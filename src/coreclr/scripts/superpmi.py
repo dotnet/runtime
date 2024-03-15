@@ -227,6 +227,10 @@ compile_help = """\
 Compile only specified method contexts, e.g., `-compile 20,25`. This is passed directly to the superpmi.exe `-compile` argument. See `superpmi.exe -?` for full documentation about allowed formats.
 """
 
+produce_repro_help = """\
+If passed, produce the *.mc repro files.
+"""
+
 # Start of parser object creation.
 
 parser = argparse.ArgumentParser(description=description)
@@ -323,6 +327,7 @@ replay_common_parser.add_argument("--force_download", action="store_true", help=
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 replay_common_parser.add_argument("-private_store", action="append", help=private_store_help)
 replay_common_parser.add_argument("-compile", "-c", help=compile_help)
+replay_common_parser.add_argument("--produce_repro", action="store_true", help=produce_repro_help)
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -1500,6 +1505,7 @@ def save_repro_mc_files(temp_location, coreclr_args, artifacts_base_name, repro_
     """ For commands that use the superpmi "-r" option to create "repro" .mc files, copy these to a
         location where they are saved (and not in a "temp" directory) for easy use by the user.
     """
+
     # If there are any .mc files, drop them into artifacts/repro/<host_os>.<arch>.<build_type>/*.mc
     mc_files = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".mc")]
     if len(mc_files) > 0:
@@ -1643,9 +1649,13 @@ class SuperPMIReplay:
             repro_flags = []
 
             common_flags = [
-                "-v", "ewi",  # display errors, warnings, missing, jit info
-                "-r", os.path.join(temp_location, "repro") # Repro name prefix, create .mc repro files
+                "-v", "ewi"  # display errors, warnings, missing, jit info
             ]
+
+            if self.coreclr_args.produce_repro:
+                common_flags += [
+                    "-r", os.path.join(temp_location, "repro") # Repro name prefix, create .mc repro files
+                ]
 
             if self.coreclr_args.altjit:
                 repro_flags += [
@@ -2151,8 +2161,12 @@ class SuperPMIReplayAsmDiffs:
                     "-v", "ewi",  # display errors, warnings, missing, jit info
                     "-f", fail_mcl_file,  # Failing mc List
                     "-details", detailed_info_file,  # Detailed information about each context
-                    "-r", os.path.join(temp_location, "repro"),  # Repro name prefix, create .mc repro files
                 ]
+                if self.coreclr_args.produce_repro:
+                    flags += [
+                        "-r", os.path.join(temp_location, "repro") # Repro name prefix, create .mc repro files
+                    ]
+
                 flags += altjit_asm_diffs_flags
                 flags += base_option_flags
                 flags += diff_option_flags
@@ -4482,6 +4496,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Method context not valid")
 
+        coreclr_args.verify(args,
+                            "produce_repro",
+                            lambda unused: True,
+                            "Unable to set produce_repro")
+        
         coreclr_args.verify(args,
                             "private_store",
                             lambda item: True,

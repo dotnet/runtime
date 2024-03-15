@@ -17,7 +17,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 EventBuilder eventType = type.DefineEvent("TestEvent", EventAttributes.SpecialName, typeof(int));
                 MethodBuilder addMethod = type.DefineMethod("AddMethod", MethodAttributes.Public | MethodAttributes.SpecialName);
                 MethodBuilder addMethod2 = type.DefineMethod("AddMethod2", MethodAttributes.Public | MethodAttributes.HideBySig, typeof(int), Type.EmptyTypes);
@@ -102,7 +102,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 TypeBuilder delegateType = ab.GetDynamicModule("MyModule").DefineType("OnMissingString", TypeAttributes.Public | TypeAttributes.Sealed, typeof(MulticastDelegate));
                 delegateType.DefineMethod("Invoke", MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual,
                     typeof(void), [typeof(string)]).SetImplementationFlags(MethodImplAttributes.Runtime);

@@ -1765,12 +1765,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     assert(returnType == TYP_STRUCT);
     assert((howToReturnStruct == SPK_ByValueAsHfa) || (howToReturnStruct == SPK_ByValue));
 
-#ifdef UNIX_AMD64_ABI
-    // must be a struct returned in two registers
-    assert(retRegCount == 2);
-#else  // not UNIX_AMD64_ABI
     assert(retRegCount >= 2);
-#endif // not UNIX_AMD64_ABI
 
     if (!call->CanTailCall() && !call->IsInlineCandidate())
     {
@@ -1967,6 +1962,33 @@ void Compiler::impRetypeUnmanagedCallArgs(GenTreeCall* call)
 #ifdef SWIFT_SUPPORT
 
 //------------------------------------------------------------------------
+// GetSwiftLowering: Get the CORINFO_SWIFT_LOWERING associated with a struct.
+//
+// Arguments:
+//   call - The class
+//
+// Return Value:
+//   Pointer to lowering
+//
+const CORINFO_SWIFT_LOWERING* Compiler::GetSwiftLowering(CORINFO_CLASS_HANDLE hClass)
+{
+    if (m_swiftLoweringCache == nullptr)
+    {
+        m_swiftLoweringCache = new (this, CMK_CallArgs) SwiftLoweringMap(getAllocator(CMK_CallArgs));
+    }
+
+    CORINFO_SWIFT_LOWERING* lowering;
+    if (!m_swiftLoweringCache->Lookup(hClass, &lowering))
+    {
+        lowering = new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING;
+        info.compCompHnd->getSwiftLowering(hClass, lowering);
+        m_swiftLoweringCache->Set(hClass, lowering);
+    }
+
+    return lowering;
+}
+
+//------------------------------------------------------------------------
 // impPopArgsForSwiftCall: Pop arguments from IL stack to a Swift pinvoke node.
 //
 // Arguments:
@@ -1987,9 +2009,6 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
 
     // Check the signature of the Swift call for the special types
     CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
-
-    CORINFO_SWIFT_LOWERING** lowerings =
-        sig->numArgs == 0 ? nullptr : (new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING*[sig->numArgs]{});
 
     for (unsigned short argIndex = 0; argIndex < sig->numArgs;
          sigArg                  = info.compCompHnd->getArgNext(sigArg), argIndex++)
@@ -2061,24 +2080,6 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         {
             // This is a struct type. Check if it needs to be lowered.
             // TODO-Bug: SIMD types are not handled correctly by this.
-            CORINFO_SWIFT_LOWERING* lowering = new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING;
-            lowerings[argIndex]              = lowering;
-            info.compCompHnd->getSwiftLowering(argClass, lowering);
-            if (lowering->byReference)
-            {
-                JITDUMP("  Argument %d of type %s must be passed by reference\n", argIndex,
-                        typGetObjLayout(argClass)->GetClassName());
-            }
-            else
-            {
-                JITDUMP("  Argument %d of type %s must be passed as %d primitive(s)\n", argIndex,
-                        typGetObjLayout(argClass)->GetClassName(), lowering->numLoweredElements);
-                for (size_t i = 0; i < lowering->numLoweredElements; i++)
-                {
-                    JITDUMP("    [%zu] @ +%02u: %s\n", i, lowering->offsets[i],
-                            varTypeName(JitType2PreciseVarType(lowering->loweredElements[i])));
-                }
-            }
         }
 
         // We must spill this struct to a local to be able to expand it into primitives.
@@ -2144,8 +2145,22 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         }
         else
         {
-            CORINFO_SWIFT_LOWERING* lowering = lowerings[argIndex];
-            assert(lowering != nullptr);
+            const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(arg->GetSignatureClassHandle());
+            if (lowering->byReference)
+            {
+                JITDUMP("  Argument %d of type %s must be passed by reference\n", argIndex,
+                        typGetObjLayout(arg->GetSignatureClassHandle())->GetClassName());
+            }
+            else
+            {
+                JITDUMP("  Argument %d of type %s must be passed as %d primitive(s)\n", argIndex,
+                        typGetObjLayout(arg->GetSignatureClassHandle())->GetClassName(), lowering->numLoweredElements);
+                for (size_t i = 0; i < lowering->numLoweredElements; i++)
+                {
+                    JITDUMP("    [%zu] @ +%02u: %s\n", i, lowering->offsets[i],
+                            varTypeName(JitType2PreciseVarType(lowering->loweredElements[i])));
+                }
+            }
 
             if (lowering->byReference)
             {
@@ -2237,6 +2252,27 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         call->gtArgs.Remove(arg);
         arg = insertAfter->GetNext();
     }
+
+#ifdef DEBUG
+    if (verbose && call->TypeIs(TYP_STRUCT) && (sig->retTypeClass != NO_CLASS_HANDLE))
+    {
+        const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(sig->retTypeClass);
+        if (lowering->byReference)
+        {
+            printf("  Call returns %s by reference\n", typGetObjLayout(sig->retTypeClass)->GetClassName());
+        }
+        else
+        {
+            printf("  Call returns %s as %d primitive(s) in registers\n",
+                   typGetObjLayout(sig->retTypeClass)->GetClassName(), lowering->numLoweredElements);
+            for (size_t i = 0; i < lowering->numLoweredElements; i++)
+            {
+                printf("    [%zu] @ +%02u: %s\n", i, lowering->offsets[i],
+                       varTypeName(JitType2PreciseVarType(lowering->loweredElements[i])));
+            }
+        }
+    }
+#endif
 
     JITDUMP("Final result after Swift call lowering:\n");
     DISPTREE(call);
@@ -3367,7 +3403,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
 
                 CORINFO_GENERICHANDLE_RESULT embedInfo;
-                info.compCompHnd->expandRawHandleIntrinsic(&resolvedToken, &embedInfo);
+                info.compCompHnd->expandRawHandleIntrinsic(&resolvedToken, info.compMethodHnd, &embedInfo);
 
                 GenTree* rawHandle = impLookupToTree(&resolvedToken, &embedInfo.lookup, gtTokenToIconFlags(memberRef),
                                                      embedInfo.compileTimeHandle);

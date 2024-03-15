@@ -3420,18 +3420,12 @@ bool MethodTable::IsRiscV64OnlyOneField(MethodTable * pMT)
 {
     TypeHandle th(pMT);
 
-    bool useNativeLayout      = false;
-    bool ret                  = false;
-    MethodTable* pMethodTable = nullptr;
+    bool ret = false;
 
     if (!th.IsTypeDesc())
     {
-        pMethodTable = th.AsMethodTable();
-        if (pMethodTable->HasLayout())
-        {
-            useNativeLayout = true;
-        }
-        else if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
+        MethodTable* pMethodTable = th.AsMethodTable();
+        if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNumIntroducedInstanceFields();
 
@@ -3440,6 +3434,19 @@ bool MethodTable::IsRiscV64OnlyOneField(MethodTable * pMT)
                 FieldDesc *pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
 
                 CorElementType fieldType = pFieldStart[0].GetFieldType();
+
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
+
+                if (hasImpliedRepeatedFields)
+                {
+                    numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
+                    if (numIntroducedFields != 1)
+                    {
+                        goto _End_arg;
+                    }
+                }
 
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
@@ -3454,20 +3461,12 @@ bool MethodTable::IsRiscV64OnlyOneField(MethodTable * pMT)
                     }
                 }
             }
-            goto _End_arg;
         }
     }
     else
     {
-        _ASSERTE(th.IsNativeValueType());
+        MethodTable* pMethodTable = th.AsNativeValueType();
 
-        useNativeLayout = true;
-        pMethodTable = th.AsNativeValueType();
-    }
-    _ASSERTE(pMethodTable != nullptr);
-
-    if (useNativeLayout)
-    {
         if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNativeLayoutInfo()->GetNumFields();
@@ -3526,18 +3525,12 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 {
     TypeHandle th(cls);
 
-    bool useNativeLayout           = false;
     int size = STRUCT_NO_FLOAT_FIELD;
-    MethodTable* pMethodTable      = nullptr;
 
     if (!th.IsTypeDesc())
     {
-        pMethodTable = th.AsMethodTable();
-        if (pMethodTable->HasLayout())
-        {
-            useNativeLayout = true;
-        }
-        else if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
+        MethodTable* pMethodTable = th.AsMethodTable();
+        if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNumIntroducedInstanceFields();
 
@@ -3546,6 +3539,44 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                 FieldDesc *pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
 
                 CorElementType fieldType = pFieldStart[0].GetFieldType();
+
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
+
+                if (hasImpliedRepeatedFields)
+                {
+                    numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
+                    if (numIntroducedFields > 2)
+                    {
+                        goto _End_arg;
+                    }
+
+                    if (fieldType == ELEMENT_TYPE_R4)
+                    {
+                        if (numIntroducedFields == 1)
+                        {
+                            size = STRUCT_FLOAT_FIELD_ONLY_ONE;
+                        }
+                        else if (numIntroducedFields == 2)
+                        {
+                            size = STRUCT_FLOAT_FIELD_ONLY_TWO;
+                        }
+                        goto _End_arg;
+                    }
+                    else if (fieldType == ELEMENT_TYPE_R8)
+                    {
+                        if (numIntroducedFields == 1)
+                        {
+                            size = STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8;
+                        }
+                        else if (numIntroducedFields == 2)
+                        {
+                            size = STRUCT_FIELD_TWO_DOUBLES;
+                        }
+                        goto _End_arg;
+                    }
+                }
 
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
@@ -3580,6 +3611,11 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                 assert(pFieldFirst->GetOffset() == 0);
 
                 if (pFieldFirst->GetSize() > 8)
+                {
+                    goto _End_arg;
+                }
+
+                if (pFieldFirst->GetSize() > pFieldSecond->GetOffset())
                 {
                     goto _End_arg;
                 }
@@ -3701,21 +3737,12 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                     size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                 }
             }
-
-            goto _End_arg;
         }
     }
     else
     {
-        _ASSERTE(th.IsNativeValueType());
+        MethodTable* pMethodTable = th.AsNativeValueType();
 
-        useNativeLayout = true;
-        pMethodTable = th.AsNativeValueType();
-    }
-    _ASSERTE(pMethodTable != nullptr);
-
-    if (useNativeLayout)
-    {
         if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNativeLayoutInfo()->GetNumFields();

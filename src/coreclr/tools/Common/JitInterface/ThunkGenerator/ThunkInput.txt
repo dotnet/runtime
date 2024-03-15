@@ -182,7 +182,7 @@ FUNCTIONS
     CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
     CORINFO_CLASS_HANDLE getDefaultComparerClass(CORINFO_CLASS_HANDLE elemType);
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType);
-    void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN *        pResolvedToken, CORINFO_GENERICHANDLE_RESULT *  pResult);
+    void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT * pResult);
     bool isIntrinsicType(           CORINFO_CLASS_HANDLE        classHnd );
     CorInfoCallConvExtension getUnmanagedCallConv(            CORINFO_METHOD_HANDLE       method,            CORINFO_SIG_INFO*           callSiteSig, bool* pSuppressGCTransition);
     bool pInvokeMarshalingRequired(        CORINFO_METHOD_HANDLE       method,        CORINFO_SIG_INFO*           callSiteSig        );
@@ -232,8 +232,8 @@ FUNCTIONS
     bool isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
     bool getStringChar(CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* value);
     CORINFO_CLASS_HANDLE getObjectType(CORINFO_OBJECT_HANDLE objPtr)
-    bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_LOOKUP_KIND * pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP *pLookup)
-    void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP *pLookup)
+    bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_LOOKUP_KIND * pGenericLookupKind, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONST_LOOKUP *pLookup)
+    void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP *pLookup)
     CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context)
     void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
     CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId)
@@ -298,7 +298,7 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE embedClassHandle(CORINFO_CLASS_HANDLE    handle, void                  **ppIndirection);
     CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE   handle, void                  **ppIndirection);
     CORINFO_FIELD_HANDLE embedFieldHandle(CORINFO_FIELD_HANDLE    handle, void                  **ppIndirection);
-    void embedGenericHandle(CORINFO_RESOLVED_TOKEN *        pResolvedToken, bool fEmbedParent, CORINFO_GENERICHANDLE_RESULT *  pResult);
+    void embedGenericHandle(CORINFO_RESOLVED_TOKEN *        pResolvedToken, bool fEmbedParent, CORINFO_METHOD_HANDLE   callerHandle, CORINFO_GENERICHANDLE_RESULT *  pResult);
     void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
     void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE   method, CORINFO_CONST_LOOKUP *pLookup);
     void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void           ** ppIndirection);

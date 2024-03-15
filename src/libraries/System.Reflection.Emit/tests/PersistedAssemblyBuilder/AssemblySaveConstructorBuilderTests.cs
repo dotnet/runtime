@@ -15,7 +15,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 ConstructorBuilder constructor = type.DefineDefaultConstructor(MethodAttributes.Public);
                 ConstructorBuilder constructor2 = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [typeof(int)]);
                 constructor2.DefineParameter(1, ParameterAttributes.None, "parameter1");
@@ -51,7 +51,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineDefaultConstructor_WithTypeBuilderParent()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             type.CreateType();
             TypeBuilder child = ab.GetDynamicModule("MyModule").DefineType("ChildType", TypeAttributes.Public | TypeAttributes.Class);
             child.SetParent(type);
@@ -69,7 +69,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 type.DefineGenericParameters("T");
                 ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
                 FieldBuilder field = type.DefineField("TestField", typeof(bool), FieldAttributes.Public | FieldAttributes.Static);
@@ -112,7 +112,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineDefaultConstructor_Interface_ThrowsInvalidOperationException()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
             TypeBuilder type = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
             Assert.Throws<InvalidOperationException>(() => type.DefineDefaultConstructor(MethodAttributes.Public));
         }
@@ -120,7 +120,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineDefaultConstructor_ThrowsNotSupportedException_IfParentNotCreated()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             TypeBuilder  child = ab.GetDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public);
             child.SetParent(type);
             Assert.Throws<NotSupportedException>(() => child.DefineDefaultConstructor(MethodAttributes.Public));
@@ -136,7 +136,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineDefaultConstructor_ParentNoDefaultConstructor_ThrowsNotSupportedException()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             FieldBuilder field = type.DefineField("TestField", typeof(int), FieldAttributes.Family);
 
             ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new[] { typeof(int) });

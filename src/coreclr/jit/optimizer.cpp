@@ -246,6 +246,13 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             continue;
         }
 
+        // Don't change the block weight if it's unreachable.
+        if (!m_reachabilitySets->GetDfsTree()->Contains(curBlk))
+        {
+            reportBlockWeight(curBlk, "; unchanged: unreachable");
+            continue;
+        }
+
         // For curBlk to be part of a loop that starts at begBlk, curBlk must be reachable from begBlk and
         // (since this is a loop) begBlk must likewise be reachable from curBlk.
 
@@ -2681,7 +2688,7 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
 }
 
 //-----------------------------------------------------------------------------
-// optFindLoops: find loops in the function.
+// optFindLoopsPhase: find loops in the function.
 //
 // The JIT recognizes two types of loops in a function: natural loops and "general" (or "unnatural") loops.
 // Natural loops are those which get added to Compiler::m_loops. Most downstream optimizations require
@@ -3118,6 +3125,9 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 
     BasicBlock* newExit;
 
+    JITDUMP("Canonicalize exit " FMT_BB " for " FMT_LP " to have only loop predecessors\n", exit->bbNum,
+            loop->GetIndex());
+
 #if FEATURE_EH_CALLFINALLY_THUNKS
     if (exit->KindIs(BBJ_CALLFINALLY))
     {
@@ -3140,7 +3150,7 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
         }
     }
     else
-#endif
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
     {
         newExit = fgNewBBbefore(BBJ_ALWAYS, exit, false);
         newExit->SetFlags(BBF_NONE_QUIRK);
@@ -3154,9 +3164,6 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 
     newExit->bbCodeOffs = exit->bbCodeOffs;
 
-    JITDUMP("Created new exit " FMT_BB " to replace " FMT_BB " for " FMT_LP "\n", newExit->bbNum, exit->bbNum,
-            loop->GetIndex());
-
     for (BasicBlock* pred : exit->PredBlocksEditing())
     {
         if (loop->ContainsBlock(pred))
@@ -3166,6 +3173,9 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
     }
 
     optSetWeightForPreheaderOrExit(loop, newExit);
+
+    JITDUMP("Created new exit " FMT_BB " to replace " FMT_BB " exit for " FMT_LP "\n", newExit->bbNum, exit->bbNum,
+            loop->GetIndex());
     return true;
 }
 

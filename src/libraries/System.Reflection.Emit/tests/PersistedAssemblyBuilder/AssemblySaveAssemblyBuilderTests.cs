@@ -5,14 +5,19 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    public class AssemblySaveAssemblyBuilder
+    public class AssemblySaveAssemblyBuilderTests
     {
+        private readonly AssemblyName _assemblyName = new AssemblyName("MyAssembly");
         public class Outer
         {
             public class Inner
@@ -25,6 +30,82 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void PersistedAssemblyBuilder_ConstructorValidations()
+        {
+            Assert.Throws<ArgumentNullException>("name", () => new PersistedAssemblyBuilder(null, typeof(object).Assembly));
+            Assert.Throws<ArgumentNullException>("coreAssembly", () => new PersistedAssemblyBuilder(_assemblyName, null));
+            Assert.Throws<ArgumentNullException>("AssemblyName.Name", () => AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName()));
+        }
+
+        [Fact]
+        public void PersistedAssemblyBuilder_SaveValidations()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(_assemblyName);
+
+            Assert.Throws<ArgumentNullException>("assemblyFileName", () => ab.Save(assemblyFileName: null));
+            Assert.Throws<ArgumentNullException>("stream", () => ab.Save(stream: null));
+            Assert.Throws<InvalidOperationException>(() => ab.Save(assemblyFileName: "File")); // no module defined
+        }
+
+        [Fact]
+        public void PersistedAssemblyBuilder_GenerateMetadataValidation()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(_assemblyName);
+            Assert.Throws<InvalidOperationException>(() => ab.GenerateMetadata(out var _, out var _)); // no module defined
+            ab.DefineDynamicModule("MyModule");
+            MetadataBuilder metadata = ab.GenerateMetadata(out var ilStream, out var mappedFieldData);
+            Assert.NotNull(metadata);
+            Assert.NotNull(ilStream);
+            Assert.NotNull(mappedFieldData);
+            Assert.Throws<InvalidOperationException>(() => ab.GenerateMetadata(out var _, out var _)); // cannot re-generate metadata
+        }
+
+        [Fact]
+        public void PersistedAssemblyBuilder_GenerateMetadataWithEntryPoint()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(_assemblyName);
+            TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+            MethodBuilder mb1 = tb.DefineMethod("SumMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int), typeof(int)]);
+            ILGenerator il = mb1.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Add);
+            il.Emit(OpCodes.Ret);
+            MethodBuilder entryPoint = tb.DefineMethod("Main", MethodAttributes.HideBySig | MethodAttributes.Public | MethodAttributes.Static, typeof(int), null);
+            ILGenerator il2 = entryPoint.GetILGenerator();
+            il2.Emit(OpCodes.Ldc_I4_S, 10);
+            il2.Emit(OpCodes.Ldc_I4_2);
+            il2.Emit(OpCodes.Call, mb1);
+            il2.Emit(OpCodes.Ret);
+            tb.CreateType();
+
+            MetadataBuilder metadataBuilder = ab.GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder fieldData);
+            PEHeaderBuilder peHeaderBuilder = new PEHeaderBuilder(
+                            imageCharacteristics: Characteristics.ExecutableImage,
+                            subsystem: Subsystem.WindowsCui);
+
+            ManagedPEBuilder peBuilder = new ManagedPEBuilder(
+                            header: peHeaderBuilder,
+                            metadataRootBuilder: new MetadataRootBuilder(metadataBuilder),
+                            ilStream: ilStream,
+                            mappedFieldData: fieldData,
+                            entryPoint: MetadataTokens.MethodDefinitionHandle(entryPoint.MetadataToken));
+
+            BlobBuilder peBlob = new BlobBuilder();
+            peBuilder.Serialize(peBlob);
+
+            // in case saving to a file:
+            using var stream = new MemoryStream();
+            peBlob.WriteContentTo(stream);
+
+            stream.Seek(0, SeekOrigin.Begin);
+            Assembly assembly = AssemblyLoadContext.Default.LoadFromStream(stream);
+            MethodInfo method = assembly.EntryPoint;
+            Assert.Equal("Main", method.Name);
+            Assert.Equal(12, method.Invoke(null, null));
+        }
+
+        [Fact]
         public void AssemblyWithDifferentTypes()
         {
             using (TempFile file = TempFile.Create())
@@ -34,7 +115,7 @@ namespace System.Reflection.Emit.Tests
                 aName.CultureInfo = new CultureInfo("en");
                 aName.Flags = AssemblyNameFlags.Retargetable;
 
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(aName);
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(aName);
 
                 ab.SetCustomAttribute(new CustomAttributeBuilder(typeof(AssemblyDelaySignAttribute).GetConstructor([typeof(bool)]), [true]));
 
