@@ -2670,9 +2670,9 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             elemsize = id->idOpSize();
             assert(insOptsNone(id->idInsOpt()));
             assert(isScalableVectorSize(elemsize));
-            assert(isVectorRegister(id->idReg1()));       // ttttt
-            assert(isGeneralRegisterOrZR(id->idReg2()));  // nnnnn
-            assert(isValidSimm<9>(emitGetInsSC(id)));     // iii
+            assert(isVectorRegister(id->idReg1()));      // ttttt
+            assert(isGeneralRegisterOrZR(id->idReg2())); // nnnnn
+            assert(isValidSimm<9>(emitGetInsSC(id)));    // iii
             break;
 
         case IF_SVE_GG_3A: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
