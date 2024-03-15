@@ -960,7 +960,7 @@ Debugger::Debugger()
     // Initialize these in ctor because we free them in dtor.
     // And we can't set them to some safe uninited value (like NULL).
 
-    m_pForceCatchHandlerFoundEventsTable = new ReturnCatchHandlerFoundTable();
+    m_pForceCatchHandlerFoundEventsTable = new ForceCatchHandlerFoundTable();
 
 
 
@@ -7283,6 +7283,7 @@ HRESULT Debugger::SendExceptionHelperAndBlock(
         PRECONDITION(CheckPointer(pThread));
     }
     CONTRACTL_END;
+
     HRESULT     hr = S_OK;
 
     // This is a normal event to send from LS to RS
@@ -7415,7 +7416,7 @@ void Debugger::SendExceptionEventsWorker(
         //
         // Send the first chance exception if we have not already and if it is not suppressed
         //
-        if (m_sendExceptionsOutsideOfJMC && !pExState->GetFlags()->SentDebugFirstChance()) //maybe do || in first condition with force
+        if (m_sendExceptionsOutsideOfJMC && !pExState->GetFlags()->SentDebugFirstChance())
         {
             // Blocking here is especially important so that the debugger can mark any code as JMC.
             hr = SendExceptionHelperAndBlock(
@@ -7451,6 +7452,7 @@ void Debugger::SendExceptionEventsWorker(
                 }
             } // end of GCX_CCOP_EEINTERFACE();
         } //end if (m_sendExceptionsOutsideOfJMC && !SentDebugFirstChance())
+
         //
         // If this is a JMC function, then we send a USER's first chance as well.
         //
@@ -7575,6 +7577,7 @@ HRESULT Debugger::SendException(Thread *pThread,
         PRECONDITION((pThread->GetFilterContext() == NULL) || !fFirstChance);
     }
     CONTRACTL_END;
+
     LOG((LF_CORDB, LL_INFO10000, "D::SendException\n"));
 
     if (CORDBUnrecoverableError(this))
@@ -7637,6 +7640,7 @@ HRESULT Debugger::SendException(Thread *pThread,
                 }
                 FramePointer framePointer = FramePointer::MakeFramePointer(stackPointer);
 
+
                 // Do the real work of sending the events
                 SendExceptionEventsWorker(
                     pThread,
@@ -7652,6 +7656,7 @@ HRESULT Debugger::SendException(Thread *pThread,
                 LOG((LF_CORDB,LL_INFO100, "D:SE: Skipping SendIPCEvent because not supposed to send anything, or RS detached.\n"));
             }
         }
+
         // If we weren't at a safe place when we switched to PREEMPTIVE, then go ahead and unmark that fact now
         // that we're successfully back in COOPERATIVE mode.
         unsafePlaceHolder.Clear();
@@ -7661,6 +7666,7 @@ HRESULT Debugger::SendException(Thread *pThread,
             ProcessAnyPendingEvals(pThread);
         }
     }
+
     if (CORDebuggerAttached())
     {
         return S_FALSE;
@@ -7769,6 +7775,7 @@ bool Debugger::FirstChanceManagedException(Thread *pThread, SIZE_T currentIP, SI
         PRECONDITION(CORDebuggerAttached());
     }
     CONTRACTL_END;
+
     LOG((LF_CORDB, LL_INFO10000, "D::FCE: First chance exception, TID:0x%x, \n", GetThreadIdHelper(pThread)));
 
     _ASSERTE(GetThreadNULLOk() != NULL);
@@ -7811,6 +7818,7 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
         MODE_ANY;
     }
     CONTRACTL_END;
+
     // @@@
     // Implements DebugInterface
     // Call by EE/exception. Must be on managed thread
@@ -7842,9 +7850,9 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
     }
 
     BOOL forceSendCatchHandlerFound = FALSE;
-    GCX_COOP_EEINTERFACE();
     {
-        forceSendCatchHandlerFound = ForceSendCatchHandlerFound(pThread);
+        GCX_COOP_EEINTERFACE();
+        forceSendCatchHandlerFound = ShouldSendCatchHandlerFound(pThread);
     }
     // Here we check if debugger opted-out of receiving exception related events from outside of JMC methods
     // or this exception ever crossed JMC frame (in this case we have already sent user first chance event)
@@ -7905,12 +7913,14 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     // @@@
     // Implements DebugInterface
     // Can only be called from EE
+
     // If no debugger is attached, then don't bother sending the events.
     // This can't kick off a jit-attach.
     if (!CORDebuggerAttached())
     {
         return EXCEPTION_CONTINUE_SEARCH;
     }
+
     //
     // If this exception has never bubbled thru to managed code, then there is no
     // useful information for the debugger and, in fact, it may be a completely
@@ -7961,6 +7971,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     // If we have not sent a first-chance notification, do so now.
     //
     ThreadExceptionState* pExState = pThread->GetExceptionState();
+
     if (!pExState->GetFlags()->SentDebugFirstChance())
     {
         SendException(pThread,
@@ -7973,10 +7984,11 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
                              // that will see this exception.
                       pExceptionPointers);
     }
+
     BOOL forceSendCatchHandlerFound = FALSE;
-    GCX_COOP_EEINTERFACE();
     {
-        forceSendCatchHandlerFound = ForceSendCatchHandlerFound(pThread);
+        GCX_COOP_EEINTERFACE();
+        forceSendCatchHandlerFound = ShouldSendCatchHandlerFound(pThread);
     }
     // Here we check if debugger opted-out of receiving exception related events from outside of JMC methods
     // or this exception ever crossed JMC frame (in this case we have already sent user first chance event)
@@ -8007,7 +8019,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-BOOL Debugger::ForceSendCatchHandlerFound(Thread* pThread) //ThreadExceptionState* pExState
+BOOL Debugger::ShouldSendCatchHandlerFound(Thread* pThread) //ThreadExceptionState* pExState
 {
     CONTRACTL
     {
@@ -8019,9 +8031,7 @@ BOOL Debugger::ForceSendCatchHandlerFound(Thread* pThread) //ThreadExceptionStat
 
     BOOL forceSendCatchHandlerFound = FALSE;
     ThreadExceptionState* pExState = pThread->GetExceptionState();
-    OBJECTREF exRef = pExState->GetThrowable();
-    AppDomain *pAppDomain = g_pEEInterface->GetThread()->GetDomain();
-    OBJECTHANDLE objHandle = pAppDomain->CreateLongWeakHandle(exRef);
+    OBJECTHANDLE objHandle = pThread->GetThrowableAsHandle();
     OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle); //destroy handle
     if (retrievedHandle != NULL)
     {
@@ -10457,7 +10467,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             OBJECTREF exObj = ObjectToOBJECTREF(obj);
             HRESULT hr = E_INVALIDARG;
 
-            hr = InsertToHashTableToForceCatchHandlerFound(enableEvents, exObj, pAppDomain);
+            hr = UpdateForceCatchHandlerFoundTable(enableEvents, exObj, pAppDomain);
 
             DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
             InitIPCEvent(pIPCResult,
@@ -12385,7 +12395,7 @@ HRESULT Debugger::IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BO
     return S_OK;
 }
 
-HRESULT Debugger::InsertToHashTableToForceCatchHandlerFound(BOOL enableEvents, OBJECTREF exObj, AppDomain *pAppDomain)
+HRESULT Debugger::UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF exObj, AppDomain *pAppDomain)
 {
     CONTRACTL
     {
@@ -12402,11 +12412,14 @@ HRESULT Debugger::InsertToHashTableToForceCatchHandlerFound(BOOL enableEvents, O
     }
     if (enableEvents)
     {
-        //Want to check if it is exception type?
         OBJECTHANDLE objHandleFound = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle);
         if (objHandleFound == NULL)
         {
             m_pForceCatchHandlerFoundEventsTable->Add(objHandle);
+        }
+        else
+        {
+            DestroyLongWeakHandle(objHandle);
         }
     }
     else
@@ -12415,6 +12428,7 @@ HRESULT Debugger::InsertToHashTableToForceCatchHandlerFound(BOOL enableEvents, O
         {
             m_pForceCatchHandlerFoundEventsTable->Remove(objHandle);
         }
+        DestroyLongWeakHandle(objHandle);
     }
     return S_OK;
 }

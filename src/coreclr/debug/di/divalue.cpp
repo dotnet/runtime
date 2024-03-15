@@ -2510,7 +2510,6 @@ HRESULT CordbObjectValue::ForceCatchHandlerFoundEvents(BOOL enableEvents)
 
         IDacDbiInterface* pDAC = GetProcess()->GetDAC();
         VMPTR_Object vmObj = pDAC->GetObject(objAddr);
-        //OBJECTREF exObjRef = ObjectToOBJECTREF(vmObj);
 
         DebuggerIPCEvent event;
         CordbAppDomain * pAppDomain = GetAppDomain();

@@ -263,7 +263,6 @@ class Object
     }
 
     static DWORD ComputeHashCode();
-    static DWORD GetGlobalNewHashCode();
 
 #ifndef DACCESS_COMPILE
     INT32 GetHashCodeEx();

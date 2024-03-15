@@ -587,7 +587,7 @@ class EMPTY_BASES_DECL ForceCatchHandlerFoundSHashTraits : public DefaultSHashTr
             DestroyLongWeakHandle(e);
         }
 };
-typedef SHash<ForceCatchHandlerFoundSHashTraits> ReturnCatchHandlerFoundTable;
+typedef SHash<ForceCatchHandlerFoundSHashTraits> ForceCatchHandlerFoundTable;
 #endif
 
 /* ------------------------------------------------------------------------ *
@@ -1972,7 +1972,7 @@ public:
                                          Module *classModule,
                                          BOOL fIsLoadEvent);
 
-    BOOL ForceSendCatchHandlerFound(Thread* pThread); //ThreadExceptionState* pExState
+    BOOL ShouldSendCatchHandlerFound(Thread* pThread);
 
     void SendCatchHandlerFound(Thread *pThread,
                                FramePointer fp,
@@ -2275,7 +2275,7 @@ public:
     HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
 #endif //DACCESS_COMPILE
     HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
-    HRESULT InsertToHashTableToForceCatchHandlerFound(BOOL enableEvents, OBJECTREF exObj, AppDomain *pAppDomain);
+    HRESULT UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF exObj, AppDomain *pAppDomain);
 
     //
     // The debugger mutex is used to protect any "global" Left Side
@@ -2867,7 +2867,7 @@ private:
     #ifdef DACCESS_COMPILE
     VOID * m_pForceCatchHandlerFoundEventsTable;
     #else
-    ReturnCatchHandlerFoundTable *m_pForceCatchHandlerFoundEventsTable;
+    ForceCatchHandlerFoundTable *m_pForceCatchHandlerFoundEventsTable;
     #endif
 
 
