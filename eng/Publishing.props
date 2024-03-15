@@ -25,9 +25,9 @@
                                    $(ArtifactsPackagesDir)**\*.exe;
                                    $(ArtifactsPackagesDir)**\*.msi"
                           Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz" />
+
       <ItemsToPushToBlobFeed Include="@(InstallerToPublish)"
-                             IsShipping="true"
-                             ManifestArtifactData="DotNetReleaseShipping=true"
+                             IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))"
                              PublishFlatContainer="true"
                              RelativeBlobPath="Runtime/$(RuntimeRuntimePackProductVersion)/%(Filename)%(Extension)" />
     </ItemGroup>
