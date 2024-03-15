@@ -854,6 +854,42 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     }
     assert(structSize > 0);
 
+#ifdef SWIFT_SUPPORT
+    if (callConv == CorInfoCallConvExtension::Swift)
+    {
+        const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(clsHnd);
+        if (lowering->byReference)
+        {
+            howToReturnStruct = SPK_ByReference;
+            useType           = TYP_UNKNOWN;
+        }
+        else if (lowering->numLoweredElements == 1)
+        {
+            useType = JITtype2varType(lowering->loweredElements[0]);
+            if (genTypeSize(useType) == structSize)
+            {
+                howToReturnStruct = SPK_PrimitiveType;
+            }
+            else
+            {
+                howToReturnStruct = SPK_EnclosingType;
+            }
+        }
+        else
+        {
+            howToReturnStruct = SPK_ByValue;
+            useType           = TYP_STRUCT;
+        }
+
+        if (wbReturnStruct != nullptr)
+        {
+            *wbReturnStruct = howToReturnStruct;
+        }
+
+        return useType;
+    }
+#endif
+
 #ifdef UNIX_AMD64_ABI
     // An 8-byte struct may need to be returned in a floating point register
     // So we always consult the struct "Classifier" routine
@@ -1949,6 +1985,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     fgSsaPassesCompleted       = 0;
     fgSsaValid                 = false;
     fgVNPassesCompleted        = 0;
+
+#ifdef SWIFT_SUPPORT
+    m_swiftLoweringCache = nullptr;
+#endif
 
     // check that HelperCallProperties are initialized
 
@@ -5130,11 +5170,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif // TARGET_ARM
 
-    // Disable profile checks now.
-    // Over time we will move this further and further back in the phase list, as we fix issues.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-
     // Assign registers to variables, etc.
 
     // Create LinearScan before Lowering, so that Lowering can call LinearScan methods
@@ -5855,6 +5890,10 @@ void Compiler::RecomputeFlowGraphAnnotations()
     fgInvalidateDfsTree();
     fgDfsBlocksAndRemove();
     optFindLoops();
+
+    // Should we call this using the phase method:
+    //    DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
+    // ? It could be called multiple times.
     optSetBlockWeights();
 
     if (m_domTree == nullptr)

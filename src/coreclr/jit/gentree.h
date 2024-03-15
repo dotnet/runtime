@@ -2249,6 +2249,7 @@ public:
     }
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+
     bool IsEmbMaskOp()
     {
         return OperIsHWIntrinsic() && ((gtFlags & GTF_HW_EM_OP) != 0);
@@ -2262,6 +2263,8 @@ public:
     }
 
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+
+    static bool HandleKindDataIsInvariant(GenTreeFlags flags);
 
     bool IsCall() const
     {
@@ -4202,6 +4205,8 @@ private:
     bool m_inited;
 #endif
 
+    void InitializeSwiftReturnRegs(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
+
 public:
     ReturnTypeDesc()
     {
@@ -4323,10 +4328,10 @@ public:
     }
 
     // Get i'th ABI return register
-    regNumber GetABIReturnReg(unsigned idx) const;
+    regNumber GetABIReturnReg(unsigned idx, CorInfoCallConvExtension callConv) const;
 
     // Get reg mask of ABI return registers
-    regMaskTP GetABIReturnRegs() const;
+    regMaskTP GetABIReturnRegs(CorInfoCallConvExtension callConv) const;
 };
 
 class TailCallSiteInfo

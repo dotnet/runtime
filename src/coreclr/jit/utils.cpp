@@ -3436,6 +3436,11 @@ uint32_t BitOperations::Log2(uint64_t value)
 // Return Value:
 //    The population count (number of bits set) of value
 //
+#if defined(_MSC_VER)
+// Disable optimizations for PopCount to avoid the compiler from generating intrinsics
+// not supported on all platforms.
+#pragma optimize("", off)
+#endif // _MSC_VER
 uint32_t BitOperations::PopCount(uint32_t value)
 {
 #if defined(_MSC_VER)
@@ -3488,6 +3493,9 @@ uint32_t BitOperations::PopCount(uint64_t value)
     return static_cast<uint32_t>(result);
 #endif
 }
+#if defined(_MSC_VER)
+#pragma optimize("", on)
+#endif // _MSC_VER
 
 //------------------------------------------------------------------------
 // BitOperations::ReverseBits: Reverses the bits in an integer value

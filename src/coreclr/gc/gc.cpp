@@ -6476,59 +6476,95 @@ public:
         total_numa_nodes++;
     }
 
-    // TODO: curently this doesn't work with GCHeapAffinitizeMask/GCHeapAffinitizeRanges
-    // because the heaps may not be on contiguous active procs.
-    //
-    // This is for scenarios where GCHeapCount is specified as something like
-    // (g_num_active_processors - 2) to allow less randomization to the Server GC threads.
-    // In this case we want to assign the right heaps to those procs, ie if they share
-    // the same numa node we want to assign local heaps to those procs. Otherwise we
-    // let the heap balancing mechanism take over for now.
-    static void distribute_other_procs()
+    static bool get_info_proc (int index, uint16_t* proc_no, uint16_t* node_no, int* start_heap, int* end_heap)
+    {
+        if (!GCToOSInterface::GetProcessorForHeap ((uint16_t)index, proc_no, node_no))
+            return false;
+
+        if (*node_no == NUMA_NODE_UNDEFINED)
+            *node_no = 0;
+
+        *start_heap = (int)numa_node_to_heap_map[*node_no];
+        *end_heap = (int)(numa_node_to_heap_map[*node_no + 1]);
+
+        return true;
+    }
+
+    static void distribute_other_procs (bool distribute_all_p)
     {
         if (affinity_config_specified_p)
             return;
 
-        uint16_t proc_no = 0;
-        uint16_t node_no = 0;
-        bool res = false;
-        int start_heap = -1;
-        int end_heap = -1;
-        int current_node_no = -1;
-        int current_heap_on_node = -1;
-
-        for (int i = gc_heap::n_heaps; i < (int)g_num_active_processors; i++)
+        if (distribute_all_p)
         {
-            if (!GCToOSInterface::GetProcessorForHeap ((uint16_t)i, &proc_no, &node_no))
-                break;
+            uint16_t current_heap_no_on_node[MAX_SUPPORTED_CPUS];
+            memset (current_heap_no_on_node, 0, sizeof (current_heap_no_on_node));
+            uint16_t current_heap_no = 0;
 
-            if (node_no == NUMA_NODE_UNDEFINED)
-                node_no = 0;
+            uint16_t proc_no = 0;
+            uint16_t node_no = 0;
 
-            int start_heap = (int)numa_node_to_heap_map[node_no];
-            int end_heap = (int)(numa_node_to_heap_map[node_no + 1]);
-
-            if ((end_heap - start_heap) > 0)
+            for (int i = gc_heap::n_heaps; i < (int)g_num_active_processors; i++)
             {
-                if (node_no == current_node_no)
+                int start_heap, end_heap;
+                if (!get_info_proc (i, &proc_no, &node_no, &start_heap, &end_heap))
+                    break;
+
+                // This indicates there are heaps on this node
+                if ((end_heap - start_heap) > 0)
                 {
-                    // We already iterated through all heaps on this node, don't add more procs to these
-                    // heaps.
-                    if (current_heap_on_node >= end_heap)
-                    {
-                        continue;
-                    }
+                    proc_no_to_heap_no[proc_no] = (current_heap_no_on_node[node_no] % (uint16_t)(end_heap - start_heap)) + (uint16_t)start_heap;
+                    (current_heap_no_on_node[node_no])++;
                 }
                 else
                 {
-                    current_node_no = node_no;
-                    current_heap_on_node = start_heap;
+                    proc_no_to_heap_no[proc_no] = current_heap_no % gc_heap::n_heaps;
+                    (current_heap_no)++;
                 }
 
-                proc_no_to_heap_no[proc_no] = (uint16_t)current_heap_on_node;
-                proc_no_to_numa_node[proc_no] = (uint16_t)node_no;
+                proc_no_to_numa_node[proc_no] = node_no;
+            }
+        }
+        else
+        {
+            // This is for scenarios where GCHeapCount is specified as something like
+            // (g_num_active_processors - 2) to allow less randomization to the Server GC threads.
+            // In this case we want to assign the right heaps to those procs, ie if they share
+            // the same numa node we want to assign local heaps to those procs. Otherwise we
+            // let the heap balancing mechanism take over for now.
+            uint16_t proc_no = 0;
+            uint16_t node_no = 0;
+            int current_node_no = -1;
+            int current_heap_on_node = -1;
 
-                current_heap_on_node++;
+            for (int i = gc_heap::n_heaps; i < (int)g_num_active_processors; i++)
+            {
+                int start_heap, end_heap;
+                if (!get_info_proc (i, &proc_no, &node_no, &start_heap, &end_heap))
+                    break;
+
+                if ((end_heap - start_heap) > 0)
+                {
+                    if (node_no == current_node_no)
+                    {
+                        // We already iterated through all heaps on this node, don't add more procs to these
+                        // heaps.
+                        if (current_heap_on_node >= end_heap)
+                        {
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        current_node_no = node_no;
+                        current_heap_on_node = start_heap;
+                    }
+
+                    proc_no_to_heap_no[proc_no] = (uint16_t)current_heap_on_node;
+                    proc_no_to_numa_node[proc_no] = (uint16_t)node_no;
+
+                    current_heap_on_node++;
+                }
             }
         }
     }
@@ -20962,14 +20998,14 @@ size_t gc_heap::get_total_allocated_since_last_gc()
     {
         gc_heap* hp = gc_heap::g_heaps[i];
 #else //MULTIPLE_HEAPS
-    {
-        gc_heap* hp = pGenGCHeap;
+        {
+            gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
-        total_allocated_size += hp->allocated_since_last_gc[0] + hp->allocated_since_last_gc[1];
-        hp->allocated_since_last_gc[0] = 0;
-        hp->allocated_since_last_gc[1] = 0;
-    }
-    return total_allocated_size;
+            total_allocated_size += hp->allocated_since_last_gc[0] + hp->allocated_since_last_gc[1];
+            hp->allocated_since_last_gc[0] = 0;
+            hp->allocated_since_last_gc[1] = 0;
+        }
+        return total_allocated_size;
 }
 
 // Gets what's allocated on both SOH, LOH, etc that hasn't been collected.
@@ -48706,7 +48742,13 @@ HRESULT GCHeap::Initialize()
     // them which means it's important to know their numa nodes and map them to a reasonable
     // heap, ie, we wouldn't want to have all such procs go to heap 0.
     if (g_num_active_processors > nhp)
-        heap_select::distribute_other_procs();
+    {
+        bool distribute_all_p = false;
+#ifdef DYNAMIC_HEAP_COUNT
+        distribute_all_p = (gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes);
+#endif //DYNAMIC_HEAP_COUNT
+        heap_select::distribute_other_procs (distribute_all_p);
+    }
 
     gc_heap* hp = gc_heap::g_heaps[0];
 
@@ -49978,7 +50020,8 @@ void gc_heap::do_pre_gc()
         settings.condemned_generation,
         total_allocated_since_last_gc,
         (settings.concurrent ? "BGC" : (gc_heap::background_running_p() ? "FGC" : "NGC")),
-        settings.b_state));
+        settings.b_state,
+        n_heaps));
 #else
     dprintf (1, ("*GC* %d(gen0:%d)(%d)(alloc: %zd)",
         VolatileLoad(&settings.gc_index),
