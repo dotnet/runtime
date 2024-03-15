@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using TestLibrary;
 using Xunit;
 
 struct Struct { }
@@ -389,6 +390,52 @@ public static unsafe class UnsafeAccessorsTestsGenerics
             Assert.False(Accessors<Struct>.CanUseElementType<string>(null, string.Empty));
             Assert.True(Accessors<Struct>.CanUseElementType<Struct>(null, new Struct()));
         }
+    }
+
+    class ClassWithConstraints
+    {
+        private string M<T, U>() where T : U, IEquatable<T>
+            => $"{typeof(T)}|{typeof(U)}";
+
+        private static string SM<T, U>() where T : U, IEquatable<T>
+            => $"{typeof(T)}|{typeof(U)}";
+    }
+
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
+    public static void Verify_Generic_ConstraintEnforcement()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_ConstraintEnforcement)}");
+
+        Assert.Equal($"{typeof(string)}|{typeof(object)}", CallMethod<string, object>(new ClassWithConstraints()));
+        Assert.Equal($"{typeof(string)}|{typeof(object)}", CallStaticMethod<string, object>(null));
+
+        // Constraint validation isn't performed in AOT scenarios.
+        if (Utilities.IsNotNativeAot)
+        {
+            Assert.Throws<InvalidProgramException>(() => CallMethod_NoConstraints<string, object>(new ClassWithConstraints()));
+            Assert.Throws<InvalidProgramException>(() => CallMethod_MissingConstraint<string, object>(new ClassWithConstraints()));
+            Assert.Throws<InvalidProgramException>(() => CallStaticMethod_NoConstraints<string, object>(null));
+            Assert.Throws<InvalidProgramException>(() => CallStaticMethod_MissingConstraint<string, object>(null));
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
+        extern static string CallMethod<T,U>(ClassWithConstraints c) where T : U, IEquatable<T>;
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
+        extern static string CallMethod_NoConstraints<T,U>(ClassWithConstraints c);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
+        extern static string CallMethod_MissingConstraint<T,U>(ClassWithConstraints c) where T : U;
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
+        extern static string CallStaticMethod<T,U>(ClassWithConstraints c) where T : U, IEquatable<T>;
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
+        extern static string CallStaticMethod_NoConstraints<T,U>(ClassWithConstraints c);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
+        extern static string CallStaticMethod_MissingConstraint<T,U>(ClassWithConstraints c) where T : U;
     }
 
     class Invalid

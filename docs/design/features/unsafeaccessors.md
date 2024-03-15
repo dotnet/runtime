@@ -24,7 +24,7 @@ The return type is considered for the signature match. Modreqs and modopts are i
 
 By default, the attributed method's name dictates the name of the method/field. This can cause confusion in some cases since language abstractions, like C# local functions, generate mangled IL names. The solution to this is to use the `nameof` mechanism and define the `Name` property.
 
-Scenarios involving Generics may require creating new Generic types to contain the `extern static` method definition. The decision was made to require all `ELEMENT_TYPE_VAR` and `ELEMENT_TYPE_MVAR` instances to match identically type and generic parameter index. This means if the target method for access uses an `ELEMENT_TYPE_VAR`, the `extern static` method must also use an `ELEMENT_TYPE_VAR`. For example:
+Scenarios involving generics may require creating new generic types to contain the `extern static` method definition. The decision was made to require all `ELEMENT_TYPE_VAR` and `ELEMENT_TYPE_MVAR` instances to match identically type and generic parameter index. This means if the target method for access uses an `ELEMENT_TYPE_VAR`, the `extern static` method must also use an `ELEMENT_TYPE_VAR`. For example:
 
 ```csharp
 class C<T>
@@ -45,7 +45,7 @@ class Accessor<V>
 }
 ```
 
-Methods with the `UnsafeAccessorAttribute` that access members with Generic parameters are expected to have the same declared constraints with the target member. Failure to do so results in unspecified behavior. For example:
+Methods with the `UnsafeAccessorAttribute` that access members with generic parameters are expected to have the same declared constraints with the target member. Failure to do so results in unspecified behavior. For example:
 
 ```csharp
 class C<T>
@@ -112,7 +112,7 @@ UserData ud = CallPrivateConstructor();
 GetName(ud) = "Joe";
 ```
 
-Using Generics
+Using generics
 
 ```csharp
 class UserData<T>
@@ -122,7 +122,7 @@ class UserData<T>
     private U ConvertFieldToT<U>() => (U)_field;
 }
 
-// The Accessors class provides the Generic Type parameter for the method definitions.
+// The Accessors class provides the generic Type parameter for the method definitions.
 class Accessors<V>
 {
     [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
