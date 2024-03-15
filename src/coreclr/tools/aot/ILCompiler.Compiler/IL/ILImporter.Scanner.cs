@@ -1224,43 +1224,31 @@ namespace Internal.IL
                     break;
                 case ILOpcode.mul_ovf:
                 case ILOpcode.mul_ovf_un:
-                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
-                    {
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LMulOfv), "_lmulovf");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULMulOvf), "_ulmulovf");
-                    }
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LMulOfv), "_lmulovf");
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULMulOvf), "_ulmulovf");
 
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
                     break;
                 case ILOpcode.div:
                 case ILOpcode.div_un:
-                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
-                    {
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULDiv), "_uldiv");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LDiv), "_ldiv");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UDiv), "_udiv");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Div), "_div");
-                    }
-                    else if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64)
-                    {
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
-                    }
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULDiv), "_uldiv");
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LDiv), "_ldiv");
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UDiv), "_udiv");
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Div), "_div");
+
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
                     break;
                 case ILOpcode.rem:
                 case ILOpcode.rem_un:
-                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
-                    {
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULMod), "_ulmod");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LMod), "_lmod");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UMod), "_umod");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Mod), "_mod");
-                    }
-                    else if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64)
-                    {
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
-                    }
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULMod), "_ulmod");
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LMod), "_lmod");
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UMod), "_umod");
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Mod), "_mod");
+
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.DblRem), "rem");
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.FltRem), "rem");
+
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
                     break;
             }
         }
@@ -1289,10 +1277,6 @@ namespace Internal.IL
                     if (checkOverflow)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2UIntOvf), "conv_u4_ovf");
-                    }
-                    else
-                    {
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2UInt), "conv_u4");
                     }
                     break;
                 case WellKnownType.UInt64:

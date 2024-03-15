@@ -38,6 +38,11 @@ EXTERN_C uint64_t QCALLTYPE RhpULMod(uint64_t i, uint64_t j)
     return i % j;
 }
 
+FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
+{
+    return (uint32_t)val;
+}
+
 FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
 {
     return (int64_t)val;
@@ -269,6 +274,14 @@ FCIMPLEND
 
 FCIMPL1_F(float, tanhf, float x)
     return std::tanhf(x);
+FCIMPLEND
+
+FCIMPL2_DD(double, fmod, double x, double y)
+    return std::fmod(x, y);
+FCIMPLEND
+
+FCIMPL2_FF(float, fmodf, float x, float y)
+    return std::fmodf(x, y);
 FCIMPLEND
 
 FCIMPL3_DDD(double, fma, double x, double y, double z)

@@ -449,7 +449,6 @@ namespace System
 
         // TODO: make the helpers saturating when implementing https://github.com/dotnet/runtime/issues/61885
         private static int ConvertToInt32(double value) => (int)(long)value;
-        private static uint ConvertToUInt32(double value) => (uint)(long)value;
 
         private static ulong ConvertToUInt64(double value)
         {
