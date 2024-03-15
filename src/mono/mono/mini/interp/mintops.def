@@ -402,6 +402,8 @@ OPDEF(MINT_LDELEMA1, "ldelema1", 5, 1, 2, MintOpShortInt)
 OPDEF(MINT_LDELEMA, "ldelema", 5, 1, 1, MintOpTwoShorts)
 OPDEF(MINT_LDELEMA_TC, "ldelema.tc", 4, 1, 1, MintOpTwoShorts)
 
+/* these opcodes need to line up with the ldelem ones or things will
+   crash mysteriously at runtime */
 OPDEF(MINT_STELEM_I1, "stelem.i1", 4, 0, 3, MintOpNoArgs)
 OPDEF(MINT_STELEM_U1, "stelem.u1", 4, 0, 3, MintOpNoArgs)
 OPDEF(MINT_STELEM_I2, "stelem.i2", 4, 0, 3, MintOpNoArgs)
@@ -413,6 +415,7 @@ OPDEF(MINT_STELEM_R8, "stelem.r8", 4, 0, 3, MintOpNoArgs)
 OPDEF(MINT_STELEM_REF, "stelem.ref", 4, 0, 3, MintOpNoArgs)
 OPDEF(MINT_STELEM_VT, "stelem.vt", 6, 0, 3, MintOpTwoShorts)
 OPDEF(MINT_STELEM_VT_NOREF, "stelem.vt.noref", 6, 0, 3, MintOpTwoShorts)
+OPDEF(MINT_STELEM_REF_UNCHECKED, "stelem.ref.unchecked", 4, 0, 3, MintOpNoArgs)
 
 OPDEF(MINT_LDLEN, "ldlen", 3, 1, 1, MintOpNoArgs)
 
