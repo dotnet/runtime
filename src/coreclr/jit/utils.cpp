@@ -3194,7 +3194,7 @@ uint32_t BitOperations::Log2(uint64_t value)
 //
 #if defined(_MSC_VER)
 // Disable optimizations for PopCount to avoid the compiler from generating intrinsics
-// not supported on all platforms. 
+// not supported on all platforms.
 #pragma optimize("", off)
 #endif // _MSC_VER
 uint32_t BitOperations::PopCount(uint32_t value)
