@@ -337,6 +337,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         BasicBlock* const lastTryBlock      = HBtab->ebdTryLast;
         BasicBlock* const firstHandlerBlock = HBtab->ebdHndBeg;
         BasicBlock* const lastHandlerBlock  = HBtab->ebdHndLast;
+        BasicBlock* callFinally;
 
         assert(firstTryBlock->getTryIndex() == XTnum);
 
@@ -349,62 +350,62 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             continue;
         }
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-
-        // Look for blocks that are always jumps to a call finally
-        // pair that targets the finally
-        if (!firstTryBlock->KindIs(BBJ_ALWAYS))
+        if (UsesCallfinallyThunks())
         {
-            JITDUMP("EH#%u first try block " FMT_BB " not jump to a callfinally; skipping.\n", XTnum,
-                    firstTryBlock->bbNum);
-            XTnum++;
-            continue;
+            // Look for blocks that are always jumps to a call finally
+            // pair that targets the finally
+            if (!firstTryBlock->KindIs(BBJ_ALWAYS))
+            {
+                JITDUMP("EH#%u first try block " FMT_BB " not jump to a callfinally; skipping.\n", XTnum,
+                        firstTryBlock->bbNum);
+                XTnum++;
+                continue;
+            }
+
+            callFinally = firstTryBlock->GetTarget();
+
+            // Look for call finally pair. Note this will also disqualify
+            // empty try removal in cases where the finally doesn't
+            // return.
+            if (!callFinally->isBBCallFinallyPair() || !callFinally->TargetIs(firstHandlerBlock))
+            {
+                JITDUMP("EH#%u first try block " FMT_BB " always jumps but not to a callfinally; skipping.\n", XTnum,
+                        firstTryBlock->bbNum);
+                XTnum++;
+                continue;
+            }
+
+            // Try itself must be a single block.
+            if (firstTryBlock != lastTryBlock)
+            {
+                JITDUMP("EH#%u first try block " FMT_BB " not only block in try; skipping.\n", XTnum,
+                        firstTryBlock->Next()->bbNum);
+                XTnum++;
+                continue;
+            }
         }
-
-        BasicBlock* const callFinally = firstTryBlock->GetTarget();
-
-        // Look for call finally pair. Note this will also disqualify
-        // empty try removal in cases where the finally doesn't
-        // return.
-        if (!callFinally->isBBCallFinallyPair() || !callFinally->TargetIs(firstHandlerBlock))
+        else
         {
-            JITDUMP("EH#%u first try block " FMT_BB " always jumps but not to a callfinally; skipping.\n", XTnum,
-                    firstTryBlock->bbNum);
-            XTnum++;
-            continue;
+            // Look for call finally pair within the try itself. Note this
+            // will also disqualify empty try removal in cases where the
+            // finally doesn't return.
+            if (!firstTryBlock->isBBCallFinallyPair() || !firstTryBlock->TargetIs(firstHandlerBlock))
+            {
+                JITDUMP("EH#%u first try block " FMT_BB " not a callfinally; skipping.\n", XTnum, firstTryBlock->bbNum);
+                XTnum++;
+                continue;
+            }
+
+            callFinally = firstTryBlock;
+
+            // Try must be a callalways pair of blocks.
+            if (!firstTryBlock->NextIs(lastTryBlock))
+            {
+                JITDUMP("EH#%u block " FMT_BB " not last block in try; skipping.\n", XTnum, firstTryBlock->Next()->bbNum);
+                XTnum++;
+                continue;
+            }
         }
-
-        // Try itself must be a single block.
-        if (firstTryBlock != lastTryBlock)
-        {
-            JITDUMP("EH#%u first try block " FMT_BB " not only block in try; skipping.\n", XTnum,
-                    firstTryBlock->Next()->bbNum);
-            XTnum++;
-            continue;
-        }
-
-#else
-        // Look for call finally pair within the try itself. Note this
-        // will also disqualify empty try removal in cases where the
-        // finally doesn't return.
-        if (!firstTryBlock->isBBCallFinallyPair() || !firstTryBlock->TargetIs(firstHandlerBlock))
-        {
-            JITDUMP("EH#%u first try block " FMT_BB " not a callfinally; skipping.\n", XTnum, firstTryBlock->bbNum);
-            XTnum++;
-            continue;
-        }
-
-        BasicBlock* const callFinally = firstTryBlock;
-
-        // Try must be a callalways pair of blocks.
-        if (!firstTryBlock->NextIs(lastTryBlock))
-        {
-            JITDUMP("EH#%u block " FMT_BB " not last block in try; skipping.\n", XTnum, firstTryBlock->Next()->bbNum);
-            XTnum++;
-            continue;
-        }
-
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
 
         JITDUMP("EH#%u has empty try, removing the try region and promoting the finally.\n", XTnum);
 
@@ -792,25 +793,29 @@ PhaseStatus Compiler::fgCloneFinally()
 
         for (BasicBlock* block = lastTryBlock; block != beforeTryBlock; block = block->Prev())
         {
-#if FEATURE_EH_CALLFINALLY_THUNKS
-            // Blocks that transfer control to callfinallies are usually
-            // BBJ_ALWAYS blocks, but the last block of a try may fall
-            // through to a callfinally, or could be the target of a BBJ_CALLFINALLYRET,
-            // indicating a chained callfinally.
             BasicBlock* jumpDest = nullptr;
 
-            if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET))
+            if (UsesCallfinallyThunks())
             {
-                jumpDest = block->GetTarget();
-            }
+                // Blocks that transfer control to callfinallies are usually
+                // BBJ_ALWAYS blocks, but the last block of a try may fall
+                // through to a callfinally, or could be the target of a BBJ_CALLFINALLYRET,
+                // indicating a chained callfinally.
 
-            if (jumpDest == nullptr)
-            {
-                continue;
+                if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET))
+                {
+                    jumpDest = block->GetTarget();
+                }
+
+                if (jumpDest == nullptr)
+                {
+                    continue;
+                }
             }
-#else
-            BasicBlock* const jumpDest = block;
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
+            else
+            {
+                jumpDest = block;
+            }
 
             // The jumpDest must be a callfinally that in turn invokes the
             // finally of interest.
@@ -877,29 +882,32 @@ PhaseStatus Compiler::fgCloneFinally()
                 isUpdate                = true;
             }
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-            // When there are callfinally thunks, we don't expect to see the
-            // callfinally within a handler region either.
-            assert(!jumpDest->hasHndIndex());
+            if (UsesCallfinallyThunks())
+            {
+                // When there are callfinally thunks, we don't expect to see the
+                // callfinally within a handler region either.
+                assert(!jumpDest->hasHndIndex());
 
-            // Update the clone insertion point to just after the
-            // call always pair.
-            cloneInsertAfter = finallyReturnBlock;
+                // Update the clone insertion point to just after the
+                // call always pair.
+                cloneInsertAfter = finallyReturnBlock;
 
-            // We will consider moving the callfinally so we can fall
-            // through from the try into the clone.
-            tryToRelocateCallFinally = true;
+                // We will consider moving the callfinally so we can fall
+                // through from the try into the clone.
+                tryToRelocateCallFinally = true;
 
-            JITDUMP("%s path to clone: try block " FMT_BB " jumps to callfinally at " FMT_BB ";"
-                    " the call returns to " FMT_BB " which jumps to " FMT_BB "\n",
-                    isUpdate ? "Updating" : "Choosing", block->bbNum, jumpDest->bbNum, finallyReturnBlock->bbNum,
-                    postTryFinallyBlock->bbNum);
-#else
-            JITDUMP("%s path to clone: try block " FMT_BB " is a callfinally;"
-                    " the call returns to " FMT_BB " which jumps to " FMT_BB "\n",
-                    isUpdate ? "Updating" : "Choosing", block->bbNum, finallyReturnBlock->bbNum,
-                    postTryFinallyBlock->bbNum);
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
+                JITDUMP("%s path to clone: try block " FMT_BB " jumps to callfinally at " FMT_BB ";"
+                        " the call returns to " FMT_BB " which jumps to " FMT_BB "\n",
+                        isUpdate ? "Updating" : "Choosing", block->bbNum, jumpDest->bbNum, finallyReturnBlock->bbNum,
+                        postTryFinallyBlock->bbNum);
+            }
+            else
+            {
+                JITDUMP("%s path to clone: try block " FMT_BB " is a callfinally;"
+                        " the call returns to " FMT_BB " which jumps to " FMT_BB "\n",
+                        isUpdate ? "Updating" : "Choosing", block->bbNum, finallyReturnBlock->bbNum,
+                        postTryFinallyBlock->bbNum);
+            }
 
             // For non-pgo just take the first one we find.
             // For pgo, keep searching in case we find one we like better.
@@ -1332,18 +1340,14 @@ void Compiler::fgDebugCheckTryFinallyExits()
                     continue;
                 }
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-
                 // When there are callfinally thunks, callfinallies
                 // logically "belong" to a child region and the exit
                 // path validity will be checked when looking at the
                 // try blocks in that region.
-                if (block->KindIs(BBJ_CALLFINALLY))
+                if (UsesCallfinallyThunks() && block->KindIs(BBJ_CALLFINALLY))
                 {
                     continue;
                 }
-
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
 
                 // Now we know block lies directly within the try of a
                 // try-finally, and succBlock is in an enclosing
@@ -1362,19 +1366,16 @@ void Compiler::fgDebugCheckTryFinallyExits()
                 // (e) via an always jump clonefinally exit
                 bool isCallToFinally = false;
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-                if (succBlock->KindIs(BBJ_CALLFINALLY))
+                if (UsesCallfinallyThunks() && succBlock->KindIs(BBJ_CALLFINALLY))
                 {
                     // case (a1)
                     isCallToFinally = isFinally && succBlock->TargetIs(finallyBlock);
                 }
-#else  // !FEATURE_EH_CALLFINALLY_THUNKS
-                if (block->KindIs(BBJ_CALLFINALLY))
+                else if (!UsesCallfinallyThunks() && block->KindIs(BBJ_CALLFINALLY))
                 {
                     // case (a2)
                     isCallToFinally = isFinally && block->TargetIs(finallyBlock);
                 }
-#endif // !FEATURE_EH_CALLFINALLY_THUNKS
 
                 bool isJumpToClonedFinally = false;
 
@@ -1531,13 +1532,14 @@ PhaseStatus Compiler::fgMergeFinallyChains()
     }
 #endif // FEATURE_EH_X86_FRAMES
 
-#if !FEATURE_EH_CALLFINALLY_THUNKS
-    // For non-thunk EH models (x86) the callfinallys may contain
-    // statements, and merging is not safe unless the callfinally
-    // blocks are split.
-    JITDUMP("EH using non-callfinally thunk model; merging not yet implemented.\n");
-    enableMergeFinallyChains = false;
-#endif
+    if (!UsesCallfinallyThunks())
+    {
+        // For non-thunk EH models (x86) the callfinallys may contain
+        // statements, and merging is not safe unless the callfinally
+        // blocks are split.
+        JITDUMP("EH using non-callfinally thunk model; merging not yet implemented.\n");
+        enableMergeFinallyChains = false;
+    }
 
     if (!enableMergeFinallyChains)
     {

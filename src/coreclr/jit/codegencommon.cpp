@@ -412,9 +412,7 @@ void CodeGen::genMarkLabelsForCodegen()
             case BBJ_CALLFINALLY:
                 // The finally target itself will get marked by walking the EH table, below, and marking
                 // all handler begins.
-                CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if FEATURE_EH_CALLFINALLY_THUNKS
+                if (compiler->UsesCallfinallyThunks())
                 {
                     // For callfinally thunks, we need to mark the block following the callfinally/callfinallyret pair,
                     // as that's needed for identifying the range of the "duplicate finally" region in EH data.
@@ -429,8 +427,6 @@ void CodeGen::genMarkLabelsForCodegen()
                         bbToLabel->SetFlags(BBF_HAS_LABEL);
                     }
                 }
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
-
                 break;
 
             case BBJ_CALLFINALLYRET:
@@ -2243,11 +2239,10 @@ void CodeGen::genReportEH()
         EHCount += duplicateClauseCount;
     }
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
     unsigned clonedFinallyCount = 0;
 
     // Duplicate clauses are not used by NativeAOT ABI
-    if (compiler->UsesFunclets() && !isNativeAOT)
+    if (compiler->UsesFunclets() && compiler->UsesCallfinallyThunks() && !isNativeAOT)
     {
         // We don't keep track of how many cloned finally there are. So, go through and count.
         // We do a quick pass first through the EH table to see if there are any try/finally
@@ -2275,23 +2270,25 @@ void CodeGen::genReportEH()
             EHCount += clonedFinallyCount;
         }
     }
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
 
 #ifdef DEBUG
     if (compiler->opts.dspEHTable)
     {
         if (compiler->UsesFunclets())
         {
-#if FEATURE_EH_CALLFINALLY_THUNKS
-            printf(
-                "%d EH table entries, %d duplicate clauses, %d cloned finallys, %d total EH entries reported to VM\n",
-                compiler->compHndBBtabCount, duplicateClauseCount, clonedFinallyCount, EHCount);
-            assert(compiler->compHndBBtabCount + duplicateClauseCount + clonedFinallyCount == EHCount);
-#else  // !FEATURE_EH_CALLFINALLY_THUNKS
-            printf("%d EH table entries, %d duplicate clauses, %d total EH entries reported to VM\n",
-                   compiler->compHndBBtabCount, duplicateClauseCount, EHCount);
-            assert(compiler->compHndBBtabCount + duplicateClauseCount == EHCount);
-#endif // !FEATURE_EH_CALLFINALLY_THUNKS
+            if (compiler->UsesCallfinallyThunks())
+            {
+                printf(
+                    "%d EH table entries, %d duplicate clauses, %d cloned finallys, %d total EH entries reported to VM\n",
+                    compiler->compHndBBtabCount, duplicateClauseCount, clonedFinallyCount, EHCount);
+                assert(compiler->compHndBBtabCount + duplicateClauseCount + clonedFinallyCount == EHCount);
+            }
+            else
+            {
+                printf("%d EH table entries, %d duplicate clauses, %d total EH entries reported to VM\n",
+                       compiler->compHndBBtabCount, duplicateClauseCount, EHCount);
+                assert(compiler->compHndBBtabCount + duplicateClauseCount == EHCount);
+            }
         }
 #if defined(FEATURE_EH_X86_FRAMES)
         else
@@ -2589,7 +2586,6 @@ void CodeGen::genReportEH()
         assert(duplicateClauseCount == reportedDuplicateClauseCount);
     } // if (duplicateClauseCount > 0)
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
     if (clonedFinallyCount > 0)
     {
         unsigned reportedClonedFinallyCount = 0;
@@ -2644,7 +2640,6 @@ void CodeGen::genReportEH()
 
         assert(clonedFinallyCount == reportedClonedFinallyCount);
     }  // if (clonedFinallyCount > 0)
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
 
     assert(XTnum == EHCount);
 }

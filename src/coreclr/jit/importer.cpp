@@ -4762,10 +4762,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 
             BasicBlock* callBlock;
 
-            if (step == nullptr)
+            if (step == nullptr && UsesCallfinallyThunks())
             {
-#if FEATURE_EH_CALLFINALLY_THUNKS
-
                 // Put the call to the finally in the enclosing region.
                 unsigned callFinallyTryIndex =
                     (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingTryIndex + 1;
@@ -4796,9 +4794,9 @@ void Compiler::impImportLeave(BasicBlock* block)
                            XTnum, block->bbNum, callBlock->bbNum);
                 }
 #endif
-
-#else // !FEATURE_EH_CALLFINALLY_THUNKS
-
+            }
+            else if (step == nullptr) // && !UsesCallfinallyThunks()
+            {
                 callBlock = block;
 
                 // callBlock calls the finally handler
@@ -4814,8 +4812,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                            XTnum, callBlock->bbNum);
                 }
 #endif
-
-#endif // !FEATURE_EH_CALLFINALLY_THUNKS
             }
             else
             {
@@ -4838,8 +4834,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert(step->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET, BBJ_EHCATCHRET));
                 assert((step == block) || !step->HasInitializedTarget());
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-                if (step->KindIs(BBJ_EHCATCHRET))
+                if (UsesCallfinallyThunks() && step->KindIs(BBJ_EHCATCHRET))
                 {
                     // Need to create another step block in the 'try' region that will actually branch to the
                     // call-to-finally thunk.
@@ -4871,17 +4866,22 @@ void Compiler::impImportLeave(BasicBlock* block)
                     step = step2;
                     assert(stepType == ST_Catch); // Leave it as catch type for now.
                 }
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-                unsigned callFinallyTryIndex =
-                    (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingTryIndex + 1;
-                unsigned callFinallyHndIndex =
-                    (HBtab->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingHndIndex + 1;
-#else  // !FEATURE_EH_CALLFINALLY_THUNKS
-                unsigned callFinallyTryIndex = XTnum + 1;
-                unsigned callFinallyHndIndex = 0; // don't care
-#endif // !FEATURE_EH_CALLFINALLY_THUNKS
+                unsigned callFinallyTryIndex;
+                unsigned callFinallyHndIndex;
+
+                if (UsesCallfinallyThunks())
+                {
+                    callFinallyTryIndex =
+                        (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingTryIndex + 1;
+                    callFinallyHndIndex =
+                        (HBtab->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingHndIndex + 1;
+                }
+                else
+                {
+                    callFinallyTryIndex = XTnum + 1;
+                    callFinallyHndIndex = 0; // don't care
+                }
 
                 assert(step->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET, BBJ_EHCATCHRET));
                 assert((step == block) || !step->HasInitializedTarget());

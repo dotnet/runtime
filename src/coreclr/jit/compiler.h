@@ -8197,8 +8197,19 @@ public:
     {
         return IsTargetAbi(CORINFO_NATIVEAOT_ABI);
     }
+
+    bool UsesCallfinallyThunks()
+    {
+        // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
+        return UsesFunclets();
+    }
 #else
     bool UsesFunclets()
+    {
+        return true;
+    }
+
+    bool UsesCallfinallyThunks()
     {
         return true;
     }

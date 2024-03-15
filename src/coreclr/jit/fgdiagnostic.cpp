@@ -3166,7 +3166,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 //    try {
                 //        try {
                 //            LEAVE L_OUTER; // this becomes a branch to a BBJ_CALLFINALLY in an outer try region
-                //                           // (in the FEATURE_EH_CALLFINALLY_THUNKS case)
+                //                           // (in the UsesCallfinallyThunks case)
                 //        } catch {
                 //        }
                 //    } finally {
@@ -3177,7 +3177,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 if (ehDsc->ebdTryBeg == succBlock)
                 {
                     // The BBJ_CALLFINALLY is the first block of it's `try` region. Don't check the predecessor.
-                    // Note that this case won't occur in the FEATURE_EH_CALLFINALLY_THUNKS case, since the
+                    // Note that this case won't occur in the UsesCallfinallyThunks case, since the
                     // BBJ_CALLFINALLY in that case won't exist in the `try` region of the `finallyIndex`.
                 }
                 else
