@@ -199,10 +199,10 @@ export function normalizeConfig() {
             config.finalizerThreadStartDelayMs = 200;
         }
         if (config.mainThreadingMode == undefined) {
-            config.mainThreadingMode = MainThreadingMode.DeputyThread;
+            config.mainThreadingMode = MainThreadingMode.DeputyAndIOThreads;
         }
         if (config.jsThreadBlockingMode == undefined) {
-            config.jsThreadBlockingMode = JSThreadBlockingMode.NoBlockingWait;
+            config.jsThreadBlockingMode = JSThreadBlockingMode.AllowBlockingWaitInAsyncCode;
         }
         if (config.jsThreadInteropMode == undefined) {
             config.jsThreadInteropMode = JSThreadInteropMode.SimpleSynchronousJSInterop;
@@ -210,6 +210,12 @@ export function normalizeConfig() {
         let validModes = false;
         if (config.mainThreadingMode == MainThreadingMode.DeputyThread
             && config.jsThreadBlockingMode == JSThreadBlockingMode.NoBlockingWait
+            && config.jsThreadInteropMode == JSThreadInteropMode.SimpleSynchronousJSInterop
+        ) {
+            validModes = true;
+        }
+        else if (config.mainThreadingMode == MainThreadingMode.DeputyAndIOThreads
+            && config.jsThreadBlockingMode == JSThreadBlockingMode.AllowBlockingWaitInAsyncCode
             && config.jsThreadInteropMode == JSThreadInteropMode.SimpleSynchronousJSInterop
         ) {
             validModes = true;
