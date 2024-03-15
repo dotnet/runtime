@@ -28580,7 +28580,7 @@ recheck:
         if (grow_mark_array_p)
         {
             // Try to grow the array.
-            size_t new_size = max (MARK_STACK_INITIAL_LENGTH, 2*background_mark_stack_array_length);
+            size_t new_size = max ((size_t)MARK_STACK_INITIAL_LENGTH, 2*background_mark_stack_array_length);
 
             if ((new_size * sizeof(mark)) > 100*1024)
             {
@@ -42440,8 +42440,8 @@ adjust:
 #endif // SEG_REUSE_STATS
         if (free_space_items)
         {
-            max_free_space_items = min (MAX_NUM_FREE_SPACES, free_space_items * 2);
-            max_free_space_items = max (max_free_space_items, MIN_NUM_FREE_SPACES);
+            max_free_space_items = min ((size_t)MAX_NUM_FREE_SPACES, free_space_items * 2);
+            max_free_space_items = max (max_free_space_items, (size_t)MIN_NUM_FREE_SPACES);
         }
         else
         {
