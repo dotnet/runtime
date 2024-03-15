@@ -26,7 +26,7 @@
       <_RuntimeVersion>$(_RuntimeArchiveFilename.Replace('$(_RuntimeFilenamePrefix)','').Replace('-$(_PackageRid)$(ArchiveExtension)',''))</_RuntimeVersion>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(DotNetBuildRepo)' == 'true'">
+    <ItemGroup>
       <InstallerToPublish Include="$(ArtifactsPackagesDir)**\*.tar.gz;
                                    $(ArtifactsPackagesDir)**\*.zip;
                                    $(ArtifactsPackagesDir)**\*.deb;
