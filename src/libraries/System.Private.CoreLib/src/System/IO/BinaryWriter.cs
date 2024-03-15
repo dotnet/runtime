@@ -135,18 +135,27 @@ namespace System.IO
         // Writes a boolean to this stream. A single byte is written to the stream
         // with the value 0 representing false or the value 1 representing true.
         //
-        public virtual void Write(bool value) => OutStream.WriteByte((byte)(value ? 1 : 0));
+        public virtual void Write(bool value)
+        {
+            OutStream.WriteByte((byte)(value ? 1 : 0));
+        }
 
         // Writes a byte to this stream. The current position of the stream is
         // advanced by one.
         //
-        public virtual void Write(byte value) => OutStream.WriteByte(value);
+        public virtual void Write(byte value)
+        {
+            OutStream.WriteByte(value);
+        }
 
         // Writes a signed byte to this stream. The current position of the stream
         // is advanced by one.
         //
         [CLSCompliant(false)]
-        public virtual void Write(sbyte value) => OutStream.WriteByte((byte)value);
+        public virtual void Write(sbyte value)
+        {
+            OutStream.WriteByte((byte)value);
+        }
 
         // Writes a byte array to this stream.
         //
@@ -263,35 +272,53 @@ namespace System.IO
         // Writes a two-byte signed integer to this stream. The current position of
         // the stream is advanced by two.
         //
-        public virtual void Write(short value) => WriteBytes(BitConverter.IsLittleEndian ? (ushort)value : BinaryPrimitives.ReverseEndianness((ushort)value));
+        public virtual void Write(short value)
+        {
+            WriteBytes(BitConverter.IsLittleEndian ? (ushort)value : BinaryPrimitives.ReverseEndianness((ushort)value));
+        }
 
         // Writes a two-byte unsigned integer to this stream. The current position
         // of the stream is advanced by two.
         //
         [CLSCompliant(false)]
-        public virtual void Write(ushort value) => WriteBytes(BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value));
+        public virtual void Write(ushort value)
+        {
+            WriteBytes(BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value));
+        }
 
         // Writes a four-byte signed integer to this stream. The current position
         // of the stream is advanced by four.
         //
-        public virtual void Write(int value) => WriteBytes(BitConverter.IsLittleEndian ? (uint)value : BinaryPrimitives.ReverseEndianness((uint)value));
+        public virtual void Write(int value)
+        {
+            WriteBytes(BitConverter.IsLittleEndian ? (uint)value : BinaryPrimitives.ReverseEndianness((uint)value));
+        }
 
         // Writes a four-byte unsigned integer to this stream. The current position
         // of the stream is advanced by four.
         //
         [CLSCompliant(false)]
-        public virtual void Write(uint value) => WriteBytes(BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value));
+        public virtual void Write(uint value)
+        {
+            WriteBytes(BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value));
+        }
 
         // Writes an eight-byte signed integer to this stream. The current position
         // of the stream is advanced by eight.
         //
-        public virtual void Write(long value) => WriteBytes(BitConverter.IsLittleEndian ? (ulong)value : BinaryPrimitives.ReverseEndianness((ulong)value));
+        public virtual void Write(long value)
+        {
+            WriteBytes(BitConverter.IsLittleEndian ? (ulong)value : BinaryPrimitives.ReverseEndianness((ulong)value));
+        }
 
         // Writes an eight-byte unsigned integer to this stream. The current
         // position of the stream is advanced by eight.
         //
         [CLSCompliant(false)]
-        public virtual void Write(ulong value) => WriteBytes(BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value));
+        public virtual void Write(ulong value)
+        {
+            WriteBytes(BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value));
+        }
 
         // Writes a float to this stream. The current position of the stream is
         // advanced by four.
