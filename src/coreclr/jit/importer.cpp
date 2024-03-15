@@ -4872,10 +4872,12 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 if (UsesCallfinallyThunks())
                 {
-                    callFinallyTryIndex =
-                        (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingTryIndex + 1;
-                    callFinallyHndIndex =
-                        (HBtab->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingHndIndex + 1;
+                    callFinallyTryIndex = (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+                                              ? 0
+                                              : HBtab->ebdEnclosingTryIndex + 1;
+                    callFinallyHndIndex = (HBtab->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+                                              ? 0
+                                              : HBtab->ebdEnclosingHndIndex + 1;
                 }
                 else
                 {

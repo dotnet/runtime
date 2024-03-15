@@ -2278,9 +2278,9 @@ void CodeGen::genReportEH()
         {
             if (compiler->UsesCallfinallyThunks())
             {
-                printf(
-                    "%d EH table entries, %d duplicate clauses, %d cloned finallys, %d total EH entries reported to VM\n",
-                    compiler->compHndBBtabCount, duplicateClauseCount, clonedFinallyCount, EHCount);
+                printf("%d EH table entries, %d duplicate clauses, %d cloned finallys, %d total EH entries reported to "
+                       "VM\n",
+                       compiler->compHndBBtabCount, duplicateClauseCount, clonedFinallyCount, EHCount);
                 assert(compiler->compHndBBtabCount + duplicateClauseCount + clonedFinallyCount == EHCount);
             }
             else
@@ -2639,7 +2639,7 @@ void CodeGen::genReportEH()
         }     // for each block
 
         assert(clonedFinallyCount == reportedClonedFinallyCount);
-    }  // if (clonedFinallyCount > 0)
+    } // if (clonedFinallyCount > 0)
 
     assert(XTnum == EHCount);
 }

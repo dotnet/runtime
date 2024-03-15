@@ -952,9 +952,9 @@ void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** st
     }
     else
     {
-        EHblkDsc* ehDsc            = ehGetDsc(finallyIndex);
-        *startBlock                = ehDsc->ebdTryBeg;
-        *lastBlock                 = ehDsc->ebdTryLast;
+        EHblkDsc* ehDsc = ehGetDsc(finallyIndex);
+        *startBlock     = ehDsc->ebdTryBeg;
+        *lastBlock      = ehDsc->ebdTryLast;
     }
 }
 

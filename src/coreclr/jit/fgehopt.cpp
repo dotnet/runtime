@@ -337,7 +337,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         BasicBlock* const lastTryBlock      = HBtab->ebdTryLast;
         BasicBlock* const firstHandlerBlock = HBtab->ebdHndBeg;
         BasicBlock* const lastHandlerBlock  = HBtab->ebdHndLast;
-        BasicBlock* callFinally;
+        BasicBlock*       callFinally;
 
         assert(firstTryBlock->getTryIndex() == XTnum);
 
@@ -401,7 +401,8 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             // Try must be a callalways pair of blocks.
             if (!firstTryBlock->NextIs(lastTryBlock))
             {
-                JITDUMP("EH#%u block " FMT_BB " not last block in try; skipping.\n", XTnum, firstTryBlock->Next()->bbNum);
+                JITDUMP("EH#%u block " FMT_BB " not last block in try; skipping.\n", XTnum,
+                        firstTryBlock->Next()->bbNum);
                 XTnum++;
                 continue;
             }
