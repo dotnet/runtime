@@ -27,14 +27,14 @@ namespace System.Numerics.Tensors
         /// <summary>Throws an <see cref="OverflowException"/> for trying to negate the minimum value of a two-complement value.</summary>
         private static void ThrowNegateTwosCompOverflow() => throw new OverflowException(SR.Overflow_NegateTwosCompNum);
 
-        /// <summary>Creates a span of <typeparamref name="TTo"/> from a <typeparamref name="TTo"/> when they're the same type.</summary>
+        /// <summary>Creates a span of <typeparamref name="TTo"/> from a <typeparamref name="TFrom"/> when they're the same type.</summary>
         private static unsafe Span<TTo> Rename<TFrom, TTo>(Span<TFrom> span) // MemoryMarshal.Cast, but without constraints or validation
         {
             Debug.Assert(sizeof(TFrom) == sizeof(TTo));
             return MemoryMarshal.CreateSpan(ref Unsafe.As<TFrom, TTo>(ref MemoryMarshal.GetReference(span)), span.Length);
         }
 
-        /// <summary>Creates a span of <typeparamref name="TTo"/> from a <typeparamref name="TTo"/> when they're the same type.</summary>
+        /// <summary>Creates a span of <typeparamref name="TTo"/> from a <typeparamref name="TFrom"/> when they're the same type.</summary>
         private static unsafe ReadOnlySpan<TTo> Rename<TFrom, TTo>(ReadOnlySpan<TFrom> span) // MemoryMarshal.Cast, but without constraints or validation
         {
             Debug.Assert(sizeof(TFrom) == sizeof(TTo));
