@@ -159,10 +159,7 @@ namespace System.DirectoryServices.Protocols.Tests
 
                 // Content: sequence containing three octet strings
                 // Parsed as two sequences of octet strings
-                // This is parsed differently between Windows 7 and later versions: the first element returned by Windows 7 will be an array of length 2,
-                // while this will be an array of length 3 in later versions.
-                yield return new object[] { "vv", new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 },
-                    Environment.OSVersion.Version <= new Version(6, 1) ? new object[] { new string[] { "abc", "" }, null } : new object[] { new string[] { "abc", "", "" }, null } };
+                yield return new object[] { "vv", new byte[] { 48, 132, 0, 0, 0, 12, 4, 3, 97, 98, 99, 4, 2, 100, 101, 4, 1, 102 }, new object[] { new string[] { "abc", "de", "f" }, null } };
 
                 // Content: sequence containing two sequences of octet strings
                 // Parsed as such
@@ -182,10 +179,7 @@ namespace System.DirectoryServices.Protocols.Tests
 
                 // Content: sequence of octet strings
                 // Parsed as two sequences of octet strings (returned as bytes)
-                // This is parsed differently between Windows 7 and later versions: the first element returned by Windows 7 will be an array of length 2,
-                // while this will be an array of length 3 in later versions.
-                yield return new object[] { "VV", new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 },
-                    Environment.OSVersion.Version <= new Version(6, 1) ? new object[] { new byte[][] { [97, 98, 99], [] }, null } : new object[]{ new byte[][] { [97, 98, 99], [], [] }, null } };
+                yield return new object[] { "VV", new byte[] { 48, 132, 0, 0, 0, 12, 4, 3, 97, 98, 99, 4, 2, 100, 101, 4, 1, 102 },new object[]{ new byte[][] { [97, 98, 99], [100, 101], [102] }, null } };
 
                 // Content: sequence containing two booleans
                 // Parsed as a sequence containing two sequences of octet strings (returned as bytes)
