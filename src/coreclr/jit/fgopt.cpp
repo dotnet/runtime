@@ -1462,29 +1462,28 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
 
         //
         // When we optimize a branch to branch we need to update the profile weight
-        // of bDest by subtracting out the block/edge weight of the path that is being optimized.
+        // of bDest by subtracting out the weight of the path that is being optimized.
         //
-        // TODO: Update block weight using likely weight
-        // if (bDest->hasProfileWeight())
-        // {
-        //     FlowEdge* const edge = fgGetPredForBlock(bDest, block);
-        //     noway_assert(edge != nullptr);
+        if (bDest->hasProfileWeight())
+        {
+            FlowEdge* const edge = fgGetPredForBlock(bDest, block);
+            noway_assert(edge != nullptr);
 
-        //     const weight_t edgeWeight = edge->getLikelyWeight();
+            const weight_t edgeWeight = edge->getLikelyWeight();
 
-        //     //
-        //     // Update the bDest->bbWeight
-        //     //
-        //     if (bDest->bbWeight > edgeWeight)
-        //     {
-        //         bDest->bbWeight -= edgeWeight;
-        //     }
-        //     else
-        //     {
-        //         bDest->bbWeight = BB_ZERO_WEIGHT;
-        //         bDest->SetFlags(BBF_RUN_RARELY); // Set the RarelyRun flag
-        //     }
-        // }
+            //
+            // Update the bDest->bbWeight
+            //
+            if (bDest->bbWeight > edgeWeight)
+            {
+                bDest->bbWeight -= edgeWeight;
+            }
+            else
+            {
+                bDest->bbWeight = BB_ZERO_WEIGHT;
+                bDest->SetFlags(BBF_RUN_RARELY); // Set the RarelyRun flag
+            }
+        }
 
         // Optimize the JUMP to empty unconditional JUMP to go to the new target
         switch (block->GetKind())
