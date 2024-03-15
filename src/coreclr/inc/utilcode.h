@@ -29,6 +29,7 @@
 #include "new.hpp"
 
 #include <type_traits>
+#include <algorithm>
 
 #include "contract.h"
 

@@ -198,7 +198,7 @@ namespace
                 COMPlusThrowOM();
 
             // size must be large enough to accommodate layout. If not, we use the layout size instead.
-            calcTotalSize = max(classSize, calcTotalSize);
+            calcTotalSize = max((uint32_t)classSize, calcTotalSize);
         }
         else
         {

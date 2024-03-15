@@ -6,7 +6,6 @@
 
 #define OEMRESOURCE
 #define INITGUID
-#define NOMINMAX
 
 #include <cor.h>
 #include <stdio.h>

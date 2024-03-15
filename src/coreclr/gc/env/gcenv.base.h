@@ -390,7 +390,6 @@ typedef struct _PROCESSOR_NUMBER {
     uint8_t Number;
     uint8_t Reserved;
 } PROCESSOR_NUMBER, *PPROCESSOR_NUMBER;
-
 #endif // _INC_WINDOWS
 
 // -----------------------------------------------------------------------------------------------------------
