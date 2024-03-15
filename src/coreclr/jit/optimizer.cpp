@@ -2896,16 +2896,36 @@ BasicBlock* Compiler::optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* 
     BasicBlock* insertionPoint = bottom;
     while (!insertionPoint->IsLast())
     {
-        if (insertionPoint->KindIs(BBJ_ALWAYS) && !insertionPoint->JumpsToNext())
+        switch (insertionPoint->GetKind())
         {
-            // Found a branch that isn't to the next block, so we won't split up any fall-through.
-            break;
-        }
-        else if (insertionPoint->KindIs(BBJ_COND) && !insertionPoint->FalseTargetIs(insertionPoint->Next()))
-        {
-            // Found a conditional branch that doesn't have a false branch to the next block,
-            // so we won't split up any fall-through.
-            break;
+            case BBJ_ALWAYS:
+                if (!insertionPoint->JumpsToNext())
+                {
+                    // Found a branch that isn't to the next block, so we won't split up any fall-through.
+                    return insertionPoint;
+                }
+                break;
+
+            case BBJ_COND:
+                if (!insertionPoint->FalseTargetIs(insertionPoint->Next()))
+                {
+                    // Found a conditional branch that doesn't have a false branch to the next block,
+                    // so we won't split up any fall-through.
+                    return insertionPoint;
+                }
+                break;
+
+            case BBJ_CALLFINALLY:
+                if (!insertionPoint->isBBCallFinallyPair())
+                {
+                    // Found a retless BBJ_CALLFINALLY block, so we won't split up any fall-through.
+                    return insertionPoint;
+                }
+                break;
+
+            default:
+                // No fall-through to split up.
+                return insertionPoint;
         }
 
         // Keep looking for a better insertion point if we can.
