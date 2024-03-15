@@ -45,7 +45,7 @@ namespace System.Numerics.Tensors
             private const float Single_HALFV = 1.0000138f;
             private const float Single_INVV2 = 0.24999309f;
 
-            private const ulong Double_MAX_VECTORIZED_VALUE = 0x41600000000000ul;
+            private const ulong Double_MAX_VECTORIZED_VALUE = 0x4030800000000000ul;
             private const double Double_LOGV = 0.6931471805599453;
             private const double Double_HALFV = 1.0;
             private const double Double_INVV2 = 0.25;
