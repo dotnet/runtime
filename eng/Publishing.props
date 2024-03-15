@@ -2,29 +2,20 @@
 
   <PropertyGroup>
     <ProducesDotNetReleaseShippingAssets>true</ProducesDotNetReleaseShippingAssets>
-    <PublishDependsOnTargets Condition="'$(DotNetBuildRepo)' == 'true'">$(PublishDependsOnTargets);PublishRuntimeInstallers</PublishDependsOnTargets>
   </PropertyGroup>
 
   <!-- Include installer archives and packages which aren't globbed by default.
        Don't include Symbols archive as it is already included in Arcade's Publish.proj, with correct blob path. -->
-  <Target Name="PublishRuntimeInstallers">
-    <!-- Discover the runtime package version from dotnet-runtime-<Version>-<Rid>.<Extension> archive. -->
-    <PropertyGroup>
-      <_RuntimeFilenamePrefix>dotnet-runtime-</_RuntimeFilenamePrefix>
-      <!-- Use TargetRid if OutputRID isn't available, i.e. on Windows. -->
-      <_PackageRid>$([MSBuild]::ValueOrDefault('$(OutputRID)', '$(TargetRid)'))</_PackageRid>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <_RuntimeArchiveItem Include="$(ArtifactsPackagesDir)**\$(_RuntimeFilenamePrefix)*$(_PackageRid)$(ArchiveExtension)"
-                           Exclude="$(ArtifactsPackagesDir)**\dotnet-runtime-internal*$(_PackageRid)$(ArchiveExtension)" />
-    </ItemGroup>
-
-    <!-- Extract runtime version from runtime archive filename. -->
-    <PropertyGroup>
-      <_RuntimeArchiveFilename>%(_RuntimeArchiveItem.Filename)%(_RuntimeArchiveItem.Extension)</_RuntimeArchiveFilename>
-      <_RuntimeVersion>$(_RuntimeArchiveFilename.Replace('$(_RuntimeFilenamePrefix)','').Replace('-$(_PackageRid)$(ArchiveExtension)',''))</_RuntimeVersion>
-    </PropertyGroup>
+  <Target Name="PublishRuntimeInstallers"
+          BeforeTargets="BeforePublish"
+          Condition="'$(DotNetBuildRepo)' == 'true'">
+    <!-- Retrieve runtime's runtime pack product version.
+         Don't stabilize the package version in order to retrieve the VersionSuffix. -->
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCoreApp/Microsoft.NETCore.App.Runtime.sfxproj"
+             Targets="ReturnProductVersion"
+             Properties="IsShipping=false">
+      <Output TaskParameter="TargetOutputs" PropertyName="RuntimeRuntimePackProductVersion" />
+    </MSBuild>
 
     <ItemGroup>
       <InstallerToPublish Include="$(ArtifactsPackagesDir)**\*.tar.gz;
@@ -34,13 +25,11 @@
                                    $(ArtifactsPackagesDir)**\*.exe;
                                    $(ArtifactsPackagesDir)**\*.msi"
                           Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ItemsToPushToBlobFeed Include="@(InstallerToPublish)"
-                             ManifestArtifactData="NonShipping=false"
+                             IsShipping="true"
+                             ManifestArtifactData="DotNetReleaseShipping=true"
                              PublishFlatContainer="true"
-                             RelativeBlobPath="Runtime/$(_RuntimeVersion)/%(Filename)%(Extension)" />
+                             RelativeBlobPath="Runtime/$(RuntimeRuntimePackProductVersion)/%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
 
