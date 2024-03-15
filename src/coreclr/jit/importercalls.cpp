@@ -1421,7 +1421,7 @@ DONE_CALL:
                         // TODO-Bug: CHECK_SPILL_NONE here looks wrong.
                         impStoreTemp(calliSlot, call, CHECK_SPILL_NONE);
                         // impStoreTemp can change src arg list and return type for call that returns struct.
-                        var_types type = genActualType(varDsc);
+                        var_types type = genActualType(lvaTable[calliSlot].TypeGet());
                         call           = gtNewLclvNode(calliSlot, type);
                     }
                 }
