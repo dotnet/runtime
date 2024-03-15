@@ -204,10 +204,11 @@
     <ImportProjectExtensionTargets>false</ImportProjectExtensionTargets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">
+  <PropertyGroup Condition="'$(AppleMobileTargets)' == 'true'">
+    <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
+    <!-- Properties for OutputType Exe -->
     <EnableAggressiveTrimming Condition="'$(OutputType)' == 'Exe'">true</EnableAggressiveTrimming>
     <PublishTrimmed Condition="'$(OutputType)' == 'Exe'">true</PublishTrimmed>
-    <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetsAppleMobile)' == 'true'">
