@@ -1245,7 +1245,6 @@ namespace Internal.IL
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
                     }
-
                     break;
                 case ILOpcode.rem:
                 case ILOpcode.rem_un:
