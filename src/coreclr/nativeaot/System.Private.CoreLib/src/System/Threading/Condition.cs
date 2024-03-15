@@ -89,9 +89,7 @@ namespace System.Threading
 
         public Condition(Lock @lock)
         {
-#pragma warning disable CS9216 // casting Lock to object
             ArgumentNullException.ThrowIfNull(@lock);
-#pragma warning restore CS9215
             _lock = @lock;
         }
 

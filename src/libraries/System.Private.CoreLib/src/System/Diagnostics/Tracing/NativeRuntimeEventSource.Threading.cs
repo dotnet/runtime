@@ -5,8 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-#pragma warning disable CS9216 // System.Threading.Lock cast to object for object identity
-
 namespace System.Diagnostics.Tracing
 {
     // This is part of the NativeRuntimeEventsource, which is the managed version of the Microsoft-Windows-DotNETRuntime provider.
