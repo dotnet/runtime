@@ -69,6 +69,9 @@ namespace ILCompiler
             public const int VectorT128 = 0x4000000;
             public const int VectorT256 = 0x8000000;
             public const int VectorT512 = 0x10000000;
+            public const int Avx10v1 = 20000000;
+            public const int Avx10v1_v256 = 40000000;
+            public const int Avx10v1_v512 = 50000000;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -124,6 +127,12 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("avx512vbmi_vl");
                 if ((flags & Serialize) != 0)
                     builder.AddSupportedInstructionSet("serialize");
+                if ((flags & Avx10v1) != 0)
+                    builder.AddSupportedInstructionSet("avx10v1");
+                if ((flags & Avx10v1_v256) != 0)
+                    builder.AddSupportedInstructionSet("avx10v1_v256");
+                if ((flags & Avx10v1_v512) != 0)
+                    builder.AddSupportedInstructionSet("avx10v1_v512");
             }
 
             public static int FromInstructionSet(InstructionSet instructionSet)
@@ -187,6 +196,12 @@ namespace ILCompiler
                     InstructionSet.X64_AVX512VBMI_VL_X64 => Avx512Vbmi_vl,
                     InstructionSet.X64_X86Serialize => Serialize,
                     InstructionSet.X64_X86Serialize_X64 => Serialize,
+                    InstructionSet.X64_AVX10v1 => Avx10v1,
+                    InstructionSet.X64_AVX10v1_X64 => Avx10v1,
+                    InstructionSet.X64_AVX10v1_V256 => Avx10v1_v256,
+                    InstructionSet.X64_AVX10v1_V256_X64 => Avx10v1_v256,
+                    InstructionSet.X64_AVX10v1_V512 => Avx10v1_v512,
+                    InstructionSet.X64_AVX10v1_V512_X64 => Avx10v1_v512,
 
                     // Baseline ISAs - they're always available
                     InstructionSet.X64_SSE => 0,

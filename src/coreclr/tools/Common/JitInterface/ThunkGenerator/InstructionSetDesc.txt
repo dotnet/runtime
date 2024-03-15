@@ -93,9 +93,9 @@ instructionset64bit,X86   ,AVX512DQ
 instructionset64bit,X86   ,AVX512DQ_VL
 instructionset64bit,X86   ,AVX512VBMI
 instructionset64bit,X86   ,AVX512VBMI_VL
-instructionset64bit,X86   ,Avx10v1
-instructionset64bit,X86   ,Avx10v1_V256
-instructionset64bit,X86   ,Avx10v1_V512
+instructionset64bit,X86   ,AVX10v1
+instructionset64bit,X86   ,AVX10v1_V256
+instructionset64bit,X86   ,AVX10v1_V512
 
 vectorinstructionset,X86  ,Vector128
 vectorinstructionset,X86  ,Vector256
@@ -137,8 +137,8 @@ implication        ,X86   ,AVX512DQ_VL          ,AVX512F_VL
 implication        ,X86   ,AVX512VBMI           ,AVX512BW
 implication        ,X86   ,AVX512VBMI_VL        ,AVX512VBMI
 implication        ,X86   ,AVX512VBMI_VL        ,AVX512BW_VL
-implication        ,X86   ,AVX10v1_V512         ,Avx10v1_V256
-implication        ,X86   ,AVX10v1_V256         ,Avx10v1
+implication        ,X86   ,AVX10v1_V512         ,AVX10v1_V256
+implication        ,X86   ,AVX10v1_V256         ,AVX10v1
 implication        ,X86   ,AVX10v1              ,AVX2
 implication        ,X86   ,AVX10v1              ,FMA
 implication        ,X86   ,AVX10v1_V512         ,AVX512F

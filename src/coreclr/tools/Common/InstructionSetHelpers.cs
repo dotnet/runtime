@@ -224,6 +224,30 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi_vl");
                 }
+
+                Debug.Assert(InstructionSet.X64_AVX10v1_V256 == InstructionSet.X86_AVX10v1_V256);
+                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX10v1_V256))
+                {
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX10v1));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX2));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_FMA));
+                }
+
+                Debug.Assert(InstructionSet.X64_AVX10v1_V512 == InstructionSet.X86_AVX10v1_V512);
+                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX10v1_V512))
+                {
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX10v1_V256));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512F));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512F_VL));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512BW));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512BW_VL));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512CD));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512CD_VL));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512DQ));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512DQ_VL));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512VBMI));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512VBMI_VL));
+                }
             }
             else if (targetArchitecture == TargetArchitecture.ARM64)
             {
