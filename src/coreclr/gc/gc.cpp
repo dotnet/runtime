@@ -13570,7 +13570,7 @@ void gc_heap::distribute_free_regions()
     if (ephemeral_elapsed >= DECOMMIT_TIME_STEP_MILLISECONDS)
     {
         gc_last_ephemeral_decommit_time = dd_time_clock (dd0);
-        size_t decommit_step_milliseconds = min (ephemeral_elapsed, (10*1000));
+        size_t decommit_step_milliseconds = min (ephemeral_elapsed, (size_t)(10*1000));
 
         decommit_step (decommit_step_milliseconds);
     }
@@ -22415,7 +22415,7 @@ void gc_heap::gc1()
         if (alloc_contexts_used >= 1)
         {
             allocation_quantum = Align (min ((size_t)CLR_SIZE,
-                                            (size_t)max (1024, get_new_allocation (0) / (2 * alloc_contexts_used))),
+                                            (size_t)max ((size_t)1024, get_new_allocation (0) / (2 * alloc_contexts_used))),
                                             get_alignment_constant(FALSE));
             dprintf (3, ("New allocation quantum: %zd(0x%zx)", allocation_quantum, allocation_quantum));
         }
@@ -43357,14 +43357,14 @@ void gc_heap::init_static_data()
 
     size_t gen0_max_size =
 #ifdef MULTIPLE_HEAPS
-        max (6*1024*1024u, min ( Align(soh_segment_size/2), 200*1024*1024u));
+        max ((size_t)6*1024*1024u, min ( Align(soh_segment_size/2), (size_t)200*1024*1024u));
 #else //MULTIPLE_HEAPS
         (
 #ifdef BACKGROUND_GC
             gc_can_use_concurrent ?
             6*1024*1024 :
 #endif //BACKGROUND_GC
-            max (6*1024*1024,  min ( Align(soh_segment_size/2), 200*1024*1024))
+            max ((size_t)6*1024*1024,  min ( Align(soh_segment_size/2), (size_t)200*1024*1024))
         );
 #endif //MULTIPLE_HEAPS
 
@@ -51270,11 +51270,11 @@ size_t gc_heap::get_gen0_min_size()
 #ifdef SERVER_GC
         // performance data seems to indicate halving the size results
         // in optimal perf.  Ask for adjusted gen0 size.
-        gen0size = max(GCToOSInterface::GetCacheSizePerLogicalCpu(FALSE),(256*1024u));
+        gen0size = max(GCToOSInterface::GetCacheSizePerLogicalCpu(FALSE), (size_t)(256*1024u));
 
         // if gen0 size is too large given the available memory, reduce it.
         // Get true cache size, as we don't want to reduce below this.
-        size_t trueSize = max(GCToOSInterface::GetCacheSizePerLogicalCpu(TRUE),(256*1024u));
+        size_t trueSize = max(GCToOSInterface::GetCacheSizePerLogicalCpu(TRUE), (size_t)(256*1024u));
         dprintf (1, ("cache: %zd-%zd",
             GCToOSInterface::GetCacheSizePerLogicalCpu(FALSE),
             GCToOSInterface::GetCacheSizePerLogicalCpu(TRUE)));
@@ -51282,8 +51282,8 @@ size_t gc_heap::get_gen0_min_size()
         int n_heaps = gc_heap::n_heaps;
 #else //SERVER_GC
         size_t trueSize = GCToOSInterface::GetCacheSizePerLogicalCpu(TRUE);
-        gen0size = max((4*trueSize/5),(256*1024));
-        trueSize = max(trueSize, (256*1024));
+        gen0size = max((4*trueSize/5),(size_t)(256*1024));
+        trueSize = max(trueSize, (size_t)(256*1024));
         int n_heaps = 1;
 #endif //SERVER_GC
 
