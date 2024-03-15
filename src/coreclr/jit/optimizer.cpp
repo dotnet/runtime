@@ -2894,8 +2894,20 @@ BasicBlock* Compiler::optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* 
     // out of the loop, and if possible find a spot that won't break up fall-through.
     BasicBlock* bottom         = loop->GetLexicallyBottomMostBlock();
     BasicBlock* insertionPoint = bottom;
-    while (insertionPoint->bbFallsThrough() && !insertionPoint->IsLast())
+    while (!insertionPoint->IsLast())
     {
+        if (insertionPoint->KindIs(BBJ_ALWAYS) && !insertionPoint->JumpsToNext())
+        {
+            // Found a branch that isn't to the next block, so we won't split up any fall-through.
+            break;
+        }
+        else if (insertionPoint->KindIs(BBJ_COND) && !insertionPoint->FalseTargetIs(insertionPoint->Next()))
+        {
+            // Found a conditional branch that doesn't have a false branch to the next block,
+            // so we won't split up any fall-through.
+            break;
+        }
+
         // Keep looking for a better insertion point if we can.
         BasicBlock* newInsertionPoint = optTryAdvanceLoopCompactionInsertionPoint(loop, insertionPoint, top, bottom);
         if (newInsertionPoint == nullptr)
