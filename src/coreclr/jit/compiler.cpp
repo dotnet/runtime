@@ -5170,11 +5170,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif // TARGET_ARM
 
-    // Disable profile checks now.
-    // Over time we will move this further and further back in the phase list, as we fix issues.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-
     // Assign registers to variables, etc.
 
     // Create LinearScan before Lowering, so that Lowering can call LinearScan methods
@@ -5895,6 +5890,10 @@ void Compiler::RecomputeFlowGraphAnnotations()
     fgInvalidateDfsTree();
     fgDfsBlocksAndRemove();
     optFindLoops();
+
+    // Should we call this using the phase method:
+    //    DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
+    // ? It could be called multiple times.
     optSetBlockWeights();
 
     if (m_domTree == nullptr)
