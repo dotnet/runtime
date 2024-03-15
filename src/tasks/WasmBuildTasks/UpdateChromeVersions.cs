@@ -266,12 +266,12 @@ public partial class UpdateChromeVersions : MBU.Task
             }
         }
 
-        return File.OpenRead(filePath);
+        return File.OpenRead(filePath); 
     }
 
     private async Task<string?> FindSnapshotUrlFromBasePositionAsync(string osPrefix, ChromeVersionSpec version, bool throwIfNotFound = true)
     {
-        string baseUrl = $"{s_snapshotBaseUrl}/{osPrefix}";
+        string baseUrl = $"{s_snapshotBaseUrl}?prefix={osPrefix}";
 
         int branchPosition = int.Parse(version.branch_base_position);
         for (int i = 0; i < MaxBranchPositionsToCheck; i++)
