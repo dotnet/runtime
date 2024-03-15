@@ -447,9 +447,7 @@ namespace System
         private const double IntMaxValueOffset = 2147483648.0; // 2^31, int.MaxValue + 1
         private const double UIntMaxValueOffset = 4294967296.0; // 2^32, uint.MaxValue + 1
 
-        // TODO: make the helpers saturating when implementing https://github.com/dotnet/runtime/issues/61885
-        private static int ConvertToInt32(double value) => (int)(long)value;
-
+        // TODO: make the helper saturating when implementing https://github.com/dotnet/runtime/issues/61885
         private static ulong ConvertToUInt64(double value)
         {
             const double two63 = IntMaxValueOffset * UIntMaxValueOffset;

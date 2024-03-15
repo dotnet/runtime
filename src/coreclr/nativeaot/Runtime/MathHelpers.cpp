@@ -38,6 +38,12 @@ EXTERN_C uint64_t QCALLTYPE RhpULMod(uint64_t i, uint64_t j)
     return i % j;
 }
 
+FCIMPL1_D(int32_t, RhpDbl2Int, double val)
+{
+    return (int32_t)val;
+}
+FCIMPLEND
+
 FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
 {
     return (uint32_t)val;

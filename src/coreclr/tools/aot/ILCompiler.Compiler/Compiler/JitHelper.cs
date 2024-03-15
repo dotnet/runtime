@@ -164,9 +164,6 @@ namespace ILCompiler
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeFieldHandle");
                     break;
 
-                case ReadyToRunHelper.Dbl2Int:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertToInt32", null);
-                    break;
                 case ReadyToRunHelper.Dbl2ULng:
                     methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertToUInt64", null);
                     break;
@@ -216,8 +213,11 @@ namespace ILCompiler
                         new MethodSignature(MethodSignatureFlags.Static, 0, floatType, [floatType]));
                     break;
 
+                case ReadyToRunHelper.Dbl2Int:
+                    mangledName = "RhpDbl2Int";
+                    break;
                 case ReadyToRunHelper.Dbl2UInt:
-                    mangledName = "RhpDbl2ULng";
+                    mangledName = "RhpDbl2UInt";
                     break;
                 case ReadyToRunHelper.Dbl2Lng:
                     mangledName = "RhpDbl2Lng";
