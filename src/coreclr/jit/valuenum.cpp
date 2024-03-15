@@ -10939,7 +10939,10 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 // Return Value:
 //    true if the given tree is a static field address
 //
-static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* byteOffset, FieldSeq** pFseq)
+bool Compiler::fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore,
+                                             GenTree*       tree,
+                                             ssize_t*       byteOffset,
+                                             FieldSeq**     pFseq)
 {
     VNFuncApp funcApp;
     if (vnStore->GetVNFunc(tree->gtVNPair.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToStatic))
@@ -10954,7 +10957,6 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
             return true;
         }
     }
-    ssize_t val = 0;
 
     // Special cases for NativeAOT:
     //   ADD(ICON_STATIC, CNS_INT)                // nonGC-static base
@@ -10972,6 +10974,7 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
     }
 
     // Accumulate final offset
+    ssize_t val = 0;
     while (tree->OperIs(GT_ADD))
     {
         GenTree* op1   = tree->gtGetOp1();
@@ -11006,11 +11009,26 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
         if (fldSeq != nullptr)
         {
             assert(fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
-            *pFseq      = fldSeq;
-            *byteOffset = vnStore->CoercedConstantValue<ssize_t>(treeVN) - fldSeq->GetOffset() + val;
-            return true;
+
+            // Is the offset within the field? There might be a sequence of adds on top of a constant static field
+            // address due to shared constant CSE such that `treeVN` is not the static field base address.
+            // Check if the entire access doesn't span across the field and any other field. This simple check is
+            // just that the access starts within the field.
+            CORINFO_FIELD_HANDLE fieldHandle = fldSeq->GetFieldHandle();
+            CORINFO_CLASS_HANDLE fieldClsHnd;
+            var_types            fieldType = eeGetFieldType(fieldHandle, &fieldClsHnd);
+            ssize_t              fieldSize = (fieldType == TYP_STRUCT) ? info.compCompHnd->getClassSize(fieldClsHnd)
+                                                          : (ssize_t)genTypeSize(fieldType);
+            ssize_t tmpByteOffset = vnStore->CoercedConstantValue<ssize_t>(treeVN) - fldSeq->GetOffset() + val;
+            if ((0 <= tmpByteOffset) && (tmpByteOffset < fieldSize))
+            {
+                *pFseq      = fldSeq;
+                *byteOffset = tmpByteOffset;
+                return true;
+            }
         }
     }
+
     return false;
 }
 
@@ -11094,7 +11112,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     const int             maxElementSize = sizeof(simd_t);
 
     if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) &&
-        GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
+        fgGetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
