@@ -954,8 +954,8 @@ namespace System.Reflection.Emit
                 return mb._handle;
             }
 
-            if (IsConstructedMethodFromNotBakedMethodBuilder(method) ||
-                IsArrayMethodFromNotBakedTypeBuilder(method))
+            if (IsConstructedFromMethodBuilderOrTypeBuilder(method) ||
+                IsArrayMethodTypeIsTypeBuilder(method))
             {
                 return default;
             }
@@ -963,11 +963,11 @@ namespace System.Reflection.Emit
             return GetHandleForMember(method);
         }
 
-        private static bool IsArrayMethodFromNotBakedTypeBuilder(MethodInfo method) => method is ArrayMethod arrayMethod &&
-            arrayMethod.DeclaringType!.GetElementType() is TypeBuilderImpl tb && tb._handle == default;
+        private static bool IsArrayMethodTypeIsTypeBuilder(MethodInfo method) => method is ArrayMethod arrayMethod &&
+            arrayMethod.DeclaringType!.GetElementType() is TypeBuilderImpl;
 
-        private static bool IsConstructedMethodFromNotBakedMethodBuilder(MethodInfo method) => method.IsConstructedGenericMethod &&
-            (method.GetGenericMethodDefinition() is MethodBuilderImpl mb && mb._handle == default || ContainsTypeBuilder(method.GetGenericArguments()));
+        private static bool IsConstructedFromMethodBuilderOrTypeBuilder(MethodInfo method) => method.IsConstructedGenericMethod &&
+            (method.GetGenericMethodDefinition() is MethodBuilderImpl || ContainsTypeBuilder(method.GetGenericArguments()));
 
         internal EntityHandle TryGetMethodHandle(MethodInfo method, Type[] optionalParameterTypes)
         {
@@ -982,7 +982,7 @@ namespace System.Reflection.Emit
                 return mb._handle;
             }
 
-            if (IsConstructedMethodFromNotBakedMethodBuilder(method))
+            if (IsConstructedFromMethodBuilderOrTypeBuilder(method))
             {
                 return default;
             }
