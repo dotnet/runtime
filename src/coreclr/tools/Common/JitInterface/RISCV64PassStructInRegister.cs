@@ -56,6 +56,13 @@ namespace Internal.JitInterface
                 {
                     continue;
                 }
+                else if (fieldIndex == 1)
+                {
+                    if (firstField.Offset.AsInt != 0 || field.Offset.AsInt == 0 || firstFieldSize > field.Offset.AsInt)
+                    {
+                        return (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
+                    }
+                }
 
                 Debug.Assert(fieldIndex < numIntroducedFields);
 
