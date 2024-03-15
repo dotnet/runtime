@@ -210,23 +210,15 @@ namespace System.Reflection.Emit
         private ConstructorBuilderImpl DefineDefaultConstructorInternal(MethodAttributes attributes)
         {
             // Get the parent class's default constructor and add it to the IL
-            ConstructorInfo? con = null;
-            if (_typeParent!.IsConstructedGenericType)
+            ConstructorInfo? con;
+            if (_typeParent!.IsConstructedGenericType &&
+                (_typeParent.GetGenericTypeDefinition() is TypeBuilderImpl || ModuleBuilderImpl.ContainsTypeBuilder(_typeParent.GetGenericArguments())))
             {
-                Type typeDefinition = _typeParent.GetGenericTypeDefinition();
-                if (typeDefinition is TypeBuilderImpl typeBuilder)
-                {
-                    con = GetConstructor(_typeParent, typeBuilder.GetConstructor(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null)!);
-                }
-                else if (ModuleBuilderImpl.ContainsTypeBuilder(_typeParent.GetGenericArguments()))
-                {
-                    con = GetConstructor(_typeParent, typeDefinition.GetConstructor(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null)!);
-                }
+                // When TypeBuilder involved need to construct the parent constructor using TypeBuilder.GetConstructor() static method
+                con = GetConstructor(_typeParent, _typeParent.GetGenericTypeDefinition().GetConstructor(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null)!);
             }
-
-            if (con == null)
+            else
             {
                 con = _typeParent.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
             }
