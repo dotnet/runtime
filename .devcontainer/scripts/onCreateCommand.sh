@@ -3,29 +3,24 @@
 set -e
 
 function wasm_common() {
+    # prebuild for WASM, so it is ready for wasm development
     make -C src/mono/browser provision-wasm
     export EMSDK_PATH=$PWD/src/mono/browser/emsdk
     case "$1" in
     wasm)
         # Put your common commands for wasm here
-        ./build.sh mono -os browser -c Release
-        dotnet nuget locals all --clear
+        ./build.sh mono+libs -os browser -c Release
         ;;
     wasm-multithreaded)
-        # Put your common commands for wasm-multithread here        
-        ./build.sh mono -os browser -c Release /p:WasmEnableThreads=true
-        dotnet nuget locals all --clear
+        # Put your common commands for wasm-multithread here
+        ./build.sh mono+libs -os browser -c Release /p:WasmEnableThreads=true
         ;;
     *)
-    # install dotnet-serve for running wasm samples
+        # install dotnet-serve for running wasm samples
     ./dotnet.sh tool install dotnet-serve --version 1.10.172 --tool-path ./.dotnet-tools-global
     ;;
     esac
 }
-
-# hidden dir are occupying disc space that could be better used (~12GB)
-# active discussion: https://github.com/orgs/community/discussions/57767
-sudo rm -rf /workspaces/.codespaces/shared/editors/jetbrains/
 
 opt=$1
 case "$opt" in

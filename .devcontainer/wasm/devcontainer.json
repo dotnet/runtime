@@ -10,7 +10,8 @@
 	},
 	"hostRequirements": {
 		"cpus": 4,
-		"memory": "8gb"
+		"memory": "8gb",
+		"storage": "40gb"
 	},
 
 	"features": {
