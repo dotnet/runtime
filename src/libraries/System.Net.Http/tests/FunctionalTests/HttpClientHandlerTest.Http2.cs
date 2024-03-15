@@ -204,7 +204,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // The read must pend because we havent received any data yet.
                 var buffer = new byte[dataLength];
-                var readTask = responseStream.ReadAtLeastAsync(buffer, dataLength);
+                var readTask = ReadAtLeastAsync(responseStream, buffer, dataLength);
                 Assert.False(readTask.IsCompleted);
 
                 // Send DATA frame with padding
@@ -220,6 +220,38 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(0, await responseStream.ReadAsync(buffer));
             }
         }
+
+        private static async ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream = true, CancellationToken cancellationToken = default)
+        {
+            if (minimumBytes < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(minimumBytes));
+            }
+            if (buffer.Length < minimumBytes)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(buffer)}.{nameof(buffer.Length)}");
+            }
+
+            int totalRead = 0;
+            while (totalRead < minimumBytes)
+            {
+                int read = await stream.ReadAsync(buffer.Slice(totalRead), cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                {
+                    if (throwOnEndOfStream)
+                    {
+                        throw new EndOfStreamException();
+                    }
+
+                    return totalRead;
+                }
+
+                totalRead += read;
+            }
+
+            return totalRead;
+        }
+
 
         [Theory]
         [InlineData("Client content", null)]
@@ -248,7 +280,7 @@ namespace System.Net.Http.Functional.Tests
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                 Assert.IsNotType<SslStream>(connection.Stream);
 
-                HttpRequestData requestData = await connection.ReadRequestDataAsync();                
+                HttpRequestData requestData = await connection.ReadRequestDataAsync();
                 string requestContent = requestData.Body is null ? (string)null : Encoding.ASCII.GetString(requestData.Body);
                 Assert.Equal(clientContent, requestContent);
                 await connection.SendResponseAsync(HttpStatusCode.OK, content: serverContent);
