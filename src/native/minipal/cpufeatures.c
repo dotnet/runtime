@@ -277,6 +277,28 @@ int minipal_getcpufeatures(void)
                                             {
                                                 result |= XArchIntrinsicConstants_AvxVnni;
                                             }
+
+                                            if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                                // Avx10
+                                            {
+                                                __cpuidex(cpuidInfo, 0x00000024, 0x00000000);
+                                                const int versionMask = 0xFF; // [7:0]
+                                                if((cpuidInfo[CPUID_EBX] & versionMask) >= 1) // version higher than 1
+                                                {
+                                                    result |= XArchIntrinsicConstants_Avx10v1;
+                                                }
+
+                                                const int vector256Mask = (1 << 17);
+                                                const int vector512Mask = (1 << 18);
+                                                if((cpuidInfo[CPUID_EBX] & vector256Mask) != 0)
+                                                {
+                                                    result |= XArchIntrinsicConstants_Avx10v1_V256;
+                                                }
+
+                                                if((cpuidInfo[CPUID_EBX] & vector512Mask) != 0)
+                                                {
+                                                    result |= XArchIntrinsicConstants_Avx10v1_V512;
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -304,42 +326,6 @@ int minipal_getcpufeatures(void)
             if ((cpuidInfo[CPUID_EDX] & (1 << 14)) != 0)
             {
                 result |= XArchIntrinsicConstants_Serialize;                                               // SERIALIZE
-            }
-        }
-
-        if (maxCpuId >= 0x07)
-        {
-            // Detect Avx10 here.
-            // Given paradigm:
-            // 1. CPUID.(EAX=07H, ECX=01H):EDX[bit 19] = 1 -> ISA supported.
-            // 2. CPUID.(EAX=24H, ECX=00H):EBX[bits 7:0] >= 1 -> ISA version larger than 1.
-            // with 1,2, set XArchIntrinsicConstants_Avx10_1
-
-            // 3. CPUID.(EAX=24H, ECX=00H):EBX[bits 18:16] -> vector length support.
-            __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
-            if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0) // Avx10 supported
-            {
-                __cpuidex(cpuidInfo, 0x00000024, 0x00000000);
-                const int versionMask = 0xFF; // [7:0]
-                if((cpuidInfo[CPUID_EBX] & versionMask) >= 1) // version higher than 1
-                {
-                    result |= XArchIntrinsicConstants_VectorT128; // Avx10 guarantee V128
-                    result |= XArchIntrinsicConstants_Avx10v1;
-                }
-
-                const int vector256Mask = (1 << 17);
-                const int vector512Mask = (1 << 18);
-                if((cpuidInfo[CPUID_EBX] & vector256Mask) != 0)
-                {
-                    result |= XArchIntrinsicConstants_VectorT256;
-                    result |= XArchIntrinsicConstants_Avx10v1_V256;
-                }
-
-                if((cpuidInfo[CPUID_EBX] & vector512Mask) != 0)
-                {
-                    result |= XArchIntrinsicConstants_VectorT512;
-                    result |= XArchIntrinsicConstants_Avx10v1_V512;
-                }
             }
         }
     }

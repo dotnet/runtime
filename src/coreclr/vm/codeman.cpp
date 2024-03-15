@@ -1454,12 +1454,12 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_AVX10v1);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V256) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V256) != 0))
     {
         CPUCompileFlags.Set(InstructionSet_AVX10v1_V256);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V512) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V512) != 0))
     {
         CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
     }
