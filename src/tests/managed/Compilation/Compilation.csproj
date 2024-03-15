@@ -4,6 +4,9 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- Test unsupported outside of windows -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+
+    <!-- https://github.com/dotnet/runtime/issues/99798 -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
