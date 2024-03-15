@@ -1424,7 +1424,7 @@ emit_dot (MonoCompile *cfg, MonoClass *klass, MonoType *vector_type, MonoTypeEnu
 				break;
 			default:
 				return NULL;
-			}	
+			}
 
 			MonoInst *dot;
 			if (COMPILE_LLVM (cfg)) {
@@ -1440,7 +1440,7 @@ emit_dot (MonoCompile *cfg, MonoClass *klass, MonoType *vector_type, MonoTypeEnu
 			return extract_first_element (cfg, klass, arg0_type, dot->dreg);
 		} else {
 			instc = OP_FMUL;
-		}	
+		}
 	} else {
 		if (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1)
 			return NULL; 	// We don't support sum vector for byte, sbyte types yet
