@@ -42,6 +42,7 @@ FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
 {
     return (uint32_t)val;
 }
+FCIMPLEND
 
 FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
 {
