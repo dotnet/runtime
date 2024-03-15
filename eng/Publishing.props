@@ -2,38 +2,22 @@
 
   <PropertyGroup>
     <ProducesDotNetReleaseShippingAssets>true</ProducesDotNetReleaseShippingAssets>
-    <PublishDependsOnTargets>$(PublishDependsOnTargets);_PublishInstallers</PublishDependsOnTargets>
+    <PublishDependsOnTargets Condition="'$(DotNetBuildRepo)' == 'true'">$(PublishDependsOnTargets);PublishRuntimeInstallers</PublishDependsOnTargets>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(DotNetBuildRepo)' == 'true'">
-    <_InstallersToPublish Remove="@(_InstallersToPublish)" />
-    <_InstallersToPublish Include="$(ArtifactsPackagesDir)**\*.tar.gz" UploadPathSegment="Runtime" />
-    <_InstallersToPublish Include="$(ArtifactsPackagesDir)**\*.zip" UploadPathSegment="Runtime" />
-    <_InstallersToPublish Include="$(ArtifactsPackagesDir)**\*.deb" UploadPathSegment="Runtime" />
-    <_InstallersToPublish Include="$(ArtifactsPackagesDir)**\*.rpm" UploadPathSegment="Runtime" />
-    <_InstallersToPublish Include="$(ArtifactsPackagesDir)**\*.exe" UploadPathSegment="Runtime" />
-    <_InstallersToPublish Include="$(ArtifactsPackagesDir)**\*.msi" UploadPathSegment="Runtime" />
-  </ItemGroup>
-
-  <Target Name="_PublishInstallers">
-
-    <ItemGroup>
-      <_SymbolsArchive Include="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz" Condition="'$(DotNetBuildFromSource)' == 'true'" />
-      <!-- Exclude Symbols archive as it is already included, with correct blob path, in Publish.proj. -->
-      <_InstallersToPublish Remove="@(_SymbolsArchive)" Condition="'$(DotNetBuildFromSource)' == 'true'" />
-    </ItemGroup>
-
+  <!-- Include installer archives and packages which aren't globbed by default.
+       Don't include Symbols archive as it is already included in Arcade's Publish.proj, with correct blob path. -->
+  <Target Name="PublishRuntimeInstallers">
     <!-- Discover the runtime package version from dotnet-runtime-<Version>-<Rid>.<Extension> archive. -->
     <PropertyGroup>
       <_RuntimeFilenamePrefix>dotnet-runtime-</_RuntimeFilenamePrefix>
-      <_PackageRid>$(OutputRID)</_PackageRid>
       <!-- Use TargetRid if OutputRID isn't available, i.e. on Windows. -->
-      <_PackageRid Condition="'$(_PackageRid)' == ''">$(TargetRid)</_PackageRid>
+      <_PackageRid>$([MSBuild]::ValueOrDefault('$(OutputRID)', '$(TargetRid)'))</_PackageRid>
     </PropertyGroup>
+
     <ItemGroup>
-      <_RuntimeArchiveItem Include="$(ArtifactsPackagesDir)**\$(_RuntimeFilenamePrefix)*$(_PackageRid)$(ArchiveExtension)" />
-      <_RuntimeInternalArchiveItem Include="$(ArtifactsPackagesDir)**\dotnet-runtime-internal*$(_PackageRid)$(ArchiveExtension)" />
-      <_RuntimeArchiveItem Remove="@(_RuntimeInternalArchiveItem)" />
+      <_RuntimeArchiveItem Include="$(ArtifactsPackagesDir)**\$(_RuntimeFilenamePrefix)*$(_PackageRid)$(ArchiveExtension)"
+                           Exclude="$(ArtifactsPackagesDir)**\dotnet-runtime-internal*$(_PackageRid)$(ArchiveExtension)" />
     </ItemGroup>
 
     <!-- Extract runtime version from runtime archive filename. -->
@@ -42,12 +26,22 @@
       <_RuntimeVersion>$(_RuntimeArchiveFilename.Replace('$(_RuntimeFilenamePrefix)','').Replace('-$(_PackageRid)$(ArchiveExtension)',''))</_RuntimeVersion>
     </PropertyGroup>
 
+    <ItemGroup Condition="'$(DotNetBuildRepo)' == 'true'">
+      <InstallerToPublish Include="$(ArtifactsPackagesDir)**\*.tar.gz;
+                                   $(ArtifactsPackagesDir)**\*.zip;
+                                   $(ArtifactsPackagesDir)**\*.deb;
+                                   $(ArtifactsPackagesDir)**\*.rpm;
+                                   $(ArtifactsPackagesDir)**\*.exe;
+                                   $(ArtifactsPackagesDir)**\*.msi"
+                          Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
+                          UploadPathSegment="Runtime" />
+    </ItemGroup>
+
     <ItemGroup>
-      <ItemsToPushToBlobFeed Include="@(_InstallersToPublish)">
-        <ManifestArtifactData>NonShipping=false</ManifestArtifactData>
-        <PublishFlatContainer>true</PublishFlatContainer>
-        <RelativeBlobPath>%(_InstallersToPublish.UploadPathSegment)/$(_RuntimeVersion)/%(Filename)%(Extension)</RelativeBlobPath>
-      </ItemsToPushToBlobFeed>
+      <ItemsToPushToBlobFeed Include="@(InstallerToPublish)"
+                             ManifestArtifactData="NonShipping=false"
+                             PublishFlatContainer"true"
+                             RelativeBlobPath="%(InstallerToPublish.UploadPathSegment)/$(_RuntimeVersion)/%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
 
