@@ -80,27 +80,32 @@ namespace ILCompiler
                     mangledName = "RhpAssignRefECX";
                     break;
                 case ReadyToRunHelper.WriteBarrier_EDI:
-                    mangledName = "RhpAssignRefECX";
+                    mangledName = "RhpAssignRefEDI";
                     break;
                 case ReadyToRunHelper.WriteBarrier_ESI:
-                    mangledName = "RhpAssignRefECX";
+                    mangledName = "RhpAssignRefESI";
+                    break;
+                case ReadyToRunHelper.WriteBarrier_EBP:
+                    mangledName = "RhpAssignRefEBP";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EAX:
                     mangledName = "RhpCheckedAssignRefEAX";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EBX:
-                    mangledName = "RhpCheckedAssignRefEAX";
+                    mangledName = "RhpCheckedAssignRefEBX";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_ECX:
                     mangledName = "RhpCheckedAssignRefECX";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EDI:
-                    mangledName = "RhpCheckedAssignRefECX";
+                    mangledName = "RhpCheckedAssignRefEDI";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_ESI:
-                    mangledName = "RhpCheckedAssignRefECX";
+                    mangledName = "RhpCheckedAssignRefESI";
                     break;
-
+                case ReadyToRunHelper.CheckedWriteBarrier_EBP:
+                    mangledName = "RhpCheckedAssignRefEBP";
+                    break;
                 case ReadyToRunHelper.Box:
                 case ReadyToRunHelper.Box_Nullable:
                     mangledName = "RhBox";
@@ -134,10 +139,16 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.MemCpy:
-                    methodDesc = context.GetHelperEntryPoint("MemoryHelpers", "MemCopy");
+                    mangledName = "RhSpanHelpers_MemCopy";
                     break;
                 case ReadyToRunHelper.MemSet:
-                    methodDesc = context.GetHelperEntryPoint("MemoryHelpers", "MemSet");
+                    mangledName = "RhSpanHelpers_MemSet";
+                    break;
+                case ReadyToRunHelper.MemZero:
+                    mangledName = "RhSpanHelpers_MemZero";
+                    break;
+                case ReadyToRunHelper.NativeMemSet:
+                    mangledName = "memset";
                     break;
 
                 case ReadyToRunHelper.GetRuntimeTypeHandle:
@@ -335,14 +346,6 @@ namespace ILCompiler
                 return "RhpNewFinalizable";
 
             return "RhpNewFast";
-        }
-
-        public static string GetNewArrayHelperForType(TypeDesc type)
-        {
-            if (type.RequiresAlign8())
-                return "RhpNewArrayAlign8";
-
-            return "RhpNewArray";
         }
     }
 }

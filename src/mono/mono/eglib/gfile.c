@@ -112,6 +112,7 @@ is_ascii_string (const gchar *str)
 	while (*str) {
 		if (!g_isascii (*str))
 			return FALSE;
+		str ++;
 	}
 	return TRUE;
 }

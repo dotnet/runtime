@@ -54,10 +54,15 @@ internal sealed unsafe partial class MsQuicApi
     private static readonly Lazy<MsQuicApi> _api = new Lazy<MsQuicApi>(AllocateMsQuicApi);
     internal static MsQuicApi Api => _api.Value;
 
+    internal static Version? Version { get; private set; }
+
     internal static bool IsQuicSupported { get; }
 
     internal static string MsQuicLibraryVersion { get; } = "unknown";
     internal static string? NotSupportedReason { get; }
+
+    // workaround for https://github.com/microsoft/msquic/issues/4132
+    internal static bool SupportsAsyncCertValidation => Version >= new Version(2, 4, 0);
 
     internal static bool UsesSChannelBackend { get; }
 
@@ -69,6 +74,7 @@ internal sealed unsafe partial class MsQuicApi
     {
         bool loaded = false;
         IntPtr msQuicHandle;
+        Version = default;
 
         // MsQuic is using DualMode sockets and that will fail even for IPv4 if AF_INET6 is not available.
         if (!Socket.OSSupportsIPv6)
@@ -135,7 +141,7 @@ internal sealed unsafe partial class MsQuicApi
                 }
                 return;
             }
-            Version version = new Version((int)libVersion[0], (int)libVersion[1], (int)libVersion[2], (int)libVersion[3]);
+            Version = new Version((int)libVersion[0], (int)libVersion[1], (int)libVersion[2], (int)libVersion[3]);
 
             paramSize = 64 * sizeof(sbyte);
             sbyte* libGitHash = stackalloc sbyte[64];
@@ -150,11 +156,11 @@ internal sealed unsafe partial class MsQuicApi
             }
             string? gitHash = Marshal.PtrToStringUTF8((IntPtr)libGitHash);
 
-            MsQuicLibraryVersion = $"{Interop.Libraries.MsQuic} {version} ({gitHash})";
+            MsQuicLibraryVersion = $"{Interop.Libraries.MsQuic} {Version} ({gitHash})";
 
-            if (version < s_minMsQuicVersion)
+            if (Version < s_minMsQuicVersion)
             {
-                NotSupportedReason = $"Incompatible MsQuic library version '{version}', expecting higher than '{s_minMsQuicVersion}'.";
+                NotSupportedReason = $"Incompatible MsQuic library version '{Version}', expecting higher than '{s_minMsQuicVersion}'.";
                 if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(null, NotSupportedReason);

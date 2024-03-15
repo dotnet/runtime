@@ -322,13 +322,14 @@ mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, co
 EMSCRIPTEN_KEEPALIVE MonoAssembly*
 mono_wasm_assembly_load (const char *name)
 {
+	MonoAssembly *res;
 	assert (name);
 	MonoImageOpenStatus status;
+	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyName* aname = mono_assembly_name_new (name);
-
-	MonoAssembly *res = mono_assembly_load (aname, NULL, &status);
+	res = mono_assembly_load (aname, NULL, &status);
 	mono_assembly_name_free (aname);
-
+	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
 
