@@ -145,14 +145,14 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
     }
 }
 
-internal sealed class SafeMsQuicConfigurationHandle : MsQuicSafeHandle
+internal sealed class MsQuicConfigurationSafeHandle : MsQuicSafeHandle
 {
     // MsQuicConfiguration handles are cached, so we need to keep track of the
     // number of times a handle is rented. Once we decide to dispose the handle,
     // we set the _rentCount to -1.
     private volatile int _rentCount;
 
-    public unsafe SafeMsQuicConfigurationHandle(QUIC_HANDLE* handle)
+    public unsafe MsQuicConfigurationSafeHandle(QUIC_HANDLE* handle)
         : base(handle, SafeHandleType.Configuration) { }
 
     public bool TryAddRentCount()

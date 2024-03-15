@@ -16,7 +16,7 @@ internal static partial class MsQuicConfiguration
     private static bool HasPrivateKey(this X509Certificate certificate)
         => certificate is X509Certificate2 certificate2 && certificate2.Handle != IntPtr.Zero && certificate2.HasPrivateKey;
 
-    public static SafeMsQuicConfigurationHandle Create(QuicClientConnectionOptions options)
+    public static MsQuicConfigurationSafeHandle Create(QuicClientConnectionOptions options)
     {
         SslClientAuthenticationOptions authenticationOptions = options.ClientAuthenticationOptions;
 
@@ -79,7 +79,7 @@ internal static partial class MsQuicConfiguration
         return Create(options, flags, certificate, intermediates, authenticationOptions.ApplicationProtocols, authenticationOptions.CipherSuitesPolicy, authenticationOptions.EncryptionPolicy);
     }
 
-    public static SafeMsQuicConfigurationHandle Create(QuicServerConnectionOptions options, string? targetHost)
+    public static MsQuicConfigurationSafeHandle Create(QuicServerConnectionOptions options, string? targetHost)
     {
         SslServerAuthenticationOptions authenticationOptions = options.ServerAuthenticationOptions;
 
@@ -117,7 +117,7 @@ internal static partial class MsQuicConfiguration
         return Create(options, flags, certificate, intermediates, authenticationOptions.ApplicationProtocols, authenticationOptions.CipherSuitesPolicy, authenticationOptions.EncryptionPolicy);
     }
 
-    private static SafeMsQuicConfigurationHandle Create(QuicConnectionOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol>? alpnProtocols, CipherSuitesPolicy? cipherSuitesPolicy, EncryptionPolicy encryptionPolicy)
+    private static MsQuicConfigurationSafeHandle Create(QuicConnectionOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol>? alpnProtocols, CipherSuitesPolicy? cipherSuitesPolicy, EncryptionPolicy encryptionPolicy)
     {
         // Validate options and SSL parameters.
         if (alpnProtocols is null || alpnProtocols.Count <= 0)
@@ -191,13 +191,13 @@ internal static partial class MsQuicConfiguration
 
         if (ConfigurationCacheEnabled)
         {
-            return GetCachedCredentialOrCreate(flags, settings, certificate, intermediates, alpnProtocols, allowedCipherSuites);
+            return GetCachedCredentialOrCreate(settings, flags, certificate, intermediates, alpnProtocols, allowedCipherSuites);
         }
 
-        return CreateInternal(flags, settings, certificate, intermediates, alpnProtocols, allowedCipherSuites);
+        return CreateInternal(settings, flags, certificate, intermediates, alpnProtocols, allowedCipherSuites);
     }
 
-    private static unsafe SafeMsQuicConfigurationHandle CreateInternal(QUIC_CREDENTIAL_FLAGS flags, QUIC_SETTINGS settings, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
+    private static unsafe MsQuicConfigurationSafeHandle CreateInternal(QUIC_SETTINGS settings, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
     {
         QUIC_HANDLE* handle;
 
@@ -212,7 +212,7 @@ internal static partial class MsQuicConfiguration
             (void*)IntPtr.Zero,
             &handle),
             "ConfigurationOpen failed");
-        SafeMsQuicConfigurationHandle configurationHandle = new SafeMsQuicConfigurationHandle(handle);
+        MsQuicConfigurationSafeHandle configurationHandle = new MsQuicConfigurationSafeHandle(handle);
 
         try
         {
