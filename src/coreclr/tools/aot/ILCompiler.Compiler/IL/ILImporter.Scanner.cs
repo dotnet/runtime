@@ -1245,6 +1245,10 @@ namespace Internal.IL
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
                     }
+                    if (opcode == ILOpcode.rem)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
+                    }
                     break;
                 case ILOpcode.rem:
                 case ILOpcode.rem_un:
@@ -1258,6 +1262,10 @@ namespace Internal.IL
                     else if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
+                    }
+                    if (opcode == ILOpcode.rem)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
                     }
 
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.DblRem), "rem");
@@ -1307,6 +1315,10 @@ namespace Internal.IL
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Lng2Dbl), "conv_r");
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULng2Dbl), "conv_r");
                     break;
+            }
+            if (checkOverflow)
+            {
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
             }
         }
 
