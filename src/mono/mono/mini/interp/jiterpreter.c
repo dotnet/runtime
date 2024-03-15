@@ -1177,19 +1177,6 @@ mono_jiterp_stelem_ref (
 	return 1;
 }
 
-// FIXME: Inline this into traces
-EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_stelem_ref_unchecked (
-	MonoArray *o, gint32 aindex, MonoObject *ref
-) {
-	if (!o)
-		return 0;
-	if (aindex >= mono_array_length_internal (o))
-		return 0;
-	mono_array_setref_fast ((MonoArray *) o, aindex, ref);
-	return 1;
-}
-
 // keep in sync with jiterpreter-enums.ts JiterpMember
 enum {
 	JITERP_MEMBER_VT_INITIALIZED = 0,

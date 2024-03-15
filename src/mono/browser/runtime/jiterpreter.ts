@@ -286,7 +286,6 @@ function getTraceImports () {
         importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
         importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
         ["stelemr_tc", "stelemr", getRawCwrap("mono_jiterp_stelem_ref")],
-        ["stelemr", "stelemr", getRawCwrap("mono_jiterp_stelem_ref_unchecked")],
         importDef("fma", getRawCwrap("fma")),
         importDef("fmaf", getRawCwrap("fmaf")),
     ];
