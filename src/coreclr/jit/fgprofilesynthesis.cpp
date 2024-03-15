@@ -31,8 +31,9 @@
 //
 void ProfileSynthesis::Run(ProfileSynthesisOption option)
 {
-    m_dfsTree = m_comp->fgComputeDfs();
-    m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+    m_dfsTree             = m_comp->fgComputeDfs();
+    m_loops               = FlowGraphNaturalLoops::Find(m_dfsTree);
+    m_improperLoopHeaders = m_loops->ImproperLoopHeaders();
 
     // Retain or compute edge likelihood information
     //

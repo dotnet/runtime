@@ -2220,6 +2220,8 @@ class FlowGraphNaturalLoops
     // Collection of loops that were found.
     jitstd::vector<FlowGraphNaturalLoop*> m_loops;
 
+    unsigned m_improperLoopHeaders;
+
     FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
 
     static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist);
@@ -2296,6 +2298,13 @@ public:
     }
 
     static FlowGraphNaturalLoops* Find(const FlowGraphDfsTree* dfs);
+
+    // Number of blocks with DFS backedges that are not natural loop headers
+    // (indicates presence of "irreducible" loops)
+    unsigned ImproperLoopHeaders() const
+    {
+        return m_improperLoopHeaders;
+    }
 
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoops* loops);
