@@ -44,7 +44,7 @@
     -->
     <MicrosoftCodeAnalysisCSharpVersion>4.10.0-2.24114.13</MicrosoftCodeAnalysisCSharpVersion>
     <MicrosoftCodeAnalysisVersion>4.10.0-2.24114.13</MicrosoftCodeAnalysisVersion>
-    <MicrosoftNetCompilersToolsetVersion>4.10.0-3.24151.8</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.10.0-2.24114.13</MicrosoftNetCompilersToolsetVersion>
   </PropertyGroup>
   <!--
     For source generator support we need to target multiple versions of Roslyn in order to be able to run on older versions of Roslyn.

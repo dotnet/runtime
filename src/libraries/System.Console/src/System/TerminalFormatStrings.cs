@@ -46,7 +46,7 @@ internal sealed class TerminalFormatStrings
     /// doesn't contain it (as appears to be the case with e.g. screen and tmux on Ubuntu), at the risk
     /// of outputting the sequence on some terminal that's not compatible.
     /// </remarks>
-    public const string CursorPositionReport = "\e[6n";
+    public const string CursorPositionReport = "\x1B[6n";
     /// <summary>
     /// The dictionary of keystring to ConsoleKeyInfo.
     /// Only some members of the ConsoleKeyInfo are used; in particular, the actual char is ignored.
@@ -210,13 +210,13 @@ internal sealed class TerminalFormatStrings
             case "linux":
             case "rxvt":
             case "xterm":
-                return "\e]0;%p1%s\x07";
+                return "\x1B]0;%p1%s\x07";
             case "cygwin":
-                return "\e];%p1%s\x07";
+                return "\x1B];%p1%s\x07";
             case "konsole":
-                return "\e]30;%p1%s\x07";
+                return "\x1B]30;%p1%s\x07";
             case "screen":
-                return "\ek%p1%s\e\\";
+                return "\x1Bk%p1%s\x1B\\";
             default:
                 return string.Empty;
         }

@@ -360,9 +360,9 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>fe7f6de587d1867b71a8e846ffee3b2035afbfe5</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.10.0-3.24151.8">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.10.0-2.24114.13">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>8537440d8c831b8533a18f6530945ee91c243e1b</Sha>
+      <Sha>77372c66fd54927312b5b0a2e399e192f74445c9</Sha>
     </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis" Version="4.10.0-2.24114.13">
       <Uri>https://github.com/dotnet/roslyn</Uri>

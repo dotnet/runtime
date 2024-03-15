@@ -1592,7 +1592,7 @@ namespace System.Text.RegularExpressions
                 case 'b':
                     return '\b';
                 case 'e':
-                    return '\e';
+                    return '\u001B';
                 case 'f':
                     return '\f';
                 case 'n':
