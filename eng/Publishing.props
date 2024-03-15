@@ -33,15 +33,14 @@
                                    $(ArtifactsPackagesDir)**\*.rpm;
                                    $(ArtifactsPackagesDir)**\*.exe;
                                    $(ArtifactsPackagesDir)**\*.msi"
-                          Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
-                          UploadPathSegment="Runtime" />
+                          Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz" />
     </ItemGroup>
 
     <ItemGroup>
       <ItemsToPushToBlobFeed Include="@(InstallerToPublish)"
                              ManifestArtifactData="NonShipping=false"
                              PublishFlatContainer="true"
-                             RelativeBlobPath="%(InstallerToPublish.UploadPathSegment)/$(_RuntimeVersion)/%(Filename)%(Extension)" />
+                             RelativeBlobPath="Runtime/$(_RuntimeVersion)/%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
 
