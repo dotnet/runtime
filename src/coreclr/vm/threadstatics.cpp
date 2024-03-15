@@ -699,7 +699,8 @@ void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
     _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
 #endif // TARGET_WINDOWS
 
-    pInfo->offsetOfThreadStaticBlocks = (uint32_t)threadStaticBaseOffset;
+    pInfo->offsetOfMaxThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, cTLSData));
+    pInfo->offsetOfThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, pTLSArrayData));
 }
 #endif // !DACCESS_COMPILE
 

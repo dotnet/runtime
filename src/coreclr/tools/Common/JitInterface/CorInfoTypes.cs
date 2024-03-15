@@ -1156,6 +1156,7 @@ namespace Internal.JitInterface
         public nuint tlsIndexObject;
         public nuint threadVarsSection;
         public uint offsetOfThreadLocalStoragePointer;
+        public uint offsetOfMaxThreadStaticBlocks;
         public uint offsetOfThreadStaticBlocks;
     };
 
