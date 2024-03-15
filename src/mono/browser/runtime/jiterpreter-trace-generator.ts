@@ -3244,8 +3244,7 @@ function emit_arrayop(builder: WasmBuilder, frame: NativePointer, ip: MintOpcode
             append_stloc_tail(builder, valueOffset, WasmOpcode.i32_store);
             return true;
         }
-        case MintOpcode.MINT_STELEM_REF:
-        case MintOpcode.MINT_STELEM_REF_UNCHECKED: {
+        case MintOpcode.MINT_STELEM_REF: {
             builder.block();
             // array
             append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
@@ -3253,13 +3252,19 @@ function emit_arrayop(builder: WasmBuilder, frame: NativePointer, ip: MintOpcode
             append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
             // value
             append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
-            builder.callImport(opcode === MintOpcode.MINT_STELEM_REF
-                ? "stelemr_tc"
-                : "stelemr");
+            builder.callImport("stelemr_tc");
             builder.appendU8(WasmOpcode.br_if);
             builder.appendULeb(0);
             append_bailout(builder, ip, BailoutReason.ArrayStoreFailed);
             builder.endBlock();
+            return true;
+        }
+        case MintOpcode.MINT_STELEM_REF_UNCHECKED: {
+            // dest
+            append_getelema1(builder, ip, objectOffset, indexOffset, 4);
+            // &value (src)
+            append_ldloca(builder, valueOffset, 0);
+            builder.callImport("copy_ptr");
             return true;
         }
         case MintOpcode.MINT_LDELEM_REF:
