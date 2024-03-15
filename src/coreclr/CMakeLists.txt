@@ -219,7 +219,7 @@ if(CLR_CMAKE_HOST_UNIX)
   # given Windows .rc file. The target C++ file path is returned in the
   # variable specified by the TARGET_FILE parameter.
   function(build_resources SOURCE TARGET_NAME TARGET_FILE)
-    set_source_files_properties(${SOURCE} PROPERTIES COMPILE_DEFINITIONS "RC_INVOKED")
+    set_property(SOURCE ${SOURCE} APPEND PROPERTY COMPILE_DEFINITIONS "RC_INVOKED")
     set(PREPROCESSED_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.rc.i)
 
     preprocess_file(${SOURCE} ${PREPROCESSED_SOURCE})
