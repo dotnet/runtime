@@ -266,7 +266,7 @@ public partial class UpdateChromeVersions : MBU.Task
             }
         }
 
-        return File.OpenRead(filePath); 
+        return File.OpenRead(filePath);
     }
 
     private async Task<string?> FindSnapshotUrlFromBasePositionAsync(string osPrefix, ChromeVersionSpec version, bool throwIfNotFound = true)
