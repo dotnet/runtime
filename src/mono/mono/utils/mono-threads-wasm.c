@@ -315,21 +315,6 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 #endif
 }
 
-gboolean
-mono_thread_platform_external_eventloop_keepalive_check (void)
-{
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	MONO_REQ_GC_SAFE_MODE;
-	/* if someone called emscripten_runtime_keepalive_push (), the
-	 * thread will stay alive in the JS event loop after returning
-	 * from the thread's main function.
-	 */
-	return emscripten_runtime_keepalive_check ();
-#else
-	return FALSE;
-#endif
-}
-
 void mono_threads_platform_init (void)
 {
 }
