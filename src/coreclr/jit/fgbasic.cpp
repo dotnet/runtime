@@ -6391,8 +6391,12 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
         }
 
         // Look for an insert location.
-        // Avoid splitting up call-finally pairs, or BBJ_COND blocks that precede their false targets.
-        if (!blk->isBBCallFinallyPair() && (!blk->KindIs(BBJ_COND) || !blk->NextIs(blk->GetFalseTarget())))
+        // Avoid splitting up call-finally pairs, or jumps/false branches to the next block.
+        // (We need the HasInitializedTarget() call because fgFindInsertPoint can be called during importation,
+        // before targets are set)
+        const bool jumpsToNext       = blk->KindIs(BBJ_ALWAYS) && blk->HasInitializedTarget() && blk->JumpsToNext();
+        const bool falseBranchToNext = blk->KindIs(BBJ_COND) && blk->NextIs(blk->GetFalseTarget());
+        if (!blk->isBBCallFinallyPair() && !jumpsToNext && !falseBranchToNext)
         {
             bool updateBestBlk = true; // We will probably update the bestBlk
 
