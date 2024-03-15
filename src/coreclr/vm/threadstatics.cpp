@@ -6,7 +6,7 @@
 struct InFlightTLSData
 {
 #ifndef DACCESS_COMPILE
-    InFlightTLSData(TLSIndex index, TADDR pTLSData) : pNext(NULL), tlsIndex(index), pTLSData(pTLSData) { }
+    InFlightTLSData(TLSIndex index) : pNext(NULL), tlsIndex(index), pTLSData(dac_cast<TADDR>(NULL)) { }
 #endif // !DACCESS_COMPILE
     PTR_InFlightTLSData pNext; // Points at the next in-flight TLS data
     TLSIndex tlsIndex; // The TLS index for the static
@@ -463,7 +463,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
             NewHolder<InFlightTLSData> pInFlightData = NULL;
             if (!pMT->IsClassInited())
             {
-                pInFlightData = new InFlightTLSData(index, pTLSBaseAddress);
+                pInFlightData = new InFlightTLSData(index);
             }
 
             if (isCollectible)
@@ -488,6 +488,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
                 {
                     SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
                     pInFlightData->pNext = t_ThreadStatics.pInFlightData;
+                    pInFlightData->pTLSData = pTLSBaseAddress;
                     t_ThreadStatics.pInFlightData = pInFlightData;
                     t_ThreadStatics.pThread->m_ThreadLocalDataThreadObjectCopy = t_ThreadStatics;
                 }
