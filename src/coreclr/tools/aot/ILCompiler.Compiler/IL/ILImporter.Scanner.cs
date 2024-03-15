@@ -1245,7 +1245,7 @@ namespace Internal.IL
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
                     }
-                    if (opcode == ILOpcode.rem)
+                    if (opcode == ILOpcode.div)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
                     }
