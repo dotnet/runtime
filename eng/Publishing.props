@@ -40,7 +40,7 @@
     <ItemGroup>
       <ItemsToPushToBlobFeed Include="@(InstallerToPublish)"
                              ManifestArtifactData="NonShipping=false"
-                             PublishFlatContainer"true"
+                             PublishFlatContainer="true"
                              RelativeBlobPath="%(InstallerToPublish.UploadPathSegment)/$(_RuntimeVersion)/%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
