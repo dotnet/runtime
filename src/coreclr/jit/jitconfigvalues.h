@@ -144,7 +144,7 @@ CONFIG_INTEGER(JitPrintInlinedMethodsVerbose, W("JitPrintInlinedMethodsVerboseLe
 CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
 
 CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"))
-// -1: just do internal checks
+// -1: just do internal checks (CHECK_HASLIKELIHOOD | CHECK_LIKELIHOODSUM | RAISE_ASSERT)
 // Else bitflag:
 //  - 0x1: check edges have likelihoods
 //  - 0x2: check edge likelihoods sum to 1.0
@@ -152,6 +152,7 @@ CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods")
 //  - 0x8: assert on check failure
 //  - 0x10: check block profile weights
 CONFIG_INTEGER(JitProfileChecks, W("JitProfileChecks"), -1)
+
 CONFIG_INTEGER(JitRequired, W("JITRequired"), -1)
 CONFIG_INTEGER(JitRoundFloat, W("JITRoundFloat"), DEFAULT_ROUND_LEVEL)
 CONFIG_INTEGER(JitStackAllocToLocalSize, W("JitStackAllocToLocalSize"), DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)

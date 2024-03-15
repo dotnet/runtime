@@ -1569,15 +1569,6 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                     break;
                 }
             }
-            else
-            {
-                // TODO-NoFallThrough: Once BBJ_COND blocks have pointers to their false branches,
-                // allow removing empty BBJ_ALWAYS and pointing bPrev's false branch to block's target.
-                if (bPrev->bbFallsThrough() && !block->JumpsToNext())
-                {
-                    break;
-                }
-            }
 
             /* Do not remove a block that jumps to itself - used for while (true){} */
             if (block->TargetIs(block))
@@ -1875,6 +1866,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         {
             printf("\nRemoving a switch jump with a single target (" FMT_BB ")\n", block->bbNum);
             printf("BEFORE:\n");
+            fgDispBasicBlocks();
         }
 #endif // DEBUG
 
@@ -5112,7 +5104,7 @@ PhaseStatus Compiler::fgDfsBlocksAndRemove()
 #ifdef DEBUG
         if (verbose)
         {
-            printf("%u/%u blocks are unreachable and will be removed\n", fgBBcount - m_dfsTree->GetPostOrderCount(),
+            printf("%u/%u blocks are unreachable and will be removed:\n", fgBBcount - m_dfsTree->GetPostOrderCount(),
                    fgBBcount);
             for (BasicBlock* block : Blocks())
             {
@@ -5122,7 +5114,7 @@ PhaseStatus Compiler::fgDfsBlocksAndRemove()
                 }
             }
         }
-#endif
+#endif // DEBUG
 
         // The DFS we run is not precise around call-finally, so
         // `fgRemoveUnreachableBlocks` can expose newly unreachable blocks
@@ -5149,6 +5141,24 @@ PhaseStatus Compiler::fgDfsBlocksAndRemove()
 
             m_dfsTree = fgComputeDfs();
         }
+
+#ifdef DEBUG
+        // Did we actually remove all the blocks we said we were going to?
+        if (verbose)
+        {
+            if (m_dfsTree->GetPostOrderCount() != fgBBcount)
+            {
+                printf("%u unreachable blocks were not removed:\n", fgBBcount - m_dfsTree->GetPostOrderCount());
+                for (BasicBlock* block : Blocks())
+                {
+                    if (!m_dfsTree->Contains(block))
+                    {
+                        printf("  " FMT_BB "\n", block->bbNum);
+                    }
+                }
+            }
+        }
+#endif // DEBUG
 
         status = PhaseStatus::MODIFIED_EVERYTHING;
     }

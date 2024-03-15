@@ -4947,6 +4947,25 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
                 else
                 {
                     likelyWeightsValid = false;
+
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        for (const FlowEdge* succEdge : block->SuccEdges(this))
+                        {
+                            const BasicBlock* succBlock = succEdge->getDestinationBlock();
+                            if (succEdge->hasLikelihood())
+                            {
+                                printf("  " FMT_BB " -> " FMT_BB ": " FMT_WT "\n", block->bbNum, succBlock->bbNum,
+                                       succEdge->getLikelihood());
+                            }
+                            else
+                            {
+                                printf("  " FMT_BB " -> " FMT_BB ": no likelihood\n", block->bbNum, succBlock->bbNum);
+                            }
+                        }
+                    }
+#endif // DEBUG
                 }
             }
         }

@@ -682,17 +682,53 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
 
         case BBJ_SWITCH:
         {
-            unsigned const   jumpCnt = block->GetSwitchTargets()->bbsCount;
-            FlowEdge** const jumpTab = block->GetSwitchTargets()->bbsDstTab;
-            bool             changed = false;
+            unsigned const   jumpCnt      = block->GetSwitchTargets()->bbsCount;
+            FlowEdge** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
+            bool             existingEdge = false;
+            FlowEdge*        oldEdge      = nullptr;
+            FlowEdge*        newEdge      = nullptr;
+            bool             changed      = false;
 
             for (unsigned i = 0; i < jumpCnt; i++)
             {
+                if (jumpTab[i]->getDestinationBlock() == newTarget)
+                {
+                    // The new target already has an edge from this switch statement.
+                    // We'll need to add the likelihood from the edge we're redirecting
+                    // to the existing edge. Note that if there is no existing edge,
+                    // then we'll copy the likelihood from the existing edge we pass to
+                    // `fgAddRefPred`. Note also that we can visit the same edge multiple
+                    // times if there are multiple switch cases with the same target. The
+                    // edge has a dup count and a single likelihood for all the possible
+                    // paths to the target, so we only want to add the likelihood once
+                    // despite visiting the duplicated edges in the `jumpTab` array
+                    // multiple times.
+                    existingEdge = true;
+                }
+
                 if (jumpTab[i]->getDestinationBlock() == oldTarget)
                 {
-                    fgRemoveRefPred(jumpTab[i]);
-                    jumpTab[i] = fgAddRefPred(newTarget, block, jumpTab[i]);
+                    assert((oldEdge == nullptr) || (oldEdge == jumpTab[i]));
+                    oldEdge = jumpTab[i];
+                    fgRemoveRefPred(oldEdge);
+                    newEdge    = fgAddRefPred(newTarget, block, oldEdge);
+                    jumpTab[i] = newEdge;
                     changed    = true;
+                }
+            }
+
+            if (existingEdge)
+            {
+                assert(oldEdge != nullptr);
+                assert(oldEdge->getSourceBlock() == block);
+                assert(oldEdge->getDestinationBlock() == oldTarget);
+                assert(newEdge != nullptr);
+                assert(newEdge->getSourceBlock() == block);
+                assert(newEdge->getDestinationBlock() == newTarget);
+
+                if (newEdge->hasLikelihood() && oldEdge->hasLikelihood())
+                {
+                    newEdge->addLikelihood(oldEdge->getLikelihood());
                 }
             }
 
@@ -5880,12 +5916,6 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
                insertAfterBlk->Next()); // We insert at the end, not at the beginning, of the funclet region.
     }
 
-    // These asserts assume we aren't moving try regions (which we might need to do). Only
-    // try regions can have fall through into or out of the region.
-
-    noway_assert(!bPrev->bbFallsThrough()); // There can be no fall through into a filter or handler region
-    noway_assert(!bLast->bbFallsThrough()); // There can be no fall through out of a handler region
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -5995,11 +6025,6 @@ BasicBlock* Compiler::fgNewBBbefore(BBKinds jumpKind, BasicBlock* block, bool ex
 
     newBlk->bbRefs = 0;
 
-    if (newBlk->bbFallsThrough() && block->isRunRarely())
-    {
-        newBlk->bbSetRunRarely();
-    }
-
     if (extendRegion)
     {
         fgExtendEHRegionBefore(block);
@@ -6033,11 +6058,6 @@ BasicBlock* Compiler::fgNewBBafter(BBKinds jumpKind, BasicBlock* block, bool ext
     fgInsertBBafter(block, newBlk);
 
     newBlk->bbRefs = 0;
-
-    if (block->bbFallsThrough() && block->isRunRarely())
-    {
-        newBlk->bbSetRunRarely();
-    }
 
     if (extendRegion)
     {
