@@ -956,7 +956,7 @@ namespace System.Numerics.Tensors.Tests
         public void Dot_AllLengths()
         {
             // TODO https://github.com/dotnet/runtime/issues/98861
-            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14f, floatTolerance: 1e-3f);
+            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14f, floatTolerance: 1e-5f);
 
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
             {
