@@ -6678,7 +6678,8 @@ static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoTy
 			kind = SWIFT_INT64;
 		}
 #if TARGET_SIZEOF_VOID_P == 8
-		else if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
+		else if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR
+			|| type->type == MONO_TYPE_I || type->type == MONO_TYPE_U) {
 			kind = SWIFT_INT64;
 		} 
 #endif
@@ -6817,7 +6818,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 				// The lowered range is allowed to extend past the end of the opaque range (including past the end of the struct),
 				// but not into the next non-empty interval.
 				// However, due to the properties of the lowering (the only non-8 byte elements of the lowering are 4-byte floats),
-				// we'll never encounter a scneario where we need would need to account for a correctly-aligned
+				// we'll never encounter a scenario where we need would need to account for a correctly-aligned
 				// opaque range of > 4 bytes that we must not pad to 8 bytes.
 
 
