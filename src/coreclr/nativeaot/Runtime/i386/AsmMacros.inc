@@ -137,6 +137,18 @@ TrapThreadsFlags_TrapThreads     equ 2
 ;; This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
 STATUS_REDHAWK_THREAD_ABORT      equ 43h
 
+;; CONTEXT (winnt.h)
+CONTEXT_FLOATING_POINT           equ 8
+CONTEXT_EXTENDED_REGISTERS       equ 32
+OFFSETOF__CONTEXT__Xmm0          equ OFFSETOF__CONTEXT__ExtendedRegisters + 160
+OFFSETOF__CONTEXT__Xmm1          equ OFFSETOF__CONTEXT__ExtendedRegisters + 176
+OFFSETOF__CONTEXT__Xmm2          equ OFFSETOF__CONTEXT__ExtendedRegisters + 192
+OFFSETOF__CONTEXT__Xmm3          equ OFFSETOF__CONTEXT__ExtendedRegisters + 208
+OFFSETOF__CONTEXT__Xmm4          equ OFFSETOF__CONTEXT__ExtendedRegisters + 224
+OFFSETOF__CONTEXT__Xmm5          equ OFFSETOF__CONTEXT__ExtendedRegisters + 240
+OFFSETOF__CONTEXT__Xmm6          equ OFFSETOF__CONTEXT__ExtendedRegisters + 256
+OFFSETOF__CONTEXT__Xmm7          equ OFFSETOF__CONTEXT__ExtendedRegisters + 272
+
 ;;
 ;; Rename fields of nested structs
 ;;
