@@ -191,7 +191,6 @@ namespace System.DirectoryServices.Protocols.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99725")]
         [Theory]
         [MemberData(nameof(Decode_TestData))]
         public void Decode_Bytes_ReturnsExpected(string format, byte[] values, object[] expected)
