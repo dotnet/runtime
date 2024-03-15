@@ -49,7 +49,7 @@ jobs:
     - ${{ if and(eq(parameters.platform, 'Linux_musl_arm64'), eq(parameters.jobParameters.isFullMatrix, true)) }}:
       - (Alpine.316.Arm64.Open)ubuntu.2204.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.16-helix-arm64v8
       - (Alpine.319.Arm64.Open)ubuntu.2204.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.19-helix-arm64v8
-  
+
     # Linux x64
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
       - ${{ if and(eq(parameters.jobParameters.interpreter, ''), ne(parameters.jobParameters.isSingleFile, true)) }}:
