@@ -53,7 +53,7 @@ namespace System.Reflection
                 ThrowForArgCountMismatch();
             }
 
-            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(new Span<object?>(ref arg1, _parameterCount));
+            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(new Span<object?>(ref arg1));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -69,7 +69,7 @@ namespace System.Reflection
             StackAllocatedArguments argStorage = default;
             argStorage._args[0] = arg1;
             argStorage._args[1] = arg2;
-            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(_parameterCount));
+            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(((Span<object?>)argStorage._args).Slice(0, 2));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -86,7 +86,7 @@ namespace System.Reflection
             argStorage._args[0] = arg1;
             argStorage._args[1] = arg2;
             argStorage._args[2] = arg3;
-            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(_parameterCount));
+            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(((Span<object?>)argStorage._args).Slice(0, 3));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -104,7 +104,7 @@ namespace System.Reflection
             argStorage._args[1] = arg2;
             argStorage._args[2] = arg3;
             argStorage._args[3] = arg4;
-            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(argStorage._args.AsSpan(_parameterCount));
+            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(((Span<object?>)argStorage._args).Slice(0, 4));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }

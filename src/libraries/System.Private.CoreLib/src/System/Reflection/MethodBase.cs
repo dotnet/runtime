@@ -190,13 +190,6 @@ namespace System.Reflection
         internal struct ArgumentData<T>
         {
             private T _arg0;
-
-            [UnscopedRef]
-            public Span<T> AsSpan(int length)
-            {
-                Debug.Assert((uint)length <= MaxStackAllocArgCount);
-                return new Span<T>(ref _arg0, length);
-            }
         }
 
         // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.
