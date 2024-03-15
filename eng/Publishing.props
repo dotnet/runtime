@@ -13,7 +13,9 @@
          Don't stabilize the package version in order to retrieve the VersionSuffix. -->
     <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
              Targets="ReturnProductVersion"
-             Properties="IsShipping=false">
+             Properties="IsShipping=false;
+                         Crossgen2SdkOverridePropsPath=;
+                         Crossgen2SdkOverrideTargetsPath=">
       <Output TaskParameter="TargetOutputs" PropertyName="RuntimeRuntimePackProductVersion" />
     </MSBuild>
 
