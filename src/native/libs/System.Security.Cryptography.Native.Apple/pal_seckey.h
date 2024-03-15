@@ -16,6 +16,7 @@ static const int32_t kErrorSeeError = -2;
 static const int32_t kErrorUnknownAlgorithm = -3;
 static const int32_t kErrorUnknownState = -4;
 static const int32_t kPlatformNotSupported = -5;
+static const int32_t kOperationNotSupported = -6;
 
 enum
 {
