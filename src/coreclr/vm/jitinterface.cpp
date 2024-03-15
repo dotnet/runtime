@@ -10721,7 +10721,11 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             // so we no longer need to use indirections and can emit a direct call instead.
             //
             // Avoid taking the lock for foreground jit compilations
-            if (!GetAppDomain()->GetTieredCompilationManager()->IsTieringDelayActive())
+            //
+            // JitEnableOptionalRelocs being false means we should avoid non-deterministic
+            // optimizations that can randomly change codegen.
+            if (!GetAppDomain()->GetTieredCompilationManager()->IsTieringDelayActive() &&
+                g_pConfig->JitEnableOptionalRelocs())
             {
                 MethodDesc* helperMD = pPrecode->GetMethodDesc();
                 _ASSERT(helperMD != nullptr);
