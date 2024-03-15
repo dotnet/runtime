@@ -328,6 +328,8 @@ PINITIALIZECONTEXT2 pfnInitializeContext2 = NULL;
 #ifdef TARGET_X86
 typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
 PRTLRESTORECONTEXT pfnRtlRestoreContext = NULL;
+typedef NTSTATUS(* PNTCONTINUE)(PCONTEXT ContextRecord, BOOLEAN RaiseAlert);
+PNTCONTINUE pfnNtContinue = NULL;
 
 #define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_FLOATING_POINT |       \
                           CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS)
@@ -352,10 +354,11 @@ REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextB
     }
 
 #ifdef TARGET_X86
-    if (pfnRtlRestoreContext == NULL)
+    if (pfnRtlRestoreContext == NULL && pfnNtContinue == NULL)
     {
         HMODULE hm = GetModuleHandleW(_T("ntdll.dll"));
         pfnRtlRestoreContext = (PRTLRESTORECONTEXT)GetProcAddress(hm, "RtlRestoreContext");
+        pfnNtContinue = (PNTCONTINUE)GetProcAddress(hm, "NtContinue");
     }
 #endif //TARGET_X86
 
@@ -438,7 +441,19 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalSetThreadContext(HAND
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
 {
     __asan_handle_no_return();
+#ifdef TARGET_X86
+    if (pfnRtlRestoreContext != NULL)
+    {
+        pfnRtlRestoreContext(pCtx, NULL);
+    }
+    else if (pfnNtContinue != NULL)
+    {
+        pfnNtContinue(pCtx, FALSE);
+    }
+    _ASSERTE(!"Neither RtlRestoreContext nor NtContinue is available");
+#else
     RtlRestoreContext(pCtx, NULL);
+#endif //TARGET_X86
 }
 
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT* pContext)
