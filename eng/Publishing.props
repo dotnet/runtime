@@ -11,7 +11,7 @@
           Condition="'$(DotNetBuildRepo)' == 'true'">
     <!-- Retrieve runtime's runtime pack product version.
          Don't stabilize the package version in order to retrieve the VersionSuffix. -->
-    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCoreApp/Microsoft.NETCore.App.Runtime.sfxproj"
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
              Targets="ReturnProductVersion"
              Properties="IsShipping=false">
       <Output TaskParameter="TargetOutputs" PropertyName="RuntimeRuntimePackProductVersion" />
