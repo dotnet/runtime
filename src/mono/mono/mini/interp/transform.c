@@ -4816,11 +4816,20 @@ handle_stelem (TransformData *td, int op)
 			*value_var_klass = mono_class_from_mono_type_internal (value_var->type);
 
 		if (m_class_is_array (array_var_klass)) {
+			ERROR_DECL (error);
 			MonoClass *array_element_klass = m_class_get_element_class (array_var_klass);
 			// If lhs is T[] and rhs is T and T is sealed, we can skip the runtime typecheck
 			// FIXME: right now this passes for Object[][] since Array is sealed, should it?
-			if (m_class_is_sealed (array_element_klass) &&
-				m_class_is_sealed (value_var_klass)) {
+			gboolean isinst;
+			// Make sure lhs and rhs element types are compatible, even though they usually would be
+			mono_class_is_assignable_from_checked (array_element_klass, value_var_klass, &isinst, error);
+			mono_error_cleanup (error); // FIXME: do not swallow the error
+			if (isinst &&
+				// We already know lhs and rhs are compatible, so if they're both sealed they
+				//  should be the same exactly
+				m_class_is_sealed (array_element_klass) &&
+				m_class_is_sealed (value_var_klass)
+			) {
 				if (td->verbose_level > 2)
 					g_printf (
 						"MINT_STELEM_REF_UNCHECKED for %s in %s::%s\n",
