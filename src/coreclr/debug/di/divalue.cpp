@@ -2504,7 +2504,6 @@ HRESULT CordbObjectValue::ForceCatchHandlerFoundEvents(BOOL enableEvents)
     EX_TRY
     {
         CordbProcess * pProcess = GetProcess();
-        RSLockHolder lockHolder(pProcess->GetProcessLock());
 
         CORDB_ADDRESS objAddr = m_valueHome.GetAddress();
 
@@ -2519,9 +2518,7 @@ HRESULT CordbObjectValue::ForceCatchHandlerFoundEvents(BOOL enableEvents)
         event.ForceCatchHandlerFoundData.enableEvents = enableEvents;
         event.ForceCatchHandlerFoundData.vmObj = vmObj;
 
-        lockHolder.Release();
         hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
-        lockHolder.Acquire();
 
         _ASSERTE(event.type == DB_IPCE_CATCH_HANDLER_FOUND_RESULT);
 
