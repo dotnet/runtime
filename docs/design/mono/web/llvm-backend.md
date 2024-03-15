@@ -1,8 +1,4 @@
----
-title: LLVM Backend
-redirect_from:
-  - /Mono%3ARuntime%3ADocumentation%3ALLVM/
----
+# LLVM Backend
 
 Mono includes a backend which compiles methods to native code using LLVM instead of the built in JIT.
 

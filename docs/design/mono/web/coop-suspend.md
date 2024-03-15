@@ -1,6 +1,4 @@
----
-title: Runtime Cooperative Suspend
----
+# Runtime Cooperative Suspend
 
 ## Intro: Preemptive, Cooperative and Hybrid Suspend
 

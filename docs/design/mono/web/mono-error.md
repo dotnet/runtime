@@ -1,6 +1,4 @@
----
-title: Error handling and MonoError
----
+# Error handling and MonoError
 
 ## MonoError
 

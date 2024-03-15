@@ -1,8 +1,4 @@
----
-title: Thread Safety/Synchronization
-redirect_from:
-  - /Mono%3ARuntime%3ADocumentation%3AThreadSafety/
----
+# Thread Safety/Synchronization
 
 Thread safety of metadata structures
 ------------------------------------

@@ -1,8 +1,4 @@
----
-title: Glossary
-redirect_from:
-  - /Mono%3ARuntime%3ADocumentation%3AGlossary/
----
+# Glossary
 
 This is a glossary of terms/abbreviations used in the runtime source code
 -------------------------------------------------------------------------

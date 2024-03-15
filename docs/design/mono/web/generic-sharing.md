@@ -1,8 +1,4 @@
----
-title: Generic Sharing
-redirect_from:
-  - /Mono%3ARuntime%3ADocumentation%3AGenericSharing/
----
+# Generic Sharing
 
 Source code
 ----------

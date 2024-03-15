@@ -1,8 +1,4 @@
----
-title: Generics
-redirect_from:
-  - /Mono%3ARuntime%3ADocumentation%3AGenerics/
----
+# Generics
 
 Terminology
 -----------

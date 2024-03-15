@@ -1,8 +1,4 @@
----
-title: Ahead of Time Compilation (AOT)
-redirect_from:
-  - /Mono%3ARuntime%3ADocumentation%3AAOT/
----
+# Ahead of Time Compilation (AOT)
 
 Mono Ahead Of Time Compiler
 ---------------------------

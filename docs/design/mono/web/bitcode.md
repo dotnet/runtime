@@ -1,6 +1,4 @@
----
-title: Bitcode
----
+# Bitcode
 
 ## Introduction
 

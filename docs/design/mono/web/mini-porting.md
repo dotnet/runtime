@@ -1,8 +1,4 @@
----
-title: Porting the Engine
-redirect_from:
-  - /Mono%3ARuntime%3ADocumentation%3AMiniPorting/
----
+# Porting the Engine
 
 ## Introduction
 

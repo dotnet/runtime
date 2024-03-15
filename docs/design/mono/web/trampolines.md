@@ -1,8 +1,4 @@
----
-title: Trampolines
-redirect_from:
-  - /Mono%3ARuntime%3ADocumentation%3ATrampolines/
----
+# Trampolines
 
 Trampolines are small, hand-written pieces of assembly code used to perform various tasks in the mono runtime. They are generated at runtime using the native code generation macros used by the JIT. They usually have a corresponding C function they can fall back to if they need to perform a more complicated task. They can be viewed as ways to pass control from JITted code back to the runtime.
 

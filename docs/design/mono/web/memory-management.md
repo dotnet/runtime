@@ -1,8 +1,4 @@
----
-title: Memory Management
-redirect_from:
-  - /Mono%3ARuntime%3ADocumentation%3AMemoryManagement/
----
+# Memory Management
 
 Metadata memory management
 --------------------------

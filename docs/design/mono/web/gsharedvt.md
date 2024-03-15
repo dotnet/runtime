@@ -1,6 +1,4 @@
----
-title: Generic sharing for valuetypes
----
+# Generic sharing for valuetypes
 
 ## The problem
 

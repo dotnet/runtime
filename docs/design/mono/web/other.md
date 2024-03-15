@@ -1,8 +1,4 @@
----
-title: Other
-redirect_from:
-  - /Mono%3ARuntime%3ADocumentation%3AOther/
----
+# Other notes
 
 ## Faster runtime builds
 
