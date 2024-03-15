@@ -64,6 +64,13 @@ extern "C" {
 #define _cdecl
 #define CDECL
 
+// Some platforms (such as FreeBSD) define the __fastcall macro
+// on all targets, even when using it will fail.
+// Undefine it here so we can use it on all platforms without error.
+#ifdef __fastcall
+#undef __fastcall
+#endif
+
 #define __fastcall
 #define _fastcall
 
