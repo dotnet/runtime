@@ -35,7 +35,7 @@ extends:
           jobParameters:
             # Default timeout is 150 minutes (2.5 hours), which is not enough for stress.
             timeoutInMinutes: 660
-            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
+            buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
