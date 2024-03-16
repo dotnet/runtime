@@ -620,7 +620,7 @@ class AsyncSubprocessHelper:
                 loop = asyncio.new_event_loop()
 
             asyncio.set_event_loop(loop)
-            
+
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
         os.environ.clear()
         os.environ.update(reset_env)
@@ -1867,11 +1867,11 @@ def write_jit_options(coreclr_args, write_fh):
     Args:
         coreclr_args: args class instance
         write_fh: file to output to
-    
+
     """
     base_options = []
     diff_options = []
-    
+
     if coreclr_args.jitoption:
         base_options += coreclr_args.jitoption
         diff_options += coreclr_args.jitoption
@@ -4500,7 +4500,7 @@ def setup_args(args):
                             "produce_repro",
                             lambda unused: True,
                             "Unable to set produce_repro")
-        
+
         coreclr_args.verify(args,
                             "private_store",
                             lambda item: True,
@@ -4591,6 +4591,11 @@ def setup_args(args):
                             "compile",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Method context not valid")
+
+        coreclr_args.verify(args,
+                            "produce_repro",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Unable to set produce_repro")
 
         coreclr_args.verify(args,
                             "collection_command",
