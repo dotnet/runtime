@@ -115,6 +115,8 @@ def getLttngDataTypeMapping(runtimeFlavor):
         return coreCLRLttngDataTypeMapping
     elif runtimeFlavor.mono:
         return monoLttngDataTypeMapping
+    else:
+        return monoLttngDataTypeMapping
 
 ctfDataTypeMapping ={
         #constructed types
