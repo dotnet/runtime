@@ -3863,11 +3863,6 @@ max_d (double lhs, double rhs)
 		return fmax (lhs, rhs);
 }
 
-#if HOST_BROWSER
-// Dummy call info used outside of monitoring phase. We don't care what's in it
-static JiterpreterCallInfo jiterpreter_call_info = { 0 };
-#endif
-
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
@@ -7865,7 +7860,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 						// now execute the trace
 						// this isn't important for performance, but it makes it easier to use the
 						//  jiterpreter early in automated tests where code only runs once
-						offset = prepare_result (frame, locals, &jiterpreter_call_info, ip);
+						offset = prepare_result (frame, locals, NULL, ip);
 						ip = (guint16*) (((guint8*)ip) + offset);
 						break;
 				}
@@ -7888,7 +7883,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER) {
 			// The fn ptr is encoded in a guint16 relative to the index of the first trace fn ptr, so compute the actual ptr
 			JiterpreterThunk thunk = (JiterpreterThunk)(void *)(((JiterpreterOpcode *)ip)->relative_fn_ptr + mono_jiterp_first_trace_fn_ptr);
-			ptrdiff_t offset = thunk (frame, locals, &jiterpreter_call_info, ip);
+			ptrdiff_t offset = thunk (frame, locals, NULL, ip);
 			ip = (guint16*) (((guint8*)ip) + offset);
 			MINT_IN_BREAK;
 		}
