@@ -1151,13 +1151,25 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     //
     // Is the tree as GT_CAST or a GT_CALL ?
     //
-    if (tree->OperGet() == GT_CAST)
+    if (tree->OperIs(GT_CAST))
     {
         fromType = tree->CastToType();
     }
-    else if (tree->OperGet() == GT_CALL)
+    else if (tree->OperIs(GT_CALL))
     {
         fromType = (var_types)tree->AsCall()->gtReturnType;
+    }
+    else if (tree->OperIs(GT_LCL_VAR))
+    {
+        LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
+        if (varDsc->lvNormalizeOnStore())
+        {
+            fromType = varDsc->TypeGet();
+        }
+        else
+        {
+            fromType = tree->TypeGet();
+        }
     }
     else
     {
