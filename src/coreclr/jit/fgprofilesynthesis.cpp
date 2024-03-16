@@ -944,6 +944,15 @@ void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
     {
         for (EHblkDsc* const HBtab : EHClauses(m_comp))
         {
+            // Only set weights on the filter/hander entries
+            // if the associated try is reachable.
+            //
+            BasicBlock* const tryBlock = HBtab->ebdTryBeg;
+            if (!m_dfsTree->Contains(tryBlock))
+            {
+                continue;
+            }
+
             if (HBtab->HasFilter())
             {
                 HBtab->ebdFilter->setBBProfileWeight(ehWeight);
