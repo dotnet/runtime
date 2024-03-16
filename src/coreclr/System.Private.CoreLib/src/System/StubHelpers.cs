@@ -103,7 +103,7 @@ namespace System.StubHelpers
                     // + 1 for the null character from the user.  + 1 for the null character we put in.
                     pbNativeBuffer = (byte*)Marshal.AllocCoTaskMem(nb + 2);
 
-                    Buffer.Memmove(ref *pbNativeBuffer, ref MemoryMarshal.GetArrayDataReference(bytes), (nuint)nb);
+                    SpanHelpers.Memmove(ref *pbNativeBuffer, ref MemoryMarshal.GetArrayDataReference(bytes), (nuint)nb);
                 }
             }
 
@@ -360,7 +360,7 @@ namespace System.StubHelpers
 
                 Debug.Assert(nbytesused >= 0 && nbytesused < nbytes, "Insufficient buffer allocated in VBByValStrMarshaler.ConvertToNative");
 
-                Buffer.Memmove(ref *pNative, ref MemoryMarshal.GetArrayDataReference(bytes), (nuint)nbytesused);
+                SpanHelpers.Memmove(ref *pNative, ref MemoryMarshal.GetArrayDataReference(bytes), (nuint)nbytesused);
 
                 pNative[nbytesused] = 0;
                 *pLength = nbytesused;
@@ -409,7 +409,7 @@ namespace System.StubHelpers
             IntPtr bstr = Marshal.AllocBSTRByteLen(length);
             if (bytes != null)
             {
-                Buffer.Memmove(ref *(byte*)bstr, ref MemoryMarshal.GetArrayDataReference(bytes), length);
+                SpanHelpers.Memmove(ref *(byte*)bstr, ref MemoryMarshal.GetArrayDataReference(bytes), length);
             }
 
             return bstr;
@@ -1484,7 +1484,7 @@ namespace System.StubHelpers
             }
             else
             {
-                Buffer.Memmove(ref *pNative, ref obj.GetRawData(), size);
+                SpanHelpers.Memmove(ref *pNative, ref obj.GetRawData(), size);
             }
         }
 
@@ -1503,7 +1503,7 @@ namespace System.StubHelpers
             }
             else
             {
-                Buffer.Memmove(ref obj.GetRawData(), ref *pNative, size);
+                SpanHelpers.Memmove(ref obj.GetRawData(), ref *pNative, size);
             }
         }
 

@@ -5,7 +5,7 @@
     <PlatformPackageType>TargetingPack</PlatformPackageType>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <InstallerName>dotnet-targeting-pack</InstallerName>
-    <IsPackable Condition="'$(PgoInstrument)' != ''">false</IsPackable>
+    <IsPackable Condition="'$(BuildOnlyPgoInstrumentedAssets)' != ''">false</IsPackable>
     <VSInsertionShortComponentName>NetCore.TargetingPack</VSInsertionShortComponentName>
     <PackageDescription>A set of .NET APIs that are included in the default .NET application model. Contains reference assemblies, documentation, and other design-time assets.</PackageDescription>
   </PropertyGroup>

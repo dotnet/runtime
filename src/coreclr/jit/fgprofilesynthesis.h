@@ -58,7 +58,6 @@ private:
     weight_t SumOutgoingLikelihoods(BasicBlock* block, WeightVector* likelihoods = nullptr);
 
     void AssignLikelihoods();
-    void AssignLikelihoodNext(BasicBlock* block);
     void AssignLikelihoodJump(BasicBlock* block);
     void AssignLikelihoodCond(BasicBlock* block);
     void AssignLikelihoodSwitch(BasicBlock* block);

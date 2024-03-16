@@ -100,6 +100,9 @@ function monoWorkerMessageHandler(worker: PThreadWorker, ev: MessageEvent<any>):
         case WorkerToMainMessageType.deputyStarted:
             runtimeHelpers.afterMonoStarted.promise_control.resolve(message.deputyProxyGCHandle);
             break;
+        case WorkerToMainMessageType.ioStarted:
+            runtimeHelpers.afterIOStarted.promise_control.resolve();
+            break;
         case WorkerToMainMessageType.deputyFailed:
             runtimeHelpers.afterMonoStarted.promise_control.reject(new Error(message.error));
             break;
@@ -182,7 +185,7 @@ export function cancelThreads() {
     }
 }
 
-export function dumpThreads(): void {
+export function mono_wasm_dump_threads(): void {
     if (!WasmEnableThreads) return;
     mono_log_info("Dumping web worker info as seen by UI thread, it could be stale: ");
     const emptyInfo: PThreadInfo = {
@@ -278,7 +281,7 @@ export function replaceEmscriptenPThreadUI(modulePThread: PThreadLibrary): void 
         }
     };
     if (BuildConfiguration === "Debug") {
-        (globalThis as any).dumpThreads = dumpThreads;
+        (globalThis as any).dumpThreads = mono_wasm_dump_threads;
         (globalThis as any).getModulePThread = getModulePThread;
     }
 }

@@ -1,6 +1,6 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-	"name": "WASM development (prebuilt)",
+	"name": "WASM singlethreaded development (prebuilt)",
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {

@@ -570,8 +570,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 LowerStoreSingleRegCallStruct(node->AsBlk());
                 break;
             }
-            FALLTHROUGH;
-        case GT_STORE_DYN_BLK:
             LowerBlockStoreCommon(node->AsBlk());
             break;
 
@@ -861,7 +859,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     {
         JITDUMP("Lowering switch " FMT_BB ": single target; converting to BBJ_ALWAYS\n", originalSwitchBB->bbNum);
         noway_assert(comp->opts.OptimizationDisabled());
-        originalSwitchBB->SetKindAndTarget(BBJ_ALWAYS, jumpTab[0]->getDestinationBlock());
+        originalSwitchBB->SetKindAndTargetEdge(BBJ_ALWAYS, jumpTab[0]);
 
         if (originalSwitchBB->JumpsToNext())
         {
@@ -951,7 +949,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // originalSwitchBB is now a BBJ_ALWAYS, and there is a predecessor edge in afterDefaultCondBlock
     // representing the fall-through flow from originalSwitchBB.
     assert(originalSwitchBB->KindIs(BBJ_ALWAYS));
-    assert(originalSwitchBB->NextIs(afterDefaultCondBlock));
+    assert(originalSwitchBB->TargetIs(afterDefaultCondBlock));
+    assert(originalSwitchBB->JumpsToNext());
     assert(afterDefaultCondBlock->KindIs(BBJ_SWITCH));
     assert(afterDefaultCondBlock->GetSwitchTargets()->bbsHasDefault);
     assert(afterDefaultCondBlock->isEmpty()); // Nothing here yet.
@@ -961,11 +960,23 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // Fix the pred for the default case: the default block target still has originalSwitchBB
     // as a predecessor, but the fgSplitBlockAfterStatement() moved all predecessors to point
     // to afterDefaultCondBlock.
-    comp->fgRemoveRefPred(jumpTab[jumpCnt - 1]);
-    comp->fgAddRefPred(defaultBB, originalSwitchBB, jumpTab[jumpCnt - 1]);
+
+    // Note defaultEdge may also be the edge for some switch cases. We only probe edges,
+    // so assume each possibility is equally likely.
+    FlowEdge* const defaultEdge       = jumpTab[jumpCnt - 1];
+    weight_t const  defaultLikelihood = defaultEdge->getLikelihood() / defaultEdge->getDupCount();
+    comp->fgRemoveRefPred(defaultEdge);
+    FlowEdge* const trueEdge = comp->fgAddRefPred(defaultBB, originalSwitchBB);
+    trueEdge->setLikelihood(defaultLikelihood);
+    defaultEdge->setLikelihood(defaultEdge->getLikelihood() - defaultLikelihood);
 
     // Turn originalSwitchBB into a BBJ_COND.
-    originalSwitchBB->SetCond(defaultBB, afterDefaultCondBlock);
+    FlowEdge* const falseEdge        = originalSwitchBB->GetTargetEdge();
+    weight_t const  switchLikelihood = 1.0 - defaultLikelihood;
+    falseEdge->setLikelihood(switchLikelihood);
+    originalSwitchBB->SetCond(trueEdge, falseEdge);
+    afterDefaultCondBlock->inheritWeight(originalSwitchBB);
+    afterDefaultCondBlock->scaleBBWeight(switchLikelihood);
 
     bool useJumpSequence = jumpCnt < minSwitchTabJumpCnt;
 
@@ -1014,7 +1025,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             comp->fgRemoveRefPred(uniqueSucc);
         }
 
-        afterDefaultCondBlock->SetKindAndTarget(BBJ_ALWAYS, uniqueSucc->getDestinationBlock());
+        afterDefaultCondBlock->SetKindAndTargetEdge(BBJ_ALWAYS, uniqueSucc);
 
         if (afterDefaultCondBlock->JumpsToNext())
         {
@@ -1047,14 +1058,36 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         // If no case target follows, the last one doesn't need to be a compare/branch: it can be an
         // unconditional branch.
         bool fAnyTargetFollows = false;
+
+        // We need to track how much of the original switch's likelihood has already been
+        // tested for.  We'll use this to adjust the likelihood of the branches we're adding.
+        // So far we've tested for the default case, so we'll start with that.
+        weight_t totalTestLikelihood = defaultLikelihood;
         for (unsigned i = 0; i < jumpCnt - 1; ++i)
         {
             assert(currentBlock != nullptr);
-            BasicBlock* targetBlock = jumpTab[i]->getDestinationBlock();
+            BasicBlock* const targetBlock = jumpTab[i]->getDestinationBlock();
 
             // Remove the switch from the predecessor list of this case target's block.
             // We'll add the proper new predecessor edge later.
-            comp->fgRemoveRefPred(jumpTab[i]);
+            FlowEdge* const oldEdge = jumpTab[i];
+
+            // Compute the likelihood that this test is successful.
+            // Divide by number of cases still sharing this edge (reduces likelihood)
+            // Divide by likelihood of reaching this test (increases likelihood).
+            // But if there is little chance of reaching this test, set the likelihood to 0.5
+            //
+            weight_t const edgeLikelihood          = oldEdge->getLikelihood();
+            weight_t const caseLikelihood          = edgeLikelihood / oldEdge->getDupCount();
+            bool const     unlikelyToReachThisCase = Compiler::fgProfileWeightsEqual(totalTestLikelihood, 1.0, 0.001);
+            weight_t const adjustedCaseLikelihood =
+                unlikelyToReachThisCase ? 0.5 : min(1.0, caseLikelihood / (1.0 - totalTestLikelihood));
+            comp->fgRemoveRefPred(oldEdge);
+
+            // Decrement the likelihood on the old edge, so if other cases are sharing it,
+            // they get the right values later.
+            //
+            oldEdge->setLikelihood(edgeLikelihood - caseLikelihood);
 
             if (targetBlock == followingBB)
             {
@@ -1065,23 +1098,56 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
             // We need a block to put in the new compare and/or branch.
             // If we haven't used the afterDefaultCondBlock yet, then use that.
+            //
             if (fUsedAfterDefaultCondBlock)
             {
-                BasicBlock* newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true, currentBlock->Next());
+                BasicBlock* newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
                 newBlock->SetFlags(BBF_NONE_QUIRK);
-                currentBlock->SetFalseTarget(newBlock);
-                comp->fgAddRefPred(newBlock, currentBlock); // The fall-through predecessor.
+                FlowEdge* const falseEdge = comp->fgAddRefPred(newBlock, currentBlock); // The fall-through predecessor.
+
+                // We set the true edge likelihood earlier, use that to figure out the false edge likelihood
+                // and the block weight.
+                //
+                FlowEdge* const trueEdge        = currentBlock->GetTrueEdge();
+                weight_t const  falseLikelihood = 1.0 - trueEdge->getLikelihood();
+                falseEdge->setLikelihood(falseLikelihood);
+                currentBlock->SetFalseEdge(falseEdge);
+                newBlock->inheritWeight(currentBlock);
+                newBlock->scaleBBWeight(falseLikelihood);
                 currentBlock   = newBlock;
                 currentBBRange = &LIR::AsRange(currentBlock);
             }
             else
             {
                 assert(currentBlock == afterDefaultCondBlock);
+
+                // If the first switch case we peel off has the same target as
+                // other cases (that is, it has nonzero dup count, it's simpler to
+                // just make a new here block, so that as we peel off cases,
+                // we're not sharing edges with the original switch.
+                //
+                // That is, the call to fgAddRefPred below always creates a new edge.
+                //
+                if (oldEdge->getDupCount() > 0)
+                {
+                    BasicBlock* const newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
+                    newBlock->SetFlags(BBF_NONE_QUIRK);
+                    FlowEdge* const newEdge = comp->fgAddRefPred(newBlock, currentBlock);
+                    currentBlock            = newBlock;
+                    currentBBRange          = &LIR::AsRange(currentBlock);
+                    afterDefaultCondBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                }
+
                 fUsedAfterDefaultCondBlock = true;
             }
 
+            // Update the total test case likelihood.
+            totalTestLikelihood += caseLikelihood;
+
             // Wire up the predecessor list for the "branch" case.
-            comp->fgAddRefPred(targetBlock, currentBlock, jumpTab[i]);
+            FlowEdge* const newEdge = comp->fgAddRefPred(targetBlock, currentBlock, oldEdge);
+            // This should truly be a new edge.
+            assert(newEdge->getDupCount() == 1);
 
             if (!fAnyTargetFollows && (i == jumpCnt - 2))
             {
@@ -1090,13 +1156,15 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 // case: there is no need to compare against the case index, since it's
                 // guaranteed to be taken (since the default case was handled first, above).
 
-                currentBlock->SetKindAndTarget(BBJ_ALWAYS, targetBlock);
+                currentBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
             }
             else
             {
                 // Otherwise, it's a conditional branch. Set the branch kind, then add the
                 // condition statement.
-                currentBlock->SetCond(targetBlock, currentBlock->Next());
+                // We will set the false edge in a later iteration of the loop, or after.
+                currentBlock->SetCond(newEdge);
+                newEdge->setLikelihood(adjustedCaseLikelihood);
 
                 // Now, build the conditional statement for the current case that is
                 // being evaluated:
@@ -1118,7 +1186,14 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             // There is a fall-through to the following block. In the loop
             // above, we deleted all the predecessor edges from the switch.
             // In this case, we need to add one back.
-            comp->fgAddRefPred(currentBlock->Next(), currentBlock);
+            FlowEdge* const falseEdge = comp->fgAddRefPred(currentBlock->Next(), currentBlock);
+            currentBlock->SetFalseEdge(falseEdge);
+            FlowEdge* const trueEdge        = currentBlock->GetTrueEdge();
+            weight_t const  falseLikelihood = 1.0 - trueEdge->getLikelihood();
+            falseEdge->setLikelihood(falseLikelihood);
+
+            // The following block weight should remain unchanged. All we've done
+            // is alter the various paths that can reach it.
         }
 
         if (!fUsedAfterDefaultCondBlock)
@@ -1129,7 +1204,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             JITDUMP("Lowering switch " FMT_BB ": all switch cases were fall-through\n", originalSwitchBB->bbNum);
             assert(currentBlock == afterDefaultCondBlock);
             assert(currentBlock->KindIs(BBJ_SWITCH));
-            currentBlock->SetKindAndTarget(BBJ_ALWAYS, currentBlock->Next());
+            FlowEdge* const newEdge = comp->fgAddRefPred(currentBlock->Next(), currentBlock);
+            currentBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
             currentBlock->RemoveFlags(BBF_DONT_REMOVE);
             comp->fgRemoveBlock(currentBlock, /* unreachable */ false); // It's an empty block.
         }
@@ -1143,9 +1219,14 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         LIR::Range& switchBlockRange = LIR::AsRange(afterDefaultCondBlock);
         switchBlockRange.InsertAtEnd(switchValue);
 
+        // We are going to modify the switch, invalidate any desc map.
+        //
+        comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
+
         // Try generating a bit test based switch first,
         // if that's not possible a jump table based switch will be generated.
-        if (!TryLowerSwitchToBitTest(jumpTab, jumpCnt, targetCnt, afterDefaultCondBlock, switchValue))
+        if (!TryLowerSwitchToBitTest(jumpTab, jumpCnt, targetCnt, afterDefaultCondBlock, switchValue,
+                                     defaultLikelihood))
         {
             JITDUMP("Lowering switch " FMT_BB ": using jump table expansion\n", originalSwitchBB->bbNum);
 
@@ -1165,9 +1246,49 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
             // this block no longer branches to the default block
             afterDefaultCondBlock->GetSwitchTargets()->removeDefault();
-        }
 
-        comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
+            // We need to scale up the likelihood of the remaining switch edges, now that we've peeled off
+            // the default case. But if the remaining likelihood is zero (default likelihood was 1.0),
+            // we don't know the case likelihoods. Instead, divide likelihood evenly among all cases.
+            //
+            // First, rebuild the unique succ set
+            //
+            Compiler::SwitchUniqueSuccSet successors = comp->GetDescriptorForSwitch(afterDefaultCondBlock);
+
+            // Then fix each successor edge
+            //
+            if (Compiler::fgProfileWeightsEqual(defaultLikelihood, 1.0, 0.001))
+            {
+                JITDUMP("Zero weight switch block " FMT_BB ", distributing likelihoods equally per case\n",
+                        afterDefaultCondBlock->bbNum);
+                // jumpCnt-1 here because we peeled the default after copying this value.
+                weight_t const newLikelihood = 1.0 / (jumpCnt - 1);
+                for (unsigned i = 0; i < successors.numDistinctSuccs; i++)
+                {
+                    FlowEdge* const edge = successors.nonDuplicates[i];
+                    edge->setLikelihood(newLikelihood * edge->getDupCount());
+                }
+            }
+            else
+            {
+                weight_t const scaleFactor = 1.0 / (1.0 - defaultLikelihood);
+                JITDUMP("Scaling switch block " FMT_BB " likelihoods by " FMT_WT "\n", afterDefaultCondBlock->bbNum,
+                        scaleFactor);
+                for (unsigned i = 0; i < successors.numDistinctSuccs; i++)
+                {
+                    FlowEdge* const edge          = successors.nonDuplicates[i];
+                    weight_t        newLikelihood = scaleFactor * edge->getLikelihood();
+
+                    if (newLikelihood > 1.0)
+                    {
+                        // tolerate small overflows
+                        assert(Compiler::fgProfileWeightsEqual(newLikelihood, 1.0, 0.001));
+                        newLikelihood = 1.0;
+                    }
+                    edge->setLikelihood(newLikelihood);
+                }
+            }
+        }
     }
 
     GenTree* next = node->gtNext;
@@ -1188,6 +1309,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 //    targetCount - The number of distinct blocks in the jump table
 //    bbSwitch - The switch block
 //    switchValue - A LclVar node that provides the switch value
+//    defaultLikelihood - likelihood control flow took the default case (already checked)
 //
 // Return value:
 //    true if the switch has been lowered to a bit test
@@ -1208,8 +1330,12 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 //    than the traditional jump table base code. And of course, it also avoids the need
 //    to emit the jump table itself that can reach up to 256 bytes (for 64 entries).
 //
-bool Lowering::TryLowerSwitchToBitTest(
-    FlowEdge* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue)
+bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
+                                       unsigned    jumpCount,
+                                       unsigned    targetCount,
+                                       BasicBlock* bbSwitch,
+                                       GenTree*    switchValue,
+                                       weight_t    defaultLikelihood)
 {
     assert(jumpCount >= 2);
     assert(targetCount >= 2);
@@ -1283,6 +1409,8 @@ bool Lowering::TryLowerSwitchToBitTest(
         return false;
     }
 
+    JITDUMP("Lowering switch " FMT_BB " to bit test\n", bbSwitch->bbNum);
+
 #if defined(TARGET_64BIT) && defined(TARGET_XARCH)
     //
     // See if we can avoid a 8 byte immediate on 64 bit targets. If all upper 32 bits are 1
@@ -1307,11 +1435,33 @@ bool Lowering::TryLowerSwitchToBitTest(
     comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
     comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
 
+    case0Edge = comp->fgAddRefPred(bbCase0, bbSwitch, case0Edge);
+    case1Edge = comp->fgAddRefPred(bbCase1, bbSwitch, case1Edge);
+
+    // If defaultLikelihood is not ~ 1.0
+    //   up-scale case likelihoods by 1.0 / (1.0 - defaultLikelihood)
+    // else switch block weight should be zero
+    //   edge likelihoods are unknown, use 0.5
+    //
+    bool const likelyToReachSwitch = !Compiler::fgProfileWeightsEqual(defaultLikelihood, 1.0, 0.001);
+
+    if (likelyToReachSwitch)
+    {
+        weight_t const scaleFactor = 1.0 / (1.0 - defaultLikelihood);
+        case0Edge->setLikelihood(min(1.0, scaleFactor * case0Edge->getLikelihood()));
+        case1Edge->setLikelihood(min(1.0, scaleFactor * case1Edge->getLikelihood()));
+    }
+    else
+    {
+        case0Edge->setLikelihood(0.5);
+        case1Edge->setLikelihood(0.5);
+    }
+
     if (bbSwitch->NextIs(bbCase0))
     {
         // GenCondition::C generates JC so we jump to bbCase1 when the bit is set
         bbSwitchCondition = GenCondition::C;
-        bbSwitch->SetCond(bbCase1, bbCase0);
+        bbSwitch->SetCond(case1Edge, case0Edge);
     }
     else
     {
@@ -1319,12 +1469,8 @@ bool Lowering::TryLowerSwitchToBitTest(
 
         // GenCondition::NC generates JNC so we jump to bbCase0 when the bit is not set
         bbSwitchCondition = GenCondition::NC;
-        bbSwitch->SetCond(bbCase0, bbCase1);
+        bbSwitch->SetCond(case0Edge, case1Edge);
     }
-
-    // TODO: Use old edges to influence new edge likelihoods?
-    comp->fgAddRefPred(bbCase0, bbSwitch);
-    comp->fgAddRefPred(bbCase1, bbSwitch);
 
     var_types bitTableType = (bitCount <= (genTypeSize(TYP_INT) * 8)) ? TYP_INT : TYP_LONG;
     GenTree*  bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);
@@ -1842,6 +1988,157 @@ GenTree* Lowering::AddrGen(void* addr)
     return AddrGen((ssize_t)addr);
 }
 
+// LowerCallMemset: Replaces the following memset-like special intrinsics:
+//
+//    SpanHelpers.Fill<T>(ref dstRef, CNS_SIZE, CNS_VALUE)
+//    CORINFO_HELP_MEMSET(ref dstRef, CNS_VALUE, CNS_SIZE)
+//    SpanHelpers.ClearWithoutReferences(ref dstRef, CNS_SIZE)
+//
+//  with a GT_STORE_BLK node:
+//
+//    *  STORE_BLK struct<CNS_SIZE> (init) (Unroll)
+//    +--*  LCL_VAR   byref  dstRef
+//    \--*  CNS_INT   int    0
+//
+// Arguments:
+//    tree - GenTreeCall node to replace with STORE_BLK
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
+{
+    assert(call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_Fill) ||
+           call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_ClearWithoutReferences) ||
+           call->IsHelperCall(comp, CORINFO_HELP_MEMSET));
+
+    JITDUMP("Considering Memset-like call [%06d] for unrolling.. ", comp->dspTreeID(call))
+
+    if (comp->info.compHasNextCallRetAddr)
+    {
+        JITDUMP("compHasNextCallRetAddr=true so we won't be able to remove the call - bail out.\n");
+        return false;
+    }
+
+    GenTree* dstRefArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+    GenTree* lengthArg;
+    GenTree* valueArg;
+
+    // Fill<T>'s length is not in bytes, so we need to scale it depending on the signature
+    unsigned lengthScale;
+
+    if (call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_Fill))
+    {
+        // void SpanHelpers::Fill<T>(ref T refData, nuint numElements, T value)
+        //
+        assert(call->gtArgs.CountUserArgs() == 3);
+        lengthArg             = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        CallArg* valueCallArg = call->gtArgs.GetUserArgByIndex(2);
+        valueArg              = valueCallArg->GetNode();
+
+        // Get that <T> from the signature
+        lengthScale = genTypeSize(valueCallArg->GetSignatureType());
+        // NOTE: structs and TYP_REF will be ignored by the "Value is not a constant" check
+        // Some of those cases can be enabled in future, e.g. s
+    }
+    else if (call->IsHelperCall(comp, CORINFO_HELP_MEMSET))
+    {
+        // void CORINFO_HELP_MEMSET(ref T refData, byte value, nuint numElements)
+        //
+        assert(call->gtArgs.CountUserArgs() == 3);
+        lengthArg   = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+        valueArg    = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        lengthScale = 1; // it's always in bytes
+    }
+    else
+    {
+        // void SpanHelpers::ClearWithoutReferences(ref byte b, nuint byteLength)
+        //
+        assert(call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_ClearWithoutReferences));
+        assert(call->gtArgs.CountUserArgs() == 2);
+
+        // Simple zeroing
+        lengthArg   = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        valueArg    = comp->gtNewZeroConNode(TYP_INT);
+        lengthScale = 1; // it's always in bytes
+    }
+
+    if (!lengthArg->IsIntegralConst())
+    {
+        JITDUMP("Length is not a constant - bail out.\n");
+        return false;
+    }
+
+    if (!valueArg->IsCnsIntOrI() || !valueArg->TypeIs(TYP_INT))
+    {
+        JITDUMP("Value is not a constant - bail out.\n");
+        return false;
+    }
+
+    // If value is not zero, we can only unroll for single-byte values
+    if (!valueArg->IsIntegralConst(0) && (lengthScale != 1))
+    {
+        JITDUMP("Value is not unroll-friendly - bail out.\n");
+        return false;
+    }
+
+    // Convert lenCns to bytes
+    ssize_t lenCns = lengthArg->AsIntCon()->IconValue();
+    if (CheckedOps::MulOverflows((target_ssize_t)lenCns, (target_ssize_t)lengthScale, CheckedOps::Signed))
+    {
+        // lenCns overflows
+        JITDUMP("lenCns * lengthScale overflows - bail out.\n")
+        return false;
+    }
+    lenCns *= (ssize_t)lengthScale;
+
+    // TODO-CQ: drop the whole thing in case of lenCns = 0
+    if ((lenCns <= 0) || (lenCns > (ssize_t)comp->getUnrollThreshold(Compiler::UnrollKind::Memset)))
+    {
+        JITDUMP("Size is either 0 or too big to unroll - bail out.\n")
+        return false;
+    }
+
+    JITDUMP("Accepted for unrolling!\nOld tree:\n");
+    DISPTREERANGE(BlockRange(), call);
+
+    if (!valueArg->IsIntegralConst(0))
+    {
+        // Non-zero (byte) value, wrap value with GT_INIT_VAL
+        GenTree* initVal = valueArg;
+        valueArg         = comp->gtNewOperNode(GT_INIT_VAL, TYP_INT, initVal);
+        BlockRange().InsertAfter(initVal, valueArg);
+    }
+
+    GenTreeBlk* storeBlk =
+        comp->gtNewStoreBlkNode(comp->typGetBlkLayout((unsigned)lenCns), dstRefArg, valueArg, GTF_IND_UNALIGNED);
+    storeBlk->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+
+    // Insert/Remove trees into LIR
+    BlockRange().InsertBefore(call, storeBlk);
+    if (call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_ClearWithoutReferences))
+    {
+        // Value didn't exist in LIR previously
+        BlockRange().InsertBefore(storeBlk, valueArg);
+    }
+
+    // Remove the call and mark everything as unused ...
+    BlockRange().Remove(call, true);
+    // ... except the args we're going to re-use
+    dstRefArg->ClearUnusedValue();
+    valueArg->ClearUnusedValue();
+    if (valueArg->OperIs(GT_INIT_VAL))
+    {
+        valueArg->gtGetOp1()->ClearUnusedValue();
+    }
+
+    JITDUMP("\nNew tree:\n");
+    DISPTREERANGE(BlockRange(), storeBlk);
+    *next = storeBlk;
+    return true;
+}
+
 //------------------------------------------------------------------------
 // LowerCallMemmove: Replace Buffer.Memmove(DST, SRC, CNS_SIZE) with a GT_STORE_BLK:
 //    Do the same for CORINFO_HELP_MEMCPY(DST, SRC, CNS_SIZE)
@@ -1862,7 +2159,7 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 {
     JITDUMP("Considering Memmove [%06d] for unrolling.. ", comp->dspTreeID(call))
     assert(call->IsHelperCall(comp, CORINFO_HELP_MEMCPY) ||
-           (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove));
+           (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_SpanHelpers_Memmove));
 
     assert(call->gtArgs.CountUserArgs() == 3);
 
@@ -2221,16 +2518,43 @@ GenTree* Lowering::LowerCall(GenTree* node)
     GenTree* nextNode = nullptr;
     if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
     {
-        NamedIntrinsic ni = comp->lookupNamedIntrinsic(call->gtCallMethHnd);
-        if (((ni == NI_System_Buffer_Memmove) && LowerCallMemmove(call, &nextNode)) ||
-            ((ni == NI_System_SpanHelpers_SequenceEqual) && LowerCallMemcmp(call, &nextNode)))
+        switch (comp->lookupNamedIntrinsic(call->gtCallMethHnd))
         {
-            return nextNode;
+            case NI_System_SpanHelpers_Memmove:
+                if (LowerCallMemmove(call, &nextNode))
+                {
+                    return nextNode;
+                }
+                break;
+
+            case NI_System_SpanHelpers_SequenceEqual:
+                if (LowerCallMemcmp(call, &nextNode))
+                {
+                    return nextNode;
+                }
+                break;
+
+            case NI_System_SpanHelpers_Fill:
+            case NI_System_SpanHelpers_ClearWithoutReferences:
+                if (LowerCallMemset(call, &nextNode))
+                {
+                    return nextNode;
+                }
+                break;
+
+            default:
+                break;
         }
     }
 
     // Try to lower CORINFO_HELP_MEMCPY to unrollable STORE_BLK
     if (call->IsHelperCall(comp, CORINFO_HELP_MEMCPY) && LowerCallMemmove(call, &nextNode))
+    {
+        return nextNode;
+    }
+
+    // Try to lower CORINFO_HELP_MEMSET to unrollable STORE_BLK
+    if (call->IsHelperCall(comp, CORINFO_HELP_MEMSET) && LowerCallMemset(call, &nextNode))
     {
         return nextNode;
     }
@@ -5819,6 +6143,26 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
         InsertPInvokeCallEpilog(call);
     }
 
+#ifdef SWIFT_SUPPORT
+    // For Swift calls that require error handling, ensure the GT_SWIFT_ERROR node
+    // that consumes the error register is the call node's successor.
+    // This is to simplify logic for marking the error register as busy in LSRA.
+    if (call->HasSwiftErrorHandling())
+    {
+        GenTree* swiftErrorNode = call->gtNext;
+        assert(swiftErrorNode != nullptr);
+
+        while (!swiftErrorNode->OperIs(GT_SWIFT_ERROR))
+        {
+            swiftErrorNode = swiftErrorNode->gtNext;
+            assert(swiftErrorNode != nullptr);
+        }
+
+        BlockRange().Remove(swiftErrorNode);
+        BlockRange().InsertAfter(call, swiftErrorNode);
+    }
+#endif // SWIFT_SUPPORT
+
     return result;
 }
 
@@ -7930,24 +8274,27 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
         }
     }
 
-    if (blkNode->OperIs(GT_STORE_DYN_BLK))
-    {
-        // Size is not a constant
-        size = blkNode->AsStoreDynBlk()->gtDynamicSize;
-    }
-    else
-    {
-        // Size is a constant
-        size = comp->gtNewIconNode(blkNode->Size(), TYP_I_IMPL);
-        BlockRange().InsertBefore(data, size);
-    }
+    // Size is a constant
+    size = comp->gtNewIconNode(blkNode->Size(), TYP_I_IMPL);
+    BlockRange().InsertBefore(data, size);
 
     // A hacky way to safely call fgMorphTree in Lower
     GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
     GenTree* dataPlaceholder = comp->gtNewZeroConNode(genActualType(data));
     GenTree* sizePlaceholder = comp->gtNewZeroConNode(genActualType(size));
 
-    GenTreeCall* call = comp->gtNewHelperCallNode(helper, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
+    const bool isMemzero = helper == CORINFO_HELP_MEMSET ? data->IsIntegralConst(0) : false;
+
+    GenTreeCall* call;
+    if (isMemzero)
+    {
+        BlockRange().Remove(data);
+        call = comp->gtNewHelperCallNode(CORINFO_HELP_MEMZERO, TYP_VOID, destPlaceholder, sizePlaceholder);
+    }
+    else
+    {
+        call = comp->gtNewHelperCallNode(helper, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
+    }
     comp->fgMorphArgs(call);
 
     LIR::Range range      = LIR::SeqTree(comp, call);
@@ -7958,17 +8305,21 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     blkNode->gtBashToNOP();
 
     LIR::Use destUse;
-    LIR::Use dataUse;
     LIR::Use sizeUse;
     BlockRange().TryGetUse(destPlaceholder, &destUse);
-    BlockRange().TryGetUse(dataPlaceholder, &dataUse);
     BlockRange().TryGetUse(sizePlaceholder, &sizeUse);
     destUse.ReplaceWith(dest);
-    dataUse.ReplaceWith(data);
     sizeUse.ReplaceWith(size);
     destPlaceholder->SetUnusedValue();
-    dataPlaceholder->SetUnusedValue();
     sizePlaceholder->SetUnusedValue();
+
+    if (!isMemzero)
+    {
+        LIR::Use dataUse;
+        BlockRange().TryGetUse(dataPlaceholder, &dataUse);
+        dataUse.ReplaceWith(data);
+        dataPlaceholder->SetUnusedValue();
+    }
 
     LowerRange(rangeStart, rangeEnd);
 
@@ -7977,8 +8328,11 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     MoveCFGCallArgs(call);
 
     BlockRange().Remove(destPlaceholder);
-    BlockRange().Remove(dataPlaceholder);
     BlockRange().Remove(sizePlaceholder);
+    if (!isMemzero)
+    {
+        BlockRange().Remove(dataPlaceholder);
+    }
 
 // Wrap with memory barriers on weak memory models
 // if the block store was volatile
@@ -8888,6 +9242,36 @@ void Lowering::UnmarkTree(GenTree* node)
 #endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
+// IsContainableLclAddr: Can a given local address be contained?
+//
+// Most local addresses can be contained, however, there are two edge cases
+// where this is not true:
+// 1. When the resulting memory access will go beyond the local's location.
+// 2. When the resulting access may go past a UINT16_MAX.
+// Both of these requirements are imposed by the emitter.
+//
+// Arguments:
+//    lclAddr    - The local address node
+//    accessSize - The access size (of an indirection)
+//
+// Return Value:
+//    Whether an indirection of "accessSize" may contain "lclAddr".
+//
+bool Lowering::IsContainableLclAddr(GenTreeLclFld* lclAddr, unsigned accessSize) const
+{
+    if (CheckedOps::AddOverflows<int32_t>(lclAddr->GetLclOffs(), accessSize, CheckedOps::Unsigned) ||
+        !comp->IsValidLclAddr(lclAddr->GetLclNum(), lclAddr->GetLclOffs() + accessSize - 1))
+    {
+        // We depend on containment for correctness of liveness updates in codegen. Therefore, all
+        // locals that may "return false" here MUST be address-exposed. Local morph ensures this.
+        assert(comp->lvaGetDesc(lclAddr)->IsAddressExposed());
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // TransformUnusedIndirection: change the opcode and the type of the unused indirection.
 //
 // Arguments:
@@ -9011,13 +9395,10 @@ void Lowering::LowerLclHeap(GenTree* node)
 //
 void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
-    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
+    assert(blkNode->OperIs(GT_STORE_BLK));
 
     if (blkNode->ContainsReferences() && !blkNode->OperIsCopyBlkOp())
     {
-        // Make sure we don't use GT_STORE_DYN_BLK
-        assert(blkNode->OperIs(GT_STORE_BLK));
-
         // and we only zero it (and that zero is better to be not hoisted/CSE'd)
         assert(blkNode->Data()->IsIntegralConst(0));
     }
@@ -9053,13 +9434,8 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 //
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
-    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
+    assert(blkNode->OperIs(GT_STORE_BLK));
     if (!comp->opts.OptimizationEnabled())
-    {
-        return false;
-    }
-
-    if (blkNode->OperIs(GT_STORE_DYN_BLK))
     {
         return false;
     }
