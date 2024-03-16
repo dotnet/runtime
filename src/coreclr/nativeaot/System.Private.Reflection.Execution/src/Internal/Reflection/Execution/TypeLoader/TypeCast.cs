@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
@@ -21,6 +22,8 @@ namespace Internal.Reflection.Execution
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // This is not a general purpose type comparison facility. It is limited to what constraint validation needs.
+    [StackTraceHidden]
+    [DebuggerStepThrough]
     internal static partial class ConstraintValidator
     {
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
