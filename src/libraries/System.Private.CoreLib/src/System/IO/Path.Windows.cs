@@ -349,8 +349,8 @@ namespace System.IO
             if (!isDevice && path.Slice(0, 2).EqualsOrdinal(@"\\".AsSpan()))
                 return 2;
             else if (isDevice && path.Length >= 8
-                && (path.Slice(0, 8).EqualsOrdinal(PathInternal.UncExtendedPathPrefix.AsSpan())
-                || path.Slice(5, 4).EqualsOrdinal(@"UNC\".AsSpan())))
+                && (path.Slice(0, 8).EqualsOrdinalIgnoreCase(PathInternal.UncExtendedPathPrefix.AsSpan())
+                || path.Slice(5, 4).EqualsOrdinalIgnoreCase(@"UNC\".AsSpan())))
                 return 8;
 
             return -1;
