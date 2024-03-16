@@ -269,12 +269,6 @@ DEFINE_METHOD(DOUBLE,               CONVERT_TO_INT64_CHECKED,ConvertToInt64Check
 DEFINE_METHOD(DOUBLE,               CONVERT_TO_UINT64_CHECKED,ConvertToUInt64Checked,   NoSig)
 DEFINE_METHOD(DOUBLE,               CONVERT_FROM_INT64,     ConvertFromInt64,           NoSig)
 DEFINE_METHOD(DOUBLE,               CONVERT_FROM_UINT64,    ConvertFromUInt64,          NoSig)
-DEFINE_METHOD(DOUBLE,               REMAINDER,              Remainder,                  NoSig)
-
-#ifdef FOR_ILLINK
-DEFINE_CLASS(SINGLE,                System,                 Single)
-#endif
-DEFINE_METHOD(SINGLE,               REMAINDER,              Remainder,                  NoSig)
 
 #ifdef FOR_ILLINK
 DEFINE_CLASS(INT64,                 System,                 Int64)
@@ -291,9 +285,11 @@ DEFINE_CLASS(UINT128,               System,                 UInt128)
 
 DEFINE_CLASS(MATH,                  System,                 Math)
 DEFINE_METHOD(MATH,                 ROUND,                  Round,                      SM_Dbl_RetDbl)
+DEFINE_METHOD(MATH,                 FMOD,                   FMod,                       NoSig)
 
 DEFINE_CLASS(MATHF,                 System,                 MathF)
 DEFINE_METHOD(MATHF,                ROUND,                  Round,                      SM_Flt_RetFlt)
+DEFINE_METHOD(MATHF,                FMOD,                   FMod,                       NoSig)
 
 DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
 DEFINE_CLASS(DYNAMICRESOLVER,       ReflectionEmit,         DynamicResolver)

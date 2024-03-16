@@ -185,11 +185,11 @@ void ECall::PopulateManagedHelpers()
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ULNG2DBL, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__REMAINDER));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__FMOD));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_DBLREM, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SINGLE__REMAINDER));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATHF__FMOD));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_FLTREM, pDest);
 

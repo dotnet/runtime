@@ -117,7 +117,7 @@ namespace System
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern double FMod(double x, double y);
+        private static extern double FMod(double x, double y);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe double ModF(double x, double* intptr);

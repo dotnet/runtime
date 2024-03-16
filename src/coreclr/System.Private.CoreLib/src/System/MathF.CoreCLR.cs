@@ -114,7 +114,7 @@ namespace System
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern float FMod(float x, float y);
+        private static extern float FMod(float x, float y);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe float ModF(float x, float* intptr);

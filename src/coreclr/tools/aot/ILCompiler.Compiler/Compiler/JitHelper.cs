@@ -188,13 +188,6 @@ namespace ILCompiler
                     methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("ConvertFromUInt64", null);
                     break;
 
-                case ReadyToRunHelper.DblRem:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Double").GetKnownMethod("Remainder", null);
-                    break;
-                case ReadyToRunHelper.FltRem:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Single").GetKnownMethod("Remainder", null);
-                    break;
-
                 case ReadyToRunHelper.LMulOfv:
                     methodDesc = context.SystemModule.GetKnownType("System", "Int64").GetKnownMethod("MultiplyChecked", null);
                     break;
@@ -211,6 +204,13 @@ namespace ILCompiler
                     DefType floatType = context.GetWellKnownType(WellKnownType.Single);
                     methodDesc = context.SystemModule.GetKnownType("System", "MathF").GetKnownMethod("Round",
                         new MethodSignature(MethodSignatureFlags.Static, 0, floatType, [floatType]));
+                    break;
+
+                case ReadyToRunHelper.DblRem:
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("FMod", null);
+                    break;
+                case ReadyToRunHelper.FltRem:
+                    methodDesc = context.SystemModule.GetKnownType("System", "MathF").GetKnownMethod("FMod", null);
                     break;
 
                 case ReadyToRunHelper.Dbl2Int:

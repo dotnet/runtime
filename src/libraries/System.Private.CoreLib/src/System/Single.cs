@@ -436,33 +436,6 @@ namespace System
         }
 
         //
-        // Helpers, those methods are referenced from the JIT
-        //
-
-        private static float Remainder(float dividend, float divisor)
-        {
-            // From the ECMA standard:
-            //
-            // If [divisor] is zero or [dividend] is infinity
-            //   the result is NaN.
-            // If [divisor] is infinity,
-            //   the result is [dividend] (negated for -infinity***).
-            //
-            // ***"negated for -infinity" has been removed from the spec
-            if (divisor == 0 || !IsFinite(dividend))
-            {
-                return NaN;
-            }
-
-            if (!IsFinite(divisor) && !IsNaN(divisor))
-            {
-                return dividend;
-            }
-
-            return MathF.FMod(dividend, divisor);
-        }
-
-        //
         // IConvertible implementation
         //
 
