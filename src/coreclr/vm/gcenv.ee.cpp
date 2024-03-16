@@ -446,28 +446,27 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
 
 void InvokeGCAllocCallback(ee_alloc_context* pEEAllocContext, enum_alloc_context_func* fn, void* param)
 {
-
+    // the allocation context can be null initially, so we need to take that case into account: skip the threshold management
     gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
 
     // The allocation context might be modified by the callback, so we need to save
-    // the remaining sampling budget and restore it after the callback.
-    size_t remainingSamplingBudget = (pEEAllocContext->alloc_sampling == nullptr) ? 0 : pEEAllocContext->alloc_sampling - pAllocContext->alloc_ptr;
+    // the remaining sampling budget and restore it after the callback if needed.
+    size_t currentSamplingBudget = (pEEAllocContext->alloc_sampling == nullptr) ? -1 : (size_t)(pEEAllocContext->alloc_sampling - pAllocContext->alloc_ptr);
+    size_t currentSize = pAllocContext->alloc_limit - pAllocContext->alloc_ptr;
 
     fn(pAllocContext, param);
 
-    if (remainingSamplingBudget != 0)
+    if (currentSamplingBudget != -1)
     {
-        // fast_alloc_limit_ptr should be in the range [alloc_ptr, alloc_limit].
-        if (remainingSamplingBudget > (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr))
+        // if the GC changed the size of the allocation context, we need to recompute the sampling limit
+        if (currentSize != (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr))
         {
-            // the allocation context size has been reduced below the sampling threshold (not sure this is possible)
-            // so need to recompute a new one
             pEEAllocContext->ComputeSamplingLimit(GetThread()->GetRandom());
         }
         else
         {
-            // restore the remaining sampling budget
-            pEEAllocContext->alloc_sampling = pAllocContext->alloc_ptr + remainingSamplingBudget;
+            // restore the remaining sampling budget when the GC simply moved the allocation context in memory
+            pEEAllocContext->alloc_sampling = pAllocContext->alloc_ptr + currentSamplingBudget;
         }
     }
 }
