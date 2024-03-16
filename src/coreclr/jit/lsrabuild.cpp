@@ -1189,7 +1189,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                     continue;
                 }
                 Interval*      interval     = getIntervalForLocalVar(varIndex);
-                regMaskOnlyOne regsKillMask = killMask.GetRegTypeMask(interval->registerType);
+                regMaskOnlyOne regsKillMask = killMask.GetRegMaskForType(interval->registerType);
                 const bool     isCallKill =
                     (killMask.gprRegs() == RBM_INT_CALLEE_TRASH) || (killMask == AllRegsMask_CALLEE_TRASH);
 
@@ -3299,7 +3299,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
         }
 #endif
 
-        regMaskOnlyOne unprefRegMask = unpref.GetRegTypeMask(interval->registerType);
+        regMaskOnlyOne unprefRegMask = unpref.GetRegMaskForType(interval->registerType);
         interval->registerAversion |= unprefRegMask;
         regMaskOnlyOne newPreferences = allRegs(interval->registerType) & ~unprefRegMask;
         interval->updateRegisterPreferences(newPreferences);

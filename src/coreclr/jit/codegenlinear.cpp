@@ -219,7 +219,7 @@ void CodeGen::genCodeForBBlist()
                 regMaskOnlyOne varRegMask = varDsc->lvRegMask();
                 assert(compiler->IsOnlyOneRegMask(varRegMask));
 
-                newLiveRegSet.AddRegTypeMask(varRegMask, varDsc->TypeGet());
+                newLiveRegSet.AddRegMaskForType(varRegMask, varDsc->TypeGet());
 
                 if (varDsc->lvType == TYP_REF)
                 {

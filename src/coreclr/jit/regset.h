@@ -145,7 +145,7 @@ public:
 public:
     regMaskOnlyOne GetMaskVars(var_types type) const // 'get' property function for rsMaskVars property
     {
-        return _rsAllMaskVars.GetRegTypeMask(type);
+        return _rsAllMaskVars.GetRegMaskForType(type);
     }
 
     regMaskGpr GetGprMaskVars() const // 'get' property function for rsMaskVars property
@@ -158,7 +158,7 @@ public:
     void AddMaskVars(var_types type, regMaskOnlyOne addMaskVars) // union 'addMaskVars' with the rsMaskVars set
     {
         AllRegsMask newMask = _rsAllMaskVars;
-        newMask.AddRegTypeMask(addMaskVars, type);
+        newMask.AddRegMaskForType(addMaskVars, type);
         SetMaskVars(newMask);
     }
 

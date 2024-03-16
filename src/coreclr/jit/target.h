@@ -330,8 +330,7 @@ public:
     void AddGprRegInMask(regNumber reg);
     void AddRegNumInMask(regNumber reg);
     void AddRegNumInMask(regNumber reg, var_types type);
-    // Rename this to AddRegMask()
-    void AddRegTypeMask(regMaskOnlyOne maskToAdd, var_types type);
+    void AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type);
     void           AddGprRegMask(regMaskGpr maskToAdd);
     void           AddFloatRegMask(regMaskFloat maskToAdd);
     void RemoveRegNumFromMask(regNumber reg);
@@ -342,7 +341,7 @@ public:
     bool IsGprMaskPresent(regMaskGpr maskToCheck) const;
     bool           IsFloatMaskPresent(regMaskFloat maskToCheck) const;
     bool IsOnlyRegNumInMask(regNumber reg);
-    regMaskOnlyOne GetRegTypeMask(var_types type) const;
+    regMaskOnlyOne GetRegMaskForType(var_types type) const;
     regMaskOnlyOne GetMaskForRegNum(regNumber reg) const;
     regMaskOnlyOne OrMask(const _regMaskAll& second, var_types regType) const;
 

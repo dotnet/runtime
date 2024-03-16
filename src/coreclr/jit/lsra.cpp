@@ -395,24 +395,24 @@ void LinearScan::updateRegsFreeBusyState(RefPosition&   refPosition,
 {
     assert(compiler->IsOnlyOneRegMask(regsBusy));
 
-    regsInUseThisLocation.AddRegTypeMask(regsBusy, regType);
+    regsInUseThisLocation.AddRegMaskForType(regsBusy, regType);
     if (refPosition.lastUse)
     {
         if (refPosition.delayRegFree)
         {
             INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED, interval, assignedReg));
-            delayRegsToFree->AddRegTypeMask(regsBusy, regType);
-            regsInUseNextLocation.AddRegTypeMask(regsBusy, regType);
+            delayRegsToFree->AddRegMaskForType(regsBusy, regType);
+            regsInUseNextLocation.AddRegMaskForType(regsBusy, regType);
         }
         else
         {
             INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE, interval, assignedReg));
-            regsToFree->AddRegTypeMask(regsBusy, regType);
+            regsToFree->AddRegMaskForType(regsBusy, regType);
         }
     }
     else if (refPosition.delayRegFree)
     {
-        regsInUseNextLocation.AddRegTypeMask(regsBusy, regType);
+        regsInUseNextLocation.AddRegMaskForType(regsBusy, regType);
     }
 }
 
@@ -4152,7 +4152,7 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
 
         regMaskOnlyOne allRegsMask   = allRegs(interval->registerType);
         RegisterType   regType       = interval->registerType;
-        regMaskOnlyOne candidateRegs = availableRegs.GetRegTypeMask(regType);
+        regMaskOnlyOne candidateRegs = availableRegs.GetRegMaskForType(regType);
 
         regNumber firstReg = REG_NA;
         regNumber newReg   = REG_NA;
@@ -5216,7 +5216,7 @@ void LinearScan::allocateRegistersMinimal()
 #ifdef SWIFT_SUPPORT
                 if (currentRefPosition.delayRegFree)
                 {
-                    regsInUseNextLocation.AddRegTypeMask(currentRefPosition.registerAssignment,
+                    regsInUseNextLocation.AddRegMaskForType(currentRefPosition.registerAssignment,
                                                          regRecord->registerType);
                 }
 #endif // SWIFT_SUPPORT
@@ -5932,13 +5932,13 @@ void LinearScan::allocateRegisters()
                     }
 #endif // TARGET_ARM
                 }
-                regsInUseThisLocation.AddRegTypeMask(currentRefPosition.registerAssignment, regRecord->registerType);
+                regsInUseThisLocation.AddRegMaskForType(currentRefPosition.registerAssignment, regRecord->registerType);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FIXED_REG, nullptr, currentRefPosition.assignedReg()));
 
 #ifdef SWIFT_SUPPORT
                 if (currentRefPosition.delayRegFree)
                 {
-                    regsInUseNextLocation.AddRegTypeMask(currentRefPosition.registerAssignment,
+                    regsInUseNextLocation.AddRegMaskForType(currentRefPosition.registerAssignment,
                                                          regRecord->registerType);
                 }
 #endif // SWIFT_SUPPORT
@@ -8142,7 +8142,7 @@ void           LinearScan::resolveRegisters()
                             // If the localVar is in a register, it must be in a register that is not trashed by
                             // the current node (otherwise it would have already been spilled).
                             assert((genRegMask(localVarInterval->physReg) &
-                                    getKillSetForNode(treeNode).GetRegTypeMask(interval->registerType)) == RBM_NONE);
+                                    getKillSetForNode(treeNode).GetRegMaskForType(interval->registerType)) == RBM_NONE);
                             // If we have allocated a register to spill it to, we will use that; otherwise, we will
                             // spill it to the stack.  We can use as a temp register any non-arg caller-save register.
                             currentRefPosition->referent->recentRefPosition = currentRefPosition;
@@ -9035,7 +9035,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         {
             var_types      varType     = getIntervalForLocalVar(liveOutVarIndex)->registerType;
             regMaskOnlyOne fromRegMask = genRegMask(fromReg, varType);
-            liveOutRegs.AddRegTypeMask(fromRegMask, varType);
+            liveOutRegs.AddRegMaskForType(fromRegMask, varType);
         }
     }
 
@@ -13610,7 +13610,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
         // When we allocate for USE, we see that the register is busy at current location
         // and we end up with that candidate is no longer available.
         AllRegsMask busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
-        candidates &= ~busyRegs.GetRegTypeMask(regType);
+        candidates &= ~busyRegs.GetRegMaskForType(regType);
 
 #ifdef TARGET_ARM
         // For TYP_DOUBLE on ARM, we can only use an even floating-point register for which the odd half
@@ -13938,7 +13938,7 @@ singleRegMask LinearScan::RegisterSelection::selectMinimal(
     // When we allocate for USE, we see that the register is busy at current location
     // and we end up with that candidate is no longer available.
     AllRegsMask busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
-    candidates &= ~busyRegs.GetRegTypeMask(regType);
+    candidates &= ~busyRegs.GetRegMaskForType(regType);
 
 #ifdef TARGET_ARM
     // For TYP_DOUBLE on ARM, we can only use an even floating-point register for which the odd half
@@ -14158,7 +14158,7 @@ _regMaskAll AllRegsMask::operator&(const regNumber reg)
 }
 
 // TODO: Can have version of AddGprMask(regMaskOnlyOne maskToAdd) and AddFloatMask(regMaskOnlyOne maskToAdd)
-void AllRegsMask::AddRegTypeMask(regMaskOnlyOne maskToAdd, var_types type)
+void AllRegsMask::AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type)
 {
     registers[regIndexForType(type)] |= maskToAdd;
 }
@@ -14189,7 +14189,7 @@ void AllRegsMask::AddRegNumInMask(regNumber reg)
 void AllRegsMask::AddRegNumInMask(regNumber reg, var_types type)
 {
     regMaskOnlyOne regMask = genRegMask(reg, type);
-    AddRegTypeMask(regMask, type);
+    AddRegMaskForType(regMask, type);
 }
 
 void AllRegsMask::RemoveRegNumFromMask(regNumber reg, var_types type)
@@ -14237,7 +14237,7 @@ bool AllRegsMask::IsOnlyRegNumInMask(regNumber reg)
     return (registers[regIndexForRegister(reg)] & regMask) == regMask;
 }
 
-regMaskOnlyOne AllRegsMask::GetRegTypeMask(var_types type) const
+regMaskOnlyOne AllRegsMask::GetRegMaskForType(var_types type) const
 {
     return registers[regIndexForType(type)];
 }
