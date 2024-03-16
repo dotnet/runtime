@@ -100,7 +100,7 @@ namespace System.Text
                 // emits one fallback char ('\uFFFD') per malformed input
                 // byte in the worst case.
 
-                if ((uint)byteCount > int.MaxValue - 1)
+                if (byteCount + 1 < 0 || byteCount < 0)
                 {
                     // Move the throw out of the hot path to allow for inlining.
                     ThrowArgumentException(byteCount);
