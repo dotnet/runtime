@@ -758,7 +758,7 @@ namespace System.Runtime
         //
 
         [RuntimeExport("RhpLdelemaRef")]
-        public static unsafe ref object? LdelemaRef(object?[]? array, nint index, IntPtr elementType)
+        public static unsafe ref object? LdelemaRef(object?[]? array, nint index, MethodTable* elementType)
         {
             Debug.Assert(array is null || array.GetMethodTable()->IsArray, "first argument must be an array");
 
@@ -771,24 +771,21 @@ namespace System.Runtime
 #else
             if (array is null)
             {
-                throw ((MethodTable*)elementType)->GetClasslibException(ExceptionIDs.NullReference);
+                throw elementType->GetClasslibException(ExceptionIDs.NullReference);
             }
-            if ((uint)index >= (uint)array.Length)
+            if ((nuint)index >= (uint)array.Length)
             {
-                throw ((MethodTable*)elementType)->GetClasslibException(ExceptionIDs.IndexOutOfRange);
+                throw elementType->GetClasslibException(ExceptionIDs.IndexOutOfRange);
             }
             ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
             ref object element = ref Unsafe.Add(ref rawData, index);
 #endif
-
-            MethodTable* elemType = (MethodTable*)elementType;
             MethodTable* arrayElemType = array.GetMethodTable()->RelatedParameterType;
 
-            if (elemType != arrayElemType)
+            if (elementType != arrayElemType)
                 ThrowArrayMismatchException(array);
 
             return ref element;
-
         }
 
         [RuntimeExport("RhpStelemRef")]
