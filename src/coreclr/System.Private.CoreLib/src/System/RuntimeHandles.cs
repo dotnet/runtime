@@ -848,9 +848,9 @@ namespace System
         private static partial void _GetCurrentMethod(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retMethod);
         internal static IRuntimeMethodInfo? GetCurrentMethod(ref StackCrawlMark stackMark)
         {
-            object? retMethod = null;
+            IRuntimeMethodInfo? retMethod = null;
             _GetCurrentMethod(new StackCrawlMarkHandle(ref stackMark), ObjectHandleOnStack.Create(ref retMethod));
-            return (IRuntimeMethodInfo?)retMethod;
+            return retMethod;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
