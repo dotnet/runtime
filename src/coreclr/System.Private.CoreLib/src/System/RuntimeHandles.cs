@@ -844,11 +844,13 @@ namespace System
             QCallTypeHandle sourceTypeHandle,
             QCallModule sourceModule);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IRuntimeMethodInfo? _GetCurrentMethod(ref StackCrawlMark stackMark);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetCurrentMethod")]
+        private static partial void _GetCurrentMethod(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retMethod);
         internal static IRuntimeMethodInfo? GetCurrentMethod(ref StackCrawlMark stackMark)
         {
-            return _GetCurrentMethod(ref stackMark);
+            object? retMethod = null;
+            _GetCurrentMethod(new StackCrawlMarkHandle(ref stackMark), ObjectHandleOnStack.Create(ref retMethod));
+            return (IRuntimeMethodInfo?)retMethod;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

@@ -890,11 +890,16 @@ static StackWalkAction SkipMethods(CrawlFrame* frame, VOID* data) {
 }
 
 // Return the MethodInfo that represents the current method (two above this one)
-FCIMPL1(ReflectMethodObject*, RuntimeMethodHandle::GetCurrentMethod, StackCrawlMark* stackMark) {
-    FCALL_CONTRACT;
+extern "C" void QCALLTYPE RuntimeMethodHandle_GetCurrentMethod(QCall::StackCrawlMarkHandle stackMark, QCall::ObjectHandleOnStack retMethod) {
+
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
     REFLECTMETHODREF pRet = NULL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
     SkipStruct skip;
     skip.pStackMark = stackMark;
     skip.pMeth = 0;
@@ -909,11 +914,10 @@ FCIMPL1(ReflectMethodObject*, RuntimeMethodHandle::GetCurrentMethod, StackCrawlM
     else
         pRet = NULL;
 
-    HELPER_METHOD_FRAME_END();
+    retMethod.Set(pRet);
 
-    return (ReflectMethodObject*)OBJECTREFToObject(pRet);
+    END_QCALL;
 }
-FCIMPLEND
 
 static OBJECTREF DirectObjectFieldGet(FieldDesc *pField, TypeHandle fieldType, TypeHandle enclosingType, TypedByRef *pTarget, CLR_BOOL *pIsClassInitialized) {
     CONTRACTL
