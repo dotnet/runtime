@@ -2,7 +2,6 @@
 ;; The .NET Foundation licenses this file to you under the MIT license.
 
         .586
-        .xmm
         .model  flat
         option  casemap:none
         .code
