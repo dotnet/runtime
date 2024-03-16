@@ -109,7 +109,7 @@ inline bool compUnixX86Abi()
 #if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 enum _regNumber_enum : unsigned
 {
-#define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
 #include "register.h"
 
@@ -121,7 +121,7 @@ enum _regNumber_enum : unsigned
 enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
 };
@@ -130,7 +130,7 @@ enum _regMask_enum : unsigned __int64
 
 enum _regNumber_enum : unsigned
 {
-#define REGDEF(name, rnum, mask, xname, wname) REG_##name = rnum,
+#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
 #include "register.h"
 
@@ -142,7 +142,7 @@ enum _regNumber_enum : unsigned
 enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
-#define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
+#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
 };
@@ -151,7 +151,7 @@ enum _regMask_enum : unsigned __int64
 
 enum _regNumber_enum : unsigned
 {
-#define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
 #include "register.h"
 
@@ -164,7 +164,7 @@ enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
 
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
 
@@ -174,7 +174,7 @@ enum _regMask_enum : uint64_t
 
 enum _regNumber_enum : unsigned
 {
-#define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
 #include "register.h"
 
@@ -187,7 +187,7 @@ enum _regMask_enum : unsigned
 {
     RBM_NONE = 0,
 
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
 };
@@ -269,160 +269,102 @@ typedef unsigned char   regNumberSmall;
 
 typedef struct _regMaskAll
 {
-    regMaskGpr   gprRegs;
-    regMaskFloat floatRegs;
+private:
+    regMaskTP registers[REGISTER_TYPE_COUNT];
+
+public:
+    inline regMaskGpr gprRegs() const
+    {
+        return registers[0];
+    }
+    inline regMaskFloat floatRegs() const
+    {
+        return registers[1];
+    }
 #ifdef HAS_PREDICATE_REGS
-    regMaskPredicate predicateRegs;
-#endif // HAS_PREDICATE_REGS
-       //
-       //    _regMaskAll(regMaskGpr _gprRegMask)
-       //        : gprRegs(_gprRegMask)
-       //        , floatRegs(RBM_NONE)
-       // #ifdef HAS_PREDICATE_REGS
-    //        , predicateRegs(RBM_NONE)
-    // #endif
-    //    {
-    //    }
-    //
-    //    _regMaskAll(regMaskGpr _gprRegMask, regMaskFloat _floatRegMask) : gprRegs(_gprRegMask),
-    //    floatRegs(_floatRegMask)
-    // #ifdef HAS_PREDICATE_REGS
-    //        , predicateRegs(RBM_NONE)
-    // #endif
-    //    {
-    //
-    //    }
+    inline regMaskPredicate predicateRegs() const
+    {
+        static_assert((REGISTER_TYPE_COUNT == 3), "There should be 3 types of registers");
+        return registers[2];
+    }
+#endif
 
     _regMaskAll(regMaskGpr _gprRegMask, regMaskFloat _floatRegMask, regMaskPredicate _predicateRegMask = RBM_NONE)
-    {
-        gprRegs   = _gprRegMask;
-        floatRegs = _floatRegMask;
+        : registers{_gprRegMask, _floatRegMask
 #ifdef HAS_PREDICATE_REGS
-        predicateRegs = _predicateRegMask;
-#endif // HAS_PREDICATE_REGS
+                    ,
+                    _predicateRegMask
+#endif
+          }
+    {
     }
 
-    //    // Useful to create an entity from `mask` when the caller
-    //    // doesn't know what is the type of mask but knows that it
-    //    // is of "onlyone" type.
-    //    _regMaskAll(regMaskOnlyOne mask)
-    //    {
-    //        gprRegs = mask;
-    //        floatRegs = mask;
-    // #ifdef HAS_PREDICATE_REGS
-    //        predicateRegs = mask;
-    // #endif
-    //    }
+
 
     _regMaskAll()
-    {
-        gprRegs   = RBM_NONE;
-        floatRegs = RBM_NONE;
+        : registers{RBM_NONE, RBM_NONE
 #ifdef HAS_PREDICATE_REGS
-        predicateRegs = RBM_NONE;
+                    , RBM_NONE
 #endif
-    }
-
-    void Clear()
+          }
     {
-        gprRegs   = RBM_NONE;
-        floatRegs = RBM_NONE;
-#ifdef HAS_PREDICATE_REGS
-        predicateRegs = RBM_NONE;
-#endif
     }
 
-    bool IsEmpty()
+    _regMaskAll(int (&_registers)[3])
     {
-        return (gprRegs == RBM_NONE) && (floatRegs == RBM_NONE)
-#ifdef HAS_PREDICATE_REGS
-               && (predicateRegs == RBM_NONE)
-#endif // HAS_PREDICATE_REGS
-            ;
+        registers[0] = _registers[0];
+        registers[1] = _registers[1];
+        registers[2] = _registers[2];
     }
 
-    unsigned Count()
+    _regMaskAll(regNumber reg) : _regMaskAll()
     {
-        return genCountBits(gprRegs) + genCountBits(floatRegs)
-#ifdef HAS_PREDICATE_REGS
-               + genCountBits(predicateRegs)
-#endif // HAS_PREDICATE_REGS
-            ;
+        *this |= reg;
     }
 
+    void Clear();
+    bool IsEmpty();
+    unsigned Count();
+    void     Create(regNumber reg);
     // Rename this to AddRegNum
+    void AddGprRegInMask(regNumber reg);
+    void AddRegNumInMask(regNumber reg);
     void AddRegNumInMask(regNumber reg, var_types type);
-    void RemoveRegNumInMask(regNumber reg);
-    void RemoveRegNumInMask(regNumber reg, var_types type);
+    // Rename this to AddRegMask()
+    void AddRegTypeMask(regMaskOnlyOne maskToAdd, var_types type);
+    void           AddGprRegMask(regMaskGpr maskToAdd);
+    void           AddFloatRegMask(regMaskFloat maskToAdd);
+    void RemoveRegNumFromMask(regNumber reg);
+    void RemoveRegNumFromMask(regNumber reg, var_types type);
+    void RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type);
     bool IsRegNumInMask(regNumber reg, var_types type);
     bool IsRegNumInMask(regNumber reg);
+    bool IsGprMaskPresent(regMaskGpr maskToCheck) const;
+    bool           IsFloatMaskPresent(regMaskFloat maskToCheck) const;
     bool IsOnlyRegNumInMask(regNumber reg);
+    regMaskOnlyOne GetRegTypeMask(var_types type) const;
+    regMaskOnlyOne GetMaskForRegNum(regNumber reg) const;
+    regMaskOnlyOne OrMask(const _regMaskAll& second, var_types regType) const;
 
-    // Rename this to AddRegMask()
-    void AddRegTypeMask(regMaskOnlyOne maskToAdd, var_types type)
-    {
-        if (varTypeUsesIntReg(type))
-        {
-            gprRegs |= maskToAdd;
-        }
-#ifdef HAS_PREDICATE_REGS
-        else if (varTypeUsesMaskReg(type))
-        {
-            predicateRegs |= maskToAdd;
-        }
-#endif
-        else
-        {
-            assert(varTypeUsesFloatReg(type));
-            floatRegs |= maskToAdd;
-        }
-    }
+    // TODO: this might go away once we have just `regMaskTP` gpr_float field
+    bool      IsGprOrFloatPresent() const;
+    regMaskTP      GetGprFloatCombinedMask() const;
 
-    regMaskOnlyOne GetRegTypeMask(var_types type)
-    {
-        if (varTypeUsesIntReg(type))
-        {
-            return gprRegs;
-        }
-#ifdef HAS_PREDICATE_REGS
-        else if (varTypeUsesMaskReg(type))
-        {
-            return predicateRegs;
-        }
-#endif
-        else
-        {
-            assert(varTypeUsesFloatReg(type));
-            return floatRegs;
-        }
-    }
+    regMaskOnlyOne operator[](int index) const;
+    regMaskOnlyOne& operator[](int index);
+    void operator|=(const _regMaskAll& other);
+    void operator&=(const _regMaskAll& other);
+    void operator|=(const regNumber reg);
+    void operator^=(const regNumber reg);
+    _regMaskAll operator~();    
+    bool operator==(const _regMaskAll& other);
+    bool        operator!=(const _regMaskAll& other);
+    _regMaskAll     operator&(const _regMaskAll& other);
+    _regMaskAll     operator|(const _regMaskAll& other);
+    _regMaskAll operator&(const regNumber reg);
 
-    regMaskOnlyOne& operator[](int index)
-    {
-        if (index == 0)
-        {
-            return gprRegs;
-        }
-        else if (index == 1)
-        {
-            return floatRegs;
-        }
-        else
-        {
-#ifdef HAS_PREDICATE_REGS
-            return predicateRegs;
-#else
-            unreached();
-#endif
-        }
-    }
-
-    // void AllRegsMask& operator|=(const AllRegsMask& second);
-    //{
-    //    gprRegs
-    //    return *this;
-    //}
 } AllRegsMask;
+
 
 #define GprRegsMask(gprRegs) AllRegsMask(gprRegs, RBM_NONE)
 #define FloatRegsMask(floatRegs) AllRegsMask(RBM_NONE, floatRegs)3
@@ -439,18 +381,8 @@ typedef unsigned __int64 regMaskSmall;
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
 
-bool operator==(const AllRegsMask& first, const AllRegsMask& second);
-bool operator!=(const AllRegsMask& first, const AllRegsMask& second);
-AllRegsMask operator&(const AllRegsMask& first, const AllRegsMask& second);
-regMaskOnlyOne operator&(const AllRegsMask& first, const regNumber reg);
-AllRegsMask operator|(const AllRegsMask& first, const AllRegsMask& second);
-AllRegsMask operator|=(AllRegsMask& first, const AllRegsMask& second);
-AllRegsMask operator&=(AllRegsMask& first, const AllRegsMask& second);
-AllRegsMask operator|=(AllRegsMask& first, const regNumber reg);
-AllRegsMask operator^=(AllRegsMask& first, const regNumber reg);
-// AllRegsMask operator|=(AllRegsMask& first, const regNumber reg);
-AllRegsMask operator~(const AllRegsMask& first);
-// inline AllRegsMask createRegMask(regNumber reg)
+
+
 
 /*****************************************************************************/
 

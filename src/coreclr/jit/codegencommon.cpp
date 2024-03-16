@@ -8206,21 +8206,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
             if ((op1->GetRegSpillFlagByIdx(i) & GTF_SPILLED) == 0)
             {
                 regNumber reg = op1->GetRegByIndex(i);
-                // regMaskOnlyOne regMask = genRegMask();
-                if (genIsValidIntReg(reg))
-                {
-                    busyRegs.gprRegs |= genRegMask(reg);
-                }
-                else if (genIsValidFloatReg(reg))
-                {
-                    busyRegs.floatRegs |= genRegMask(reg);
-                }
-#ifdef HAS_PREDICATE_REGS
-                else if (genIsValidMaskReg(reg))
-                {
-                    busyRegs.predicateRegs |= genRegMask(reg);
-                }
-#endif // HAS_PREDICATE_REGS
+                busyRegs.AddRegNumInMask(reg);
             }
         }
 #endif // DEBUG
@@ -8234,41 +8220,13 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 
 #ifdef DEBUG
 
-#define DO_VALIDATION(regType)                                                                                         \
-    \
-if(targetReg != sourceReg)                                                                                             \
-    \
-{                                                                                                               \
-        singleRegMask targetRegMask = genRegMask(targetReg);                                                           \
-        assert((busyRegs.regType & targetRegMask) == 0);                                                               \
-        busyRegs.regType &= ~genRegMask(sourceReg);                                                                    \
-    \
-}                                                                                                               \
-    \
-busyRegs.regType |= genRegMask(targetReg);
-
-            if (genIsValidIntReg(targetReg))
-            {
-                DO_VALIDATION(gprRegs)
-            }
-            else if (genIsValidFloatReg(targetReg))
-            {
-                DO_VALIDATION(floatRegs)
-            }
-#ifdef HAS_PREDICATE_REGS
-            else if (genIsValidMaskReg(targetReg))
-            {
-                DO_VALIDATION(predicateRegs)
-            }
-#endif // HAS_PREDICATE_REGS
-       // if (targetReg != sourceReg)
-//{
-//    singleRegMask targetRegMask = genRegMask(targetReg);
-//    assert((busyRegs & targetRegMask) == 0);
-//    // Clear sourceReg from the busyRegs, and add targetReg.
-//    busyRegs &= ~genRegMask(sourceReg);
-//}
-// busyRegs |= genRegMask(targetReg);
+        if (targetReg != sourceReg)
+        {
+            singleRegMask targetRegMask = genRegMask(targetReg);
+            assert((busyRegs.GetMaskForRegNum(targetReg) & targetRegMask) == 0);
+            busyRegs.RemoveRegNumFromMask(sourceReg);
+        }
+        busyRegs.AddRegNumInMask(targetReg);
 #endif // DEBUG
         }
         return;

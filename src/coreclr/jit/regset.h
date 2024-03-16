@@ -145,26 +145,12 @@ public:
 public:
     regMaskOnlyOne GetMaskVars(var_types type) const // 'get' property function for rsMaskVars property
     {
-        if (varTypeUsesIntReg(type))
-        {
-            return _rsAllMaskVars.gprRegs;
-        }
-#ifdef HAS_PREDICATE_REGS
-        else if (varTypeUsesMaskReg(type))
-        {
-            return _rsAllMaskVars.predicateRegs;
-        }
-#endif
-        else
-        {
-            assert(varTypeUsesFloatReg(type));
-            return _rsAllMaskVars.floatRegs;
-        }
+        return _rsAllMaskVars.GetRegTypeMask(type);
     }
 
     regMaskGpr GetGprMaskVars() const // 'get' property function for rsMaskVars property
     {
-        return _rsAllMaskVars.gprRegs;
+        return _rsAllMaskVars.gprRegs();
     }
 
     void SetMaskVars(AllRegsMask newMaskVars); // 'put' property function for rsMaskVars property
@@ -172,43 +158,17 @@ public:
     void AddMaskVars(var_types type, regMaskOnlyOne addMaskVars) // union 'addMaskVars' with the rsMaskVars set
     {
         AllRegsMask newMask = _rsAllMaskVars;
-        if (varTypeUsesIntReg(type))
-        {
-            newMask.gprRegs |= addMaskVars;
-        }
-#ifdef HAS_PREDICATE_REGS
-        else if (varTypeUsesMaskReg(type))
-        {
-            newMask.predicateRegs |= addMaskVars;
-        }
-#endif
-        else
-        {
-            assert(varTypeUsesFloatReg(type));
-            newMask.floatRegs |= addMaskVars;
-        }
+        newMask.AddRegTypeMask(addMaskVars, type);
         SetMaskVars(newMask);
     }
 
     // remove 'removeMaskVars' from the rsMaskVars set (like bitset DiffD)
     void RemoveMaskVars(var_types type, regMaskOnlyOne removeMaskVars)
     {
+        // TODO: Skip assigning to newMask, just update _rsAllMaskVars directly. The only thing remaining
+        // would be to print the change if (newMask != _rsAllMaskVars).
         AllRegsMask newMask = _rsAllMaskVars;
-        if (varTypeUsesIntReg(type))
-        {
-            newMask.gprRegs &= ~removeMaskVars;
-        }
-#ifdef HAS_PREDICATE_REGS
-        else if (varTypeUsesMaskReg(type))
-        {
-            newMask.predicateRegs &= ~removeMaskVars;
-        }
-#endif
-        else
-        {
-            assert(varTypeUsesFloatReg(type));
-            newMask.floatRegs &= ~removeMaskVars;
-        }
+        newMask.RemoveRegTypeFromMask(removeMaskVars, type);
         SetMaskVars(newMask);
     }
 

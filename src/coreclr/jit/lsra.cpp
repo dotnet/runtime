@@ -278,12 +278,12 @@ void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPo
     if (nextRefPosition == nullptr)
     {
         nextLocation = MaxLocation;
-        fixedRegs[regTypeIndex(regRecord->registerType)] &= ~genRegMask(regRecord->regNum);
+        fixedRegs[regIndexForType(regRecord->registerType)] &= ~genRegMask(regRecord->regNum);
     }
     else
     {
         nextLocation = nextRefPosition->nodeLocation;
-        fixedRegs[regTypeIndex(regRecord->registerType)] |= genRegMask(regRecord->regNum);
+        fixedRegs[regIndexForType(regRecord->registerType)] |= genRegMask(regRecord->regNum);
     }
     nextFixedRef[regRecord->regNum] = nextLocation;
 }
@@ -293,7 +293,7 @@ regMaskOnlyOne LinearScan::getMatchingConstants(regMaskOnlyOne mask,
                                                 RefPosition*   refPosition)
 {
     assert(currentInterval->isConstant && RefTypeIsDef(refPosition->refType));
-    regMaskOnlyOne candidates = (mask & m_RegistersWithConstants[regTypeIndex(currentInterval->registerType)]);
+    regMaskOnlyOne candidates = (mask & m_RegistersWithConstants[regIndexForType(currentInterval->registerType)]);
     regMaskOnlyOne result     = RBM_NONE;
     while (candidates != RBM_NONE)
     {
@@ -494,21 +494,7 @@ regMaskOnlyOne LinearScan::getConstrainedRegMask(RefPosition*   refPosition,
     if ((refPosition != nullptr) && !refPosition->RegOptional())
     {
         regMaskOnlyOne busyRegs = RBM_NONE;
-        if (varTypeUsesIntReg(regType))
-        {
-            busyRegs = regsBusyUntilKill.gprRegs | regsInUseThisLocation.gprRegs;
-        }
-        else if (varTypeUsesFloatReg(regType))
-        {
-            busyRegs = regsBusyUntilKill.floatRegs | regsInUseThisLocation.floatRegs;
-        }
-        else
-        {
-#ifdef HAS_PREDICATE_REGS
-            assert(varTypeUsesMaskReg(regType));
-            busyRegs = regsBusyUntilKill.predicateRegs | regsInUseThisLocation.predicateRegs;
-#endif
-        }
+        busyRegs                = regsBusyUntilKill.OrMask(regsInUseThisLocation, regType);
         if ((newMask & ~busyRegs) == RBM_NONE)
         {
             // Constrained mask does not have at least one free register to allocate.
@@ -4163,28 +4149,10 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
     {
         // If we're rotating the register locations at block boundaries, try to use
         // the next higher register number of the appropriate register type.
-        regMaskOnlyOne candidateRegs = RBM_NONE;
 
-        regMaskOnlyOne allRegsMask = allRegs(interval->registerType);
-        RegisterType   regType     = interval->registerType;
-
-        if (varTypeUsesIntReg(regType))
-        {
-            candidateRegs = allRegsMask & availableRegs.gprRegs;
-        }
-        else if (varTypeUsesFloatReg(regType))
-        {
-            candidateRegs = allRegsMask & availableRegs.floatRegs;
-        }
-        else
-        {
-#ifdef HAS_PREDICATE_REGS
-            assert(varTypeUsesMaskReg(regType));
-            candidateRegs = allRegsMask & availableRegs.predicateRegs;
-#else
-            unreached();
-#endif // HAS_PREDICATE_REGS
-        }
+        regMaskOnlyOne allRegsMask   = allRegs(interval->registerType);
+        RegisterType   regType       = interval->registerType;
+        regMaskOnlyOne candidateRegs = availableRegs.GetRegTypeMask(regType);
 
         regNumber firstReg = REG_NA;
         regNumber newReg   = REG_NA;
@@ -4665,7 +4633,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                     RegRecord* anotherHalfRegRec = findAnotherHalfRegRec(targetRegRecord);
 
                     // Use TYP_FLOAT to get the regmask of just the half reg.
-                    liveRegs.floatRegs &= ~getRegMask(anotherHalfRegRec->regNum, TYP_FLOAT);
+                    liveRegs.RemoveRegNumFromMask(anotherHalfRegRec->regNum, TYP_FLOAT);
                 }
 
 #endif // TARGET_ARM
@@ -4692,7 +4660,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord = getRegisterRecord(reg);
-        if ((liveRegs & reg) == 0)
+        if (!liveRegs.IsRegNumInMask(reg))
         {
             makeRegAvailable(reg, physRegRecord->registerType);
             Interval* assignedInterval = physRegRecord->assignedInterval;
@@ -5512,7 +5480,7 @@ void LinearScan::allocateRegistersMinimal()
             currentRefPosition.registerAssignment = assignedRegBit;
 
             currentInterval->physReg = assignedRegister;
-            regsToFree.RemoveRegNumInMask(assignedRegister,
+            regsToFree.RemoveRegNumFromMask(assignedRegister,
                                           currentInterval->registerType); // we'll set it again later if it's dead
 
             // If this interval is dead, free the register.
@@ -6742,7 +6710,7 @@ void LinearScan::allocateRegisters()
             currentRefPosition.registerAssignment = assignedRegBit;
 
             currentInterval->physReg = assignedRegister;
-            regsToFree.RemoveRegNumInMask(assignedRegister,
+            regsToFree.RemoveRegNumFromMask(assignedRegister,
                                           currentInterval->registerType); // we'll set it again later if it's dead
 
             // If this interval is dead, free the register.
@@ -9877,7 +9845,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         regNumber upperHalfReg  = REG_NEXT(fromReg);
                         if ((otherInterval->registerType == TYP_DOUBLE) && (location[upperHalfReg] != REG_NA))
                         {
-                            targetRegsReady.RemoveRegNumInMask(fromReg);
+                            targetRegsReady.RemoveRegNumFromMask(fromReg);
                         }
                     }
                 }
@@ -9921,7 +9889,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             regNumber fromReg   = (regNumber)location[sourceReg];
             if (targetReg == fromReg)
             {
-                targetRegsToDo.RemoveRegNumInMask(targetReg);
+                targetRegsToDo.RemoveRegNumFromMask(targetReg);
             }
             else
             {
@@ -9964,7 +9932,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         // Otherwise, we'll spill it to the stack and reload it later.
                         if (useSwap)
                         {
-                            targetRegsToDo.RemoveRegNumInMask(fromReg);
+                            targetRegsToDo.RemoveRegNumFromMask(fromReg);
                         }
                     }
                     else
@@ -10010,7 +9978,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
                         targetRegsFromStack |= otherTargetReg;
                         stackToRegIntervals[otherTargetReg] = otherInterval;
-                        targetRegsToDo.RemoveRegNumInMask(otherTargetReg);
+                        targetRegsToDo.RemoveRegNumFromMask(otherTargetReg);
 
                         // Now, move the interval that is going to targetReg.
                         addResolution(block, insertionPoint, sourceIntervals[sourceReg], targetReg,
@@ -10035,13 +10003,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                                 regNumber upperHalfReg  = REG_NEXT(fromReg);
                                 if ((otherInterval->registerType == TYP_DOUBLE) && (location[upperHalfReg] != REG_NA))
                                 {
-                                    targetRegsReady.RemoveRegNumInMask(fromReg);
+                                    targetRegsReady.RemoveRegNumFromMask(fromReg);
                                 }
                             }
 #endif // TARGET_ARM
                         }
                     }
-                    targetRegsToDo.RemoveRegNumInMask(targetReg);
+                    targetRegsToDo.RemoveRegNumFromMask(targetReg);
                 }
                 else
                 {
@@ -11581,7 +11549,7 @@ void LinearScan::dumpRegRecords()
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                 printf("%c", activeChar);
             }
-            else if ((regsBusyUntilKill & regNum) != RBM_NONE)
+            else if (regsBusyUntilKill.IsRegNumInMask(regNum))
             {
                 printf(columnFormatArray, "Busy");
             }
@@ -11813,19 +11781,19 @@ bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
 //
 void LinearScan::verifyFreeRegisters(AllRegsMask regsToFree)
 {
-    regMaskOnlyOne regsMaskToFree    = regsToFree.gprRegs;
+    regMaskOnlyOne regsMaskToFree    = regsToFree.gprRegs();
     regMaskOnlyOne availableRegsMask = availableIntRegs;
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         if (reg >= REG_FP_FIRST && reg <= REG_FP_LAST)
         {
-            regsMaskToFree    = regsToFree.floatRegs;
+            regsMaskToFree    = regsToFree.floatRegs();
             availableRegsMask = availableFloatRegs;
         }
 #ifdef HAS_PREDICATE_REGS
         else if (reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST)
         {
-            regsMaskToFree    = regsToFree.predicateRegs;
+            regsMaskToFree    = regsToFree.predicateRegs();
             availableRegsMask = availableMaskRegs;
         }
 #endif
@@ -13652,7 +13620,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
         // clause below creates a mask to do this.
         if (currentInterval->registerType == TYP_DOUBLE)
         {
-            candidates &= ~((busyRegs.floatRegs & RBM_ALLDOUBLE_HIGH) >> 1);
+            candidates &= ~((busyRegs.floatRegs() & RBM_ALLDOUBLE_HIGH) >> 1);
         }
 #endif // TARGET_ARM
 
@@ -13663,7 +13631,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
         // Also eliminate as busy any register with a conflicting fixed reference at this or
         // the next location.
         // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
-        regMaskOnlyOne checkConflictMask = candidates & linearScan->fixedRegs[regTypeIndex(regType)];
+        regMaskOnlyOne checkConflictMask = candidates & linearScan->fixedRegs[regIndexForType(regType)];
         while (checkConflictMask != RBM_NONE)
         {
             regNumber     checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
@@ -13742,7 +13710,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
             // refpositions.
             assert((refPosition->refType == RefTypeUpperVectorRestore) || (genCountBits(candidates) == 1));
 
-            freeCandidates = candidates & linearScan->m_AvailableRegs[regTypeIndex(currentInterval->registerType)];
+            freeCandidates = candidates & linearScan->m_AvailableRegs[regIndexForType(currentInterval->registerType)];
         }
 
         if ((freeCandidates == RBM_NONE) && (candidates == RBM_NONE))
@@ -13758,7 +13726,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
                 // such range that is consecutive. Next, append that range to the `candidates`.
                 //
                 regMaskFloat limitCandidatesForConsecutive =
-                    refPosition->registerAssignment & ~inUseOrBusyRegsMask.floatRegs;
+                    refPosition->registerAssignment & ~inUseOrBusyRegsMask.floatRegs();
                 regMaskFloat overallLimitCandidates;
                 regMaskFloat limitConsecutiveResult =
                     linearScan->filterConsecutiveCandidates(limitCandidatesForConsecutive, refPosition->regCount,
@@ -13970,23 +13938,7 @@ singleRegMask LinearScan::RegisterSelection::selectMinimal(
     // When we allocate for USE, we see that the register is busy at current location
     // and we end up with that candidate is no longer available.
     AllRegsMask busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
-    if (varTypeUsesIntReg(regType))
-    {
-        candidates &= ~busyRegs.gprRegs;
-    }
-    else if (varTypeUsesFloatReg(regType))
-    {
-        candidates &= ~busyRegs.floatRegs;
-    }
-    else
-    {
-#ifdef HAS_PREDICATE_REGS
-        assert(varTypeUsesMaskReg(regType));
-        candidates &= ~busyRegs.predicateRegs;
-#else
-        unreached();
-#endif
-    }
+    candidates &= ~busyRegs.GetRegTypeMask(regType);
 
 #ifdef TARGET_ARM
     // For TYP_DOUBLE on ARM, we can only use an even floating-point register for which the odd half
@@ -13996,14 +13948,14 @@ singleRegMask LinearScan::RegisterSelection::selectMinimal(
     // clause below creates a mask to do this.
     if (currentInterval->registerType == TYP_DOUBLE)
     {
-        candidates &= ~((busyRegs.floatRegs & RBM_ALLDOUBLE_HIGH) >> 1);
+        candidates &= ~((busyRegs.floatRegs() & RBM_ALLDOUBLE_HIGH) >> 1);
     }
 #endif // TARGET_ARM
 
     // Also eliminate as busy any register with a conflicting fixed reference at this or
     // the next location.
     // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
-    regMaskOnlyOne checkConflictMask = candidates & linearScan->fixedRegs[regTypeIndex(regType)];
+    regMaskOnlyOne checkConflictMask = candidates & linearScan->fixedRegs[regIndexForType(regType)];
     while (checkConflictMask != RBM_NONE)
     {
         regNumber     checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
@@ -14083,135 +14035,155 @@ singleRegMask LinearScan::RegisterSelection::selectMinimal(
     return candidates;
 }
 
-bool operator==(const AllRegsMask& first, const AllRegsMask& second)
+void AllRegsMask::Clear()
 {
-    return first.gprRegs == second.gprRegs && first.floatRegs == second.floatRegs
+    registers[0] = RBM_NONE;
+    registers[1] = RBM_NONE;
 #ifdef HAS_PREDICATE_REGS
-           && first.predicateRegs == second.predicateRegs
+    registers[2] = RBM_NONE;
 #endif
+}
+
+bool AllRegsMask::IsEmpty()
+{
+    return (gprRegs() | floatRegs()
+#ifdef HAS_PREDICATE_REGS
+            | predicateRegs()
+#endif // HAS_PREDICATE_REGS
+                ) == RBM_NONE;
+}
+
+unsigned AllRegsMask::Count()
+{
+    return genCountBits(gprRegs()) + genCountBits(floatRegs())
+#ifdef HAS_PREDICATE_REGS
+           + genCountBits(predicateRegs())
+#endif // HAS_PREDICATE_REGS
         ;
 }
 
-bool operator!=(const AllRegsMask& first, const AllRegsMask& second)
+regMaskOnlyOne AllRegsMask::operator[](int index) const
 {
-    return !(first == second);
+    assert(index <= REGISTER_TYPE_COUNT);
+    return registers[index];
 }
 
-AllRegsMask operator&(const AllRegsMask& first, const AllRegsMask& second)
+regMaskOnlyOne& AllRegsMask::operator[](int index)
 {
-    AllRegsMask result(first.gprRegs & second.gprRegs, first.floatRegs & second.floatRegs
+    assert(index <= REGISTER_TYPE_COUNT);
+    return registers[index];
+}
+
+void AllRegsMask::operator|=(const _regMaskAll& other)
+{
+    // TODO: Can we optimize to reintrepret_cast<unsigned long long>
+    //  Something like https://godbolt.org/z/1KevT8Edh
+    registers[0] |= other.gprRegs();
+    registers[1] |= other.floatRegs();
 #ifdef HAS_PREDICATE_REGS
-                       ,
-                       first.predicateRegs & second.predicateRegs
+    registers[2] |= other.predicateRegs();
 #endif
-                       );
+}
+
+void AllRegsMask::operator&=(const _regMaskAll& other)
+{
+    // TODO: Can we optimize to reintrepret_cast<unsigned long long>
+    //  Something like https://godbolt.org/z/1KevT8Edh
+    registers[0] &= other.gprRegs();
+    registers[1] &= other.floatRegs();
+#ifdef HAS_PREDICATE_REGS
+    registers[2] &= other.predicateRegs();
+#endif
+}
+
+void AllRegsMask::operator|=(const regNumber reg)
+{
+    registers[regIndexForRegister(reg)] |= genRegMask(reg);
+}
+
+void AllRegsMask::operator^=(const regNumber reg)
+{
+    registers[regIndexForRegister(reg)] ^= genRegMask(reg);
+}
+
+_regMaskAll AllRegsMask::operator~()
+{
+    return _regMaskAll(~gprRegs(), ~floatRegs()
+#ifdef HAS_PREDICATE_REGS
+                                       ,
+                       ~predicateRegs()
+#endif
+    );
+}
+
+bool AllRegsMask::operator==(const AllRegsMask& other)
+{
+    return ((gprRegs() == other.gprRegs()) && (floatRegs() == other.floatRegs())
+#ifdef HAS_PREDICATE_REGS
+            && (predicateRegs() == other.predicateRegs())
+#endif
+    );
+}
+
+bool AllRegsMask::operator!=(const AllRegsMask& other)
+{
+    return !(*this == other);
+}
+
+_regMaskAll AllRegsMask::operator&(const AllRegsMask& other)
+{
+    return _regMaskAll(gprRegs() & other.gprRegs(), floatRegs() & other.floatRegs()
+#ifdef HAS_PREDICATE_REGS
+                                                         ,
+                       predicateRegs() & other.predicateRegs()
+#endif
+    );
+}
+
+_regMaskAll AllRegsMask::operator|(const _regMaskAll& other)
+{
+    return _regMaskAll(gprRegs() | other.gprRegs(), floatRegs() | other.floatRegs()
+#ifdef HAS_PREDICATE_REGS
+                                                         ,
+                       predicateRegs() | other.predicateRegs()
+#endif
+    );
+}
+
+_regMaskAll AllRegsMask::operator&(const regNumber reg)
+{
+    _regMaskAll result = *this;
+    result[regIndexForRegister(reg)] &= genRegMask(reg);
     return result;
 }
 
-regMaskOnlyOne operator&(const AllRegsMask& first, const regNumber reg)
+// TODO: Can have version of AddGprMask(regMaskOnlyOne maskToAdd) and AddFloatMask(regMaskOnlyOne maskToAdd)
+void AllRegsMask::AddRegTypeMask(regMaskOnlyOne maskToAdd, var_types type)
 {
-    if (emitter::isGeneralRegister(reg))
-    {
-        return first.gprRegs & genRegMask(reg);
-    }
-    else if (emitter::isFloatReg(reg))
-    {
-        return first.floatRegs & genRegMask(reg);
-    }
-    else
-    {
-#ifdef HAS_PREDICATE_REGS
-        return first.predicateRegs & genRegMask(reg);
-#else
-        unreached();
-#endif // HAS_PREDICATE_REGS
-    }
+    registers[regIndexForType(type)] |= maskToAdd;
 }
 
-AllRegsMask operator|(const AllRegsMask& first, const AllRegsMask& second)
+void AllRegsMask::AddGprRegMask(regMaskOnlyOne maskToAdd)
 {
-    AllRegsMask result(first.gprRegs | second.gprRegs, first.floatRegs | second.floatRegs
-#ifdef HAS_PREDICATE_REGS
-                       ,
-                       first.predicateRegs | second.predicateRegs
-#endif
-                       );
-    return result;
+    registers[0] |= maskToAdd;
 }
 
-AllRegsMask operator|=(AllRegsMask& first, const regNumber reg)
+void AllRegsMask::AddFloatRegMask(regMaskOnlyOne maskToAdd)
 {
-    if (emitter::isGeneralRegister(reg))
-    {
-        first.gprRegs |= genRegMask(reg);
-    }
-    else if (emitter::isFloatReg(reg))
-    {
-        first.floatRegs |= genRegMask(reg);
-    }
-    else
-    {
-#ifdef HAS_PREDICATE_REGS
-        first.predicateRegs |= genRegMask(reg);
-#else
-        unreached();
-#endif // HAS_PREDICATE_REGS
-    }
-    return first;
+    registers[1] |= maskToAdd;
 }
 
-AllRegsMask operator|=(AllRegsMask& first, const AllRegsMask& second)
+// Adds reg only if it is gpr register
+void AllRegsMask::AddGprRegInMask(regNumber reg)
 {
-    first.gprRegs |= second.gprRegs;
-    first.floatRegs |= second.floatRegs;
-
-#ifdef HAS_PREDICATE_REGS
-    first.predicateRegs |= second.predicateRegs;
-#endif
-    return first;
+    int regIndex = regIndexForRegister(reg);
+    registers[0] |= -static_cast<int>(!regIndex) & genRegMask(reg);
 }
 
-AllRegsMask operator&=(AllRegsMask& first, const AllRegsMask& second)
+void AllRegsMask::AddRegNumInMask(regNumber reg)
 {
-    first.gprRegs &= second.gprRegs;
-    first.floatRegs &= second.floatRegs;
-
-#ifdef HAS_PREDICATE_REGS
-    first.predicateRegs &= second.predicateRegs;
-#endif
-    return first;
-}
-
-AllRegsMask operator^=(AllRegsMask& first, const regNumber reg)
-{
-    if (emitter::isGeneralRegister(reg))
-    {
-        first.gprRegs ^= genRegMask(reg);
-    }
-    else if (emitter::isFloatReg(reg))
-    {
-        first.floatRegs ^= genRegMask(reg);
-    }
-    else
-    {
-#ifdef HAS_PREDICATE_REGS
-        first.predicateRegs ^= genRegMask(reg);
-#else
-        unreached();
-#endif // HAS_PREDICATE_REGS
-    }
-    return first;
-}
-
-AllRegsMask operator~(const AllRegsMask& first)
-{
-    AllRegsMask result(~first.gprRegs, ~first.floatRegs
-#ifdef HAS_PREDICATE_REGS
-                       ,
-                       ~first.predicateRegs
-#endif
-                       );
-    return result;
+    regMaskOnlyOne regMask = genRegMask(reg);
+    registers[regIndexForRegister(reg)] |= regMask;
 }
 
 void AllRegsMask::AddRegNumInMask(regNumber reg, var_types type)
@@ -14220,108 +14192,77 @@ void AllRegsMask::AddRegNumInMask(regNumber reg, var_types type)
     AddRegTypeMask(regMask, type);
 }
 
-void AllRegsMask::RemoveRegNumInMask(regNumber reg, var_types type)
+void AllRegsMask::RemoveRegNumFromMask(regNumber reg, var_types type)
 {
     regMaskOnlyOne regMaskToRemove = genRegMask(reg, type);
-
-    if (emitter::isGeneralRegister(reg))
-    {
-        gprRegs &= ~regMaskToRemove;
-    }
-    else if (emitter::isFloatReg(reg))
-    {
-        floatRegs &= ~regMaskToRemove;
-    }
-    else
-    {
-#ifdef HAS_PREDICATE_REGS
-        predicateRegs &= ~regMaskToRemove;
-#else
-        unreached();
-#endif // HAS_PREDICATE_REGS
-    }
+    registers[regIndexForType(type)] &= ~regMaskToRemove;
 }
 
-void AllRegsMask::RemoveRegNumInMask(regNumber reg)
+void AllRegsMask::RemoveRegNumFromMask(regNumber reg)
 {
     regMaskOnlyOne regMaskToRemove = genRegMask(reg);
+    registers[regIndexForRegister(reg)] &= ~regMaskToRemove;
+}
 
-    if (emitter::isGeneralRegister(reg))
-    {
-        gprRegs &= ~regMaskToRemove;
-    }
-    else if (emitter::isFloatReg(reg))
-    {
-        floatRegs &= ~regMaskToRemove;
-    }
-    else
-    {
-#ifdef HAS_PREDICATE_REGS
-        predicateRegs &= ~regMaskToRemove;
-#else
-        unreached();
-#endif // HAS_PREDICATE_REGS
-    }
+void AllRegsMask::RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type)
+{
+    registers[regIndexForType(type)] &= ~regMaskToRemove;
 }
 
 bool AllRegsMask::IsRegNumInMask(regNumber reg, var_types type)
 {
-    if (emitter::isGeneralRegister(reg))
-    {
-        return (gprRegs & genRegMask(reg)) != RBM_NONE;
-    }
-    else if (emitter::isFloatReg(reg))
-    {
-        return (floatRegs & genRegMask(reg, type)) != RBM_NONE;
-    }
-    else
-    {
-#ifdef HAS_PREDICATE_REGS
-        return (predicateRegs & genRegMask(reg)) != RBM_NONE;
-#else
-        unreached();
-#endif // HAS_PREDICATE_REGS
-    }
+    regMaskOnlyOne regMaskToCheck = genRegMask(reg, type);
+    return (registers[regIndexForRegister(reg)] & regMaskToCheck) != RBM_NONE;
 }
 
 bool AllRegsMask::IsRegNumInMask(regNumber reg)
 {
-    regMaskOnlyOne regMask = genRegMask(reg);
-    if (emitter::isGeneralRegister(reg))
-    {
-        return (gprRegs & regMask) != RBM_NONE;
-    }
-    else if (emitter::isFloatReg(reg))
-    {
-        return (floatRegs & regMask) != RBM_NONE;
-    }
-    else
-    {
-#ifdef HAS_PREDICATE_REGS
-        return (predicateRegs & regMask) != RBM_NONE;
-#else
-        unreached();
-#endif // HAS_PREDICATE_REGS
-    }
+    regMaskOnlyOne regMaskToCheck = genRegMask(reg);
+    return (registers[regIndexForRegister(reg)] & regMaskToCheck) != RBM_NONE;
+}
+
+bool AllRegsMask::IsGprMaskPresent(regMaskGpr maskToCheck) const
+{
+    return (gprRegs() & maskToCheck) != RBM_NONE;
+}
+
+bool AllRegsMask::IsFloatMaskPresent(regMaskFloat maskToCheck) const
+{
+    return (floatRegs() & maskToCheck) != RBM_NONE;
 }
 
 bool AllRegsMask::IsOnlyRegNumInMask(regNumber reg)
 {
     regMaskOnlyOne regMask = genRegMask(reg);
-    if (emitter::isGeneralRegister(reg))
-    {
-        return (gprRegs & regMask) == regMask;
-    }
-    else if (emitter::isFloatReg(reg))
-    {
-        return (floatRegs & regMask) == regMask;
-    }
-    else
-    {
-#ifdef HAS_PREDICATE_REGS
-        return (predicateRegs & regMask) == regMask;
+    return (registers[regIndexForRegister(reg)] & regMask) == regMask;
+}
+
+regMaskOnlyOne AllRegsMask::GetRegTypeMask(var_types type) const
+{
+    return registers[regIndexForType(type)];
+}
+
+regMaskOnlyOne AllRegsMask::GetMaskForRegNum(regNumber reg) const
+{
+    return registers[regIndexForRegister(reg)];
+}
+
+regMaskTP AllRegsMask::GetGprFloatCombinedMask() const
+{
+#ifdef TARGET_64BIT
+    return ((regMaskTP)floatRegs() << 32) | gprRegs();
 #else
-        unreached();
-#endif // HAS_PREDICATE_REGS
-    }
+    return ((regMaskTP)floatRegs() << REG_INT_COUNT) | gprRegs();
+#endif
+}
+
+bool AllRegsMask::IsGprOrFloatPresent() const
+{
+    return (gprRegs() | floatRegs()) != RBM_NONE;
+}
+
+regMaskOnlyOne AllRegsMask::OrMask(const _regMaskAll& other, var_types regType) const
+{
+    int regIndex = regIndexForType(regType);
+    return registers[regIndex] | other[regIndex];
 }

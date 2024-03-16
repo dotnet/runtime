@@ -25,12 +25,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #if defined(TARGET_ARM64)
 const regMaskSmall regMasks[] = {
-#define REGDEF(name, rnum, mask, xname, wname) mask,
+#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) mask,
 #include "register.h"
 };
 #else // !TARGET_ARM64
 const regMaskSmall regMasks[] = {
-#define REGDEF(name, rnum, mask, sname) mask,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) mask,
 #include "register.h"
 };
 #endif
@@ -221,21 +221,12 @@ void RegSet::verifyRegistersUsed(AllRegsMask regs)
     // See https://github.com/dotnet/runtime/issues/10411 and
     // https://github.com/dotnet/coreclr/pull/18230 on why we call
     // rsSetGprRegsModified() instead of assert(rsRegsModified())
-    if (regs.gprRegs != RBM_NONE)
-    {
-        rsSetGprRegsModified(regs.gprRegs);
-    }
 
-    if (regs.floatRegs != RBM_NONE)
-    {
-        rsSetFloatRegsModified(regs.floatRegs);
-    }
+    rsSetGprRegsModified(regs.gprRegs());
+    rsSetFloatRegsModified(regs.floatRegs());
 
 #ifdef HAS_PREDICATE_REGS
-    if (regs.predicateRegs != RBM_NONE)
-    {
-        rsSetPredicateRegsModified(regs.predicateRegs);
-    }
+    rsSetPredicateRegsModified(regs.predicateRegs());
 #endif
 }
 
@@ -280,7 +271,9 @@ void RegSet::rsSetRegsModified(regMaskOnlyOne& trackingMask,
                                regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump)
                                    DEBUGARG(regMaskOnlyOne calleeSaveMask))
 {
-    assert(modifiedMask != RBM_NONE);
+    //TODO: Commented this, so that caller don't have to check if modifiedMask is not RBM_NONE
+    // It doesn't harm if this was RBM_NONE, as it will not modify the trackingMask
+    //assert(modifiedMask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
 
 #ifdef DEBUG

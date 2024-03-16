@@ -1081,13 +1081,15 @@ AllRegsMask GenTree::gtGetContainedRegMask()
 // Return Value:
 //    Reg Mask of GenTree node.
 //
+//TODO: All the callers of gtGetRegMask() are just interested in gpr
+// so, this can just return gpr mask and if none exist, just return RBM_NONE
 AllRegsMask GenTree::gtGetRegMask() const
 {
     AllRegsMask resultMask;
 
     if (IsMultiRegCall())
     {
-        resultMask = createRegMask(GetRegNum());
+        resultMask = AllRegsMask(GetRegNum());
         resultMask |= AsCall()->GetOtherRegMask();
     }
     else if (IsCopyOrReloadOfMultiRegCall())
@@ -1125,7 +1127,82 @@ AllRegsMask GenTree::gtGetRegMask() const
 #endif // FEATURE_ARG_SPLIT
     else
     {
-        resultMask = createRegMask(GetRegNum());
+        resultMask = AllRegsMask(GetRegNum());
+    }
+
+    return resultMask;
+}
+
+//---------------------------------------------------------------
+// gtGetRegMask: Get the gpr reg mask of the node.
+//
+// Arguments:
+//    None
+//
+// Return Value:
+//    Reg Mask of GenTree node.
+//
+// Note: This method would populate the reg mask with only the GPR registers.
+regMaskGpr GenTree::gtGetGprRegMask() const
+{
+    regMaskGpr resultMask = RBM_NONE;
+
+    if (IsMultiRegCall())
+    {
+        regNumber reg = GetRegNum();
+        resultMask |= -static_cast<int>(!regIndexForRegister(reg)) & genRegMask(reg);
+
+#if FEATURE_MULTIREG_RET
+        const GenTreeCall* call = AsCall();
+        for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
+        {
+            regNumber otherReg = (regNumber)call->gtOtherRegs[i];
+            if (otherReg != REG_NA)
+            {
+                resultMask |= -static_cast<int>(!regIndexForRegister(otherReg)) & genRegMask(otherReg);
+                continue;
+            }
+            break;
+        }
+#endif
+    }
+    else if (IsCopyOrReloadOfMultiRegCall())
+    {
+        // A multi-reg copy or reload, will have valid regs for only those
+        // positions that need to be copied or reloaded.  Hence we need
+        // to consider only those registers for computing reg mask.
+
+        const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
+        const GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
+        const unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
+
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            regNumber reg = copyOrReload->GetRegNumByIdx(i);
+            if (reg != REG_NA)
+            {
+                resultMask |= -static_cast<int>(!regIndexForRegister(reg)) & genRegMask(reg);
+            }
+        }
+    }
+#if FEATURE_ARG_SPLIT
+    else if (compFeatureArgSplit() && OperIsPutArgSplit())
+    {
+        const GenTreePutArgSplit* splitArg = AsPutArgSplit();
+        const unsigned            regCount = splitArg->gtNumRegs;
+
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            regNumber reg = splitArg->GetRegNumByIdx(i);
+            assert(reg != REG_NA);
+            resultMask |= -static_cast<int>(!regIndexForRegister(reg)) & genRegMask(reg);
+        }
+    }
+#endif // FEATURE_ARG_SPLIT
+    else
+    {
+        regNumber reg = GetRegNum();
+        resultMask |= -static_cast<int>(!regIndexForRegister(reg)) & genRegMask(reg);
     }
 
     return resultMask;
@@ -27188,23 +27265,7 @@ AllRegsMask ReturnTypeDesc::GetABIReturnRegs() const
     for (unsigned i = 0; i < count; ++i)
     {
         regNumber reg = GetABIReturnReg(i);
-        if ((reg >= REG_INT_FIRST) && (reg <= REG_INT_LAST))
-        {
-            resultMask.gprRegs |= genRegMask(reg);
-        }
-        else if ((reg >= REG_FP_FIRST) && (reg <= REG_FP_LAST))
-        {
-            resultMask.floatRegs |= genRegMask(reg);
-        }
-        else
-        {
-#ifdef HAS_PREDICATE_REGS
-            assert((reg >= REG_MASK_FIRST) && (reg <= REG_MASK_LAST));
-            resultMask.predicateRegs |= genRegMask(reg);
-#else
-            unreached();
-#endif
-        }
+        resultMask.AddRegNumInMask(reg);
     }
 
     return resultMask;

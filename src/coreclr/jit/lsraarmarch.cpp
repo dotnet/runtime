@@ -414,7 +414,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     if (call->HasSwiftErrorHandling())
     {
         // Tree is a Swift call with error handling; error register should have been killed
-        assert((killMask.gprRegs & RBM_SWIFT_ERROR) != 0);
+        assert((killMask.gprRegs() & RBM_SWIFT_ERROR) != 0);
 
         // After a Swift call that might throw returns, we expect the error register to be consumed
         // by a GT_SWIFT_ERROR node. However, we want to ensure the error register won't be trashed

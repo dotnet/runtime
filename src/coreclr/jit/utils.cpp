@@ -111,6 +111,20 @@ extern const BYTE opcodeArgKinds[] = {
 
 /*****************************************************************************/
 
+const int regIndexForRegister(regNumber reg)
+{
+    static const BYTE _registerTypeIndex[] = {
+#ifdef TARGET_ARM64
+#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) regTypeTag,
+#else
+#define REGDEF(name, rnum, mask, sname, regTypeTag) regTypeTag,
+#endif
+    #include "register.h"
+    };
+
+    return _registerTypeIndex[reg];
+}
+
 const char* varTypeName(var_types vt)
 {
     static const char* const varTypeNames[] = {
@@ -139,9 +153,9 @@ const char* getRegName(regNumber reg)
 
     static const char* const regNames[] = {
 #if defined(TARGET_ARM64)
-#define REGDEF(name, rnum, mask, xname, wname) xname,
+#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) xname,
 #else
-#define REGDEF(name, rnum, mask, sname) sname,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) sname,
 #endif
 #include "register.h"
     };
@@ -227,7 +241,7 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 #elif defined(TARGET_ARM64)
 
     static const char* regNamesFloat[] = {
-#define REGDEF(name, rnum, mask, xname, wname) xname,
+#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) xname,
 #include "register.h"
     };
     assert((unsigned)reg < ArrLen(regNamesFloat));
@@ -237,7 +251,7 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 #elif defined(TARGET_LOONGARCH64)
 
     static const char* regNamesFloat[] = {
-#define REGDEF(name, rnum, mask, sname) sname,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) sname,
 #include "register.h"
     };
 
@@ -247,16 +261,16 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 
 #else
     static const char* regNamesFloat[] = {
-#define REGDEF(name, rnum, mask, sname) "x" sname,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) "x" sname,
 #include "register.h"
     };
 #ifdef FEATURE_SIMD
     static const char* regNamesYMM[] = {
-#define REGDEF(name, rnum, mask, sname) "y" sname,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) "y" sname,
 #include "register.h"
     };
     static const char* regNamesZMM[] = {
-#define REGDEF(name, rnum, mask, sname) "z" sname,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) "z" sname,
 #include "register.h"
     };
 #endif // FEATURE_SIMD
@@ -455,11 +469,11 @@ void dspRegMask(AllRegsMask mask, size_t minSiz)
 
     printf("[");
 
-    sep = dspRegRange(mask.gprRegs, minSiz, sep, REG_INT_FIRST, REG_INT_LAST);
-    sep = dspRegRange(mask.floatRegs, minSiz, sep, REG_FP_FIRST, REG_FP_LAST);
+    sep = dspRegRange(mask.gprRegs(), minSiz, sep, REG_INT_FIRST, REG_INT_LAST);
+    sep = dspRegRange(mask.floatRegs(), minSiz, sep, REG_FP_FIRST, REG_FP_LAST);
 
 #ifdef TARGET_XARCH
-    sep = dspRegRange(mask.predicateRegs, minSiz, sep, REG_MASK_FIRST, REG_MASK_LAST);
+    sep = dspRegRange(mask.predicateRegs(), minSiz, sep, REG_MASK_FIRST, REG_MASK_LAST);
 #endif // TARGET_XARCH
 
     printf("]");

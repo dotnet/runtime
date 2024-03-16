@@ -3643,24 +3643,24 @@ void Compiler::dumpRegMask(regMaskOnlyOne mask) const
 //
 void Compiler::dumpRegMask(AllRegsMask mask) const
 {
-    if (mask.gprRegs == RBM_ALLINT)
+    if (mask.gprRegs() == RBM_ALLINT)
     {
         printf("[allInt]");
     }
-    else if (mask.gprRegs == (RBM_ALLINT & ~RBM_FPBASE))
+    else if (mask.gprRegs() == (RBM_ALLINT & ~RBM_FPBASE))
     {
         printf("[allIntButFP]");
     }
-    else if (mask.floatRegs == RBM_ALLFLOAT)
+    else if (mask.floatRegs() == RBM_ALLFLOAT)
     {
         printf("[allFloat]");
     }
-    else if (mask.floatRegs == RBM_ALLDOUBLE)
+    else if (mask.floatRegs() == RBM_ALLDOUBLE)
     {
         printf("[allDouble]");
     }
 #ifdef TARGET_XARCH
-    else if (mask.predicateRegs == RBM_ALLMASK)
+    else if (mask.predicateRegs() == RBM_ALLMASK)
     {
         printf("[allMask]");
     }

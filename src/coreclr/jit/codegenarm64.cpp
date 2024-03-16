@@ -909,8 +909,8 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lo
     assert(spDelta <= 0);
     assert(-spDelta <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
 
-    regMaskTP maskSaveRegsFloat = regsToSaveMask.floatRegs;
-    regMaskTP maskSaveRegsInt   = regsToSaveMask.gprRegs;
+    regMaskTP maskSaveRegsInt   = regsToSaveMask.gprRegs();
+    regMaskTP maskSaveRegsFloat = regsToSaveMask.floatRegs();
 
     assert(compiler->IsGprRegMask(maskSaveRegsInt));
     assert(compiler->IsFloatRegMask(maskSaveRegsFloat));
@@ -1027,8 +1027,8 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask,
 {
     assert(spDelta >= 0);
 
-    regMaskGpr   maskRestoreRegsInt   = regsToRestoreMask.gprRegs;
-    regMaskFloat maskRestoreRegsFloat = regsToRestoreMask.floatRegs;
+    regMaskGpr   maskRestoreRegsInt   = regsToRestoreMask.gprRegs();
+    regMaskFloat maskRestoreRegsFloat = regsToRestoreMask.floatRegs();
 
     assert(compiler->IsGprRegMask(maskRestoreRegsInt));
     assert(compiler->IsFloatRegMask(maskRestoreRegsFloat));
@@ -3971,7 +3971,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
         instGen_MemoryBarrier();
 
-        gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask().gprRegs);
+        gcInfo.gcMarkRegSetNpt(addr->gtGetGprRegMask());
     }
 
     if (targetReg != REG_NA)
@@ -4121,7 +4121,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
         instGen_MemoryBarrier();
 
-        gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask().gprRegs);
+        gcInfo.gcMarkRegSetNpt(addr->gtGetGprRegMask());
     }
 
     if (varTypeIsSmall(treeNode->TypeGet()) && varTypeIsSigned(treeNode->TypeGet()))
@@ -5137,7 +5137,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         AllRegsMask callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
         // assert that all registers in callTargetMask are in the callKillSet
-        noway_assert((callTargetMask & callKillSet.gprRegs) == callTargetMask);
+        noway_assert((callTargetMask & callKillSet.gprRegs()) == callTargetMask);
 
         callTarget = callTargetReg;
 
@@ -5480,7 +5480,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
     genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);
 
-    if ((genRegMask(initReg) & AllRegsMask_PROFILER_ENTER_TRASH.gprRegs) != RBM_NONE)
+    if (AllRegsMask_PROFILER_ENTER_TRASH.IsRegNumInMask(initReg))
     {
         *pInitRegZeroed = false;
     }

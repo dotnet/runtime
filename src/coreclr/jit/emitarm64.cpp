@@ -3300,13 +3300,13 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
 // clang-format off
 static const char * const  xRegNames[] =
 {
-    #define REGDEF(name, rnum, mask, xname, wname) xname,
+    #define REGDEF(name, rnum, mask, xname, wname, regTypeTag) xname,
     #include "register.h"
 };
 
 static const char * const  wRegNames[] =
 {
-    #define REGDEF(name, rnum, mask, xname, wname) wname,
+    #define REGDEF(name, rnum, mask, xname, wname, regTypeTag) wname,
     #include "register.h"
 };
 
@@ -18413,8 +18413,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     // Trim out any callee-trashed registers from the live set.
     AllRegsMask savedSet = emitGetGCRegsSavedOrModified(methHnd);
-    gcrefRegs &= savedSet.gprRegs;
-    byrefRegs &= savedSet.gprRegs;
+    gcrefRegs &= savedSet.gprRegs();
+    byrefRegs &= savedSet.gprRegs();
 
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)

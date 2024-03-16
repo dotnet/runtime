@@ -703,23 +703,17 @@ bool LinearScan::isContainableMemoryOp(GenTree* node)
 void LinearScan::addRefsForPhysRegMask(AllRegsMask mask, LsraLocation currentLoc, RefType refType, bool isLastUse)
 {
     assert(refType == RefTypeKill);
-    if (mask.gprRegs != RBM_NONE)
-    {
-        compiler->codeGen->regSet.rsSetGprRegsModified(mask.gprRegs DEBUGARG(true));
-        addRefsForPhysRegMask(mask.gprRegs, currentLoc, refType, isLastUse);
-    }
-    if (mask.floatRegs != RBM_NONE)
-    {
-        compiler->codeGen->regSet.rsSetFloatRegsModified(mask.floatRegs DEBUGARG(true));
-        addRefsForPhysRegMask(mask.floatRegs, currentLoc, refType, isLastUse);
-    }
+
+    compiler->codeGen->regSet.rsSetGprRegsModified(mask.gprRegs() DEBUGARG(true));
+    compiler->codeGen->regSet.rsSetFloatRegsModified(mask.floatRegs() DEBUGARG(true));
+
+    addRefsForPhysRegMask(mask.gprRegs(), currentLoc, refType, isLastUse);
+    addRefsForPhysRegMask(mask.floatRegs(), currentLoc, refType, isLastUse);
+
 #ifdef HAS_PREDICATE_REGS
-    if (mask.predicateRegs != RBM_NONE)
-    {
-        compiler->codeGen->regSet.rsSetPredicateRegsModified(mask.predicateRegs DEBUGARG(true));
-        addRefsForPhysRegMask(mask.predicateRegs, currentLoc, refType, isLastUse);
-    }
-#endif // HAS_PREDICATE_REGS
+    compiler->codeGen->regSet.rsSetPredicateRegsModified(mask.predicateRegs() DEBUGARG(true));
+    addRefsForPhysRegMask(mask.predicateRegs(), currentLoc, refType, isLastUse);
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -896,22 +890,22 @@ AllRegsMask LinearScan::getKillSetForCall(GenTreeCall* call)
     // if there is no FP used, we can ignore the FP kills
     if (!compiler->compFloatingPointUsed)
     {
-        killMask.floatRegs &= ~RBM_FLT_CALLEE_TRASH;
+        killMask.RemoveRegTypeFromMask(RBM_FLT_CALLEE_TRASH, TYP_FLOAT);
 #if defined(TARGET_XARCH) || defined(HAS_PREDICATE_REGS)
-        killMask.predicateRegs &= ~RBM_MSK_CALLEE_TRASH;
+        killMask.RemoveRegTypeFromMask(RBM_MSK_CALLEE_TRASH, TYP_MASK);
 #endif // TARGET_XARCH || HAS_PREDICATE_REGS
     }
 #ifdef TARGET_ARM
     if (call->IsVirtualStub())
     {
-        killMask.gprRegs |= compiler->virtualStubParamInfo->GetRegMask();
+        killMask.AddGprRegMask(compiler->virtualStubParamInfo->GetRegMask());
     }
 #else  // !TARGET_ARM
     // Verify that the special virtual stub call registers are in the kill mask.
     // We don't just add them unconditionally to the killMask because for most architectures
     // they are already in the RBM_CALLEE_TRASH set,
     // and we don't want to introduce extra checks and calls in this hot function.
-    assert(!call->IsVirtualStub() || ((killMask.gprRegs & compiler->virtualStubParamInfo->GetRegMask()) ==
+    assert(!call->IsVirtualStub() || ((killMask.gprRegs() & compiler->virtualStubParamInfo->GetRegMask()) ==
                                       compiler->virtualStubParamInfo->GetRegMask()));
 #endif // !TARGET_ARM
 
@@ -920,7 +914,7 @@ AllRegsMask LinearScan::getKillSetForCall(GenTreeCall* call)
     // so don't use the register post-call until it is consumed by SwiftError.
     if (call->HasSwiftErrorHandling())
     {
-        killMask.gprRegs |= RBM_SWIFT_ERROR;
+        killMask.AddGprRegMask(RBM_SWIFT_ERROR);
     }
 #endif // SWIFT_SUPPORT
 
@@ -956,7 +950,7 @@ AllRegsMask LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
             if (isCopyBlk)
             {
                 // rep movs kills RCX, RDI and RSI
-                killMask.gprRegs = RBM_RCX | RBM_RDI | RBM_RSI;
+                killMask.AddGprRegMask(RBM_RCX | RBM_RDI | RBM_RSI);
             }
             else
             {
@@ -964,7 +958,7 @@ AllRegsMask LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
                 // (Note that the Data() node, if not constant, will be assigned to
                 // RCX, but it's find that this kills it, as the value is not available
                 // after this node in any case.)
-                killMask.gprRegs = RBM_RDI | RBM_RCX;
+                killMask.AddGprRegMask(RBM_RDI | RBM_RCX);
             }
             break;
 #endif
@@ -1065,7 +1059,7 @@ AllRegsMask LinearScan::getKillSetForNode(GenTree* tree)
         case GT_LSH_HI:
         case GT_RSH_LO:
 #endif
-            killMask.gprRegs = getKillSetForShiftRotate(tree->AsOp());
+            killMask.AddGprRegMask(getKillSetForShiftRotate(tree->AsOp()));
             break;
 
         case GT_MUL:
@@ -1073,14 +1067,14 @@ AllRegsMask LinearScan::getKillSetForNode(GenTree* tree)
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
         case GT_MUL_LONG:
 #endif
-            killMask.gprRegs = getKillSetForMul(tree->AsOp());
+            killMask.AddGprRegMask(getKillSetForMul(tree->AsOp()));
             break;
 
         case GT_MOD:
         case GT_DIV:
         case GT_UMOD:
         case GT_UDIV:
-            killMask.gprRegs = getKillSetForModDiv(tree->AsOp());
+            killMask.AddGprRegMask(getKillSetForModDiv(tree->AsOp()));
             break;
 
         case GT_STORE_BLK:
@@ -1115,7 +1109,7 @@ AllRegsMask LinearScan::getKillSetForNode(GenTree* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            killMask.gprRegs = getKillSetForHWIntrinsic(tree->AsHWIntrinsic());
+            killMask.AddGprRegMask(getKillSetForHWIntrinsic(tree->AsHWIntrinsic()));
             break;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -1152,10 +1146,10 @@ AllRegsMask LinearScan::getKillSetForNode(GenTree* tree)
 
 bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, AllRegsMask killMask)
 {
-    assert(compiler->IsGprRegMask(killMask.gprRegs));
-    assert(compiler->IsFloatRegMask(killMask.floatRegs));
+    assert(compiler->IsGprRegMask(killMask.gprRegs()));
+    assert(compiler->IsFloatRegMask(killMask.floatRegs()));
 #ifdef HAS_PREDICATE_REGS
-    assert(compiler->IsPredicateRegMask(killMask.predicateRegs));
+    assert(compiler->IsPredicateRegMask(killMask.predicateRegs()));
 #endif // HAS_PREDICATE_REGS
 
     bool insertedKills = false;
@@ -1197,7 +1191,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                 Interval*      interval     = getIntervalForLocalVar(varIndex);
                 regMaskOnlyOne regsKillMask = killMask.GetRegTypeMask(interval->registerType);
                 const bool     isCallKill =
-                    (killMask.gprRegs == RBM_INT_CALLEE_TRASH) || (killMask == AllRegsMask_CALLEE_TRASH);
+                    (killMask.gprRegs() == RBM_INT_CALLEE_TRASH) || (killMask == AllRegsMask_CALLEE_TRASH);
 
                 if (isCallKill)
                 {
@@ -2560,11 +2554,11 @@ void           LinearScan::buildIntervals()
             AllRegsMask killed;
 #if defined(TARGET_XARCH)
             // Poisoning uses EAX for small vars and rep stosd that kills edi, ecx and eax for large vars.
-            killed.gprRegs = RBM_EDI | RBM_ECX | RBM_EAX;
+            killed.AddGprRegMask(RBM_EDI | RBM_ECX | RBM_EAX);
 #else
             // Poisoning uses REG_SCRATCH for small vars and memset helper for big vars.
             killed = compiler->compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
-            killed.gprRegs |= genRegMask(REG_SCRATCH);
+            killed.AddRegNumInMask(REG_SCRATCH);
 #endif
             addRefsForPhysRegMask(killed, currentLoc + 1, RefTypeKill, true);
             currentLoc += 2;
@@ -3094,32 +3088,14 @@ void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, AllRegsMask dstCandi
 
     for (int i = 0; i < dstCount; i++)
     {
-        singleRegMask thisDstCandidates;
         // In case of multi-reg call node, we have to query the i'th position return register.
         // For all other cases of multi-reg definitions, the registers must be in sequential order.
         regNumber thisReg = tree->AsCall()->GetReturnTypeDesc()->GetABIReturnReg(i);
-        thisDstCandidates = genRegMask(thisReg);
 
-        if (emitter::isGeneralRegister(thisReg))
-        {
-            assert((dstCandidates.gprRegs & thisDstCandidates) != RBM_NONE);
-            dstCandidates.gprRegs &= ~thisDstCandidates;
-        }
-        else if (emitter::isFloatReg(thisReg))
-        {
-            assert((dstCandidates.floatRegs & thisDstCandidates) != RBM_NONE);
-            dstCandidates.floatRegs &= ~thisDstCandidates;
-        }
-#ifdef HAS_PREDICATE_REGS
-        else
-        {
-            assert(emitter::isMaskReg(thisReg));
-            assert((dstCandidates.predicateRegs & thisDstCandidates) != RBM_NONE);
-            dstCandidates.predicateRegs &= ~thisDstCandidates;
-        }
-#endif // HAS_PREDICATE_REGS
+        assert(dstCandidates.IsRegNumInMask(thisReg));
+        dstCandidates.RemoveRegNumFromMask(thisReg);
 
-        BuildDef(tree, thisDstCandidates, i);
+        BuildDef(tree, genRegMask(thisReg), i);
     }
 }
 
@@ -3187,10 +3163,10 @@ void LinearScan::BuildKills(GenTree* tree, AllRegsMask killMask)
         // RefPositions in that case.
         // This must be done after the kills, so that we know which large vectors are still live.
         //
-        if ((killMask.floatRegs & RBM_FLT_CALLEE_TRASH) != RBM_NONE)
+        if ((killMask.IsFloatMaskPresent(RBM_FLT_CALLEE_TRASH)))
         {
             buildUpperVectorSaveRefPositions(tree,
-                                             currentLoc + 1 DEBUG_ARG((killMask.floatRegs & RBM_FLT_CALLEE_TRASH)));
+                                             currentLoc + 1 DEBUG_ARG((killMask.floatRegs() & RBM_FLT_CALLEE_TRASH)));
         }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     }
@@ -3307,7 +3283,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
         {
             // This local's value is going to be available in this register so
             // keep it in the preferences.
-            unpref.RemoveRegNumInMask(placedArgLocals[i].Reg);
+            unpref.RemoveRegNumFromMask(placedArgLocals[i].Reg);
         }
     }
 

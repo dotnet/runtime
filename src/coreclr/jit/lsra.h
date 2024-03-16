@@ -66,23 +66,14 @@ RegisterType regType(T type)
 
 // TODO: If there are lot of callers of RegisterType, simplify it.
 template <class T>
-FORCEINLINE unsigned regTypeIndex(T type)
+FORCEINLINE int regIndexForType(T vt)
 {
-    if (varTypeUsesIntReg(type))
-    {
-        return 0;
-    }
-#ifdef HAS_PREDICATE_REGS
-    else if (varTypeUsesMaskReg(type))
-    {
-        return 2;
-    }
-#endif // HAS_PREDICATE_REGS
-    else
-    {
-        assert(varTypeUsesFloatReg(type));
-        return 1;
-    }
+    int type = varTypeRegister[TypeGet(vt)];
+    assert(type <= REGISTER_TYPE_COUNT);
+#ifndef HAS_PREDICATE_REGS
+    assert(type != VTR_MASK);
+#endif
+    return (type - 1);
 }
 
 //------------------------------------------------------------------------
@@ -1257,7 +1248,7 @@ private:
 
     regMaskOnlyOne getFreeCandidates(regMaskOnlyOne candidates, var_types regType)
     {
-        regMaskOnlyOne result = candidates & m_AvailableRegs[regTypeIndex(regType)];
+        regMaskOnlyOne result = candidates & m_AvailableRegs[regIndexForType(regType)];
 #ifdef TARGET_ARM
         // For TYP_DOUBLE on ARM, we can only use register for which the odd half is
         // also available.
@@ -1759,7 +1750,10 @@ private:
 // register type. That wawy we do not have to query and fetch the appropriate
 // entry again and agin.
 #ifdef HAS_PREDICATE_REGS
-    regMaskOnlyOne m_AvailableRegs[3]; // TODO: Change this to m_AvailableGprRegs, m_AvailableFloatRegs, etc.
+    // TODO: Change this to m_AvailableGprRegs, m_AvailableFloatRegs, etc.
+    // TODO: Check why this can't be AllRegsMask
+    regMaskOnlyOne m_AvailableRegs[3];
+
 #else
     regMaskOnlyOne m_AvailableRegs[2];
 #endif // HAS_PREDICATE_REGS
@@ -1834,10 +1828,10 @@ private:
     void setRegsInUse(AllRegsMask regMask)
     {
         // TODO: Fix this later.
-        m_AvailableRegs[0] &= ~regMask.gprRegs;
-        m_AvailableRegs[1] &= ~regMask.floatRegs;
+        m_AvailableRegs[0] &= ~regMask.gprRegs();
+        m_AvailableRegs[1] &= ~regMask.floatRegs();
 #ifdef HAS_PREDICATE_REGS
-        m_AvailableRegs[2] &= ~regMask.predicateRegs;
+        m_AvailableRegs[2] &= ~regMask.predicateRegs();
 #endif
     }
     void setRegInUse(regNumber reg, var_types regType)
@@ -1867,10 +1861,10 @@ private:
     void makeRegsAvailable(AllRegsMask regMask)
     {
         // TODO: This will be just `regMask`
-        m_AvailableRegs[0] |= regMask.gprRegs;
-        m_AvailableRegs[1] |= regMask.floatRegs;
+        m_AvailableRegs[0] |= regMask.gprRegs();
+        m_AvailableRegs[1] |= regMask.floatRegs();
 #ifdef HAS_PREDICATE_REGS
-        m_AvailableRegs[2] |= regMask.predicateRegs;
+        m_AvailableRegs[2] |= regMask.predicateRegs();
         assert(compiler->IsPredicateRegMask(m_AvailableRegs[2]));
 #endif
         assert(compiler->IsGprRegMask(m_AvailableRegs[0]));
@@ -1886,7 +1880,7 @@ private:
         // rbx - 0
         // ...
         // xmm0 - 1
-        // here it will be, m_AvailableRegs[regTypeIndex[reg]] =
+        // here it will be, m_AvailableRegs[regIndexForType[reg]] =
         if (emitter::isGeneralRegisterOrZR(reg))
 #else
         if (emitter::isGeneralRegister(reg))
@@ -1929,7 +1923,7 @@ private:
             assert(compiler->IsFloatRegMask(regMask));
         }
 #endif
-        m_AvailableRegs[regTypeIndex(regType)] |= regMask;
+        m_AvailableRegs[regIndexForType(regType)] |= regMask;
     }
 
     void clearAllNextIntervalRef();
@@ -1960,19 +1954,19 @@ private:
     {
         // TODO: If we decide to have curr_RegistersWithConstants, then here we will
         // just operate on curr_RegistersWithConstants and assert
-        // assert(m_RegistersWithConstants[regTypeIndex(regType)] == curr_RegistersWithConstants);
+        // assert(m_RegistersWithConstants[regIndexForType(regType)] == curr_RegistersWithConstants);
         // but we will have to make sure that we save it back too??
-        m_RegistersWithConstants[regTypeIndex(regType)] &= ~getRegMask(reg, regType);
+        m_RegistersWithConstants[regIndexForType(regType)] &= ~getRegMask(reg, regType);
     }
     void setConstantReg(regNumber reg, var_types regType)
     {
-        m_RegistersWithConstants[regTypeIndex(regType)] |= getRegMask(reg, regType);
+        m_RegistersWithConstants[regIndexForType(regType)] |= getRegMask(reg, regType);
     }
     bool isRegConstant(regNumber reg, var_types regType)
     {
         reg                    = getRegForType(reg, regType);
         regMaskOnlyOne regMask = getRegMask(reg, regType);
-        return (m_RegistersWithConstants[regTypeIndex(regType)] & regMask) == regMask;
+        return (m_RegistersWithConstants[regIndexForType(regType)] & regMask) == regMask;
     }
     regMaskOnlyOne getMatchingConstants(regMaskOnlyOne mask, Interval* currentInterval, RefPosition* refPosition);
 
@@ -2021,7 +2015,7 @@ private:
     }
     void clearRegBusyUntilKill(regNumber reg)
     {
-        regsBusyUntilKill.RemoveRegNumInMask(reg);
+        regsBusyUntilKill.RemoveRegNumFromMask(reg);
     }
 
     bool isRegInUse(regNumber reg, var_types regType)

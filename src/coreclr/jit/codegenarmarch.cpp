@@ -1753,7 +1753,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     GetEmitter()->emitIns_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), node->GetRegNum(),
                                 node->gtElemOffset);
 
-    gcInfo.gcMarkRegSetNpt(base->gtGetRegMask().gprRegs);
+    gcInfo.gcMarkRegSetNpt(base->gtGetGprRegMask());
 
     genProduceReg(node);
 }
@@ -3390,8 +3390,8 @@ void CodeGen::genCall(GenTreeCall* call)
         killMask                 = compiler->compHelperCallKillSet(helpFunc);
     }
 
-    assert((gcInfo.gcRegGCrefSetCur & killMask.gprRegs) == 0);
-    assert((gcInfo.gcRegByrefSetCur & killMask.gprRegs) == 0);
+    assert(!killMask.IsGprMaskPresent(gcInfo.gcRegGCrefSetCur));
+    assert(!killMask.IsGprMaskPresent(gcInfo.gcRegByrefSetCur));
 #endif
 
     var_types returnType = call->TypeGet();

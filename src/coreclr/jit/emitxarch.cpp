@@ -9519,8 +9519,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     // Trim out any callee-trashed registers from the live set.
     AllRegsMask savedSet = emitGetGCRegsSavedOrModified(methHnd);
-    gcrefRegs &= savedSet.gprRegs;
-    byrefRegs &= savedSet.gprRegs;
+    gcrefRegs &= savedSet.gprRegs();
+    byrefRegs &= savedSet.gprRegs();
 
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)
@@ -10222,7 +10222,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
 const char* emitter::emitXMMregName(unsigned reg) const
 {
     static const char* const regNames[] = {
-#define REGDEF(name, rnum, mask, sname) "x" sname,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) "x" sname,
 #include "register.h"
     };
 
@@ -10240,7 +10240,7 @@ const char* emitter::emitXMMregName(unsigned reg) const
 const char* emitter::emitYMMregName(unsigned reg) const
 {
     static const char* const regNames[] = {
-#define REGDEF(name, rnum, mask, sname) "y" sname,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) "y" sname,
 #include "register.h"
     };
 
@@ -10258,7 +10258,7 @@ const char* emitter::emitYMMregName(unsigned reg) const
 const char* emitter::emitZMMregName(unsigned reg) const
 {
     static const char* const regNames[] = {
-#define REGDEF(name, rnum, mask, sname) "z" sname,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) "z" sname,
 #include "register.h"
     };
 

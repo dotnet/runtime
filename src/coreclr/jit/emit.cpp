@@ -3516,19 +3516,10 @@ void emitter::emitDispGprRegSet(regMaskGpr regs)
 
 void emitter::emitDispRegSet(AllRegsMask regs)
 {
-    if (regs.gprRegs != RBM_NONE)
-    {
-        emitDispGprRegSet(regs.gprRegs);
-    }
-    if (regs.floatRegs != RBM_NONE)
-    {
-        emitDispRegSet(REG_FP_FIRST, REG_FP_LAST, regs.floatRegs);
-    }
+    emitDispGprRegSet(regs.gprRegs());
+    emitDispGprRegSet(regs.floatRegs());
 #ifdef HAS_PREDICATE_REGS
-    if (regs.predicateRegs != RBM_NONE)
-    {
-        emitDispRegSet(REG_MASK_FIRST, REG_MASK_LAST, regs.predicateRegs);
-    }
+    emitDispGprRegSet(regs.predicateRegs());
 #endif
 }
 
@@ -10403,7 +10394,7 @@ AllRegsMask emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
         CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(methHnd);
 
         // Get the set of registers that this call kills and remove it from the saved set.
-        regMaskGpr savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helpFunc).gprRegs;
+        regMaskGpr savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helpFunc).gprRegs();
 
 #ifdef DEBUG
         if (emitComp->verbose)

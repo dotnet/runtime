@@ -970,45 +970,6 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskOnlyOne& mask)
 }
 
 //------------------------------------------------------------------------------
-// genFirstRegNumFromMaskAndToggle : Maps first bit set in the register mask to a
-//          register number and also toggle the bit in the `mask`.
-// Arguments:
-//    mask               - the register mask
-//
-// Return Value:
-//    The number of the first register contained in the mask and updates the `mask` to toggle
-//    the bit.
-//
-
-inline regNumber genFirstRegNumFromMaskAndToggle(AllRegsMask& mask)
-{
-    assert(!mask.IsEmpty()); // Must have one bit set, so can't have a mask of zero
-
-    /* Convert the mask to a register number */
-    regNumber regNum;
-
-    if (mask.gprRegs != RBM_NONE)
-    {
-        regNum = (regNumber)BitOperations::BitScanForward(mask.gprRegs);
-        mask.gprRegs ^= genRegMask(regNum);
-    }
-#ifdef HAS_PREDICATE_REGS
-    else if (mask.predicateRegs != RBM_NONE)
-    {
-        regNum = (regNumber)BitOperations::BitScanForward(mask.predicateRegs);
-        mask.predicateRegs ^= genRegMask(regNum);
-    }
-#endif
-    else
-    {
-        regNum = (regNumber)BitOperations::BitScanForward(mask.floatRegs);
-        mask.floatRegs ^= genRegMask(regNum);
-    }
-
-    return regNum;
-}
-
-//------------------------------------------------------------------------------
 // genFirstRegNumFromMask : Maps first bit set in the register mask to a register number.
 //
 // Arguments:
@@ -1025,21 +986,24 @@ inline regNumber genFirstRegNumFromMask(AllRegsMask& mask)
     /* Convert the mask to a register number */
     regNumber regNum;
 
-    if (mask.gprRegs != RBM_NONE)
-    {
-        regNum = (regNumber)BitOperations::BitScanForward(mask.gprRegs);
-    }
+    regMaskTP gprOrFloatMask = mask.GetGprFloatCombinedMask();
+
 #ifdef HAS_PREDICATE_REGS
-    else if (mask.predicateRegs != RBM_NONE)
+    // Only check this condition if there are predicate register support
+    // is present.
+    // If not, then gprOrFloatMask should be non-empty, and we will hit the
+    // above assert of IsEmpty() anyway.
+    if (gprOrFloatMask != RBM_NONE)
     {
-        regNum = (regNumber)BitOperations::BitScanForward(mask.predicateRegs);
+        regNum = (regNumber)BitOperations::BitScanForward(gprOrFloatMask);
     }
-#endif
     else
     {
-        regNum = (regNumber)BitOperations::BitScanForward(mask.floatRegs);
+        regNum = (regNumber)BitOperations::BitScanForward(mask.predicateRegs());
     }
-
+#else
+    regNum = (regNumber)BitOperations::BitScanForward(gprOrFloatMask);
+#endif
     return regNum;
 }
 
@@ -1064,26 +1028,22 @@ inline regNumber genFirstRegNumFromMask(regMaskOnlyOne mask)
     return regNum;
 }
 
-inline AllRegsMask createRegMask(regNumber reg)
+//------------------------------------------------------------------------------
+// genFirstRegNumFromMaskAndToggle : Maps first bit set in the register mask to a
+//          register number and also toggle the bit in the `mask`.
+// Arguments:
+//    mask               - the register mask
+//
+// Return Value:
+//    The number of the first register contained in the mask and updates the `mask` to toggle
+//    the bit.
+//
+
+inline regNumber genFirstRegNumFromMaskAndToggle(AllRegsMask& mask)
 {
-    AllRegsMask result;
-    if (emitter::isGeneralRegister(reg))
-    {
-        result.gprRegs = genRegMask(reg);
-    }
-    else if (emitter::isFloatReg(reg))
-    {
-        result.floatRegs |= genRegMask(reg);
-    }
-    else
-    {
-#ifdef HAS_PREDICATE_REGS
-        result.predicateRegs |= genRegMask(reg);
-#else
-        unreached();
-#endif // HAS_PREDICATE_REGS
-    }
-    return result;
+    regNumber regNum = genFirstRegNumFromMask(mask);
+    mask ^= regNum;
+    return regNum;
 }
 
 /*****************************************************************************
@@ -1237,6 +1197,7 @@ inline const char* varTypeGCstring(var_types type)
 /*****************************************************************************/
 
 const char* varTypeName(var_types);
+const int   regIndexForRegister(regNumber reg);
 
 /*****************************************************************************/
 //  Helpers to pull little-endian values out of a byte stream.
@@ -4547,13 +4508,13 @@ inline void* operator new[](size_t sz, Compiler* compiler, CompMemKind cmk)
 
 inline void printRegMask(AllRegsMask mask)
 {
-    printf(REG_MASK_ALL_FMT, mask.gprRegs);
+    printf(REG_MASK_ALL_FMT, mask.gprRegs());
     printf(" ");
-    printf(REG_MASK_ALL_FMT, mask.floatRegs);
+    printf(REG_MASK_ALL_FMT, mask.floatRegs());
 
 #ifdef HAS_PREDICATE_REGS
     printf(" ");
-    printf(REG_MASK_ALL_FMT, mask.predicateRegs);
+    printf(REG_MASK_ALL_FMT, mask.predicateRegs());
 #endif // HAS_PREDICATE_REGS
 }
 

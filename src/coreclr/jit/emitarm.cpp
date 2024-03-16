@@ -4695,8 +4695,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     // Trim out any callee-trashed registers from the live set.
     AllRegsMask savedSet = emitGetGCRegsSavedOrModified(methHnd);
-    gcrefRegs &= savedSet.gprRegs;
-    byrefRegs &= savedSet.gprRegs;
+    gcrefRegs &= savedSet.gprRegs();
+    byrefRegs &= savedSet.gprRegs();
 
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)

@@ -394,7 +394,7 @@ void CodeGen::genCodeForBBlist()
         // We cannot emit this code in the prolog as it might make the prolog too large.
         if (compiler->compShouldPoisonFrame() && compiler->fgBBisScratch(block))
         {
-            genPoisonFrame(newLiveRegSet.gprRegs);
+            genPoisonFrame(newLiveRegSet.gprRegs());
         }
 
         // Traverse the block in linear order, generating code for each node as we
@@ -1584,7 +1584,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     }
     else
     {
-        gcInfo.gcMarkRegSetNpt(tree->gtGetRegMask().gprRegs);
+        gcInfo.gcMarkRegSetNpt(tree->gtGetGprRegMask());
     }
 
     genCheckConsumeNode(tree);
@@ -1868,7 +1868,7 @@ void CodeGen::genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode)
 
     genUnspillRegIfNeeded(putArgNode);
 
-    gcInfo.gcMarkRegSetNpt(putArgNode->gtGetRegMask().gprRegs);
+    gcInfo.gcMarkRegSetNpt(putArgNode->gtGetGprRegMask());
 
     genCheckConsumeNode(putArgNode);
 }
