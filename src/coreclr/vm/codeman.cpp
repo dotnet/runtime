@@ -1285,8 +1285,6 @@ void EEJitManager::SetCpuInfo()
     // Get the maximum bitwidth of Vector<T>, rounding down to the nearest multiple of 128-bits
     uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
 
-    uint32_t avx10MaxVectorLength = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Avx10MaxVectorLength);
-
     if (((cpuFeatures & XArchIntrinsicConstants_VectorT256) != 0) && ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256)))
     {
         // We allow 256-bit Vector<T> by default
@@ -1451,20 +1449,17 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_X86Serialize);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1)
-        && (avx10MaxVectorLength >= 128))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
     {
         CPUCompileFlags.Set(InstructionSet_AVX10v1);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V256) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1_V256)
-        && (avx10MaxVectorLength >= 256))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V256) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
     {
         CPUCompileFlags.Set(InstructionSet_AVX10v1_V256);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V512) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1_V512)
-        && (avx10MaxVectorLength >= 512))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V512) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
     {
         CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
     }
