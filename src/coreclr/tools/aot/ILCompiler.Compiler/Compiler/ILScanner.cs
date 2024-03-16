@@ -444,7 +444,7 @@ namespace ILCompiler
                     if (type != null)
                     {
                         _constructedMethodTables.Add(type);
-                        TypeDesc canonForm = type.ConvertToCanonForm(CanonicalFormKind.Specific)
+                        TypeDesc canonForm = type.ConvertToCanonForm(CanonicalFormKind.Specific);
                         if (canonForm != type)
                         {
                             _canonConstructedMethodTables.Add(canonForm);
