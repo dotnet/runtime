@@ -946,10 +946,10 @@ bool pal::getenv(const pal::char_t* name, pal::string_t* recv)
 
 bool pal::fullpath(pal::string_t* path, bool skip_error_logging)
 {
-    return realpath2(path, skip_error_logging);
+    return realpath(path, skip_error_logging);
 }
 
-bool pal::realpath2(pal::string_t* path, bool skip_error_logging)
+bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 {
     auto resolved = ::realpath(path->c_str(), nullptr);
     if (resolved == nullptr)
