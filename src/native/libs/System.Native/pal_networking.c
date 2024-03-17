@@ -1411,7 +1411,7 @@ int32_t SystemNative_ReceiveSocketError(intptr_t socket, MessageHeader* messageH
     while ((res = recvmsg(fd, &header, SocketFlags_MSG_DONTWAIT | SocketFlags_MSG_ERRQUEUE)) < 0 && errno == EINTR);
 
     struct cmsghdr *cmsg;
-    for (cmsg = CMSG_FIRSTHDR(&header); cmsg; cmsg = CMSG_NXTHDR(&header, cmsg))
+    for (cmsg = CMSG_FIRSTHDR(&header); cmsg; cmsg = GET_CMSG_NXTHDR(&header, cmsg))
     {
         if (cmsg->cmsg_level == SOL_IP && cmsg->cmsg_type == IP_RECVERR)
         {

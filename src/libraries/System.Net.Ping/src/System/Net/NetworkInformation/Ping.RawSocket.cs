@@ -279,7 +279,7 @@ namespace System.Net.NetworkInformation
                 }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.HostUnreachable)
                 {
-                    // This happens on on Linux where we explicitly subscribed to error messages
+                    // This happens on Linux where we explicitly subscribed to error messages
                     // We should be able to get more info by getting extended socket error from error queue.
 
                     Interop.Sys.MessageHeader header = default;
