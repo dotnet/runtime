@@ -239,7 +239,4 @@
       <Link>Internal\Runtime\TypeManagerHandle.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="nativeaot\test.corelib\src\system\runtime\interopservices\" />
-  </ItemGroup>
 </Project>
