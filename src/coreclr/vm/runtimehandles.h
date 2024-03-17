@@ -274,7 +274,7 @@ public:
 };
 
 
-extern "C" void QCALLTYPE RuntimeMethodHandle_GetCurrentMethod(QCall::StackCrawlMarkHandle stackMark, QCall::ObjectHandleOnStack retMethod);
+extern "C" MethodDesc* QCALLTYPE MethodBase_GetCurrentMethod(QCall::StackCrawlMarkHandle stackMark);
 
 extern "C" BOOL QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDecoratedType(
         QCall::TypeHandle targetTypeHandle,

@@ -890,15 +890,13 @@ static StackWalkAction SkipMethods(CrawlFrame* frame, VOID* data) {
 }
 
 // Return the MethodInfo that represents the current method (two above this one)
-extern "C" void QCALLTYPE RuntimeMethodHandle_GetCurrentMethod(QCall::StackCrawlMarkHandle stackMark, QCall::ObjectHandleOnStack retMethod) {
+extern "C" MethodDesc* QCALLTYPE MethodBase_GetCurrentMethod(QCall::StackCrawlMarkHandle stackMark) {
 
     QCALL_CONTRACT;
 
+    MethodDesc* pRet = nullptr;
+
     BEGIN_QCALL;
-
-    GCX_COOP();
-
-    REFLECTMETHODREF pRet = NULL;
 
     SkipStruct skip;
     skip.pStackMark = stackMark;
@@ -910,13 +908,11 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetCurrentMethod(QCall::StackCrawl
     // is to return C<T>.m<P> and that's what LoadTypicalMethodDefinition will do for us.
 
     if (skip.pMeth != NULL)
-        pRet = skip.pMeth->LoadTypicalMethodDefinition()->GetStubMethodInfo();
-    else
-        pRet = NULL;
-
-    retMethod.Set(pRet);
+        pRet = skip.pMeth->LoadTypicalMethodDefinition();
 
     END_QCALL;
+
+    return pRet;
 }
 
 static OBJECTREF DirectObjectFieldGet(FieldDesc *pField, TypeHandle fieldType, TypeHandle enclosingType, TypedByRef *pTarget, CLR_BOOL *pIsClassInitialized) {
