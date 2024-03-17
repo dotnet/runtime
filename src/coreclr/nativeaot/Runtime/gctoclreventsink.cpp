@@ -17,6 +17,12 @@ void GCToCLREventSink::FireDynamicEvent(const char* eventName, void* payload, ui
     int i = 0;
     while (true)
     {
+        if (i == (EventNameMaxSize - 1))
+        {
+            wideEventName[i] = L'\0';
+            assert(false);
+            break;
+        }
         wideEventName[i] = (WCHAR)eventName[i];
         if (eventName[i] == '\0')
         {
