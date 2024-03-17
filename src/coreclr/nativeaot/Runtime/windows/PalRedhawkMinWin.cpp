@@ -710,7 +710,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
         // in kernel mode (i.e. in the middle of a syscall or exception handling). Therefore, we should treat
         // the absence of the CONTEXT_EXCEPTION_REPORTING flag as an indication that it is not safe to
         // manipulate with the current state of the thread context.
-        isSafeToRedirect = (pContext->ContextFlags & CONTEXT_EXCEPTION_REPORTING) != 0;
+        isSafeToRedirect = (win32ctx.ContextFlags & CONTEXT_EXCEPTION_REPORTING) != 0;
 #endif
 
         // The CONTEXT_SERVICE_ACTIVE and CONTEXT_EXCEPTION_ACTIVE output flags indicate we suspended the thread
