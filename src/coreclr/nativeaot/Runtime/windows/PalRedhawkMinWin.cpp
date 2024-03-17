@@ -329,8 +329,7 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTR
 
 PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord()
 {
-    LPVOID fs0 = (LPVOID)__readfsdword(0);
-    return (EXCEPTION_REGISTRATION_RECORD*)fs0;
+    return (PEXCEPTION_REGISTRATION_RECORD)__readfsdword(0);
 }
 
 VOID SetCurrentSEHRecord(EXCEPTION_REGISTRATION_RECORD *pSEH)
@@ -338,23 +337,16 @@ VOID SetCurrentSEHRecord(EXCEPTION_REGISTRATION_RECORD *pSEH)
     __writefsdword(0, (DWORD)pSEH);
 }
 
-// Note that this logic is copied below, in PopSEHRecords
-__declspec(naked)
-VOID __cdecl PopSEHRecords(LPVOID pTargetSP)
+VOID PopSEHRecords(LPVOID pTargetSP)
 {
-    __asm
+    PEXCEPTION_REGISTRATION_RECORD currentContext = GetCurrentSEHRecord();
+    // The last record in the chain is EXCEPTION_CHAIN_END which is defined as maxiumum
+    // pointer value so it cannot satisfy the loop condition.
+    while (currentContext < pTargetSP)
     {
-        mov     ecx, [esp+4]        ;; ecx <- pTargetSP
-        mov     eax, fs:[0]         ;; get current SEH record
-  poploop:
-        cmp     eax, ecx
-        jge     done
-        mov     eax, [eax]          ;; get next SEH record
-        jmp     poploop
-  done:
-        mov     fs:[0], eax
-        retn
+        currentContext = currentContext->Next;
     }
+    SetCurrentSEHRecord(currentContext);
 }
 
 // This will check who caused the exception.  If it was caused by the redirect function,
