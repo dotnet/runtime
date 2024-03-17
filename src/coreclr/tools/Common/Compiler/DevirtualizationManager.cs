@@ -213,7 +213,7 @@ namespace ILCompiler
         /// exist. This is similar to <see cref="CanReferenceConstructedMethodTable"/>, but will return true
         /// for List&lt;__Canon&gt; if a constructed MethodTable for List&lt;object&gt; exists.
         /// </summary>
-        public virtual bool CanTypeOrCanonicalFormOfTypeBeAllocated(TypeDesc type) => true;
+        public virtual bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type) => true;
 
         public virtual TypeDesc[] GetImplementingClasses(TypeDesc type) => null;
 #endif

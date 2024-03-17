@@ -2248,7 +2248,7 @@ namespace Internal.JitInterface
             //       and STS::AccessCheck::CanAccess.
         }
 
-        private bool canNeverHaveInstanceOfSubclassOf(TypeDesc type)
+        private bool CanNeverHaveInstanceOfSubclassOf(TypeDesc type)
         {
             // Don't try to optimize nullable
             if (type.IsNullable)
@@ -2262,7 +2262,7 @@ namespace Internal.JitInterface
 
             // If we don't have a constructed MethodTable for the exact type or for its template,
             // this type or any of its subclasses can never be instantiated.
-            return !_compilation.CanTypeOrCanonicalFormOfTypeBeAllocated(type)
+            return !_compilation.CanReferenceConstructedTypeOrCanonicalFormOfType(type)
                 && (type == canonType || !_compilation.CanReferenceConstructedMethodTable(canonType));
         }
 
@@ -2274,7 +2274,7 @@ namespace Internal.JitInterface
                 return -1;
             }
 
-            if (canNeverHaveInstanceOfSubclassOf(type))
+            if (CanNeverHaveInstanceOfSubclassOf(type))
             {
                 return 0;
             }

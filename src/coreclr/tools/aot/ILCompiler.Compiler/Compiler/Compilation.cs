@@ -108,9 +108,9 @@ namespace ILCompiler
             return NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
         }
 
-        public bool CanTypeOrCanonicalFormOfTypeBeAllocated(TypeDesc type)
+        public bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type)
         {
-            return NodeFactory.DevirtualizationManager.CanTypeOrCanonicalFormOfTypeBeAllocated(type);
+            return NodeFactory.DevirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(type);
         }
 
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, TypeDesc constrainedType, bool followVirtualDispatch)

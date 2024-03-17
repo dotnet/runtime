@@ -696,7 +696,7 @@ namespace ILCompiler
             public override bool CanReferenceConstructedMethodTable(TypeDesc type)
                 => _constructedMethodTables.Contains(type);
 
-            public override bool CanTypeOrCanonicalFormOfTypeBeAllocated(TypeDesc type)
+            public override bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type)
                 => _constructedMethodTables.Contains(type) || _canonConstructedMethodTables.Contains(type);
 
             public override TypeDesc[] GetImplementingClasses(TypeDesc type)

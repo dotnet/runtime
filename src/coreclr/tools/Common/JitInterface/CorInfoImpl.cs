@@ -2883,7 +2883,7 @@ namespace Internal.JitInterface
 
 #if !READYTORUN
             if (result == TypeCompareState.May
-                && (canNeverHaveInstanceOfSubclassOf(type1) || canNeverHaveInstanceOfSubclassOf(type2)))
+                && (CanNeverHaveInstanceOfSubclassOf(type1) || CanNeverHaveInstanceOfSubclassOf(type2)))
             {
                 return TypeCompareState.MustNot;
             }
