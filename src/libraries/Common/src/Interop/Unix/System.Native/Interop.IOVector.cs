@@ -9,8 +9,10 @@ internal static partial class Interop
     {
         internal unsafe struct IOVector
         {
+#pragma warning disable CS0649
             public byte* Base;
             public UIntPtr Count;
+#pragma warning restore CS0649
         }
     }
 }
