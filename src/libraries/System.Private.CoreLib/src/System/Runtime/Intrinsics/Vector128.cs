@@ -2325,7 +2325,7 @@ namespace System.Runtime.Intrinsics
                 }
                 else
                 {
-                    Vector128<byte> mask = Vector512.LessThan(indices, Vector128.Create((byte)16));
+                    Vector128<byte> mask = Vector128.LessThan(indices, Vector128.Create((byte)16));
                     return ShuffleUnsafeIntrinsic(vector, indices) & mask;
                 }
             }
