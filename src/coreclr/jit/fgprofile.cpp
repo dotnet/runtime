@@ -2949,7 +2949,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         //
         if (fgPgoHaveWeights && !dataIsGood)
         {
-            JITDUMP("\nIncorporated count data had inconsistencies; blending profile...\n");
+            JITDUMP("\nIncorporated count data had inconsistencies; blending/repairing profile...\n");
             ProfileSynthesis::Run(this, ProfileSynthesisOption::BlendLikelihoods);
         }
     }
@@ -3266,15 +3266,9 @@ public:
 
     // Are there are reparable issues with the reconstruction?
     //
-    // Ideally we'd also have || !m_negativeCount here, but this
-    // leads to lots of diffs in async methods.
-    //
-    // Looks like we might first need to resolve reconstruction
-    // shortcomings with irreducible loops.
-    //
     bool IsGood() const
     {
-        return !m_entryWeightZero;
+        return !(m_entryWeightZero || m_negativeCount);
     }
 
     void VisitBlock(BasicBlock*) override
