@@ -239,7 +239,7 @@ bool Compiler::fgEnsureFirstBBisScratch()
     noway_assert(fgLastBB != nullptr);
 
     // Set the expected flags
-    block->SetFlags(BBF_INTERNAL | BBF_IMPORTED | BBF_NONE_QUIRK);
+    block->SetFlags(BBF_INTERNAL | BBF_IMPORTED);
 
     // This new first BB has an implicit ref, and no others.
     //
@@ -3503,7 +3503,6 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
             // Jump to the next block
             jmpKind = BBJ_ALWAYS;
             jmpAddr = nxtBBoffs;
-            bbFlags |= BBF_NONE_QUIRK;
         }
 
         assert(jmpKind != BBJ_COUNT);
@@ -4806,7 +4805,6 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newBlock->TransferTarget(curr);
 
     curr->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
-    curr->SetFlags(BBF_NONE_QUIRK);
     assert(curr->JumpsToNext());
 
     return newBlock;
@@ -4898,7 +4896,6 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
 
     // prevBb should flow into block
     assert(prevBb->KindIs(BBJ_ALWAYS) && prevBb->JumpsToNext() && prevBb->NextIs(block));
-    prevBb->SetFlags(BBF_NONE_QUIRK);
 
     return block;
 }
@@ -5031,9 +5028,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         // an immediately following block of a BBJ_SWITCH (which has
         // no fall-through path). For this case, simply insert a new
         // fall-through block after 'curr'.
-        // TODO-NoFallThrough: Once false target can diverge from bbNext, this will be unnecessary for BBJ_COND
         newBlock = fgNewBBafter(BBJ_ALWAYS, curr, true /* extendRegion */);
-        newBlock->SetFlags(BBF_NONE_QUIRK);
     }
     else
     {
@@ -5483,10 +5478,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
         JITDUMP("Added an unconditional jump to " FMT_BB " after block " FMT_BB "\n", jmpBlk->GetTarget()->bbNum,
                 bSrc->bbNum);
-    }
-    else if (bSrc->KindIs(BBJ_ALWAYS) && bSrc->HasInitializedTarget() && bSrc->JumpsToNext())
-    {
-        bSrc->SetFlags(BBF_NONE_QUIRK);
     }
 
     return jmpBlk;
@@ -5944,7 +5935,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
 // Because this relies on ebdEnclosingTryIndex and ebdEnclosingHndIndex
 #endif // DEBUG
 
-#else // !FEATURE_EH_FUNCLETS
+#else  // !FEATURE_EH_FUNCLETS
 
     for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
@@ -5994,17 +5985,6 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
 
     // We have decided to insert the block(s) after fgLastBlock
     fgMoveBlocksAfter(bStart, bLast, insertAfterBlk);
-
-    if (bPrev->KindIs(BBJ_ALWAYS) && bPrev->JumpsToNext())
-    {
-        bPrev->SetFlags(BBF_NONE_QUIRK);
-    }
-
-    if (bLast->KindIs(BBJ_ALWAYS) && bLast->JumpsToNext())
-    {
-        bLast->SetFlags(BBF_NONE_QUIRK);
-    }
-
 #endif // !FEATURE_EH_FUNCLETS
 
     goto DONE;
