@@ -2250,6 +2250,7 @@ public:
     }
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+
     bool IsEmbMaskOp()
     {
         return OperIsHWIntrinsic() && ((gtFlags & GTF_HW_EM_OP) != 0);
@@ -2263,6 +2264,8 @@ public:
     }
 
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+
+    static bool HandleKindDataIsInvariant(GenTreeFlags flags);
 
     bool IsCall() const
     {
@@ -4203,6 +4206,8 @@ private:
     bool m_inited;
 #endif
 
+    void InitializeSwiftReturnRegs(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
+
 public:
     ReturnTypeDesc()
     {
@@ -4324,10 +4329,10 @@ public:
     }
 
     // Get i'th ABI return register
-    regNumber GetABIReturnReg(unsigned idx) const;
+    regNumber GetABIReturnReg(unsigned idx, CorInfoCallConvExtension callConv) const;
 
     // Get reg mask of ABI return registers
-    AllRegsMask GetABIReturnRegs() const;
+    AllRegsMask GetABIReturnRegs(CorInfoCallConvExtension callConv) const;
 };
 
 class TailCallSiteInfo
@@ -4727,7 +4732,6 @@ public:
     CORINFO_CLASS_HANDLE GetSignatureClassHandle() { return m_signatureClsHnd; }
     var_types GetSignatureType() { return m_signatureType; }
     WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
-    void SetWellKnownArg(const WellKnownArg argType) { m_wellKnownArg = argType; }
     bool IsTemp() { return m_isTmp; }
     // clang-format on
 
@@ -6512,8 +6516,9 @@ struct GenTreeVecCon : public GenTree
         simd16_t gtSimd16Val;
 
 #if defined(TARGET_XARCH)
-        simd32_t gtSimd32Val;
-        simd64_t gtSimd64Val;
+        simd32_t   gtSimd32Val;
+        simd64_t   gtSimd64Val;
+        simdmask_t gtSimdMaskVal;
 #endif // TARGET_XARCH
 
         simd_t gtSimdVal;
@@ -6765,6 +6770,11 @@ struct GenTreeVecCon : public GenTree
             {
                 return gtSimd64Val.IsAllBitsSet();
             }
+
+            case TYP_MASK:
+            {
+                return gtSimdMaskVal.IsAllBitsSet();
+            }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -6812,6 +6822,11 @@ struct GenTreeVecCon : public GenTree
             {
                 return left->gtSimd64Val == right->gtSimd64Val;
             }
+
+            case TYP_MASK:
+            {
+                return left->gtSimdMaskVal == right->gtSimdMaskVal;
+            }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -6851,6 +6866,11 @@ struct GenTreeVecCon : public GenTree
             case TYP_SIMD64:
             {
                 return gtSimd64Val.IsZero();
+            }
+
+            case TYP_MASK:
+            {
+                return gtSimdMaskVal.IsZero();
             }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD

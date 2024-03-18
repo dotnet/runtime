@@ -8172,13 +8172,13 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 // Return Value:
 //    A field handle representing the data offset to access the constant.
 //
+// Note:
+// Access to inline data is 'abstracted' by a special type of static member
+// (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+// to constant data, not a real static field.
+//
 CORINFO_FIELD_HANDLE emitter::emitSimd8Const(simd8_t constValue)
 {
-    // Access to inline data is 'abstracted' by a special type of static member
-    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
-    // to constant data, not a real static field.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
     unsigned cnsSize  = 8;
     unsigned cnsAlign = cnsSize;
 
@@ -8195,11 +8195,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd8Const(simd8_t constValue)
 
 CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
 {
-    // Access to inline data is 'abstracted' by a special type of static member
-    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
-    // to constant data, not a real static field.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
     unsigned cnsSize  = 16;
     unsigned cnsAlign = cnsSize;
 
@@ -8217,11 +8212,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
 #if defined(TARGET_XARCH)
 CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
 {
-    // Access to inline data is 'abstracted' by a special type of static member
-    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
-    // to constant data, not a real static field.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
     unsigned cnsSize  = 32;
     unsigned cnsAlign = cnsSize;
 
@@ -8236,11 +8226,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
 
 CORINFO_FIELD_HANDLE emitter::emitSimd64Const(simd64_t constValue)
 {
-    // Access to inline data is 'abstracted' by a special type of static member
-    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
-    // to constant data, not a real static field.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
     unsigned cnsSize  = 64;
     unsigned cnsAlign = cnsSize;
 
@@ -8250,6 +8235,22 @@ CORINFO_FIELD_HANDLE emitter::emitSimd64Const(simd64_t constValue)
     }
 
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD64);
+    return emitComp->eeFindJitDataOffs(cnum);
+}
+
+CORINFO_FIELD_HANDLE emitter::emitSimdMaskConst(simdmask_t constValue)
+{
+    unsigned cnsSize  = 8;
+    unsigned cnsAlign = cnsSize;
+
+#ifdef TARGET_XARCH
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
+    }
+#endif // TARGET_XARCH
+
+    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_MASK);
     return emitComp->eeFindJitDataOffs(cnum);
 }
 #endif // TARGET_XARCH

@@ -226,7 +226,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         if (hasMultiRegRetVal)
     {
         assert(retTypeDesc != nullptr);
-        dstReturnCandidates = retTypeDesc->GetABIReturnRegs();
+        dstReturnCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
         assert((int)dstReturnCandidates.Count() == dstCount);
     }
     else if (varTypeUsesFloatArgReg(registerType))

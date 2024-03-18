@@ -989,6 +989,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                         memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd64_t));
                         return OperandDesc(emit->emitSimd64Const(constValue));
                     }
+
+                    case TYP_MASK:
+                    {
+                        simdmask_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simdmask_t));
+                        return OperandDesc(emit->emitSimdMaskConst(constValue));
+                    }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 

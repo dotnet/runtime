@@ -497,10 +497,9 @@ namespace System.Reflection
             object?[] parameters, BinderBundle? binderBundle, bool wrapInTargetInvocationException)
         {
             Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
-            int argCount = _argumentCount;
 
             StackAllocatedArguments argStorage = default;
-            Span<object?> copyOfParameters = argStorage._args.AsSpan(argCount);
+            Span<object?> copyOfParameters = ((Span<object?>)argStorage._args).Slice(0, _argumentCount);
             StackAllocatedByRefs byrefStorage = default;
 #pragma warning disable CS8500
             void* pByRefStorage = (ByReference*)&byrefStorage;
@@ -532,10 +531,9 @@ namespace System.Reflection
             IntPtr methodToCall, ref byte thisArg, ref byte ret, Span<object?> parameters)
         {
             Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
-            int argCount = _argumentCount;
 
             StackAllocatedArguments argStorage = default;
-            Span<object?> copyOfParameters = argStorage._args.AsSpan(argCount);
+            Span<object?> copyOfParameters = ((Span<object?>)argStorage._args).Slice(0, _argumentCount);
             StackAllocatedByRefs byrefStorage = default;
 #pragma warning disable CS8500
             void* pByRefStorage = (ByReference*)&byrefStorage;
@@ -884,19 +882,6 @@ namespace System.Reflection
         internal struct ArgumentData<T>
         {
             private T _arg0;
-
-            [UnscopedRef]
-            public Span<T> AsSpan(int length)
-            {
-                Debug.Assert((uint)length <= MaxStackAllocArgCount);
-                return new Span<T>(ref _arg0, length);
-            }
-
-            public void Set(int index, T value)
-            {
-                Debug.Assert((uint)index < MaxStackAllocArgCount);
-                Unsafe.Add(ref _arg0, index) = value;
-            }
         }
 
         // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.

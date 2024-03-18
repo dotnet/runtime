@@ -1,8 +1,4 @@
 <linker>
-  <type fullname="System.Runtime.CompilerServices.RuntimeFeature">
-    <method signature="System.Boolean get_IsDynamicCodeCompiled()" body="stub" value="false" />
-    <method signature="System.Boolean get_IsDynamicCodeSupported()" body="stub" value="false" />
-  </type>
 
   <type fullname="System.Collections.Generic.Comparer`1" feature="System.Collections.Generic.DefaultComparers" featurevalue="false">
     <method signature="System.Boolean get_SupportsGenericIComparableInterfaces()" body="stub" />
