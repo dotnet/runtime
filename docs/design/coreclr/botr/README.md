@@ -30,6 +30,7 @@ Below is a table of contents.
 - [Mixed Mode Assemblies](mixed-mode.md)
 - [Guide For Porting](guide-for-porting.md)
 - [Vectors and Intrinsics](vectors-and-intrinsics.md)
+- [Data Contracts for CoreCLR](data_contracts_for_coreclr.md)
 
 
 It may be possible that this table is not complete.  You can get a complete list
