@@ -2305,7 +2305,7 @@ namespace System.Runtime.Intrinsics
                 }
                 else
                 {
-                    Vector256<byte> mask = Vector512.LessThan(indices, Vector256.Create(32));
+                    Vector256<byte> mask = Vector512.LessThan(indices, Vector256.Create((byte)32));
                     return ShuffleUnsafeIntrinsic(vector, indices) & mask;
                 }
             }
@@ -2409,6 +2409,7 @@ namespace System.Runtime.Intrinsics
             }
 
             Debug.Fail("Expected an intrinsic to be supported");
+            return default;
         }
 
         private static bool ShuffleUnsafeIntrinsicIsSafe => false; // none are safe

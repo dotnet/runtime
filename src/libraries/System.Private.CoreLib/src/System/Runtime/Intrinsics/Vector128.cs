@@ -2325,7 +2325,7 @@ namespace System.Runtime.Intrinsics
                 }
                 else
                 {
-                    Vector128<byte> mask = Vector512.LessThan(indices, Vector128.Create(16));
+                    Vector128<byte> mask = Vector512.LessThan(indices, Vector128.Create((byte)16));
                     return ShuffleUnsafeIntrinsic(vector, indices) & mask;
                 }
             }
@@ -2405,6 +2405,7 @@ namespace System.Runtime.Intrinsics
             }
 
             Debug.Fail("Expected an intrinsic to be supported");
+            return default;
         }
 
         private static bool ShuffleUnsafeIntrinsicIsSafe => AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported; // only the arm64 and wasm implementations are safe
