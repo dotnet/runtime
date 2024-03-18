@@ -729,11 +729,10 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                 assert(newEdge != nullptr);
                 assert(newEdge->getSourceBlock() == block);
                 assert(newEdge->getDestinationBlock() == newTarget);
+                assert(newEdge->hasLikelihood());
+                assert(oldEdge->hasLikelihood());
 
-                if (newEdge->hasLikelihood() && oldEdge->hasLikelihood())
-                {
-                    newEdge->addLikelihood(oldEdge->getLikelihood());
-                }
+                newEdge->addLikelihood(oldEdge->getLikelihood());
             }
 
             assert(changed);
