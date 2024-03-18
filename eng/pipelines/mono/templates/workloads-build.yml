@@ -42,8 +42,6 @@ jobs:
         value: '/p:OfficialBuildId=$(Build.BuildNumber)'
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
-    - name: monoRepoRoot
-      value: '$(Build.SourcesDirectory)/src/mono'
     - name: workloadPackagesPath
       value: $(Build.SourcesDirectory)/artifacts/workloadPackages
     - name: workloadArtifactsPath
