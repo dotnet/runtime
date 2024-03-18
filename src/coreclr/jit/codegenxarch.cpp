@@ -1604,13 +1604,13 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     inst_RV_TT(INS_mov, emitTypeSize(select), dstReg, falseVal);
 
     assert(!trueVal->isContained() || trueVal->isUsedFromMemory());
-    assert((trueVal->gtGetContainedRegMask().GetMaskForRegNum(dstReg) & dstReg) == 0);
+    assert(!trueVal->gtGetContainedRegMask().IsRegNumInMask(dstReg));
     inst_RV_TT(JumpKindToCmov(desc.jumpKind1), emitTypeSize(select), dstReg, trueVal);
 
     if (desc.oper == GT_AND)
     {
         assert(falseVal->isUsedFromReg());
-        assert((falseVal->gtGetContainedRegMask().GetMaskForRegNum(dstReg) & dstReg) == 0);
+        assert(!falseVal->gtGetContainedRegMask().IsRegNumInMask(dstReg));
         inst_RV_TT(JumpKindToCmov(emitter::emitReverseJumpKind(desc.jumpKind2)), emitTypeSize(select), dstReg,
                    falseVal);
     }

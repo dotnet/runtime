@@ -4152,7 +4152,7 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
 
         regMaskOnlyOne allRegsMask   = allRegs(interval->registerType);
         RegisterType   regType       = interval->registerType;
-        regMaskOnlyOne candidateRegs = availableRegs.GetRegMaskForType(regType);
+        regMaskOnlyOne candidateRegs = allRegsMask & availableRegs.GetRegMaskForType(regType);
 
         regNumber firstReg = REG_NA;
         regNumber newReg   = REG_NA;
@@ -14249,11 +14249,13 @@ regMaskOnlyOne AllRegsMask::GetMaskForRegNum(regNumber reg) const
 
 regMaskTP AllRegsMask::GetGprFloatCombinedMask() const
 {
-#ifdef TARGET_64BIT
-    return ((regMaskTP)floatRegs() << 32) | gprRegs();
-#else
-    return ((regMaskTP)floatRegs() << REG_INT_COUNT) | gprRegs();
-#endif
+    //TODO: NEed to revert this once we change floatRegs to 32-bits
+//#ifdef TARGET_64BIT
+//    return ((regMaskTP)floatRegs() << 32) | gprRegs();
+//#else
+//    return ((regMaskTP)floatRegs() << REG_INT_COUNT) | gprRegs();
+//#endif
+    return floatRegs() | gprRegs();
 }
 
 bool AllRegsMask::IsGprOrFloatPresent() const
