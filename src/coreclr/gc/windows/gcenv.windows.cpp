@@ -299,7 +299,7 @@ static size_t GetRestrictedPhysicalMemoryLimit()
                 total_physical = ms.ullAvailPhys;
 
                 // A sanity check in case someone set a larger limit than there is actual physical memory.
-                job_physical_memory_limit = (size_t) std::min (job_physical_memory_limit, ms.ullTotalPhys);
+                job_physical_memory_limit = (size_t) std::min (job_physical_memory_limit, (size_t)ms.ullTotalPhys);
             }
         }
     }
