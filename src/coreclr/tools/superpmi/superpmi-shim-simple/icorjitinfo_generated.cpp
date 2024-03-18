@@ -578,6 +578,12 @@ bool interceptor_ICJI::isExactType(
     return original_ICorJitInfo->isExactType(cls);
 }
 
+TypeCompareState interceptor_ICJI::isGenericType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->isGenericType(cls);
+}
+
 TypeCompareState interceptor_ICJI::isEnum(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CLASS_HANDLE* underlyingType)

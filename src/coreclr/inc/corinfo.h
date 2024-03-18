@@ -2739,6 +2739,11 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
+    // Returns whether a class handle represents a generic type, if that can be statically determined.
+    virtual TypeCompareState isGenericType(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
     // Returns TypeCompareState::Must if cls is known to be an enum.
     // For enums with known exact type returns the underlying
     // type in underlyingType when the provided pointer is
