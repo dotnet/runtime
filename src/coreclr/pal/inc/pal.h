@@ -3982,32 +3982,13 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #ifndef PAL_STDCPP_COMPAT
 #define exit          PAL_exit
 #define realloc       PAL_realloc
-#define fopen         PAL_fopen
-#define fprintf       PAL_fprintf
-#define vfprintf      PAL_vfprintf
 #define rand          PAL_rand
 #define time          PAL_time
 #define getenv        PAL_getenv
-#define fgets         PAL_fgets
 #define qsort         PAL_qsort
 #define bsearch       PAL_bsearch
-#define ferror        PAL_ferror
-#define fread         PAL_fread
-#define fwrite        PAL_fwrite
-#define ftell         PAL_ftell
-#define fclose        PAL_fclose
-#define fflush        PAL_fflush
-#define fputs         PAL_fputs
-#define fseek         PAL_fseek
-#define fgetpos       PAL_fgetpos
-#define fsetpos       PAL_fsetpos
-#define setvbuf       PAL_setvbuf
 #define malloc        PAL_malloc
 #define free          PAL_free
-#define _open         PAL__open
-#define _pread        PAL__pread
-#define _close        PAL__close
-#define _flushall     PAL__flushall
 
 #ifdef HOST_AMD64
 #define _mm_getcsr    PAL__mm_getcsr
@@ -4086,6 +4067,68 @@ PALIMPORT int __cdecl iswxdigit(wint_t);
 PALIMPORT wint_t __cdecl towupper(wint_t);
 PALIMPORT wint_t __cdecl towlower(wint_t);
 PALIMPORT int remove(const char*);
+
+#define SEEK_SET    0
+#define SEEK_CUR    1
+#define SEEK_END    2
+
+/* Locale categories */
+#define LC_ALL          0
+#define LC_COLLATE      1
+#define LC_CTYPE        2
+#define LC_MONETARY     3
+#define LC_NUMERIC      4
+#define LC_TIME         5
+
+#define _IOFBF  0       /* setvbuf should set fully buffered */
+#define _IOLBF  1       /* setvbuf should set line buffered */
+#define _IONBF  2       /* setvbuf should set unbuffered */
+
+struct _FILE;
+
+#ifdef DEFINE_DUMMY_FILE_TYPE
+#define FILE _PAL_FILE
+struct _PAL_FILE;
+#else
+typedef _FILE FILE;
+#endif // DEFINE_DUMMY_FILE_TYPE
+
+PALIMPORT int __cdecl fclose(FILE *);
+PALIMPORT int __cdecl fflush(FILE *);
+PALIMPORT size_t __cdecl fwrite(const void *, size_t, size_t, FILE *);
+PALIMPORT size_t __cdecl fread(void *, size_t, size_t, FILE *);
+PALIMPORT char * __cdecl fgets(char *, int, FILE *);
+PALIMPORT int __cdecl fputs(const char *, FILE *);
+PALIMPORT int __cdecl fprintf(FILE *, const char *, ...);
+PALIMPORT int __cdecl vfprintf(FILE *, const char *, va_list);
+PALIMPORT int __cdecl fseek(FILE *, LONG, int);
+PALIMPORT LONG __cdecl ftell(FILE *);
+PALIMPORT int __cdecl ferror(FILE *);
+PALIMPORT FILE * __cdecl fopen(const char *, const char *);
+PALIMPORT int __cdecl setvbuf(FILE *stream, char *, int, size_t);
+
+// We need a PAL shim for errno and the standard streams as it's not possible to replicate these definition from the standard library
+// in all cases. Instead, we shim it and implement the PAL function where we can include the standard headers.
+// When we allow people to include the standard headers, then we can remove this.
+
+PALIMPORT DLLEXPORT int * __cdecl PAL_errno();
+#define errno  (*PAL_errno())
+
+// Only provide a prototype for the PAL forwarders for the standard streams if we are not including the standard headers.
+#ifndef DEFINE_DUMMY_FILE_TYPE
+
+extern "C" PALIMPORT DLLEXPORT FILE* __cdecl PAL_stdout();
+extern "C" PALIMPORT DLLEXPORT FILE* __cdecl PAL_stdin();
+extern "C" PALIMPORT DLLEXPORT FILE* __cdecl PAL_stderr();
+#define stdout PAL_stdout()
+#define stdin PAL_stdin()
+#define stderr PAL_stderr()
+
+#endif
+
+#ifdef DEFINE_DUMMY_FILE_TYPE
+#undef FILE
+#endif
 #endif // PAL_STDCPP_COMPAT
 
 /* _TRUNCATE */
@@ -4124,6 +4167,10 @@ PALIMPORT DLLEXPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
 PALIMPORT DLLEXPORT errno_t __cdecl _i64tow_s(long long, WCHAR *, size_t, int);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
+
+#ifndef DEFINE_DUMMY_FILE_TYPE
+PALIMPORT FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
+#endif
 
 inline int _stricmp(const char* a, const char* b)
 {
@@ -4321,56 +4368,6 @@ PALIMPORT time_t __cdecl time(time_t *);
 
 #endif // !PAL_STDCPP_COMPAT
 
-PALIMPORT DLLEXPORT int __cdecl _open(const char *szPath, int nFlags, ...);
-PALIMPORT DLLEXPORT size_t __cdecl _pread(int fd, void *buf, size_t nbytes, ULONG64 offset);
-PALIMPORT DLLEXPORT int __cdecl _close(int);
-PALIMPORT DLLEXPORT int __cdecl _flushall();
-
-#ifdef PAL_STDCPP_COMPAT
-
-struct _PAL_FILE;
-typedef struct _PAL_FILE PAL_FILE;
-
-#else // PAL_STDCPP_COMPAT
-
-struct _FILE;
-typedef struct _FILE FILE;
-typedef struct _FILE PAL_FILE;
-
-#define SEEK_SET    0
-#define SEEK_CUR    1
-#define SEEK_END    2
-
-/* Locale categories */
-#define LC_ALL          0
-#define LC_COLLATE      1
-#define LC_CTYPE        2
-#define LC_MONETARY     3
-#define LC_NUMERIC      4
-#define LC_TIME         5
-
-#define _IOFBF  0       /* setvbuf should set fully buffered */
-#define _IOLBF  1       /* setvbuf should set line buffered */
-#define _IONBF  2       /* setvbuf should set unbuffered */
-
-#endif // PAL_STDCPP_COMPAT
-
-PALIMPORT int __cdecl PAL_fclose(PAL_FILE *);
-PALIMPORT DLLEXPORT int __cdecl PAL_fflush(PAL_FILE *);
-PALIMPORT size_t __cdecl PAL_fwrite(const void *, size_t, size_t, PAL_FILE *);
-PALIMPORT size_t __cdecl PAL_fread(void *, size_t, size_t, PAL_FILE *);
-PALIMPORT char * __cdecl PAL_fgets(char *, int, PAL_FILE *);
-PALIMPORT int __cdecl PAL_fputs(const char *, PAL_FILE *);
-PALIMPORT DLLEXPORT int __cdecl PAL_fprintf(PAL_FILE *, const char *, ...);
-PALIMPORT int __cdecl PAL_vfprintf(PAL_FILE *, const char *, va_list);
-PALIMPORT int __cdecl PAL_fseek(PAL_FILE *, LONG, int);
-PALIMPORT LONG __cdecl PAL_ftell(PAL_FILE *);
-PALIMPORT int __cdecl PAL_ferror(PAL_FILE *);
-PALIMPORT PAL_FILE * __cdecl PAL_fopen(const char *, const char *);
-PALIMPORT int __cdecl PAL_setvbuf(PAL_FILE *stream, char *, int, size_t);
-
-PALIMPORT PAL_FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
-
 /* Maximum value that can be returned by the rand function. */
 
 #ifndef PAL_STDCPP_COMPAT
@@ -4379,29 +4376,6 @@ PALIMPORT PAL_FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
 
 PALIMPORT int __cdecl rand(void);
 PALIMPORT void __cdecl srand(unsigned int);
-
-#ifdef _MSC_VER
-#define PAL_get_caller _MSC_VER
-#else
-#define PAL_get_caller 0
-#endif
-
-PALIMPORT DLLEXPORT PAL_FILE * __cdecl PAL_get_stdout(int caller);
-PALIMPORT PAL_FILE * __cdecl PAL_get_stdin(int caller);
-PALIMPORT DLLEXPORT PAL_FILE * __cdecl PAL_get_stderr(int caller);
-PALIMPORT DLLEXPORT int * __cdecl PAL_errno(int caller);
-
-#ifdef PAL_STDCPP_COMPAT
-#define PAL_stdout (PAL_get_stdout(PAL_get_caller))
-#define PAL_stdin  (PAL_get_stdin(PAL_get_caller))
-#define PAL_stderr (PAL_get_stderr(PAL_get_caller))
-#define PAL_errno   (*PAL_errno(PAL_get_caller))
-#else // PAL_STDCPP_COMPAT
-#define stdout (PAL_get_stdout(PAL_get_caller))
-#define stdin  (PAL_get_stdin(PAL_get_caller))
-#define stderr (PAL_get_stderr(PAL_get_caller))
-#define errno  (*PAL_errno(PAL_get_caller))
-#endif // PAL_STDCPP_COMPAT
 
 PALIMPORT DLLEXPORT char * __cdecl getenv(const char *);
 PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);

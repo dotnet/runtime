@@ -23,7 +23,7 @@
   <ItemGroup>
     <AdditionalRuntimeIdentifiers Include="$(AdditionalRuntimeIdentifiers)" Imports="$(AdditionalRuntimeIdentifierParent)" />
     <!-- When building from source, ensure the RID we're building for is part of the RID graph. -->
-    <AdditionalRuntimeIdentifiers Include="$(OutputRID)" Imports="$(AdditionalRuntimeIdentifierParent)" Condition="'$(DotNetBuildFromSource)' == 'true'" />
+    <AdditionalRuntimeIdentifiers Include="$(OutputRID)" Imports="$(AdditionalRuntimeIdentifierParent)" Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
   </ItemGroup>
 
   <ItemGroup>

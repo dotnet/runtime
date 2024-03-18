@@ -3028,7 +3028,7 @@ ves_icall_RuntimeType_GetNamespace (MonoQCallTypeHandle type_handle, MonoObjectH
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	MonoClass *elem;
-	while (!m_class_is_enumtype (klass) && 
+	while (!m_class_is_enumtype (klass) &&
 		!mono_class_is_nullable (klass) &&
 		(klass != (elem = m_class_get_element_class (klass))))
 		klass = elem;
@@ -4564,6 +4564,7 @@ ves_icall_System_Reflection_RuntimeAssembly_GetInfo (MonoQCallAssemblyHandle ass
 		else
 			absolute = g_build_filename (assembly->basedir, filename, (const char*)NULL);
 
+		g_assert (absolute);
 		mono_icall_make_platform_path (absolute);
 
 		const gchar *prepend = mono_icall_get_file_path_prefix (absolute);

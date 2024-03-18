@@ -221,7 +221,7 @@ CrashInfo::EnumerateMemoryRegions()
         printf_error("snprintf failed building /proc/<pid>/maps\n");
         return false;
     }
-    FILE* mapsFile = fopen(mapPath, "r");
+    FILE* mapsFile = fopen(mapPath, "rb");
     if (mapsFile == nullptr)
     {
         printf_error("Problem reading maps file: fopen(%s) FAILED %s (%d)\n", mapPath, strerror(errno), errno);
@@ -554,7 +554,7 @@ GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
         return false;
     }
 
-    FILE *statusFile = fopen(statusPath, "r");
+    FILE *statusFile = fopen(statusPath, "rb");
     if (statusFile == nullptr)
     {
         printf_error("GetStatus fopen(%s) FAILED %s (%d)\n", statusPath, strerror(errno), errno);

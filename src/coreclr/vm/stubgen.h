@@ -45,7 +45,6 @@ struct LocalDesc
     {
         Module*         pSigModule;
         size_t          cbArrayBoundsInfo;
-        BOOL            bIsCopyConstructed; // used for E_T_PTR
     };
 
     LocalDesc()
@@ -56,7 +55,6 @@ struct LocalDesc
     {
         ElementType[0]     = static_cast<BYTE>(elemType);
         cbType             = 1;
-        bIsCopyConstructed = FALSE;
     }
 
     inline LocalDesc(TypeHandle thType)
@@ -64,7 +62,6 @@ struct LocalDesc
         ElementType[0]     = ELEMENT_TYPE_INTERNAL;
         cbType             = 1;
         InternalToken      = thType;
-        bIsCopyConstructed = FALSE;
     }
 
     inline LocalDesc(MethodTable *pMT)
@@ -73,7 +70,6 @@ struct LocalDesc
         ElementType[0]     = ELEMENT_TYPE_INTERNAL;
         cbType             = 1;
         InternalToken      = TypeHandle(pMT);
-        bIsCopyConstructed = FALSE;
     }
 
     void MakeByRef()
@@ -92,14 +88,6 @@ struct LocalDesc
     {
         LIMITED_METHOD_CONTRACT;
         ChangeType(ELEMENT_TYPE_SZARRAY);
-    }
-
-    // makes the LocalDesc semantically equivalent to ET_TYPE_CMOD_REQD<IsCopyConstructed>/ET_TYPE_CMOD_REQD<NeedsCopyConstructorModifier>
-    void MakeCopyConstructedPointer()
-    {
-        LIMITED_METHOD_CONTRACT;
-        MakePointer();
-        bIsCopyConstructed = TRUE;
     }
 
     void MakePointer()

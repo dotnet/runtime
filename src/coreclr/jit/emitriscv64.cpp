@@ -625,7 +625,8 @@ void emitter::emitIns_R_R(
         assert(isGeneralRegisterOrR0(reg2));
         code |= (reg1 & 0x1f) << 7;
         code |= reg2 << 15;
-        code |= 0x7 << 12;
+        if (INS_fcvt_d_w != ins && INS_fcvt_d_wu != ins) // fcvt.d.w[u] always produces an exact result
+            code |= 0x7 << 12;                           // round according to frm status register
     }
     else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins)
     {
@@ -633,7 +634,8 @@ void emitter::emitIns_R_R(
         assert(isFloatReg(reg2));
         code |= (reg1 & 0x1f) << 7;
         code |= (reg2 & 0x1f) << 15;
-        code |= 0x7 << 12;
+        if (INS_fcvt_d_s != ins) // fcvt.d.s never rounds
+            code |= 0x7 << 12;   // round according to frm status register
     }
     else
     {
@@ -2118,8 +2120,8 @@ AGAIN:
 unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code) const
 {
     assert(dst != nullptr);
-    assert(sizeof(code_t) == 4);
-    memcpy(dst + writeableOffset, &code, sizeof(code_t));
+    static_assert(sizeof(code_t) == 4, "code_t must be 4 bytes");
+    memcpy(dst + writeableOffset, &code, sizeof(code));
     return sizeof(code_t);
 }
 
@@ -3157,8 +3159,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     instruction       ins;
     size_t            sz = 0;
 
-    assert(REG_NA == static_cast<int>(REG_NA));
-    assert(writeableOffset == 0);
+    static_assert(REG_NA == static_cast<int>(REG_NA), "REG_NA must fit in an int");
 
     insOpts insOp = id->idInsOpt();
 

@@ -12,7 +12,7 @@ import { localHeapViewU8, localHeapViewU32 } from "./memory";
 import { utf8ToString } from "./strings";
 import {
     JiterpNumberMode, BailoutReason, JiterpreterTable,
-    JiterpCounter, JiterpMember
+    JiterpCounter, JiterpMember, OpcodeInfoType
 } from "./jiterpreter-enums";
 
 export const maxFailures = 2,
@@ -104,6 +104,7 @@ export class WasmBuilder {
     backBranchOffsets: Array<MintOpcodePtr> = [];
     callHandlerReturnAddresses: Array<MintOpcodePtr> = [];
     nextConstantSlot = 0;
+    backBranchTraceLevel = 0;
 
     compressImportNames = false;
     lockImports = false;
@@ -1139,8 +1140,11 @@ class Cfg {
     backBranchTargets: Uint16Array | null = null;
     base!: MintOpcodePtr;
     ip!: MintOpcodePtr;
+    // The address of the prepare point
     entryIp!: MintOpcodePtr;
     exitIp!: MintOpcodePtr;
+    // The address of the first actual opcode in the trace
+    firstOpcodeIp!: MintOpcodePtr;
     lastSegmentStartIp!: MintOpcodePtr;
     lastSegmentEnd = 0;
     overheadBytes = 0;
@@ -1148,7 +1152,7 @@ class Cfg {
     blockStack: Array<MintOpcodePtr> = [];
     backDispatchOffsets: Array<MintOpcodePtr> = [];
     dispatchTable = new Map<MintOpcodePtr, number>();
-    observedBranchTargets = new Set<MintOpcodePtr>();
+    observedBackBranchTargets = new Set<MintOpcodePtr>();
     trace = 0;
 
     constructor(builder: WasmBuilder) {
@@ -1161,11 +1165,11 @@ class Cfg {
         this.startOfBody = startOfBody;
         this.backBranchTargets = backBranchTargets;
         this.base = this.builder.base;
-        this.ip = this.lastSegmentStartIp = this.builder.base;
+        this.ip = this.lastSegmentStartIp = this.firstOpcodeIp = this.builder.base;
         this.lastSegmentEnd = 0;
         this.overheadBytes = 10; // epilogue
         this.dispatchTable.clear();
-        this.observedBranchTargets.clear();
+        this.observedBackBranchTargets.clear();
         this.trace = trace;
         this.backDispatchOffsets.length = 0;
     }
@@ -1173,6 +1177,9 @@ class Cfg {
     // We have a header containing the table of locals and we need to preserve it
     entry(ip: MintOpcodePtr) {
         this.entryIp = ip;
+        // Skip over the enter opcode
+        const enterSizeU16 = cwraps.mono_jiterp_get_opcode_info(MintOpcode.MINT_TIER_ENTER_JITERPRETER, OpcodeInfoType.Length);
+        this.firstOpcodeIp = ip + <any>(enterSizeU16 * 2);
         this.appendBlob();
         mono_assert(this.segments.length === 1, "expected 1 segment");
         mono_assert(this.segments[0].type === "blob", "expected blob");
@@ -1183,6 +1190,7 @@ class Cfg {
             this.overheadBytes += 20; // some extra padding for the dispatch br_table
             this.overheadBytes += this.backBranchTargets.length; // one byte for each target in the table
         }
+        return this.firstOpcodeIp;
     }
 
     appendBlob() {
@@ -1212,7 +1220,9 @@ class Cfg {
     }
 
     branch(target: MintOpcodePtr, isBackward: boolean, branchType: CfgBranchType) {
-        this.observedBranchTargets.add(target);
+        if (isBackward)
+            this.observedBackBranchTargets.add(target);
+
         this.appendBlob();
         this.segments.push({
             type: "branch",
@@ -1224,21 +1234,21 @@ class Cfg {
         // some branches will generate bailouts instead so we allocate 4 bytes per branch
         //  to try and balance this out and avoid underestimating too much
         this.overheadBytes += 4; // forward branches are a constant br + depth (optimally 2 bytes)
+
         if (isBackward) {
-            // get_local <cinfo>
-            // i32_const 1
-            // i32_store 0 0
             // i32.const <n>
             // set_local <disp>
-            this.overheadBytes += 11;
+            this.overheadBytes += 4;
         }
 
-        // Account for the size of the safepoint
-        if (
-            (branchType === CfgBranchType.SafepointConditional) ||
-            (branchType === CfgBranchType.SafepointUnconditional)
-        ) {
-            this.overheadBytes += 17;
+        if (WasmEnableThreads) {
+            // Account for the size of the safepoint
+            if (
+                (branchType === CfgBranchType.SafepointConditional) ||
+                (branchType === CfgBranchType.SafepointUnconditional)
+            ) {
+                this.overheadBytes += 17;
+            }
         }
     }
 
@@ -1266,8 +1276,9 @@ class Cfg {
         // We wrap the entire trace in a loop that starts with a dispatch br_table in order to support
         //  backwards branches.
         if (this.backBranchTargets) {
-            this.builder.i32_const(0);
-            this.builder.local("disp", WasmOpcode.set_local);
+            // unnecessary, the local is default initialized to zero
+            // this.builder.i32_const(0);
+            // this.builder.local("disp", WasmOpcode.set_local);
             this.builder.block(WasmValtype.void, WasmOpcode.loop);
         }
 
@@ -1298,7 +1309,7 @@ class Cfg {
                 const breakDepth = this.blockStack.indexOf(offset);
                 if (breakDepth < 0)
                     continue;
-                if (!this.observedBranchTargets.has(offset))
+                if (!this.observedBackBranchTargets.has(offset))
                     continue;
 
                 this.dispatchTable.set(offset, this.backDispatchOffsets.length + 1);
@@ -1316,17 +1327,22 @@ class Cfg {
                         mono_log_info(`Exactly one back dispatch offset and it was 0x${(<any>this.backDispatchOffsets[0]).toString(16)}`);
                 }
 
-                // if (disp) goto back_branch_target else fallthrough
+                // if (disp)
+                //    goto back_branch_target;
                 this.builder.local("disp");
                 this.builder.appendU8(WasmOpcode.br_if);
                 this.builder.appendULeb(this.blockStack.indexOf(this.backDispatchOffsets[0]));
             } else {
+                if (this.trace > 0)
+                    mono_log_info(`${this.backDispatchOffsets.length} back branch offsets after filtering.`);
+
                 // the loop needs to start with a br_table that performs dispatch based on the current value
                 //  of the dispatch index local
                 // br_table has to be surrounded by a block in order for a depth of 0 to be fallthrough
                 // We wrap it in an additional block so we can have a trap for unexpected disp values
                 this.builder.block(WasmValtype.void);
                 this.builder.block(WasmValtype.void);
+                // switch (disp) {
                 this.builder.local("disp");
                 this.builder.appendU8(WasmOpcode.br_table);
 
@@ -1376,23 +1392,16 @@ class Cfg {
                 case "branch": {
                     const lookupTarget = segment.isBackward ? dispatchIp : segment.target;
                     let indexInStack = this.blockStack.indexOf(lookupTarget),
-                        successfulBackBranch = false;
+                        successfulBackBranch = false,
+                        disp : number | undefined = undefined;
 
                     // Back branches will target the dispatcher loop so we need to update the dispatch index
                     //  which will be used by the loop dispatch br_table to jump to the correct location
                     if (segment.isBackward) {
                         if (this.dispatchTable.has(segment.target)) {
-                            const disp = this.dispatchTable.get(segment.target)!;
+                            disp = this.dispatchTable.get(segment.target)!;
                             if (this.trace > 1)
                                 mono_log_info(`backward br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)}: disp=${disp}`);
-
-                            // Set the back branch taken flag local so it will get flushed on monitoring exit
-                            this.builder.i32_const(1);
-                            this.builder.local("backbranched", WasmOpcode.set_local);
-
-                            // set the dispatch index for the br_table
-                            this.builder.i32_const(disp);
-                            this.builder.local("disp", WasmOpcode.set_local);
                             successfulBackBranch = true;
                         } else {
                             if (this.trace > 0)
@@ -1406,20 +1415,40 @@ class Cfg {
                         switch (segment.branchType) {
                             case CfgBranchType.SafepointUnconditional:
                                 append_safepoint(this.builder, segment.from);
+                                if (disp !== undefined) {
+                                    this.builder.i32_const(disp);
+                                    this.builder.local("disp", WasmOpcode.set_local);
+                                }
                                 this.builder.appendU8(WasmOpcode.br);
                                 break;
                             case CfgBranchType.SafepointConditional:
                                 // Wrap the safepoint + branch in an if
                                 this.builder.block(WasmValtype.void, WasmOpcode.if_);
                                 append_safepoint(this.builder, segment.from);
+                                if (disp !== undefined) {
+                                    this.builder.i32_const(disp);
+                                    this.builder.local("disp", WasmOpcode.set_local);
+                                }
                                 this.builder.appendU8(WasmOpcode.br);
                                 offset = 1;
                                 break;
                             case CfgBranchType.Unconditional:
+                                if (disp !== undefined) {
+                                    this.builder.i32_const(disp);
+                                    this.builder.local("disp", WasmOpcode.set_local);
+                                }
                                 this.builder.appendU8(WasmOpcode.br);
                                 break;
                             case CfgBranchType.Conditional:
-                                this.builder.appendU8(WasmOpcode.br_if);
+                                if (disp !== undefined) {
+                                    this.builder.block(WasmValtype.void, WasmOpcode.if_);
+                                    this.builder.i32_const(disp);
+                                    this.builder.local("disp", WasmOpcode.set_local);
+                                    offset = 1;
+                                    this.builder.appendU8(WasmOpcode.br);
+                                } else {
+                                    this.builder.appendU8(WasmOpcode.br_if);
+                                }
                                 break;
                             default:
                                 throw new Error("Unimplemented branch type");
@@ -1489,6 +1518,9 @@ export const _now = (globalThis.performance && globalThis.performance.now)
 let scratchBuffer: NativePointer = <any>0;
 
 export function append_safepoint(builder: WasmBuilder, ip: MintOpcodePtr) {
+    // safepoints are never triggered in a single-threaded build
+    if (!WasmEnableThreads)
+        return;
     // Check whether a safepoint is required
     builder.ptr_const(cwraps.mono_jiterp_get_polling_required_address());
     builder.appendU8(WasmOpcode.i32_load);
@@ -1514,19 +1546,31 @@ export function append_bailout(builder: WasmBuilder, ip: MintOpcodePtr, reason: 
 
 // generate a bailout that is recorded for the monitoring phase as a possible early exit.
 export function append_exit(builder: WasmBuilder, ip: MintOpcodePtr, opcodeCounter: number, reason: BailoutReason) {
+    /*
+     * disp will always be nonzero once we've taken at least one backward branch.
+     * if (cinfo) {
+     *   cinfo->backward_branch_taken = disp;
+     *   if (opcodeCounter <= threshold)
+     *     cinfo->opcode_count = opcodeCounter;
+     * }
+     */
+
+    builder.local("cinfo");
+    builder.block(WasmValtype.void, WasmOpcode.if_);
+
+    builder.local("cinfo");
+    builder.local("disp");
+    builder.appendU8(WasmOpcode.i32_store);
+    builder.appendMemarg(getMemberOffset(JiterpMember.BackwardBranchTaken), 0);
+
     if (opcodeCounter <= (builder.options.monitoringLongDistance + 2)) {
         builder.local("cinfo");
         builder.i32_const(opcodeCounter);
         builder.appendU8(WasmOpcode.i32_store);
-        builder.appendMemarg(4, 0); // bailout_opcode_count
-        // flush the backward branch taken flag into the cinfo so that the monitoring phase
-        //  knows we took a backward branch. this is unfortunate but unavoidable overhead
-        // we just make it a flag instead of an increment to reduce the cost
-        builder.local("cinfo");
-        builder.local("backbranched");
-        builder.appendU8(WasmOpcode.i32_store);
-        builder.appendMemarg(0, 0); // JiterpreterCallInfo.backward_branch_taken
+        builder.appendMemarg(getMemberOffset(JiterpMember.BailoutOpcodeCount), 0);
     }
+
+    builder.endBlock();
 
     builder.ip_const(ip);
     if (builder.options.countBailouts) {

@@ -23,51 +23,13 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Massage the RuntimeIdentifier into an ObjWriter package RID that we can download -->
-    <_objWriterRidPlatformIndex>$(RuntimeIdentifier.LastIndexOf('-'))</_objWriterRidPlatformIndex>
-    <ObjWriterRidWithoutPlatform>$(RuntimeIdentifier.Substring(0, $(_objWriterRidPlatformIndex)))</ObjWriterRidWithoutPlatform>
-    <ObjWriterRidPlatform>$(RuntimeIdentifier.Substring($(_objWriterRidPlatformIndex)).TrimStart('-'))</ObjWriterRidPlatform>
-
-    <!-- If it's not win/osx/freebsd/linux-musl, it's a non-portable Linux. Treat as Linux. -->
-    <ObjWriterRidWithoutPlatform Condition="'$(ObjWriterRidWithoutPlatform)' != 'win' and '$(ObjWriterRidWithoutPlatform)' != 'osx' and '$(ObjWriterRidWithoutPlatform)' != 'linux-musl' and '$(ObjWriterRidWithoutPlatform)' != 'freebsd'">linux</ObjWriterRidWithoutPlatform>
-
-    <ObjWriterRid Condition="'$(ObjWriterRid)' == ''">$(ObjWriterRidWithoutPlatform)-$(ObjWriterRidPlatform)</ObjWriterRid>
-
-    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'linux-arm64'">$(runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
-    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'linux-x64'">$(runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
-    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'linux-musl-arm64'">$(runtimelinuxmuslarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
-    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'linux-musl-x64'">$(runtimelinuxmuslx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
-    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'win-arm64'">$(runtimewinarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
-    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'win-x64'">$(runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
-    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'osx-arm64'">$(runtimeosxarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
-    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'osx-x64'">$(runtimeosxx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
-    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'freebsd-x64'">$(runtimefreebsdx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
-    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'freebsd-arm64'">$(runtimefreebsdarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
-
     <!-- CoreDisTools are used in debugging visualizers. -->
     <IncludeCoreDisTools Condition="'$(Configuration)' != 'Release' and '$(CrossHostArch)' == ''">true</IncludeCoreDisTools>
-    <!-- source-build doesn't use ObjWriter for the ILCompiler.  the end-user will end up pulling Microsoft-built bits for NativeAOT anyway.  -->
-    <IncludeObjWriter Condition="'$(DotNetBuildFromSource)' != 'true' and '$(ObjWriterVersion)' != ''">true</IncludeObjWriter>
   </PropertyGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(IncludeCoreDisTools)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(IncludeCoreDisTools)' == 'true'" />
 
   <ItemGroup>
-    <PackageReference Include="runtime.$(ObjWriterRid).Microsoft.NETCore.Runtime.ObjWriter" Condition="'$(IncludeObjWriter)' == 'true'">
-      <Version>$(ObjWriterVersion)</Version>
-    </PackageReference>
-
-    <!-- Workaround until the SDK does this, see https://github.com/dotnet/sdk/issues/24799 -->
-    <PackageReference Include="NETStandard.Library">
-      <Version>$(NetStandardLibraryVersion)</Version>
-    </PackageReference>
-
-    <Content Include="$(NuGetPackageRoot)runtime.$(ObjWriterRid).microsoft.netcore.runtime.objwriter\$(ObjWriterVersion)\runtimes\$(ObjWriterRid)\native\$(LibPrefix)objwriter$(LibSuffix)" Condition="'$(IncludeObjWriter)' == 'true'">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>false</Visible>
-      <Pack>false</Pack>
-    </Content>
-
     <Content Include="$(CoreDisToolsLibrary)" Condition="Exists('$(CoreDisToolsLibrary)') and '$(IncludeCoreDisTools)' == 'true'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

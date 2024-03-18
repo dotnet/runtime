@@ -1583,11 +1583,13 @@ public class Interfaces
         [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
         public static void Run()
         {
-            var r = (string)typeof(Gen<>).MakeGenericType(typeof(Baz)).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            var r = (string)typeof(Gen<>).MakeGenericType(GetBaz()).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            static Type GetBaz() => typeof(Baz);
             if (r != "IBar")
                 throw new Exception(r);
 
-            r = (string)typeof(Gen<>).MakeGenericType(typeof(IBar)).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            r = (string)typeof(Gen<>).MakeGenericType(GetIBar()).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            static Type GetIBar() => typeof(IBar);
             if (r != "IBar")
                 throw new Exception(r);
         }
@@ -1620,15 +1622,18 @@ public class Interfaces
         [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
         public static void Run()
         {
-            Activator.CreateInstance(typeof(Baz<>).MakeGenericType(typeof(Atom1)));
+            Activator.CreateInstance(typeof(Baz<>).MakeGenericType(GetAtom1()));
 
-            var r = (string)typeof(Gen<>).MakeGenericType(typeof(Baz<>).MakeGenericType(typeof(Atom1))).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            var r = (string)typeof(Gen<>).MakeGenericType(typeof(Baz<>).MakeGenericType(GetAtom1())).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
             if (r != "IBar<Atom1>")
                 throw new Exception(r);
 
-            r = (string)typeof(Gen<>).MakeGenericType(typeof(IBar<>).MakeGenericType(typeof(Atom2))).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            r = (string)typeof(Gen<>).MakeGenericType(typeof(IBar<>).MakeGenericType(GetAtom2())).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
             if (r != "IBar<Atom2>")
                 throw new Exception(r);
+
+            static Type GetAtom1() => typeof(Atom1);
+            static Type GetAtom2() => typeof(Atom2);
         }
     }
 
