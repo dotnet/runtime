@@ -2314,7 +2314,56 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<byte> Shuffle(Vector128<byte> vector, Vector128<byte> indices)
+        {
+            if (ShuffleUnsafeIntrinsicSupported)
+            {
+                if (ShuffleUnsafeIntrinsicIsSafe)
+                {
+                    return ShuffleUnsafeIntrinsic(vector, indices);
+                }
+                else
+                {
+                    Vector128<byte> mask = Vector512.LessThan(indices, Vector128.Create(16));
+                    return ShuffleUnsafeIntrinsic(vector, indices) & mask;
+                }
+            }
+            return ShuffleSoftwareFallback(vector, indices);
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<sbyte> Shuffle(Vector128<sbyte> vector, Vector128<sbyte> indices)
+        {
+            return Shuffle(vector.AsByte(), indices.AsByte()).AsSByte();
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
+        /// Behavior is platform-dependent for out-of-range indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].
+        /// On hardware with <see cref="Ssse3"/> support, indices are treated as modulo 16, and if the high bit is set, the result will be set to 0 for that element.
+        /// On hardware with <see cref="AdvSimd.Arm64"/> or <see cref="PackedSimd"/> support, this method behaves the same as Shuffle.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
+        public static Vector128<byte> ShuffleUnsafe(Vector128<byte> vector, Vector128<byte> indices)
+        {
+            if (ShuffleUnsafeIntrinsicSupported) return ShuffleUnsafeIntrinsic(vector, indices);
+            return Shuffle(vector, indices);
+        }
+
+        private static Vector128<byte> ShuffleSoftwareFallback(Vector128<byte> vector, Vector128<byte> indices)
         {
             Unsafe.SkipInit(out Vector128<byte> result);
 
@@ -2333,45 +2382,12 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        [CLSCompliant(false)]
-        public static Vector128<sbyte> Shuffle(Vector128<sbyte> vector, Vector128<sbyte> indices)
-        {
-            Unsafe.SkipInit(out Vector128<sbyte> result);
-
-            for (int index = 0; index < Vector128<sbyte>.Count; index++)
-            {
-                byte selectedIndex = (byte)indices.GetElementUnsafe(index);
-                sbyte selectedValue = 0;
-
-                if (selectedIndex < Vector128<sbyte>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
-        /// Behavior is platform-dependent for out-of-range indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].
-        /// On hardware with <see cref="Ssse3"/> support, indices are treated as modulo 16, and if the high bit is set, the result will be set to 0 for that element.
-        /// On hardware with <see cref="AdvSimd.Arm64"/> or <see cref="PackedSimd"/> support, this method behaves the same as Shuffle.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        public static Vector128<byte> ShuffleUnsafe(Vector128<byte> vector, Vector128<byte> indices)
+        private static Vector128<byte> ShuffleUnsafeIntrinsic(Vector128<byte> vector, Vector128<byte> indices)
         {
             if (Ssse3.IsSupported)
             {
@@ -2388,8 +2404,11 @@ namespace System.Runtime.Intrinsics
                 return PackedSimd.Swizzle(vector, indices);
             }
 
-            return Shuffle(vector, indices);
+            Debug.Fail("Expected an intrinsic to be supported");
         }
+
+        private static bool ShuffleUnsafeIntrinsicIsSafe => AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported; // only the arm64 and wasm implementations are safe
+        private static bool ShuffleUnsafeIntrinsicSupported => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
