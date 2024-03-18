@@ -441,6 +441,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // TARGET_ARM64
 
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR:
+            genCodeForSwiftErrorReg(treeNode);
+            break;
+#endif // SWIFT_SUPPORT
+
         case GT_RELOAD:
             // do nothing - reload is just a marker.
             // The parent node will call genConsumeReg on this which will trigger the unspill of this node's child
@@ -507,7 +513,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif
             break;
 
-        case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -1925,37 +1930,6 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     genProduceReg(tree);
 }
 
-//----------------------------------------------------------------------------------
-// genCodeForCpBlkHelper - Generate code for a CpBlk node by the means of the VM memcpy helper call
-//
-// Arguments:
-//    cpBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
-{
-    // Destination address goes in arg0, source address goes in arg1, and size goes in arg2.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
-
-    if (cpBlkNode->IsVolatile())
-    {
-        // issue a full memory barrier before a volatile CpBlk operation
-        instGen_MemoryBarrier();
-    }
-
-    genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
-
-    if (cpBlkNode->IsVolatile())
-    {
-        // issue a load barrier after a volatile CpBlk operation
-        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
-    }
-}
-
 #ifdef TARGET_ARM64
 
 // The following classes
@@ -3219,31 +3193,6 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForInitBlkHelper - Generate code for an InitBlk node by the means of the VM memcpy helper call
-//
-// Arguments:
-//    initBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
-{
-    // Size goes in arg2, source address goes in arg1, and size goes in arg2.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
-
-    if (initBlkNode->IsVolatile())
-    {
-        // issue a full memory barrier before a volatile initBlock Operation
-        instGen_MemoryBarrier();
-    }
-
-    genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
-}
-
-//------------------------------------------------------------------------
 // genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
 //    It's needed for cases when size is too big to unroll and we're not allowed
 //    to use memset call due to atomicity requirements.
@@ -3461,7 +3410,7 @@ void CodeGen::genCall(GenTreeCall* call)
             for (unsigned i = 0; i < regCount; ++i)
             {
                 var_types regType      = pRetTypeDesc->GetReturnRegType(i);
-                returnReg              = pRetTypeDesc->GetABIReturnReg(i);
+                returnReg              = pRetTypeDesc->GetABIReturnReg(i, call->GetUnmanagedCallConv());
                 regNumber allocatedReg = call->GetRegNumByIdx(i);
                 inst_Mov(regType, allocatedReg, returnReg, /* canSkip */ true);
             }
@@ -4607,14 +4556,14 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 }
 
 //------------------------------------------------------------------------
-// genCodeForStoreBlk: Produce code for a GT_STORE_DYN_BLK/GT_STORE_BLK node.
+// genCodeForStoreBlk: Produce code for a GT_STORE_BLK node.
 //
 // Arguments:
 //    tree - the node
 //
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
-    assert(blkOp->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
+    assert(blkOp->OperIs(GT_STORE_BLK));
 
     bool isCopyBlk = blkOp->OperIsCopyBlkOp();
 
@@ -4628,18 +4577,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         case GenTreeBlk::BlkOpKindLoop:
             assert(!isCopyBlk);
             genCodeForInitBlkLoop(blkOp);
-            break;
-
-        case GenTreeBlk::BlkOpKindHelper:
-            assert(!blkOp->gtBlkOpGcUnsafe);
-            if (isCopyBlk)
-            {
-                genCodeForCpBlkHelper(blkOp);
-            }
-            else
-            {
-                genCodeForInitBlkHelper(blkOp);
-            }
             break;
 
         case GenTreeBlk::BlkOpKindUnroll:
@@ -4891,7 +4828,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
     for (unsigned i = 0; i < regCount; ++i)
     {
         var_types type = retTypeDesc->GetReturnRegType(i);
-        regNumber reg  = retTypeDesc->GetABIReturnReg(i);
+        regNumber reg  = retTypeDesc->GetABIReturnReg(i, compiler->info.compCallConv);
         if (varTypeIsFloating(type))
         {
             // If the register piece is to be passed in a floating point register

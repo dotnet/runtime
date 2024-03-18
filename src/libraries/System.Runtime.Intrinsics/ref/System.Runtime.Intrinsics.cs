@@ -2904,8 +2904,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void StoreSelectedScalar(uint* address, System.Runtime.Intrinsics.Vector128<uint> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte index) { }
         public static unsafe void StoreSelectedScalar(uint* address, System.Runtime.Intrinsics.Vector64<uint> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte index) { }
         public static unsafe void StoreSelectedScalar(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte index) { }
-#if false
-        // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
         public static unsafe void StoreSelectedScalar(byte* address, (System.Runtime.Intrinsics.Vector64<byte> value1, System.Runtime.Intrinsics.Vector64<byte> value2) value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(7))] byte index) { throw null; }
         public static unsafe void StoreSelectedScalar(sbyte* address, (System.Runtime.Intrinsics.Vector64<sbyte> value1, System.Runtime.Intrinsics.Vector64<sbyte> value2) value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(7))] byte index) { throw null; }
         public static unsafe void StoreSelectedScalar(short* address, (System.Runtime.Intrinsics.Vector64<short> value1, System.Runtime.Intrinsics.Vector64<short> value2) value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte index) { throw null; }
@@ -2927,7 +2925,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void StoreSelectedScalar(int* address, (System.Runtime.Intrinsics.Vector64<int> value1, System.Runtime.Intrinsics.Vector64<int> value2, System.Runtime.Intrinsics.Vector64<int> value3, System.Runtime.Intrinsics.Vector64<int> value4) value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
         public static unsafe void StoreSelectedScalar(uint* address, (System.Runtime.Intrinsics.Vector64<uint> value1, System.Runtime.Intrinsics.Vector64<uint> value2, System.Runtime.Intrinsics.Vector64<uint> value3, System.Runtime.Intrinsics.Vector64<uint> value4) value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
         public static unsafe void StoreSelectedScalar(float* address, (System.Runtime.Intrinsics.Vector64<float> value1, System.Runtime.Intrinsics.Vector64<float> value2, System.Runtime.Intrinsics.Vector64<float> value3, System.Runtime.Intrinsics.Vector64<float> value4) value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
-#endif
         public unsafe static void StoreVector64x2AndZip(byte* address, (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2) value) { throw null; }
         public unsafe static void StoreVector64x2AndZip(sbyte* address, (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2) value) { throw null; }
         public unsafe static void StoreVector64x2AndZip(short* address, (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2) value) { throw null; }
@@ -3748,8 +3745,6 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe void StorePairScalarNonTemporal(int* address, System.Runtime.Intrinsics.Vector64<int> value1, System.Runtime.Intrinsics.Vector64<int> value2) { }
             public static unsafe void StorePairScalarNonTemporal(float* address, System.Runtime.Intrinsics.Vector64<float> value1, System.Runtime.Intrinsics.Vector64<float> value2) { }
             public static unsafe void StorePairScalarNonTemporal(uint* address, System.Runtime.Intrinsics.Vector64<uint> value1, System.Runtime.Intrinsics.Vector64<uint> value2) { }
-#if false
-            // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
             public static unsafe void StoreSelectedScalar(byte* address, (System.Runtime.Intrinsics.Vector128<byte> value1, System.Runtime.Intrinsics.Vector128<byte> value2) value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(15))] byte index) { throw null; }
             public static unsafe void StoreSelectedScalar(sbyte* address, (System.Runtime.Intrinsics.Vector128<sbyte> value1, System.Runtime.Intrinsics.Vector128<sbyte> value2) value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(15))] byte index) { throw null; }
             public static unsafe void StoreSelectedScalar(short* address, (System.Runtime.Intrinsics.Vector128<short> value1, System.Runtime.Intrinsics.Vector128<short> value2) value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(7))] byte index) { throw null; }
@@ -3780,7 +3775,6 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe void StoreSelectedScalar(ulong* address, (System.Runtime.Intrinsics.Vector128<ulong> value1, System.Runtime.Intrinsics.Vector128<ulong> value2, System.Runtime.Intrinsics.Vector128<ulong> value3, System.Runtime.Intrinsics.Vector128<ulong> value4) value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte index) { throw null; }
             public static unsafe void StoreSelectedScalar(float* address, (System.Runtime.Intrinsics.Vector128<float> value1, System.Runtime.Intrinsics.Vector128<float> value2, System.Runtime.Intrinsics.Vector128<float> value3, System.Runtime.Intrinsics.Vector128<float> value4) value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte index) { throw null; }
             public static unsafe void StoreSelectedScalar(double* address, (System.Runtime.Intrinsics.Vector128<double> value1, System.Runtime.Intrinsics.Vector128<double> value2, System.Runtime.Intrinsics.Vector128<double> value3, System.Runtime.Intrinsics.Vector128<double> value4) value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte index) { throw null; }
-#endif
             public unsafe static void StoreVector128x2AndZip(byte* address, (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2) value) { throw null; }
             public unsafe static void StoreVector128x2AndZip(sbyte* address, (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2) value) { throw null; }
             public unsafe static void StoreVector128x2AndZip(short* address, (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2) value) { throw null; }
@@ -4144,7 +4138,51 @@ namespace System.Runtime.Intrinsics.Arm
             internal Arm64() { }
             public static new bool IsSupported { get { throw null; } }
         }
+
+        public static System.Numerics.Vector<byte> CreateTrueMaskByte([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<double> CreateTrueMaskDouble([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<short> CreateTrueMaskInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<int> CreateTrueMaskInt32([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<long> CreateTrueMaskInt64([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateTrueMaskSByte([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<float> CreateTrueMaskSingle([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateTrueMaskUInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<uint> CreateTrueMaskUInt32([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateTrueMaskUInt64([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+
+        public static unsafe System.Numerics.Vector<sbyte> LoadVector(System.Numerics.Vector<sbyte> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<short> LoadVector(System.Numerics.Vector<short> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVector(System.Numerics.Vector<int> mask, int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVector(System.Numerics.Vector<long> mask, long* address) { throw null; }
+        public static unsafe System.Numerics.Vector<byte> LoadVector(System.Numerics.Vector<byte> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVector(System.Numerics.Vector<ushort> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVector(System.Numerics.Vector<uint> mask, uint* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVector(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
+        public static unsafe System.Numerics.Vector<float> LoadVector(System.Numerics.Vector<float> mask, float* address) { throw null; }
+        public static unsafe System.Numerics.Vector<double> LoadVector(System.Numerics.Vector<double> mask, double* address) { throw null; }
+
     }
+
+    public enum SveMaskPattern : byte
+    {
+        LargestPowerOf2 = 0,      // The largest power of 2.
+        VectorCount1 = 1,         // 1 element.
+        VectorCount2 = 2,         // 2 elements.
+        VectorCount3 = 3,         // 3 elements.
+        VectorCount4 = 4,         // 4 elements.
+        VectorCount5 = 5,         // 5 elements.
+        VectorCount6 = 6,         // 6 elements.
+        VectorCount7 = 7,         // 7 elements.
+        VectorCount8 = 8,         // 8 elements.
+        VectorCount16 = 9,        // 16 elements.
+        VectorCount32 = 10,       // 32 elements.
+        VectorCount64 = 11,       // 64 elements.
+        VectorCount128 = 12,      // 128 elements.
+        VectorCount256 = 13,      // 256 elements.
+        LargestMultipleOf4 = 29,  // The largest multiple of 4.
+        LargestMultipleOf3 = 30,  // The largest multiple of 3.
+        All  = 31                 // All available (implicitly a multiple of two).
+    };
 }
 namespace System.Runtime.Intrinsics.X86
 {
