@@ -6390,12 +6390,13 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
             }
         }
 
-        // Look for an insert location. We want blocks that don't end with a fall through.
-        // Quirk: Manually check for BBJ_COND fallthrough behavior
-        const bool blkFallsThrough =
-            blk->bbFallsThrough() && (!blk->KindIs(BBJ_COND) || blk->NextIs(blk->GetFalseTarget()));
-        const bool blkJumpsToNext = blk->KindIs(BBJ_ALWAYS) && blk->HasFlag(BBF_NONE_QUIRK) && blk->JumpsToNext();
-        if (!blkFallsThrough && !blkJumpsToNext)
+        // Look for an insert location.
+        // Avoid splitting up call-finally pairs, or jumps/false branches to the next block.
+        // (We need the HasInitializedTarget() call because fgFindInsertPoint can be called during importation,
+        // before targets are set)
+        const bool jumpsToNext       = blk->KindIs(BBJ_ALWAYS) && blk->HasInitializedTarget() && blk->JumpsToNext();
+        const bool falseBranchToNext = blk->KindIs(BBJ_COND) && blk->NextIs(blk->GetFalseTarget());
+        if (!blk->isBBCallFinallyPair() && !jumpsToNext && !falseBranchToNext)
         {
             bool updateBestBlk = true; // We will probably update the bestBlk
 
