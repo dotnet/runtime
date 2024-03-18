@@ -196,7 +196,6 @@ FCFuncStart(gSignatureNative)
 FCFuncEnd()
 
 FCFuncStart(gRuntimeMethodHandle)
-    FCFuncElement("_GetCurrentMethod", RuntimeMethodHandle::GetCurrentMethod)
     FCFuncElement("InvokeMethod", RuntimeMethodHandle::InvokeMethod)
     FCFuncElement("ReboxFromNullable", RuntimeMethodHandle::ReboxFromNullable)
     FCFuncElement("ReboxToNullable", RuntimeMethodHandle::ReboxToNullable)
