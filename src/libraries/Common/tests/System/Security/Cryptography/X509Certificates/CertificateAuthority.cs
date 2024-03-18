@@ -950,8 +950,8 @@ SingleResponse ::= SEQUENCE {
             PkiOptions pkiOptions,
             bool includePkiOptions)
         {
-            string pkiOptionsPart = includePkiOptions ? $", OU=\"{pkiOptions}\"" : "";
             string testNamePart = !string.IsNullOrWhiteSpace(testName) ? $", O=\"{testName}\"" : "";
+            string pkiOptionsPart = includePkiOptions ? $", OU=\"{pkiOptions}\"" : "";
 
             return $"CN=\"{cn}\"" + testNamePart + pkiOptionsPart;
         }

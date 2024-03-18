@@ -197,7 +197,7 @@ namespace System.Net.Security.Tests
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
 
             CertificateAuthority.BuildPrivatePki(
-                PkiOptions.CrlEverywhere,
+                PkiOptions.EndEntityRevocationViaOcsp | PkiOptions.CrlEverywhere,
                 out RevocationResponder responder,
                 out CertificateAuthority rootAuthority,
                 out CertificateAuthority[] intermediateAuthorities,
@@ -205,6 +205,7 @@ namespace System.Net.Security.Tests
                 testName: testName,
                 intermediateAuthorityCount: noIntermediates ? 0 : 1,
                 subjectName: serverName,
+                keySize: 2048,
                 extensions: Configuration.Certificates.BuildTlsServerCertExtensions(serverName));
 
             CertificateAuthority issuingAuthority = noIntermediates ? rootAuthority : intermediateAuthorities[0];
