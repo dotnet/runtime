@@ -1003,6 +1003,21 @@ mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int to
         return mono_metadata_update_table_bounds_check (image, table_index, token_index);
 }
 
+static void
+mono_metadata_compute_column_offsets (guint32 bitfield, guint8 column_offsets[9])
+{
+	int offset = 0, c = mono_metadata_table_count (bitfield);
+	for (int i = 0; i < 9; i++) {
+		if (i >= c) {
+			column_offsets[i] = 0xFFu;
+		} else {
+			int size = mono_metadata_table_size (bitfield, i);
+			column_offsets[i] = (guint8)offset;
+			offset += size;
+		}
+	}
+}
+
 /**
  * mono_metadata_compute_table_bases:
  * \param meta metadata context to compute table values
@@ -1022,6 +1037,7 @@ mono_metadata_compute_table_bases (MonoImage *meta)
 			continue;
 
 		table->row_size = mono_metadata_compute_size (meta, i, &table->size_bitfield);
+		mono_metadata_compute_column_offsets (table->size_bitfield, table->column_offsets);
 		table->base = base;
 		base += table_info_get_rows (table) * table->row_size;
 	}
@@ -1470,6 +1486,7 @@ mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
 {
 	const char *data;
 	int n;
+	guint8 column_offset;
 
 	guint32 bitfield = t->size_bitfield;
 
@@ -1477,11 +1494,10 @@ mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
 	g_assert (col < mono_metadata_table_count (bitfield));
 	data = t->base + idx * t->row_size;
 
-	n = mono_metadata_table_size (bitfield, 0);
-	for (guint i = 0; i < col; ++i) {
-		data += n;
-		n = mono_metadata_table_size (bitfield, i + 1);
-	}
+	n = mono_metadata_table_size (bitfield, col);
+	column_offset = t->column_offsets [col];
+	g_assert (column_offset < 0xFFu);
+	data += column_offset;
 	switch (n) {
 	case 1:
 		return *data;
@@ -6009,7 +6025,7 @@ signature_equiv_vararg (MonoMethodSignature *sig1, MonoMethodSignature *sig2, in
 	if (sig1->hasthis != sig2->hasthis ||
 	    sig1->sentinelpos != sig2->sentinelpos)
 		return FALSE;
-	
+
 	int flag = MONO_TYPE_EQ_FLAGS_SIG_ONLY | (((equiv_flags & SIG_EQUIV_FLAG_IGNORE_CMODS) != 0) ? MONO_TYPE_EQ_FLAG_IGNORE_CMODS : 0);
 
 	for (i = 0; i < sig1->sentinelpos; i++) {

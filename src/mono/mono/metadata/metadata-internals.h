@@ -234,6 +234,12 @@ struct _MonoTableInfo {
 	 * we only need 4, but 8 is aligned no shift required.
 	 */
 	guint32   size_bitfield;
+
+	/*
+	 * optimize out the loop in mono_metadata_decode_row_col_raw.
+	 * 4 * 9 easily fits in a uint8
+	 */
+	guint8    column_offsets[9];
 };
 
 #define REFERENCE_MISSING ((gpointer) -1)
