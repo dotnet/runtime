@@ -14,7 +14,6 @@
 // * vet against some real data
 // * IR based heuristics (perhaps)
 // * During Cp, avoid repeatedly propagating through nested loops
-// * Fake BB0 or always force scratch BB
 // * Stop the upweight/downweight of loops in rest of jit
 // * Durable edge properties (exit, back)
 // * Tweak RunRarely to be at or near zero
@@ -100,6 +99,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
 
     m_comp->fgPgoHaveWeights = true;
     m_comp->fgPgoSource      = newSource;
+    m_comp->fgPgoSynthesized = true;
 
 #ifdef DEBUG
     if (JitConfig.JitCheckSynthesizedCounts() > 0)
@@ -107,11 +107,15 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         // Verify consistency, provided we didn't see any improper headers
         // or cap any Cp values.
         //
+        // Unfortunately invalid IL may also cause inconsistencies,
+        // so if we are running before the importer, we can't reliably
+        // assert.
+        //
         if ((m_improperLoopHeaders == 0) && (m_cappedCyclicProbabilities == 0))
         {
             // verify likely weights, assert on failure, check all blocks
-            m_comp->fgDebugCheckProfileWeights(ProfileChecks::CHECK_LIKELY | ProfileChecks::RAISE_ASSERT |
-                                               ProfileChecks::CHECK_ALL_BLOCKS);
+            m_comp->fgPgoConsistent = m_comp->fgDebugCheckProfileWeights(
+                ProfileChecks::CHECK_LIKELY | ProfileChecks::RAISE_ASSERT | ProfileChecks::CHECK_ALL_BLOCKS);
         }
     }
 #endif
