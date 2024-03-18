@@ -2811,12 +2811,20 @@ void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint
 void mono_cfg_set_exception (MonoCompile *cfg, MonoExceptionType type);
 void mono_cfg_set_exception_invalid_program (MonoCompile *cfg, const char *msg);
 
+#if defined(HOST_WASM)
+#define MONO_TIME_TRACK(a, phase) \
+	{ \
+		(phase) ; \
+		a = 0; \
+	}
+#else
 #define MONO_TIME_TRACK(a, phase) \
 	{ \
 		gint64 start = mono_time_track_start (); \
 		(phase) ; \
 		mono_time_track_end (&(a), start); \
 	}
+#endif // HOST_WASM
 
 gint64 mono_time_track_start (void);
 void mono_time_track_end (gint64 *time, gint64 start);
