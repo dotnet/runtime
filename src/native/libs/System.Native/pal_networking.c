@@ -1617,13 +1617,16 @@ int32_t SystemNative_Connectx(intptr_t socket, uint8_t* socketAddress, int32_t s
     int enabled = 1;
     socklen_t len = sizeof(enabled);
 
-    if (tfo)
+    // To make it consistent across platform we check if TCP_FASTOPEN and if so we also enabled it for
+    // TCP_FASTOPEN_CONNECT to avoid platform specific code at Socket layer.
+    if (getsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, &enabled, &len) == 0 && enabled != 0)
     {
         // This will either success and connect will finish without sending SYN until we write to so the socket.
         // If this is not available we simply connect and write provided data afterwards.
         setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, &enabled, len);
     }
 #endif
+    // avoid possible warning about unused parameters
     (void*)data;
     (void)dataLen;
     (void)tfo;

@@ -424,6 +424,33 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task TcpFastOpen_Roundrip_Succeeds()
+        {
+            using (Socket l = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                l.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                l.Listen();
+
+                int oldValue = (int)l.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen);
+                int newValue = oldValue == 0 ? 1 : 0;
+                l.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen, newValue);
+                oldValue = (int)l.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen);
+                Assert.Equal(newValue, oldValue);
+
+                using (Socket c = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    oldValue = (int)c.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen);
+                    newValue = oldValue == 0 ? 1 : 0;
+                    c.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen, newValue);
+                    oldValue = (int)c.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.FastOpen);
+                    Assert.Equal(newValue, oldValue);
+
+                    await c.ConnectAsync(l.LocalEndPoint);
+                }
+            }
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.OSX)]
         public unsafe void ReuseAddressUdp()
         {
