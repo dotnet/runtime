@@ -2248,7 +2248,7 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
             else
             {
                 // Always allocate in multiples of pointer size
-                cbMem = sizeof(TADDR);
+                cbMem = ALIGN_UP(cbMem, sizeof(TADDR));
             }
             uint8_t* pbMem = (uint8_t*)(void*)GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMem));
             if (initialcbMem >= 8)
