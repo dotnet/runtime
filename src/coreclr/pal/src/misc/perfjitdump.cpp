@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // ===========================================================================
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 #define JITDUMP_SUPPORTED
 #endif
 
@@ -61,6 +61,22 @@ namespace
         JIT_CODE_LOAD = 0,
     };
 
+#if defined(__linux__)
+    static uint32_t sys_gettid()
+    {
+        return syscall(SYS_gettid);
+    }
+#else
+    static uint32_t sys_gettid()
+    {
+        // macOS SYS_gettid is completely unrelated to linux gettid (it returns
+        // effective uid/gid a thread is operating under)
+        // There is pthread_threadid_np(), but it returns a uint64_t.
+        // Given that we need a uint32_t, just return 0 here for now.
+        return 0;
+    }
+#endif
+
     uint64_t GetTimeStampNS()
     {
 #if HAVE_CLOCK_MONOTONIC
@@ -115,7 +131,7 @@ namespace
     {
         JitCodeLoadRecord() :
             pid(getpid()),
-            tid(syscall(SYS_gettid))
+            tid(sys_gettid())
         {
             header.id = JIT_CODE_LOAD;
             header.timestamp = GetTimeStampNS();
@@ -203,12 +219,18 @@ struct PerfJitDumpState
         if (result == -1)
             return FatalError();
 
+#if !defined(__APPLE__)
         // mmap jitdump file
-        // this is a marker for perf inject to find the jitdumpfile
+        // this is a marker for perf inject to find the jitdumpfile on linux.
+        // On OSX, samply and others hook open and mmap is not needed. It also fails on OSX,
+        // likely because of PROT_EXEC and hardened runtime
         mmapAddr = mmap(nullptr, sizeof(FileHeader), PROT_READ | PROT_EXEC, MAP_PRIVATE, fd, 0);
 
         if (mmapAddr == MAP_FAILED)
             return FatalError();
+#else
+        mmapAddr = NULL;
+#endif
 
         enabled = true;
 
@@ -314,10 +336,13 @@ exit:
             if (!enabled)
                 goto exit;
 
-            result = munmap(mmapAddr, sizeof(FileHeader));
+            if (mmapAddr != NULL)
+            {
+                result = munmap(mmapAddr, sizeof(FileHeader));
 
-            if (result == -1)
-                return FatalError();
+                if (result == -1)
+                    return FatalError();
+            }
 
             mmapAddr = MAP_FAILED;
 
