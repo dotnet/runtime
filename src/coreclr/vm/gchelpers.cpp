@@ -203,26 +203,35 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     auto pCurrentThread = GetThread();
     if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
-        // TODO: if sampling is on, decide if this object should be sampled
+        // if sampling is on, decide if this object should be sampled.
         // the provided allocation context fields are not used for LOH/POH allocations
-        // (only its alloc_bytes_uoh field will be updated)
+        // (only its alloc_bytes_uoh field will be updated),
         // so get a random size in the distribution and if it is less than the size of the object
         // then this object should be sampled
         isSampled = ee_alloc_context::IsSampled(pCurrentThread->GetRandom(), size);
     }
     else
     {
-        // check if this allocation overlaps the SOH sampling point:
-        //    if the sampling threshold was outside of the allocation context,
-        //    then
-        //      alloc_sampling was set to alloc_limit
-        //      or the allocation context was just initialized to nullptr for the first allocation
-        //    else
-        //      use the alloc_sampling to decide if this allocation should be sampled
-        // see the comment at the beginning of the function for the simplified check
-        isSampled =
-            (pEEAllocContext->alloc_sampling != pAllocContext->alloc_limit) &&
-            (size > samplingBudget);
+        // as explained below, the GC might have returned an allocation context that is already full
+        // so, in that case, we should check if the next threshold is inside the object or not like for LOH
+        if ((pAllocContext->alloc_ptr != nullptr) && (pAllocContext->alloc_ptr == pAllocContext->alloc_limit))
+        {
+            isSampled = ee_alloc_context::IsSampled(pCurrentThread->GetRandom(), size);
+        }
+        else
+        {
+            // check if this allocation overlaps the SOH sampling point:
+            //    if the sampling threshold was outside of the allocation context,
+            //    then
+            //      alloc_sampling was set to alloc_limit
+            //      or the allocation context was just initialized to nullptr for the first allocation
+            //    else
+            //      use the alloc_sampling to decide if this allocation should be sampled
+            // see the comment at the beginning of the function for the simplified check
+            isSampled =
+                (pEEAllocContext->alloc_sampling != pAllocContext->alloc_limit) &&
+                (size > samplingBudget);
+        }
     }
 
     GCStress<gc_on_alloc>::MaybeTrigger(pAllocContext);
@@ -231,6 +240,10 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     // the allocation will be done in place (like in the fast path),
     // otherwise a new allocation context will be provided
     retVal = GCHeapUtilities::GetGCHeap()->Alloc(pAllocContext, size, flags);
+    // Note: it might happen that the object to allocate is larger than an allocation context
+    // in this case, both alloc_ptr and alloc_limit will share the same value and retVal = alloc_ptr + size
+    // --> this already full allocation context will trigger the slow path in the next allocation
+    // so we should handle this case like for LOH: check that the next threshold is inside the object or not
 
     // only SOH allocations require sampling threshold to be recomputed
     if ((flags & GC_ALLOC_USER_OLD_HEAP) == 0)
