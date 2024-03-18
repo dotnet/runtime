@@ -658,13 +658,16 @@ static code_t insEncodeSplitUimm(size_t imm)
     return result;
 }
 
+// Signed variant of insEncodeUimm, preserves the sign bit as the most significant bit of the immediate.
+// The immediate will be encoded into a 32-bit integer where bits in the range [hi, lo] are equal to the
+// bits of the signed immediate.
 template <const size_t hi, const size_t lo>
 static code_t insEncodeSimm(ssize_t imm)
 {
     // lo <= hi < 32
     static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
 
-    const size_t imm_bits = hi - lo + 1;
+    constexpr size_t imm_bits = hi - lo + 1;
     static_assert(imm_bits < sizeof(code_t) * BITS_PER_BYTE);
 
     const ssize_t imm_max = 1 << (imm_bits - 1);
