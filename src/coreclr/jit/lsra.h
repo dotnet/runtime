@@ -51,12 +51,12 @@ RegisterType regType(T type)
     {
         return IntRegisterType;
     }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if (defined(TARGET_XARCH) || defined(TARGET_ARM64)) && defined(FEATURE_SIMD)
     else if (varTypeUsesMaskReg(type))
     {
         return MaskRegisterType;
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // (TARGET_XARCH || TARGET_ARM64) && FEATURE_SIMD
     else
     {
         assert(varTypeUsesFloatReg(type));
@@ -1662,12 +1662,12 @@ private:
     PhasedVar<regMaskTP> availableIntRegs;
     PhasedVar<regMaskTP> availableFloatRegs;
     PhasedVar<regMaskTP> availableDoubleRegs;
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     PhasedVar<regMaskTP> availableMaskRegs;
 #endif
     PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 #define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
 #else
 #define allAvailableRegs (availableIntRegs | availableFloatRegs)
@@ -2517,6 +2517,10 @@ public:
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     // If upper vector save/restore can be avoided.
     unsigned char skipSaveRestore : 1;
+    // If upper vector save is related to live var
+    // or created just based on bbLiveIn/bbDefs and
+    // whose liveness is not entirely know.
+    unsigned char liveVarUpperSave : 1;
 #endif
 
 #ifdef DEBUG
@@ -2720,6 +2724,11 @@ public:
 #endif
 #endif // TARGET_ARM64
 
+    FORCEINLINE bool IsExtraUpperVectorSave() const
+    {
+        assert(refType == RefTypeUpperVectorSave);
+        return (nextRefPosition == nullptr) || (nextRefPosition->refType != RefTypeUpperVectorRestore);
+    }
 #ifdef DEBUG
     // operator= copies everything except 'rpNum', which must remain unique
     RefPosition& operator=(const RefPosition& rp)

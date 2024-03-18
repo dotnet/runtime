@@ -14,7 +14,7 @@ namespace System.Runtime.CompilerServices
         public static unsafe void ReadInt32()
         {
             int expected = 10;
-            void* address = Unsafe.AsPointer(ref expected);
+            void* address = Unsafe.AsPointer(ref expected); // Unsafe.AsPointer is safe since expected is on stack
             int ret = Unsafe.Read<int>(address);
             Assert.Equal(expected, ret);
         }
@@ -23,7 +23,7 @@ namespace System.Runtime.CompilerServices
         public static unsafe void WriteInt32()
         {
             int value = 10;
-            int* address = (int*)Unsafe.AsPointer(ref value);
+            int* address = (int*)Unsafe.AsPointer(ref value); // Unsafe.AsPointer is safe since value is on stack
             int expected = 20;
             Unsafe.Write(address, expected);
 
@@ -36,7 +36,7 @@ namespace System.Runtime.CompilerServices
         public static unsafe void WriteBytesIntoInt32()
         {
             int value = 20;
-            int* intAddress = (int*)Unsafe.AsPointer(ref value);
+            int* intAddress = (int*)Unsafe.AsPointer(ref value); // Unsafe.AsPointer is safe since value is on stack
             byte* byteAddress = (byte*)intAddress;
             for (int i = 0; i < 4; i++)
             {
@@ -70,7 +70,7 @@ namespace System.Runtime.CompilerServices
         public static unsafe void LongIntoCompoundStruct()
         {
             long value = 1234567891011121314L;
-            long* longAddress = (long*)Unsafe.AsPointer(ref value);
+            long* longAddress = (long*)Unsafe.AsPointer(ref value); // Unsafe.AsPointer is safe since value is on stack
             Byte4Short2 b4s2 = Unsafe.Read<Byte4Short2>(longAddress);
             if (BitConverter.IsLittleEndian)
             {
@@ -117,7 +117,7 @@ namespace System.Runtime.CompilerServices
         {
             int value1 = 10;
             int value2 = 20;
-            int* valueAddress = (int*)Unsafe.AsPointer(ref value1);
+            int* valueAddress = (int*)Unsafe.AsPointer(ref value1); // Unsafe.AsPointer is safe since value1 is on stack
             int** valueAddressPtr = &valueAddress;
             Unsafe.Write(valueAddressPtr, new IntPtr(&value2));
 
@@ -132,7 +132,7 @@ namespace System.Runtime.CompilerServices
         {
             int value = 10;
             int destination = -1;
-            Unsafe.Copy(ref destination, Unsafe.AsPointer(ref value));
+            Unsafe.Copy(ref destination, Unsafe.AsPointer(ref value)); // Unsafe.AsPointer is safe since value is on stack
             Assert.Equal(10, destination);
             Assert.Equal(10, value);
 
@@ -147,7 +147,7 @@ namespace System.Runtime.CompilerServices
         {
             int value = 10;
             int destination = -1;
-            Unsafe.Copy(Unsafe.AsPointer(ref destination), ref value);
+            Unsafe.Copy(Unsafe.AsPointer(ref destination), ref value); // Unsafe.AsPointer is safe since destination is on stack
             Assert.Equal(10, destination);
             Assert.Equal(10, value);
 
@@ -163,7 +163,7 @@ namespace System.Runtime.CompilerServices
             Int32Generic<string> destination = default;
             Int32Generic<string> value = new() { Int32 = 5, Value = "a" };
 
-            Unsafe.Copy(ref destination, Unsafe.AsPointer(ref value));
+            Unsafe.Copy(ref destination, Unsafe.AsPointer(ref value)); // Unsafe.AsPointer is safe since value is on stack
 
             Assert.Equal(5, destination.Int32);
             Assert.Equal("a", destination.Value);
@@ -175,7 +175,7 @@ namespace System.Runtime.CompilerServices
             Int32Generic<string> destination = default;
             Int32Generic<string> value = new() { Int32 = 5, Value = "a" };
 
-            Unsafe.Copy(Unsafe.AsPointer(ref destination), ref value);
+            Unsafe.Copy(Unsafe.AsPointer(ref destination), ref value); // Unsafe.AsPointer is safe since destination is on stack
 
             Assert.Equal(5, destination.Int32);
             Assert.Equal("a", destination.Value);
@@ -462,6 +462,26 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(new IntPtr(-3), Unsafe.ByteOffset(ref byte4.B3, ref byte4.B0));
         }
 
+        private static unsafe class StaticReadonlyHolder
+        {
+            public static readonly void* Pointer = (void*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(StaticReadonlyHolder), 1);
+        }
+
+        [Fact]
+        public static unsafe void ByteOffsetConstantRef()
+        {
+            // https://github.com/dotnet/runtime/pull/99019
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static nint NullTest(ref byte origin) => Unsafe.ByteOffset(ref origin, ref Unsafe.NullRef<byte>());
+            Assert.Equal(0, NullTest(ref Unsafe.NullRef<byte>()));
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static ref byte GetStatic(ref byte x) => ref x;
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static nint StaticReadonlyTest(ref byte x) => Unsafe.ByteOffset(ref GetStatic(ref Unsafe.AsRef<byte>(StaticReadonlyHolder.Pointer)), ref x);
+            Assert.Equal(0, StaticReadonlyTest(ref Unsafe.AsRef<byte>(StaticReadonlyHolder.Pointer)));
+        }
+
         [Fact]
         public static unsafe void AsRef()
         {
@@ -597,7 +617,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
-        public static void RefSubtract()
+        public static unsafe void RefSubtract()
         {
             string[] a = new string[] { "abc", "def", "ghi", "jkl" };
 
@@ -609,6 +629,11 @@ namespace System.Runtime.CompilerServices
 
             ref string r3 = ref Unsafe.Subtract(ref r2, 3);
             Assert.Equal("abc", r3);
+
+            // https://github.com/dotnet/runtime/pull/99019
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static ref byte NullTest(nuint offset) => ref Unsafe.Subtract(ref Unsafe.NullRef<byte>(), offset);
+            Assert.True(Unsafe.IsNullRef(ref NullTest(0)));
         }
 
         [Fact]

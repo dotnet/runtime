@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <Description>Abstractions for modifying .NET host binaries</Description>
     <IsShipping>false</IsShipping>
-    <IsPackable Condition="'$(PgoInstrument)' == ''">true</IsPackable>
+    <IsPackable Condition="'$(BuildOnlyPgoInstrumentedAssets)' != 'true'">true</IsPackable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>

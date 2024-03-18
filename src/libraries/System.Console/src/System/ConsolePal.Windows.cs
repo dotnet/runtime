@@ -108,7 +108,9 @@ namespace System
             if (enc.CodePage != UnicodeCodePage)
             {
                 if (!Interop.Kernel32.SetConsoleCP(enc.CodePage))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
+                {
+                    HandleSetConsoleEncodingError(Marshal.GetLastPInvokeError());
+                }
             }
         }
 
@@ -122,8 +124,22 @@ namespace System
             if (enc.CodePage != UnicodeCodePage)
             {
                 if (!Interop.Kernel32.SetConsoleOutputCP(enc.CodePage))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
+                {
+                    HandleSetConsoleEncodingError(Marshal.GetLastPInvokeError());
+                }
             }
+        }
+
+        private static void HandleSetConsoleEncodingError(int lastError)
+        {
+            if (lastError == Interop.Errors.ERROR_INVALID_HANDLE
+                || lastError == Interop.Errors.ERROR_INVALID_ACCESS)
+            {
+                // no console, or not a valid handle, so fail silently
+                return;
+            }
+
+            throw Win32Marshal.GetExceptionForWin32Error(lastError);
         }
 
         /// <summary>Gets whether Console.In is targeting a terminal display.</summary>

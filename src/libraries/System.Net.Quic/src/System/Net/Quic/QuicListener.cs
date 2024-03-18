@@ -209,6 +209,11 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// <param name="clientHello">The TLS ClientHello data.</param>
     private async void StartConnectionHandshake(QuicConnection connection, SslClientHelloInfo clientHello)
     {
+        // Yield to the threadpool immediately. This makes sure the connection options callback
+        // provided by the user is not invoked from the MsQuic thread and cannot delay acks
+        // or other operations on other connections.
+        await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+
         bool wrapException = false;
         CancellationToken cancellationToken = default;
 

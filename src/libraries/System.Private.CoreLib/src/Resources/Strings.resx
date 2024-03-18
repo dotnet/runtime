@@ -3346,7 +3346,7 @@
   </data>
   <data name="RFLCT_Targ_ITargMismatch_WithType" xml:space="preserve">
     <value>Object type {0} does not match target type {1}.</value>
-  </data>	  
+  </data>
   <data name="RFLCT_Targ_StatFldReqTarg" xml:space="preserve">
     <value>Non-static field requires a target.</value>
   </data>
@@ -4303,9 +4303,6 @@
   </data>
   <data name="RFLCT_CannotSetInitonlyStaticField" xml:space="preserve">
     <value>Cannot set initonly static field '{0}' after type '{1}' is initialized.</value>
-  </data>
-  <data name="NotSupported_AssemblySave" xml:space="preserve">
-    <value>This AssemblyBuilder instance doesn't support saving. Use AssemblyBuilder.DefinePersistedAssembly to create an AssemblyBuilder instance that supports saving.</value>
   </data>
   <data name="WasmThreads_BlockingWaitNotSupportedOnJSInterop" xml:space="preserve">
     <value>Blocking wait is not supported on the JS interop threads.</value>

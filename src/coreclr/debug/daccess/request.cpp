@@ -2577,7 +2577,7 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
     }
 
     assemblyData->AssemblyPtr = HOST_CDADDR(pAssembly);
-    assemblyData->ClassLoader = HOST_CDADDR(pAssembly->GetLoader());
+    assemblyData->ClassLoader = 0;
     assemblyData->ParentDomain = HOST_CDADDR(AppDomain::GetCurrentDomain());
     assemblyData->isDynamic = pAssembly->IsDynamic();
     assemblyData->ModuleCount = 0;
@@ -3810,8 +3810,12 @@ ClrDataAccess::GetJumpThunkTarget(T_CONTEXT *ctx, CLRDATA_ADDRESS *targetIP, CLR
 #ifdef TARGET_AMD64
     SOSDacEnter();
 
-    if (!GetAnyThunkTarget(ctx, targetIP, targetMD))
+    TADDR tempTargetIP, tempTargetMD;
+    if (!GetAnyThunkTarget(ctx, &tempTargetIP, &tempTargetMD))
         hr = E_FAIL;
+
+    *targetIP = TO_CDADDR(tempTargetIP);
+    *targetMD = TO_CDADDR(tempTargetMD);
 
     SOSDacLeave();
     return hr;

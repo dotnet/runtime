@@ -75,7 +75,9 @@ EXTERN  g_GCShadowEnd:DWORD
 INVALIDGCVALUE equ 0CCCCCCCDh
 endif
 
+ifndef FEATURE_EH_FUNCLETS
 EXTERN _COMPlusEndCatch@20:PROC
+endif
 
 .686P
 .XMM
@@ -1298,6 +1300,7 @@ ret
 _JIT_PatchedCodeEnd@0 endp
 
 
+ifndef FEATURE_EH_FUNCLETS
 ; Note that the debugger skips this entirely when doing SetIP,
 ; since COMPlusCheckForAbort should always return 0.  Excep.cpp:LeaveCatch
 ; asserts that to be true.  If this ends up doing more work, then the
@@ -1325,6 +1328,7 @@ JIT_EndCatch PROC stdcall public
     jmp     edx         ; eip = new eip
 
 JIT_EndCatch ENDP
+endif
 
 ; The following helper will access ("probe") a word on each page of the stack
 ; starting with the page right beneath esp down to the one pointed to by eax.

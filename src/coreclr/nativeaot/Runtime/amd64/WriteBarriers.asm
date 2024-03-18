@@ -274,7 +274,10 @@ LEAF_END RhpCheckedXchg, _TEXT
 ;;
 ;; On exit:
 ;;      rdi, rsi are incremented by 8,
-;;      rcx, r10, r11: trashed
+;;      rcx, rax: trashed
+;;
+;; NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
+;;       if you add more trashed registers.
 ;;
 ;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1/2
@@ -296,16 +299,15 @@ ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
     UPDATE_GC_SHADOW BASENAME, rcx, rdi
 
 ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    mov     r11, [g_write_watch_table]
-    cmp     r11, 0
+    cmp     [g_write_watch_table], 0
     je      RhpByRefAssignRef_CheckCardTable
 
-    mov     r10, rdi
-    shr     r10, 0Ch ;; SoftwareWriteWatch::AddressToTableByteIndexShift
-    add     r10, r11
-    cmp     byte ptr [r10], 0
+    mov     rax, rdi
+    shr     rax, 0Ch ;; SoftwareWriteWatch::AddressToTableByteIndexShift
+    add     rax, [g_write_watch_table]
+    cmp     byte ptr [rax], 0
     jne     RhpByRefAssignRef_CheckCardTable
-    mov     byte ptr [r10], 0FFh
+    mov     byte ptr [rax], 0FFh
 endif
 
 RhpByRefAssignRef_CheckCardTable:
@@ -325,12 +327,12 @@ RhpByRefAssignRef_CheckCardTable:
     ;; an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
     ;; the byte if it hasn't already been done since writes are expensive and impact scaling.
     shr     rcx, 0Bh
-    mov     r10, [g_card_table]
-    cmp     byte ptr [rcx + r10], 0FFh
+    mov     rax, [g_card_table]
+    cmp     byte ptr [rcx + rax], 0FFh
     je      RhpByRefAssignRef_NoBarrierRequired
 
 ;; We get here if it's necessary to update the card table.
-    mov     byte ptr [rcx + r10], 0FFh
+    mov     byte ptr [rcx + rax], 0FFh
 
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
     ;; Shift rcx by 0Ah more to get the card bundle byte (we shifted by 0Bh already)

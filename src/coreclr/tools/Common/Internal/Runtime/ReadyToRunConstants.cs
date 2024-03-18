@@ -239,7 +239,9 @@ namespace Internal.ReadyToRunConstants
         Stelem_Ref                  = 0x38,
         Ldelema_Ref                 = 0x39,
 
-        MemSet                      = 0x40,
+        MemZero                     = 0x3E,
+        MemSet                      = 0x3F,
+        NativeMemSet                = 0x40,
         MemCpy                      = 0x41,
 
         // P/Invoke support

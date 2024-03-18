@@ -13,5 +13,8 @@ CLRJitAttachState                                   @3 data
 ; needed by SOS, WinDBG, and Watson. This must remain ordinal 4.
 DotNetRuntimeInfo                                   @4 data
 
+; DAC table export
+g_dacTable = s_dacGlobals
+
 ; Used by profilers
 MetaDataGetDispenser

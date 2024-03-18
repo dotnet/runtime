@@ -121,8 +121,8 @@ namespace System.Linq.Tests
             Assert.Equal(convertedList, sourceIntegers.Where(i => true).Select(i => i.ToString()).ToList());
             Assert.Equal(emptyStringsList, sourceIntegers.Where(i => false).Select(i => i.ToString()).ToList());
 
-            Assert.Equal(convertedList, sourceIntegers.Select(i => i.ToString()).Where(s => s != null).ToList());
-            Assert.Equal(emptyStringsList, sourceIntegers.Select(i => i.ToString()).Where(s => s == null).ToList());
+            Assert.Equal(convertedList, sourceIntegers.Select(i => i.ToString()).Where(s => s is not null).ToList());
+            Assert.Equal(emptyStringsList, sourceIntegers.Select(i => i.ToString()).Where(s => s is null).ToList());
         }
 
         [Theory]
@@ -145,8 +145,8 @@ namespace System.Linq.Tests
             Assert.Equal(convertedList, sourceList.Where(i => true).Select(i => i.ToString()).ToList());
             Assert.Equal(emptyStringsList, sourceList.Where(i => false).Select(i => i.ToString()).ToList());
 
-            Assert.Equal(convertedList, sourceList.Select(i => i.ToString()).Where(s => s != null).ToList());
-            Assert.Equal(emptyStringsList, sourceList.Select(i => i.ToString()).Where(s => s == null).ToList());
+            Assert.Equal(convertedList, sourceList.Select(i => i.ToString()).Where(s => s is not null).ToList());
+            Assert.Equal(emptyStringsList, sourceList.Select(i => i.ToString()).Where(s => s is null).ToList());
         }
 
         [Theory]
@@ -166,8 +166,8 @@ namespace System.Linq.Tests
             Assert.Equal(convertedList, sourceList.Where(i => true).Select(i => i.ToString()).ToList());
             Assert.Equal(ReadOnlyCollection<string>.Empty, sourceList.Where(i => false).Select(i => i.ToString()).ToList());
 
-            Assert.Equal(convertedList, sourceList.Select(i => i.ToString()).Where(s => s != null).ToList());
-            Assert.Equal(ReadOnlyCollection<string>.Empty, sourceList.Select(i => i.ToString()).Where(s => s == null).ToList());
+            Assert.Equal(convertedList, sourceList.Select(i => i.ToString()).Where(s => s is not null).ToList());
+            Assert.Equal(ReadOnlyCollection<string>.Empty, sourceList.Select(i => i.ToString()).Where(s => s is null).ToList());
         }
 
         [Fact]

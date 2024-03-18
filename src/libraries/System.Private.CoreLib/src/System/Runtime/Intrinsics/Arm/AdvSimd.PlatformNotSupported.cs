@@ -3776,9 +3776,6 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static unsafe void StorePairScalarNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
 
-#if false
-            // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
-
             /// <summary>
             /// void vst2_lane_s8 (int8_t * ptr, int8x16x2_t val, const int lane)
             ///   A64: ST2 { Vt.16B, Vt+1.16B }[index], [Xn]
@@ -3949,7 +3946,6 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: ST3 { Vt.2D, Vt+1.2D, Vt+2.2D, Vt+3.2D }[index], [Xn]
             /// </summary>
             public static unsafe void StoreSelectedScalar(double* address, (Vector128<double> value1, Vector128<double> value2, Vector128<double> value3, Vector128<double> value4) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
-#endif
 
             /// <summary>
             ///   A64: ST2 { Vn.16B, Vn+1.16B }, [Xn]
@@ -15932,9 +15928,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void StoreSelectedScalar(ulong* address, Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
-#if false
-        // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
-
         /// <summary>
         ///   A64: ST2 { Vt.8B, Vt+1.8B }[index], [Xn]
         /// </summary>
@@ -16039,7 +16032,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: ST4 { Vt.2S, Vt+1.2S, Vt+2.2S, Vt+3.2S }[index], [Xn]
         /// </summary>
         public static unsafe void StoreSelectedScalar(float* address, (Vector64<float> value1, Vector64<float> value2, Vector64<float> value3, Vector64<float> value4) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
-#endif
 
         /// <summary>
         ///   A64: ST2 { Vn.8B, Vn+1.8B }, [Xn]

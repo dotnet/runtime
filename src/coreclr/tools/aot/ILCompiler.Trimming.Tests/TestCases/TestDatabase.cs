@@ -69,6 +69,11 @@ namespace Mono.Linker.Tests.TestCases
 			return TestNamesBySuiteName ();
 		}
 
+		public static IEnumerable<object[]> Substitutions ()
+		{
+			return TestNamesBySuiteName ();
+		}
+
 		public static IEnumerable<object[]> TopLevelStatements ()
 		{
 			return TestNamesBySuiteName ();

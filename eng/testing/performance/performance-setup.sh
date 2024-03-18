@@ -492,7 +492,7 @@ if [[ "$nor2r" == "true" ]]; then
 fi
 
 if [[ ! -z "$experimentname" ]]; then
-    setup_arguments="$setup_arguments --experiment-name '$experimentname'"
+    setup_arguments="$setup_arguments --experiment-name $experimentname"
 fi
 
 if [[ "$monoaot" == "true" ]]; then

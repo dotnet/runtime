@@ -1076,7 +1076,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_STORE_BLK:
-        case GT_STORE_DYN_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
             break;
 
@@ -1282,6 +1281,20 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildSelect(tree->AsOp());
             break;
 
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR:
+            srcCount = 0;
+            assert(dstCount == 1);
+
+            // Any register should do here, but the error register value should immediately
+            // be moved from GT_SWIFT_ERROR's destination register to the SwiftError struct,
+            // and we know REG_SWIFT_ERROR should be busy up to this point, anyway.
+            // By forcing LSRA to use REG_SWIFT_ERROR as both the source and destination register,
+            // we can ensure the redundant move is elided.
+            BuildDef(tree, RBM_SWIFT_ERROR);
+            break;
+#endif // SWIFT_SUPPORT
+
     } // end switch (tree->OperGet())
 
     if (tree->IsUnusedValue() && (dstCount != 0))
@@ -1316,8 +1329,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     const HWIntrinsic intrin(intrinsicTree);
 
-    int srcCount = 0;
-    int dstCount = 0;
+    int       srcCount      = 0;
+    int       dstCount      = 0;
+    regMaskTP dstCandidates = RBM_NONE;
 
     if (HWIntrinsicInfo::IsMultiReg(intrin.id))
     {
@@ -1430,6 +1444,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         assert(intrin.op4->isContainedIntOrIImmed());
                         break;
 
+                    case NI_Sve_CreateTrueMaskByte:
+                    case NI_Sve_CreateTrueMaskDouble:
+                    case NI_Sve_CreateTrueMaskInt16:
+                    case NI_Sve_CreateTrueMaskInt32:
+                    case NI_Sve_CreateTrueMaskInt64:
+                    case NI_Sve_CreateTrueMaskSByte:
+                    case NI_Sve_CreateTrueMaskSingle:
+                    case NI_Sve_CreateTrueMaskUInt16:
+                    case NI_Sve_CreateTrueMaskUInt32:
+                    case NI_Sve_CreateTrueMaskUInt64:
+                        needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
+                        break;
+
                     default:
                         unreached();
                 }
@@ -1517,6 +1544,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 BuildDelayFreeUses(use.GetNode(), intrinsicTree);
                 srcCount++;
             }
+        }
+        else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
+        {
+            regMaskTP predMask = HWIntrinsicInfo::IsLowMaskedOperation(intrin.id) ? RBM_LOWMASK : RBM_ALLMASK;
+            srcCount += BuildOperandUses(intrin.op1, predMask);
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
         {
@@ -1684,6 +1716,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 assert(intrinsicTree->OperIsMemoryLoadOrStore());
                 srcCount += BuildAddrUses(intrin.op3);
+                buildInternalRegisterUses();
                 FALLTHROUGH;
             }
 
@@ -1716,6 +1749,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         return srcCount;
     }
+
     else if (intrin.op2 != nullptr)
     {
         // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
@@ -1770,11 +1804,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     if ((dstCount == 1) || (dstCount == 2))
     {
-        BuildDef(intrinsicTree);
+        BuildDef(intrinsicTree, dstCandidates);
 
         if (dstCount == 2)
         {
-            BuildDef(intrinsicTree, RBM_NONE, 1);
+            BuildDef(intrinsicTree, dstCandidates, 1);
         }
     }
     else
@@ -2024,17 +2058,30 @@ bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegist
         return true;
     }
 
+    bool atConsecutiveRegsLoc          = consecutiveRegistersLocation == nodeLocation;
+    bool treeNeedsConsecutiveRegisters = false;
+
+    if ((treeNode != nullptr) && treeNode->OperIsHWIntrinsic())
+    {
+        const HWIntrinsic intrin(treeNode->AsHWIntrinsic());
+        treeNeedsConsecutiveRegisters = HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id);
+    }
+
     if (refType == RefTypeDef)
     {
-        if (treeNode->OperIsHWIntrinsic())
-        {
-            const HWIntrinsic intrin(treeNode->AsHWIntrinsic());
-            return HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id);
-        }
+        return treeNeedsConsecutiveRegisters;
     }
-    else if ((refType == RefTypeUse) || (refType == RefTypeUpperVectorRestore))
+    else if (refType == RefTypeUse)
     {
-        return consecutiveRegistersLocation == nodeLocation;
+        if (isIntervalRef() && getInterval()->isInternal)
+        {
+            return treeNeedsConsecutiveRegisters;
+        }
+        return atConsecutiveRegsLoc;
+    }
+    else if (refType == RefTypeUpperVectorRestore)
+    {
+        return atConsecutiveRegsLoc;
     }
     return false;
 }

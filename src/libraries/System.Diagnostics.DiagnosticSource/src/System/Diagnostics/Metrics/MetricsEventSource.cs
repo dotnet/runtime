@@ -737,7 +737,11 @@ namespace System.Diagnostics.Metrics
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < quantiles.Length; i++)
                 {
-                    sb.Append(quantiles[i].Quantile).Append('=').Append(quantiles[i].Value);
+#if NETCOREAPP
+                    sb.Append(CultureInfo.InvariantCulture, $"{quantiles[i].Quantile}={quantiles[i].Value}");
+#else
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "{0}={1}", quantiles[i].Quantile, quantiles[i].Value);
+#endif
                     if (i != quantiles.Length - 1)
                     {
                         sb.Append(';');

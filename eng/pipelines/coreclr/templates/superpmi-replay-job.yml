@@ -26,7 +26,7 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     helixQueues: ${{ parameters.helixQueues }}
     dependsOn:
-     - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'
 
     variables: ${{ parameters.variables }}
 
@@ -35,7 +35,8 @@ jobs:
     # Download jit builds
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: $(buildProductRootFolderPath)
-        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-        artifactName: '$(buildProductArtifactName)'
-        displayName: 'JIT product build'
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+        artifactFileName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
+        artifactName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)'
+        displayName: 'JIT checked build'
+        cleanupUnpackFolder: false

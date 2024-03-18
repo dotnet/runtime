@@ -80,7 +80,6 @@ export type MonoConfigInternal = MonoConfig & {
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
-    assertAfterExit?: boolean // default true for shell/nodeJS
     interopCleanupOnExit?: boolean
     dumpThreadsOnNonZeroExit?: boolean
     logExitCode?: boolean
@@ -95,6 +94,10 @@ export type MonoConfigInternal = MonoConfig & {
     resourcesHash?: string,
     GitHash?: string,
     ProductVersion?: string,
+
+    mainThreadingMode?: MainThreadingMode,
+    jsThreadBlockingMode?: JSThreadBlockingMode,
+    jsThreadInteropMode?: JSThreadInteropMode,
 };
 
 export type RunArguments = {
@@ -119,7 +122,6 @@ export type LoaderHelpers = {
 
     maxParallelDownloads: number;
     enableDownloadRetry: boolean;
-    assertAfterExit: boolean;
 
     exitCode: number | undefined;
     exitReason: any;
@@ -207,8 +209,10 @@ export type RuntimeHelpers = {
     monoThreadInfo: PThreadInfo,
     proxyGCHandle: GCHandle | undefined,
     managedThreadTID: PThreadPtr,
-    isCurrentThread: boolean,
-    isPendingSynchronousCall: boolean, // true when we are in the middle of a synchronous call from managed code with the same JSProxyContext
+    ioThreadTID: PThreadPtr,
+    currentThreadTID: PThreadPtr,
+    isManagedRunningOnCurrentThread: boolean,
+    isPendingSynchronousCall: boolean, // true when we are in the middle of a synchronous call from managed code from same thread
     cspPolicy: boolean,
 
     allAssetsInMemory: PromiseAndController<void>,
@@ -219,6 +223,7 @@ export type RuntimeHelpers = {
     afterPreRun: PromiseAndController<void>,
     beforeOnRuntimeInitialized: PromiseAndController<void>,
     afterMonoStarted: PromiseAndController<GCHandle | undefined>,
+    afterIOStarted: PromiseAndController<void>,
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
 
@@ -230,7 +235,7 @@ export type RuntimeHelpers = {
     instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,
     instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     instantiate_segmentation_rules_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
-    jiterpreter_dump_stats?: (x: boolean) => string,
+    jiterpreter_dump_stats?: (concise?: boolean) => void,
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
     dumpThreads: () => void,
 }
@@ -426,6 +431,7 @@ export declare interface EmscriptenModuleInternal {
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
     maybeExit(): void;
+    __emscripten_thread_init(pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number): void;
 }
 
 /// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.
@@ -453,6 +459,7 @@ export type passEmscriptenInternalsType = (internals: EmscriptenInternals, emscr
 export type setGlobalObjectsType = (globalObjects: GlobalObjects) => void;
 export type initializeExportsType = (globalObjects: GlobalObjects) => RuntimeAPI;
 export type initializeReplacementsType = (replacements: EmscriptenReplacements) => void;
+export type afterInitializeType = (module: EmscriptenModuleInternal) => void;
 export type configureEmscriptenStartupType = (module: DotnetModuleInternal) => void;
 export type configureRuntimeStartupType = () => Promise<void>;
 export type configureWorkerStartupType = (module: DotnetModuleInternal) => Promise<void>
@@ -487,6 +494,10 @@ export const enum WorkerToMainMessageType {
     enabledInterop = "notify_enabled_interop",
     monoUnRegistered = "monoUnRegistered",
     pthreadCreated = "pthreadCreated",
+    deputyCreated = "createdDeputy",
+    deputyFailed = "deputyFailed",
+    deputyStarted = "monoStarted",
+    ioStarted = "ioStarted",
     preload = "preload",
 }
 
@@ -516,6 +527,8 @@ export interface PThreadInfo {
     isRegistered?: boolean,
     isRunning?: boolean,
     isAttached?: boolean,
+    isDeputy?: boolean,
+    isIo?: boolean,
     isExternalEventLoop?: boolean,
     isUI?: boolean;
     isBackground?: boolean,
@@ -554,4 +567,38 @@ export interface MonoThreadMessage {
     type: string;
     // A particular kind of message. For example, "started", "stopped", "stopped_with_error", etc.
     cmd: string;
+}
+
+// keep in sync with JSHostImplementation.Types.cs
+export const enum MainThreadingMode {
+    // Running the managed main thread on UI thread. 
+    // Managed GC and similar scenarios could be blocking the UI. 
+    // Easy to deadlock. Not recommended for production.
+    UIThread = 0,
+    // Running the managed main thread on dedicated WebWorker. Marshaling all JavaScript calls to and from the main thread.
+    DeputyThread = 1,
+    // TODO comment
+    DeputyAndIOThreads = 2,
+}
+
+// keep in sync with JSHostImplementation.Types.cs
+export const enum JSThreadBlockingMode {
+    // throw PlatformNotSupportedException if blocking .Wait is called on threads with JS interop, like JSWebWorker and Main thread.
+    // Avoids deadlocks (typically with pending JS promises on the same thread) by throwing exceptions.
+    NoBlockingWait = 0,
+    // TODO comment
+    AllowBlockingWaitInAsyncCode = 1,
+    // allow .Wait on all threads. 
+    // Could cause deadlocks with blocking .Wait on a pending JS Task/Promise on the same thread or similar Task/Promise chain.
+    AllowBlockingWait = 100,
+}
+
+// keep in sync with JSHostImplementation.Types.cs
+export const enum JSThreadInteropMode {
+    // throw PlatformNotSupportedException if synchronous JSImport/JSExport is called on threads with JS interop, like JSWebWorker and Main thread.
+    // calling synchronous JSImport on thread pool or new threads is allowed.
+    NoSyncJSInterop = 0,
+    // allow non-re-entrant synchronous blocking calls to and from JS on JSWebWorker on threads with JS interop, like JSWebWorker and Main thread.
+    // calling synchronous JSImport on thread pool or new threads is allowed.
+    SimpleSynchronousJSInterop = 1,
 }

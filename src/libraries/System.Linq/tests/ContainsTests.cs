@@ -71,7 +71,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(String_TestData))]
         public void String(IEnumerable<string> source, IEqualityComparer<string> comparer, string value, bool expected)
         {
-            if (comparer == null)
+            if (comparer is null)
             {
                 Assert.Equal(expected, source.Contains(value));
             }
@@ -81,7 +81,7 @@ namespace System.Linq.Tests
         [Theory, MemberData(nameof(String_TestData))]
         public void StringRunOnce(IEnumerable<string> source, IEqualityComparer<string> comparer, string value, bool expected)
         {
-            if (comparer == null)
+            if (comparer is null)
             {
                 Assert.Equal(expected, source.RunOnce().Contains(value));
             }

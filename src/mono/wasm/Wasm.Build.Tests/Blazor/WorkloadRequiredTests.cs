@@ -120,7 +120,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         {
             Config = config,
             Host = publish ? BlazorRunHost.WebServer : BlazorRunHost.DotnetRun,
-            OnConsoleMessage = msg =>
+            OnConsoleMessage = (_, msg) =>
             {
                 sbOutput.AppendLine(msg.Text);
             }

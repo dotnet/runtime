@@ -916,18 +916,14 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 #endif // FEATURE_HW_INTRINSICS
         }
 
-        switch (addr->OperGet())
+        if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
         {
-            case GT_LCL_ADDR:
-            {
-                assert(addr->isContained());
-                varNum = addr->AsLclFld()->GetLclNum();
-                offset = addr->AsLclFld()->GetLclOffs();
-                break;
-            }
-
-            default:
-                return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);
+            varNum = addr->AsLclFld()->GetLclNum();
+            offset = addr->AsLclFld()->GetLclOffs();
+        }
+        else
+        {
+            return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);
         }
     }
     else
@@ -992,6 +988,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                         simd64_t constValue;
                         memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd64_t));
                         return OperandDesc(emit->emitSimd64Const(constValue));
+                    }
+
+                    case TYP_MASK:
+                    {
+                        simdmask_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simdmask_t));
+                        return OperandDesc(emit->emitSimdMaskConst(constValue));
                     }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD

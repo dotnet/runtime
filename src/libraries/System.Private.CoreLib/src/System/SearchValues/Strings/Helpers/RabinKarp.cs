@@ -64,6 +64,12 @@ namespace System.Buffers
 
             foreach (string value in values)
             {
+                if (value.Length > MaxInputLength)
+                {
+                    // This value can never match. There's no point in including it in the buckets.
+                    continue;
+                }
+
                 nuint hash = 0;
                 for (int i = 0; i < minimumLength; i++)
                 {

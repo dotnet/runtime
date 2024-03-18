@@ -23,7 +23,7 @@ namespace System
             {
 #pragma warning disable 8500 // sizeof of managed types
                 // Blittable memmove
-                Memmove(
+                SpanHelpers.Memmove(
                     ref Unsafe.As<T, byte>(ref destination),
                     ref Unsafe.As<T, byte>(ref source),
                     elementCount * (nuint)sizeof(T));

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 
 namespace System.Linq
 {
@@ -64,16 +64,20 @@ namespace System.Linq
 
         private static TSource? TryGetFirst<TSource>(this IEnumerable<TSource> source, out bool found)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is IPartition<TSource> partition)
-            {
-                return partition.TryGetFirst(out found);
-            }
+            return
+#if !OPTIMIZE_FOR_SIZE
+                source is Iterator<TSource> iterator ? iterator.TryGetFirst(out found) :
+#endif
+                TryGetFirstNonIterator(source, out found);
+        }
 
+        private static TSource? TryGetFirstNonIterator<TSource>(IEnumerable<TSource> source, out bool found)
+        {
             if (source is IList<TSource> list)
             {
                 if (list.Count > 0)
@@ -100,12 +104,12 @@ namespace System.Linq
 
         private static TSource? TryGetFirst<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, out bool found)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null)
+            if (predicate is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }

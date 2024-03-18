@@ -204,9 +204,6 @@
   <data name="DelegateGetMethodInfo_NoInstantiation" xml:space="preserve">
     <value>Cannot retrieve a MethodInfo for this delegate because the necessary generic instantiation was not metadata-enabled.</value>
   </data>
-  <data name="DelegateGetMethodInfo_ObjectArrayDelegate" xml:space="preserve">
-    <value>Cannot retrieve a MethodInfo for this delegate because the delegate target is an interpreted LINQ expression.</value>
-  </data>
   <data name="Arg_InterfaceMapMustNotBeAbstract" xml:space="preserve">
     <value>Could not retrieve the mapping of the interface '{0}' on type '{1}' because the type implements the interface abstractly.</value>
   </data>

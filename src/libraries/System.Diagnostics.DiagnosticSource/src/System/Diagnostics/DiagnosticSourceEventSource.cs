@@ -1440,13 +1440,13 @@ namespace System.Diagnostics
                     /// </summary>
                     private sealed class ReflectionPropertyFetch : PropertyFetch
                     {
-                        private readonly PropertyInfo _property;
+                        private readonly MethodInvoker _getterInvoker;
                         public ReflectionPropertyFetch(Type type, PropertyInfo property) : base(type)
                         {
-                            _property = property;
+                            _getterInvoker = MethodInvoker.Create(property.GetMethod!);
                         }
 
-                        public override object? Fetch(object? obj) => _property.GetValue(obj);
+                        public override object? Fetch(object? obj) => _getterInvoker.Invoke(obj);
                     }
 
                     /// <summary>

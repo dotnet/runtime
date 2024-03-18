@@ -23,6 +23,8 @@ function(create_standalone_jit)
 
   if(TARGETDETAILS_OS STREQUAL "unix_osx" OR TARGETDETAILS_OS STREQUAL "unix_anyos")
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_unix_${TARGETDETAILS_ARCH})
+  elseif(TARGETDETAILS_OS STREQUAL "win_aot")
+    set(JIT_ARCH_LINK_LIBRARIES gcinfo_win_${TARGETDETAILS_ARCH})
   else()
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH})
   endif()
@@ -94,7 +96,6 @@ set( JIT_SOURCES
   bitset.cpp
   block.cpp
   buildstring.cpp
-  layout.cpp
   codegencommon.cpp
   codegenlinear.cpp
   compiler.cpp
@@ -123,20 +124,23 @@ set( JIT_SOURCES
   gentree.cpp
   gschecks.cpp
   hashbv.cpp
-  hwintrinsic.cpp
-  hostallocator.cpp
-  ifconversion.cpp
   helperexpansion.cpp
-  indirectcalltransformer.cpp
-  importercalls.cpp
+  hostallocator.cpp
+  hwintrinsic.cpp
+  ifconversion.cpp
   importer.cpp
+  importercalls.cpp
   importervectorization.cpp
+  indirectcalltransformer.cpp
+  inductionvariableopts.cpp
   inline.cpp
   inlinepolicy.cpp
   instr.cpp
   jitconfig.cpp
   jiteh.cpp
   jithashtable.cpp
+  jitmetadata.cpp
+  layout.cpp
   lclmorph.cpp
   lclvars.cpp
   likelyclass.cpp
@@ -151,7 +155,6 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizebools.cpp
-  switchrecognition.cpp
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
@@ -164,6 +167,7 @@ set( JIT_SOURCES
   regalloc.cpp
   registerargconvention.cpp
   regset.cpp
+  scev.cpp
   scopeinfo.cpp
   sideeffects.cpp
   sm.cpp
@@ -172,6 +176,7 @@ set( JIT_SOURCES
   ssabuilder.cpp
   ssarenamestate.cpp
   stacklevelsetter.cpp
+  switchrecognition.cpp
   treelifeupdater.cpp
   unwind.cpp
   utils.cpp
@@ -334,6 +339,8 @@ set( JIT_HEADERS
   jitexpandarray.h
   jitgcinfo.h
   jithashtable.h
+  jitmetadata.h
+  jitmetadatalist.h
   jitpch.h
   jitstd.h
   lir.h
@@ -356,6 +363,7 @@ set( JIT_HEADERS
   registerargconvention.h
   register.h
   regset.h
+  scev.h
   sideeffects.h
   simd.h
   simdashwintrinsic.h
@@ -646,6 +654,7 @@ else()
   create_standalone_jit(TARGET clrjit_universal_arm_${ARCH_HOST_NAME} OS universal ARCH arm DESTINATIONS .)
   target_compile_definitions(clrjit_universal_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
   create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86 DESTINATIONS .)
+  create_standalone_jit(TARGET clrjit_win_aot_x86_${ARCH_HOST_NAME} OS win_aot ARCH x86 DESTINATIONS .)
 endif (CLR_CMAKE_TARGET_ARCH_RISCV64)
 
 if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)

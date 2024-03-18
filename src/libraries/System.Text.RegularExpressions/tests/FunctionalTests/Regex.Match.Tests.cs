@@ -92,6 +92,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?:(?!(b)b)\1a)+", "babababa", RegexOptions.None, 0, 8, false, string.Empty);
                 yield return (@"(?:(?!(b)b)\1a)*", "babababa", RegexOptions.None, 0, 8, true, string.Empty);
                 yield return (@"(.*?)a(?!(a+)b\2c)\2(.*)", "baaabaac", RegexOptions.None, 0, 8, false, string.Empty);
+                yield return (@"(?!(abc))+\w\w\w", "abcdef", RegexOptions.None, 0, 6, true, "bcd");
 
                 // Zero-width positive lookbehind assertion
                 yield return (@"(\w){6}(?<=XXX)def", "abcXXXdef", RegexOptions.None, 0, 9, true, "abcXXXdef");
@@ -660,8 +661,15 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@$"^{aOptional}{{1,2}}?b", "aaab", RegexOptions.None, 0, 4, false, "");
                 yield return (@$"^{aOptional}{{2}}b", "aab", RegexOptions.None, 0, 3, true, "aab");
             }
+            yield return (@"(a+.|b+.)", "aaac", RegexOptions.None, 0, 4, true, "aaac");
+            yield return (@"(a+?.|b+?.)", "aaac", RegexOptions.None, 0, 4, true, "aa");
+            yield return (@"((a+?).|(b+?).)", "aaac", RegexOptions.None, 0, 4, true, "aa");
+            yield return (@"((a+?)+.|(b+?)+.)", "aaac", RegexOptions.None, 0, 4, true, "aaac");
+            yield return (@"((a+?)+?.|(b+?)+?.)", "aaac", RegexOptions.None, 0, 4, true, "aa");
             if (!RegexHelpers.IsNonBacktracking(engine))
             {
+                yield return (@"((?>a+).|(?>b+).)", "aaac", RegexOptions.None, 0, 4, true, "aaac");
+
                 yield return ("(?(dog2))", "dog2", RegexOptions.None, 0, 4, true, string.Empty);
                 yield return ("(?(a:b))", "a", RegexOptions.None, 0, 1, true, string.Empty);
                 yield return ("(?(a:))", "a", RegexOptions.None, 0, 1, true, string.Empty);

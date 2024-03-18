@@ -118,8 +118,8 @@ namespace System.Reflection
             Debug.Assert(_argCount <= MaxStackAllocArgCount);
 
             StackAllocatedArgumentsWithCopyBack stackArgStorage = default;
-            Span<object?> copyOfArgs = stackArgStorage._args.AsSpan(_argCount);
-            Span<bool> shouldCopyBack = stackArgStorage._shouldCopyBack.AsSpan(_argCount);
+            Span<object?> copyOfArgs = ((Span<object?>)stackArgStorage._args).Slice(0, _argCount);
+            Span<bool> shouldCopyBack = ((Span<bool>)stackArgStorage._shouldCopyBack).Slice(0, _argCount);
 
             object? ret;
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -33,6 +34,7 @@ namespace ILCompiler.DependencyAnalysis
             builder.AddSymbol(this);
             foreach (FrozenObjectNode node in factory.MetadataManager.GetFrozenObjects())
             {
+                Debug.Assert(node is not FrozenObjectNode frozenObj || !frozenObj.ObjectType.RequiresAlign8());
                 AlignNextObject(ref builder, factory);
 
                 node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);

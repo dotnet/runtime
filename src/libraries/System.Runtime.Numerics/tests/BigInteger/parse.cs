@@ -143,6 +143,18 @@ namespace System.Numerics.Tests
             Assert.True(BigInteger.TryParse("080000001", NumberStyles.HexNumber, null, out result));
             Assert.Equal(0x80000001u, result);
 
+            Assert.True(BigInteger.TryParse("F0000001", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(-0xFFFFFFFL, result);
+
+            Assert.True(BigInteger.TryParse("0F0000001", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(0xF0000001u, result);
+            
+            Assert.True(BigInteger.TryParse("F00000001", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(-0xFFFFFFFFL, result);
+
+            Assert.True(BigInteger.TryParse("0F00000001", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(0xF00000001u, result);
+
             // Regression test for: https://github.com/dotnet/runtime/issues/74758
             Assert.True(BigInteger.TryParse("FFFFFFFFE", NumberStyles.HexNumber, null, out result));
             Assert.Equal(new BigInteger(-2), result);
@@ -175,6 +187,7 @@ namespace System.Numerics.Tests
         [InlineData("10000000000000000000000000000000", (long)int.MinValue)]
         [InlineData("010000000000000000000000000000001", 0x080000001L)]
         [InlineData("111111111111111111111111111111110", -2L)]
+        [InlineData("100000000000000000000000000000001", -0xFFFFFFFFL)]
         [InlineData("0111111111111111111111111111111111", 0x1FFFFFFFFL)]
         public void Parse_BinSpecialCases(string input, long expectedValue)
         {

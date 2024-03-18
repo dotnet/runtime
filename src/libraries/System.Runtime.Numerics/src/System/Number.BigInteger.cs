@@ -445,7 +445,7 @@ namespace System
             int leadingBitsCount = value.Length % TParser.DigitsPerBlock;
 
             uint leading = signBits;
-            // First parse unanligned leading block if exists.
+            // First parse unaligned leading block if exists.
             if (leadingBitsCount != 0)
             {
                 if (!TParser.TryParseUnalignedBlock(value[0..leadingBitsCount], out leading))
@@ -484,8 +484,8 @@ namespace System
                     // Require to store in _bits.
 
                     // Positive: sign=1, bits=[leading]
-                    // Negative: sign=-1, bits=[leading ^ -1 + 1]=[-leading]
-                    result = new BigInteger((int)signBits | 1, [leading ^ signBits - signBits]);
+                    // Negative: sign=-1, bits=[(leading ^ -1) + 1]=[-leading]
+                    result = new BigInteger((int)signBits | 1, [(leading ^ signBits) - signBits]);
                     return ParsingStatus.OK;
                 }
                 else

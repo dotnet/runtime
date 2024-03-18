@@ -86,7 +86,6 @@ export function setLoaderGlobals(
 
         maxParallelDownloads: 16,
         enableDownloadRetry: true,
-        assertAfterExit: !ENVIRONMENT_IS_WEB,
 
         _loaded_files: [],
         loadedFiles: [],

@@ -42,7 +42,7 @@ namespace System.Runtime.ExceptionServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EHEnumInitFromStackFrameIterator")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool RhpEHEnumInitFromStackFrameIterator(ref StackFrameIterator pFrameIter, byte** pMethodStartAddress, void* pEHEnum);
+        internal static unsafe partial bool RhpEHEnumInitFromStackFrameIterator(ref StackFrameIterator pFrameIter, out EH.MethodRegionInfo pMethodRegionInfo, void* pEHEnum);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EHEnumNext")]
         [return: MarshalAs(UnmanagedType.Bool)]

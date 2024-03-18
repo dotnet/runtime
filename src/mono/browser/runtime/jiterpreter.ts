@@ -56,7 +56,7 @@ export const
     traceNullCheckOptimizations = false,
     // Print diagnostic information when generating backward branches
     // 1 = failures only, 2 = full detail
-    traceBackBranches = 0,
+    defaultTraceBackBranches = 0,
     // Enable generating conditional backward branches for ENDFINALLY opcodes if we saw some CALL_HANDLER
     //  opcodes previously, up to this many potential return addresses. If a trace contains more potential
     //  return addresses than this we will not emit code for the ENDFINALLY opcode
@@ -779,7 +779,6 @@ function generate_wasm(
             "math_rhs64": WasmValtype.i64,
             "temp_f32": WasmValtype.f32,
             "temp_f64": WasmValtype.f64,
-            "backbranched": WasmValtype.i32,
         };
         if (builder.options.enableSimd) {
             traceLocals["v128_zero"] = WasmValtype.v128;
@@ -891,7 +890,7 @@ function generate_wasm(
         //  suites or benchmarks if you've enabled stats
         const tracesCompiled = getCounter(JiterpCounter.TracesCompiled);
         if (builder.options.enableStats && tracesCompiled && (tracesCompiled % autoDumpInterval) === 0)
-            jiterpreter_dump_stats(false, true);
+            jiterpreter_dump_stats(true);
 
         return idx;
     } catch (exc: any) {
@@ -1032,7 +1031,7 @@ export function mono_interp_tier_prepare_jiterpreter(
         const threshold = (<any>ip - <any>startOfBody) / 2;
         let foundReachableBranchTarget = false;
         for (let i = 0; i < backwardBranchTable.length; i++) {
-            if (backwardBranchTable[i] > threshold) {
+            if (backwardBranchTable[i] >= threshold) {
                 foundReachableBranchTarget = true;
                 break;
             }
@@ -1074,14 +1073,14 @@ export function mono_jiterp_free_method_data_js(
     mono_jiterp_free_method_data_jit_call(method);
 }
 
-export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
+export function jiterpreter_dump_stats(concise?: boolean): void {
     if (!runtimeHelpers.runtimeReady) {
         return;
     }
-    if (!mostRecentOptions || (b !== undefined))
+    if (!mostRecentOptions)
         mostRecentOptions = getOptions();
 
-    if (!mostRecentOptions.enableStats && (b !== undefined))
+    if (!mostRecentOptions.enableStats)
         return;
 
     const backBranchesEmitted = getCounter(JiterpCounter.BackBranchesEmitted),
@@ -1243,10 +1242,4 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
 
     for (const k in simdFallbackCounters)
         mono_log_info(`// simd ${k}: ${simdFallbackCounters[k]} fallback insn(s)`);
-
-    if ((typeof (globalThis.setTimeout) === "function") && (b !== undefined))
-        setTimeout(
-            () => jiterpreter_dump_stats(b),
-            15000
-        );
 }

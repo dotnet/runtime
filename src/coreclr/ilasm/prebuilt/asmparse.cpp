@@ -2523,7 +2523,7 @@ case 152:
 { yyval.int32 = gpNotNullableValueTypeConstraint; } break;
 case 153:
 #line 489 "asmparse.y"
-{ yyval.int32 = gpAcceptByRefLike; } break;
+{ yyval.int32 = gpAllowByRefLike; } break;
 case 154:
 #line 490 "asmparse.y"
 { yyval.int32 = gpDefaultConstructorConstraint; } break;

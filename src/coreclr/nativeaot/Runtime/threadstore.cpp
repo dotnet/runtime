@@ -410,20 +410,22 @@ void ThreadStore::CancelThreadAbort(Thread* targetThread)
     ResumeAllThreads(/* waitForGCEvent = */ false);
 }
 
-COOP_PINVOKE_HELPER(void *, RhpGetCurrentThread, ())
+EXTERN_C void* QCALLTYPE RhpGetCurrentThread()
 {
     return ThreadStore::GetCurrentThread();
 }
 
-COOP_PINVOKE_HELPER(void, RhpInitiateThreadAbort, (void* thread, Object * threadAbortException, CLR_BOOL doRudeAbort))
+FCIMPL3(void, RhpInitiateThreadAbort, void* thread, Object * threadAbortException, CLR_BOOL doRudeAbort)
 {
     GetThreadStore()->InitiateThreadAbort((Thread*)thread, threadAbortException, doRudeAbort);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpCancelThreadAbort, (void* thread))
+FCIMPL1(void, RhpCancelThreadAbort, void* thread)
 {
     GetThreadStore()->CancelThreadAbort((Thread*)thread);
 }
+FCIMPLEND
 
 C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
@@ -477,7 +479,6 @@ GVAL_IMPL(uint32_t, SECTIONREL__tls_CurrentThread);
 //
 // This routine supports the !Thread debugger extension routine
 //
-typedef DPTR(TADDR) PTR_TADDR;
 // static
 PTR_Thread ThreadStore::GetThreadFromTEB(TADDR pTEB)
 {

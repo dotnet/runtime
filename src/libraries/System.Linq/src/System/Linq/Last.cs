@@ -63,16 +63,20 @@ namespace System.Linq
 
         private static TSource? TryGetLast<TSource>(this IEnumerable<TSource> source, out bool found)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is IPartition<TSource> partition)
-            {
-                return partition.TryGetLast(out found);
-            }
+            return
+#if !OPTIMIZE_FOR_SIZE
+                source is Iterator<TSource> iterator ? iterator.TryGetLast(out found) :
+#endif
+                TryGetLastNonIterator(source, out found);
+        }
 
+        private static TSource? TryGetLastNonIterator<TSource>(IEnumerable<TSource> source, out bool found)
+        {
             if (source is IList<TSource> list)
             {
                 int count = list.Count;
@@ -107,17 +111,17 @@ namespace System.Linq
 
         private static TSource? TryGetLast<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, out bool found)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null)
+            if (predicate is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            if (source is OrderedEnumerable<TSource> ordered)
+            if (source is OrderedIterator<TSource> ordered)
             {
                 return ordered.TryGetLast(predicate, out found);
             }

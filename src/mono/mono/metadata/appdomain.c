@@ -612,6 +612,7 @@ try_load_from (MonoAssembly **assembly,
 
 	*assembly = NULL;
 	fullpath = g_build_filename (path1, path2, path3, path4, (const char*)NULL);
+	g_assert (fullpath);
 
 	found = g_file_test (fullpath, G_FILE_TEST_IS_REGULAR);
 

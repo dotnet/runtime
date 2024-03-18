@@ -64,7 +64,7 @@ inline
 void LookupMap<SIZE_T>::SetValueAt(PTR_TADDR pValue, SIZE_T value, TADDR flags)
 {
     WRAPPER_NO_CONTRACT;
-    VolatileStore(pValue, value | flags);
+    VolatileStore(pValue, dac_cast<TADDR>(value | flags));
 }
 #endif // DACCESS_COMPILE
 

@@ -1,16 +1,7 @@
 parameters:
   name: ''
-  runtimeFlavor: 'coreclr'
-  runtimeVariant: ''
-  isOfficialBuild: false
 
 steps:
-# Upload build artifacts (packages) to pipeline only if official, to save storage space.
-- ${{ if eq(parameters.isOfficialBuild, true) }}:
-  - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-    parameters:
-      name: ${{ parameters.name }}
-
 - task: PublishTestResults@2
   displayName: Publish Test Results
   inputs:
@@ -18,41 +9,40 @@ steps:
     testResultsFiles: '*.trx'
     searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
     mergeTestResults: true
-    testRunTitle: Installer-${{ parameters.runtimeFlavor }}-${{ parameters.name }}-$(_BuildConfig)
+    testRunTitle: Installer-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
-  condition: eq(variables.SkipTests, false)
+  condition: always()
 
 # Upload binaries and symbols on failure to allow debugging issues
-- ${{ if eq(parameters.skipTests, false) }}:
-  - task: CopyFiles@2
-    displayName: Prepare binaries to publish
-    inputs:
-      SourceFolder: '$(Build.SourcesDirectory)/artifacts/bin'
-      Contents: |
-        */corehost/**
-        */corehost_test/**
-      TargetFolder: '$(Build.StagingDirectory)/Binaries'
-    continueOnError: true
-    condition: failed()
+- task: CopyFiles@2
+  displayName: Prepare binaries to publish
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)/artifacts/bin'
+    Contents: |
+      */corehost/**
+      */corehost_test/**
+    TargetFolder: '$(Build.StagingDirectory)/Binaries'
+  continueOnError: true
+  condition: failed()
 
-  - task: ArchiveFiles@2
-    displayName: Zip binaries
-    inputs:
-      rootFolderOrFile: '$(Build.StagingDirectory)/Binaries'
-      archiveFile: '$(Build.StagingDirectory)/corehost-bin-${{ parameters.name }}-$(_BuildConfig)$(archiveExtension)'
-      archiveType: $(archiveType)
-      tarCompression: $(tarCompression)
-      includeRootFolder: false
-    continueOnError: true
-    condition: failed()
+- task: ArchiveFiles@2
+  displayName: Zip binaries
+  inputs:
+    rootFolderOrFile: '$(Build.StagingDirectory)/Binaries'
+    archiveFile: '$(Build.StagingDirectory)/corehost-bin-${{ parameters.name }}-$(_BuildConfig)$(archiveExtension)'
+    archiveType: $(archiveType)
+    tarCompression: $(tarCompression)
+    includeRootFolder: false
+  continueOnError: true
+  condition: failed()
 
-  - task: PublishBuildArtifacts@1
-    displayName: Publish binaries
-    inputs:
-      pathtoPublish: '$(Build.StagingDirectory)/corehost-bin-${{ parameters.name }}-$(_BuildConfig)$(archiveExtension)'
-      artifactName: Installer-Binaries-${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)
-    continueOnError: true
-    condition: failed()
+- task: PublishBuildArtifacts@1
+  displayName: Publish binaries
+  inputs:
+    pathtoPublish: '$(Build.StagingDirectory)/corehost-bin-${{ parameters.name }}-$(_BuildConfig)$(archiveExtension)'
+    artifactName: Installer-Binaries-${{ parameters.name }}-$(_BuildConfig)
+  continueOnError: true
+  condition: failed()
 
 - task: CopyFiles@2
   displayName: Prepare BuildLogs staging directory

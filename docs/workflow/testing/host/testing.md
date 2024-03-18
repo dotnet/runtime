@@ -77,6 +77,11 @@ The `category!=failing` is to respect the [filtering traits](../libraries/filter
 ### Visual Studio
 
 The [Microsoft.DotNet.CoreSetup.sln](/src/installer/Microsoft.DotNet.CoreSetup.sln) can be used to run and debug host tests through Visual Studio. When using the solution, the product should have already been [built](#building-tests) and the [test context](#test-context) set up.
+If you built the runtime or libraries with a different configuration from the host, you have to specify this when starting visual studio:
+
+```console
+build.cmd -vs Microsoft.DotNet.CoreSetup -rc Release -lc Release
+```
 
 ### Preserving test artifacts
 

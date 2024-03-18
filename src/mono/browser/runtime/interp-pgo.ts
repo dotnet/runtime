@@ -193,7 +193,6 @@ export async function getCacheKey(prefix: string): Promise<string | null> {
     delete inputs.forwardConsoleLogsToWS;
     delete inputs.diagnosticTracing;
     delete inputs.appendElementOnExit;
-    delete inputs.assertAfterExit;
     delete inputs.interopCleanupOnExit;
     delete inputs.dumpThreadsOnNonZeroExit;
     delete inputs.logExitCode;
@@ -207,6 +206,9 @@ export async function getCacheKey(prefix: string): Promise<string | null> {
     delete inputs.enableDownloadRetry;
     delete inputs.extensions;
     delete inputs.runtimeId;
+    delete inputs.mainThreadingMode;
+    delete inputs.jsThreadBlockingMode;
+    delete inputs.jsThreadInteropMode;
 
     inputs.GitHash = loaderHelpers.gitHash;
     inputs.ProductVersion = ProductVersion;

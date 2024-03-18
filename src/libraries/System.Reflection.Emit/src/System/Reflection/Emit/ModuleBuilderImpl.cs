@@ -16,7 +16,7 @@ namespace System.Reflection.Emit
         private readonly Assembly _coreAssembly;
         private readonly string _name;
         private readonly MetadataBuilder _metadataBuilder;
-        private readonly AssemblyBuilderImpl _assemblyBuilder;
+        private readonly PersistedAssemblyBuilder _assemblyBuilder;
         private readonly TypeBuilderImpl _globalTypeBuilder;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyReferences = new();
         private readonly Dictionary<Type, EntityHandle> _typeReferences = new();
@@ -37,7 +37,7 @@ namespace System.Reflection.Emit
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
                                                        typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint), typeof(TypedReference) };
 
-        internal ModuleBuilderImpl(string name, Assembly coreAssembly, MetadataBuilder builder, AssemblyBuilderImpl assemblyBuilder)
+        internal ModuleBuilderImpl(string name, Assembly coreAssembly, MetadataBuilder builder, PersistedAssemblyBuilder assemblyBuilder)
         {
             _coreAssembly = coreAssembly;
             _name = name;
@@ -609,7 +609,7 @@ namespace System.Reflection.Emit
             Type declaringType = methodBase.DeclaringType!;
             if (declaringType.IsConstructedGenericType &&
                 declaringType.GetGenericTypeDefinition() is not TypeBuilderImpl &&
-                !ContainsNotBakedTypeBuilder(declaringType.GetGenericArguments()))
+                !ContainsTypeBuilder(declaringType.GetGenericArguments()))
             {
                 return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(methodBase);
             }
@@ -883,7 +883,7 @@ namespace System.Reflection.Emit
 
         private EntityHandle GetHandleForMember(MemberInfo member)
         {
-            if (IsConstructedFromNotBakedTypeBuilder(member.DeclaringType!))
+            if (IsConstructedFromTypeBuilder(member.DeclaringType!))
             {
                 return default;
             }
@@ -891,11 +891,11 @@ namespace System.Reflection.Emit
             return GetMemberReferenceHandle(member);
         }
 
-        private static bool IsConstructedFromNotBakedTypeBuilder(Type type) => type.IsConstructedGenericType &&
+        private static bool IsConstructedFromTypeBuilder(Type type) => type.IsConstructedGenericType &&
             (type.GetGenericTypeDefinition() is TypeBuilderImpl ||
-             ContainsNotBakedTypeBuilder(type.GetGenericArguments()));
+             ContainsTypeBuilder(type.GetGenericArguments()));
 
-        private static bool ContainsNotBakedTypeBuilder(Type[] genericArguments)
+        internal static bool ContainsTypeBuilder(Type[] genericArguments)
         {
             foreach (Type type in genericArguments)
             {
@@ -904,7 +904,7 @@ namespace System.Reflection.Emit
                     return true;
                 }
 
-                if (IsConstructedFromNotBakedTypeBuilder(type))
+                if (IsConstructedFromTypeBuilder(type))
                 {
                     return true;
                 }
@@ -925,7 +925,7 @@ namespace System.Reflection.Emit
                 return eb._typeBuilder._handle;
             }
 
-            if (IsConstructedFromNotBakedTypeBuilder(type))
+            if (IsConstructedFromTypeBuilder(type))
             {
                 return default;
             }
@@ -954,8 +954,8 @@ namespace System.Reflection.Emit
                 return mb._handle;
             }
 
-            if (IsConstructedMethodFromNotBakedMethodBuilder(method) ||
-                IsArrayMethodFromNotBakedTypeBuilder(method))
+            if (IsConstructedFromMethodBuilderOrTypeBuilder(method) ||
+                IsArrayMethodTypeIsTypeBuilder(method))
             {
                 return default;
             }
@@ -963,11 +963,11 @@ namespace System.Reflection.Emit
             return GetHandleForMember(method);
         }
 
-        private static bool IsArrayMethodFromNotBakedTypeBuilder(MethodInfo method) => method is ArrayMethod arrayMethod &&
-            arrayMethod.DeclaringType!.GetElementType() is TypeBuilderImpl tb && tb._handle == default;
+        private static bool IsArrayMethodTypeIsTypeBuilder(MethodInfo method) => method is ArrayMethod arrayMethod &&
+            arrayMethod.DeclaringType!.GetElementType() is TypeBuilderImpl;
 
-        private static bool IsConstructedMethodFromNotBakedMethodBuilder(MethodInfo method) => method.IsConstructedGenericMethod &&
-            (method.GetGenericMethodDefinition() is MethodBuilderImpl mb && mb._handle == default || ContainsNotBakedTypeBuilder(method.GetGenericArguments()));
+        private static bool IsConstructedFromMethodBuilderOrTypeBuilder(MethodInfo method) => method.IsConstructedGenericMethod &&
+            (method.GetGenericMethodDefinition() is MethodBuilderImpl || ContainsTypeBuilder(method.GetGenericArguments()));
 
         internal EntityHandle TryGetMethodHandle(MethodInfo method, Type[] optionalParameterTypes)
         {
@@ -982,7 +982,7 @@ namespace System.Reflection.Emit
                 return mb._handle;
             }
 
-            if (IsConstructedMethodFromNotBakedMethodBuilder(method))
+            if (IsConstructedFromMethodBuilderOrTypeBuilder(method))
             {
                 return default;
             }

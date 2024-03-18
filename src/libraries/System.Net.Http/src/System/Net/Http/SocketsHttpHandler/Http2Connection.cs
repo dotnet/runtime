@@ -765,9 +765,12 @@ namespace System.Net.Http
             // Just ignore the frame in this case.
 
             ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength), hasPad: frameHeader.PaddedFlag, hasPriority: false);
-
             bool endStream = frameHeader.EndStreamFlag;
-            http2Stream?.OnResponseData(frameData, endStream);
+
+            if (frameData.Length > 0 || endStream)
+            {
+                http2Stream?.OnResponseData(frameData, endStream);
+            }
 
             if (frameData.Length > 0)
             {
@@ -1438,6 +1441,14 @@ namespace System.Net.Http
                                     break;
                                 }
                             }
+                            continue;
+                        }
+
+                        // Extended connect requests will use the response content stream for bidirectional communication.
+                        // We will ignore any content set for such requests in Http2Stream.SendRequestBodyAsync, as it has no defined semantics.
+                        // Drop the Content-Length header as well in the unlikely case it was set.
+                        if (knownHeader == KnownHeaders.ContentLength && request.IsExtendedConnectRequest)
+                        {
                             continue;
                         }
 

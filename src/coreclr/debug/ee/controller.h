@@ -827,7 +827,7 @@ public:
     DebuggerControllerPatch * GetPatch(PTR_CORDB_ADDRESS_TYPE address)
     {
         SUPPORTS_DAC;
-        ARM_ONLY(_ASSERTE(dac_cast<DWORD>(address) & THUMB_CODE));
+        ARM_ONLY(_ASSERTE(dac_cast<TADDR>(address) & THUMB_CODE));
 
         DebuggerControllerPatch * pPatch =
             dac_cast<PTR_DebuggerControllerPatch>(Find(HashAddress(address), (SIZE_T)(dac_cast<TADDR>(address))));

@@ -20,7 +20,7 @@ public class DebugLevelTests : AppTestBase
     {
     }
 
-    private void AssertDebugLevel(RunResult result, int value) 
+    private void AssertDebugLevel(RunResult result, int value)
     {
         Assert.Collection(
             result.TestOutput,
@@ -51,7 +51,7 @@ public class DebugLevelTests : AppTestBase
     public async Task BuildWithExplicitValue(string configuration, int debugLevel)
     {
         CopyTestAsset("WasmBasicTestApp", $"DebugLevelTests_BuildWithExplicitValue_{configuration}");
-        BuildProject(configuration, $"-p:WasmDebugLevel={debugLevel}");
+        BuildProject(configuration: configuration, extraArgs: $"-p:WasmDebugLevel={debugLevel}");
 
         var result = await RunSdkStyleAppForBuild(new(
             Configuration: configuration,

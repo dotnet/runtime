@@ -14,6 +14,7 @@ export function export_api(): any {
     const api: APIType = {
         runMain: mono_run_main,
         runMainAndExit: mono_run_main_and_exit,
+        exit: loaderHelpers.mono_exit,
         setEnvironmentVariable: mono_wasm_setenv,
         getAssemblyExports: mono_wasm_get_assembly_exports,
         setModuleImports: mono_wasm_set_module_imports,

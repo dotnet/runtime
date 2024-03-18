@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import BuildConfiguration from "consts:configuration";
-
 import { INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
@@ -363,11 +361,6 @@ export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): voi
     if (INTERNAL["logging"] && typeof INTERNAL.logging["debugger"] === "function") {
         INTERNAL.logging.debugger(level, message);
         return;
-    }
-
-    if (BuildConfiguration === "Debug") {
-        // eslint-disable-next-line no-console
-        console.debug(`Debugger.Debug: ${message}`);
     }
 }
 

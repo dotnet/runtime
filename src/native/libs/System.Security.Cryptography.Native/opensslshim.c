@@ -116,8 +116,21 @@ static void OpenLibraryOnce(void)
         DlOpen(MAKELIB("10"));
     }
 
-    // FreeBSD uses a different suffix numbering convention.
-    // Current supported FreeBSD releases should use the order .11 -> .111
+#ifdef __FreeBSD__
+    // The ports version of OpenSSL is used over base where possible
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.0 from ports
+        DlOpen(MAKELIB("12"));
+    }
+
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.0 from base as found in FreeBSD 14.0
+        DlOpen(MAKELIB("30"));
+    }
+
+    // Fallbacks for OpenSSL 1.1.x
     if (libssl == NULL)
     {
         DlOpen(MAKELIB("11"));
@@ -127,6 +140,8 @@ static void OpenLibraryOnce(void)
     {
         DlOpen(MAKELIB("111"));
     }
+#endif
+
 }
 
 static pthread_once_t g_openLibrary = PTHREAD_ONCE_INIT;

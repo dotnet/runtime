@@ -87,7 +87,7 @@ namespace System.Linq.Tests
             public bool Equals(string x, string y)
             {
                 if (ReferenceEquals(x, y)) return true;
-                if (x == null | y == null) return false;
+                if (x is null | y is null) return false;
                 int length = x.Length;
                 if (length != y.Length) return false;
                 using (var en = x.OrderBy(i => i).GetEnumerator())
@@ -103,7 +103,7 @@ namespace System.Linq.Tests
 
             public int GetHashCode(string obj)
             {
-                if (obj == null) return 0;
+                if (obj is null) return 0;
                 int hash = obj.Length;
                 foreach (char c in obj)
                     hash ^= c;

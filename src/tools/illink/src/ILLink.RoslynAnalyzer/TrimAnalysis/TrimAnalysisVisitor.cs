@@ -59,12 +59,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			_featureChecksVisitor = new FeatureChecksVisitor (dataFlowAnalyzerContext);
 		}
 
-		public override FeatureChecksValue? GetConditionValue (IOperation branchValueOperation, StateValue state)
+		public override FeatureChecksValue GetConditionValue (IOperation branchValueOperation, StateValue state)
 		{
 			return _featureChecksVisitor.Visit (branchValueOperation, state);
 		}
 
-		public override void ApplyCondition (FeatureChecksValue featureChecksValue,  ref LocalStateAndContext<MultiValue, FeatureContext> currentState)
+		public override void ApplyCondition (FeatureChecksValue featureChecksValue, ref LocalStateAndContext<MultiValue, FeatureContext> currentState)
 		{
 			currentState.Context = currentState.Context.Union (new FeatureContext (featureChecksValue.EnabledFeatures));
 		}
@@ -424,6 +424,29 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					isReturnValue: true
 				);
 			}
+		}
+
+		public override void HandleReturnConditionValue (FeatureChecksValue returnConditionValue, IOperation operation)
+		{
+			// Return statements should only happen inside of method bodies.
+			Debug.Assert (OwningSymbol is IMethodSymbol);
+			if (OwningSymbol is not IMethodSymbol method)
+				return;
+
+			// FeatureGuard validation needs to happen only for property getters.
+			// Include properties with setters here because they will get validated later.
+			if (method.MethodKind != MethodKind.PropertyGet)
+				return;
+
+			IPropertySymbol propertySymbol = (IPropertySymbol) method.AssociatedSymbol!;
+			var featureCheckAnnotations = propertySymbol.GetFeatureGuardAnnotations ();
+
+			// If there are no feature checks, there is nothing to validate.
+			if (featureCheckAnnotations.IsEmpty())
+				return;
+
+			TrimAnalysisPatterns.Add (
+				new FeatureCheckReturnValuePattern (returnConditionValue, featureCheckAnnotations, operation, propertySymbol));
 		}
 
 		public override MultiValue HandleDelegateCreation (IMethodSymbol method, IOperation operation, in FeatureContext featureContext)

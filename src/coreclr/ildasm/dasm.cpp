@@ -3081,7 +3081,7 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
         if ((attr & gpNotNullableValueTypeConstraint) != 0)
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "valuetype ");
         CHECK_REMAINING_SIZE;
-        if ((attr & gpAcceptByRefLike) != 0)
+        if ((attr & gpAllowByRefLike) != 0)
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "byreflike ");
         CHECK_REMAINING_SIZE;
         if ((attr & gpDefaultConstructorConstraint) != 0)

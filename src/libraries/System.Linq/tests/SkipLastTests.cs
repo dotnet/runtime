@@ -9,6 +9,12 @@ namespace System.Linq.Tests
 {
     public class SkipLastTests : EnumerableTests
     {
+        [Fact]
+        public void SkipLastThrowsOnNull()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).SkipLast(10));
+        }
+
         [Theory]
         [MemberData(nameof(EnumerableData), MemberType = typeof(SkipTakeData))]
         public void SkipLast(IEnumerable<int> source, int count)

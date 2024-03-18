@@ -25,7 +25,11 @@ function commonAsserts(controller: HttpController) {
     mono_assert(controller, "expected controller");
 }
 
+let http_wasm_supports_streaming_request_cached: boolean | undefined;
 export function http_wasm_supports_streaming_request(): boolean {
+    if (http_wasm_supports_streaming_request_cached !== undefined) {
+        return http_wasm_supports_streaming_request_cached;
+    }
     // Detecting streaming request support works like this:
     // If the browser doesn't support a particular body type, it calls toString() on the object and uses the result as the body.
     // So, if the browser doesn't support request streams, the request body becomes the string "[object ReadableStream]".
@@ -43,13 +47,20 @@ export function http_wasm_supports_streaming_request(): boolean {
                 return "half";
             },
         } as RequestInit /* https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1483 */).headers.has("Content-Type");
-        return duplexAccessed && !hasContentType;
+        http_wasm_supports_streaming_request_cached = duplexAccessed && !hasContentType;
+    } else {
+        http_wasm_supports_streaming_request_cached = false;
     }
-    return false;
+    return http_wasm_supports_streaming_request_cached;
 }
 
+let http_wasm_supports_streaming_response_cached: boolean | undefined;
 export function http_wasm_supports_streaming_response(): boolean {
-    return typeof Response !== "undefined" && "body" in Response.prototype && typeof ReadableStream === "function";
+    if (http_wasm_supports_streaming_response_cached !== undefined) {
+        return http_wasm_supports_streaming_response_cached;
+    }
+    http_wasm_supports_streaming_response_cached = typeof Response !== "undefined" && "body" in Response.prototype && typeof ReadableStream === "function";
+    return http_wasm_supports_streaming_response_cached;
 }
 
 export function http_wasm_create_controller(): HttpController {

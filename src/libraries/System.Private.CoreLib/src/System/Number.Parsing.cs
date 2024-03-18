@@ -113,7 +113,7 @@ namespace System
                 return false;
             }
 
-            byte* p = number.GetDigitsPointer();
+            byte* p = number.DigitsPtr;
 
             Debug.Assert(p != null);
             TInteger n = TInteger.Zero;
@@ -725,7 +725,7 @@ namespace System
         {
             number.CheckConsistency();
 
-            byte* p = number.GetDigitsPointer();
+            byte* p = number.DigitsPtr;
             int e = number.Scale;
             bool sign = number.IsNegative;
             uint c = *p;

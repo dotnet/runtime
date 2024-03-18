@@ -26,6 +26,9 @@ public class ErrorHandlingTests
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05getMyB7Message4from13messageLengthSPys6UInt16VGSgs0B0_p_s5Int32VztF")]
     public unsafe static extern void* GetErrorMessage(void* handle, out int length);
 
+    [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling16freeStringBuffer6bufferySpys6UInt16VG_tF")]
+    public unsafe static extern void FreeErrorMessageBuffer(void* stringPtr);
+
     [Fact]
     public unsafe static void TestSwiftErrorThrown()
     {
@@ -99,7 +102,7 @@ public class ErrorHandlingTests
     {
         void* pointer = GetErrorMessage(error.Value, out int messageLength);
         string errorMessage = Marshal.PtrToStringUni((IntPtr)pointer, messageLength);
-        NativeMemory.Free((void*)pointer);
+        FreeErrorMessageBuffer(pointer);
         return errorMessage;
     }
 }

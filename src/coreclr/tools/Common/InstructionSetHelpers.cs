@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 
 using ILCompiler;
 
@@ -19,6 +20,7 @@ namespace System.CommandLine
             string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool optimizingForSize = false)
         {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new(targetArchitecture);
+            InstructionSetSupportFlags flags = 0;
 
             // Ready to run images are built with certain instruction set baselines
             if ((targetArchitecture == TargetArchitecture.X86) || (targetArchitecture == TargetArchitecture.X64))
@@ -62,6 +64,52 @@ namespace System.CommandLine
                     cpuFeatures = getCpuFeatures();
                 }
                 HardwareIntrinsicHelpers.AddRuntimeRequiredIsaFlagsToBuilder(instructionSetSupportBuilder, cpuFeatures);
+
+                if (targetArchitecture is TargetArchitecture.X64 or TargetArchitecture.X86)
+                {
+                    // Some architectures can experience frequency throttling when executing
+                    // 512-bit width instructions. To account for this we set the
+                    // default preferred vector width to 256-bits in some scenarios.
+                    (int Eax, int Ebx, int Ecx, int Edx) cpuidInfo = X86Base.CpuId(0, 0);
+                    bool isGenuineIntel = (cpuidInfo.Ebx == 0x756E6547) && // Genu
+                                          (cpuidInfo.Edx == 0x49656E69) && // ineI
+                                          (cpuidInfo.Ecx == 0x6C65746E);   // ntel
+                    if (isGenuineIntel)
+                    {
+                        cpuidInfo = X86Base.CpuId(1, 0);
+                        Debug.Assert((cpuidInfo.Edx & (1 << 15)) != 0); // CMOV
+                        int model = (cpuidInfo.Eax >> 4) & 0xF;
+                        int family = (cpuidInfo.Eax >> 8) & 0xF;
+                        int extendedModel = (cpuidInfo.Eax >> 16) & 0xF;
+
+                        if (family == 0x06)
+                        {
+                            if (extendedModel == 0x05)
+                            {
+                                if (model == 0x05)
+                                {
+                                    // * Skylake (Server)
+                                    // * Cascade Lake
+                                    // * Cooper Lake
+
+                                    flags |= InstructionSetSupportFlags.Vector512Throttling;
+                                }
+                            }
+                            else if (extendedModel == 0x06)
+                            {
+                                if (model == 0x06)
+                                {
+                                    // * Cannon Lake
+
+                                    flags |= InstructionSetSupportFlags.Vector512Throttling;
+                                }
+                            }
+                        }
+                    }
+
+                    if ((flags & InstructionSetSupportFlags.Vector512Throttling) != 0 && logger.IsVerbose)
+                        logger.LogMessage("Vector512 is throttled");
+                }
 
                 if (logger.IsVerbose)
                     logger.LogMessage($"The 'native' instruction set expanded to {instructionSetSupportBuilder}");
@@ -198,7 +246,8 @@ namespace System.CommandLine
                 unsupportedInstructionSet,
                 optimisticInstructionSet,
                 InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(targetArchitecture),
-                targetArchitecture);
+                targetArchitecture,
+                flags);
         }
     }
 }

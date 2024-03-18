@@ -7,28 +7,28 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private sealed partial class ReverseIterator<TSource> : IPartition<TSource>
+        private sealed partial class ReverseIterator<TSource>
         {
-            public TSource[] ToArray()
+            public override TSource[] ToArray()
             {
                 TSource[] array = _source.ToArray();
                 Array.Reverse(array);
                 return array;
             }
 
-            public List<TSource> ToList()
+            public override List<TSource> ToList()
             {
                 List<TSource> list = _source.ToList();
                 list.Reverse();
                 return list;
             }
 
-            public int GetCount(bool onlyIfCheap) =>
+            public override int GetCount(bool onlyIfCheap) =>
                 !onlyIfCheap ? _source.Count() :
                 TryGetNonEnumeratedCount(_source, out int count) ? count :
                 -1;
 
-            public TSource? TryGetElementAt(int index, out bool found)
+            public override TSource? TryGetElementAt(int index, out bool found)
             {
                 if (_source is IList<TSource> list)
                 {
@@ -53,11 +53,11 @@ namespace System.Linq
                 return default;
             }
 
-            public TSource? TryGetFirst(out bool found)
+            public override TSource? TryGetFirst(out bool found)
             {
-                if (_source is IPartition<TSource> partition)
+                if (_source is Iterator<TSource> iterator)
                 {
-                    return partition.TryGetLast(out found);
+                    return iterator.TryGetLast(out found);
                 }
                 else if (_source is IList<TSource> list)
                 {
@@ -89,11 +89,11 @@ namespace System.Linq
                 return default;
             }
 
-            public TSource? TryGetLast(out bool found)
+            public override TSource? TryGetLast(out bool found)
             {
-                if (_source is IPartition<TSource> partition)
+                if (_source is Iterator<TSource> iterator)
                 {
-                    return partition.TryGetFirst(out found);
+                    return iterator.TryGetFirst(out found);
                 }
                 else if (_source is IList<TSource> list)
                 {
@@ -116,10 +116,6 @@ namespace System.Linq
                 found = false;
                 return default;
             }
-
-            public IPartition<TSource>? Skip(int count) => new EnumerablePartition<TSource>(this, count, -1);
-
-            public IPartition<TSource>? Take(int count) => new EnumerablePartition<TSource>(this, 0, count - 1);
         }
     }
 }

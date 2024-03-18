@@ -80,13 +80,27 @@ namespace System.Runtime.CompilerServices
                 TplEventSource.Log.TraceOperationEnd(this.Task.Id, AsyncCausalityStatus.Completed);
             }
 
+            // Grab the context. Calling SetResult will complete the builder which can cause the state
+            // to be cleared out of the builder, so we can't touch anything on this builder after calling Set*.
+            // This clearing is done as part of the AsyncStateMachineBox.MoveNext method after it calls
+            // MoveNext on the state machine: it's possible to have a chain of events like this:
+            // Thread 1: Calls AsyncStateMachineBox.MoveNext, which calls StateMachine.MoveNext.
+            // Thread 1: StateMachine.MoveNext hooks up a continuation and returns
+            //     Thread 2: That continuation runs and calls AsyncStateMachineBox.MoveNext, which calls SetResult on the builder (below)
+            //               which will result in the state machine task being marked completed.
+            // Thread 1: The original AsyncStateMachineBox.MoveNext call continues and sees that the task is now completed
+            // Thread 1: Clears the builder
+            //     Thread 2: Continues in this call to AsyncVoidMethodBuilder. If it touches anything on this instance, it will be cleared.
+            SynchronizationContext? context = _synchronizationContext;
+
             // Mark the builder as completed.  As this is a void-returning method, this mostly
             // doesn't matter, but it can affect things like debug events related to finalization.
+            // Marking the task completed will also then enable the MoveNext code to clear state.
             _builder.SetResult();
 
-            if (_synchronizationContext != null)
+            if (context != null)
             {
-                NotifySynchronizationContextOfCompletion();
+                NotifySynchronizationContextOfCompletion(context);
             }
         }
 
@@ -106,17 +120,18 @@ namespace System.Runtime.CompilerServices
                 TplEventSource.Log.TraceOperationEnd(this.Task.Id, AsyncCausalityStatus.Error);
             }
 
-            if (_synchronizationContext != null)
+            SynchronizationContext? context = _synchronizationContext;
+            if (context != null)
             {
                 // If we captured a synchronization context, Post the throwing of the exception to it
                 // and decrement its outstanding operation count.
                 try
                 {
-                    Task.ThrowAsync(exception, targetContext: _synchronizationContext);
+                    Task.ThrowAsync(exception, targetContext: context);
                 }
                 finally
                 {
-                    NotifySynchronizationContextOfCompletion();
+                    NotifySynchronizationContextOfCompletion(context);
                 }
             }
             else
@@ -132,12 +147,12 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Notifies the current synchronization context that the operation completed.</summary>
-        private void NotifySynchronizationContextOfCompletion()
+        private static void NotifySynchronizationContextOfCompletion(SynchronizationContext context)
         {
-            Debug.Assert(_synchronizationContext != null, "Must only be used with a non-null context.");
+            Debug.Assert(context != null, "Must only be used with a non-null context.");
             try
             {
-                _synchronizationContext.OperationCompleted();
+                context.OperationCompleted();
             }
             catch (Exception exc)
             {

@@ -806,6 +806,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         // If we're building tests not for Mono, we can skip handling the specifics of the SkipOnMonoAttribute.
                         continue;
                     }
+                    if (filterAttribute.ConstructorArguments.Length <= 1)
+                    {
+                        return ImmutableArray<ITestInfo>.Empty;
+                    }
                     testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
                     break;
                 case "Xunit.SkipOnPlatformAttribute":
@@ -892,6 +896,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             conditions.Add($"{ConditionClass}.IsStressTest");
         }
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.DisableR2R))
+        {
+            conditions.Add($"!{ConditionClass}.IsDisableR2R");
+        }
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.JitStress))
         {
             conditions.Add($"!{ConditionClass}.IsJitStress");
@@ -908,9 +916,13 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             conditions.Add($"!{ConditionClass}.IsTailcallStress");
         }
-        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.ZapDisable))
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.TieredCompilation))
         {
-            conditions.Add($"!{ConditionClass}.IsZapDisable");
+            conditions.Add($"!{ConditionClass}.IsTieredCompilation");
+        }
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.HeapVerify))
+        {
+            conditions.Add($"!{ConditionClass}.IsHeapVerify");
         }
 
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.AnyGCStress))

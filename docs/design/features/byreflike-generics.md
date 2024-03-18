@@ -127,3 +127,129 @@ The following are IL sequences involving the `box` instruction. They are used fo
 `box` ; `isinst` ; `unbox.any` &ndash; The box, `isint`, and unbox target types are all equal.
 
 `box` ; `isinst` ; `br_true/false` &ndash; The box target type is equal to the unboxed target type or the box target type is `Nullable<T>` and target type equalities can be computed.
+
+## Examples
+
+Below are valid and invalid examples of ByRefLike as Generic parameters. All examples use the **not official** syntax, `allows ref struct`, for indicating the Generic permits ByRefLike types.
+
+**1) Valid**
+```csharp
+class A<T1> where T1: allows ref struct
+{
+    public void M();
+}
+
+// The derived class is okay to lack the 'allows'
+// because the base permits non-ByRefLike (default)
+// _and_ ByRefLike types.
+class B<T2> : A<T2>
+{
+    public void N()
+        => M(); // Any T2 satisfies the constraints from A<>
+}
+```
+
+**2) Invalid**
+```csharp
+class A<T1>
+{
+    public void M();
+}
+
+// The derived class cannot push up the allows
+// constraint for ByRefLike types.
+class B<T2> : A<T2> where T2: allows ref struct
+{
+    public void N()
+        => M(); // A<> may not permit a T2
+}
+```
+
+**3) Valid**
+```csharp
+interface IA
+{
+    void M();
+}
+
+ref struct A : IA
+{
+    public void M() { }
+}
+
+class B
+{
+    // This call is permitted because no boxing is needed
+    // to dispatch to the method - it is implemented on A.
+    public static void C<T>(T t) where T: IA, allows ref struct
+        => t.M();
+}
+```
+
+**4) Invalid**
+```csharp
+interface IA
+{
+    public void M() { }
+}
+
+ref struct A : IA
+{
+    // Relies on IA::M() implementation.
+}
+
+class B
+{
+    // Reliance on a DIM forces the generic parameter
+    // to be boxed, which is invalid for ByRefLike types.
+    public static void C<T>(T t) where T: IA, allows ref struct
+        => t.M();
+}
+```
+
+**5) Valid**
+```csharp
+class A<T1> where T1: allows ref struct
+{
+}
+
+class B<T2>
+{
+    // The type parameter is okay to lack the 'allows'
+    // because the field permits non-ByRefLike (default)
+    // _and_ ByRefLike types.
+    A<T2> Field;
+}
+```
+
+**6) Invalid**
+```csharp
+class A<T1>
+{
+}
+
+class B<T2> where T2: allows ref struct
+{
+    // The type parameter can be passed to
+    // the field type, but will fail if
+    // T2 is a ByRefLike type.
+    A<T2> Field;
+}
+```
+
+**7) Invalid**
+```csharp
+class A
+{
+    virtual void M<T1>() where T1: allows ref struct;
+}
+
+class B : A
+{
+    // Override methods need to match be at least
+    // as restrictive with respect to constraints.
+    // If a user has an instance of A, they are
+    // not aware they could be calling B.
+    override void M<T2>();
+}
+```

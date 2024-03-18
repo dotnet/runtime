@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
@@ -36,7 +37,7 @@ internal static partial class Interop
 
         internal static SafeSecKeyRefHandle ImportEphemeralKey(ReadOnlySpan<byte> keyBlob, bool hasPrivateKey)
         {
-            Debug.Assert(keyBlob != null);
+            Debug.Assert(!Unsafe.IsNullRef(ref MemoryMarshal.GetReference(keyBlob)));
 
             SafeSecKeyRefHandle keyHandle;
             int osStatus;

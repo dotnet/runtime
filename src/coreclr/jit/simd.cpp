@@ -549,8 +549,6 @@ bool areFieldAddressesTheSame(GenTreeFieldAddr* op1, GenTreeFieldAddr* op2)
 bool Compiler::areFieldsContiguous(GenTreeIndir* op1, GenTreeIndir* op2)
 {
     assert(op1->isIndir() && op2->isIndir());
-    // TODO-1stClassStructs: delete once IND<struct> nodes are no more.
-    assert(!op1->TypeIs(TYP_STRUCT) && !op2->TypeIs(TYP_STRUCT));
 
     var_types         op1Type      = op1->TypeGet();
     var_types         op2Type      = op2->TypeGet();

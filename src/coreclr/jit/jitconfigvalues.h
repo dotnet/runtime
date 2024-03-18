@@ -144,9 +144,11 @@ CONFIG_INTEGER(JitPrintInlinedMethodsVerbose, W("JitPrintInlinedMethodsVerboseLe
 CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
 
 CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"))
-// -1: just do internal checks
-// Else bitflag: 0x1 check classic, 0x2 check likely, 0x4 enable asserts
+
+// -1: just do internal checks (CHECK_HASLIKELIHOOD | CHECK_LIKELIHOODSUM | RAISE_ASSERT)
+// Else bitflag of ProfileChecks enum.
 CONFIG_INTEGER(JitProfileChecks, W("JitProfileChecks"), -1)
+
 CONFIG_INTEGER(JitRequired, W("JITRequired"), -1)
 CONFIG_INTEGER(JitRoundFloat, W("JITRoundFloat"), DEFAULT_ROUND_LEVEL)
 CONFIG_INTEGER(JitStackAllocToLocalSize, W("JitStackAllocToLocalSize"), DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)
@@ -377,6 +379,14 @@ CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 #define CONST_CSE_ENABLE_ALL 3
 #define CONST_CSE_ENABLE_ALL_NO_SHARING 4
 
+// If nonzero, use the greedy RL policy.
+//
+CONFIG_INTEGER(JitRLCSEGreedy, W("JitRLCSEGreedy"), 0)
+
+// If nonzero, dump out details of parameterized policy evaluation and
+// gradient updates
+CONFIG_INTEGER(JitRLCSEVerbose, W("JitRLCSEVerbose"), 0)
+
 #if defined(DEBUG)
 // Allow fine-grained controls of CSEs done in a particular method
 //
@@ -415,7 +425,7 @@ CONFIG_STRING(JitReplayCSE, W("JitReplayCSE"))
 CONFIG_STRING(JitReplayCSEReward, W("JitReplayCSEReward"))
 
 // When set, specifies the initial parameter string for
-// a reinforcement-learning based CSE heuristic.
+// the reinforcement-learning based CSE heuristic.
 //
 // Note you can also set JitReplayCSE and JitReplayCSEPerfScore
 // along with this, in which case we are asking for a policy
@@ -426,15 +436,8 @@ CONFIG_STRING(JitRLCSE, W("JitRLCSE"))
 // use in learning.
 CONFIG_STRING(JitRLCSEAlpha, W("JitRLCSEAlpha"))
 
-// If nonzero, dump out details of policy evaluation and
-// gradient updates
-CONFIG_INTEGER(JitRLCSEVerbose, W("JitRLCSEVerbose"), 0)
-
 // If nonzero, dump candidate feature values
 CONFIG_INTEGER(JitRLCSECandidateFeatures, W("JitRLCSECandidateFeatures"), 0)
-
-// If nonzero, use the greedy policy with current parameters.
-CONFIG_INTEGER(JitRLCSEGreedy, W("JitRLCSEGreedy"), 0)
 
 #endif
 
@@ -480,8 +483,9 @@ CONFIG_INTEGER(JitNoRngChks, W("JitNoRngChks"), 0) // If 1, don't generate range
 
 #if defined(OPT_CONFIG)
 CONFIG_INTEGER(JitDoAssertionProp, W("JitDoAssertionProp"), 1) // Perform assertion propagation optimization
-CONFIG_INTEGER(JitDoCopyProp, W("JitDoCopyProp"), 1)   // Perform copy propagation on variables that appear redundant
-CONFIG_INTEGER(JitDoEarlyProp, W("JitDoEarlyProp"), 1) // Perform Early Value Propagation
+CONFIG_INTEGER(JitDoCopyProp, W("JitDoCopyProp"), 1) // Perform copy propagation on variables that appear redundant
+CONFIG_INTEGER(JitDoOptimizeIVs, W("JitDoOptimizeIVs"), 1)     // Perform optimization of induction variables
+CONFIG_INTEGER(JitDoEarlyProp, W("JitDoEarlyProp"), 1)         // Perform Early Value Propagation
 CONFIG_INTEGER(JitDoLoopHoisting, W("JitDoLoopHoisting"), 1)   // Perform loop hoisting on loop invariant values
 CONFIG_INTEGER(JitDoLoopInversion, W("JitDoLoopInversion"), 1) // Perform loop inversion on "for/while" loops
 CONFIG_INTEGER(JitDoRangeAnalysis, W("JitDoRangeAnalysis"), 1) // Perform range check analysis
@@ -496,6 +500,7 @@ CONFIG_STRING(JitOnlyOptimizeRange,
               W("JitOnlyOptimizeRange")) // If set, all methods that do _not_ match are forced into MinOpts
 CONFIG_STRING(JitEnablePhysicalPromotionRange, W("JitEnablePhysicalPromotionRange"))
 CONFIG_STRING(JitEnableCrossBlockLocalAssertionPropRange, W("JitEnableCrossBlockLocalAssertionPropRange"))
+CONFIG_STRING(JitEnableInductionVariableOptsRange, W("JitEnableInductionVariableOptsRange"))
 
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -9,6 +9,12 @@
     <AnalysisLevel>Latest</AnalysisLevel>
     <NoWarn Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NoWarn);CS8524</NoWarn>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <!-- The analyzer needs to process deeply nested expressions in corelib.
+         This can blow up the stack if using unoptimized code (due to large
+         stack frames with many temporary locals for debugging support), so we
+         optimize the analyzer even in Debug builds. Note: we still use the
+         Debug configuration to get Debug asserts. -->
+    <Optimize>true</Optimize>
   </PropertyGroup>
 
   <ItemGroup>

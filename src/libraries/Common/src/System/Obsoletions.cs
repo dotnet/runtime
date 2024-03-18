@@ -171,5 +171,8 @@ namespace System
 
         internal const string AesGcmTagConstructorMessage = "AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size.";
         internal const string AesGcmTagConstructorDiagId = "SYSLIB0053";
+
+        internal const string ThreadVolatileReadWriteMessage = "Thread.VolatileRead and Thread.VolatileWrite are obsolete. Use Volatile.Read or Volatile.Write respectively instead.";
+        internal const string ThreadVolatileReadWriteDiagId = "SYSLIB0054";
     }
 }

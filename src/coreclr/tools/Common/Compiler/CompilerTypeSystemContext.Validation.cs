@@ -326,6 +326,12 @@ namespace ILCompiler
                     return type;
                 }
 
+                // Make sure instantiation length matches the expectation
+                if (type.Instantiation.Length != type.GetTypeDefinition().Instantiation.Length)
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                }
+
                 // We need to be able to load interfaces
                 foreach (var intf in type.RuntimeInterfaces)
                 {
@@ -342,12 +348,6 @@ namespace ILCompiler
                 // Ensure we can compute the type layout
                 defType.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
                 defType.ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizesAndFields);
-
-                // Make sure instantiation length matches the expectation
-                if (defType.Instantiation.Length != defType.GetTypeDefinition().Instantiation.Length)
-                {
-                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                }
 
                 foreach (TypeDesc typeArg in defType.Instantiation)
                 {

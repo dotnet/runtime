@@ -245,7 +245,6 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
 
         case GT_STOREIND:
         case GT_STORE_BLK:
-        case GT_STORE_DYN_BLK:
         case GT_MEMORYBARRIER: // Similar to Volatile indirections, we must handle this as a memory def.
             fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
             break;
@@ -1937,7 +1936,6 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_STOREIND:
             case GT_BOUNDS_CHECK:
             case GT_STORE_BLK:
-            case GT_STORE_DYN_BLK:
             case GT_JCMP:
             case GT_JTEST:
             case GT_JCC:

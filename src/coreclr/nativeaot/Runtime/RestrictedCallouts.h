@@ -97,6 +97,6 @@ private:
     static CrstStatic s_sLock;
 
     // Prototypes for the callouts.
-    typedef void (REDHAWK_CALLCONV * GcRestrictedCallbackFunction)(uint32_t uiCondemnedGeneration);
-    typedef CLR_BOOL (REDHAWK_CALLCONV * HandleTableRestrictedCallbackFunction)(Object * pObject);
+    typedef void (F_CALL_CONV * GcRestrictedCallbackFunction)(uint32_t uiCondemnedGeneration);
+    typedef CLR_BOOL (* HandleTableRestrictedCallbackFunction)(Object * pObject);
 };

@@ -3400,13 +3400,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_AOTCONST: {
 			mono_add_patch_info (cfg, code - cfg->native_code,
-				(MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+				(MonoJumpInfoType)(gsize)ins->inst_i1, ins->inst_p0);
 			S390_LOAD_TEMPLATE (code, ins->dreg);
 		}
 			break;
 		case OP_JUMP_TABLE: {
 			mono_add_patch_info (cfg, code - cfg->native_code,
-				(MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+				(MonoJumpInfoType)(gsize)ins->inst_i1, ins->inst_p0);
 			S390_LOAD_TEMPLATE (code, ins->dreg);
 		}
 			break;

@@ -1619,7 +1619,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 
     // Update the frame pointer in the current context.
     pRD->pCurrentContext->R11 = m_pCalleeSavedFP;
-    pRD->pCurrentContextPointers->R11 = &m_pCalleeSavedFP;
+    pRD->pCurrentContextPointers->R11 = (DWORD *)&m_pCalleeSavedFP;
 
     // This is necessary to unwind methods with alloca. This needs to stay
     // in sync with definition of REG_SAVED_LOCALLOC_SP in the JIT.

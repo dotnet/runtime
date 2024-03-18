@@ -251,6 +251,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Only windows cares about the key usage attribute in the PKCS12
+        public static void ECDHPrivateKey_PfxKeyIsEcdsaConstrained()
+        {
+            // [SuppressMessage("Microsoft.Security", "CSCAN0220.DefaultPasswordContexts", Justification="Legacy Test Data")]
+            using (X509Certificate2 cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test"))
+            {
+                    Assert.Null(cert.GetECDiffieHellmanPrivateKey());
+                    Assert.NotNull(cert.GetECDiffieHellmanPublicKey());
+                    Assert.NotNull(cert.GetECDsaPrivateKey());
+            }
+        }
+
+        [Fact]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void DsaPrivateKeyProperty()
         {

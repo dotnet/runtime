@@ -326,7 +326,7 @@ void ProfilingAPIDetach::ExecuteEvacuationLoop()
         {
             CRITSEC_Holder csh(ProfilingAPIUtility::GetStatusCrst());
 
-            for (SIZE_T pos = 0; pos < s_profilerDetachInfos.Size(); ++pos)
+            while (s_profilerDetachInfos.Size() > 0)
             {
                 ProfilerDetachInfo current = s_profilerDetachInfos.Pop();
 

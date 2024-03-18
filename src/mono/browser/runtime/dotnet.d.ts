@@ -447,6 +447,13 @@ type APIType = {
      */
     runMainAndExit: (mainAssemblyName?: string, args?: string[]) => Promise<number>;
     /**
+     * Exits the runtime.
+     * Note: after the runtime exits, it would reject all further calls to the API.
+     * @param code "process" exit code.
+     * @param reason could be a string or an Error object.
+     */
+    exit: (code: number, reason?: any) => void;
+    /**
      * Sets the environment variable for the "process"
      * @param name
      * @param value

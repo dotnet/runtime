@@ -76,9 +76,7 @@ namespace System.Buffers
             }
 
             // Vector128<char> isn't valid. Treat the values as shorts instead.
-            ReadOnlySpan<short> shortValues = MemoryMarshal.CreateReadOnlySpan(
-                ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(values)),
-                values.Length);
+            ReadOnlySpan<short> shortValues = MemoryMarshal.Cast<char, short>(values);
 
             if (values.Length == 1)
             {

@@ -15,8 +15,12 @@
 #ifdef HOST_WASM
 
 static char
-type_to_c (MonoType *t)
+type_to_c (MonoType *t, gboolean *is_byref_return)
 {
+	g_assert (t);
+
+	if (is_byref_return)
+		*is_byref_return = 0;
 	if (m_type_is_byref (t))
 		return 'I';
 
@@ -48,7 +52,7 @@ handle_enum:
 		return 'L';
 	case MONO_TYPE_VOID:
 		return 'V';
-	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_VALUETYPE: {
 		if (m_class_is_enumtype (t->data.klass)) {
 			t = mono_class_enum_basetype_internal (t->data.klass);
 			goto handle_enum;
@@ -60,13 +64,27 @@ handle_enum:
 		// FIXME: Handle the scenario where there are fields of struct types that contain no members
 		MonoType *scalar_vtype;
 		if (mini_wasm_is_scalar_vtype (t, &scalar_vtype))
-			return type_to_c (scalar_vtype);
+			return type_to_c (scalar_vtype, NULL);
+
+		if (is_byref_return)
+			*is_byref_return = 1;
 
 		return 'I';
-	case MONO_TYPE_GENERICINST:
-		if (m_class_is_valuetype (t->data.klass))
+	}
+	case MONO_TYPE_GENERICINST: {
+		if (m_class_is_valuetype (t->data.klass)) {
+			MonoType *scalar_vtype;
+			if (mini_wasm_is_scalar_vtype (t, &scalar_vtype))
+				return type_to_c (scalar_vtype, NULL);
+
+			if (is_byref_return)
+				*is_byref_return = 1;
+
 			return 'S';
+		}
+
 		return 'I';
+	}
 	default:
 		g_warning ("CANT TRANSLATE %s", mono_type_full_name (t));
 		return 'X';
@@ -140,18 +158,29 @@ gpointer
 mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig)
 {
 	char cookie [32];
-	int c_count;
+	int c_count, offset = 1;
+	gboolean is_byref_return = 0;
 
-	c_count = sig->param_count + sig->hasthis + 1;
+	memset (cookie, 0, 32);
+	cookie [0] = type_to_c (sig->ret, &is_byref_return);
+
+	c_count = sig->param_count + sig->hasthis + is_byref_return + 1;
 	g_assert (c_count < sizeof (cookie)); //ensure we don't overflow the local
 
-	cookie [0] = type_to_c (sig->ret);
-	if (sig->hasthis)
-		cookie [1] = 'I';
-	for (int i = 0; i < sig->param_count; ++i) {
-		cookie [1 + sig->hasthis + i] = type_to_c (sig->params [i]);
+	if (is_byref_return) {
+		cookie[0] = 'V';
+		// return value address goes in arg0
+		cookie[1] = 'I';
+		offset += 1;
 	}
-	cookie [c_count] = 0;
+	if (sig->hasthis) {
+		// thisptr goes in arg0/arg1 depending on return type
+		cookie [offset] = 'I';
+		offset += 1;
+	}
+	for (int i = 0; i < sig->param_count; ++i) {
+		cookie [offset + i] = type_to_c (sig->params [i], NULL);
+	}
 
 	void *p = mono_wasm_interp_to_native_callback (cookie);
 	if (!p)

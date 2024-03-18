@@ -12,43 +12,10 @@ variables:
   - template: /eng/pipelines/common/variables.yml
 
 extends:
-  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  template:  /eng/pipelines/coreclr/templates/jit-outerloop-pipeline.yml
   parameters:
-    stages:
-    - stage: Build
-      jobs:
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
-          buildConfig: checked
-          platforms:
-          - linux_arm64
-          - osx_arm64
-          - windows_arm64
-          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-          jobParameters:
-            testGroup: jitstress-isas-arm
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-          buildConfig: checked
-          platforms:
-          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-          jobParameters:
-            testGroup: jitstress-isas-arm
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          buildConfig: checked
-          platforms:
-          - linux_arm64
-          - osx_arm64
-          - windows_arm64
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: jitstress-isas-arm
-            liveLibrariesBuildConfig: Release
+    platforms:
+    - osx_arm64
+    - linux_arm64
+    - windows_arm64
+    testGroup: jitstress-isas-arm

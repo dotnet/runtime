@@ -30,9 +30,6 @@ namespace R2RDump
         public static extern IntPtr InitBufferedDisasm(TargetArch Target);
 
         [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void DumpCodeBlock(IntPtr Disasm, IntPtr Address, IntPtr Bytes, IntPtr Size);
-
-        [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
         public static extern int DumpInstruction(IntPtr Disasm, IntPtr Address, IntPtr Bytes, IntPtr Size);
 
         [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
@@ -236,6 +233,11 @@ namespace R2RDump
             }
 
             int instrSize = CoreDisTools.GetInstruction(_disasm, rtf, imageOffset, rtfOffset, _reader.Image, out instruction);
+            if (instrSize == 0)
+            {
+                instruction = "Decode failure, aborting disassembly" + Environment.NewLine;
+                return rtf.Size - rtfOffset;
+            }
 
             // CoreDisTools dumps instructions in the following format:
             //

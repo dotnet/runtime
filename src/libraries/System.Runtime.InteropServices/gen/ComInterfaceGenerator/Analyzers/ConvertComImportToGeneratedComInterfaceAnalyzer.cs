@@ -50,7 +50,7 @@ namespace Microsoft.Interop.Analyzers
                     INamedTypeSymbol type = (INamedTypeSymbol)context.Symbol;
                     AttributeData? interfaceTypeAttributeData = type.GetAttributes().FirstOrDefault(a => a.AttributeClass.Equals(interfaceTypeAttribute, SymbolEqualityComparer.Default));
                     if (type is not { TypeKind: TypeKind.Interface, IsComImport: true }
-                        || interfaceTypeAttributeData.ConstructorArguments.Length == 1 && (int)interfaceTypeAttributeData.ConstructorArguments[0].Value != (int)ComInterfaceType.InterfaceIsIUnknown)
+                        || interfaceTypeAttributeData is not { ConstructorArguments: [{ Value: (int)ComInterfaceType.InterfaceIsIUnknown }] })
                     {
                         return;
                     }

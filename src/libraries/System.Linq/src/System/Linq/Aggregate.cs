@@ -9,12 +9,12 @@ namespace System.Linq
     {
         public static TSource Aggregate<TSource>(this IEnumerable<TSource> source, Func<TSource, TSource, TSource> func)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (func == null)
+            if (func is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.func);
             }
@@ -38,12 +38,12 @@ namespace System.Linq
 
         public static TAccumulate Aggregate<TSource, TAccumulate>(this IEnumerable<TSource> source, TAccumulate seed, Func<TAccumulate, TSource, TAccumulate> func)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (func == null)
+            if (func is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.func);
             }
@@ -59,17 +59,17 @@ namespace System.Linq
 
         public static TResult Aggregate<TSource, TAccumulate, TResult>(this IEnumerable<TSource> source, TAccumulate seed, Func<TAccumulate, TSource, TAccumulate> func, Func<TAccumulate, TResult> resultSelector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (func == null)
+            if (func is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.func);
             }
 
-            if (resultSelector == null)
+            if (resultSelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
             }

@@ -9,6 +9,12 @@ namespace System.Linq.Tests
 {
     public class TakeLastTests : EnumerableTests
     {
+        [Fact]
+        public void SkipLastThrowsOnNull()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).TakeLast(10));
+        }
+
         [Theory]
         [MemberData(nameof(EnumerableData), MemberType = typeof(SkipTakeData))]
         public void TakeLast(IEnumerable<int> source, int count)

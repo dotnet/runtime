@@ -31,7 +31,7 @@ parameters:
   additionalSetupParameters: ''   # optional -- additional setup parameters that are job-specific
 
 jobs:
-- template: xplat-pipeline-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     dependsOn: ${{ parameters.dependsOn }}
     buildConfig: ${{ parameters.buildConfig }}

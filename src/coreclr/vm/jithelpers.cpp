@@ -3596,6 +3596,14 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
 }
 HCIMPLEND
 
+HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
+{
+    _ASSERTE(pDest != nullptr);
+    FCALL_CONTRACT;
+    memset(pDest, value, length);
+}
+HCIMPLEND
+
 HCIMPL1(Object*, JIT_GetRuntimeFieldStub, CORINFO_FIELD_HANDLE field)
 {
     FCALL_CONTRACT;

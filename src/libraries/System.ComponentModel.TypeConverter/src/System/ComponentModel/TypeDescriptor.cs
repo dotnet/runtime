@@ -20,7 +20,7 @@ namespace System.ComponentModel
     public sealed class TypeDescriptor
     {
         internal const DynamicallyAccessedMemberTypes ReflectTypesDynamicallyAccessedMembers = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields;
-        internal const string EditorRequiresUnreferencedCode = "Editors registered in TypeDescriptor.AddEditorTable may be trimmed.";
+        internal const string DesignTimeAttributeTrimmed = "Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.";
 
         // Note: this is initialized at class load because we
         // lock on it for thread safety. It is used from nearly
@@ -933,7 +933,7 @@ namespace System.ComponentModel
         /// Gets an editor with the specified base type for the
         /// specified component.
         /// </summary>
-        [RequiresUnreferencedCode(EditorRequiresUnreferencedCode + " The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(DesignTimeAttributeTrimmed + " The Type of component cannot be statically discovered.")]
         public static object? GetEditor(object component, Type editorBaseType)
         {
             return GetEditor(component, editorBaseType, false);
@@ -944,7 +944,7 @@ namespace System.ComponentModel
         /// specified component.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode(EditorRequiresUnreferencedCode + " The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(DesignTimeAttributeTrimmed + " The Type of component cannot be statically discovered.")]
         public static object? GetEditor(object component, Type editorBaseType, bool noCustomTypeDesc)
         {
             ArgumentNullException.ThrowIfNull(editorBaseType);
@@ -955,7 +955,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets an editor with the specified base type for the specified type.
         /// </summary>
-        [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
+        [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
         public static object? GetEditor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             Type editorBaseType)
@@ -2342,7 +2342,7 @@ namespace System.ComponentModel
             get => typeof(TypeDescriptorComObject);
         }
 
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
         public static IDesigner? CreateDesigner(IComponent component, Type designerBaseType)
         {
             Type? type = null;
@@ -2635,7 +2635,7 @@ namespace System.ComponentModel
                     return _handler.GetDefaultProperty(_instance);
                 }
 
-                [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
+                [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
                 object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
                 {
                     return _handler.GetEditor(_instance, editorBaseType);
@@ -2944,7 +2944,7 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
+            [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
             object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
             {
                 ArgumentNullException.ThrowIfNull(editorBaseType);
@@ -3307,7 +3307,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
+                [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
                 object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
                 {
                     ArgumentNullException.ThrowIfNull(editorBaseType);
@@ -3632,7 +3632,7 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
+            [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
             public object? GetEditor(Type editorBaseType)
             {
                 ArgumentNullException.ThrowIfNull(editorBaseType);

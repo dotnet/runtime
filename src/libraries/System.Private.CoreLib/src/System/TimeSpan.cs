@@ -308,6 +308,195 @@ namespace System
 
         public override int GetHashCode() => _ticks.GetHashCode();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TimeSpan FromUnits(long units, long ticksPerUnit, long minUnits, long maxUnits)
+        {
+            System.Diagnostics.Debug.Assert(minUnits < 0);
+            System.Diagnostics.Debug.Assert(maxUnits > 0);
+
+            if (units > maxUnits || units < minUnits)
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
+            }
+            return TimeSpan.FromTicks(units * ticksPerUnit);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// days.
+        /// </summary>
+        /// <param name="days">Number of days.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of days.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromDays(int days) => FromUnits(days, TicksPerDay, MinDays, MaxDays);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// days, hours, minutes, seconds, milliseconds, and microseconds.
+        /// </summary>
+        /// <param name="days">Number of days.</param>
+        /// <param name="hours">Number of hours.</param>
+        /// <param name="minutes">Number of minutes.</param>
+        /// <param name="seconds">Number of seconds.</param>
+        /// <param name="milliseconds">Number of milliseconds.</param>
+        /// <param name="microseconds">Number of microseconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of days, hours, minutes, seconds, milliseconds, and microseconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromDays(int days, int hours = 0, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
+        {
+            Int128 totalMicroseconds = Math.BigMul(days, MicrosecondsPerDay)
+                                     + Math.BigMul(hours, MicrosecondsPerHour)
+                                     + Math.BigMul(minutes, MicrosecondsPerMinute)
+                                     + Math.BigMul(seconds, MicrosecondsPerSecond)
+                                     + Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
+
+            return FromMicroseconds(totalMicroseconds);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// hours.
+        /// </summary>
+        /// <param name="hours">Number of hours.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of hours.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromHours(int hours) => FromUnits(hours, TicksPerHour, MinHours, MaxHours);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// hours, minutes, seconds, milliseconds, and microseconds.
+        /// </summary>
+        /// <param name="hours">Number of hours.</param>
+        /// <param name="minutes">Number of minutes.</param>
+        /// <param name="seconds">Number of seconds.</param>
+        /// <param name="milliseconds">Number of milliseconds.</param>
+        /// <param name="microseconds">Number of microseconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of hours, minutes, seconds, milliseconds, and microseconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromHours(int hours, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
+        {
+            Int128 totalMicroseconds = Math.BigMul(hours, MicrosecondsPerHour)
+                                     + Math.BigMul(minutes, MicrosecondsPerMinute)
+                                     + Math.BigMul(seconds, MicrosecondsPerSecond)
+                                     + Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
+
+            return FromMicroseconds(totalMicroseconds);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// minutes.
+        /// </summary>
+        /// <param name="minutes">Number of minutes.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of minutes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromMinutes(long minutes) => FromUnits(minutes, TicksPerMinute, MinMinutes, MaxMinutes);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// minutes, seconds, milliseconds, and microseconds.
+        /// </summary>
+        /// <param name="minutes">Number of minutes.</param>
+        /// <param name="seconds">Number of seconds.</param>
+        /// <param name="milliseconds">Number of milliseconds.</param>
+        /// <param name="microseconds">Number of microseconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of minutes, seconds, milliseconds, and microseconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromMinutes(long minutes, long seconds = 0, long milliseconds = 0, long microseconds = 0)
+        {
+            Int128 totalMicroseconds = Math.BigMul(minutes, MicrosecondsPerMinute)
+                                     + Math.BigMul(seconds, MicrosecondsPerSecond)
+                                     + Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
+
+            return FromMicroseconds(totalMicroseconds);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// seconds.
+        /// </summary>
+        /// <param name="seconds">Number of seconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of seconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromSeconds(long seconds) => FromUnits(seconds, TicksPerSecond, MinSeconds, MaxSeconds);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// seconds, milliseconds, and microseconds.
+        /// </summary>
+        /// <param name="seconds">Number of seconds.</param>
+        /// <param name="milliseconds">Number of milliseconds.</param>
+        /// <param name="microseconds">Number of microseconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of seconds, milliseconds, and microseconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromSeconds(long seconds, long milliseconds = 0, long microseconds = 0)
+        {
+            Int128 totalMicroseconds = Math.BigMul(seconds, MicrosecondsPerSecond)
+                                     + Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
+
+            return FromMicroseconds(totalMicroseconds);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// milliseconds, and microseconds.
+        /// </summary>
+        /// <param name="milliseconds">Number of milliseconds.</param>
+        /// <param name="microseconds">Number of microseconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of milliseconds, and microseconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0)
+        {
+            Int128 totalMicroseconds = Math.BigMul(milliseconds, MicrosecondsPerMillisecond)
+                                     + microseconds;
+
+            return FromMicroseconds(totalMicroseconds);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TimeSpan FromMicroseconds(Int128 microseconds)
+        {
+            if ((microseconds > MaxMicroseconds) || (microseconds < MinMicroseconds))
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
+            }
+            long ticks = (long)microseconds * TicksPerMicrosecond;
+            return TimeSpan.FromTicks(ticks);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// microseconds.
+        /// </summary>
+        /// <param name="microseconds">Number of microseconds.</param>
+        /// <returns>Returns a <see cref="TimeSpan"/> that represents a specified number of microseconds.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public static TimeSpan FromMicroseconds(long microseconds) => FromUnits(microseconds, TicksPerMicrosecond, MinMicroseconds, MaxMicroseconds);
+
         public static TimeSpan FromHours(double value) => Interval(value, TicksPerHour);
 
         private static TimeSpan Interval(double value, double scale)

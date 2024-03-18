@@ -12,27 +12,27 @@ namespace System.Linq
 
         public static IEnumerable<TResult> Join<TOuter, TInner, TKey, TResult>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, TInner, TResult> resultSelector, IEqualityComparer<TKey>? comparer)
         {
-            if (outer == null)
+            if (outer is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.outer);
             }
 
-            if (inner == null)
+            if (inner is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.inner);
             }
 
-            if (outerKeySelector == null)
+            if (outerKeySelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.outerKeySelector);
             }
 
-            if (innerKeySelector == null)
+            if (innerKeySelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.innerKeySelector);
             }
 
-            if (resultSelector == null)
+            if (resultSelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
             }
@@ -58,7 +58,7 @@ namespace System.Linq
                         {
                             TOuter item = e.Current;
                             Grouping<TKey, TInner>? g = lookup.GetGrouping(outerKeySelector(item), create: false);
-                            if (g != null)
+                            if (g is not null)
                             {
                                 int count = g._count;
                                 TInner[] elements = g._elements;

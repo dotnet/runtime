@@ -224,9 +224,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// where the owning symbol is not a method.
 			[Kept]
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
-			// NativeAot doesn't handle the type name on fields: https://github.com/dotnet/runtime/issues/92259
-			[ExpectedWarning ("IL2105", "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributeWithConditionalExpression+ClassWithKeptPublicMethods", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[KeepsPublicMethods (TypeName = 1 + 1 == 2 ? "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributeWithConditionalExpression+ClassWithKeptPublicMethods" : null)]
 			public static int field;
 

@@ -30,7 +30,10 @@ namespace ILCompiler
             _rootAdder(methodEntryPoint, reason);
 
             if (exportName != null)
+            {
+                exportName = _factory.NameMangler.NodeMangler.ExternMethod(exportName, method);
                 _factory.NodeAliases.Add(methodEntryPoint, exportName);
+            }
 
             if (canonMethod != method && method.HasInstantiation)
                 _rootAdder(_factory.MethodGenericDictionary(method), reason);
@@ -133,6 +136,7 @@ namespace ILCompiler
         {
             var blob = _factory.ReadOnlyDataBlob("__readonlydata_" + exportName, data, alignment);
             _rootAdder(blob, reason);
+            exportName = _factory.NameMangler.NodeMangler.ExternVariable(exportName);
             _factory.NodeAliases.Add(blob, exportName);
         }
 

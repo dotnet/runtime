@@ -823,7 +823,6 @@ mono_method_search_in_array_class (MonoClass *klass, const char *name, MonoMetho
 	int i;
 
 	mono_class_setup_methods (klass);
-	g_assert (!mono_class_has_failure (klass)); /*FIXME this should not fail, right?*/
 	int mcount = mono_class_get_method_count (klass);
 	MonoMethod **klass_methods = m_class_get_methods (klass);
 	for (i = 0; i < mcount; ++i) {
