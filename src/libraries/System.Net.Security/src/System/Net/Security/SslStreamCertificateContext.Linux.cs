@@ -154,6 +154,17 @@ namespace System.Net.Security
             return ValueTask.FromResult(_ocspResponse);
         }
 
+        internal ValueTask<byte[]?> WaitForPendingOcspFetchAsync()
+        {
+            Task<byte[]?>? pending = _pendingDownload;
+            if (pending is not null && !pending.IsFaulted)
+            {
+                return new ValueTask<byte[]?>(pending);
+            }
+
+            return ValueTask.FromResult(DateTimeOffset.UtcNow <= _ocspExpiration ? _ocspResponse : null);
+        }
+
         private ValueTask<byte[]?> DownloadOcspAsync()
         {
             Task<byte[]?>? pending = _pendingDownload;

@@ -477,8 +477,6 @@ public:
 
     InstantiatedMethodDesc* AsInstantiatedMethodDesc() const;
 
-    BaseDomain *GetDomain();
-
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager* GetCodeVersionManager();
 #endif

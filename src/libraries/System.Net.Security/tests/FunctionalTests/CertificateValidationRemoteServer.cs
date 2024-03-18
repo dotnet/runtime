@@ -95,7 +95,6 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/70981", TestPlatforms.OSX)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public Task ConnectWithRevocation_WithCallback(bool checkRevocation)
         {
@@ -204,7 +203,7 @@ namespace System.Net.Security.Tests
                 intermediateAuthorityCount: noIntermediates ? 0 : 1,
                 subjectName: serverName,
                 keySize: 2048,
-                extensions: TestHelper.BuildTlsServerCertExtensions(serverName));
+                extensions: Configuration.Certificates.BuildTlsServerCertExtensions(serverName));
 
             CertificateAuthority issuingAuthority = noIntermediates ? rootAuthority : intermediateAuthorities[0];
             X509Certificate2 issuerCert = issuingAuthority.CloneIssuerCert();

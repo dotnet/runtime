@@ -39,7 +39,8 @@ namespace ILCompiler.DependencyAnalysis
             DictionaryLayoutProvider dictionaryLayoutProvider,
             InlinedThreadStatics inlinedThreadStatics,
             ImportedNodeProvider importedNodeProvider,
-            PreinitializationManager preinitializationManager)
+            PreinitializationManager preinitializationManager,
+            DevirtualizationManager devirtualizationManager)
         {
             _target = context.Target;
             _context = context;
@@ -54,6 +55,7 @@ namespace ILCompiler.DependencyAnalysis
             LazyGenericsPolicy = lazyGenericsPolicy;
             _importedNodeProvider = importedNodeProvider;
             PreinitializationManager = preinitializationManager;
+            DevirtualizationManager = devirtualizationManager;
         }
 
         public void SetMarkingComplete()
@@ -99,6 +101,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public PreinitializationManager PreinitializationManager
+        {
+            get;
+        }
+
+        public DevirtualizationManager DevirtualizationManager
         {
             get;
         }
@@ -812,6 +819,12 @@ namespace ILCompiler.DependencyAnalysis
         public ISortableSymbolNode ExternSymbol(string name)
         {
             return _externSymbols.GetOrAdd(name);
+        }
+
+        public ISortableSymbolNode ExternVariable(string name)
+        {
+            string mangledName = NameMangler.NodeMangler.ExternVariable(name);
+            return _externSymbols.GetOrAdd(mangledName);
         }
 
         private NodeCache<string, ExternSymbolNode> _externIndirectSymbols;

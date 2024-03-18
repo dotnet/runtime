@@ -1,0 +1,1882 @@
+id: 
+name: GitOps.PullRequestIssueManagement
+description: GitOps.PullRequestIssueManagement primitive
+owner: 
+resource: repository
+disabled: false
+where: 
+configuration:
+  resourceManagementConfiguration:
+    scheduledSearches:
+    - description: Automated Issue cleanup
+      frequencies:
+      - hourly:
+          hour: 6
+      filters:
+      - noActivitySince:
+          days: 1644
+      - isIssue
+      - isOpen
+      - isNotLabeledWith:
+          label: backlog-cleanup-candidate
+      actions:
+      - addReply:
+          reply: >-
+            Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.
+
+
+            This process is part of our [issue cleanup automation](https://github.com/dotnet/runtime/blob/main/docs/issue-cleanup.md).
+      - addLabel:
+          label: backlog-cleanup-candidate
+      - addLabel:
+          label: no-recent-activity
+    - description: Add no-recent-activity label to issues
+      frequencies:
+      - hourly:
+          hour: 6
+      filters:
+      - isIssue
+      - isOpen
+      - hasLabel:
+          label: needs-author-action
+      - noActivitySince:
+          days: 14
+      - isNotLabeledWith:
+          label: no-recent-activity
+      actions:
+      - addLabel:
+          label: no-recent-activity
+      - addReply:
+          reply: This issue has been automatically marked `no-recent-activity` because it has not had any activity for 14 days. It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will remove `no-recent-activity`.
+    - description: Add no-recent-activity label to PRs
+      frequencies:
+      - hourly:
+          hour: 6
+      filters:
+      - isPullRequest
+      - isOpen
+      - hasLabel:
+          label: needs-author-action
+      - noActivitySince:
+          days: 14
+      - isNotLabeledWith:
+          label: no-recent-activity
+      actions:
+      - addLabel:
+          label: no-recent-activity
+      - addReply:
+          reply: This pull request has been automatically marked `no-recent-activity` because it has not had any activity for 14 days. It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will remove `no-recent-activity`.
+    - description: Close issues with no recent activity
+      frequencies:
+      - hourly:
+          hour: 6
+      filters:
+      - isIssue
+      - isOpen
+      - hasLabel:
+          label: no-recent-activity
+      - noActivitySince:
+          days: 14
+      actions:
+      - addReply:
+          reply: This issue will now be closed since it had been marked `no-recent-activity` but received no further activity in the past 14 days. It is still possible to reopen or comment on the issue, but please note that the issue will be locked if it remains inactive for another 30 days.
+      - closeIssue
+    - description: Close PRs with no-recent-activity
+      frequencies:
+      - hourly:
+          hour: 6
+      filters:
+      - isPullRequest
+      - isOpen
+      - hasLabel:
+          label: no-recent-activity
+      - noActivitySince:
+          days: 14
+      actions:
+      - addReply:
+          reply: This pull request will now be closed since it had been marked `no-recent-activity` but received no further activity in the past 14 days. It is still possible to reopen or comment on the pull request, but please note that it will be locked if it remains inactive for another 30 days.
+      - closeIssue
+    - description: Close inactive Draft PRs
+      frequencies:
+      - hourly:
+          hour: 6
+      filters:
+      - isDraftPullRequest
+      - isOpen
+      - noActivitySince:
+          days: 30
+      actions:
+      - closeIssue
+      - addReply:
+          reply: Draft Pull Request was automatically closed for 30 days of inactivity. Please [let us know](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you'd like to reopen it.
+    eventResponderTasks:
+    - if:
+      - or:
+        - payloadType: Issues
+        - payloadType: Pull_Request
+      - isAction:
+          action: Opened
+      then:
+      - if:
+        - hasLabel:
+            label: area-AssemblyLoader-coreclr
+        then:
+        - mentionUsers:
+            mentionees:
+            - vitek-karas
+            - agocke
+            - vsadov
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-AssemblyLoader-mono
+        then:
+        - mentionUsers:
+            mentionees: []
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-CodeGen-coreclr
+        then:
+        - mentionUsers:
+            mentionees:
+            - JulieLeeMSFT
+            - jakobbotsch
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Codegen-Interpreter-mono
+        then:
+        - mentionUsers:
+            mentionees:
+            - brzvlad
+            - kotlarmilos
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Codegen-JIT-Mono
+        then:
+        - mentionUsers:
+            mentionees:
+            - SamMonoRT
+            - vargaz
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-CodeGen-LLVM-Mono
+        then:
+        - mentionUsers:
+            mentionees:
+            - SamMonoRT
+            - vargaz
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Codegen-Intrinsics-mono
+        then:
+        - mentionUsers:
+            mentionees:
+            - SamMonoRT
+            - fanyang-mono
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-CodeGen-meta-Mono
+        then:
+        - mentionUsers:
+            mentionees:
+            - SamMonoRT
+            - vargaz
+            - lambdageek
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.DateTime
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-datetime
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Debugger-mono
+        then:
+        - mentionUsers:
+            mentionees:
+            - thaystg
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-DependencyModel
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-dependencymodel
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Diagnostics-coreclr
+        then:
+        - mentionUsers:
+            mentionees:
+            - tommcdon
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Extensions-Caching
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-extensions-caching
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Extensions-Configuration
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-extensions-configuration
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Extensions-DependencyInjection
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-extensions-dependencyinjection
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Extensions-FileSystem
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-extensions-filesystem
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Extensions-Hosting
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-extensions-hosting
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Extensions-HttpClientFactory
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/ncl
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Extensions-Logging
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-extensions-logging
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Extensions-Options
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-extensions-options
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Extensions-Primitives
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-extensions-primitives
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-GC-coreclr
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/gc
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-GC-mono
+        then:
+        - mentionUsers:
+            mentionees:
+            - brzvlad
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Host
+        then:
+        - mentionUsers:
+            mentionees:
+            - vitek-karas
+            - agocke
+            - vsadov
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-HostModel
+        then:
+        - mentionUsers:
+            mentionees:
+            - vitek-karas
+            - agocke
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-ILTools-coreclr
+        then:
+        - mentionUsers:
+            mentionees:
+            - JulieLeeMSFT
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Tools-ILVerification
+        then:
+        - mentionUsers:
+            mentionees:
+            - JulieLeeMSFT
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Infrastructure
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/runtime-infrastructure
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Infrastructure-coreclr
+        then:
+        - mentionUsers:
+            mentionees:
+            - hoyosjs
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Infrastructure-libraries
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-infrastructure-libraries
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Infrastructure-mono
+        then:
+        - mentionUsers:
+            mentionees:
+            - directhex
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Meta
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-meta
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Microsoft.CSharp
+        then:
+        - mentionUsers:
+            mentionees:
+            - cston
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Microsoft.Extensions
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-microsoft-extensions
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Microsoft.VisualBasic
+        then:
+        - mentionUsers:
+            mentionees:
+            - cston
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Microsoft.Win32
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-microsoft-win32
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-NativeAOT-coreclr
+        then:
+        - mentionUsers:
+            mentionees:
+            - agocke
+            - MichalStrehovsky
+            - jkotas
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Single-File
+        then:
+        - mentionUsers:
+            mentionees:
+            - agocke
+            - vitek-karas
+            - vsadov
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Buffers
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-buffers
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.CodeDom
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-codedom
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Collections
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-collections
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.ComponentModel
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-componentmodel
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.ComponentModel.Composition
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-componentmodel-composition
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.ComponentModel.DataAnnotations
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-componentmodel-dataannotations
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Composition
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-composition
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Configuration
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-configuration
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Console
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-console
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Data
+        then:
+        - mentionUsers:
+            mentionees:
+            - roji
+            - ajcvickers
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Data.Odbc
+        then:
+        - mentionUsers:
+            mentionees:
+            - roji
+            - ajcvickers
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Data.OleDB
+        then:
+        - mentionUsers:
+            mentionees:
+            - roji
+            - ajcvickers
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Data.SqlClient
+        then:
+        - mentionUsers:
+            mentionees:
+            - davoudeshtehari
+            - david-engel
+            - jrahnama
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Diagnostics
+        then:
+        - mentionUsers:
+            mentionees:
+            - tommcdon
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Diagnostics.Activity
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-diagnostics-activity
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Diagnostics.EventLog
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-diagnostics-eventlog
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Diagnostics.PerformanceCounter
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-diagnostics-performancecounter
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Diagnostics.Process
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-diagnostics-process
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Diagnostics.TraceSource
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-diagnostics-tracesource
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Diagnostics.Tracing
+        then:
+        - mentionUsers:
+            mentionees:
+            - tarekgh
+            - tommcdon
+            - pjanotti
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.DirectoryServices
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-directoryservices
+            - jay98014
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Drawing
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-drawing
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Dynamic.Runtime
+        then:
+        - mentionUsers:
+            mentionees:
+            - cston
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Formats.Asn1
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-formats-asn1
+            - bartonjs
+            - vcsjones
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Formats.Cbor
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-formats-cbor
+            - bartonjs
+            - vcsjones
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Formats.Tar
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-formats-tar
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Globalization
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-globalization
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.IO
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-io
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.IO.Compression
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-io-compression
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.IO.Hashing
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-io-hashing
+            - bartonjs
+            - vcsjones
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.IO.Ports
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-io-ports
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Linq
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-linq
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Linq.Expressions
+        then:
+        - mentionUsers:
+            mentionees:
+            - cston
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Linq.Parallel
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-linq-parallel
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Management
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-management
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Memory
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-memory
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Net
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/ncl
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Net.Http
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/ncl
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Net.Quic
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/ncl
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Net.Security
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/ncl
+            - bartonjs
+            - vcsjones
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Net.Sockets
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/ncl
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Numerics
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-numerics
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Numerics.Tensors
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-numerics-tensors
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Reflection
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-reflection
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Reflection.Emit
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-reflection-emit
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Reflection.Metadata
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-reflection-metadata
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Resources
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-resources
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Runtime
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-runtime
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Runtime.CompilerServices
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-runtime-compilerservices
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Runtime.InteropServices
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/interop-contrib
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Runtime.Intrinsics
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-runtime-intrinsics
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Security
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-security
+            - bartonjs
+            - vcsjones
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.ServiceProcess
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-serviceprocess
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Speech
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-speech
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Text.Encoding
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-text-encoding
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Text.Encodings.Web
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-text-encodings-web
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Text.Json
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-text-json
+            - gregsdennis
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Text.RegularExpressions
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-text-regularexpressions
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Threading
+        then:
+        - mentionUsers:
+            mentionees:
+            - mangod9
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Threading.Channels
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-threading-channels
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Threading.Tasks
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-threading-tasks
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Transactions
+        then:
+        - mentionUsers:
+            mentionees:
+            - roji
+            - ajcvickers
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-System.Xml
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/area-system-xml
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Tools-ILLink
+        then:
+        - mentionUsers:
+            mentionees:
+            - agocke
+            - sbomer
+            - vitek-karas
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-vm-coreclr
+        then:
+        - mentionUsers:
+            mentionees:
+            - mangod9
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      description: Area-owners
+    - if:
+      - payloadType: Issues
+      - labelAdded:
+          label: breaking-change
+      then:
+      - addLabel:
+          label: needs-breaking-change-doc-created
+      - addReply:
+          reply: >-
+            Added `needs-breaking-change-doc-created` label because this issue has the `breaking-change` label. 
+
+
+            1. [ ] Create and link to this issue a matching issue in the dotnet/docs repo using the [breaking change documentation template](https://aka.ms/dotnet/docs/new-breaking-change-issue), then remove this `needs-breaking-change-doc-created` label.
+
+
+            Tagging @dotnet/compat for awareness of the breaking change.
+      description: Add breaking change doc label to issue
+    - if:
+      - payloadType: Pull_Request
+      - labelAdded:
+          label: breaking-change
+      - isPullRequest
+      then:
+      - addLabel:
+          label: needs-breaking-change-doc-created
+      - addReply:
+          reply: >-
+            Added `needs-breaking-change-doc-created` label because this PR has the `breaking-change` label. 
+
+
+            When you commit this breaking change:
+
+
+            1. [ ] Create and link to this PR and the issue a matching issue in the dotnet/docs repo using the [breaking change documentation template](https://aka.ms/dotnet/docs/new-breaking-change-issue), then remove this `needs-breaking-change-doc-created` label.
+
+            2. [ ] Ask a committer to mail the `.NET Breaking Change Notification` DL.
+
+
+            Tagging @dotnet/compat for awareness of the breaking change.
+      description: Add breaking change doc label to PR
+    - if:
+      - or:
+        - payloadType: Issues
+        - payloadType: Pull_Request
+      - isAction:
+          action: Opened
+      then:
+      - if:
+        - hasLabel:
+            label: linkable-framework
+        then:
+        - mentionUsers:
+            mentionees:
+            - eerhardt
+            - vitek-karas
+            - LakshanF
+            - sbomer
+            - joperezr
+            - marek-safar
+            replyTemplate: >-
+              Tagging subscribers to 'linkable-framework': ${mentionees}
+
+              See info in area-owners.md if you want to be subscribed.
+            assignMentionees: False
+      description: '@Mention for linkable-framework'
+    - if:
+      - or:
+        - payloadType: Issues
+        - payloadType: Pull_Request
+      - isAction:
+          action: Opened
+      then:
+      - if:
+        - hasLabel:
+            label: size-reduction
+        then:
+        - mentionUsers:
+            mentionees:
+            - eerhardt
+            - SamMonoRT
+            - marek-safar
+            replyTemplate: >-
+              Tagging subscribers to 'size-reduction': ${mentionees}
+
+              See info in area-owners.md if you want to be subscribed.
+            assignMentionees: False
+      description: '@Mention for size-reduction'
+    - if:
+      - or:
+        - payloadType: Issues
+        - payloadType: Pull_Request
+      - isAction:
+          action: Opened
+      then:
+      - if:
+        - hasLabel:
+            label: arch-wasm
+        then:
+        - mentionUsers:
+            mentionees:
+            - lewing
+            replyTemplate: >-
+              Tagging subscribers to 'arch-wasm': ${mentionees}
+
+              See info in area-owners.md if you want to be subscribed.
+            assignMentionees: False
+      description: '@Mention for wasm'
+    - if:
+      - or:
+        - payloadType: Issues
+        - payloadType: Pull_Request
+      - isAction:
+          action: Opened
+      then:
+      - if:
+        - hasLabel:
+            label: os-ios
+        then:
+        - mentionUsers:
+            mentionees:
+            - steveisok
+            - akoeplinger
+            - kotlarmilos
+            replyTemplate: >-
+              Tagging subscribers to 'os-ios': ${mentionees}
+
+              See info in area-owners.md if you want to be subscribed.
+            assignMentionees: False
+      description: '@Mention for ios'
+    - if:
+      - or:
+        - payloadType: Issues
+        - payloadType: Pull_Request
+      - isAction:
+          action: Opened
+      then:
+      - if:
+        - hasLabel:
+            label: os-android
+        then:
+        - mentionUsers:
+            mentionees:
+            - steveisok
+            - akoeplinger
+            replyTemplate: >-
+              Tagging subscribers to 'arch-android': ${mentionees}
+
+              See info in area-owners.md if you want to be subscribed.
+            assignMentionees: False
+      description: '@Mention for android'
+    - if:
+      - payloadType: Pull_Request
+      - or:
+        - filesMatchPattern:
+            pattern: .*ILLink.*
+        - filesMatchPattern:
+            pattern: .*illink.*
+      - not:
+          hasLabel:
+            label: linkable-framework
+      - isPullRequest
+      - isOpen
+      then:
+      - addLabel:
+          label: linkable-framework
+      description: '[Linkable-framework workgroup] Add linkable-framework label to new Prs that touch files with *ILLink* that not have it already'
+    - if:
+      - payloadType: Pull_Request
+      - or:
+        - filesMatchPattern:
+            pattern: .*ILLink.*
+        - filesMatchPattern:
+            pattern: .*illink.*
+      - not:
+          hasLabel:
+            label: linkable-framework
+      - isPullRequest
+      - isOpen
+      - isAction:
+          action: Synchronize
+      then:
+      - addLabel:
+          label: linkable-framework
+      description: '[Linkable-framework workgroup] Add linkable-framework label to Prs that get changes pushed where they touch *ILLInk* files'
+    - if:
+      - payloadType: Issues
+      - labelAdded:
+          label: backlog-cleanup-candidate
+      then:
+      - addReply:
+          reply: >-
+            Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.
+
+
+            This process is part of our [issue cleanup automation](https://github.com/dotnet/runtime/blob/main/docs/issue-cleanup.md).
+      - addLabel:
+          label: no-recent-activity
+      description: Manual Issue Cleanup
+    - if:
+      - or:
+        - payloadType: Issues
+        - payloadType: Pull_Request
+      - isAction:
+          action: Opened
+      then:
+      - if:
+        - hasLabel:
+            label: os-tvos
+        then:
+        - mentionUsers:
+            mentionees:
+            - steveisok
+            - akoeplinger
+            replyTemplate: >-
+              Tagging subscribers to 'os-tvos': ${mentionees}
+
+              See info in area-owners.md if you want to be subscribed.
+            assignMentionees: False
+      description: '@Mention for tvos'
+    - if:
+      - or:
+        - payloadType: Issues
+        - payloadType: Pull_Request
+      - isAction:
+          action: Opened
+      then:
+      - if:
+        - hasLabel:
+            label: os-maccatalyst
+        then:
+        - mentionUsers:
+            mentionees:
+            - steveisok
+            - akoeplinger
+            replyTemplate: >-
+              Tagging subscribers to 'os-maccatalyst': ${mentionees}
+
+              See info in area-owners.md if you want to be subscribed.
+            assignMentionees: False
+      description: '@Mention for maccatalyst'
+    - if:
+      - payloadType: Issues
+      - or:
+        - isAction:
+            action: Opened
+        - isAction:
+            action: Reopened
+      - isOpen
+      - not: isPartOfAnyMilestone
+      - not:
+          hasLabel:
+            label: untriaged
+      then:
+      - addLabel:
+          label: untriaged
+      description: Add untriaged label to new/reopened issues without a milestone
+    - if:
+      - payloadType: Issues
+      - or:
+        - isAction:
+            action: Closed
+        - isPartOfAnyMilestone
+      - hasLabel:
+          label: untriaged
+      then:
+      - removeLabel:
+          label: untriaged
+      description: Remove untriaged label from issues when closed or added to a milestone
+    - if:
+      - payloadType: Pull_Request
+      then:
+      - inPrLabel:
+          label: in-pr
+      description: Add `in-pr` label on issue when an open pull request is targeting it
+    - if:
+      - payloadType: Pull_Request
+      - isAction:
+          action: Opened
+      - not:
+          activitySenderHasPermission:
+            permission: Read
+      then:
+      - assignTo:
+          author: True
+      description: Assign Team PRs to author
+    - if:
+      - payloadType: Pull_Request
+      - isAction:
+          action: Opened
+      - isPullRequest
+      - and:
+        - not:
+            activitySenderHasPermission:
+              permission: Admin
+        - not:
+            activitySenderHasPermission:
+              permission: Write
+        - not:
+            isActivitySender:
+              user: github-actions[bot]
+              issueAuthor: False
+        - not:
+            isActivitySender:
+              user: dotnet-maestro[bot]
+              issueAuthor: False
+        - not:
+            isActivitySender:
+              user: dotnet-maestro-bot[bot]
+              issueAuthor: False
+        - not:
+            isActivitySender:
+              user: dotnet-maestro-bot
+              issueAuthor: False
+        - not:
+            isActivitySender:
+              user: dotnet-maestro
+              issueAuthor: False
+        - not:
+            isActivitySender:
+              user: github-actions
+              issueAuthor: False
+      then:
+      - addLabel:
+          label: community-contribution
+      description: Label community PRs
+    - if:
+      - payloadType: Issues
+      - labelAdded:
+          label: needs-author-action
+      then:
+      - addReply:
+          reply: This issue has been marked `needs-author-action` and may be missing some important information.
+      description: Needs-author-action notification
+    - if:
+      - payloadType: Pull_Request_Review
+      - not:
+          activitySenderHasPermission:
+            permission: Read
+      - isPullRequest
+      - isAction:
+          action: Submitted
+      - isReviewState:
+          reviewState: Changes_requested
+      then:
+      - addLabel:
+          label: needs-author-action
+      description: PR reviews with "changes requested" applies the needs-author-action label
+    - if:
+      - payloadType: Issue_Comment
+      - isAction:
+          action: Created
+      - isActivitySender:
+          issueAuthor: True
+      - hasLabel:
+          label: needs-author-action
+      - not:
+          hasLabel:
+            label: untriaged
+      - isIssue
+      - isOpen
+      then:
+      - addLabel:
+          label: needs-further-triage
+      - removeLabel:
+          label: needs-author-action
+      description: Replace `needs-author-action` label with `needs-further-triage` label when the author comments on an issue that is not still untriaged
+    - if:
+      - payloadType: Issue_Comment
+      - isAction:
+          action: Created
+      - isActivitySender:
+          issueAuthor: True
+      - hasLabel:
+          label: needs-author-action
+      - hasLabel:
+          label: untriaged
+      - isIssue
+      - isOpen
+      then:
+      - removeLabel:
+          label: needs-author-action
+      description: Remove `needs-author-action` label when the author comments on an `untriaged` issue
+    - if:
+      - payloadType: Pull_Request
+      - isPullRequest
+      - isAction:
+          action: Synchronize
+      - hasLabel:
+          label: needs-author-action
+      then:
+      - removeLabel:
+          label: needs-author-action
+      description: Pushing changes to PR branch removes the needs-author-action label
+    - if:
+      - payloadType: Issue_Comment
+      - isActivitySender:
+          issueAuthor: True
+      - isAction:
+          action: Created
+      - hasLabel:
+          label: needs-author-action
+      - isPullRequest
+      - isOpen
+      then:
+      - removeLabel:
+          label: needs-author-action
+      description: Author commenting in PR removes the needs-author-action label
+    - if:
+      - payloadType: Pull_Request_Review
+      - isActivitySender:
+          issueAuthor: True
+      - hasLabel:
+          label: needs-author-action
+      - isAction:
+          action: Submitted
+      - isPullRequest
+      - isOpen
+      then:
+      - removeLabel:
+          label: needs-author-action
+      description: Author responding to a pull request review comment removes the needs-author-action label
+    - if:
+      - payloadType: Issues
+      - not:
+          isAction:
+            action: Closed
+      - hasLabel:
+          label: no-recent-activity
+      - not:
+          labelAdded:
+            label: no-recent-activity
+      then:
+      - removeLabel:
+          label: no-recent-activity
+      - removeLabel:
+          label: backlog-cleanup-candidate
+      description: Remove `no-recent-activity` label from issues when issue is modified
+    - if:
+      - payloadType: Issue_Comment
+      - hasLabel:
+          label: no-recent-activity
+      - isIssue
+      then:
+      - removeLabel:
+          label: no-recent-activity
+      - removeLabel:
+          label: backlog-cleanup-candidate
+      description: Remove `no-recent-activity` label when an issue is commented on
+    - if:
+      - payloadType: Pull_Request
+      - isPullRequest
+      - isOpen
+      - hasLabel:
+          label: no-recent-activity
+      - not:
+          labelAdded:
+            label: no-recent-activity
+      then:
+      - removeLabel:
+          label: no-recent-activity
+      - removeLabel:
+          label: backlog-cleanup-candidate
+      description: Remove `no-recent-activity` label from PRs when modified
+    - if:
+      - payloadType: Issue_Comment
+      - hasLabel:
+          label: no-recent-activity
+      - isPullRequest
+      - isOpen
+      then:
+      - removeLabel:
+          label: no-recent-activity
+      - removeLabel:
+          label: backlog-cleanup-candidate
+      description: Remove `no-recent-activity` label from PRs when commented on
+    - if:
+      - payloadType: Pull_Request_Review
+      - hasLabel:
+          label: no-recent-activity
+      - isPullRequest
+      - isOpen
+      then:
+      - removeLabel:
+          label: no-recent-activity
+      - removeLabel:
+          label: backlog-cleanup-candidate
+      description: Remove `no-recent-activity` label from PRs when new review is added
+onFailure: 
+onSuccess: 

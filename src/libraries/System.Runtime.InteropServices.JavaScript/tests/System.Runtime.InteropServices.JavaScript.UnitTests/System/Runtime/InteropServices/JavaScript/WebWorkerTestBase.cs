@@ -45,9 +45,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return Enum.GetValues<ExecutorType>().Select(type => new object[] { new Executor(type) });
         }
 
-        public static IEnumerable<object[]> GetSpecificTargetThreads()
+        public static IEnumerable<object[]> GetBlockingFriendlyTargetThreads()
         {
-            yield return new object[] { new Executor(ExecutorType.JSWebWorker), new Executor(ExecutorType.Main) };
+            yield return new object[] { new Executor(ExecutorType.Main) };
+            yield return new object[] { new Executor(ExecutorType.NewThread) };
+            yield return new object[] { new Executor(ExecutorType.ThreadPool) };
+            // JSWebWorker is missing here because JS can't resolve promises while blocked
+        }
+
+        public static IEnumerable<object[]> GetSpecificTargetThreads2x()
+        {
+            yield return new object[] { new Executor(ExecutorType.Main), new Executor(ExecutorType.Main) };
             yield break;
         }
 
@@ -134,6 +142,38 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     cts.Cancel();
                 }
                 throw;
+            }
+        }
+
+        public static IEnumerable<NamedCall> BlockingCalls = new List<NamedCall>
+        {
+                new NamedCall { Name = "Task.Wait", Call = delegate (CancellationToken ct) { Task.Delay(10, ct).Wait(ct); }},
+                new NamedCall { Name = "Task.WaitAll", Call = delegate (CancellationToken ct) { Task.WaitAll(Task.Delay(10, ct)); }},
+                new NamedCall { Name = "Task.WaitAny", Call = delegate (CancellationToken ct) { Task.WaitAny(Task.Delay(10, ct)); }},
+                new NamedCall { Name = "ManualResetEventSlim.Wait", Call = delegate (CancellationToken ct) {
+                    using var mr = new ManualResetEventSlim(false);
+                    using var cts = new CancellationTokenSource(8);
+                    try {
+                        mr.Wait(cts.Token);
+                    } catch (OperationCanceledException) { /* ignore */ }
+                }},
+                new NamedCall { Name = "SemaphoreSlim.Wait", Call = delegate (CancellationToken ct) {
+                    using var sem = new SemaphoreSlim(2);
+                    var cts = new CancellationTokenSource(8);
+                    try {
+                        sem.Wait(cts.Token);
+                    } catch (OperationCanceledException) { /* ignore */ }
+                }},
+        };
+
+        public static IEnumerable<object[]> GetTargetThreadsAndBlockingCalls()
+        {
+            foreach (var type in Enum.GetValues<ExecutorType>())
+            {
+                foreach (var call in BlockingCalls)
+                {
+                    yield return new object[] { new Executor(type), call };
+                }
             }
         }
     }

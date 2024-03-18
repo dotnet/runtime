@@ -318,7 +318,7 @@ struct MethodTableAuxiliaryData
         enum_flag_IsNotFullyLoaded          = 0x0040,
         enum_flag_DependenciesLoaded        = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
-        // enum_unused                      = 0x0100,
+        enum_flag_MayHaveOpenInterfaceInInterfaceMap = 0x0100,
         // enum_unused                      = 0x0200,
         // enum_unused                      = 0x0400,
         // enum_unused                      = 0x0800,
@@ -429,6 +429,17 @@ public:
     inline void SetOffsetToNonVirtualSlots(int16_t offset)
     {
         m_offsetToNonVirtualSlots = offset;
+    }
+
+    inline void SetMayHaveOpenInterfacesInInterfaceMap()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedOr((LONG*)&m_dwFlags, MethodTableAuxiliaryData::enum_flag_MayHaveOpenInterfaceInInterfaceMap);
+    }
+
+    inline bool MayHaveOpenInterfacesInInterfaceMap() const
+    {
+        return !!(m_dwFlags & MethodTableAuxiliaryData::enum_flag_MayHaveOpenInterfaceInInterfaceMap);
     }
 
     static inline PTR_GenericsStaticsInfo GetGenericStaticsInfo(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData)
@@ -622,13 +633,6 @@ public:
 
     PTR_Module GetModuleIfLoaded();
 
-    // GetDomain on an instantiated type, e.g. C<ty1,ty2> returns the SharedDomain if all the
-    // constituent parts of the type are SharedDomain (i.e. domain-neutral),
-    // and returns an AppDomain if any of the parts are from an AppDomain,
-    // i.e. are domain-bound.  Note that if any of the parts are domain-bound
-    // then they will all belong to the same domain.
-    PTR_BaseDomain GetDomain();
-
     // For regular, non-constructed types, GetLoaderModule() == GetModule()
     // For constructed types (e.g. int[], Dict<int[], C>) the hash table through which a type
     // is accessed lives in a "loader module". The rule for determining the loader module must ensure
@@ -820,14 +824,13 @@ public:
     // during object construction.
     void CheckRunClassInitAsIfConstructingThrowing();
 
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    static bool IsOnlyOneField(MethodTable * pMT);
 #if defined(TARGET_LOONGARCH64)
-    static bool IsLoongArch64OnlyOneField(MethodTable * pMT);
     static int GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
-#endif
-
-#if defined(TARGET_RISCV64)
-    static bool IsRiscV64OnlyOneField(MethodTable * pMT);
+#elif defined(TARGET_RISCV64)
     static int GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
+#endif
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)
@@ -835,6 +838,10 @@ public:
     bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct, MethodTable** pByValueClassCache = NULL);
     bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, EEClassNativeLayoutInfo const* nativeLayoutInfo);
 #endif // defined(UNIX_AMD64_ABI_ITF)
+
+#if !defined(DACCESS_COMPILE)
+    void GetNativeSwiftPhysicalLowering(CORINFO_SWIFT_LOWERING* pSwiftLowering, bool useNativeLayout);
+#endif
 
     // Copy m_dwFlags from another method table
     void CopyFlags(MethodTable * pOldMT)
@@ -1940,7 +1947,7 @@ public:
                 if (pCurrentMethodTable->HasSameTypeDefAs(pMT) &&
                     pMT->HasInstantiation() &&
                     pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() &&
-                    !pMTOwner->ContainsGenericVariables() &&
+                    !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() &&
                     pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
                 {
                     exactMatch = true;

@@ -117,11 +117,14 @@ class SafeArrayNative
     public struct BlittableRecord
     {
         public int a;
+
+        public override string ToString() => $"BlittableRecord: {a}";
     }
 
     public struct NonBlittableRecord
     {
         public bool b;
+        public override string ToString() => $"NonBlittableRecord: {b}";
     }
 
     [DllImport(nameof(SafeArrayNative))]

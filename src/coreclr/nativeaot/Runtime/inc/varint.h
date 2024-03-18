@@ -3,12 +3,12 @@
 class VarInt
 {
 public:
-    static uint32_t ReadUnsigned(PTR_UInt8 & pbEncoding)
+    static uint32_t ReadUnsigned(PTR_uint8_t & pbEncoding)
     {
         uintptr_t lengthBits = *pbEncoding & 0x0F;
         size_t  negLength = s_negLengthTab[lengthBits];
         uintptr_t shift = s_shiftTab[lengthBits];
-        uint32_t result = *(PTR_UInt32)(pbEncoding - negLength - 4);
+        uint32_t result = *(PTR_uint32_t)(pbEncoding - negLength - 4);
 
         result >>= shift;
         pbEncoding -= negLength;

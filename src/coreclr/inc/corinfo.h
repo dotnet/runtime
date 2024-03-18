@@ -572,7 +572,10 @@ enum CorInfoHelpFunc
     CORINFO_HELP_INIT_PINVOKE_FRAME,   // initialize an inlined PInvoke Frame for the JIT-compiler
 
     CORINFO_HELP_MEMSET,                // Init block of memory
+    CORINFO_HELP_MEMZERO,               // Init block of memory with zeroes
     CORINFO_HELP_MEMCPY,                // Copy block of memory
+    CORINFO_HELP_NATIVE_MEMSET,         // Init block of memory using native memset (not safe for pDst being null,
+                                        // not safe for unbounded size, does not trigger GC)
 
     CORINFO_HELP_RUNTIMEHANDLE_METHOD,          // determine a type/field/method handle at run-time
     CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG,      // determine a type/field/method handle at run-time, with IBC logging
@@ -1979,6 +1982,16 @@ enum class GetTypeLayoutResult
     Failure,
 };
 
+#define MAX_SWIFT_LOWERED_ELEMENTS 4
+
+struct CORINFO_SWIFT_LOWERING
+{
+    bool byReference;
+    CorInfoType loweredElements[MAX_SWIFT_LOWERED_ELEMENTS];
+    uint32_t offsets[MAX_SWIFT_LOWERED_ELEMENTS];
+    size_t numLoweredElements;
+};
+
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
 
 #define CORINFO_Array_MaxLength                           0x7FFFFFC7
@@ -2058,7 +2071,7 @@ public:
     // Example of a scenario addressed by notifyMethodInfoUsage:
     //  1) Crossgen (with --opt-cross-module=MyLib) attempts to inline a call from MyLib.dll into MyApp.dll
     //     and realizes that the call always throws.
-    //  2) JIT aborts the inlining attempt and marks the call as no-return instead. The code that follows the call is 
+    //  2) JIT aborts the inlining attempt and marks the call as no-return instead. The code that follows the call is
     //     replaced with a breakpoint instruction that is expected to be unreachable.
     //  3) MyLib is updated to a new version so it's no longer within the same version bubble with MyApp.dll
     //     and the new version of the call no longer throws and does some work.
@@ -2218,6 +2231,7 @@ public:
     // should be looked up at runtime.
     virtual void expandRawHandleIntrinsic(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+        CORINFO_METHOD_HANDLE           callerHandle,
         CORINFO_GENERICHANDLE_RESULT *  pResult) = 0;
 
     // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
@@ -2634,6 +2648,7 @@ public:
             CORINFO_RESOLVED_TOKEN *        pResolvedToken,
             CORINFO_LOOKUP_KIND *           pGenericLookupKind,
             CorInfoHelpFunc                 id,
+            CORINFO_METHOD_HANDLE           callerHandle,
             CORINFO_CONST_LOOKUP *          pLookup
             ) = 0;
 
@@ -2641,6 +2656,7 @@ public:
             CORINFO_RESOLVED_TOKEN *    pTargetMethod,
             mdToken                     targetConstraint,
             CORINFO_CLASS_HANDLE        delegateType,
+            CORINFO_METHOD_HANDLE       callerHandle,
             CORINFO_LOOKUP *            pLookup
             ) = 0;
 
@@ -2916,6 +2932,13 @@ public:
             uint32_t                          numMappings         // [IN] Number of rich mappings
             ) = 0;
 
+    // Report back some metadata about the compilation to the EE -- for
+    // example, metrics about the compilation.
+    virtual void reportMetadata(
+        const char* key,
+        const void* value,
+        size_t length) = 0;
+
     /*-------------------------- Misc ---------------------------------------*/
 
     // Used to allocate memory that needs to handed to the EE.
@@ -2960,7 +2983,7 @@ public:
             CORINFO_CLASS_HANDLE*       vcTypeRet       /* OUT */
             ) = 0;
 
-    // Obtains a list of exact classes for a given base type. Returns 0 if the number of
+    // Obtains a list of exact classes for a given base type. Returns -1 if the number of
     // the exact classes is greater than maxExactClasses or if more types might be loaded
     // in future.
     virtual int getExactClasses(
@@ -3059,6 +3082,9 @@ public:
             CORINFO_CLASS_HANDLE                                    structHnd,              /* IN */
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*    structPassInRegDescPtr  /* OUT */
             ) = 0;
+
+    // Classifies a swift structure into primitives or an implicit byref for ABI purposes.
+    virtual void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering) = 0;
 
     virtual uint32_t getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) = 0;
     virtual uint32_t getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) = 0;
@@ -3170,6 +3196,7 @@ public:
     virtual void embedGenericHandle(
             CORINFO_RESOLVED_TOKEN *        pResolvedToken,
             bool                            fEmbedParent, // `true` - embeds parent type handle of the field/method handle
+            CORINFO_METHOD_HANDLE           callerHandle,
             CORINFO_GENERICHANDLE_RESULT *  pResult
             ) = 0;
 
@@ -3372,7 +3399,17 @@ public:
 #define IMAGE_REL_BASED_REL32           0x10
 #define IMAGE_REL_BASED_THUMB_BRANCH24  0x13
 #define IMAGE_REL_SECREL                0x104
+
+// Linux x64
+// GD model
 #define IMAGE_REL_TLSGD                 0x105
+
+// Linux arm64
+//    TLSDESC  (dynamic)
+#define IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21   0x107
+#define IMAGE_REL_AARCH64_TLSDESC_LD64_LO12    0x108
+#define IMAGE_REL_AARCH64_TLSDESC_ADD_LO12     0x109
+#define IMAGE_REL_AARCH64_TLSDESC_CALL         0x10A
 
 // The identifier for ARM32-specific PC-relative address
 // computation corresponds to the following instruction

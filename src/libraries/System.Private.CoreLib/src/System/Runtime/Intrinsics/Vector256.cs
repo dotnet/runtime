@@ -36,6 +36,9 @@ namespace System.Runtime.Intrinsics
         internal const int Alignment = 8;
 #elif TARGET_ARM64
         internal const int Alignment = 16;
+#elif TARGET_RISCV64
+        // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
+        internal const int Alignment = 16;
 #else
         internal const int Alignment = 32;
 #endif
@@ -1323,6 +1326,15 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<ulong> CreateScalarUnsafe(ulong value) => CreateScalarUnsafe<ulong>(value);
+
+        /// <summary>Creates a new <see cref="Vector256{T}" /> instance where the elements begin at a specified value and which are spaced apart according to another specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="start">The value that element 0 will be initialized to.</param>
+        /// <param name="step">The value that indicates how far apart each element should be from the previous.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the the value of the previous element plus <paramref name="step" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> CreateSequence<T>(T start, T step) => (Vector256<T>.Indices * step) + Create(start);
 
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>

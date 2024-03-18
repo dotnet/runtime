@@ -15,7 +15,7 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
 
-    <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
+    <NoWarn Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NoWarn);CS8524</NoWarn>
     <NoWarn>$(NoWarn);CA1859</NoWarn>
   </PropertyGroup>
 
@@ -24,16 +24,13 @@
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
 
-    <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
+    <PackageReference Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
     </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Common\Compiler\ImpliedRepeatedFieldDesc.cs" Link="Compiler\ImpliedRepeatedFieldDesc.cs" />
-    <Compile Include="..\..\Common\Compiler\TypeWithRepeatedFields.cs" Link="Compiler\TypeWithRepeatedFields.cs" />
-    <Compile Include="..\..\Common\Compiler\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs" Link="Compiler\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Reader.cs" Link="Compiler\Win32Resources\ResourceData.Reader.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />
@@ -478,7 +475,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ShadowConcreteUnboxingThunkNode.cs" />
     <Compile Include="Compiler\ILScanner.cs" />
     <Compile Include="Compiler\ILScannerBuilder.cs" />
-    <Compile Include="Compiler\ILStreamReader.cs" />
     <Compile Include="Compiler\LibraryInitializers.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
@@ -612,7 +608,6 @@
     <Compile Include="Compiler\ObjectWriter\Eabi\EabiAttributesBuilder.cs" />
     <Compile Include="Compiler\ObjectWriter\Eabi\EabiNative.cs" />
     <Compile Include="Compiler\ObjectWriter\Eabi\EabiUnwindConverter.cs" />
-    <Compile Include="Compiler\ObjectWriter\LegacyObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWritingOptions.cs" />
     <Compile Include="Compiler\ObjectWriter\MachNative.cs" />

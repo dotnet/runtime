@@ -233,7 +233,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets an editor of the specified type.
         /// </summary>
-        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode + " " + PropertyDescriptorPropertyTypeMessage)]
+        [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed + " " + PropertyDescriptorPropertyTypeMessage)]
         public virtual object? GetEditor(Type editorBaseType)
         {
             object? editor = null;

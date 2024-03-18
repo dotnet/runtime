@@ -1677,6 +1677,7 @@ namespace System.Tests
 
         [Theory]
         [InlineData( float.NegativeInfinity,  float.NaN,     float.NaN,    0.0f,                             0.0f)]
+        [InlineData(-1e8f,                   -0.931639,     -0.36338508,   CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // https://github.com/dotnet/runtime/issues/98204
         [InlineData(-3.14159265f,            -0.0f,         -1.0f,         CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon * 10)]  // value: -(pi)
         [InlineData(-2.71828183f,            -0.410781291f, -0.911733918f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(e)
         [InlineData(-2.30258509f,            -0.743980337f, -0.668201510f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(ln(10))
@@ -1708,6 +1709,7 @@ namespace System.Tests
         [InlineData( 2.30258509f,             0.743980337f, -0.668201510f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (ln(10))
         [InlineData( 2.71828183f,             0.410781291f, -0.911733918f, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (e)
         [InlineData( 3.14159265f,             0.0f,         -1.0f,         CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon * 10)]  // value:  (pi)
+        [InlineData( 1e8f,                    0.931639,     -0.36338508,   CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // https://github.com/dotnet/runtime/issues/98204
         [InlineData( float.PositiveInfinity,  float.NaN,     float.NaN,    0.0f,                             0.0f)]
         public static void SinCos(float value, float expectedResultSin, float expectedResultCos, float allowedVarianceSin, float allowedVarianceCos)
         {

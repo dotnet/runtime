@@ -5,11 +5,11 @@
 #define __eetype_inl__
 //-----------------------------------------------------------------------------------------------------------
 #if !defined(DACCESS_COMPILE)
-inline PTR_UInt8 FollowRelativePointer(const int32_t* pDist)
+inline PTR_uint8_t FollowRelativePointer(const int32_t* pDist)
 {
     int32_t dist = *pDist;
 
-    PTR_UInt8 result = (PTR_UInt8)pDist + dist;
+    PTR_uint8_t result = (PTR_uint8_t)pDist + dist;
 
     return result;
 }

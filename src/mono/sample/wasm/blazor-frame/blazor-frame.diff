@@ -1,3 +1,22 @@
+diff -ruw blazor/Pages/Home.razor blazor/Pages/Home.razor
+--- a/blazor/Pages/Home.razor	2024-01-23 14:30:05
++++ b/blazor/Pages/Home.razor	2024-02-12 17:59:24
+@@ -1,7 +1,15 @@
+ ﻿@page "/"
++@inject IJSRuntime JSRuntime
+ 
+ <PageTitle>Home</PageTitle>
+ 
+ <h1>Hello, world!</h1>
+ 
+ Welcome to your new app.
++
++@code {
++    protected override void OnAfterRender(bool firstRender)
++    {
++        BenchmarkEvent.Send(JSRuntime, "Rendered Index.razor");
++    }
++}
 diff -urw blazor/Program.cs blazor/Program.cs
 --- a/blazor/Program.cs	2024-01-22 16:01:30
 +++ b/blazor/Program.cs	2023-09-28 13:12:14

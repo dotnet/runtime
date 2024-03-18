@@ -584,12 +584,14 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 
 		if (m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_ARRAY ||
 			m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_SZARRAY) {
+			g_assert (!mono_class_has_failure (inflated_class));
 			inflated_method = mono_method_search_in_array_class (inflated_class,
 				method->name, method->signature);
 		} else {
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
 			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		}
+		g_assert (inflated_method);
 		mono_class_init_internal (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
 		return inflated_method;
@@ -648,12 +650,14 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 
 		if (m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_ARRAY ||
 			m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_SZARRAY) {
+			g_assert (!mono_class_has_failure (inflated_class));
 			inflated_method = mono_method_search_in_array_class (inflated_class,
 				method->name, method->signature);
 		} else {
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
 			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		}
+		g_assert (inflated_method);
 		mono_class_init_internal (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
 
@@ -1189,25 +1193,36 @@ get_wrapper_shared_vtype (MonoType *t)
 
 	guint32 packing, packing_size;
 	gboolean has_explicit_size = FALSE;
-	if (m_class_get_type_token (klass) && mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), &packing, &packing_size)) {
-		// FIXME: Support other sizes
-		if (packing == 0 && (packing_size == 8 || packing_size == 16)) {
-			has_explicit_size = TRUE;
-			switch (packing_size) {
-			case 8:
-				findex = 1;
-				args [0] = m_class_get_byval_arg (mono_get_int64_class ());
-				break;
-			case 16:
-				findex = 2;
-				args [0] = m_class_get_byval_arg (mono_get_int64_class ());
-				args [1] = m_class_get_byval_arg (mono_get_int64_class ());
-				break;
-			default:
-				g_assert_not_reached ();
-				break;
-			}
-		} else {
+	if (m_class_get_type_token (klass) && mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), &packing, &packing_size) && packing == 0) {
+		has_explicit_size = TRUE;
+		switch (packing_size) {
+		case 1:
+			findex = 1;
+			args [0] = m_class_get_byval_arg (mono_get_byte_class ());
+			break;
+		case 2:
+			findex = 1;
+			args [0] = m_class_get_byval_arg (mono_get_int16_class ());
+			break;
+		case 4:
+			findex = 1;
+			args [0] = m_class_get_byval_arg (mono_get_int32_class ());
+			break;
+		case 8:
+			findex = 1;
+			args [0] = m_class_get_byval_arg (mono_get_int64_class ());
+			break;
+		case 16:
+			findex = 2;
+			for (int i = 0; i < findex; ++i)
+				args [i] = m_class_get_byval_arg (mono_get_int64_class ());
+			break;
+		case 32:
+			findex = 4;
+			for (int i = 0; i < findex; ++i)
+				args [i] = m_class_get_byval_arg (mono_get_int64_class ());
+			break;
+		default:
 			return NULL;
 		}
 	}
@@ -1297,6 +1312,7 @@ get_wrapper_shared_vtype (MonoType *t)
 
 	MonoClass *tuple_inst = mono_class_inflate_generic_class_checked (tuple_class, &ctx, error);
 	mono_error_assert_ok (error);
+	g_assert (tuple_inst);
 
 	//printf ("T: %s\n", mono_class_full_name (tuple_inst));
 
@@ -1396,6 +1412,7 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 		}
 		klass = mono_class_inflate_generic_class_checked (mono_class_get_generic_class (klass)->container_class, &ctx, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
+		g_assert (klass);
 
 		t = m_class_get_byval_arg (klass);
 		MonoType *shared_type = get_wrapper_shared_vtype (t);
@@ -4334,6 +4351,7 @@ get_shared_type (MonoType *t, MonoType *type)
 
 		k = mono_class_inflate_generic_class_checked (gclass->container_class, &context, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
+		g_assert (k);
 
 		return mini_get_shared_gparam (t, m_class_get_byval_arg (k));
 	} else if (MONO_TYPE_ISSTRUCT (type)) {

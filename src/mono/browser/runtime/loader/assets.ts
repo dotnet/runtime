@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import type { AssetEntryInternal, PromiseAndController } from "../types/internal";
+import { PThreadPtrNull, type AssetEntryInternal, type PThreadWorker, type PromiseAndController } from "../types/internal";
 import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, SingleAssetBehaviors as SingleAssetBehaviors, WebAssemblyBootResourceType } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
@@ -17,9 +17,11 @@ import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 let throttlingPromise: PromiseAndController<void> | undefined;
 // in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
 let parallel_count = 0;
-const containedInSnapshotAssets: AssetEntryInternal[] = [];
-const alwaysLoadedAssets: AssetEntryInternal[] = [];
+const assetsToLoad: AssetEntryInternal[] = [];
 const singleAssets: Map<string, AssetEntryInternal> = new Map();
+
+// A duplicate in pthreads/shared.ts
+const worker_empty_prefix = "          -    ";
 
 const jsRuntimeModulesAssetTypes: {
     [k: string]: boolean
@@ -71,22 +73,20 @@ const skipBufferByAssetTypes: {
     "segmentation-rules": true,
 };
 
-const containedInSnapshotByAssetTypes: {
-    [k: string]: boolean
-} = {
-    "resource": true,
-    "assembly": true,
-    "pdb": true,
-    "heap": true,
-    "icu": true,
-};
-
 // these assets are instantiated differently than the main flow
 const skipInstantiateByAssetTypes: {
     [k: string]: boolean
 } = {
     ...jsModulesAssetTypes,
     "dotnetwasm": true,
+    "symbols": true,
+    "segmentation-rules": true,
+};
+
+// load again for each worker
+const loadIntoWorker: {
+    [k: string]: boolean
+} = {
     "symbols": true,
     "segmentation-rules": true,
 };
@@ -163,30 +163,9 @@ export async function mono_download_assets(): Promise<void> {
             }
         };
 
-        // start fetching assets in parallel, only assets which are not part of memory snapshot
-        for (const asset of alwaysLoadedAssets) {
+        // start fetching assets in parallel
+        for (const asset of assetsToLoad) {
             countAndStartDownload(asset);
-        }
-
-        // continue after we know if memory snapshot is available or not
-        await loaderHelpers.memorySnapshotSkippedOrDone.promise;
-
-        // start fetching assets in parallel, only if memory snapshot is not available.
-        for (const asset of containedInSnapshotAssets) {
-            if (!runtimeHelpers.loadedMemorySnapshotSize) {
-                countAndStartDownload(asset);
-            } else {
-                // Otherwise cleanup in case we were given pending download. It would be even better if we could abort the download.
-                cleanupAsset(asset);
-                // tell the debugger it is loaded
-                if (asset.behavior == "resource" || asset.behavior == "assembly" || asset.behavior == "pdb") {
-                    const url = resolve_path(asset, "");
-                    const virtualName: string = typeof (asset.virtualPath) === "string"
-                        ? asset.virtualPath
-                        : asset.name;
-                    loaderHelpers._loaded_files.push({ url: url, file: virtualName });
-                }
-            }
         }
 
         loaderHelpers.allDownloadsQueued.promise_control.resolve();
@@ -207,7 +186,7 @@ export async function mono_download_assets(): Promise<void> {
                         const data = new Uint8Array(buffer);
                         cleanupAsset(asset);
 
-                        // wait till after onRuntimeInitialized and after memory snapshot is loaded or skipped
+                        // wait till after onRuntimeInitialized
 
                         await runtimeHelpers.beforeOnRuntimeInitialized.promise;
                         runtimeHelpers.instantiate_asset(asset, url, data);
@@ -271,11 +250,7 @@ export function prepareAssets() {
             mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
-            if (containedInSnapshotByAssetTypes[asset.behavior]) {
-                containedInSnapshotAssets.push(asset);
-            } else {
-                alwaysLoadedAssets.push(asset);
-            }
+            assetsToLoad.push(asset);
             set_single_asset(asset);
         }
     } else if (config.resources) {
@@ -285,7 +260,7 @@ export function prepareAssets() {
         mono_assert(resources.jsModuleNative, "resources.jsModuleNative must be defined");
         mono_assert(resources.jsModuleRuntime, "resources.jsModuleRuntime must be defined");
         mono_assert(!WasmEnableThreads || resources.jsModuleWorker, "resources.jsModuleWorker must be defined");
-        convert_single_asset(alwaysLoadedAssets, resources.wasmNative, "dotnetwasm");
+        convert_single_asset(assetsToLoad, resources.wasmNative, "dotnetwasm");
         convert_single_asset(modulesAssets, resources.jsModuleNative, "js-module-native");
         convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
         if (WasmEnableThreads) {
@@ -294,7 +269,7 @@ export function prepareAssets() {
 
         if (resources.assembly) {
             for (const name in resources.assembly) {
-                containedInSnapshotAssets.push({
+                assetsToLoad.push({
                     name,
                     hash: resources.assembly[name],
                     behavior: "assembly"
@@ -302,9 +277,9 @@ export function prepareAssets() {
             }
         }
 
-        if (config.debugLevel != 0 && resources.pdb) {
+        if (config.debugLevel != 0 && loaderHelpers.isDebuggingSupported() && resources.pdb) {
             for (const name in resources.pdb) {
-                containedInSnapshotAssets.push({
+                assetsToLoad.push({
                     name,
                     hash: resources.pdb[name],
                     behavior: "pdb"
@@ -315,7 +290,7 @@ export function prepareAssets() {
         if (config.loadAllSatelliteResources && resources.satelliteResources) {
             for (const culture in resources.satelliteResources) {
                 for (const name in resources.satelliteResources[culture]) {
-                    containedInSnapshotAssets.push({
+                    assetsToLoad.push({
                         name,
                         hash: resources.satelliteResources[culture][name],
                         behavior: "resource",
@@ -328,7 +303,7 @@ export function prepareAssets() {
         if (resources.vfs) {
             for (const virtualPath in resources.vfs) {
                 for (const name in resources.vfs[virtualPath]) {
-                    alwaysLoadedAssets.push({
+                    assetsToLoad.push({
                         name,
                         hash: resources.vfs[virtualPath][name],
                         behavior: "vfs",
@@ -342,14 +317,14 @@ export function prepareAssets() {
         if (icuDataResourceName && resources.icu) {
             for (const name in resources.icu) {
                 if (name === icuDataResourceName) {
-                    containedInSnapshotAssets.push({
+                    assetsToLoad.push({
                         name,
                         hash: resources.icu[name],
                         behavior: "icu",
                         loadRemote: true
                     });
                 } else if (name === "segmentation-rules.json") {
-                    alwaysLoadedAssets.push({
+                    assetsToLoad.push({
                         name,
                         hash: resources.icu[name],
                         behavior: "segmentation-rules",
@@ -360,7 +335,7 @@ export function prepareAssets() {
 
         if (resources.wasmSymbols) {
             for (const name in resources.wasmSymbols) {
-                alwaysLoadedAssets.push({
+                assetsToLoad.push({
                     name,
                     hash: resources.wasmSymbols[name],
                     behavior: "symbols"
@@ -375,7 +350,7 @@ export function prepareAssets() {
             const configUrl = config.appsettings[i];
             const configFileName = fileName(configUrl);
             if (configFileName === "appsettings.json" || configFileName === `appsettings.${config.applicationEnvironment}.json`) {
-                alwaysLoadedAssets.push({
+                assetsToLoad.push({
                     name: configUrl,
                     behavior: "vfs",
                     // TODO what should be the virtualPath ?
@@ -387,7 +362,7 @@ export function prepareAssets() {
         }
     }
 
-    config.assets = [...containedInSnapshotAssets, ...alwaysLoadedAssets, ...modulesAssets];
+    config.assets = [...assetsToLoad, ...modulesAssets];
 }
 
 export function prepareAssetsWorker() {
@@ -396,6 +371,9 @@ export function prepareAssetsWorker() {
 
     for (const asset of config.assets) {
         set_single_asset(asset);
+        if (loadIntoWorker[asset.behavior]) {
+            assetsToLoad.push(asset);
+        }
     }
 }
 
@@ -757,5 +735,24 @@ export async function streamingCompileWasm() {
     }
     catch (err) {
         loaderHelpers.wasmCompilePromise.promise_control.reject(err);
+    }
+}
+export function preloadWorkers() {
+    if (!WasmEnableThreads) return;
+    const jsModuleWorker = resolve_single_asset_path("js-module-threads");
+    for (let i = 0; i < loaderHelpers.config.pthreadPoolInitialSize!; i++) {
+        const workerNumber = loaderHelpers.workerNextNumber++;
+        const worker: Partial<PThreadWorker> = new Worker(jsModuleWorker.resolvedUrl!, {
+            name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
+        });
+        worker.info = {
+            workerNumber,
+            pthreadId: PThreadPtrNull,
+            reuseCount: 0,
+            updateCount: 0,
+            threadPrefix: worker_empty_prefix,
+            threadName: "emscripten-pool",
+        } as any;
+        loaderHelpers.loadingWorkers.push(worker as any);
     }
 }

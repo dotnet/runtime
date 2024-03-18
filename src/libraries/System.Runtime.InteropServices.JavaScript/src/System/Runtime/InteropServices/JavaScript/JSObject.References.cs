@@ -42,7 +42,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <inheritdoc />
         public override string ToString() => $"(js-obj js '{JSHandle}')";
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         internal void AssertNotDisposed()
         {
             lock (ProxyContext)
@@ -55,27 +57,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (!_isDisposed)
             {
-#if FEATURE_WASM_MANAGED_THREADS
-                if (ProxyContext.SynchronizationContext._isDisposed)
-                {
-                    return;
-                }
-
-                if (ProxyContext.IsCurrentThread())
-                {
-                    JSProxyContext.ReleaseCSOwnedObject(this, skipJsCleanup);
-                    return;
-                }
-
-                // async
-                ProxyContext.SynchronizationContext.Post(static (object? s) =>
-                {
-                    var x = ((JSObject self, bool skipJS))s!;
-                    JSProxyContext.ReleaseCSOwnedObject(x.self, x.skipJS);
-                }, (this, skipJsCleanup));
-#else
                 JSProxyContext.ReleaseCSOwnedObject(this, skipJsCleanup);
-#endif
             }
         }
 

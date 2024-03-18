@@ -30,8 +30,6 @@ void Compiler::fgInit()
     fgRangeUsedInEdgeWeights = true;
     fgCalledCount            = BB_ZERO_WEIGHT;
 
-    fgReturnBlocksComputed = false;
-
     /* Initialize the basic block list */
 
     fgFirstBB          = nullptr;
@@ -49,8 +47,7 @@ void Compiler::fgInit()
     fgBBcount = 0;
 
 #ifdef DEBUG
-    fgBBcountAtCodegen = 0;
-    fgBBOrder          = nullptr;
+    fgBBOrder = nullptr;
 #endif // DEBUG
 
     fgMightHaveNaturalLoops = false;
@@ -207,17 +204,10 @@ bool Compiler::fgEnsureFirstBBisScratch()
 
     assert(fgFirstBBScratch == nullptr);
 
-    BasicBlock* block = BasicBlock::New(this, BBJ_ALWAYS, fgFirstBB);
-    block->SetFlags(BBF_NONE_QUIRK);
+    BasicBlock* block;
 
     if (fgFirstBB != nullptr)
     {
-        // If we have profile data the new block will inherit fgFirstBlock's weight
-        if (fgFirstBB->hasProfileWeight())
-        {
-            block->inheritWeight(fgFirstBB);
-        }
-
         // The first block has an implicit ref count which we must
         // remove. Note the ref count could be greater than one, if
         // the first block is not scratch and is targeted by a
@@ -225,14 +215,23 @@ bool Compiler::fgEnsureFirstBBisScratch()
         assert(fgFirstBB->bbRefs >= 1);
         fgFirstBB->bbRefs--;
 
+        block = BasicBlock::New(this);
+
+        // If we have profile data the new block will inherit fgFirstBlock's weight
+        if (fgFirstBB->hasProfileWeight())
+        {
+            block->inheritWeight(fgFirstBB);
+        }
+
         // The new scratch bb will fall through to the old first bb
         FlowEdge* const edge = fgAddRefPred(fgFirstBB, block);
-        edge->setLikelihood(1.0);
+        block->SetKindAndTargetEdge(BBJ_ALWAYS, edge);
         fgInsertBBbefore(fgFirstBB, block);
     }
     else
     {
         noway_assert(fgLastBB == nullptr);
+        block     = BasicBlock::New(this, BBJ_ALWAYS);
         fgFirstBB = block;
         fgLastBB  = block;
     }
@@ -358,7 +357,7 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     fgRemoveBlockAsPred(block);
 
     // Update jump kind after the scrub.
-    block->SetKindAndTarget(BBJ_THROW);
+    block->SetKindAndTargetEdge(BBJ_THROW);
     block->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
 
     // Any block with a throw is rare
@@ -382,36 +381,26 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
     assert(fgPredsComputed);
 
     // Walk the switch's jump table, updating the predecessor for each branch.
-    for (BasicBlock* const bJump : oldSwitchBlock->SwitchTargets())
+    BBswtDesc* swtDesc = oldSwitchBlock->GetSwitchTargets();
+
+    for (unsigned i = 0; i < swtDesc->bbsCount; i++)
     {
-        noway_assert(bJump != nullptr);
+        FlowEdge* succEdge = swtDesc->bbsDstTab[i];
+        assert(succEdge != nullptr);
 
-        // Note that if there are duplicate branch targets in the switch jump table,
-        // fgRemoveRefPred()/fgAddRefPred() will do the right thing: the second and
-        // subsequent duplicates will simply subtract from and add to the duplicate
-        // count (respectively).
-        //
-        // However this does the "wrong" thing with respect to edge profile
-        // data; the old edge is not returned by fgRemoveRefPred until it has
-        // a dup count of 0, and the fgAddRefPred only uses the optional
-        // old edge arg when the new edge is first created.
-        //
-        // Remove the old edge [oldSwitchBlock => bJump]
-        //
-        assert(bJump->countOfInEdges() > 0);
-        FlowEdge* const oldEdge = fgRemoveRefPred(bJump, oldSwitchBlock);
-
-        //
-        // Create the new edge [newSwitchBlock => bJump]
-        //
-        FlowEdge* const newEdge = fgAddRefPred(bJump, newSwitchBlock);
-
-        // Handle the profile update, once we get our hands on the old edge.
-        //
-        if (oldEdge != nullptr)
+        if (succEdge->getSourceBlock() != oldSwitchBlock)
         {
-            assert(!newEdge->hasLikelihood());
-            newEdge->setLikelihood(oldEdge->getLikelihood());
+            // swtDesc can have duplicate targets, so we may have updated this edge already
+            //
+            assert(succEdge->getSourceBlock() == newSwitchBlock);
+            assert(succEdge->getDupCount() > 1);
+        }
+        else
+        {
+            // Redirect edge's source block from oldSwitchBlock to newSwitchBlock,
+            // and keep successor block's pred list in order
+            //
+            fgReplacePred(succEdge, newSwitchBlock);
         }
     }
 
@@ -449,18 +438,12 @@ void Compiler::fgChangeEhfBlock(BasicBlock* oldBlock, BasicBlock* newBlock)
     assert(oldBlock->KindIs(BBJ_EHFINALLYRET));
     assert(fgPredsComputed);
 
-    for (BasicBlock* const succ : oldBlock->EHFinallyRetSuccs())
+    BBehfDesc* ehfDesc = oldBlock->GetEhfTargets();
+
+    for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
     {
-        assert(succ != nullptr);
-
-        // Remove the old edge [oldBlock => succ]
-        //
-        assert(succ->countOfInEdges() > 0);
-        fgRemoveRefPred(succ, oldBlock);
-
-        // Create the new edge [newBlock => succ]
-        //
-        fgAddRefPred(succ, newBlock);
+        FlowEdge* succEdge = ehfDesc->bbeSuccs[i];
+        fgReplacePred(succEdge, newBlock);
     }
 }
 
@@ -484,22 +467,26 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
     assert(block->KindIs(BBJ_EHFINALLYRET));
     assert(fgPredsComputed);
 
-    BBehfDesc* const   ehfDesc   = block->GetEhfTargets();
-    const unsigned     succCount = ehfDesc->bbeCount;
-    BasicBlock** const succTab   = ehfDesc->bbeSuccs;
+    BBehfDesc* const ehfDesc   = block->GetEhfTargets();
+    const unsigned   succCount = ehfDesc->bbeCount;
+    FlowEdge** const succTab   = ehfDesc->bbeSuccs;
 
-    // Walk the successor table looking for the old successor, which we expect to find.
+    // Walk the successor table looking for the old successor, which we expect to find only once.
     unsigned oldSuccNum = UINT_MAX;
     unsigned newSuccNum = UINT_MAX;
     for (unsigned i = 0; i < succCount; i++)
     {
-        if (succTab[i] == newSucc)
+        assert(succTab[i]->getSourceBlock() == block);
+
+        if (succTab[i]->getDestinationBlock() == newSucc)
         {
+            assert(newSuccNum == UINT_MAX);
             newSuccNum = i;
         }
 
-        if (succTab[i] == oldSucc)
+        if (succTab[i]->getDestinationBlock() == oldSucc)
         {
+            assert(oldSuccNum == UINT_MAX);
             oldSuccNum = i;
         }
     }
@@ -509,7 +496,7 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
     if (newSuccNum != UINT_MAX)
     {
         // The new successor is already in the table; simply remove the old one.
-        fgRemoveEhfSuccessor(block, oldSucc);
+        fgRemoveEhfSuccessor(block, oldSuccNum);
 
         JITDUMP("Remove existing BBJ_EHFINALLYRET " FMT_BB " successor " FMT_BB "; replacement successor " FMT_BB
                 " already exists in list\n",
@@ -517,17 +504,17 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
     }
     else
     {
-        // Replace the old one with the new one.
-
-        succTab[oldSuccNum] = newSucc;
-
         // Remove the old edge [block => oldSucc]
         //
         fgRemoveAllRefPreds(oldSucc, block);
 
         // Create the new edge [block => newSucc]
         //
-        fgAddRefPred(newSucc, block);
+        FlowEdge* const newEdge = fgAddRefPred(newSucc, block);
+
+        // Replace the old one with the new one.
+        //
+        succTab[oldSuccNum] = newEdge;
 
         JITDUMP("Replace BBJ_EHFINALLYRET " FMT_BB " successor " FMT_BB " with " FMT_BB "\n", block->bbNum,
                 oldSucc->bbNum, newSucc->bbNum);
@@ -535,60 +522,96 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
 }
 
 //------------------------------------------------------------------------
-// fgRemoveEhfSuccessor: update BBJ_EHFINALLYRET block to remove `succ` as a successor.
-// Updates the predecessor list of `succ`.
+// fgRemoveEhfSuccessor: update BBJ_EHFINALLYRET block to remove the successor at `succIndex`
+// in the block's jump table.
+// Updates the predecessor list of the successor, if necessary.
 //
 // Arguments:
-//   block   - BBJ_EHFINALLYRET block
-//   succ    - successor
+//   block     - BBJ_EHFINALLYRET block
+//   succIndex - index of the successor in block->GetEhfTargets()->bbeSuccs
 //
-void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ)
+void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex)
 {
     assert(block != nullptr);
-    assert(succ != nullptr);
-    assert(fgPredsComputed);
     assert(block->KindIs(BBJ_EHFINALLYRET));
-
-    // Don't `assert(succ->isBBCallFinallyPairTail())`; we've already unlinked the CALLFINALLY
-    assert(succ->KindIs(BBJ_CALLFINALLYRET));
-
-    fgRemoveRefPred(succ, block);
+    assert(fgPredsComputed);
 
     BBehfDesc* const ehfDesc   = block->GetEhfTargets();
-    unsigned         succCount = ehfDesc->bbeCount;
-    BasicBlock**     succTab   = ehfDesc->bbeSuccs;
+    const unsigned   succCount = ehfDesc->bbeCount;
+    FlowEdge**       succTab   = ehfDesc->bbeSuccs;
+    assert(succIndex < succCount);
+    FlowEdge* succEdge = succTab[succIndex];
+
+    fgRemoveRefPred(succEdge);
+
+    // If succEdge not the last entry, move everything after in the table down one slot.
+    if ((succIndex + 1) < succCount)
+    {
+        memmove_s(&succTab[succIndex], (succCount - succIndex) * sizeof(FlowEdge*), &succTab[succIndex + 1],
+                  (succCount - succIndex - 1) * sizeof(FlowEdge*));
+    }
+
+#ifdef DEBUG
+    // We only expect to see a successor once in the table.
+    for (unsigned i = succIndex; i < (succCount - 1); i++)
+    {
+        assert(succTab[i]->getDestinationBlock() != succEdge->getDestinationBlock());
+    }
+#endif // DEBUG
+
+    ehfDesc->bbeCount--;
+}
+
+//------------------------------------------------------------------------
+// fgRemoveEhfSuccessor: Removes `succEdge` from its BBJ_EHFINALLYRET source block's jump table.
+// Updates the predecessor list of the successor block, if necessary.
+//
+// Arguments:
+//   block     - BBJ_EHFINALLYRET block
+//   succEdge - FlowEdge* to be removed from predecessor block's jump table
+//
+void Compiler::fgRemoveEhfSuccessor(FlowEdge* succEdge)
+{
+    assert(succEdge != nullptr);
+    assert(fgPredsComputed);
+
+    BasicBlock* block = succEdge->getSourceBlock();
+    assert(block != nullptr);
+    assert(block->KindIs(BBJ_EHFINALLYRET));
+
+    fgRemoveRefPred(succEdge);
+
+    BBehfDesc* const ehfDesc   = block->GetEhfTargets();
+    const unsigned   succCount = ehfDesc->bbeCount;
+    FlowEdge**       succTab   = ehfDesc->bbeSuccs;
     bool             found     = false;
 
-    // Walk the successor table looking for the specified successor block.
+    // Search succTab for succEdge so we can splice it out of the table.
     for (unsigned i = 0; i < succCount; i++)
     {
-        if (succTab[i] == succ)
+        if (succTab[i] == succEdge)
         {
-            // If it's not the last one, move everything after in the table down one slot.
-            if (i + 1 < succCount)
+            // If succEdge not the last entry, move everything after in the table down one slot.
+            if ((i + 1) < succCount)
             {
-                memmove_s(&succTab[i], (succCount - i) * sizeof(BasicBlock*), &succTab[i + 1],
-                          (succCount - i - 1) * sizeof(BasicBlock*));
+                memmove_s(&succTab[i], (succCount - i) * sizeof(FlowEdge*), &succTab[i + 1],
+                          (succCount - i - 1) * sizeof(FlowEdge*));
             }
-
-            --succCount;
 
             found = true;
 
 #ifdef DEBUG
             // We only expect to see a successor once in the table.
-            for (; i < succCount; i++)
+            for (; i < (succCount - 1); i++)
             {
-                assert(succTab[i] != succ);
+                assert(succTab[i]->getDestinationBlock() != succEdge->getDestinationBlock());
             }
 #endif // DEBUG
-
-            break;
         }
     }
-    assert(found);
 
-    ehfDesc->bbeCount = succCount;
+    assert(found);
+    ehfDesc->bbeCount--;
 }
 
 //------------------------------------------------------------------------
@@ -620,94 +643,107 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE: // This function can be called before import, so we still have BBJ_LEAVE
-
-            if (block->TargetIs(oldTarget))
-            {
-                block->SetTarget(newTarget);
-                FlowEdge* const oldEdge = fgRemoveRefPred(oldTarget, block);
-                fgAddRefPred(newTarget, block, oldEdge);
-            }
+            assert(block->TargetIs(oldTarget));
+            fgRedirectTargetEdge(block, newTarget);
             break;
 
         case BBJ_COND:
-
             if (block->TrueTargetIs(oldTarget))
             {
-                if (block->FalseTargetIs(oldTarget))
+                if (block->FalseEdgeIs(block->GetTrueEdge()))
                 {
-                    // fgRemoveRefPred returns nullptr for BBJ_COND blocks with two flow edges to target
+                    // Branch was degenerate, simplify it first
+                    //
                     fgRemoveConditionalJump(block);
                     assert(block->KindIs(BBJ_ALWAYS));
                     assert(block->TargetIs(oldTarget));
-                    block->SetTarget(newTarget);
+                    fgRedirectTargetEdge(block, newTarget);
                 }
                 else
                 {
-                    block->SetTrueTarget(newTarget);
-                }
-
-                // fgRemoveRefPred should have removed the flow edge
-                FlowEdge* oldEdge = fgRemoveRefPred(oldTarget, block);
-                assert(oldEdge != nullptr);
-
-                // TODO-NoFallThrough: Proliferate weight from oldEdge
-                // (as a quirk, we avoid doing so for the true target to reduce diffs for now)
-                FlowEdge* const newEdge = fgAddRefPred(newTarget, block);
-                if (block->KindIs(BBJ_ALWAYS))
-                {
-                    newEdge->setLikelihood(1.0);
-                }
-                else if (oldEdge->hasLikelihood())
-                {
-                    newEdge->setLikelihood(oldEdge->getLikelihood());
+                    fgRedirectTrueEdge(block, newTarget);
                 }
             }
             else
             {
+                // Already degenerate cases should have taken the true path above
+                //
                 assert(block->FalseTargetIs(oldTarget));
-
-                // fgRemoveRefPred should have removed the flow edge
-                FlowEdge* oldEdge = fgRemoveRefPred(oldTarget, block);
-                assert(oldEdge != nullptr);
-                block->SetFalseTarget(newTarget);
-                fgAddRefPred(newTarget, block, oldEdge);
+                assert(!block->TrueEdgeIs(block->GetFalseEdge()));
+                fgRedirectFalseEdge(block, newTarget);
             }
+
+            if (block->KindIs(BBJ_COND) && block->TrueEdgeIs(block->GetFalseEdge()))
+            {
+                // Block became degenerate, simplify
+                //
+                fgRemoveConditionalJump(block);
+                assert(block->KindIs(BBJ_ALWAYS));
+                assert(block->TargetIs(newTarget));
+            }
+
             break;
 
         case BBJ_SWITCH:
         {
-            unsigned const     jumpCnt = block->GetSwitchTargets()->bbsCount;
-            BasicBlock** const jumpTab = block->GetSwitchTargets()->bbsDstTab;
-            bool               changed = false;
+            unsigned const   jumpCnt      = block->GetSwitchTargets()->bbsCount;
+            FlowEdge** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
+            bool             existingEdge = false;
+            FlowEdge*        oldEdge      = nullptr;
+            FlowEdge*        newEdge      = nullptr;
+            bool             changed      = false;
 
             for (unsigned i = 0; i < jumpCnt; i++)
             {
-                if (jumpTab[i] == oldTarget)
+                if (jumpTab[i]->getDestinationBlock() == newTarget)
                 {
-                    jumpTab[i]              = newTarget;
-                    changed                 = true;
-                    FlowEdge* const oldEdge = fgRemoveRefPred(oldTarget, block);
-                    FlowEdge* const newEdge = fgAddRefPred(newTarget, block, oldEdge);
+                    // The new target already has an edge from this switch statement.
+                    // We'll need to add the likelihood from the edge we're redirecting
+                    // to the existing edge. Note that if there is no existing edge,
+                    // then we'll copy the likelihood from the existing edge we pass to
+                    // `fgAddRefPred`. Note also that we can visit the same edge multiple
+                    // times if there are multiple switch cases with the same target. The
+                    // edge has a dup count and a single likelihood for all the possible
+                    // paths to the target, so we only want to add the likelihood once
+                    // despite visiting the duplicated edges in the `jumpTab` array
+                    // multiple times.
+                    existingEdge = true;
+                }
 
-                    // Handle the profile update, once we get our hands on the old edge.
-                    // (see notes in fgChangeSwitchBlock for why this extra step is necessary)
-                    //
-                    // We do it slightly differently here so we don't lose the old
-                    // edge weight propagation that would sometimes happen
-                    //
-                    if ((oldEdge != nullptr) && !newEdge->hasLikelihood())
-                    {
-                        newEdge->setLikelihood(oldEdge->getLikelihood());
-                    }
+                if (jumpTab[i]->getDestinationBlock() == oldTarget)
+                {
+                    assert((oldEdge == nullptr) || (oldEdge == jumpTab[i]));
+                    oldEdge = jumpTab[i];
+                    fgRemoveRefPred(oldEdge);
+                    newEdge    = fgAddRefPred(newTarget, block, oldEdge);
+                    jumpTab[i] = newEdge;
+                    changed    = true;
                 }
             }
 
-            if (changed)
+            if (existingEdge)
             {
-                InvalidateUniqueSwitchSuccMap();
+                assert(oldEdge != nullptr);
+                assert(oldEdge->getSourceBlock() == block);
+                assert(oldEdge->getDestinationBlock() == oldTarget);
+                assert(newEdge != nullptr);
+                assert(newEdge->getSourceBlock() == block);
+                assert(newEdge->getDestinationBlock() == newTarget);
+
+                if (newEdge->hasLikelihood() && oldEdge->hasLikelihood())
+                {
+                    newEdge->addLikelihood(oldEdge->getLikelihood());
+                }
             }
+
+            assert(changed);
+            InvalidateUniqueSwitchSuccMap();
             break;
         }
+
+        case BBJ_EHFINALLYRET:
+            fgReplaceEhfSuccessor(block, oldTarget, newTarget);
+            break;
 
         default:
             assert(!"Block doesn't have a jump target!");
@@ -717,51 +753,36 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
 }
 
 //------------------------------------------------------------------------
-// fgReplacePred: update the predecessor list, swapping one pred for another
+// fgReplacePred: redirects the given edge to a new predecessor block
 //
 // Arguments:
-//   block - block with the pred list we want to update
-//   oldPred - pred currently appearing in block's pred list
-//   newPred - pred that will take oldPred's place.
+//   edge - the edge whose source block we want to update
+//   newPred - the new predecessor block for edge
 //
 // Notes:
 //
-// A block can only appear once in the preds list. If a predecessor has multiple
-// ways to get to this block, then the pred edge DupCount will be >1.
-//
 // This function assumes that all branches from the predecessor (practically, that all
-// switch cases that target this block) are changed to branch from the new predecessor,
+// switch cases that target the successor block) are changed to branch from the new predecessor,
 // with the same dup count.
 //
-// Note that the block bbRefs is not changed, since 'block' has the same number of
+// Note that the successor block's bbRefs is not changed, since it has the same number of
 // references as before, just from a different predecessor block.
 //
 // Also note this may cause sorting of the pred list.
 //
-void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred)
+void Compiler::fgReplacePred(FlowEdge* edge, BasicBlock* const newPred)
 {
-    noway_assert(block != nullptr);
-    noway_assert(oldPred != nullptr);
-    noway_assert(newPred != nullptr);
+    assert(edge != nullptr);
+    assert(newPred != nullptr);
+    assert(edge->getSourceBlock() != newPred);
 
-    bool modified = false;
-
-    for (FlowEdge* const pred : block->PredEdges())
-    {
-        if (oldPred == pred->getSourceBlock())
-        {
-            pred->setSourceBlock(newPred);
-            modified = true;
-            break;
-        }
-    }
+    edge->setSourceBlock(newPred);
 
     // We may now need to reorder the pred list.
     //
-    if (modified)
-    {
-        block->ensurePredListOrder(this);
-    }
+    BasicBlock* succBlock = edge->getDestinationBlock();
+    assert(succBlock != nullptr);
+    succBlock->ensurePredListOrder(this);
 }
 
 /*****************************************************************************
@@ -1282,8 +1303,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 break;
                             }
 
+                            case NI_System_SpanHelpers_ClearWithoutReferences:
+                            case NI_System_SpanHelpers_Fill:
                             case NI_System_SpanHelpers_SequenceEqual:
-                            case NI_System_Buffer_Memmove:
+                            case NI_System_SpanHelpers_Memmove:
                             {
                                 if (FgStack::IsConstArgument(pushedStack.Top(), impInlineInfo))
                                 {
@@ -2904,10 +2927,9 @@ void Compiler::fgLinkBasicBlocks()
     //
     fgFirstBB->bbRefs = 1;
 
-    // Special args to fgAddRefPred so it will use the initialization fast path.
+    // Special arg to fgAddRefPred so it will use the initialization fast path.
     //
-    FlowEdge* const oldEdge           = nullptr;
-    bool const      initializingPreds = true;
+    const bool initializingPreds = true;
 
     for (BasicBlock* const curBBdesc : Blocks())
     {
@@ -2915,15 +2937,27 @@ void Compiler::fgLinkBasicBlocks()
         {
             case BBJ_COND:
             {
-                BasicBlock* const trueTarget = fgLookupBB(curBBdesc->GetTargetOffs());
-                curBBdesc->SetTrueTarget(trueTarget);
-                curBBdesc->SetFalseTarget(curBBdesc->Next());
-                fgAddRefPred<initializingPreds>(trueTarget, curBBdesc, oldEdge);
-                fgAddRefPred<initializingPreds>(curBBdesc->GetFalseTarget(), curBBdesc, oldEdge);
+                BasicBlock* const trueTarget  = fgLookupBB(curBBdesc->GetTargetOffs());
+                BasicBlock* const falseTarget = curBBdesc->Next();
+                FlowEdge* const   trueEdge    = fgAddRefPred<initializingPreds>(trueTarget, curBBdesc);
+                FlowEdge* const   falseEdge   = fgAddRefPred<initializingPreds>(falseTarget, curBBdesc);
+                curBBdesc->SetTrueEdge(trueEdge);
+                curBBdesc->SetFalseEdge(falseEdge);
 
-                if (curBBdesc->GetTrueTarget()->bbNum <= curBBdesc->bbNum)
+                if (trueEdge == falseEdge)
                 {
-                    fgMarkBackwardJump(curBBdesc->GetTrueTarget(), curBBdesc);
+                    assert(trueEdge->getDupCount() == 2);
+                    trueEdge->setLikelihood(1.0);
+                }
+                else
+                {
+                    trueEdge->setLikelihood(0.5);
+                    falseEdge->setLikelihood(0.5);
+                }
+
+                if (trueTarget->bbNum <= curBBdesc->bbNum)
+                {
+                    fgMarkBackwardJump(trueTarget, curBBdesc);
                 }
 
                 if (curBBdesc->IsLast())
@@ -2942,10 +2976,10 @@ void Compiler::fgLinkBasicBlocks()
                 assert(!(curBBdesc->IsLast() && jumpsToNext));
                 BasicBlock* const jumpDest = jumpsToNext ? curBBdesc->Next() : fgLookupBB(curBBdesc->GetTargetOffs());
 
-                // Redundantly use SetKindAndTarget() instead of SetTarget() just this once,
-                // so we don't break the HasInitializedTarget() invariant of SetTarget().
-                curBBdesc->SetKindAndTarget(curBBdesc->GetKind(), jumpDest);
-                fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
+                // Redundantly use SetKindAndTargetEdge() instead of SetTargetEdge() just this once,
+                // so we don't break the HasInitializedTarget() invariant of SetTargetEdge().
+                FlowEdge* const newEdge = fgAddRefPred<initializingPreds>(jumpDest, curBBdesc);
+                curBBdesc->SetKindAndTargetEdge(curBBdesc->GetKind(), newEdge);
 
                 if (curBBdesc->GetTarget()->bbNum <= curBBdesc->bbNum)
                 {
@@ -2971,23 +3005,26 @@ void Compiler::fgLinkBasicBlocks()
 
             case BBJ_SWITCH:
             {
-                unsigned     jumpCnt = curBBdesc->GetSwitchTargets()->bbsCount;
-                BasicBlock** jumpPtr = curBBdesc->GetSwitchTargets()->bbsDstTab;
+                const unsigned numSucc = curBBdesc->GetSwitchTargets()->bbsCount;
+                unsigned       jumpCnt = numSucc;
+                FlowEdge**     jumpPtr = curBBdesc->GetSwitchTargets()->bbsDstTab;
 
                 do
                 {
-                    BasicBlock* jumpDest = fgLookupBB((unsigned)*(size_t*)jumpPtr);
-                    *jumpPtr             = jumpDest;
-                    fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
-                    if ((*jumpPtr)->bbNum <= curBBdesc->bbNum)
+                    BasicBlock*     jumpDest = fgLookupBB((unsigned)*(size_t*)jumpPtr);
+                    FlowEdge* const newEdge  = fgAddRefPred<initializingPreds>(jumpDest, curBBdesc);
+
+                    newEdge->setLikelihood((1.0 / numSucc) * newEdge->getDupCount());
+                    *jumpPtr = newEdge;
+                    if (jumpDest->bbNum <= curBBdesc->bbNum)
                     {
-                        fgMarkBackwardJump(*jumpPtr, curBBdesc);
+                        fgMarkBackwardJump(jumpDest, curBBdesc);
                     }
                 } while (++jumpPtr, --jumpCnt);
 
                 /* Default case of CEE_SWITCH (next block), is at end of jumpTab[] */
 
-                noway_assert(curBBdesc->NextIs(*(jumpPtr - 1)));
+                noway_assert(curBBdesc->NextIs((*(jumpPtr - 1))->getDestinationBlock()));
                 break;
             }
 
@@ -3150,8 +3187,8 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                 unsigned jmpBase;
                 unsigned jmpCnt; // # of switch cases (excluding default)
 
-                BasicBlock** jmpTab;
-                BasicBlock** jmpPtr;
+                FlowEdge** jmpTab;
+                FlowEdge** jmpPtr;
 
                 /* Allocate the switch descriptor */
 
@@ -3168,7 +3205,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
                 /* Allocate the jump table */
 
-                jmpPtr = jmpTab = new (this, CMK_BasicBlock) BasicBlock*[jmpCnt + 1];
+                jmpPtr = jmpTab = new (this, CMK_FlowEdge) FlowEdge*[jmpCnt + 1];
 
                 /* Fill in the jump table */
 
@@ -3178,12 +3215,12 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                     codeAddr += 4;
 
                     // store the offset in the pointer.  We change these in fgLinkBasicBlocks().
-                    *jmpPtr++ = (BasicBlock*)(size_t)(jmpBase + jmpDist);
+                    *jmpPtr++ = (FlowEdge*)(size_t)(jmpBase + jmpDist);
                 }
 
                 /* Append the default label to the target table */
 
-                *jmpPtr++ = (BasicBlock*)(size_t)jmpBase;
+                *jmpPtr++ = (FlowEdge*)(size_t)jmpBase;
 
                 /* Make sure we found the right number of labels */
 
@@ -3466,7 +3503,6 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
             // Jump to the next block
             jmpKind = BBJ_ALWAYS;
             jmpAddr = nxtBBoffs;
-            bbFlags |= BBF_NONE_QUIRK;
         }
 
         assert(jmpKind != BBJ_COUNT);
@@ -3520,7 +3556,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
     noway_assert(codeAddr == codeEndp);
 
-    /* Finally link up the bbTarget of the blocks together */
+    /* Finally link up the targets of the blocks together */
 
     fgLinkBasicBlocks();
 
@@ -3838,9 +3874,9 @@ void Compiler::fgFindBasicBlocks()
                 if (block->KindIs(BBJ_EHFILTERRET))
                 {
                     // Mark catch handler as successor.
-                    block->SetTarget(hndBegBB);
-                    fgAddRefPred(hndBegBB, block);
-                    assert(block->GetTarget()->bbCatchTyp == BBCT_FILTER_HANDLER);
+                    FlowEdge* const newEdge = fgAddRefPred(hndBegBB, block);
+                    block->SetTargetEdge(newEdge);
+                    assert(hndBegBB->bbCatchTyp == BBCT_FILTER_HANDLER);
                     break;
                 }
             }
@@ -4172,10 +4208,7 @@ void Compiler::fgFixEntryFlowForOSR()
     //
     fgEnsureFirstBBisScratch();
     assert(fgFirstBB->KindIs(BBJ_ALWAYS) && fgFirstBB->JumpsToNext());
-    fgRemoveRefPred(fgFirstBB->GetTarget(), fgFirstBB);
-    fgFirstBB->SetKindAndTarget(BBJ_ALWAYS, fgOSREntryBB);
-    FlowEdge* const edge = fgAddRefPred(fgOSREntryBB, fgFirstBB);
-    edge->setLikelihood(1.0);
+    fgRedirectTargetEdge(fgFirstBB, fgOSREntryBB);
 
     // We don't know the right weight for this block, since
     // execution of the method was interrupted within the
@@ -4724,14 +4757,15 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     {
         // For each successor of the original block, set the new block as their predecessor.
 
-        for (BasicBlock* const succ : curr->Succs(this))
+        for (FlowEdge* const succEdge : curr->SuccEdges())
         {
-            if (succ != newBlock)
-            {
-                JITDUMP(FMT_BB " previous predecessor was " FMT_BB ", now is " FMT_BB "\n", succ->bbNum, curr->bbNum,
-                        newBlock->bbNum);
-                fgReplacePred(succ, curr, newBlock);
-            }
+            // For non-switch blocks, successor iterator should not iterate duplicates.
+            assert(succEdge->getSourceBlock() != newBlock);
+
+            BasicBlock* const succBlock = succEdge->getDestinationBlock();
+            JITDUMP(FMT_BB " previous predecessor was " FMT_BB ", now is " FMT_BB "\n", succBlock->bbNum, curr->bbNum,
+                    newBlock->bbNum);
+            fgReplacePred(succEdge, newBlock);
         }
     }
 
@@ -4763,18 +4797,15 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     // Remove flags from the old block that are no longer possible.
     curr->RemoveFlags(BBF_HAS_JMP | BBF_RETLESS_CALL);
 
+    // Default to fallthrough, and add the arc for that.
+    FlowEdge* const newEdge = fgAddRefPred(newBlock, curr);
+
     // Transfer the kind and target. Do this after the code above, to avoid null-ing out the old targets used by the
-    // above code (and so newBlock->bbNext is valid, so SetCond() can initialize bbFalseTarget if newBlock is a
-    // BBJ_COND).
+    // above code.
     newBlock->TransferTarget(curr);
 
-    // Default to fallthrough, and add the arc for that.
-    curr->SetKindAndTarget(BBJ_ALWAYS, newBlock);
-    curr->SetFlags(BBF_NONE_QUIRK);
+    curr->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     assert(curr->JumpsToNext());
-
-    FlowEdge* const newEdge = fgAddRefPred(newBlock, curr);
-    newEdge->setLikelihood(1.0);
 
     return newBlock;
 }
@@ -4865,7 +4896,6 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
 
     // prevBb should flow into block
     assert(prevBb->KindIs(BBJ_ALWAYS) && prevBb->JumpsToNext() && prevBb->NextIs(block));
-    prevBb->SetFlags(BBF_NONE_QUIRK);
 
     return block;
 }
@@ -4998,15 +5028,12 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         // an immediately following block of a BBJ_SWITCH (which has
         // no fall-through path). For this case, simply insert a new
         // fall-through block after 'curr'.
-        // TODO-NoFallThrough: Once bbFalseTarget can diverge from bbNext, this will be unnecessary for BBJ_COND
-        newBlock = fgNewBBafter(BBJ_ALWAYS, curr, true /* extendRegion */, /* jumpDest */ succ);
-        newBlock->SetFlags(BBF_NONE_QUIRK);
-        assert(newBlock->JumpsToNext());
+        newBlock = fgNewBBafter(BBJ_ALWAYS, curr, true /* extendRegion */);
     }
     else
     {
         // The new block always jumps to 'succ'
-        newBlock = fgNewBBinRegion(BBJ_ALWAYS, curr, /* jumpDest */ succ, /* isRunRarely */ curr->isRunRarely());
+        newBlock = fgNewBBinRegion(BBJ_ALWAYS, curr, /* isRunRarely */ curr->isRunRarely());
     }
     newBlock->CopyFlags(curr, succ->GetFlagsRaw() & BBF_BACKWARD_JUMP);
 
@@ -5018,7 +5045,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
     // And 'succ' has 'newBlock' as a new predecessor.
     FlowEdge* const newEdge = fgAddRefPred(succ, newBlock);
-    newEdge->setLikelihood(1.0);
+    newBlock->SetTargetEdge(newEdge);
 
     // This isn't accurate, but it is complex to compute a reasonable number so just assume that we take the
     // branch 50% of the time.
@@ -5279,9 +5306,9 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
          * First, remove 'block' from the predecessor list of succBlock.
          */
 
-        fgRemoveRefPred(succBlock, block);
+        fgRemoveRefPred(block->GetTargetEdge());
 
-        for (BasicBlock* const predBlock : block->PredBlocks())
+        for (BasicBlock* const predBlock : block->PredBlocksEditing())
         {
             /* change all jumps/refs to the removed block */
             switch (predBlock->GetKind())
@@ -5296,11 +5323,8 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
                 case BBJ_SWITCH:
-                    fgReplaceJumpTarget(predBlock, block, succBlock);
-                    break;
-
                 case BBJ_EHFINALLYRET:
-                    fgReplaceEhfSuccessor(predBlock, block, succBlock);
+                    fgReplaceJumpTarget(predBlock, block, succBlock);
                     break;
             }
         }
@@ -5324,7 +5348,7 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 assert(!bPrev->FalseTargetIs(block));
 
                 /* Check if both sides of the BBJ_COND now jump to the same block */
-                if (bPrev->TrueTargetIs(bPrev->GetFalseTarget()))
+                if (bPrev->TrueEdgeIs(bPrev->GetFalseEdge()))
                 {
                     fgRemoveConditionalJump(bPrev);
                 }
@@ -5365,9 +5389,9 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
     // However, we might not have marked the BBJ_CALLFINALLY as BBF_RETLESS_CALL even though it is.
     // (Some early flow optimization should probably aggressively mark these as BBF_RETLESS_CALL
     // and not depend on fgRemoveBlock() to do that.)
-    for (BasicBlock* const leavePredBlock : block->PredBlocks())
+    for (FlowEdge* leavePredEdge : block->PredEdges())
     {
-        fgRemoveEhfSuccessor(leavePredBlock, block);
+        fgRemoveEhfSuccessor(leavePredEdge);
     }
     assert(block->bbRefs == 0);
     assert(block->bbPreds == nullptr);
@@ -5400,16 +5424,21 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
     if (bSrc->KindIs(BBJ_COND) && bSrc->FalseTargetIs(bDst) && !bSrc->NextIs(bDst))
     {
         // Add a new block after bSrc which jumps to 'bDst'
-        jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true, bDst);
-        bSrc->SetFalseTarget(jmpBlk);
-        fgAddRefPred(jmpBlk, bSrc, fgGetPredForBlock(bDst, bSrc));
+        jmpBlk                  = fgNewBBafter(BBJ_ALWAYS, bSrc, true);
+        FlowEdge* const oldEdge = bSrc->GetFalseEdge();
+        // Access the likelihood of oldEdge before
+        // it gets reset by SetTargetEdge below.
+        //
+        FlowEdge* const newEdge = fgAddRefPred(jmpBlk, bSrc, oldEdge);
+        fgReplacePred(oldEdge, jmpBlk);
+        jmpBlk->SetTargetEdge(oldEdge);
+        assert(jmpBlk->TargetIs(bDst));
+        bSrc->SetFalseEdge(newEdge);
 
         // When adding a new jmpBlk we will set the bbWeight and bbFlags
         //
         if (fgHaveValidEdgeWeights && fgHaveProfileWeights())
         {
-            FlowEdge* const newEdge = fgGetPredForBlock(jmpBlk, bSrc);
-
             jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
             if (bSrc->bbWeight == BB_ZERO_WEIGHT)
             {
@@ -5447,14 +5476,8 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
             }
         }
 
-        fgReplacePred(bDst, bSrc, jmpBlk);
-
         JITDUMP("Added an unconditional jump to " FMT_BB " after block " FMT_BB "\n", jmpBlk->GetTarget()->bbNum,
                 bSrc->bbNum);
-    }
-    else if (bSrc->KindIs(BBJ_ALWAYS) && bSrc->HasInitializedTarget() && bSrc->JumpsToNext())
-    {
-        bSrc->SetFlags(BBF_NONE_QUIRK);
     }
 
     return jmpBlk;
@@ -5901,12 +5924,6 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
                insertAfterBlk->Next()); // We insert at the end, not at the beginning, of the funclet region.
     }
 
-    // These asserts assume we aren't moving try regions (which we might need to do). Only
-    // try regions can have fall through into or out of the region.
-
-    noway_assert(!bPrev->bbFallsThrough()); // There can be no fall through into a filter or handler region
-    noway_assert(!bLast->bbFallsThrough()); // There can be no fall through out of a handler region
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -5918,7 +5935,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
 // Because this relies on ebdEnclosingTryIndex and ebdEnclosingHndIndex
 #endif // DEBUG
 
-#else // !FEATURE_EH_FUNCLETS
+#else  // !FEATURE_EH_FUNCLETS
 
     for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
@@ -5968,17 +5985,6 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
 
     // We have decided to insert the block(s) after fgLastBlock
     fgMoveBlocksAfter(bStart, bLast, insertAfterBlk);
-
-    if (bPrev->KindIs(BBJ_ALWAYS) && bPrev->JumpsToNext())
-    {
-        bPrev->SetFlags(BBF_NONE_QUIRK);
-    }
-
-    if (bLast->KindIs(BBJ_ALWAYS) && bLast->JumpsToNext())
-    {
-        bLast->SetFlags(BBF_NONE_QUIRK);
-    }
-
 #endif // !FEATURE_EH_FUNCLETS
 
     goto DONE;
@@ -6005,24 +6011,16 @@ DONE:
  * Insert a BasicBlock before the given block.
  */
 
-BasicBlock* Compiler::fgNewBBbefore(BBKinds     jumpKind,
-                                    BasicBlock* block,
-                                    bool        extendRegion,
-                                    BasicBlock* jumpDest /* = nullptr */)
+BasicBlock* Compiler::fgNewBBbefore(BBKinds jumpKind, BasicBlock* block, bool extendRegion)
 {
     // Create a new BasicBlock and chain it in
 
-    BasicBlock* newBlk = BasicBlock::New(this, jumpKind, jumpDest);
+    BasicBlock* newBlk = BasicBlock::New(this, jumpKind);
     newBlk->SetFlags(BBF_INTERNAL);
 
     fgInsertBBbefore(block, newBlk);
 
     newBlk->bbRefs = 0;
-
-    if (newBlk->bbFallsThrough() && block->isRunRarely())
-    {
-        newBlk->bbSetRunRarely();
-    }
 
     if (extendRegion)
     {
@@ -6047,24 +6045,16 @@ BasicBlock* Compiler::fgNewBBbefore(BBKinds     jumpKind,
  * Insert a BasicBlock after the given block.
  */
 
-BasicBlock* Compiler::fgNewBBafter(BBKinds     jumpKind,
-                                   BasicBlock* block,
-                                   bool        extendRegion,
-                                   BasicBlock* jumpDest /* = nullptr */)
+BasicBlock* Compiler::fgNewBBafter(BBKinds jumpKind, BasicBlock* block, bool extendRegion)
 {
     // Create a new BasicBlock and chain it in
 
-    BasicBlock* newBlk = BasicBlock::New(this, jumpKind, jumpDest);
+    BasicBlock* newBlk = BasicBlock::New(this, jumpKind);
     newBlk->SetFlags(BBF_INTERNAL);
 
     fgInsertBBafter(block, newBlk);
 
     newBlk->bbRefs = 0;
-
-    if (block->bbFallsThrough() && block->isRunRarely())
-    {
-        newBlk->bbSetRunRarely();
-    }
 
     if (extendRegion)
     {
@@ -6094,7 +6084,6 @@ BasicBlock* Compiler::fgNewBBafter(BBKinds     jumpKind,
 //    tree              - tree that will be wrapped into a statement and
 //                        inserted in the new block.
 //    debugInfo         - debug info to propagate into the new statement.
-//    jumpDest          - the jump target of the new block. Defaults to nullptr.
 //    updateSideEffects - update side effects for the whole statement.
 //
 // Return Value:
@@ -6103,14 +6092,10 @@ BasicBlock* Compiler::fgNewBBafter(BBKinds     jumpKind,
 // Notes:
 //    The new block will have BBF_INTERNAL flag and EH region will be extended
 //
-BasicBlock* Compiler::fgNewBBFromTreeAfter(BBKinds     jumpKind,
-                                           BasicBlock* block,
-                                           GenTree*    tree,
-                                           DebugInfo&  debugInfo,
-                                           BasicBlock* jumpDest /* = nullptr */,
-                                           bool        updateSideEffects /* = false */)
+BasicBlock* Compiler::fgNewBBFromTreeAfter(
+    BBKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, bool updateSideEffects /* = false */)
 {
-    BasicBlock* newBlock = fgNewBBafter(jumpKind, block, true, jumpDest);
+    BasicBlock* newBlock = fgNewBBafter(jumpKind, block, true);
     newBlock->SetFlags(BBF_INTERNAL);
     Statement* stmt = fgNewStmtFromTree(tree, debugInfo);
     fgInsertStmtAtEnd(newBlock, stmt);
@@ -6385,12 +6370,13 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
             }
         }
 
-        // Look for an insert location. We want blocks that don't end with a fall through.
-        // Quirk: Manually check for BBJ_COND fallthrough behavior
-        const bool blkFallsThrough =
-            blk->bbFallsThrough() && (!blk->KindIs(BBJ_COND) || blk->NextIs(blk->GetFalseTarget()));
-        const bool blkJumpsToNext = blk->KindIs(BBJ_ALWAYS) && blk->HasFlag(BBF_NONE_QUIRK) && blk->JumpsToNext();
-        if (!blkFallsThrough && !blkJumpsToNext)
+        // Look for an insert location.
+        // Avoid splitting up call-finally pairs, or jumps/false branches to the next block.
+        // (We need the HasInitializedTarget() call because fgFindInsertPoint can be called during importation,
+        // before targets are set)
+        const bool jumpsToNext       = blk->KindIs(BBJ_ALWAYS) && blk->HasInitializedTarget() && blk->JumpsToNext();
+        const bool falseBranchToNext = blk->KindIs(BBJ_COND) && blk->NextIs(blk->GetFalseTarget());
+        if (!blk->isBBCallFinallyPair() && !jumpsToNext && !falseBranchToNext)
         {
             bool updateBestBlk = true; // We will probably update the bestBlk
 
@@ -6532,7 +6518,6 @@ DONE:
 //               [0..compHndBBtabCount].
 //    nearBlk  - insert the new block closely after this block, if possible. If nullptr, put the new block anywhere
 //               in the requested region.
-//    jumpDest - the jump target of the new block. Defaults to nullptr.
 //    putInFilter - put the new block in the filter region given by hndIndex, as described above.
 //    runRarely - 'true' if the new block is run rarely.
 //    insertAtEnd - 'true' if the block should be inserted at the end of the region. Note: this is currently only
@@ -6545,7 +6530,6 @@ BasicBlock* Compiler::fgNewBBinRegion(BBKinds     jumpKind,
                                       unsigned    tryIndex,
                                       unsigned    hndIndex,
                                       BasicBlock* nearBlk,
-                                      BasicBlock* jumpDest /* = nullptr */,
                                       bool        putInFilter /* = false */,
                                       bool        runRarely /* = false */,
                                       bool        insertAtEnd /* = false */)
@@ -6671,7 +6655,7 @@ _FoundAfterBlk:;
             bbKindNames[jumpKind], tryIndex, hndIndex, dspBool(putInFilter), dspBool(runRarely), dspBool(insertAtEnd),
             afterBlk->bbNum);
 
-    return fgNewBBinRegionWorker(jumpKind, afterBlk, regionIndex, putInTryRegion, jumpDest);
+    return fgNewBBinRegionWorker(jumpKind, afterBlk, regionIndex, putInTryRegion);
 }
 
 //------------------------------------------------------------------------
@@ -6682,7 +6666,6 @@ _FoundAfterBlk:;
 // Arguments:
 //    jumpKind - the jump kind of the new block to create.
 //    srcBlk   - insert the new block in the same EH region as this block, and closely after it if possible.
-//    jumpDest - the jump target of the new block. Defaults to nullptr.
 //    runRarely - 'true' if the new block is run rarely.
 //    insertAtEnd - 'true' if the block should be inserted at the end of the region. Note: this is currently only
 //                  implemented when inserting into the main function (not into any EH region).
@@ -6692,7 +6675,6 @@ _FoundAfterBlk:;
 
 BasicBlock* Compiler::fgNewBBinRegion(BBKinds     jumpKind,
                                       BasicBlock* srcBlk,
-                                      BasicBlock* jumpDest /* = nullptr */,
                                       bool        runRarely /* = false */,
                                       bool        insertAtEnd /* = false */)
 {
@@ -6711,7 +6693,7 @@ BasicBlock* Compiler::fgNewBBinRegion(BBKinds     jumpKind,
         putInFilter = ehGetDsc(hndIndex - 1)->InFilterRegionBBRange(srcBlk);
     }
 
-    return fgNewBBinRegion(jumpKind, tryIndex, hndIndex, srcBlk, jumpDest, putInFilter, runRarely, insertAtEnd);
+    return fgNewBBinRegion(jumpKind, tryIndex, hndIndex, srcBlk, putInFilter, runRarely, insertAtEnd);
 }
 
 //------------------------------------------------------------------------
@@ -6721,14 +6703,13 @@ BasicBlock* Compiler::fgNewBBinRegion(BBKinds     jumpKind,
 //
 // Arguments:
 //    jumpKind - the jump kind of the new block to create.
-//    jumpDest - the jump target of the new block. Defaults to nullptr.
 //
 // Return Value:
 //    The new block.
 
-BasicBlock* Compiler::fgNewBBinRegion(BBKinds jumpKind, BasicBlock* jumpDest /* = nullptr */)
+BasicBlock* Compiler::fgNewBBinRegion(BBKinds jumpKind)
 {
-    return fgNewBBinRegion(jumpKind, 0, 0, nullptr, jumpDest, /* putInFilter */ false, /* runRarely */ false,
+    return fgNewBBinRegion(jumpKind, 0, 0, nullptr, /* putInFilter */ false, /* runRarely */ false,
                            /* insertAtEnd */ true);
 }
 
@@ -6747,7 +6728,6 @@ BasicBlock* Compiler::fgNewBBinRegion(BBKinds jumpKind, BasicBlock* jumpDest /* 
 //          set its handler index to the most nested handler region enclosing that 'try' region.
 //          Otherwise, put the block in the handler region specified by 'regionIndex', and set its 'try'
 //          index to the most nested 'try' region enclosing that handler region.
-//    jumpDest - the jump target of the new block. Defaults to nullptr.
 //
 // Return Value:
 //    The new block.
@@ -6755,13 +6735,12 @@ BasicBlock* Compiler::fgNewBBinRegion(BBKinds jumpKind, BasicBlock* jumpDest /* 
 BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
                                             BasicBlock* afterBlk,
                                             unsigned    regionIndex,
-                                            bool        putInTryRegion,
-                                            BasicBlock* jumpDest /* = nullptr */)
+                                            bool        putInTryRegion)
 {
     /* Insert the new block */
     BasicBlock* afterBlkNext = afterBlk->Next();
     (void)afterBlkNext; // prevent "unused variable" error from GCC
-    BasicBlock* newBlk = fgNewBBafter(jumpKind, afterBlk, false, jumpDest);
+    BasicBlock* newBlk = fgNewBBafter(jumpKind, afterBlk, false);
 
     if (putInTryRegion)
     {

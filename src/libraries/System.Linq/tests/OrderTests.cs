@@ -196,6 +196,9 @@ namespace System.Linq.Tests
         {
             Assert.Equal(0, Enumerable.Range(0, 10).Shuffle().Order().First());
             Assert.Equal(9, Enumerable.Range(0, 10).Shuffle().OrderDescending().First());
+
+            Assert.Equal(0, ForceNotCollection(Enumerable.Range(0, 10).Shuffle()).Order().First());
+            Assert.Equal(9, ForceNotCollection(Enumerable.Range(0, 10).Shuffle()).OrderDescending().First());
         }
 
         [Fact]
@@ -281,6 +284,9 @@ namespace System.Linq.Tests
         {
             Assert.Equal(9, Enumerable.Range(0, 10).Shuffle().Order().Last());
             Assert.Equal(0, Enumerable.Range(0, 10).Shuffle().OrderDescending().Last());
+
+            Assert.Equal(9, ForceNotCollection(Enumerable.Range(0, 10).Shuffle()).Order().Last());
+            Assert.Equal(0, ForceNotCollection(Enumerable.Range(0, 10).Shuffle()).OrderDescending().Last());
         }
 
         [Fact]
@@ -305,6 +311,16 @@ namespace System.Linq.Tests
             Assert.Equal(9, Enumerable.Range(0, 10).Shuffle().Order().LastOrDefault());
             Assert.Equal(0, Enumerable.Range(0, 10).Shuffle().OrderDescending().LastOrDefault());
             Assert.Equal(0, Enumerable.Empty<int>().Order().LastOrDefault());
+        }
+
+        [Fact]
+        public void ElementAtOnOrdered()
+        {
+            Assert.Equal(4, Enumerable.Range(0, 10).Shuffle().Order().ElementAt(4));
+            Assert.Equal(5, Enumerable.Range(0, 10).Shuffle().OrderDescending().ElementAt(4));
+
+            Assert.Equal(4, ForceNotCollection(Enumerable.Range(0, 10).Shuffle()).Order().ElementAt(4));
+            Assert.Equal(5, ForceNotCollection(Enumerable.Range(0, 10).Shuffle()).OrderDescending().ElementAt(4));
         }
 
         [Fact]

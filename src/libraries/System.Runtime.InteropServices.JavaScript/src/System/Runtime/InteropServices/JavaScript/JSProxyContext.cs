@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     internal sealed class JSProxyContext : IDisposable
     {
-        private bool _isDisposed;
+        internal bool _isDisposed;
 
         // we use this to maintain identity of JSHandle for a JSObject proxy
         private readonly Dictionary<nint, WeakReference<JSObject>> ThreadCsOwnedObjects = new();
@@ -28,17 +28,31 @@ namespace System.Runtime.InteropServices.JavaScript
         private JSProxyContext()
         {
         }
-#else
-        public nint ContextHandle;
-        public nint NativeTID;
-        public int ManagedTID;
-        public bool IsMainThread;
-        public JSSynchronizationContext SynchronizationContext;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#pragma warning disable CA1822 // Mark members as static
+        public bool IsCurrentThread() => true;
+#pragma warning restore CA1822 // Mark members as static
+#else
+        public nint ContextHandle;
+        public nint JSNativeTID; // target thread where JavaScript is running
+        public nint NativeTID; // current pthread id
+        public int ManagedTID; // current managed thread id
+        public bool IsMainThread;
+        public JSSynchronizationContext SynchronizationContext;
+        public JSAsyncTaskScheduler? AsyncTaskScheduler;
+
+        public static MainThreadingMode MainThreadingMode = MainThreadingMode.DeputyThread;
+        public static JSThreadBlockingMode ThreadBlockingMode = JSThreadBlockingMode.AllowBlockingWaitInAsyncCode;
+        public static JSThreadInteropMode ThreadInteropMode = JSThreadInteropMode.SimpleSynchronousJSInterop;
+        public bool IsPendingSynchronousCall;
+
+#if !DEBUG
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public bool IsCurrentThread()
         {
-            return ManagedTID == Environment.CurrentManagedThreadId;
+            return ManagedTID == Environment.CurrentManagedThreadId && (!IsMainThread || MainThreadingMode == MainThreadingMode.UIThread);
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "thread_id")]
@@ -53,7 +67,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public JSProxyContext(bool isMainThread, JSSynchronizationContext synchronizationContext)
         {
             SynchronizationContext = synchronizationContext;
-            NativeTID = GetNativeThreadId();
+            NativeTID = JSNativeTID = GetNativeThreadId();
             ManagedTID = Environment.CurrentManagedThreadId;
             IsMainThread = isMainThread;
             ContextHandle = (nint)GCHandle.Alloc(this, GCHandleType.Normal);
@@ -226,7 +240,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #endif
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static JSProxyContext AssertIsInteropThread()
         {
 #if FEATURE_WASM_MANAGED_THREADS
@@ -265,15 +281,13 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             lock (this)
             {
+                ObjectDisposedException.ThrowIf(_isDisposed, this);
+
                 if (JSVHandleFreeList.Count > 0)
                 {
                     var jsvHandle = JSVHandleFreeList[JSVHandleFreeList.Count - 1];
                     JSVHandleFreeList.RemoveAt(JSVHandleFreeList.Count - 1);
                     return jsvHandle;
-                }
-                if (NextJSVHandle == IntPtr.Zero)
-                {
-                    NextJSVHandle = -2;
                 }
                 return NextJSVHandle--;
             }
@@ -371,6 +385,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     holder.IsDisposed = true;
                     handle.Free();
                 }
+#if FEATURE_WASM_MANAGED_THREADS
+                Marshal.FreeHGlobal((IntPtr)holder.State);
+                holder.State = null;
+#endif
             }
         }
 
@@ -408,6 +426,10 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     holderCallback = holder.Callback;
                     holder.IsDisposed = true;
+#if FEATURE_WASM_MANAGED_THREADS
+                    Marshal.FreeHGlobal((IntPtr)holder.State);
+                    holder.State = null;
+#endif
                 }
             }
             holderCallback?.Invoke(null);
@@ -429,36 +451,49 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static void ReleaseCSOwnedObject(JSObject proxy, bool skipJS)
+        public static void ReleaseCSOwnedObject(JSObject jso, bool skipJS)
         {
-            if (proxy.IsDisposed)
+            if (jso.IsDisposed)
             {
                 return;
             }
-            var ctx = proxy.ProxyContext;
-#if FEATURE_WASM_MANAGED_THREADS
-            if (!ctx.IsCurrentThread())
-            {
-                throw new InvalidOperationException($"ReleaseCSOwnedObject has to run on the thread with same affinity as the proxy. ManagedThreadId: {Environment.CurrentManagedThreadId} JSHandle: {proxy.JSHandle}");
-            }
-#endif
+            var ctx = jso.ProxyContext;
+
             lock (ctx)
             {
-                if (proxy.IsDisposed)
+                if (jso.IsDisposed || ctx._isDisposed)
                 {
                     return;
                 }
-                var jsHandle = proxy.JSHandle;
-                proxy._isDisposed = true;
-                proxy.JSHandle = IntPtr.Zero;
-                GC.SuppressFinalize(proxy);
+                var jsHandle = jso.JSHandle;
+                jso._isDisposed = true;
+                jso.JSHandle = IntPtr.Zero;
+                GC.SuppressFinalize(jso);
                 if (!ctx.ThreadCsOwnedObjects.Remove(jsHandle))
                 {
                     Environment.FailFast($"ReleaseCSOwnedObject expected to find registration for JSHandle: {jsHandle}, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 };
                 if (!skipJS)
                 {
+#if FEATURE_WASM_MANAGED_THREADS
+                    if (ctx.IsCurrentThread())
+                    {
+                        Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
+                    }
+                    else
+                    {
+                        if (IsJSVHandle(jsHandle))
+                        {
+                            Environment.FailFast($"TODO implement blocking ReleaseCSOwnedObjectSend to make sure the order of FreeJSVHandle is correct, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
+                        }
+
+                        // this is async message, we need to call this as the last thing
+                        // the same jsHandle would not be re-used until JS side considers it free
+                        Interop.Runtime.ReleaseCSOwnedObjectPost(ctx.JSNativeTID, jsHandle);
+                    }
+#else
                     Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
+#endif
                 }
                 if (IsJSVHandle(jsHandle))
                 {
@@ -482,7 +517,6 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         Environment.FailFast($"JSProxyContext must be disposed on the thread which owns it, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                     }
-                    ((GCHandle)ContextHandle).Free();
 #endif
 
                     List<WeakReference<JSObject>> copy = new(ThreadCsOwnedObjects.Values);
@@ -496,6 +530,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #if FEATURE_WASM_MANAGED_THREADS
                     Interop.Runtime.UninstallWebWorkerInterop();
+                    ((GCHandle)ContextHandle).Free();
 #endif
 
                     foreach (var gch in ThreadJsOwnedObjects.Values)
@@ -509,6 +544,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         {
                             holder.Callback!.Invoke(null);
                         }
+                        ((GCHandle)holder.GCHandle).Free();
                     }
 
                     ThreadCsOwnedObjects.Clear();

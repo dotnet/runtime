@@ -211,6 +211,7 @@ typedef struct MonoCompileArch {
 	MonoInst *ss_tramp_var;
 	MonoInst *bp_tramp_var;
 	MonoInst *lmf_var;
+	MonoInst *swift_error_var;
 #ifdef HOST_WIN32
 	struct _UNWIND_INFO* unwindinfo;
 #endif
@@ -246,6 +247,9 @@ static const AMD64_XMM_Reg_No float_param_regs[] = {AMD64_XMM0, AMD64_XMM1, AMD6
 
 static const AMD64_Reg_No return_regs [] = {AMD64_RAX, AMD64_RDX};
 #endif
+
+#define CTX_REGS 2
+#define CTX_REGS_OFFSET AMD64_R12
 
 typedef struct {
 	/* Method address to call */
@@ -297,6 +301,7 @@ typedef enum {
 	ArgGSharedVtOnStack,
 	/* Variable sized gsharedvt argument passed/returned by addr */
 	ArgGsharedvtVariableInReg,
+	ArgSwiftError,
 	ArgNone /* only in pair_storage */
 } ArgStorage;
 
@@ -324,6 +329,7 @@ struct CallInfo {
 	guint32 stack_usage;
 	guint32 reg_usage;
 	guint32 freg_usage;
+	gint32 swift_error_index;
 	gboolean need_stack_align;
 	gboolean gsharedvt;
 	/* The index of the vret arg in the argument list */
@@ -487,6 +493,10 @@ typedef struct {
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1
 
+#if defined(TARGET_OSX) || defined(TARGET_APPLE_MOBILE)
+#define MONO_ARCH_HAVE_SWIFTCALL 1
+#endif
+
 void
 mono_amd64_patch (unsigned char* code, gpointer target);
 
@@ -542,7 +552,7 @@ typedef union _UNWIND_CODE {
         guchar CodeOffset;
         guchar UnwindOp : 4;
         guchar OpInfo   : 4;
-    };
+    } UnwindCode;
     gushort FrameOffset;
 } UNWIND_CODE, *PUNWIND_CODE;
 

@@ -3241,77 +3241,81 @@ stsfld	int32 Thread_EA::TLSFieldData
   IL_003d:  ret
 }
 
-.method public static int32 main() il managed
+.class public auto ansi abstract sealed beforefieldinit mutualrecurthd
+    extends [mscorlib]System.Object
 {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
-  .entrypoint
-  .maxstack  4
-  .locals (class [System.Threading.Thread]System.Threading.Thread[] thrd,
-           class Thread_EA ThdObj,
-           int32 V_2)
+  .method public static int32 main() il managed
+  {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .entrypoint
+    .maxstack  4
+    .locals (class [System.Threading.Thread]System.Threading.Thread[] thrd,
+            class Thread_EA ThdObj,
+            int32 V_2)
 
-    call	    class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
-call       class [mscorlib]System.IO.TextWriter [mscorlib]System.IO.TextWriter::Synchronized(class [mscorlib]System.IO.TextWriter)
-call       void [System.Console]System.Console::SetOut(class [mscorlib]System.IO.TextWriter)
+      call	    class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
+  call       class [mscorlib]System.IO.TextWriter [mscorlib]System.IO.TextWriter::Synchronized(class [mscorlib]System.IO.TextWriter)
+  call       void [System.Console]System.Console::SetOut(class [mscorlib]System.IO.TextWriter)
 
-  IL_0000:  ldc.i4     0xa
-  IL_0005:  newarr     [System.Threading.Thread]System.Threading.Thread
-  IL_000a:  stloc.0
-  IL_000b:  newobj     instance void Thread_EA::.ctor()
-  IL_0010:  stloc.1
-  IL_0011: 	call	    class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
-  IL_0016:  ldstr "test started"
-  IL_001b:
-  IL_0020:  callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(class [mscorlib]System.String)
-  IL_0025:  ldc.i4     0x0
-  IL_002a:  stloc.2
-  IL_002b:  br         IL_0038
+    IL_0000:  ldc.i4     0xa
+    IL_0005:  newarr     [System.Threading.Thread]System.Threading.Thread
+    IL_000a:  stloc.0
+    IL_000b:  newobj     instance void Thread_EA::.ctor()
+    IL_0010:  stloc.1
+    IL_0011: 	call	    class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
+    IL_0016:  ldstr "test started"
+    IL_001b:
+    IL_0020:  callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(class [mscorlib]System.String)
+    IL_0025:  ldc.i4     0x0
+    IL_002a:  stloc.2
+    IL_002b:  br         IL_0038
 
-  IL_0030:  ldloc.2
-  IL_0031:  ldc.i4     0x1
-  IL_0036:  add
-  IL_0037:  stloc.2
-  IL_0038:  ldloc.2
-  IL_0039:  ldc.i4     0xa
-  IL_003e:  bge        IL_0064
+    IL_0030:  ldloc.2
+    IL_0031:  ldc.i4     0x1
+    IL_0036:  add
+    IL_0037:  stloc.2
+    IL_0038:  ldloc.2
+    IL_0039:  ldc.i4     0xa
+    IL_003e:  bge        IL_0064
 
-  IL_0043:  ldloc.0
-  IL_0044:  ldloc.2
-  IL_0045:  ldloc.1
-  IL_0046:  ldftn      instance void Thread_EA::Run()
-  IL_004c:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(class [mscorlib]System.Object,native int)
-  IL_0051:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
-  IL_0056:  stelem.ref
-  IL_0057:  ldloc.0
-  IL_0058:  ldloc.2
-  IL_0059:  ldelem.ref
-  IL_005a:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
-  IL_005f:  br         IL_0030
+    IL_0043:  ldloc.0
+    IL_0044:  ldloc.2
+    IL_0045:  ldloc.1
+    IL_0046:  ldftn      instance void Thread_EA::Run()
+    IL_004c:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(class [mscorlib]System.Object,native int)
+    IL_0051:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
+    IL_0056:  stelem.ref
+    IL_0057:  ldloc.0
+    IL_0058:  ldloc.2
+    IL_0059:  ldelem.ref
+    IL_005a:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
+    IL_005f:  br         IL_0030
 
-  IL_0064:  ldc.i4     0x0
-  IL_0069:  stloc.2
-  IL_006a:  br         IL_0077
+    IL_0064:  ldc.i4     0x0
+    IL_0069:  stloc.2
+    IL_006a:  br         IL_0077
 
-  IL_006f:  ldloc.2
-  IL_0070:  ldc.i4     0x1
-  IL_0075:  add
-  IL_0076:  stloc.2
-  IL_0077:  ldloc.2
-  IL_0078:  ldc.i4     0xa
-  IL_007d:  bge        IL_008f
+    IL_006f:  ldloc.2
+    IL_0070:  ldc.i4     0x1
+    IL_0075:  add
+    IL_0076:  stloc.2
+    IL_0077:  ldloc.2
+    IL_0078:  ldc.i4     0xa
+    IL_007d:  bge        IL_008f
 
-  IL_0082:  ldloc.0
-  IL_0083:  ldloc.2
-  IL_0084:  ldelem.ref
-  IL_0085:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
-  IL_008a:  br         IL_006f
+    IL_0082:  ldloc.0
+    IL_0083:  ldloc.2
+    IL_0084:  ldelem.ref
+    IL_0085:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
+    IL_008a:  br         IL_006f
 
-  IL_008f: 	call	    class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
-  IL_0094:  ldstr "Mututalrecurthd test passed"
-  IL_0099:
-  IL_009e:  callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(class [mscorlib]System.String)
-  IL_00a3:  ldc.i4     0x64
-  IL_00a8:  ret
+    IL_008f: 	call	    class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
+    IL_0094:  ldstr "Mututalrecurthd test passed"
+    IL_0099:
+    IL_009e:  callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(class [mscorlib]System.String)
+    IL_00a3:  ldc.i4     0x64
+    IL_00a8:  ret
+  }
 }

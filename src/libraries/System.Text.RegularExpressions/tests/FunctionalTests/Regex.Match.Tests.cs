@@ -92,6 +92,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?:(?!(b)b)\1a)+", "babababa", RegexOptions.None, 0, 8, false, string.Empty);
                 yield return (@"(?:(?!(b)b)\1a)*", "babababa", RegexOptions.None, 0, 8, true, string.Empty);
                 yield return (@"(.*?)a(?!(a+)b\2c)\2(.*)", "baaabaac", RegexOptions.None, 0, 8, false, string.Empty);
+                yield return (@"(?!(abc))+\w\w\w", "abcdef", RegexOptions.None, 0, 6, true, "bcd");
 
                 // Zero-width positive lookbehind assertion
                 yield return (@"(\w){6}(?<=XXX)def", "abcXXXdef", RegexOptions.None, 0, 9, true, "abcXXXdef");
@@ -660,8 +661,15 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@$"^{aOptional}{{1,2}}?b", "aaab", RegexOptions.None, 0, 4, false, "");
                 yield return (@$"^{aOptional}{{2}}b", "aab", RegexOptions.None, 0, 3, true, "aab");
             }
+            yield return (@"(a+.|b+.)", "aaac", RegexOptions.None, 0, 4, true, "aaac");
+            yield return (@"(a+?.|b+?.)", "aaac", RegexOptions.None, 0, 4, true, "aa");
+            yield return (@"((a+?).|(b+?).)", "aaac", RegexOptions.None, 0, 4, true, "aa");
+            yield return (@"((a+?)+.|(b+?)+.)", "aaac", RegexOptions.None, 0, 4, true, "aaac");
+            yield return (@"((a+?)+?.|(b+?)+?.)", "aaac", RegexOptions.None, 0, 4, true, "aa");
             if (!RegexHelpers.IsNonBacktracking(engine))
             {
+                yield return (@"((?>a+).|(?>b+).)", "aaac", RegexOptions.None, 0, 4, true, "aaac");
+
                 yield return ("(?(dog2))", "dog2", RegexOptions.None, 0, 4, true, string.Empty);
                 yield return ("(?(a:b))", "a", RegexOptions.None, 0, 1, true, string.Empty);
                 yield return ("(?(a:))", "a", RegexOptions.None, 0, 1, true, string.Empty);
@@ -2380,6 +2388,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, "^(?:aaa|aa){1,5}?$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
                 yield return new object[] { engine, "^(?:aaa|aa){4}$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
                 yield return new object[] { engine, "^(?:aaa|aa){4}?$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^((?:(xx?,xx?)|xx?,xx?>xx?,xx?)-?(x)??){1,2}$", RegexOptions.None, "xx,xx>xx,xx", new (int, int, string)[] { (0, 11, "xx,xx>xx,xx") } };
+                yield return new object[] { engine, "^((?:(xx?,xx?)|xx?,xx?>xx?,xx?)-?(x*)??){1,2}$", RegexOptions.None, "xx,xx>xx,xx", new (int, int, string)[] { (0, 11, "xx,xx>xx,xx") } };
+                yield return new object[] { engine, "^((?:(xx?,xx?)|xx?,xx?>xx?,xx?)-?(x+)??){1,2}$", RegexOptions.None, "xx,xx>xx,xx", new (int, int, string)[] { (0, 11, "xx,xx>xx,xx") } };
+                yield return new object[] { engine, "^((?:(x(x?),x(x?))|xx?,(x(x?)>x(x?)),(x((x))?))-?(x+?)??){1,2}$", RegexOptions.None, "xx,xx>xx,xx", new (int, int, string)[] { (0, 11, "xx,xx>xx,xx") } };
+                yield return new object[] { engine, "^(?:x|(x)??){2}$", RegexOptions.None, "x>", null };
 
                 // Mostly empty matches using unusual regexes consisting mostly of anchors only
                 yield return new object[] { engine, "^", RegexOptions.None, "", new (int, int, string)[] { (0, 0, "") } };

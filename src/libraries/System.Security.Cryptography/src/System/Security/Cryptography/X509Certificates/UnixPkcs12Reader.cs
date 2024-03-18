@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs12;
@@ -30,7 +31,7 @@ namespace System.Security.Cryptography.X509Certificates
         protected abstract ICertificatePalCore ReadX509Der(ReadOnlyMemory<byte> data);
         protected abstract AsymmetricAlgorithm LoadKey(ReadOnlyMemory<byte> safeBagBagValue);
 
-        protected void ParsePkcs12(ReadOnlySpan<byte> data)
+        internal void ParsePkcs12(ReadOnlySpan<byte> data)
         {
             try
             {
@@ -42,10 +43,19 @@ namespace System.Security.Cryptography.X509Certificates
 
                 unsafe
                 {
-                    IntPtr tmpPtr = Marshal.AllocHGlobal(encodedData.Length);
-                    Span<byte> tmpSpan = new Span<byte>((byte*)tmpPtr, encodedData.Length);
-                    encodedData.CopyTo(tmpSpan);
-                    _tmpManager = new PointerMemoryManager<byte>((void*)tmpPtr, encodedData.Length);
+                    void* tmpPtr = NativeMemory.Alloc((uint)encodedData.Length);
+
+                    try
+                    {
+                        Span<byte> tmpSpan = new Span<byte>((byte*)tmpPtr, encodedData.Length);
+                        encodedData.CopyTo(tmpSpan);
+                        _tmpManager = new PointerMemoryManager<byte>(tmpPtr, encodedData.Length);
+                    }
+                    catch
+                    {
+                        NativeMemory.Free(tmpPtr);
+                        throw;
+                    }
                 }
 
                 ReadOnlyMemory<byte> tmpMemory = _tmpManager.Memory;
@@ -115,26 +125,27 @@ namespace System.Security.Cryptography.X509Certificates
             // Generally, having a MemoryManager cleaned up in a Dispose is a bad practice.
             // In this case, the UnixPkcs12Reader is only ever created in a using statement,
             // never accessed by a second thread, and there isn't a manual call to Dispose
-            // mixed in anywhere.
-            if (_tmpManager != null)
+            // mixed in anywhere outside of an aborted allocation path.
+
+            PointerMemoryManager<byte>? manager = _tmpManager;
+            _tmpManager = null;
+
+            if (manager != null)
             {
                 unsafe
                 {
-                    Span<byte> tmp = _tmpManager.GetSpan();
+                    Span<byte> tmp = manager.GetSpan();
                     CryptographicOperations.ZeroMemory(tmp);
-
-                    fixed (byte* ptr = tmp)
-                    {
-                        Marshal.FreeHGlobal((IntPtr)ptr);
-                    }
+                    NativeMemory.Free(Unsafe.AsPointer(ref MemoryMarshal.GetReference(tmp)));
                 }
 
-                ((IDisposable)_tmpManager).Dispose();
-                _tmpManager = null;
+                ((IDisposable)manager).Dispose();
             }
 
-            ContentInfoAsn[]? rentedContents = Interlocked.Exchange(ref _safeContentsValues, null);
-            CertAndKey[]? rentedCerts = Interlocked.Exchange(ref _certs, null);
+            ContentInfoAsn[]? rentedContents = _safeContentsValues;
+            CertAndKey[]? rentedCerts = _certs;
+            _safeContentsValues = null;
+            _certs = null;
 
             if (rentedContents != null)
             {

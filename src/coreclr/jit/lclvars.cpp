@@ -1540,7 +1540,7 @@ unsigned Compiler::compMapILvarNum(unsigned ILvarNum)
     else if (ILvarNum == (unsigned)ICorDebugInfo::TYPECTXT_ILNUM)
     {
         noway_assert(info.compTypeCtxtArg >= 0);
-        varNum = unsigned(info.compTypeCtxtArg);
+        varNum = info.compTypeCtxtArg;
     }
     else if (ILvarNum < info.compILargsCount)
     {
@@ -1593,7 +1593,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
 
     // We create an extra argument for the type context parameter
     // needed for shared generic code.
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum == (unsigned)info.compTypeCtxtArg)
+    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum == info.compTypeCtxtArg)
     {
         return (unsigned)ICorDebugInfo::TYPECTXT_ILNUM;
     }
@@ -1606,7 +1606,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
 #endif // FEATURE_FIXED_OUT_ARGS
 
     // Now mutate varNum to remove extra parameters from the count.
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum > (unsigned)info.compTypeCtxtArg)
+    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum > info.compTypeCtxtArg)
     {
         varNum--;
     }
@@ -2357,16 +2357,12 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 // Now grab the temp for the field local.
 
 #ifdef DEBUG
-        char        buf[200];
         char        fieldNameBuffer[128];
         const char* fieldName =
             compiler->eeGetFieldName(pFieldInfo->diagFldHnd, false, fieldNameBuffer, sizeof(fieldNameBuffer));
-        sprintf_s(buf, sizeof(buf), "field V%02u.%s (fldOffset=0x%x)", lclNum, fieldName, pFieldInfo->fldOffset);
 
-        // We need to copy 'buf' as lvaGrabTemp() below caches a copy to its argument.
-        size_t len  = strlen(buf) + 1;
-        char*  bufp = compiler->getAllocator(CMK_DebugOnly).allocate<char>(len);
-        strcpy_s(bufp, len, buf);
+        const char* bufp =
+            compiler->printfAlloc("field V%02u.%s (fldOffset=0x%x)", lclNum, fieldName, pFieldInfo->fldOffset);
 
         if (index > 0)
         {
@@ -4361,7 +4357,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     else if (lvaReportParamTypeArg())
     {
         // We should have a context arg.
-        assert(info.compTypeCtxtArg != (int)BAD_VAR_NUM);
+        assert(info.compTypeCtxtArg != BAD_VAR_NUM);
         lvaGetDesc(info.compTypeCtxtArg)->lvImplicitlyReferenced = reportParamTypeArg;
     }
 
@@ -5502,7 +5498,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     //@GENERICS: extra argument for instantiation info
     if (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE)
     {
-        noway_assert(lclNum == (unsigned)info.compTypeCtxtArg);
+        noway_assert(lclNum == info.compTypeCtxtArg);
         argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
                                                    argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }
@@ -5611,7 +5607,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     //@GENERICS: extra argument for instantiation info
     if (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE)
     {
-        noway_assert(lclNum == (unsigned)info.compTypeCtxtArg);
+        noway_assert(lclNum == info.compTypeCtxtArg);
         argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
                                                    argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }

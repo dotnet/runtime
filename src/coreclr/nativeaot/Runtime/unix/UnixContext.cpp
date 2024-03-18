@@ -266,6 +266,7 @@
 #define MCREG_R9(mc)        ((mc).arm_r9)
 #define MCREG_R10(mc)       ((mc).arm_r10)
 #define MCREG_R11(mc)       ((mc).arm_fp)
+#define MCREG_R12(mc)       ((mc).arm_ip)
 
 #elif defined(HOST_X86)
 
@@ -526,6 +527,7 @@ uint64_t GetPC(void* context)
     uint64_t& UNIX_CONTEXT::R9(){ return (uint64_t&)MCREG_R9(ctx.uc_mcontext); }
     uint64_t& UNIX_CONTEXT::R10(){ return (uint64_t&)MCREG_R10(ctx.uc_mcontext); }
     uint64_t& UNIX_CONTEXT::R11(){ return (uint64_t&)MCREG_R11(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R12(){ return (uint64_t&)MCREG_R12(ctx.uc_mcontext); }
 
 #else
     PORTABILITY_ASSERT("UNIX_CONTEXT");

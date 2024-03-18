@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
 using Xunit;
@@ -67,6 +68,34 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceledTask);
         }
 
+        [Theory, MemberData(nameof(GetBlockingFriendlyTargetThreads))]
+        public async Task JSDelay_Blocking_Wait(Executor executor)
+        {
+            var cts = new CancellationTokenSource();
+            var blockedTask = executor.Execute(async () =>
+            {
+                await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
+                var promise = WebWorkerTestHelper.JSDelay(100);
+                promise.Wait();
+            }, cts.Token);
+
+            await blockedTask;
+        }
+
+        [Theory, MemberData(nameof(GetBlockingFriendlyTargetThreads))]
+        public async Task JSDelay_Blocking_GetResult(Executor executor)
+        {
+            var cts = new CancellationTokenSource();
+            var blockedTask = executor.Execute(async () =>
+            {
+                await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
+                var promise = WebWorkerTestHelper.JSDelay(100);
+                promise.GetAwaiter().GetResult();
+            }, cts.Token);
+
+            await blockedTask;
+        }
+
         [Fact]
         public async Task JSSynchronizationContext_Send_Post_Items_Cancellation()
         {
@@ -84,18 +113,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 capturedSynchronizationContext = SynchronizationContext.Current;
                 jswReady.SetResult();
 
-                var threadFlag = Monitor.ThrowOnBlockingWaitOnJSInteropThread;
-                try
-                {
-                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = false;
-                    
-                    // blocking the worker, so that JSSynchronizationContext could enqueue next tasks
-                    blocker.Wait();
-                }
-                finally
-                {
-                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = threadFlag;
-                }
+                // blocking the worker, so that JSSynchronizationContext could enqueue next tasks
+                Thread.ForceBlockingWait(static (b) => ((ManualResetEventSlim)b).Wait(), blocker);
 
                 return never.Task;
             }, cts.Token);
@@ -326,6 +345,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await executor.Execute(() =>
             {
                 Console.WriteLine("C# Hello from ManagedThreadId: " + Environment.CurrentManagedThreadId);
+                Console.Clear();
                 return Task.CompletedTask;
             }, cts.Token);
         }
@@ -351,7 +371,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
                 var jsTid = WebWorkerTestHelper.GetTid();
                 var csTid = WebWorkerTestHelper.NativeThreadId;
-                if (executor.Type == ExecutorType.Main || executor.Type == ExecutorType.JSWebWorker)
+                if (executor.Type == ExecutorType.JSWebWorker)
                 {
                     Assert.Equal(jsTid, csTid);
                 }
@@ -372,23 +392,25 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await executor.Execute(async () =>
             {
                 TaskCompletionSource tcs = new TaskCompletionSource();
+                Console.WriteLine("ThreadingTimer: Start Time: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
 
                 using var timer = new Timer(_ =>
                 {
                     Assert.NotEqual(1, Environment.CurrentManagedThreadId);
                     Assert.True(Thread.CurrentThread.IsThreadPoolThread);
-                    tcs.SetResult();
                     hit = true;
+                    tcs.SetResult();
                 }, null, 100, Timeout.Infinite);
 
                 await tcs.Task;
             }, cts.Token);
 
+            Console.WriteLine("ThreadingTimer: End Time: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
             Assert.True(hit);
         }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
-        public async Task JSDelay_ContinueWith(Executor executor)
+        public async Task JSDelay_ContinueWith_Async(Executor executor)
         {
             using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
@@ -397,9 +419,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
                 await WebWorkerTestHelper.JSDelay(10).ContinueWith(_ =>
                 {
-                    // continue on the context of the target JS interop
-                    executor.AssertInteropThread();
-                }, TaskContinuationOptions.ExecuteSynchronously);
+                    Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                }, TaskContinuationOptions.RunContinuationsAsynchronously);
+            }, cts.Token);
+        }
+
+        [Theory, MemberData(nameof(GetTargetThreads))]
+        public async Task JSDelay_ContinueWith_Sync(Executor executor)
+        {
+            using var cts = CreateTestCaseTimeoutSource();
+            await executor.Execute(async () =>
+            {
+                await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
+
+                await WebWorkerTestHelper.JSDelay(10).ContinueWith(_ =>
+                {
+                    Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                }, TaskContinuationOptions.ExecuteSynchronously); // ExecuteSynchronously is ignored
             }, cts.Token);
         }
 
@@ -414,6 +450,21 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await WebWorkerTestHelper.JSDelay(10).ConfigureAwait(true);
 
                 executor.AssertAwaitCapturedContext();
+            }, cts.Token);
+        }
+
+        [Theory, MemberData(nameof(GetTargetThreads))]
+        public async Task JSDelay_ConfigureAwait_False(Executor executor)
+        {
+            using var cts = CreateTestCaseTimeoutSource();
+            await executor.Execute(async () =>
+            {
+                await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
+
+                await WebWorkerTestHelper.JSDelay(10).ConfigureAwait(false);
+
+                // resolve/reject on I/O thread -> thread pool
+                Assert.True(Thread.CurrentThread.IsThreadPoolThread);
             }, cts.Token);
         }
 
@@ -444,22 +495,72 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }, cts.Token);
         }
 
-        [Theory, MemberData(nameof(GetTargetThreads))]
-        public async Task WaitAssertsOnJSInteropThreads(Executor executor)
+        [Theory, MemberData(nameof(GetTargetThreadsAndBlockingCalls))]
+        public async Task WaitDoesNotAssertInAsyncCode(Executor executor, NamedCall method)
         {
-            var cts = CreateTestCaseTimeoutSource();
-            await executor.Execute(Task () =>
+            using var cts = CreateTestCaseTimeoutSource();
+            await executor.Execute(async () =>
             {
+                await executor.StickyAwait(WebWorkerTestHelper.InitializeAsync(), cts.Token);
+
                 Exception? exception = null;
-                try {
-                    Task.Delay(10, cts.Token).Wait();
-                } catch (Exception ex) {
+                try
+                {
+                    method.Call(cts.Token);
+                }
+                catch (Exception ex)
+                {
                     exception = ex;
                 }
 
-                executor.AssertBlockingWait(exception);
+                Assert.Null(exception);
+            }, cts.Token);
+        }
 
-                return Task.CompletedTask;
+        [Theory, MemberData(nameof(GetTargetThreadsAndBlockingCalls))]
+        public async Task WaitAssertsOnSyncCallback(Executor executor, NamedCall method)
+        {
+            using var cts = CreateTestCaseTimeoutSource();
+            await executor.Execute(async () =>
+            {
+                await executor.StickyAwait(WebWorkerTestHelper.InitializeAsync(), cts.Token);
+
+                Exception? exception = null;
+                // the callback will hit Main or JSWebWorker, not the original executor thread
+                await WebWorkerTestHelper.CallMeBackSync(() => {
+                    // when we are inside of synchronous callback, all blocking .Wait is forbidden
+                    try
+                    {
+                        method.Call(cts.Token);
+                    }
+                    catch (Exception ex)
+                    {
+                        exception = ex;
+                    }
+                });
+
+                Console.WriteLine("WaitAssertsOnJSInteropThreads: ExecuterType: " + executor.Type + " ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
+                Assert.NotNull(exception);
+                Assert.IsType<PlatformNotSupportedException>(exception);
+            }, cts.Token);
+        }
+
+        [Theory, MemberData(nameof(GetTargetThreadsAndBlockingCalls))]
+        public async Task WaitAssertsOnSyncJSExport(Executor executor, NamedCall method)
+        {
+            using var cts = CreateTestCaseTimeoutSource();
+            await executor.Execute(async () =>
+            {
+                await executor.StickyAwait(WebWorkerTestHelper.InitializeAsync(), cts.Token);
+
+                WebWorkerTestHelper.CurrentCallback = method;
+                WebWorkerTestHelper.CurrentCancellationToken = cts.Token;
+                // the callback will hit Main or JSWebWorker, not the original executor thread
+                await WebWorkerTestHelper.CallExportBackSync(nameof(WebWorkerTestHelper.CallCurrentCallback));
+
+                Console.WriteLine("WaitAssertsOnJSInteropThreads: ExecuterType: " + executor.Type + " ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
+                Assert.NotNull(WebWorkerTestHelper.LastException);
+                Assert.IsType<PlatformNotSupportedException>(WebWorkerTestHelper.LastException);
             }, cts.Token);
         }
 

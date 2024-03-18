@@ -246,6 +246,10 @@ private:
 class ConfigIntArray
 {
 public:
+    ConfigIntArray() : m_values(nullptr), m_length(0)
+    {
+    }
+
     // Ensure the string has been parsed.
     void EnsureInit(const WCHAR* str)
     {
@@ -276,6 +280,10 @@ private:
 class ConfigDoubleArray
 {
 public:
+    ConfigDoubleArray() : m_values(nullptr), m_length(0)
+    {
+    }
+
     // Ensure the string has been parsed.
     void EnsureInit(const WCHAR* str)
     {
@@ -813,6 +821,10 @@ public:
 
     static bool isAllBitsSet(double val);
 
+    static bool isFinite(float val);
+
+    static bool isFinite(double val);
+
     static bool isNegative(float val);
 
     static bool isNegative(double val);
@@ -858,6 +870,10 @@ public:
     static float minimumNumber(float val1, float val2);
 
     static double normalize(double x);
+
+    static int ilogb(double x);
+
+    static int ilogb(float f);
 };
 
 class BitOperations

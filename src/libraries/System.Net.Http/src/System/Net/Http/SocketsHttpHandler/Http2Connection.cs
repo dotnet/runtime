@@ -637,7 +637,7 @@ namespace System.Net.Http
             if (http2Stream != null)
             {
                 http2Stream.OnHeadersStart();
-                _rttEstimator.OnDataOrHeadersReceived(this);
+                _rttEstimator.OnDataOrHeadersReceived(this, sendWindowUpdateBeforePing: true);
                 headersHandler = http2Stream;
             }
             else
@@ -765,22 +765,20 @@ namespace System.Net.Http
             // Just ignore the frame in this case.
 
             ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength), hasPad: frameHeader.PaddedFlag, hasPriority: false);
+            bool endStream = frameHeader.EndStreamFlag;
 
-            if (http2Stream != null)
+            if (frameData.Length > 0 || endStream)
             {
-                bool endStream = frameHeader.EndStreamFlag;
-
-                http2Stream.OnResponseData(frameData, endStream);
-
-                if (!endStream && frameData.Length > 0)
-                {
-                    _rttEstimator.OnDataOrHeadersReceived(this);
-                }
+                http2Stream?.OnResponseData(frameData, endStream);
             }
 
             if (frameData.Length > 0)
             {
-                ExtendWindow(frameData.Length);
+                bool windowUpdateSent = ExtendWindow(frameData.Length);
+                if (http2Stream is not null && !endStream)
+                {
+                    _rttEstimator.OnDataOrHeadersReceived(this, sendWindowUpdateBeforePing: !windowUpdateSent);
+                }
             }
 
             _incomingBuffer.Discard(frameHeader.PayloadLength);
@@ -1446,6 +1444,14 @@ namespace System.Net.Http
                             continue;
                         }
 
+                        // Extended connect requests will use the response content stream for bidirectional communication.
+                        // We will ignore any content set for such requests in Http2Stream.SendRequestBodyAsync, as it has no defined semantics.
+                        // Drop the Content-Length header as well in the unlikely case it was set.
+                        if (knownHeader == KnownHeaders.ContentLength && request.IsExtendedConnectRequest)
+                        {
+                            continue;
+                        }
+
                         // For all other known headers, send them via their pre-encoded name and the associated value.
                         WriteBytes(knownHeader.Http2EncodedName, ref headerBuffer);
                         string? separator = null;
@@ -1772,28 +1778,34 @@ namespace System.Net.Http
             });
         }
 
-        private void ExtendWindow(int amount)
+        private bool ExtendWindow(int amount)
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(amount)}={amount}");
             Debug.Assert(amount > 0);
+            Debug.Assert(_pendingWindowUpdate < ConnectionWindowThreshold);
 
-            int windowUpdateSize;
-            lock (SyncObject)
+            _pendingWindowUpdate += amount;
+            if (_pendingWindowUpdate < ConnectionWindowThreshold)
             {
-                Debug.Assert(_pendingWindowUpdate < ConnectionWindowThreshold);
-
-                _pendingWindowUpdate += amount;
-                if (_pendingWindowUpdate < ConnectionWindowThreshold)
-                {
-                    if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_pendingWindowUpdate)} {_pendingWindowUpdate} < {ConnectionWindowThreshold}.");
-                    return;
-                }
-
-                windowUpdateSize = _pendingWindowUpdate;
-                _pendingWindowUpdate = 0;
+                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_pendingWindowUpdate)} {_pendingWindowUpdate} < {ConnectionWindowThreshold}.");
+                return false;
             }
 
+            int windowUpdateSize = _pendingWindowUpdate;
+            _pendingWindowUpdate = 0;
+
             LogExceptions(SendWindowUpdateAsync(0, windowUpdateSize));
+            return true;
+        }
+
+        private bool ForceSendConnectionWindowUpdate()
+        {
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_pendingWindowUpdate)}={_pendingWindowUpdate}");
+            if (_pendingWindowUpdate == 0) return false;
+
+            LogExceptions(SendWindowUpdateAsync(0, _pendingWindowUpdate));
+            _pendingWindowUpdate = 0;
+            return true;
         }
 
         public override long GetIdleTicks(long nowTicks)

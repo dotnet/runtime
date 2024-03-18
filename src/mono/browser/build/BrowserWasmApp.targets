@@ -64,7 +64,6 @@
 
     <_BoolPropertiesThatTriggerRelinking Include="WasmEnableSIMD" DefaultValueInRuntimePack="true" />
     <_BoolPropertiesThatTriggerRelinking Include="WasmEnableExceptionHandling" DefaultValueInRuntimePack="true" />
-    <_BoolPropertiesThatTriggerRelinking Include="WasmNativeStrip" DefaultValueInRuntimePack="true" />
   </ItemGroup>
 
   <Target Name="_GetWasmGenerateAppBundleDependencies">
@@ -121,7 +120,8 @@
 
     <PropertyGroup>
       <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.native.js -->
-      <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == ''">-1</_WasmPThreadPoolSize>
+      <_WasmPThreadPoolInitialSize Condition="'$(_WasmPThreadPoolInitialSize)' == ''">-1</_WasmPThreadPoolInitialSize>
+      <_WasmPThreadPoolUnusedSize Condition="'$(_WasmPThreadPoolUnusedSize)' == ''">-1</_WasmPThreadPoolUnusedSize>
     </PropertyGroup>
 
     <ItemGroup>
@@ -148,7 +148,8 @@
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
       IncludeThreadsWorker="$(WasmEnableThreads)"
-      PThreadPoolSize="$(_WasmPThreadPoolSize)"
+      PThreadPoolInitialSize="$(_WasmPThreadPoolInitialSize)"
+      PThreadPoolUnusedSize="$(_WasmPThreadPoolUnusedSize)"
       UseWebcil="$(WasmEnableWebcil)"
       WasmIncludeFullIcuData="$(WasmIncludeFullIcuData)"
       WasmIcuDataFileName="$(WasmIcuDataFileName)"

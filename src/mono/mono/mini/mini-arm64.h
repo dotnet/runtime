@@ -98,6 +98,8 @@ struct SeqPointInfo {
 
 #define PARAM_REGS 8
 #define FP_PARAM_REGS 8
+#define CTX_REGS 2
+#define CTX_REGS_OFFSET ARMREG_R20
 
 typedef struct {
 	host_mgreg_t res, res2;
@@ -119,6 +121,7 @@ typedef struct {
 	MonoInst *seq_point_info_var;
 	MonoInst *ss_tramp_var;
 	MonoInst *bp_tramp_var;
+	MonoInst *swift_error_var;
 	guint8 *thunks;
 	int thunks_size;
 } MonoCompileArch;
@@ -205,6 +208,10 @@ typedef struct {
 #define MONO_ARCH_EXPLICIT_NULL_CHECKS 1
 #endif
 
+#if defined(TARGET_OSX) || defined(TARGET_APPLE_MOBILE)
+#define MONO_ARCH_HAVE_SWIFTCALL 1
+#endif
+
 /* Relocations */
 #define MONO_R_ARM64_B 1
 #define MONO_R_ARM64_BCC 2
@@ -234,6 +241,7 @@ typedef enum {
 	ArgVtypeByRefOnStack,
 	ArgVtypeOnStack,
 	ArgHFA,
+	ArgSwiftError,
 	ArgNone
 } ArgStorage;
 
@@ -268,8 +276,8 @@ struct CallInfo {
 };
 
 typedef struct {
-	/* General registers + ARMREG_R8 for indirect returns */
-	host_mgreg_t gregs [PARAM_REGS + 1];
+	/* General registers + ARMREG_R8 for indirect returns + context registers  */
+	host_mgreg_t gregs [PARAM_REGS + CTX_REGS + 1];
 	/* Floating registers */
 	double fregs [FP_PARAM_REGS];
 	/* Stack usage, used for passing params on stack */

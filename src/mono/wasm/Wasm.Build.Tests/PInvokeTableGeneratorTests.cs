@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -31,7 +32,7 @@ namespace Wasm.Build.Tests
                     public static int Main(string[] args)
                     {
                         Console.WriteLine($""Main running"");
-                        if (args.Length > 0)
+                        if (args.Length > 2)
                         {
                             // We don't want to run this, because we can't call variadic functions
                             Console.WriteLine($""sum_three: {sum_three(7, 14, 21)}"");
@@ -50,7 +51,9 @@ namespace Wasm.Build.Tests
                                                           buildArgs with { ProjectName = $"variadic_{buildArgs.Config}_{id}" },
                                                           id);
             Assert.Matches("warning.*native function.*sum.*varargs", output);
-            Assert.Matches("warning.*sum_(one|two|three)", output);
+            Assert.Contains("System.Int32 sum_one(System.Int32)", output);
+            Assert.Contains("System.Int32 sum_two(System.Int32, System.Int32)", output);
+            Assert.Contains("System.Int32 sum_three(System.Int32, System.Int32, System.Int32)", output);
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
@@ -58,7 +61,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome)]
-        public void DllImportWithFunctionPointersCompilesWithWarning(BuildArgs buildArgs, RunHost host, string id)
+        public void DllImportWithFunctionPointersCompilesWithoutWarning(BuildArgs buildArgs, RunHost host, string id)
         {
             string code =
                 """
@@ -84,8 +87,8 @@ namespace Wasm.Build.Tests
                                                           buildArgs with { ProjectName = $"fnptr_{buildArgs.Config}_{id}" },
                                                           id);
 
-            Assert.Matches("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
-            Assert.Matches("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
+            Assert.DoesNotMatch("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
+            Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
@@ -114,8 +117,8 @@ namespace Wasm.Build.Tests
                                                           buildArgs with { ProjectName = $"fnptr_variadic_{buildArgs.Config}_{id}" },
                                                           id);
 
-            Assert.Matches("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
-            Assert.Matches("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
+            Assert.DoesNotMatch("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
+            Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
@@ -128,6 +131,7 @@ namespace Wasm.Build.Tests
         {
             (_, string output) = SingleProjectForDisabledRuntimeMarshallingTest(
                 withDisabledRuntimeMarshallingAttribute: false,
+                withAutoLayout: true,
                 expectSuccess: false,
                 buildArgs,
                 id
@@ -137,12 +141,29 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [BuildAndRun(host: RunHost.None)]
+        public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_WithStructLayout_ConsideredBlittable
+                        (BuildArgs buildArgs, string id)
+        {
+            (_, string output) = SingleProjectForDisabledRuntimeMarshallingTest(
+                withDisabledRuntimeMarshallingAttribute: false,
+                withAutoLayout: false,
+                expectSuccess: true,
+                buildArgs,
+                id
+            );
+
+            Assert.DoesNotMatch("error.*Parameter.*types.*pinvoke.*.*blittable", output);
+        }
+
+        [Theory]
         [BuildAndRun(host: RunHost.Chrome)]
         public void UnmanagedStructAndMethodIn_SameAssembly_WithDisableRuntimeMarshallingAttribute_ConsideredBlittable
                         (BuildArgs buildArgs, RunHost host, string id)
         {
             (buildArgs, _) = SingleProjectForDisabledRuntimeMarshallingTest(
                 withDisabledRuntimeMarshallingAttribute: true,
+                withAutoLayout: true,
                 expectSuccess: true,
                 buildArgs,
                 id
@@ -152,8 +173,10 @@ namespace Wasm.Build.Tests
             Assert.Contains("Main running 5", output);
         }
 
-        private (BuildArgs buildArgs ,string output) SingleProjectForDisabledRuntimeMarshallingTest(bool withDisabledRuntimeMarshallingAttribute, bool expectSuccess, BuildArgs buildArgs, string id)
-        {
+        private (BuildArgs buildArgs ,string output) SingleProjectForDisabledRuntimeMarshallingTest(
+            bool withDisabledRuntimeMarshallingAttribute, bool withAutoLayout,
+            bool expectSuccess, BuildArgs buildArgs, string id
+        ) {
             string code =
             """
             using System;
@@ -171,8 +194,10 @@ namespace Wasm.Build.Tests
                     Console.WriteLine("Main running " + x.Value);
                     return 42;
                 }
-
-                public struct S { public int Value; }
+            """
+            + (withAutoLayout ? "\n[StructLayout(LayoutKind.Auto)]\n" : "")
+            + """
+                public struct S { public int Value; public float Value2; }
 
                 [UnmanagedCallersOnly]
                 public static void M(S myStruct) { }
@@ -230,7 +255,7 @@ namespace Wasm.Build.Tests
         {
             string code =
                 (libraryHasAttribute ? "[assembly: System.Runtime.CompilerServices.DisableRuntimeMarshalling]" : "")
-                + "public struct S { public int Value; }";
+                + "public struct __NonBlittableTypeForAutomatedTests__ { } public struct S { public int Value; public __NonBlittableTypeForAutomatedTests__ NonBlittable; }";
 
             var libraryBuildArgs = ExpandBuildArgs(
                 buildArgs with { ProjectName = $"blittable_different_library_{buildArgs.Config}_{id}" },
@@ -256,6 +281,7 @@ namespace Wasm.Build.Tests
             using System;
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
+
             """
             + (appHasAttribute ? "[assembly: DisableRuntimeMarshalling]" : "")
             + """
@@ -372,7 +398,7 @@ namespace Wasm.Build.Tests
                 id
             );
 
-            Assert.Matches("warning\\sWASM0001.*Skipping.*Test::SomeFunction1.*because.*function\\spointer", output);
+            Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*Test::SomeFunction1.*because.*function\\spointer", output);
         }
 
         [Theory]
@@ -406,7 +432,7 @@ namespace Wasm.Build.Tests
             );
 
             Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
-    
+
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
         }
@@ -692,5 +718,171 @@ namespace Wasm.Build.Tests
 
             return (buildArgs, output);
         }
+
+        private void EnsureWasmAbiRulesAreFollowed(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string programText = @"
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+
+                public struct SingleFloatStruct {
+                    public float Value;
+                }
+                public struct SingleDoubleStruct {
+                    public struct Nested1 {
+                        // This field is private on purpose to ensure we treat visibility correctly
+                        double Value;
+                    }
+                    public Nested1 Value;
+                }
+                public struct SingleI64Struct {
+                    public Int64 Value;
+                }
+                public struct PairStruct {
+                    public int A, B;
+                }
+                public unsafe struct MyFixedArray {
+                    public fixed int elements[2];
+                }
+                [System.Runtime.CompilerServices.InlineArray(2)]
+                public struct MyInlineArray {
+                    public int element0;
+                }
+
+                public class Test
+                {
+                    public static unsafe int Main(string[] argv)
+                    {
+                        var i64_a = 0xFF00FF00FF00FF0L;
+                        var i64_b = ~i64_a;
+                        var resI = direct64(i64_a);
+                        Console.WriteLine(""l (l)="" + resI);
+
+                        var sis = new SingleI64Struct { Value = i64_a };
+                        var resSI = indirect64(sis);
+                        Console.WriteLine(""s (s)="" + resSI.Value);
+
+                        var resF = direct(3.14);
+                        Console.WriteLine(""f (d)="" + resF);
+
+                        SingleDoubleStruct sds = default;
+                        Unsafe.As<SingleDoubleStruct, double>(ref sds) = 3.14;
+
+                        resF = indirect_arg(sds);
+                        Console.WriteLine(""f (s)="" + resF);
+
+                        var res = indirect(sds);
+                        Console.WriteLine(""s (s)="" + res.Value);
+
+                        var pair = new PairStruct { A = 1, B = 2 };
+                        var paires = accept_and_return_pair(pair);
+                        Console.WriteLine(""paires.B="" + paires.B);
+
+                        // This test is split into methods to simplify debugging issues with it
+                        var ia = InlineArrayTest1();
+                        var iares = InlineArrayTest2(ia);
+                        Console.WriteLine($""iares[0]={iares[0]} iares[1]={iares[1]}"");
+
+                        MyFixedArray fa = new ();
+                        for (int i = 0; i < 2; i++)
+                            fa.elements[i] = i;
+                        var fares = accept_and_return_fixedarray(fa);
+                        Console.WriteLine(""fares.elements[1]="" + fares.elements[1]);
+
+                        return (int)res.Value;
+                    }
+
+                    public static unsafe MyInlineArray InlineArrayTest1 () {
+                        MyInlineArray ia = new ();
+                        for (int i = 0; i < 2; i++)
+                            ia[i] = i;
+                        return ia;
+                    }
+
+                    public static unsafe MyInlineArray InlineArrayTest2 (MyInlineArray ia) {
+                        return accept_and_return_inlinearray(ia);
+                    }
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_double_struct_and_return_float_struct"")]
+                    public static extern SingleFloatStruct indirect(SingleDoubleStruct arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_double_struct_and_return_float_struct"")]
+                    public static extern float indirect_arg(SingleDoubleStruct arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_double_struct_and_return_float_struct"")]
+                    public static extern float direct(double arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_i64_struct"")]
+                    public static extern SingleI64Struct indirect64(SingleI64Struct arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_i64_struct"")]
+                    public static extern Int64 direct64(Int64 arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_pair"")]
+                    public static extern PairStruct accept_and_return_pair(PairStruct arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_fixedarray"")]
+                    public static extern MyFixedArray accept_and_return_fixedarray(MyFixedArray arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_inlinearray"")]
+                    public static extern MyInlineArray accept_and_return_inlinearray(MyInlineArray arg);
+                }";
+
+            var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>false</_WasmDevel><WasmNativeStrip>false</WasmNativeStrip>";
+            var extraItems = @"<NativeFileReference Include=""wasm-abi.c"" />";
+
+            buildArgs = ExpandBuildArgs(buildArgs,
+                                        extraItems: extraItems,
+                                        extraProperties: extraProperties);
+
+            (string libraryDir, string output) = BuildProject(buildArgs,
+                                        id: id,
+                                        new BuildProjectOptions(
+                                            InitProject: () =>
+                                            {
+                                                File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+                                                File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "wasm-abi.c"),
+                                                            Path.Combine(_projectDir!, "wasm-abi.c"));
+                                            },
+                                            Publish: buildArgs.AOT,
+                                            // Verbosity: "diagnostic",
+                                            DotnetWasmFromRuntimePack: false));
+
+            string objDir = Path.Combine(_projectDir!, "obj", buildArgs.Config!, "net9.0", "browser-wasm", "wasm", buildArgs.AOT ? "for-publish" : "for-build");
+
+            // Verify that the right signature was added for the pinvoke. We can't determine this by examining the m2n file
+            // FIXME: Not possible in in-process mode for some reason, even with verbosity at "diagnostic"
+            // Assert.Contains("Adding pinvoke signature FD for method 'Test.", output);
+
+            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, "pinvoke-table.h"));
+            // Verify that the invoke is in the pinvoke table. Under various circumstances we will silently skip it,
+            //  for example if the module isn't found
+            Assert.Contains("\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct", pinvokeTable);
+            // Verify the signature of the C function prototype. Wasm ABI specifies that the structs should both decompose into scalars.
+            Assert.Contains("float accept_double_struct_and_return_float_struct (double);", pinvokeTable);
+            Assert.Contains("int64_t accept_and_return_i64_struct (int64_t);", pinvokeTable);
+
+            var runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 3, host: host, id: id);
+            Assert.Contains("l (l)=-1148435428713435121", runOutput);
+            Assert.Contains("s (s)=-1148435428713435121", runOutput);
+            Assert.Contains("f (d)=3.14", runOutput);
+            Assert.Contains("f (s)=3.14", runOutput);
+            Assert.Contains("s (s)=3.14", runOutput);
+            Assert.Contains("paires.B=4", runOutput);
+            Assert.Contains("iares[0]=32", runOutput);
+            Assert.Contains("iares[1]=2", runOutput);
+            Assert.Contains("fares.elements[1]=2", runOutput);
+        }
+
+        [Theory]
+        [BuildAndRun(host: RunHost.Chrome, aot: true)]
+        public void EnsureWasmAbiRulesAreFollowedInAOT(BuildArgs buildArgs, RunHost host, string id) =>
+            EnsureWasmAbiRulesAreFollowed(buildArgs, host, id);
+
+        [Theory]
+        [BuildAndRun(host: RunHost.Chrome, aot: false)]
+        public void EnsureWasmAbiRulesAreFollowedInInterpreter(BuildArgs buildArgs, RunHost host, string id) =>
+            EnsureWasmAbiRulesAreFollowed(buildArgs, host, id);
     }
 }

@@ -634,6 +634,7 @@ inflate_generic_signature_checked (MonoImage *image, MonoMethodSignature *sig, M
 	res->explicit_this = sig->explicit_this;
 	res->call_convention = sig->call_convention;
 	res->pinvoke = sig->pinvoke;
+	res->ext_callconv = sig->ext_callconv;
 	res->generic_param_count = sig->generic_param_count;
 	res->sentinelpos = sig->sentinelpos;
 	res->has_type_parameters = is_open;
@@ -822,7 +823,6 @@ mono_method_search_in_array_class (MonoClass *klass, const char *name, MonoMetho
 	int i;
 
 	mono_class_setup_methods (klass);
-	g_assert (!mono_class_has_failure (klass)); /*FIXME this should not fail, right?*/
 	int mcount = mono_class_get_method_count (klass);
 	MonoMethod **klass_methods = m_class_get_methods (klass);
 	for (i = 0; i < mcount; ++i) {

@@ -143,7 +143,7 @@ namespace System.Numerics
             }
 
             int bitCount = checked(value!.GetByteCount() * 8);
-            return (value << rotateAmount) | (value >> (bitCount - rotateAmount));
+            return (value << rotateAmount) | (value >>> (bitCount - rotateAmount));
         }
 
         /// <summary>Rotates a value right by a given amount.</summary>
@@ -158,7 +158,7 @@ namespace System.Numerics
             }
 
             int bitCount = checked(value!.GetByteCount() * 8);
-            return (value >> rotateAmount) | (value << (bitCount - rotateAmount));
+            return (value >>> rotateAmount) | (value << (bitCount - rotateAmount));
         }
 
         /// <summary>Computes the number of trailing zero bits in a value.</summary>

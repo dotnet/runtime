@@ -8,8 +8,8 @@ import { CharPtr, VoidPtr } from "./types/emscripten";
 
 let prefix = "MONO_WASM: ";
 
-export function mono_set_thread_name(threadName: string) {
-    prefix = `[${threadName}] MONO_WASM: `;
+export function set_thread_prefix(threadPrefix: string) {
+    prefix = `[${threadPrefix}] MONO_WASM: `;
 }
 
 export function mono_log_debug(msg: string, ...data: any) {
@@ -157,4 +157,8 @@ export function parseSymbolMapFile(text: string) {
 
 export function mono_wasm_get_func_id_to_name_mappings() {
     return [...wasm_func_map.values()];
+}
+
+export function mono_wasm_console_clear() {
+    console.clear();
 }
