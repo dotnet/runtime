@@ -684,7 +684,7 @@ class DeadCodeElimination
             {
                 Consume(new Canary1());
             }
-#if false // Not yet implemented
+#if !DEBUG
             ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary1));
 #endif
 
@@ -705,7 +705,7 @@ class DeadCodeElimination
                     Consume(new Canary3());
                 }
             }
-#if false // Not yet implemented
+#if !DEBUG
             ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary3));
 #endif
 
@@ -715,7 +715,7 @@ class DeadCodeElimination
             {
                 Consume(new Canary4());
             }
-#if false // Not yet implemented
+#if !DEBUG
             ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary4));
 #endif
 
@@ -736,7 +736,7 @@ class DeadCodeElimination
                     Consume(new Canary6());
                 }
             }
-#if false // Not yet implemented
+#if !DEBUG
             ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary6));
 #endif
 
@@ -744,7 +744,7 @@ class DeadCodeElimination
 
             Activator.CreateInstance(typeof(Maybe1<>).MakeGenericType(GetAtom1()));
 
-            if (GetUnknownType() is Maybe1<object>)
+            if (GetUnknownType().GetType() == typeof(Maybe1<object>))
             {
                 // This should not be optimized away because Maybe1<object> is possible
                 // with the type loader template for MakeGeneric above.

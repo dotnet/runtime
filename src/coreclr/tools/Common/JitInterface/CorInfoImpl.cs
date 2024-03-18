@@ -2874,22 +2874,12 @@ namespace Internal.JitInterface
             TypeDesc type1 = HandleToObject(cls1);
             TypeDesc type2 = HandleToObject(cls2);
 
-            TypeCompareState result = TypeExtensions.CompareTypesForEquality(type1, type2) switch
+            return TypeExtensions.CompareTypesForEquality(type1, type2) switch
             {
                 true => TypeCompareState.Must,
                 false => TypeCompareState.MustNot,
                 _ => TypeCompareState.May,
             };
-
-#if !READYTORUN
-            if (result == TypeCompareState.May
-                && (CanNeverHaveInstanceOfSubclassOf(type1) || CanNeverHaveInstanceOfSubclassOf(type2)))
-            {
-                return TypeCompareState.MustNot;
-            }
-#endif
-
-            return result;
         }
 
         private bool isMoreSpecificType(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
