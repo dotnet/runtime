@@ -2052,7 +2052,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         // Create extra basic block for the spill
         //
         BasicBlock* newBlk = fgNewBBbefore(BBJ_ALWAYS, hndBlk, /* extendRegion */ true);
-        newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE | BBF_NONE_QUIRK);
+        newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
         newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
@@ -7233,10 +7233,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         fgRemoveRefPred(block->GetFalseEdge());
                         block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
 
-                        // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense to
-                        // set BBF_NONE_QUIRK
-                        block->SetFlags(BBF_NONE_QUIRK);
-
                         jumpToNextOptimization = true;
                     }
                     else if (block->KindIs(BBJ_ALWAYS) && block->JumpsToNext())
@@ -7310,15 +7306,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
                         else
                         {
-                            // TODO-NoFallThrough: Update once false target can diverge from bbNext
                             assert(block->NextIs(block->GetFalseTarget()));
                             JITDUMP("\nThe block jumps to the next " FMT_BB "\n", block->Next()->bbNum);
                             fgRemoveRefPred(block->GetTrueEdge());
                             block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
-
-                            // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense
-                            // to set BBF_NONE_QUIRK
-                            block->SetFlags(BBF_NONE_QUIRK);
                         }
                     }
 
@@ -7495,10 +7486,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         fgRemoveRefPred(block->GetFalseEdge());
                         block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
 
-                        // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense to
-                        // set BBF_NONE_QUIRK
-                        block->SetFlags(BBF_NONE_QUIRK);
-
                         jumpToNextOptimization = true;
                     }
                     else if (block->KindIs(BBJ_ALWAYS) && block->JumpsToNext())
@@ -7591,11 +7578,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 
                     assert(foundVal);
-                    if (block->JumpsToNext())
-                    {
-                        block->SetFlags(BBF_NONE_QUIRK);
-                    }
-
 #ifdef DEBUG
                     if (verbose)
                     {
