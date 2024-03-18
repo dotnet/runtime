@@ -4,7 +4,7 @@
       <Uri>https://github.com/dotnet/icu</Uri>
       <Sha>71df594b9044123e5ea61cb75d3730597743c4c3</Sha>
     </Dependency>
-    <Dependency Name="System.Net.MsQuic.Transport" Version="9.0.0-alpha.1.24162.1">
+    <Dependency Name="System.Net.MsQuic.Transport" Version="9.0.0-alpha.1.24167.3">
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>6281631a8328ffdbb1b63b231af1aaa803915b23</Sha>
     </Dependency>
