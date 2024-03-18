@@ -340,7 +340,21 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 break;
             }
             CorInfoType fieldType = (srcType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
+            /*The code below is to introduce saturating conversions on X86/X64.
+            The C# equivalence of the code is given below -->
 
+                    // Replace QNaN and SNaN with Zero
+                    op1 = Avx512F.Fixup(op1, op1, Vector128.Create<long>(0x88), 0);
+
+                    // Convert from double to long, replacing any values that were greater than or equal to MaxValue
+            with MaxValue
+                    // Values that were less than or equal to MinValue will already be MinValue
+                    return Vector128.ConditionalSelect(
+                        Vector128.LessThan(op1, Vector128.Create<double>(long.MaxValue)).AsInt64(),
+                        Avx512DQ.VL.ConvertToVector128Int64(op1),
+                        Vector128.Create<long>(long.MaxValue)
+                    );
+            */
             if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
             {
                 if (varTypeIsUnsigned(dstType))
@@ -363,18 +377,17 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     // The logic is that first and second operand are basically the same because we want
                     // the output to be in the same xmm register
                     // Hence we clone the first operand
-                    GenTree* op2Clone = fgMakeMultiUse(&oper);
+                    GenTree* op1Clone = fgMakeMultiUse(&oper);
 
                     // run vfixupimmsd base on table and no flags reporting
-                    GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oper, op2Clone, tbl, gtNewIconNode(0),
-                                                                NI_AVX512F_FixupScalar, fieldType, 16);
+                    oper = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oper, op1Clone, tbl, gtNewIconNode(0),
+                                                    NI_AVX512F_FixupScalar, fieldType, 16);
 
                     // Convert to scalar
                     // Here, we try to insert a Vector128 to Scalar node so that the input
                     // can be provided to the scalar cast
-                    GenTree* retNode1 =
-                        gtNewSimdHWIntrinsicNode(srcType, retNode, NI_Vector128_ToScalar, fieldType, 16);
-                    tree = gtNewCastNode(genActualType(dstType), retNode1, false, dstType);
+                    oper = gtNewSimdHWIntrinsicNode(srcType, oper, NI_Vector128_ToScalar, fieldType, 16);
+                    tree = gtNewCastNode(genActualType(dstType), oper, false, dstType);
                     tree->SetSaturatedConversion();
                     return fgMorphTree(tree);
                 }
@@ -384,7 +397,6 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 
                     ssize_t actualMaxVal = (dstType == TYP_INT) ? INT32_MAX : INT64_MAX;
 
-                    // CorInfoType destFieldType = (dstType == TYP_INT) ? CORINFO_TYPE_INT : CORINFO_TYPE_LONG;
                     // Generate the control table for VFIXUPIMMSD
                     // The behavior we want is to saturate negative values to 0.
                     GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
@@ -403,41 +415,36 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     // The logic is that first and second operand are basically the same because we want
                     // the output to be in the same xmm register
                     // Hence we clone the first operand
-                    GenTree* op2Clone = fgMakeMultiUse(&oper);
+                    GenTree* op1Clone1 = fgMakeMultiUse(&oper);
 
                     // run vfixupimmsd base on table and no flags reporting
-                    oper = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oper, op2Clone, tbl, gtNewIconNode(0),
+                    oper = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oper, op1Clone1, tbl, gtNewIconNode(0),
                                                     NI_AVX512F_FixupScalar, fieldType, 16);
 
-                    GenTree* saturate_val = oper;
-
                     // get the max value vector
-
-                    GenTree* max_val = (srcType == TYP_DOUBLE) ? gtNewDconNodeD(static_cast<double>(actualMaxVal))
-                                                               : gtNewDconNodeF(static_cast<float>(actualMaxVal));
-                    GenTree* max_valDup =
+                    GenTree* maxVal = (srcType == TYP_DOUBLE) ? gtNewDconNodeD(static_cast<double>(actualMaxVal))
+                                                              : gtNewDconNodeF(static_cast<float>(actualMaxVal));
+                    GenTree* maxValDup =
                         (dstType == TYP_INT) ? gtNewIconNode(actualMaxVal, dstType) : gtNewLconNode(actualMaxVal);
-                    max_val    = gtNewSimdCreateBroadcastNode(TYP_SIMD16, max_val, fieldType, 16);
-                    max_valDup = gtNewSimdCreateBroadcastNode(TYP_SIMD16, max_valDup, destFieldType, 16);
+                    maxVal    = gtNewSimdCreateBroadcastNode(TYP_SIMD16, maxVal, fieldType, 16);
+                    maxValDup = gtNewSimdCreateBroadcastNode(TYP_SIMD16, maxValDup, destFieldType, 16);
 
                     // we will be using the input value twice
-                    GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);
+                    GenTree* op1Clone2 = fgMakeMultiUse(&oper);
 
                     // usage 1 --> compare with max value of integer
-                    saturate_val = gtNewSimdCmpOpNode(GT_GE, TYP_SIMD16, saturate_val, max_val, fieldType, 16);
-                    GenTree* retNode1 =
-                        gtNewSimdHWIntrinsicNode(srcType, saturate_valDup, NI_Vector128_ToScalar, fieldType, 16);
+                    oper      = gtNewSimdCmpOpNode(GT_GE, TYP_SIMD16, oper, maxVal, fieldType, 16);
+                    op1Clone2 = gtNewSimdHWIntrinsicNode(srcType, op1Clone2, NI_Vector128_ToScalar, fieldType, 16);
+
                     // cast it
-                    tree = gtNewCastNode(dstType, retNode1, false, dstType);
+                    tree = gtNewCastNode(dstType, op1Clone2, false, dstType);
                     tree->SetSaturatedConversion();
-                    GenTree* tree1 = gtNewSimdCreateBroadcastNode(TYP_SIMD16, tree, destFieldType, 16);
+                    GenTree* newTree = gtNewSimdCreateBroadcastNode(TYP_SIMD16, tree, destFieldType, 16);
 
                     // usage 2 --> use thecompared mask with input value and max value to blend
-                    // GenTree* dummy = gtNewSimdCreateBroadcastNode(TYP_SIMD16, gtNewLconNode(2), destFieldType, 16);
-                    saturate_val = gtNewSimdCndSelNode(TYP_SIMD16, saturate_val, max_valDup, tree1, destFieldType, 16);
-                    saturate_val =
-                        gtNewSimdHWIntrinsicNode(dstType, saturate_val, NI_Vector128_ToScalar, destFieldType, 16);
-                    return fgMorphTree(saturate_val);
+                    oper = gtNewSimdCndSelNode(TYP_SIMD16, oper, maxValDup, newTree, destFieldType, 16);
+                    oper = gtNewSimdHWIntrinsicNode(dstType, oper, NI_Vector128_ToScalar, destFieldType, 16);
+                    return fgMorphTree(oper);
                 }
             }
             else if (varTypeIsSigned(dstType) && compOpportunisticallyDependsOn(InstructionSet_SSE41))
@@ -455,34 +462,29 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 // inp = inp & mask
                 oper = gtNewSimdBinOpNode(GT_AND, TYP_SIMD16, op1Clone2, mask1, fieldType, 16);
 
-                GenTree* saturate_val = oper;
-
                 // get the max value vector
-                GenTree* max_val = (srcType == TYP_DOUBLE) ? gtNewDconNodeD(static_cast<double>(actualMaxVal))
-                                                           : gtNewDconNodeF(static_cast<float>(actualMaxVal));
-                GenTree* max_valDup =
+                GenTree* maxVal = (srcType == TYP_DOUBLE) ? gtNewDconNodeD(static_cast<double>(actualMaxVal))
+                                                          : gtNewDconNodeF(static_cast<float>(actualMaxVal));
+                GenTree* maxValDup =
                     (dstType == TYP_INT) ? gtNewIconNode(actualMaxVal, dstType) : gtNewLconNode(actualMaxVal);
-                max_val    = gtNewSimdCreateBroadcastNode(TYP_SIMD16, max_val, fieldType, 16);
-                max_valDup = gtNewSimdCreateBroadcastNode(TYP_SIMD16, max_valDup, destFieldType, 16);
+                maxVal    = gtNewSimdCreateBroadcastNode(TYP_SIMD16, maxVal, fieldType, 16);
+                maxValDup = gtNewSimdCreateBroadcastNode(TYP_SIMD16, maxValDup, destFieldType, 16);
 
                 // we will be using the input value twice
-                GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);
+                GenTree* op1Clone3 = fgMakeMultiUse(&oper);
 
                 // usage 1 --> compare with max value of integer
-                saturate_val = gtNewSimdCmpOpNode(GT_GE, TYP_SIMD16, saturate_val, max_val, fieldType, 16);
-                GenTree* retNode1 =
-                    gtNewSimdHWIntrinsicNode(srcType, saturate_valDup, NI_Vector128_ToScalar, fieldType, 16);
+                oper      = gtNewSimdCmpOpNode(GT_GE, TYP_SIMD16, oper, maxVal, fieldType, 16);
+                op1Clone3 = gtNewSimdHWIntrinsicNode(srcType, op1Clone3, NI_Vector128_ToScalar, fieldType, 16);
                 // cast it
-                tree = gtNewCastNode(dstType, retNode1, false, dstType);
+                tree = gtNewCastNode(dstType, op1Clone3, false, dstType);
                 tree->SetSaturatedConversion();
-                GenTree* tree1 = gtNewSimdCreateBroadcastNode(TYP_SIMD16, tree, destFieldType, 16);
+                GenTree* newTree = gtNewSimdCreateBroadcastNode(TYP_SIMD16, tree, destFieldType, 16);
 
                 // usage 2 --> use thecompared mask with input value and max value to blend
-                // GenTree* dummy = gtNewSimdCreateBroadcastNode(TYP_SIMD16, gtNewLconNode(2), destFieldType, 16);
-                saturate_val = gtNewSimdCndSelNode(TYP_SIMD16, saturate_val, max_valDup, tree1, destFieldType, 16);
-                saturate_val =
-                    gtNewSimdHWIntrinsicNode(dstType, saturate_val, NI_Vector128_ToScalar, destFieldType, 16);
-                return fgMorphTree(saturate_val);
+                oper = gtNewSimdCndSelNode(TYP_SIMD16, oper, maxValDup, newTree, destFieldType, 16);
+                oper = gtNewSimdHWIntrinsicNode(dstType, oper, NI_Vector128_ToScalar, destFieldType, 16);
+                return fgMorphTree(oper);
             }
             else if (dstType == TYP_UINT && compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {
@@ -501,17 +503,17 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 GenTree* op1Clone3 = fgMakeMultiUse(&oper);
                 GenTree* op1Clone4 = fgMakeMultiUse(&oper);
 
-                // get the max value vector
-                GenTree* min_val    = gtNewDconNodeD(static_cast<double>(0));
-                min_val             = gtNewSimdCreateBroadcastNode(TYP_SIMD16, min_val, fieldType, 16);
-                GenTree* max_val    = gtNewDconNodeD(static_cast<double>(actualMaxVal));
-                max_val             = gtNewSimdCreateBroadcastNode(TYP_SIMD16, max_val, fieldType, 16);
-                GenTree* max_valDup = fgMakeMultiUse(&max_val);
+                // get the max/min value vector
+                GenTree* minVal    = gtNewDconNodeD(static_cast<double>(0));
+                minVal             = gtNewSimdCreateBroadcastNode(TYP_SIMD16, minVal, fieldType, 16);
+                GenTree* maxVal    = gtNewDconNodeD(static_cast<double>(actualMaxVal));
+                maxVal             = gtNewSimdCreateBroadcastNode(TYP_SIMD16, maxVal, fieldType, 16);
+                GenTree* maxValDup = fgMakeMultiUse(&maxVal);
 
                 // check NaN
                 GenTree* mask1 = gtNewSimdCmpOpNode(GT_EQ, TYP_SIMD16, oper, op1Clone1, fieldType, 16);
                 // check negative
-                GenTree* mask2 = gtNewSimdCmpOpNode(GT_GE, TYP_SIMD16, op1Clone2, min_val, fieldType, 16);
+                GenTree* mask2 = gtNewSimdCmpOpNode(GT_GE, TYP_SIMD16, op1Clone2, minVal, fieldType, 16);
 
                 // and mask
                 GenTree* mask12 = gtNewSimdBinOpNode(GT_AND, TYP_SIMD16, mask1, mask2, fieldType, 16);
@@ -521,10 +523,10 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 GenTree* saturatedValDup = fgMakeMultiUse(&saturated_val);
 
                 // compare with max value of uint
-                GenTree* mask3 = gtNewSimdCmpOpNode(GT_GE, TYP_SIMD16, saturated_val, max_val, fieldType, 16);
+                GenTree* mask3 = gtNewSimdCmpOpNode(GT_GE, TYP_SIMD16, saturated_val, maxVal, fieldType, 16);
 
                 // Select based on mask3
-                saturated_val = gtNewSimdCndSelNode(TYP_SIMD16, mask3, max_valDup, saturatedValDup, fieldType, 16);
+                saturated_val = gtNewSimdCndSelNode(TYP_SIMD16, mask3, maxValDup, saturatedValDup, fieldType, 16);
 
                 // scalar
                 GenTree* val = gtNewSimdHWIntrinsicNode(srcType, saturated_val, NI_Vector128_ToScalar, fieldType, 16);
