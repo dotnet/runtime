@@ -22,12 +22,6 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 		}
 
 		[Fact]
-		public Task GenericDefaultInterfaceMethod ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task GenericDefaultInterfaceMethods ()
 		{
 			return RunTest (allowMissingWarnings: true);
