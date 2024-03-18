@@ -705,7 +705,7 @@ class DeadCodeElimination
                     Consume(new Canary3());
                 }
             }
-#if !DEBUG
+#if false // This optimization is disabled for now, don't check.
             ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary3));
 #endif
 
@@ -736,7 +736,7 @@ class DeadCodeElimination
                     Consume(new Canary6());
                 }
             }
-#if !DEBUG
+#if false // This optimization is disabled for now, don't check.
             ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary6));
 #endif
 
