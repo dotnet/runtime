@@ -174,35 +174,16 @@ internal sealed class MsQuicConfigurationSafeHandle : MsQuicSafeHandle
 
     public bool TryMarkForDispose()
     {
-        int oldCount;
-
-        do
-        {
-            oldCount = _rentCount;
-            if (oldCount > 0)
-            {
-                // The handle is being used
-                return false;
-            }
-        } while (Interlocked.CompareExchange(ref _rentCount, -1, oldCount) != oldCount);
-
-        return true;
+        return Interlocked.CompareExchange(ref _rentCount, -1, 0) == 0;
     }
 
     protected override void Dispose(bool disposing)
     {
-        int oldCount;
-        do
+        if (Interlocked.Decrement(ref _rentCount) < 0)
         {
-            oldCount = _rentCount;
-            if (oldCount <= 0)
-            {
-                // _rentCount is 0 if the handle was never rented (e.g. failure during creation),
-                // and is -1 when evicted from cache.
-                base.Dispose(disposing);
-                return;
-            }
-
-        } while (Interlocked.CompareExchange(ref _rentCount, oldCount - 1, oldCount) != oldCount);
+            // _rentCount is 0 if the handle was never rented (e.g. failure during creation),
+            // and is -1 when evicted from cache.
+            base.Dispose(disposing);
+        }
     }
 }
