@@ -1031,7 +1031,6 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     // Update the flow.
     m_comp->fgRemoveRefPred(m_b1->GetTrueEdge());
     m_b1->SetKindAndTargetEdge(BBJ_ALWAYS, m_b1->GetFalseEdge());
-    m_b1->SetFlags(BBF_NONE_QUIRK);
 
     // Fixup flags.
     m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);

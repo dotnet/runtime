@@ -45,6 +45,10 @@
       <!-- Properties that control source-only build configurations should be added to the repository and guarded with DotNetBuildSourceOnly conditions.
            This allows to build the repository using './build.sh <args> /p:DotNetBuildSourceOnly=true'.
            Properties that control flags from the VMR build, and the expected output for the VMR build should be added to this file. -->
+
+      <!-- Enable regular Arcade publishing in VMR build -->
+      <InnerBuildArgs Condition="'$(DotNetBuildOrchestrator)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)restore $(FlagParameterPrefix)build $(FlagParameterPrefix)publish</InnerBuildArgs>
+
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)arch $(TargetArch)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildSourceOnly)' != 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)os $(TargetOS)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(CrossBuild)' == 'true' or ('$(TargetArch)' != '$(_hostArch)' and '$(ShortStack)' != 'true')">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
@@ -74,6 +78,12 @@
       <InnerBuildArgs Condition="'$(ContinuousIntegrationBuild)' != ''">$(InnerBuildArgs) /p:ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PortableBuild)' != ''">$(InnerBuildArgs) /p:PortableBuild=$(PortableBuild)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(RestoreConfigFile)' != ''">$(InnerBuildArgs) /p:RestoreConfigFile=$(RestoreConfigFile)</InnerBuildArgs>
+
+      <!-- Pass locations for assets and packages -->
+      <InnerBuildArgs Condition="'$(SourceBuiltAssetsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetsDir=$(SourceBuiltAssetsDir)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(SourceBuiltShippingPackagesDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltShippingPackagesDir=$(SourceBuiltShippingPackagesDir)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(SourceBuiltNonShippingPackagesDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltNonShippingPackagesDir=$(SourceBuiltNonShippingPackagesDir)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(SourceBuiltAssetManifestsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetManifestsDir=$(SourceBuiltAssetManifestsDir)</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 

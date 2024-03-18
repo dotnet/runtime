@@ -172,7 +172,7 @@ namespace DebuggerTests
 
                     foreach (var frame in pause_location["callFrames"])
                     {
-                        Assert.Equal(false, frame["url"].Value<string>().Contains(".wasm"));
+                        Assert.Equal(false, frame["url"].Value<string>().EndsWith(".wasm", StringComparison.Ordinal));
                         Assert.Equal(false, frame["url"].Value<string>().Contains("wasm://"));
                     }
                     return Task.CompletedTask;

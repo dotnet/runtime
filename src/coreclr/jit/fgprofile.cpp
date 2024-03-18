@@ -508,7 +508,7 @@ void BlockCountInstrumentor::RelocateProbes()
         if (criticalPreds.Height() > 0)
         {
             BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
-            intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED | BBF_NONE_QUIRK);
+            intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED);
             intermediary->inheritWeight(block);
             FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
             intermediary->SetTargetEdge(newEdge);
@@ -1679,7 +1679,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         if (criticalPreds.Height() > 0)
         {
             BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
-            intermediary->SetFlags(BBF_IMPORTED | BBF_NONE_QUIRK);
+            intermediary->SetFlags(BBF_IMPORTED);
             intermediary->inheritWeight(block);
             FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
             intermediary->SetTargetEdge(newEdge);
@@ -4592,6 +4592,9 @@ void Compiler::fgDebugCheckProfileWeights()
 // Arguments:
 //   checks - checker options
 //
+// Returns:
+//   True if all enabled checks pass
+//
 // Notes:
 //   For each profiled block, check that the flow of counts into
 //   the block matches the flow of counts out of the block.
@@ -4603,7 +4606,7 @@ void Compiler::fgDebugCheckProfileWeights()
 //   There's no point checking until we've built pred lists, as
 //   we can't easily reason about consistency without them.
 //
-void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
+bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 {
     // We can check classic (min/max, late computed) weights
     //   and/or
@@ -4618,7 +4621,7 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     if (!verifyLikelyWeights && !verifyHasLikelihood)
     {
         JITDUMP("[profile weight checks disabled]\n");
-        return;
+        return true;
     }
 
     JITDUMP("Checking Profile Weights (flags:0x%x)\n", checks);
@@ -4781,6 +4784,8 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
             assert(!"Inconsistent profile data");
         }
     }
+
+    return (problemBlocks == 0);
 }
 
 //------------------------------------------------------------------------

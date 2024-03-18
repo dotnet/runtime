@@ -677,7 +677,6 @@ private:
                 {
                     m_compiler->fgRemoveRefPred(block->GetTrueEdge());
                     block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
-                    block->SetFlags(BBF_NONE_QUIRK);
                 }
                 else
                 {
@@ -1536,11 +1535,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
                 FlowEdge* const newEdge = fgAddRefPred(bottomBlock, block);
                 block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
-
-                if (block == InlineeCompiler->fgLastBB)
-                {
-                    block->SetFlags(BBF_NONE_QUIRK);
-                }
             }
         }
 
@@ -1554,7 +1548,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         fgRedirectTargetEdge(topBlock, InlineeCompiler->fgFirstBB);
 
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
-        topBlock->SetFlags(BBF_NONE_QUIRK);
         InlineeCompiler->fgLastBB->SetNext(bottomBlock);
 
         //

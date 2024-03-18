@@ -2223,6 +2223,8 @@ class FlowGraphNaturalLoops
     // Collection of loops that were found.
     jitstd::vector<FlowGraphNaturalLoop*> m_loops;
 
+    unsigned m_improperLoopHeaders;
+
     FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
 
     static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist);
@@ -2299,6 +2301,13 @@ public:
     }
 
     static FlowGraphNaturalLoops* Find(const FlowGraphDfsTree* dfs);
+
+    // Number of blocks with DFS backedges that are not natural loop headers
+    // (indicates presence of "irreducible" loops)
+    unsigned ImproperLoopHeaders() const
+    {
+        return m_improperLoopHeaders;
+    }
 
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoops* loops);
@@ -6120,7 +6129,7 @@ public:
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfileWeights();
-    void fgDebugCheckProfileWeights(ProfileChecks checks);
+    bool fgDebugCheckProfileWeights(ProfileChecks checks);
     bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
 
@@ -6260,6 +6269,13 @@ public:
     unsigned                               fgPgoInlineeNoPgo;
     unsigned                               fgPgoInlineeNoPgoSingleBlock;
     bool                                   fgPgoHaveWeights;
+    bool                                   fgPgoSynthesized;
+    bool                                   fgPgoConsistent;
+
+#ifdef DEBUG
+    bool                                   fgPgoConsistentCheck;
+#endif
+
 
     void WalkSpanningTree(SpanningTreeVisitor* visitor);
     void fgSetProfileWeight(BasicBlock* block, weight_t weight);
