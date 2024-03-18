@@ -1841,7 +1841,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #if defined(TARGET_XARCH)
         return INS_kmovq_msk;
 #elif defined(TARGET_ARM64)
-        return INS_sve_ldr;
+        return INS_sve_ldr_mask;
 #endif
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -2163,7 +2163,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #if defined(TARGET_XARCH)
         return INS_kmovq_msk;
 #elif defined(TARGET_ARM64)
-        return INS_sve_str;
+        return INS_sve_str_mask;
 #endif
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS

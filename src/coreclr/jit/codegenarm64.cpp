@@ -2767,19 +2767,11 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         // targetType must be a normal scalar type and not a TYP_STRUCT
         assert(targetType != TYP_STRUCT);
 
-        instruction     ins  = ins_Load(targetType);
-        emitAttr        attr = emitActualTypeSize(targetType);
-        insScalableOpts sopt = INS_SCALABLE_OPTS_NONE;
-        emitter*        emit = GetEmitter();
+        instruction ins  = ins_Load(targetType);
+        emitAttr    attr = emitActualTypeSize(targetType);
 
-        // TODO-SVE: Removable once REG_V0 and REG_P0 are distinct
-        if (varTypeUsesMaskReg(targetType))
-        {
-            sopt = INS_SCALABLE_OPTS_PREDICATE_DEST;
-        }
-
-        emit->emitIns_R_S(ins, attr, tree->GetRegNum(), varNum, 0, sopt);
-
+        emitter* emit = GetEmitter();
+        emit->emitIns_R_S(ins, attr, tree->GetRegNum(), varNum, 0);
         genProduceReg(tree);
     }
 }
@@ -2961,17 +2953,10 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         {
             inst_set_SV_var(lclNode);
 
-            instruction     ins  = ins_StoreFromSrc(dataReg, targetType);
-            emitAttr        attr = emitActualTypeSize(targetType);
-            insScalableOpts sopt = INS_SCALABLE_OPTS_NONE;
+            instruction ins  = ins_StoreFromSrc(dataReg, targetType);
+            emitAttr    attr = emitActualTypeSize(targetType);
 
-            // TODO-SVE: Removable once REG_V0 and REG_P0 are distinct
-            if (varTypeUsesMaskReg(targetType))
-            {
-                sopt = INS_SCALABLE_OPTS_PREDICATE_DEST;
-            }
-
-            emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0, sopt);
+            emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
         }
         else // store into register (i.e move into register)
         {

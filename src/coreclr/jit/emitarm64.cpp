@@ -17309,12 +17309,7 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
  *
  *  Add an instruction referencing a register and a stack-based local variable.
  */
-void emitter::emitIns_R_S(instruction     ins,
-                          emitAttr        attr,
-                          regNumber       reg1,
-                          int             varx,
-                          int             offs,
-                          insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
+void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
     emitAttr  size       = EA_SIZE(attr);
     insFormat fmt        = IF_NONE;
@@ -17358,29 +17353,30 @@ void emitter::emitIns_R_S(instruction     ins,
             break;
 
         case INS_sve_ldr:
-            assert(isVectorRegister(reg1) || isPredicateRegister(reg1));
+            assert(isPredicateRegister(reg1));
             isScalable = true;
+            size       = EA_SCALABLE;
+            attr       = size;
+            fmt        = IF_SVE_IE_2A;
 
-            // TODO-SVE: This should probably be set earlier in the caller
-            size = EA_SCALABLE;
-            attr = size;
-
-            // TODO-SVE: Use register number instead of enum
             // TODO-SVE: Don't assume 128bit vectors
-            if (sopt == INS_SCALABLE_OPTS_PREDICATE_DEST)
-            {
-                assert(isPredicateRegister(reg1));
-                fmt = IF_SVE_ID_2A;
-                // Predicate size is vector length / 8
-                scale = NaturalScale_helper(EA_2BYTE);
-            }
-            else
-            {
-                assert(insScalableOptsNone(sopt));
-                assert(isVectorRegister(reg1));
-                fmt   = IF_SVE_IE_2A;
-                scale = NaturalScale_helper(EA_16BYTE);
-            }
+            scale = NaturalScale_helper(EA_16BYTE);
+
+            break;
+
+        // TODO-SVE: Fold into INS_sve_ldr once REG_V0 and REG_P0 are distinct
+        case INS_sve_ldr_mask:
+            assert(isPredicateRegister(reg1));
+            isScalable = true;
+            size       = EA_SCALABLE;
+            attr       = size;
+            fmt        = IF_SVE_ID_2A;
+            ins        = INS_sve_ldr;
+
+            // TODO-SVE: Don't assume 128bit vectors
+            // Predicate size is vector length / 8
+            scale = NaturalScale_helper(EA_2BYTE);
+
             break;
 
         default:
@@ -17602,12 +17598,7 @@ void emitter::emitIns_R_R_S_S(
  *
  *  Add an instruction referencing a stack-based local variable and a register
  */
-void emitter::emitIns_S_R(instruction     ins,
-                          emitAttr        attr,
-                          regNumber       reg1,
-                          int             varx,
-                          int             offs,
-                          insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
+void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
     assert(offs >= 0);
     emitAttr  size          = EA_SIZE(attr);
@@ -17649,29 +17640,30 @@ void emitter::emitIns_S_R(instruction     ins,
             break;
 
         case INS_sve_str:
-            assert(isVectorRegister(reg1) || isPredicateRegister(reg1));
+            assert(isVectorRegister(reg1));
             isScalable = true;
+            size       = EA_SCALABLE;
+            attr       = size;
+            fmt        = IF_SVE_JH_2A;
 
-            // TODO-SVE: This should probably be set in the caller
-            size = EA_SCALABLE;
-            attr = size;
-
-            // TODO-SVE: Use register number instead of enum
             // TODO-SVE: Don't assume 128bit vectors
-            if (sopt == INS_SCALABLE_OPTS_PREDICATE_DEST)
-            {
-                assert(isPredicateRegister(reg1));
-                fmt = IF_SVE_JG_2A;
-                // Predicate size is vector length / 8
-                scale = NaturalScale_helper(EA_2BYTE);
-            }
-            else
-            {
-                assert(insScalableOptsNone(sopt));
-                assert(isVectorRegister(reg1));
-                fmt   = IF_SVE_JH_2A;
-                scale = NaturalScale_helper(EA_16BYTE);
-            }
+            scale = NaturalScale_helper(EA_16BYTE);
+
+            break;
+
+        // TODO-SVE: Fold into INS_sve_str once REG_V0 and REG_P0 are distinct
+        case INS_sve_str_mask:
+            assert(isPredicateRegister(reg1));
+            isScalable = true;
+            size       = EA_SCALABLE;
+            attr       = size;
+            fmt        = IF_SVE_JG_2A;
+            ins        = INS_sve_str;
+
+            // TODO-SVE: Don't assume 128bit vectors
+            // Predicate size is vector length / 8
+            scale = NaturalScale_helper(EA_2BYTE);
+
             break;
 
         default:
