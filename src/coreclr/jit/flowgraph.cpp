@@ -1279,8 +1279,6 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
     return tree;
 }
 
-#if defined(FEATURE_EH_FUNCLETS)
-
 /*****************************************************************************
  *
  *  Add monitor enter/exit calls for synchronized methods, and a try/fault
@@ -1343,6 +1341,8 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
 
 void Compiler::fgAddSyncMethodEnterExit()
 {
+    assert(UsesFunclets());
+
     assert((info.compFlags & CORINFO_FLG_SYNCH) != 0);
 
     // We need to do this transformation before funclets are created.
@@ -1654,8 +1654,6 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     }
 #endif
 }
-
-#endif // FEATURE_EH_FUNCLETS
 
 //------------------------------------------------------------------------
 // fgAddReversePInvokeEnterExit: Add enter/exit calls for reverse PInvoke methods
@@ -2340,17 +2338,15 @@ PhaseStatus Compiler::fgAddInternal()
     // Merge return points if required or beneficial
     MergedReturns merger(this);
 
-#if defined(FEATURE_EH_FUNCLETS)
     // Add the synchronized method enter/exit calls and try/finally protection. Note
     // that this must happen before the one BBJ_RETURN block is created below, so the
     // BBJ_RETURN block gets placed at the top-level, not within an EH region. (Otherwise,
     // we'd have to be really careful when creating the synchronized method try/finally
     // not to include the BBJ_RETURN block.)
-    if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+    if (UsesFunclets() && (info.compFlags & CORINFO_FLG_SYNCH) != 0)
     {
         fgAddSyncMethodEnterExit();
     }
-#endif // FEATURE_EH_FUNCLETS
 
     //
     //  We will generate just one epilog (return block)
@@ -2461,11 +2457,11 @@ PhaseStatus Compiler::fgAddInternal()
         madeChanges = true;
     }
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_X86_FRAMES)
 
     /* Is this a 'synchronized' method? */
 
-    if (info.compFlags & CORINFO_FLG_SYNCH)
+    if (!UsesFunclets() && (info.compFlags & CORINFO_FLG_SYNCH))
     {
         GenTree* tree = nullptr;
 
@@ -2533,7 +2529,7 @@ PhaseStatus Compiler::fgAddInternal()
         madeChanges         = true;
     }
 
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_X86_FRAMES
 
     if (opts.IsReversePInvoke())
     {
@@ -2719,14 +2715,10 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
 //
 BasicBlock* Compiler::fgLastBBInMainFunction()
 {
-#if defined(FEATURE_EH_FUNCLETS)
-
     if (fgFirstFuncletBB != nullptr)
     {
         return fgFirstFuncletBB->Prev();
     }
-
-#endif // FEATURE_EH_FUNCLETS
 
     assert(fgLastBB->IsLast());
     return fgLastBB;
@@ -2739,20 +2731,14 @@ BasicBlock* Compiler::fgLastBBInMainFunction()
 //
 BasicBlock* Compiler::fgEndBBAfterMainFunction()
 {
-#if defined(FEATURE_EH_FUNCLETS)
-
     if (fgFirstFuncletBB != nullptr)
     {
         return fgFirstFuncletBB;
     }
 
-#endif // FEATURE_EH_FUNCLETS
-
     assert(fgLastBB->IsLast());
     return nullptr;
 }
-
-#if defined(FEATURE_EH_FUNCLETS)
 
 /*****************************************************************************
  * Introduce a new head block of the handler for the prolog to be put in, ahead
@@ -2769,6 +2755,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     }
 #endif
 
+    assert(UsesFunclets());
     assert(block->hasHndIndex());
     assert(fgFirstBlockOfHandler(block) == block); // this block is the first block of a handler
 
@@ -2831,6 +2818,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 //
 void Compiler::fgCreateFuncletPrologBlocks()
 {
+    assert(UsesFunclets());
     noway_assert(fgPredsComputed);
     assert(!fgFuncletsCreated);
 
@@ -2895,6 +2883,7 @@ void Compiler::fgCreateFuncletPrologBlocks()
 //
 PhaseStatus Compiler::fgCreateFunclets()
 {
+    assert(UsesFunclets());
     assert(!fgFuncletsCreated);
 
     fgCreateFuncletPrologBlocks();
@@ -2970,6 +2959,8 @@ PhaseStatus Compiler::fgCreateFunclets()
 //
 bool Compiler::fgFuncletsAreCold()
 {
+    assert(UsesFunclets());
+
     for (BasicBlock* block = fgFirstFuncletBB; block != nullptr; block = block->Next())
     {
         if (!block->isRunRarely())
@@ -2980,8 +2971,6 @@ bool Compiler::fgFuncletsAreCold()
 
     return true;
 }
-
-#endif // defined(FEATURE_EH_FUNCLETS)
 
 //------------------------------------------------------------------------
 // fgDetermineFirstColdBlock: figure out where we might split the block
@@ -3052,14 +3041,12 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
             }
 #endif // HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
 
-#ifdef FEATURE_EH_FUNCLETS
             // Make note of if we're in the funclet section,
             // so we can stop the search early.
             if (block == fgFirstFuncletBB)
             {
                 inFuncletSection = true;
             }
-#endif // FEATURE_EH_FUNCLETS
 
             // Do we have a candidate for the first cold block?
             if (firstColdBlock != nullptr)
@@ -3073,7 +3060,6 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     firstColdBlock       = nullptr;
                     prevToFirstColdBlock = nullptr;
 
-#ifdef FEATURE_EH_FUNCLETS
                     // If we're already in the funclet section, try to split
                     // at fgFirstFuncletBB, and stop the search.
                     if (inFuncletSection)
@@ -3086,13 +3072,10 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
 
                         break;
                     }
-#endif // FEATURE_EH_FUNCLETS
                 }
             }
             else // (firstColdBlock == NULL) -- we don't have a candidate for first cold block
             {
-
-#ifdef FEATURE_EH_FUNCLETS
                 //
                 // If a function has exception handling and we haven't found the first cold block yet,
                 // consider splitting at the first funclet; do not consider splitting between funclets,
@@ -3108,7 +3091,6 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
 
                     break;
                 }
-#endif // FEATURE_EH_FUNCLETS
 
                 // Is this a cold block?
                 if (!blockMustBeInHotSection && block->isRunRarely())

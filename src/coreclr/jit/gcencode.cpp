@@ -62,8 +62,6 @@ ReturnKind GCInfo::getReturnKind()
     }
 }
 
-#if !defined(JIT32_GCENCODER) || defined(FEATURE_EH_FUNCLETS)
-
 // gcMarkFilterVarsPinned - Walk all lifetimes and make it so that anything
 //     live in a filter is marked as pinned (often by splitting the lifetime
 //     so that *only* the filter region is pinned).  This should only be
@@ -86,6 +84,7 @@ ReturnKind GCInfo::getReturnKind()
 //
 void GCInfo::gcMarkFilterVarsPinned()
 {
+    assert(compiler->UsesFunclets());
     assert(compiler->ehAnyFunclets());
 
     for (EHblkDsc* const HBtab : EHClauses(compiler))
@@ -297,6 +296,8 @@ void GCInfo::gcMarkFilterVarsPinned()
 
 void GCInfo::gcInsertVarPtrDscSplit(varPtrDsc* desc, varPtrDsc* begin)
 {
+    assert(compiler->UsesFunclets());
+
 #ifndef JIT32_GCENCODER
     (void)begin;
     desc->vpdNext = gcVarPtrList;
@@ -335,6 +336,8 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
     const GCtype gcType = (desc->vpdVarNum & byref_OFFSET_FLAG) ? GCT_BYREF : GCT_GCREF;
     const bool   isPin  = (desc->vpdVarNum & pinned_OFFSET_FLAG) != 0;
 
+    assert(compiler->UsesFunclets());
+
     printf("[%08X] %s%s var at [%s", dspPtr(desc), GCtypeStr(gcType), isPin ? "pinned-ptr" : "",
            compiler->isFramePointerUsed() ? STR_FPBASE : STR_SPBASE);
 
@@ -351,8 +354,6 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
 }
 
 #endif // DEBUG
-
-#endif // !defined(JIT32_GCENCODER) || defined(FEATURE_EH_FUNCLETS)
 
 #ifdef JIT32_GCENCODER
 
@@ -1564,9 +1565,9 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->syncStartOffset = INVALID_SYNC_OFFSET;
     header->syncEndOffset   = INVALID_SYNC_OFFSET;
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_X86_FRAMES)
     // JIT is responsible for synchronization on funclet-based EH model that x86/Linux uses.
-    if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
+    if (!compiler->UsesFunclets() && compiler->info.compFlags & CORINFO_FLG_SYNCH)
     {
         assert(compiler->syncStartEmitCookie != nullptr);
         header->syncStartOffset = compiler->GetEmitter()->emitCodeOffset(compiler->syncStartEmitCookie, 0);
@@ -2319,8 +2320,8 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
     if (header.varPtrTableSize != 0)
     {
-#if !defined(FEATURE_EH_FUNCLETS)
-        if (keepThisAlive)
+#if defined(FEATURE_EH_X86_FRAMES)
+        if (!compiler->UsesFunclets() && keepThisAlive)
         {
             // Encoding of untracked variables does not support reporting
             // "this". So report it as a tracked variable with a liveness
@@ -2344,7 +2345,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
             dest += (sz & mask);
             totalSize += sz;
         }
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_X86_FRAMES
 
         /* We'll use a delta encoding for the lifetime offsets */
 
@@ -3960,7 +3961,6 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         gcInfoEncoderWithLog->SetPrologSize(prologSize);
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
 #ifdef TARGET_AMD64
@@ -3978,8 +3978,6 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         gcInfoEncoderWithLog->SetWantsReportOnlyLeaf();
     }
 #endif // TARGET_AMD64
-
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef TARGET_ARMARCH
     if (compiler->codeGen->GetHasTailCalls())
@@ -4698,8 +4696,8 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode
     // unused by alignment
     C_ASSERT((OFFSET_MASK + 1) <= sizeof(int));
 
-#if defined(DEBUG) && defined(JIT32_GCENCODER) && !defined(FEATURE_EH_FUNCLETS)
-    if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
+#if defined(DEBUG) && defined(JIT32_GCENCODER) && defined(FEATURE_EH_X86_FRAMES)
+    if (!compiler->UsesFunclets() && mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
         // Tracked variables can't be pinned, and the encoding takes
         // advantage of that by using the same bit for 'pinned' and 'this'

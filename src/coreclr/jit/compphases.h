@@ -55,9 +55,7 @@ CompPhaseNameMacro(PHASE_POST_MORPH,                 "Post-Morph",              
 CompPhaseNameMacro(PHASE_MORPH_END,                  "Morph - Finish",                 false, -1, true)
 CompPhaseNameMacro(PHASE_GS_COOKIE,                  "GS Cookie",                      false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_EDGE_WEIGHTS,       "Compute edge weights (1, false)",false, -1, false)
-#if defined(FEATURE_EH_FUNCLETS)
 CompPhaseNameMacro(PHASE_CREATE_FUNCLETS,            "Create EH funclets",             false, -1, false)
-#endif // FEATURE_EH_FUNCLETS
 CompPhaseNameMacro(PHASE_HEAD_TAIL_MERGE,            "Head and tail merge",            false, -1, false)
 CompPhaseNameMacro(PHASE_MERGE_THROWS,               "Merge throw blocks",             false, -1, false)
 CompPhaseNameMacro(PHASE_INVERT_LOOPS,               "Invert loops",                   false, -1, false)
