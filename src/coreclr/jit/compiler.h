@@ -6276,9 +6276,10 @@ public:
     unsigned                               fgPgoInlineeNoPgoSingleBlock;
     bool                                   fgPgoHaveWeights;
     bool                                   fgPgoSynthesized;
+    bool                                   fgPgoConsistent;
 
 #ifdef DEBUG
-    bool                                   fgPgoConsistent;
+    bool                                   fgPgoConsistentCheck;
 #endif
 
 

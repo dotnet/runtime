@@ -582,6 +582,15 @@ PhaseStatus Compiler::fgImport()
         compInlineResult->SetImportedILSize(info.compILImportSize);
     }
 
+    // Now that we've made it through the importer, we know the IL was valid.
+    // If we synthesized profile data and though it should be consistent,
+    // verify that it was consistent.
+    //
+    if (fgPgoSynthesized && fgPgoConsistent)
+    {
+        assert(fgPgoConsistentCheck);
+    }
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 

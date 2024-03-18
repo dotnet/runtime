@@ -100,6 +100,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoHaveWeights = true;
     m_comp->fgPgoSource      = newSource;
     m_comp->fgPgoSynthesized = true;
+    m_comp->fgPgoConsistent  = (m_improperLoopHeaders == 0) && (m_cappedCyclicProbabilities == 0);
 
 #ifdef DEBUG
     if (JitConfig.JitCheckSynthesizedCounts() > 0)
@@ -109,13 +110,13 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         //
         // Unfortunately invalid IL may also cause inconsistencies,
         // so if we are running before the importer, we can't reliably
-        // assert.
+        // assert. So we check now, but defer asserting until the end of fgImport.
         //
-        if ((m_improperLoopHeaders == 0) && (m_cappedCyclicProbabilities == 0))
+        if (m_comp->fgPgoConsistent)
         {
             // verify likely weights, assert on failure, check all blocks
-            m_comp->fgPgoConsistent = m_comp->fgDebugCheckProfileWeights(
-                ProfileChecks::CHECK_LIKELY | ProfileChecks::RAISE_ASSERT | ProfileChecks::CHECK_ALL_BLOCKS);
+            m_comp->fgPgoConsistentCheck =
+                m_comp->fgDebugCheckProfileWeights(ProfileChecks::CHECK_LIKELY | ProfileChecks::CHECK_ALL_BLOCKS);
         }
     }
 #endif
