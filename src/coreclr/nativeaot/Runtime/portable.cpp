@@ -33,7 +33,7 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(USE_PORTABLE_HELPERS)
-EXTERN_C void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C void* F_CALL_CONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
 static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements)
 {

@@ -396,6 +396,8 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
             FlowEdge* const falseEdge = fgAddRefPred(nullcheckBb, sizeCheckBb);
             sizeCheckBb->SetTrueEdge(trueEdge);
             sizeCheckBb->SetFalseEdge(falseEdge);
+            trueEdge->setLikelihood(0.2);
+            falseEdge->setLikelihood(0.8);
         }
 
         // fallbackBb is reachable from both nullcheckBb and sizeCheckBb
@@ -414,10 +416,13 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     FlowEdge* const falseEdge = fgAddRefPred(fastPathBb, nullcheckBb);
     nullcheckBb->SetTrueEdge(trueEdge);
     nullcheckBb->SetFalseEdge(falseEdge);
+    trueEdge->setLikelihood(0.2);
+    falseEdge->setLikelihood(0.8);
 
     //
     // Re-distribute weights (see '[weight: X]' on the diagrams above)
     // TODO: consider marking fallbackBb as rarely-taken
+    // TODO: derive block weights from edge likelihoods.
     //
     block->inheritWeight(prevBb);
     if (needsSizeCheck)
@@ -720,6 +725,8 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, tlsRootNullCondBB);
     tlsRootNullCondBB->SetTrueEdge(trueEdge);
     tlsRootNullCondBB->SetFalseEdge(falseEdge);
+    trueEdge->setLikelihood(1.0);
+    falseEdge->setLikelihood(0.0);
 
     {
         FlowEdge* const newEdge = fgAddRefPred(block, fallbackBb);
@@ -1091,6 +1098,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         FlowEdge* const falseEdge = fgAddRefPred(threadStaticBlockNullCondBB, maxThreadStaticBlocksCondBB);
         maxThreadStaticBlocksCondBB->SetTrueEdge(trueEdge);
         maxThreadStaticBlocksCondBB->SetFalseEdge(falseEdge);
+        trueEdge->setLikelihood(0.0);
+        falseEdge->setLikelihood(1.0);
     }
 
     {
@@ -1098,6 +1107,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, threadStaticBlockNullCondBB);
         threadStaticBlockNullCondBB->SetTrueEdge(trueEdge);
         threadStaticBlockNullCondBB->SetFalseEdge(falseEdge);
+        trueEdge->setLikelihood(1.0);
+        falseEdge->setLikelihood(0.0);
     }
 
     {
@@ -1471,6 +1482,8 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
         FlowEdge* const falseEdge = fgAddRefPred(helperCallBb, isInitedBb);
         isInitedBb->SetTrueEdge(trueEdge);
         isInitedBb->SetFalseEdge(falseEdge);
+        trueEdge->setLikelihood(1.0);
+        falseEdge->setLikelihood(0.0);
     }
 
     //
@@ -1700,7 +1713,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     //
     // Block 1: lengthCheckBb (we check that dstLen < srcLen)
     //
-    BasicBlock* lengthCheckBb = fgNewBBafter(BBJ_COND, prevBb, true);
+    BasicBlock* const lengthCheckBb = fgNewBBafter(BBJ_COND, prevBb, true);
     lengthCheckBb->SetFlags(BBF_INTERNAL);
 
     // Set bytesWritten -1 by default, if the fast path is not taken we'll return it as the result.
@@ -1786,6 +1799,10 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         FlowEdge* const falseEdge = fgAddRefPred(fastpathBb, lengthCheckBb);
         lengthCheckBb->SetTrueEdge(trueEdge);
         lengthCheckBb->SetFalseEdge(falseEdge);
+
+        // review: we assume length check always succeeds??
+        trueEdge->setLikelihood(1.0);
+        falseEdge->setLikelihood(0.0);
     }
 
     {
@@ -2456,12 +2473,47 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         // No-op because tmp was already assigned to obj
         typeCheckSucceedTree = gtNewNothingNode();
     }
-    BasicBlock* typeCheckSucceedBb =
-        typeCheckNotNeeded ? nullptr : fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo);
 
     //
     // Wire up the blocks
     //
+
+    // We assume obj is 50%/50% null/not-null (TODO-InlineCast: rely on PGO)
+    // and rely on profile for the slow path.
+    //
+    // Alternatively we could profile nulls in the reservoir sample and
+    // treat that as another "option".
+    //
+    // True out of the null check means obj is null.
+    //
+    const weight_t nullcheckTrueLikelihood  = 0.5;
+    const weight_t nullcheckFalseLikelihood = 0.5;
+    BasicBlock*    typeCheckSucceedBb;
+
+    {
+        FlowEdge* const trueEdge = fgAddRefPred(lastBb, nullcheckBb);
+        nullcheckBb->SetTrueEdge(trueEdge);
+        trueEdge->setLikelihood(nullcheckTrueLikelihood);
+    }
+
+    if (typeCheckNotNeeded)
+    {
+        FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, nullcheckBb);
+        nullcheckBb->SetFalseEdge(falseEdge);
+        falseEdge->setLikelihood(nullcheckFalseLikelihood);
+
+        typeCheckSucceedBb = nullptr;
+    }
+    else
+    {
+        FlowEdge* const falseEdge = fgAddRefPred(typeChecksBbs[0], nullcheckBb);
+        nullcheckBb->SetFalseEdge(falseEdge);
+        falseEdge->setLikelihood(nullcheckFalseLikelihood);
+
+        typeCheckSucceedBb      = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo);
+        FlowEdge* const newEdge = fgAddRefPred(lastBb, typeCheckSucceedBb);
+        typeCheckSucceedBb->SetTargetEdge(newEdge);
+    }
 
     // Tricky case - wire up multiple type check blocks (in most cases there is only one)
     for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
@@ -2489,46 +2541,74 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
     fgRedirectTargetEdge(firstBb, nullcheckBb);
 
-    {
-        FlowEdge* const trueEdge = fgAddRefPred(lastBb, nullcheckBb);
-        nullcheckBb->SetTrueEdge(trueEdge);
-    }
-
-    if (typeCheckNotNeeded)
-    {
-        FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, nullcheckBb);
-        nullcheckBb->SetFalseEdge(falseEdge);
-    }
-    else
-    {
-        FlowEdge* const falseEdge = fgAddRefPred(typeChecksBbs[0], nullcheckBb);
-        nullcheckBb->SetFalseEdge(falseEdge);
-
-        FlowEdge* const newEdge = fgAddRefPred(lastBb, typeCheckSucceedBb);
-        typeCheckSucceedBb->SetTargetEdge(newEdge);
-    }
-
     //
-    // Re-distribute weights
+    // Re-distribute weights and set edge likelihoods.
+    //
+    // We have the likelihood estimate for each class to test against.
+    // As with multi-guess GDV, once we've failed the first check, the
+    // likelihood of the other checks will increase.
+    //
+    // For instance, suppose we have 3 classes A, B, C, with likelihoods 0.5, 0.2, 0.1,
+    // and a residual 0.2 likelihood for none of the above.
+    //
+    // We first test for A, this is a 0.5 likelihood of success.
+    //
+    // If the test for A fails, we test for B. Because we only reach this second
+    // test with relative likelihood 0.5, we need to divide (scale up) the remaining
+    // likelihoods by 0.5, so we end up with 0.4, 0.2, (none of the above: 0.4).
+    //
+    // If the test for B also fails, we test for C. Because we only reach
+    // this second test with relative likelihood 0.6, we need to divide (scale up)
+    // the remaining likelihoods by by 0.6, so we end up with 0.33, (none of the above: 0.67).
+    //
+    // In the code below, instead of updating all the likelihoods each time,
+    // we remember how much  we need to divide by to fix the next likelihood. This divisor is
+    // 1.0 - (sumOfPreviousLikelihoods)
+    //
+    // So for the above, we have
+    //
+    //   Test  |  Likelihood  |  Sum of Previous  |   Rel. Likelihood
+    //    A    |      0.5     |        0.0        |   0.5 / (1 - 0.0) = 0.50
+    //    B    |      0.2     |        0.5        |   0.2 / (1 - 0.5) = 0.40
+    //    C    |      0.1     |        0.7        |   0.1 / (1 - 0.7) = 0.33
+    //   n/a   |      0.2     |        0.8        |   0.2 / (1 - 0.8) = 1.00
+    //
+    // The same goes for inherited weights -- the block where we test for B will have
+    // the weight of A times the likelihood that A's test fails, etc.
     //
     nullcheckBb->inheritWeight(firstBb);
-    unsigned totalLikelihood = 0;
+    weight_t sumOfPreviousLikelihood = 0;
     for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
     {
-        unsigned    likelihood     = likelihoods[candidateId];
         BasicBlock* curTypeCheckBb = typeChecksBbs[candidateId];
         if (candidateId == 0)
         {
-            // We assume obj is 50%/50% null/not-null (TODO-InlineCast: rely on PGO)
-            // and rely on profile for the slow path.
-            curTypeCheckBb->inheritWeightPercentage(nullcheckBb, 50);
+            // Predecessor is the nullcheck, control reaches on false.
+            //
+            curTypeCheckBb->inheritWeight(nullcheckBb);
+            curTypeCheckBb->scaleBBWeight(nullcheckBb->GetFalseEdge()->getLikelihood());
         }
         else
         {
-            BasicBlock* prevTypeCheckBb = typeChecksBbs[candidateId - 1];
-            curTypeCheckBb->inheritWeightPercentage(prevTypeCheckBb, likelihood);
+            // Predecessor is the prior type check, control reaches on false.
+            //
+            BasicBlock* const prevTypeCheckBb           = typeChecksBbs[candidateId - 1];
+            weight_t          prevCheckFailedLikelihood = prevTypeCheckBb->GetFalseEdge()->getLikelihood();
+            curTypeCheckBb->inheritWeight(prevTypeCheckBb);
+            curTypeCheckBb->scaleBBWeight(prevCheckFailedLikelihood);
         }
-        totalLikelihood += likelihood;
+
+        // Fix likelihood of block's outgoing edges.
+        //
+        weight_t likelihood    = (weight_t)likelihoods[candidateId] / 100;
+        weight_t relLikelihood = likelihood / (1.0 - sumOfPreviousLikelihood);
+
+        JITDUMP("Candidate %d: likelihood " FMT_WT " relative likelihood " FMT_WT "\n", candidateId, likelihood,
+                relLikelihood);
+
+        curTypeCheckBb->GetTrueEdge()->setLikelihood(relLikelihood);
+        curTypeCheckBb->GetFalseEdge()->setLikelihood(1.0 - relLikelihood);
+        sumOfPreviousLikelihood += likelihood;
     }
 
     if (fallbackBb->KindIs(BBJ_THROW))
@@ -2540,13 +2620,15 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         assert(fallbackBb->KindIs(BBJ_ALWAYS));
         FlowEdge* const newEdge = fgAddRefPred(lastBb, fallbackBb);
         fallbackBb->SetTargetEdge(newEdge);
-
-        fallbackBb->inheritWeightPercentage(lastTypeCheckBb, 100 - totalLikelihood);
+        fallbackBb->inheritWeight(lastTypeCheckBb);
+        weight_t lastTypeCheckFailedLikelihood = lastTypeCheckBb->GetFalseEdge()->getLikelihood();
+        fallbackBb->scaleBBWeight(lastTypeCheckFailedLikelihood);
     }
 
     if (!typeCheckNotNeeded)
     {
-        typeCheckSucceedBb->inheritWeightPercentage(typeChecksBbs[0], totalLikelihood);
+        typeCheckSucceedBb->inheritWeight(typeChecksBbs[0]);
+        typeCheckSucceedBb->scaleBBWeight(sumOfPreviousLikelihood);
     }
 
     lastBb->inheritWeight(firstBb);

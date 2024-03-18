@@ -751,6 +751,8 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     //
     BasicBlock* notInRangeBb = m_b1->GetTrueTarget();
     BasicBlock* inRangeBb;
+    weight_t    inRangeLikelihood = m_b1->GetFalseEdge()->getLikelihood();
+
     if (m_b2->TrueTargetIs(notInRangeBb))
     {
         // Shape 1: both conditions jump to NotInRange
@@ -764,6 +766,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         // InRange:
         // ...
         inRangeBb = m_b2->GetFalseTarget();
+        inRangeLikelihood *= m_b2->GetFalseEdge()->getLikelihood();
     }
     else if (m_b2->FalseTargetIs(notInRangeBb))
     {
@@ -778,6 +781,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         // NotInRange:
         // ...
         inRangeBb = m_b2->GetTrueTarget();
+        inRangeLikelihood *= m_b2->GetTrueEdge()->getLikelihood();
     }
     else
     {
@@ -808,28 +812,35 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     }
 
     // Re-direct firstBlock to jump to inRangeBb
-    FlowEdge* const newEdge = m_comp->fgAddRefPred(inRangeBb, m_b1);
-    FlowEdge* const oldEdge = m_b1->GetFalseEdge();
+    FlowEdge* const newEdge      = m_comp->fgAddRefPred(inRangeBb, m_b1);
+    FlowEdge* const oldFalseEdge = m_b1->GetFalseEdge();
+    FlowEdge* const oldTrueEdge  = m_b1->GetTrueEdge();
 
     if (!cmp2IsReversed)
     {
-        m_b1->SetFalseEdge(m_b1->GetTrueEdge());
+        m_b1->SetFalseEdge(oldTrueEdge);
         m_b1->SetTrueEdge(newEdge);
         assert(m_b1->TrueTargetIs(inRangeBb));
         assert(m_b1->FalseTargetIs(notInRangeBb));
+
+        newEdge->setLikelihood(inRangeLikelihood);
+        oldTrueEdge->setLikelihood(1.0 - inRangeLikelihood);
     }
     else
     {
         m_b1->SetFalseEdge(newEdge);
         assert(m_b1->TrueTargetIs(notInRangeBb));
         assert(m_b1->FalseTargetIs(inRangeBb));
+
+        oldTrueEdge->setLikelihood(inRangeLikelihood);
+        newEdge->setLikelihood(1.0 - inRangeLikelihood);
     }
 
     // Remove the 2nd condition block as we no longer need it
-    m_comp->fgRemoveRefPred(oldEdge);
+    m_comp->fgRemoveRefPred(oldFalseEdge);
     m_comp->fgRemoveBlock(m_b2, true);
 
-    Statement* stmt = m_b1->lastStmt();
+    Statement* const stmt = m_b1->lastStmt();
     m_comp->gtSetStmtInfo(stmt);
     m_comp->fgSetStmtSeq(stmt);
     m_comp->gtUpdateStmtSideEffects(stmt);
@@ -1268,40 +1279,6 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         m_comp->fgSetStmtSeq(m_testInfo1.testStmt);
     }
 
-    if (!optReturnBlock)
-    {
-        // Update edges if m_b1: BBJ_COND and m_b2: BBJ_COND
-
-        FlowEdge* edge1 = m_b1->GetTrueEdge();
-        FlowEdge* edge2;
-
-        if (m_sameTarget)
-        {
-            edge2 = m_b2->GetTrueEdge();
-        }
-        else
-        {
-            edge2 = m_b2->GetFalseEdge();
-            m_comp->fgRemoveRefPred(m_b1->GetTrueEdge());
-            FlowEdge* const newEdge = m_comp->fgAddRefPred(m_b2->GetTrueTarget(), m_b1);
-            m_b1->SetTrueEdge(newEdge);
-        }
-
-        assert(edge1 != nullptr);
-        assert(edge2 != nullptr);
-
-        weight_t edgeSumMin = edge1->edgeWeightMin() + edge2->edgeWeightMin();
-        weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
-        if ((edgeSumMax >= edge1->edgeWeightMax()) && (edgeSumMax >= edge2->edgeWeightMax()))
-        {
-            edge1->setEdgeWeights(edgeSumMin, edgeSumMax, m_b1->GetTrueTarget());
-        }
-        else
-        {
-            edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, m_b1->GetTrueTarget());
-        }
-    }
-
     /* Modify the target of the conditional jump and update bbRefs and bbPreds */
 
     if (optReturnBlock)
@@ -1314,23 +1291,61 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     }
     else
     {
+        // Modify b1, if necessary, so it has the same
+        // true target as b2.
+        //
+        FlowEdge* const origB1TrueEdge  = m_b1->GetTrueEdge();
+        FlowEdge* const origB2TrueEdge  = m_b2->GetTrueEdge();
+        FlowEdge* const origB2FalseEdge = m_b2->GetFalseEdge();
+
+        weight_t const origB1TrueLikelihood = origB1TrueEdge->getLikelihood();
+        weight_t       newB1TrueLikelihood  = 0;
+
+        if (m_sameTarget)
+        {
+            // We originally reached B2's true target via
+            // B1 true OR B1 false B2 true.
+            //
+            newB1TrueLikelihood = origB1TrueLikelihood + (1.0 - origB1TrueLikelihood) * origB2TrueEdge->getLikelihood();
+        }
+        else
+        {
+            // We originally reached B2's true target via
+            // B1 false OR B1 true B2 false.
+            //
+            // We will now reach via B1 true.
+            // Modify flow for true side of B1
+            //
+            m_comp->fgRedirectTrueEdge(m_b1, m_b2->GetTrueTarget());
+
+            newB1TrueLikelihood =
+                (1.0 - origB1TrueLikelihood) + origB1TrueLikelihood * origB2FalseEdge->getLikelihood();
+        }
+
+        // Fix B1 true edge likelihood and min/max weights
+        //
+        origB1TrueEdge->setLikelihood(newB1TrueLikelihood);
+        weight_t const newB1TrueWeight = m_b1->bbWeight * newB1TrueLikelihood;
+        origB1TrueEdge->setEdgeWeights(newB1TrueWeight, newB1TrueWeight, m_b1->GetTrueTarget());
+
         assert(m_b1->KindIs(BBJ_COND));
         assert(m_b2->KindIs(BBJ_COND));
         assert(m_b1->TrueTargetIs(m_b2->GetTrueTarget()));
         assert(m_b1->FalseTargetIs(m_b2));
         assert(!m_b2->IsLast());
-    }
 
-    if (!optReturnBlock)
-    {
-        // Update bbRefs and bbPreds
+        // We now reach B2's false target via B1 false.
         //
-        // Replace pred 'm_b2' for m_b2's false target with 'm_b1'
-        // Remove  pred 'm_b2' for m_b2's true target
-        FlowEdge* falseEdge = m_b2->GetFalseEdge();
-        m_comp->fgReplacePred(falseEdge, m_b1);
-        m_comp->fgRemoveRefPred(m_b2->GetTrueEdge());
-        m_b1->SetFalseEdge(falseEdge);
+        m_comp->fgReplacePred(origB2FalseEdge, m_b1);
+        m_comp->fgRemoveRefPred(origB2TrueEdge);
+        FlowEdge* const newB1FalseEdge = origB2FalseEdge;
+        m_b1->SetFalseEdge(newB1FalseEdge);
+
+        // Fix B1 false edge likelihood and min/max weights.
+        //
+        newB1FalseEdge->setLikelihood(1.0 - newB1TrueLikelihood);
+        weight_t const newB1FalseWeight = m_b1->bbWeight * (1.0 - newB1TrueLikelihood);
+        newB1FalseEdge->setEdgeWeights(newB1FalseWeight, newB1FalseWeight, m_b1->GetTrueTarget());
     }
 
     // Get rid of the second block

@@ -43,8 +43,10 @@ DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
 
 //------------------------------------------------------------------------
 // optSetBlockWeights: adjust block weights, as follows:
-// 1. A block that is not reachable from the entry block is marked "run rarely".
-// 2. If we're not using profile weights, then any block with a non-zero weight
+// 1. Lexical block ranges where the bottom reaches the top are scaled as a loop.
+//    This is a more general definition of "loop" than natural loops.
+// 2. A block that is not reachable from the entry block is marked "run rarely".
+// 3. If we're not using profile weights, then any block with a non-zero weight
 //    that doesn't dominate all the return blocks has its weight dropped in half
 //    (but only if the first block *does* dominate all the returns).
 //
@@ -57,12 +59,28 @@ DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
 PhaseStatus Compiler::optSetBlockWeights()
 {
     noway_assert(opts.OptimizationEnabled());
-    assert(m_domTree != nullptr);
-    assert(fgReturnBlocksComputed);
+
+    assert(m_dfsTree != nullptr);
+    if (m_domTree == nullptr)
+    {
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    }
+    if (m_reachabilitySets == nullptr)
+    {
+        m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
+    }
+
+    if (m_dfsTree->HasCycle())
+    {
+        optMarkLoopHeads();
+        optFindAndScaleGeneralLoopBlocks();
+    }
 
     bool       madeChanges                = false;
     bool       firstBBDominatesAllReturns = true;
     const bool usingProfileWeights        = fgIsUsingProfileWeights();
+
+    fgComputeReturnBlocks();
 
     // TODO-Quirk: Previously, this code ran on a dominator tree based only on
     // regular flow. This meant that all handlers were not considered to be
@@ -225,6 +243,13 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         if (curBlk->isRunRarely())
         {
             reportBlockWeight(curBlk, "; unchanged: run rarely");
+            continue;
+        }
+
+        // Don't change the block weight if it's unreachable.
+        if (!m_reachabilitySets->GetDfsTree()->Contains(curBlk))
+        {
+            reportBlockWeight(curBlk, "; unchanged: unreachable");
             continue;
         }
 
@@ -1724,12 +1749,10 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
             testCopyStmt->SetRootNode(sideEffList);
         }
 
-        fgRemoveRefPred(prevTestBlock->GetTrueEdge());
-        fgRemoveRefPred(prevTestBlock->GetFalseEdge());
-
         // Redirect exit edge from previous iteration to new entry.
-        FlowEdge* const newEdge = fgAddRefPred(target, prevTestBlock);
-        prevTestBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+        fgRedirectTrueEdge(prevTestBlock, target);
+        fgRemoveRefPred(prevTestBlock->GetFalseEdge());
+        prevTestBlock->SetKindAndTargetEdge(BBJ_ALWAYS, prevTestBlock->GetTrueEdge());
 
         JITDUMP("Redirecting previously created exiting " FMT_BB " -> " FMT_BB "\n", prevTestBlock->bbNum,
                 target->bbNum);
@@ -2247,7 +2270,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     //
     unsigned const loopFirstNum  = bTop->bbNum;
     unsigned const loopBottomNum = bTest->bbNum;
-    for (BasicBlock* const predBlock : bTest->PredBlocks())
+    for (BasicBlock* const predBlock : bTest->PredBlocksEditing())
     {
         unsigned const bNum = predBlock->bbNum;
         if ((loopFirstNum <= bNum) && (bNum <= loopBottomNum))
@@ -2507,12 +2530,12 @@ void Compiler::optMarkLoopHeads()
     {
         printf("*************** In optMarkLoopHeads()\n");
     }
-
-    assert(m_reachabilitySets != nullptr);
     fgDebugCheckBBNumIncreasing();
 
     int loopHeadsMarked = 0;
 #endif
+
+    assert((m_dfsTree != nullptr) && (m_reachabilitySets != nullptr));
 
     bool hasLoops = false;
 
@@ -2589,15 +2612,7 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
     // This code depends on block number ordering.
     INDEBUG(fgDebugCheckBBNumIncreasing());
 
-    assert(m_dfsTree != nullptr);
-    if (m_reachabilitySets == nullptr)
-    {
-        m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
-    }
-    if (m_domTree == nullptr)
-    {
-        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
-    }
+    assert((m_dfsTree != nullptr) && (m_domTree != nullptr) && (m_reachabilitySets != nullptr));
 
     unsigned generalLoopCount = 0;
 
@@ -2673,7 +2688,7 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
 }
 
 //-----------------------------------------------------------------------------
-// optFindLoops: find loops in the function.
+// optFindLoopsPhase: find loops in the function.
 //
 // The JIT recognizes two types of loops in a function: natural loops and "general" (or "unnatural") loops.
 // Natural loops are those which get added to Compiler::m_loops. Most downstream optimizations require
@@ -2694,15 +2709,10 @@ PhaseStatus Compiler::optFindLoopsPhase()
     }
 #endif
 
-    optMarkLoopHeads();
+    fgRenumberBlocks();
 
     assert(m_dfsTree != nullptr);
     optFindLoops();
-
-    if (fgHasLoops)
-    {
-        optFindAndScaleGeneralLoopBlocks();
-    }
 
     Metrics.LoopsFoundDuringOpts = (int)m_loops->NumLoops();
 
@@ -3115,6 +3125,9 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 
     BasicBlock* newExit;
 
+    JITDUMP("Canonicalize exit " FMT_BB " for " FMT_LP " to have only loop predecessors\n", exit->bbNum,
+            loop->GetIndex());
+
 #if FEATURE_EH_CALLFINALLY_THUNKS
     if (exit->KindIs(BBJ_CALLFINALLY))
     {
@@ -3137,7 +3150,7 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
         }
     }
     else
-#endif
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
     {
         newExit = fgNewBBbefore(BBJ_ALWAYS, exit, false);
         newExit->SetFlags(BBF_NONE_QUIRK);
@@ -3151,10 +3164,7 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 
     newExit->bbCodeOffs = exit->bbCodeOffs;
 
-    JITDUMP("Created new exit " FMT_BB " to replace " FMT_BB " for " FMT_LP "\n", newExit->bbNum, exit->bbNum,
-            loop->GetIndex());
-
-    for (BasicBlock* pred : exit->PredBlocks())
+    for (BasicBlock* pred : exit->PredBlocksEditing())
     {
         if (loop->ContainsBlock(pred))
         {
@@ -3163,6 +3173,9 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
     }
 
     optSetWeightForPreheaderOrExit(loop, newExit);
+
+    JITDUMP("Created new exit " FMT_BB " to replace " FMT_BB " exit for " FMT_LP "\n", newExit->bbNum, exit->bbNum,
+            loop->GetIndex());
     return true;
 }
 

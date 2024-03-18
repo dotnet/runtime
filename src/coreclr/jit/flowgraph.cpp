@@ -361,6 +361,8 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         FlowEdge* const trueEdge  = fgAddRefPred(bottom, top);
         FlowEdge* const falseEdge = fgAddRefPred(poll, top);
+        trueEdge->setLikelihood(1.0);
+        falseEdge->setLikelihood(0.0);
 
         FlowEdge* const newEdge = fgAddRefPred(bottom, poll);
         poll->SetTargetEdge(newEdge);
@@ -1036,7 +1038,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                 GenTree*       targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
                 CORINFO_LOOKUP pLookup;
                 info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
-                                                                  clsHnd, &pLookup);
+                                                                  clsHnd, info.compMethodHnd, &pLookup);
                 if (!pLookup.lookupKind.needsRuntimeLookup)
                 {
                     call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
@@ -1048,7 +1050,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                     assert(oper != GT_FTN_ADDR);
                     CORINFO_CONST_LOOKUP genericLookup;
                     info.compCompHnd->getReadyToRunHelper(&ldftnToken->m_token, &pLookup.lookupKind,
-                                                          CORINFO_HELP_READYTORUN_GENERIC_HANDLE, &genericLookup);
+                                                          CORINFO_HELP_READYTORUN_GENERIC_HANDLE, info.compMethodHnd,
+                                                          &genericLookup);
                     GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
                     call             = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
                                                targetObjPointers, ctxTree);
@@ -1071,7 +1074,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
             CORINFO_LOOKUP entryPoint;
             info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
-                                                              clsHnd, &entryPoint);
+                                                              clsHnd, info.compMethodHnd, &entryPoint);
             assert(!entryPoint.lookupKind.needsRuntimeLookup);
             call->setEntryPoint(entryPoint.constLookup);
         }
@@ -1148,13 +1151,25 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     //
     // Is the tree as GT_CAST or a GT_CALL ?
     //
-    if (tree->OperGet() == GT_CAST)
+    if (tree->OperIs(GT_CAST))
     {
         fromType = tree->CastToType();
     }
-    else if (tree->OperGet() == GT_CALL)
+    else if (tree->OperIs(GT_CALL))
     {
         fromType = (var_types)tree->AsCall()->gtReturnType;
+    }
+    else if (tree->OperIs(GT_LCL_VAR))
+    {
+        LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
+        if (varDsc->lvNormalizeOnStore())
+        {
+            fromType = varDsc->TypeGet();
+        }
+        else
+        {
+            fromType = tree->TypeGet();
+        }
     }
     else
     {
@@ -2772,7 +2787,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and
     // go to the existing 'block'.
 
-    for (BasicBlock* const predBlock : block->PredBlocks())
+    for (BasicBlock* const predBlock : block->PredBlocksEditing())
     {
         if (!fgIsIntraHandlerPred(predBlock, block))
         {
@@ -2784,9 +2799,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
                 case BBJ_CALLFINALLY:
                 {
                     noway_assert(predBlock->TargetIs(block));
-                    fgRemoveRefPred(predBlock->GetTargetEdge());
-                    FlowEdge* const newEdge = fgAddRefPred(newHead, predBlock);
-                    predBlock->SetTargetEdge(newEdge);
+                    fgRedirectTargetEdge(predBlock, newHead);
                     break;
                 }
 
@@ -3906,6 +3919,26 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
         lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
     }
 }
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// FlowGraphDfsTree::Dump: Dump a textual representation of the DFS tree.
+//
+void FlowGraphDfsTree::Dump() const
+{
+    printf("DFS tree. %s.\n", HasCycle() ? "Has cycle" : "No cycle");
+    printf("PO RPO -> BB [pre, post]\n");
+    for (unsigned i = 0; i < GetPostOrderCount(); i++)
+    {
+        unsigned          rpoNum = GetPostOrderCount() - i - 1;
+        BasicBlock* const block  = GetPostOrder(i);
+        printf("%02u %02u -> " FMT_BB "[%u, %u]\n", i, rpoNum, block->bbNum, block->bbPreorderNum,
+               block->bbPostorderNum);
+    }
+}
+
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // FlowGraphDfsTree::Contains: Check if a block is contained in the DFS tree;
@@ -6130,6 +6163,37 @@ BlockToNaturalLoopMap* BlockToNaturalLoopMap::Build(FlowGraphNaturalLoops* loops
 
     return new (comp, CMK_Loops) BlockToNaturalLoopMap(loops, indices);
 }
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// BlockToNaturalLoopMap::Dump: Dump a textual representation of the map.
+//
+void BlockToNaturalLoopMap::Dump() const
+{
+    const FlowGraphDfsTree* dfs        = m_loops->GetDfsTree();
+    unsigned                blockCount = dfs->GetPostOrderCount();
+
+    printf("Block -> natural loop map: %u blocks\n", blockCount);
+    if (blockCount > 0)
+    {
+        printf("block : loop index\n");
+        for (unsigned i = 0; i < blockCount; i++)
+        {
+            if (m_indices[i] == UINT_MAX)
+            {
+                // Just leave the loop space empty if there is no enclosing loop
+                printf(FMT_BB " : \n", dfs->GetPostOrder(i)->bbNum);
+            }
+            else
+            {
+                printf(FMT_BB " : " FMT_LP "\n", dfs->GetPostOrder(i)->bbNum, m_indices[i]);
+            }
+        }
+    }
+}
+
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // BlockReachabilitySets::Build: Build the reachability sets.

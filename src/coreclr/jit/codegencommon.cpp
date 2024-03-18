@@ -595,28 +595,6 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 // compHelperCallKillSet: Gets a register mask that represents the kill set for a helper call.
 // Not all JIT Helper calls follow the standard ABI on the target architecture.
 //
-// TODO-CQ: Currently this list is incomplete (not all helpers calls are
-//          enumerated) and not 100% accurate (some killsets are bigger than
-//          what they really are).
-//          There's some work to be done in several places in the JIT to
-//          accurately track the registers that are getting killed by
-//          helper calls:
-//              a) LSRA needs several changes to accommodate more precise killsets
-//                 for every helper call it sees (both explicitly [easy] and
-//                 implicitly [hard])
-//              b) Currently for AMD64, when we generate code for a helper call
-//                 we're independently over-pessimizing the killsets of the call
-//                 (independently from LSRA) and this needs changes
-//                 both in CodeGenAmd64.cpp and emitx86.cpp.
-//
-//                 The best solution for this problem would be to try to centralize
-//                 the killset information in a single place but then make the
-//                 corresponding changes so every code generation phase is in sync
-//                 about this.
-//
-//         The interim solution is to only add known helper calls that don't
-//         follow the AMD64 ABI and actually trash registers that are supposed to be non-volatile.
-//
 // Arguments:
 //   helper - The helper being inquired about
 //
@@ -627,6 +605,12 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 {
     switch (helper)
     {
+        // Most of the helpers are written in C++ and C# and we can't make
+        // any additional assumptions beyond the standard ABI. However, some are written in raw assembly,
+        // so we can narrow down the kill sets.
+        //
+        // TODO-CQ: Inspect all asm helpers and narrow down the kill sets for them.
+        //
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
             return RBM_CALLEE_TRASH_WRITEBARRIER;
@@ -7786,7 +7770,8 @@ void CodeGen::genReturn(GenTree* treeNode)
             {
                 if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
                 {
-                    gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i), retTypeDesc.GetReturnRegType(i));
+                    gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
+                                           retTypeDesc.GetReturnRegType(i));
                 }
             }
         }
@@ -7803,7 +7788,7 @@ void CodeGen::genReturn(GenTree* treeNode)
             {
                 if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
                 {
-                    gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i)));
+                    gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv)));
                 }
             }
         }
@@ -7910,7 +7895,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         // On LoongArch64, for a struct like "{ int, double }", "retTypeDesc" will be "{ TYP_INT, TYP_DOUBLE }",
         // i. e. not include the padding for the first field, and so the general loop below won't work.
         var_types type  = retTypeDesc.GetReturnRegType(0);
-        regNumber toReg = retTypeDesc.GetABIReturnReg(0);
+        regNumber toReg = retTypeDesc.GetABIReturnReg(0, compiler->info.compCallConv);
         GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), 0);
         if (regCount > 1)
         {
@@ -7918,7 +7903,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             int offset = genTypeSize(type);
             type       = retTypeDesc.GetReturnRegType(1);
             offset     = (int)((unsigned int)offset < genTypeSize(type) ? genTypeSize(type) : offset);
-            toReg      = retTypeDesc.GetABIReturnReg(1);
+            toReg      = retTypeDesc.GetABIReturnReg(1, compiler->info.compCallConv);
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         }
 #else  // !TARGET_LOONGARCH64 && !TARGET_RISCV64
@@ -7926,7 +7911,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         for (unsigned i = 0; i < regCount; ++i)
         {
             var_types type  = retTypeDesc.GetReturnRegType(i);
-            regNumber toReg = retTypeDesc.GetABIReturnReg(i);
+            regNumber toReg = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
             offset += genTypeSize(type);
         }
@@ -7937,7 +7922,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         for (unsigned i = 0; i < regCount; ++i)
         {
             var_types type    = retTypeDesc.GetReturnRegType(i);
-            regNumber toReg   = retTypeDesc.GetABIReturnReg(i);
+            regNumber toReg   = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
             regNumber fromReg = op1->GetRegByIndex(i);
             if ((fromReg == REG_NA) && op1->OperIs(GT_COPY))
             {
@@ -8002,7 +7987,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 
     unsigned   lclNum = lclNode->GetLclNum();
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
-    if (op1->OperIs(GT_CALL))
+    if (actualOp1->OperIs(GT_CALL))
     {
         assert(regCount <= MAX_RET_REG_COUNT);
         noway_assert(varDsc->lvIsMultiRegRet);
@@ -8061,6 +8046,16 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         assert(regCount == varDsc->lvFieldCnt);
     }
 
+#ifdef SWIFT_SUPPORT
+    const uint32_t* offsets = nullptr;
+    if (actualOp1->IsCall() && (actualOp1->AsCall()->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift))
+    {
+        const CORINFO_SWIFT_LOWERING* lowering = compiler->GetSwiftLowering(actualOp1->AsCall()->gtRetClsHnd);
+        assert(!lowering->byReference && (regCount == lowering->numLoweredElements));
+        offsets = lowering->offsets;
+    }
+#endif
+
     for (unsigned i = 0; i < regCount; ++i)
     {
         regNumber reg     = genConsumeReg(op1, i);
@@ -8103,6 +8098,12 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // should consider the padding field within a struct.
             offset = (offset % genTypeSize(srcType)) ? AlignUp(offset, genTypeSize(srcType)) : offset;
+#endif
+#ifdef SWIFT_SUPPORT
+            if (offsets != nullptr)
+            {
+                offset = offsets[i];
+            }
 #endif
             // Several fields could be passed in one register, copy using the register type.
             // It could rewrite memory outside of the fields but local on the stack are rounded to POINTER_SIZE so

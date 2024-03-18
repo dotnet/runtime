@@ -14,138 +14,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
-	// Note: the XML must be passed as an embedded resource named ILLink.Substitutions.xml,
-	// not as a separate substitution file, for it to work with NativeAot.
-	// Related: https://github.com/dotnet/runtime/issues/88647
-	[SetupCompileBefore ("TestFeatures.dll", new[] { "Dependencies/TestFeatures.cs" },
-		resources: new object[] { new [] { "FeatureCheckDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml" } })]
-	// FeatureGuardAttribute is currently only supported by the analyzer.
-	// The same guard behavior is achieved for ILLink/ILCompiler using substitutions.
-	[SetupCompileResource ("FeatureGuardAttributeDataFlowTestSubstitutions.xml", "ILLink.Substitutions.xml")]
-	[IgnoreSubstitutions (false)]
+	[SetupCompileBefore ("TestFeatures.dll", new[] { "Dependencies/TestFeatures.cs" })]
 	public class FeatureGuardAttributeDataFlow
 	{
 		public static void Main ()
 		{
-			DefineFeatureGuard.Test ();
 			ValidGuardBodies.Test ();
 			InvalidGuardBodies.Test ();
 			InvalidFeatureGuards.Test ();
-		}
-
-		class DefineFeatureGuard {
-			[FeatureGuard (typeof(RequiresDynamicCodeAttribute))]
-			static bool GuardDynamicCode => RuntimeFeature.IsDynamicCodeSupported;
-
-			static void TestGuardDynamicCode ()
-			{
-				if (GuardDynamicCode)
-					RequiresDynamicCode ();
-			}
-
-			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
-			static bool GuardUnreferencedCode => TestFeatures.IsUnreferencedCodeSupported;
-
-			static void TestGuardUnreferencedCode ()
-			{
-				if (GuardUnreferencedCode)
-					RequiresUnreferencedCode ();
-			}
-
-			[FeatureGuard (typeof(RequiresAssemblyFilesAttribute))]
-			static bool GuardAssemblyFiles => TestFeatures.IsAssemblyFilesSupported;
-
-			static void TestGuardAssemblyFiles ()
-			{
-				if (GuardAssemblyFiles)
-					RequiresAssemblyFiles ();
-			}
-
-			[ExpectedWarning ("IL4000", nameof (RequiresDynamicCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL4000", nameof (RequiresUnreferencedCodeAttribute), ProducedBy = Tool.Analyzer)]
-			[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
-			[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
-			static bool GuardDynamicCodeAndUnreferencedCode => RuntimeFeature.IsDynamicCodeSupported && TestFeatures.IsUnreferencedCodeSupported;
-
-			static void TestMultipleGuards ()
-			{
-				if (GuardDynamicCodeAndUnreferencedCode) {
-					RequiresDynamicCode ();
-					RequiresUnreferencedCode ();
-				}
-			}
-
-			static class DynamicCode1 {
-				[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
-				public static bool IsSupported => RuntimeFeature.IsDynamicCodeSupported;
-			}
-
-			static class DynamicCode2 {
-				[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
-				public static bool IsSupported => DynamicCode1.IsSupported;
-			}
-
-			// Currently there is no way to annotate a feature type as depending on another feature,
-			// so indirect guards are expressed the same way as direct guards, by using
-			// FeatureGuardAttribute that references the underlying feature type.
-			[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
-			static bool GuardDynamicCodeIndirect => DynamicCode2.IsSupported;
-
-			static void TestIndirectGuard ()
-			{
-				if (GuardDynamicCodeIndirect)
-					RequiresDynamicCode ();
-			}
-
-			static class DynamicCodeCycle {
-				[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
-				public static bool IsSupported => DynamicCodeCycle.IsSupported;
-			}
-
-			[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
-			static bool GuardDynamicCodeCycle => DynamicCodeCycle.IsSupported;
-
-			[FeatureGuard (typeof (DynamicCodeCycle))]
-			static void TestFeatureDependencyCycle1 ()
-			{
-				if (GuardDynamicCodeCycle)
-					RequiresDynamicCode ();
-			}
-
-			static class DynamicCodeCycle2_A {
-				[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
-				public static bool IsSupported => DynamicCodeCycle2_B.IsSupported;
-			}
-
-			static class DynamicCodeCycle2_B {
-				[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
-				public static bool IsSupported => DynamicCodeCycle2_A.IsSupported;
-			}
-
-			static class DynamicCodeCycle2 {
-				[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
-				public static bool IsSupported => DynamicCodeCycle2_A.IsSupported;
-			}
-
-			[FeatureGuard (typeof (RequiresDynamicCodeAttribute))]
-			static bool GuardDynamicCodeCycle2 => DynamicCodeCycle2.IsSupported;
-
-			static void TestFeatureDependencyCycle2 ()
-			{
-				if (GuardDynamicCodeCycle2)
-					RequiresDynamicCode ();
-			}
-
-			public static void Test ()
-			{
-				TestGuardDynamicCode ();
-				TestGuardUnreferencedCode ();
-				TestGuardAssemblyFiles ();
-				TestMultipleGuards ();
-				TestIndirectGuard ();
-				TestFeatureDependencyCycle1 ();
-				TestFeatureDependencyCycle2 ();
-			}
 		}
 
 		class ValidGuardBodies {
@@ -590,6 +466,27 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool SetOnlyProperty { set => throw null; }
+
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]
+			static void TestSetOnlyProperty ()
+			{
+				if (SetOnlyProperty = true)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4001", ProducedBy = Tool.Analyzer)]
+			[FeatureGuard (typeof(RequiresUnreferencedCodeAttribute))]
+			static bool GetAndSetProperty { get => true; set => throw null; }
+
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]
+			static void TestGetAndSetProperty ()
+			{
+				if (GetAndSetProperty)
+					RequiresUnreferencedCode ();
+			}
+
 			// No warning for this case because we don't validate that the attribute usage matches
 			// the expected AttributeUsage.Property for assemblies that define their own version
 			// of FeatureGuardAttribute.
@@ -607,18 +504,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				TestNonBooleanProperty ();
 				TestNonStaticProperty ();
+				TestSetOnlyProperty ();
+				TestGetAndSetProperty ();
 				TestMethod ();
 			}
 		}
 
-		[RequiresDynamicCode (nameof (RequiresDynamicCode))]
-		static void RequiresDynamicCode () { }
-
 		[RequiresUnreferencedCode (nameof (RequiresUnreferencedCode))]
 		static void RequiresUnreferencedCode () { }
-
-		[RequiresAssemblyFiles (nameof (RequiresAssemblyFiles))]
-		static void RequiresAssemblyFiles () { }
 
 		static bool OtherCondition () => true;
 	}
