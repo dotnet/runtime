@@ -9663,8 +9663,6 @@ int CEEInfo::getExactClasses (
         MODE_ANY;
     } CONTRACTL_END;
 
-    int exactClassesCount = 0;
-
     JIT_TO_EE_TRANSITION();
 
     // This function is currently implemented only on NativeAOT
@@ -9672,7 +9670,7 @@ int CEEInfo::getExactClasses (
 
     EE_TO_JIT_TRANSITION();
 
-    return exactClassesCount;
+    return -1;
 }
 
 /*********************************************************************/
