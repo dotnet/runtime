@@ -306,7 +306,7 @@ namespace System
 
             int section;
             int src;
-            byte* dig = number.GetDigitsPointer();
+            byte* dig = number.DigitsPtr;
             char ch;
 
             section = FindSection(format, dig[0] == 0 ? 2 : number.IsNegative ? 1 : 0);
@@ -748,13 +748,12 @@ namespace System
             Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
 
             int digPos = number.Scale;
-            byte* dig = number.GetDigitsPointer();
+            byte* dig = number.DigitsPtr;
 
             if (digPos > 0)
             {
                 if (groupDigits != null)
                 {
-                    Debug.Assert(sGroup != null, "Must be null when groupDigits != null");
                     int groupSizeIndex = 0;                             // Index into the groupDigits array.
                     int bufferSize = digPos;                            // The length of the result buffer string.
                     int groupSize = 0;                                  // The current group size.
@@ -836,7 +835,6 @@ namespace System
 
             if (nMaxDigits > 0)
             {
-                Debug.Assert(sDecimal != null);
                 vlb.Append(sDecimal);
                 if ((digPos < 0) && (nMaxDigits > 0))
                 {
@@ -912,7 +910,7 @@ namespace System
         {
             Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
 
-            byte* dig = number.GetDigitsPointer();
+            byte* dig = number.DigitsPtr;
 
             vlb.Append(TChar.CastFrom((*dig != 0) ? (char)(*dig++) : '0'));
 
@@ -971,7 +969,7 @@ namespace System
                 }
             }
 
-            byte* dig = number.GetDigitsPointer();
+            byte* dig = number.DigitsPtr;
 
             if (digPos > 0)
             {
@@ -1041,7 +1039,7 @@ namespace System
 
         internal static unsafe void RoundNumber(ref NumberBuffer number, int pos, bool isCorrectlyRounded)
         {
-            byte* dig = number.GetDigitsPointer();
+            byte* dig = number.DigitsPtr;
 
             int i = 0;
             while (i < pos && dig[i] != '\0')
