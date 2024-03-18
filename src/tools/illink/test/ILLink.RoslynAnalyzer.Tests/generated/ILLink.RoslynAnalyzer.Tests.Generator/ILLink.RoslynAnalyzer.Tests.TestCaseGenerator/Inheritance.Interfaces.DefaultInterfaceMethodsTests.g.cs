@@ -16,6 +16,18 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 		}
 
 		[Fact]
+		public Task DimProvidedByRecursiveInterface ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task GenericDefaultInterfaceMethod ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task GenericDefaultInterfaceMethods ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -40,6 +52,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 		}
 
 		[Fact]
+		public Task MultipleDimsProvidedByRecursiveInterface ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task SimpleDefaultInterfaceMethod ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -47,6 +65,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 
 		[Fact]
 		public Task StaticDefaultInterfaceMethodOnStruct ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task StaticDimProvidedByUnreferencedIfaceInHierarchy ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

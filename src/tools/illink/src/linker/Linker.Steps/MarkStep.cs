@@ -36,7 +36,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Runtime.TypeParsing;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
@@ -2453,23 +2452,150 @@ namespace Mono.Linker.Steps
 			if (!type.HasInterfaces)
 				return;
 
-			foreach (var iface in type.Interfaces) {
+			var ifaces = GetRecursiveInterfaceImplementations (type);
+			foreach (var (ifaceType, impls) in ifaces) {
 				// Only mark interface implementations of interface types that have been marked.
 				// This enables stripping of interfaces that are never used
-				if (ShouldMarkInterfaceImplementation (type, iface))
-					MarkInterfaceImplementation (iface, new MessageOrigin (type));
+				if (ShouldMarkInterfaceImplementationList (type, impls, ifaceType))
+					MarkInterfaceImplementationList (impls, new MessageOrigin (type));
 			}
 		}
 
-		protected virtual bool ShouldMarkInterfaceImplementation (TypeDefinition type, InterfaceImplementation iface)
+		List<(TypeReference, List<InterfaceImplementation>)> GetRecursiveInterfaceImplementations (TypeDefinition type)
 		{
-			if (Annotations.IsMarked (iface))
+			List<(TypeReference, List<InterfaceImplementation>)> firstImplementationChain = new ();
+
+			AddRecursiveInterfaces (type, [], firstImplementationChain, Context);
+			Debug.Assert (firstImplementationChain.All (kvp => Context.Resolve (kvp.Item1) == Context.Resolve (kvp.Item2.Last ().InterfaceType)));
+
+			return firstImplementationChain;
+
+			static void AddRecursiveInterfaces (TypeReference typeRef, IEnumerable<InterfaceImplementation> pathToType, List<(TypeReference, List<InterfaceImplementation>)> firstImplementationChain, LinkContext Context)
+			{
+				var type = Context.TryResolve (typeRef);
+				if (type is null)
+					return;
+				// GeVt all explicit interfaces of this type
+				foreach (var directIface in type.Interfaces) {
+					//var directlyImplementedType = Context.Resolve (directIface.InterfaceType);
+					var directlyImplementedType = directIface.InterfaceType.TryInflateFrom (typeRef, Context);
+					if (directlyImplementedType is null) {
+						continue;
+					}
+					if (!firstImplementationChain.Any (i => InterfaceTypeEquals(i.Item1, directlyImplementedType, Context))) {
+						firstImplementationChain.Add ((directlyImplementedType, pathToType.Append (directIface).ToList ()));
+					}
+				}
+
+				// Add interfaces on base type
+				if (type.BaseType is { } baseType && Context.Resolve (baseType) is { } baseDef) {
+					AddRecursiveInterfaces (baseDef, pathToType, firstImplementationChain, Context);
+				}
+
+				// Recursive interfaces next to preserve Inherit/Implement tree order
+				foreach (var directIface in type.Interfaces) {
+					// If we can't resolve the interface type we can't find recursive interfaces
+					var ifaceDirectlyOnType = directIface.InterfaceType.TryInflateFrom(typeRef, Context);
+					if (ifaceDirectlyOnType is null) {
+						continue;
+					}
+					AddRecursiveInterfaces (ifaceDirectlyOnType, pathToType.Append (directIface), firstImplementationChain, Context);
+				}
+			}
+			/// <summary>
+			/// Compares two TypeReferences to interface types and determines if they are equivalent references, taking into account generic arguments and element types.
+			/// </summary>
+			static bool InterfaceTypeEquals (TypeReference? type, TypeReference? other, ITryResolveMetadata resolver)
+			{
+				Debug.Assert (type is not null && other is not null);
+				Debug.Assert (resolver.TryResolve (type)?.IsInterface is null or true);
+				Debug.Assert (resolver.TryResolve (other)?.IsInterface is null or true);
+				return TypeEquals (type, other);
+
+				bool TypeEquals (TypeReference type1, TypeReference type2)
+				{
+					if (type1 == type2)
+						return true;
+
+					if (resolver.TryResolve (type1) != resolver.TryResolve (type2))
+						return false;
+
+					if (type1 is GenericInstanceType genericInstance1) {
+						if (type2 is not GenericInstanceType genericInstance2)
+							return false;
+						if (genericInstance1.HasGenericParameters != genericInstance2.HasGenericParameters)
+							return false;
+						if (genericInstance1.GenericParameters.Count != genericInstance2.GenericParameters.Count
+							|| genericInstance2.GenericArguments.Count != genericInstance2.GenericArguments.Count)
+							return false;
+						for (var i = 0; i < genericInstance1.GenericArguments.Count; ++i) {
+							if (!TypeEquals (genericInstance1.GenericArguments[i], genericInstance2.GenericArguments[i]))
+								return false;
+						}
+						return true;
+					}
+
+					if (type1 is TypeSpecification typeSpec1) {
+						if (type2 is not TypeSpecification typeSpec2)
+							return false;
+						return TypeEquals (typeSpec1.ElementType, typeSpec2.ElementType);
+					}
+					return type1.FullName == type2.FullName;
+				}
+			}
+		}
+		//          Dictionary<TypeReference, List<InterfaceImplementationNode>> waysToImplementIface = new (InflatedInterfaceComparer);
+
+		//// Get all explicit interfaces of this type
+		//foreach (var directIface in type.Interfaces) {
+		//InterfaceImplementationNode directlyImplementedNode = new InterfaceImplementationNode (directIface, type, []);
+		//  TypeReference inflatedDirectIface = directIface.InterfaceType.TryInflateFrom (type, context)!;
+		//  waysToImplementIface.AddToList (inflatedDirectIface, directlyImplementedNode);
+		//}
+
+		//// Add interfaces on base type
+		//if (type.BaseType is { } baseType && context.Resolve (baseType) is { } baseDef) {
+		//  MapInterfacesOnType (baseDef);
+		//  var baseInterfaces = _interfaces[baseDef];
+		//  foreach (var item in baseInterfaces) {
+		//      var inflatedInterface = item.InflatedInterface.TryInflateFrom (type.BaseType, context);
+		//      Debug.Assert (inflatedInterface is not null);
+		//      foreach (var node in item.InterfaceImplementationNodes) {
+		//          waysToImplementIface.AddToList (inflatedInterface, node);
+		//      }
+		//  }
+		//}
+
+		//// Recursive interfaces next to preserve Inherit/Implement tree order
+		//foreach (var directIface in type.Interfaces) {
+		//  // If we can't resolve the interface type we can't find recursive interfaces
+		//  var ifaceDirectlyOnType = context.Resolve (directIface.InterfaceType);
+		//  if (ifaceDirectlyOnType is null) {
+		//      continue;
+		//  }
+		//  MapInterfacesOnType (ifaceDirectlyOnType);
+		//  TypeReference inflatedDirectIface = directIface.InterfaceType.TryInflateFrom (type, context)!;
+		//  var recursiveInterfaces = _interfaces[ifaceDirectlyOnType];
+		//  foreach (var recursiveInterface in recursiveInterfaces) {
+		//      var implToRecursiveIfaceChain = new InterfaceImplementationNode (directIface, type, recursiveInterface.InterfaceImplementationNodes);
+		//      // Inflate the generic arguments up to the terminal interfaceImpl to get the inflated interface type implemented by this type
+		//      TypeReference inflatedRecursiveInterface = inflatedDirectIface;
+		//      foreach (var interfaceImpl in recursiveInterface.MostDirectInterfaceImplementationPath) {
+		//          inflatedRecursiveInterface = interfaceImpl.InterfaceType.TryInflateFrom (inflatedRecursiveInterface, context)!;
+		//      }
+		//      waysToImplementIface.AddToList (inflatedRecursiveInterface, implToRecursiveIfaceChain);
+		//  }
+		//}
+
+		protected virtual bool ShouldMarkInterfaceImplementationList (TypeDefinition type, List<InterfaceImplementation> ifaces, TypeReference ifaceType)
+		{
+			if (ifaces.All (Annotations.IsMarked))
 				return false;
 
 			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type))
 				return true;
 
-			if (Context.Resolve (iface.InterfaceType) is not TypeDefinition resolvedInterfaceType)
+			if (Context.Resolve (ifaceType) is not TypeDefinition resolvedInterfaceType)
 				return false;
 
 			if (Annotations.IsMarked (resolvedInterfaceType))
@@ -3764,8 +3890,7 @@ namespace Mono.Linker.Steps
 					ScopeStack.UpdateCurrentScopeInstructionOffset (instruction.Offset);
 					if (markForReflectionAccess) {
 						MarkMethodVisibleToReflection (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
-					}
-					else {
+					} else {
 						MarkMethod (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
 					}
 					break;
@@ -3826,6 +3951,12 @@ namespace Mono.Linker.Steps
 		}
 
 
+		void MarkInterfaceImplementationList (List<InterfaceImplementation> ifaces, MessageOrigin? origin = null, DependencyInfo? reason = null)
+		{
+			foreach (var iface in ifaces) {
+				MarkInterfaceImplementation (iface, origin, reason);
+			}
+		}
 		protected internal virtual void MarkInterfaceImplementation (InterfaceImplementation iface, MessageOrigin? origin = null, DependencyInfo? reason = null)
 		{
 			if (Annotations.IsMarked (iface))
