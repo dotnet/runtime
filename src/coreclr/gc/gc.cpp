@@ -51918,7 +51918,7 @@ void CFinalize::CheckFinalizerObjects()
 void gc_heap::walk_heap_per_heap (walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p)
 {
     generation* gen = gc_heap::generation_of (gen_number);
-    heap_segment*    seg = generation_start_segment (gen);
+    heap_segment*    seg = heap_segment_in_range (generation_start_segment (gen));
     uint8_t* x = ((gen_number == max_generation) ? heap_segment_mem (seg) : get_soh_start_object (seg, gen));
     uint8_t*       end = heap_segment_allocated (seg);
     int align_const = get_alignment_constant (TRUE);
@@ -51928,7 +51928,7 @@ void gc_heap::walk_heap_per_heap (walk_fn fn, void* context, int gen_number, BOO
     {
         if (x >= end)
         {
-            if ((seg = heap_segment_next (seg)) != 0)
+            if ((seg = heap_segment_next_in_range (seg)) != 0)
             {
                 x = heap_segment_mem (seg);
                 end = heap_segment_allocated (seg);
@@ -51940,7 +51940,7 @@ void gc_heap::walk_heap_per_heap (walk_fn fn, void* context, int gen_number, BOO
                 // advance to next lower generation
                 gen_number--;
                 gen = gc_heap::generation_of (gen_number);
-                seg = generation_start_segment (gen);
+                seg = heap_segment_in_range (generation_start_segment (gen));
 
                 x = heap_segment_mem (seg);
                 end = heap_segment_allocated (seg);
@@ -51952,12 +51952,12 @@ void gc_heap::walk_heap_per_heap (walk_fn fn, void* context, int gen_number, BOO
                 if (walk_large_object_heap_p)
                 {
                     walk_large_object_heap_p = FALSE;
-                    seg = generation_start_segment (large_object_generation);
+                    seg = heap_segment_in_range (generation_start_segment (large_object_generation));
                 }
                 else if (walk_pinned_object_heap)
                 {
                     walk_pinned_object_heap = FALSE;
-                    seg = generation_start_segment (pinned_object_generation);
+                    seg = heap_segment_in_range (generation_start_segment (pinned_object_generation));
                 }
                 else
                 {
