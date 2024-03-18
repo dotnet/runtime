@@ -270,8 +270,14 @@ namespace System.Net
                 {
                     Debug.Assert(incomingBlob.IsEmpty);
 
+                    Flags requiredFlags = s_requiredFlags;
+                    if (_protectionLevel == ProtectionLevel.EncryptAndSign)
+                    {
+                        requiredFlags |= Flags.NegotiateSeal;
+                    }
+
                     _negotiateMessage = new byte[sizeof(NegotiateMessage)];
-                    CreateNtlmNegotiateMessage(_negotiateMessage);
+                    CreateNtlmNegotiateMessage(_negotiateMessage, requiredFlags);
 
                     outgoingBlob = _negotiateMessage;
                     statusCode = NegotiateAuthenticationStatusCode.ContinueNeeded;
@@ -286,7 +292,7 @@ namespace System.Net
                 return outgoingBlob;
             }
 
-            private static unsafe void CreateNtlmNegotiateMessage(Span<byte> asBytes)
+            private static unsafe void CreateNtlmNegotiateMessage(Span<byte> asBytes, Flags requiredFlags)
             {
                 Debug.Assert(HeaderLength == NtlmHeader.Length);
                 Debug.Assert(asBytes.Length == sizeof(NegotiateMessage));
@@ -296,7 +302,7 @@ namespace System.Net
                 asBytes.Clear();
                 NtlmHeader.CopyTo(asBytes);
                 message.Header.MessageType = MessageType.Negotiate;
-                message.Flags = s_requiredFlags;
+                message.Flags = requiredFlags;
                 message.Version = s_version;
             }
 
@@ -578,6 +584,13 @@ namespace System.Net
                 if ((flags & s_requiredFlags) != s_requiredFlags)
                 {
                     statusCode = NegotiateAuthenticationStatusCode.InvalidToken;
+                    return null;
+                }
+
+                // We already negotiate signing, so we only need to check sealing/encryption.
+                if ((flags & Flags.NegotiateSeal) == 0 && _protectionLevel == ProtectionLevel.EncryptAndSign)
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.QopNotSupported;
                     return null;
                 }
 
