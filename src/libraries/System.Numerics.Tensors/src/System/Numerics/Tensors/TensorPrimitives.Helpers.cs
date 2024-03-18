@@ -28,17 +28,27 @@ namespace System.Numerics.Tensors
         private static void ThrowNegateTwosCompOverflow() => throw new OverflowException(SR.Overflow_NegateTwosCompNum);
 
         /// <summary>Creates a span of <typeparamref name="TTo"/> from a <typeparamref name="TFrom"/> when they're the same type.</summary>
-        private static unsafe Span<TTo> Rename<TFrom, TTo>(Span<TFrom> span) // MemoryMarshal.Cast, but without constraints or validation
+        /// <remarks>
+        /// This is the same as MemoryMarshal.Cast, except only to be used when TFrom and TTo are the same type or effectively
+        /// the same type (e.g. int and nint in a 32-bit process). MemoryMarshal.Cast can't currently be used as it's
+        /// TFrom/TTo are constrained to be value types.
+        /// </remarks>
+        private static unsafe Span<TTo> Rename<TFrom, TTo>(Span<TFrom> span)
         {
             Debug.Assert(sizeof(TFrom) == sizeof(TTo));
-            return MemoryMarshal.CreateSpan(ref Unsafe.As<TFrom, TTo>(ref MemoryMarshal.GetReference(span)), span.Length);
+            return *(Span<TTo>*)(&span);
         }
 
         /// <summary>Creates a span of <typeparamref name="TTo"/> from a <typeparamref name="TFrom"/> when they're the same type.</summary>
-        private static unsafe ReadOnlySpan<TTo> Rename<TFrom, TTo>(ReadOnlySpan<TFrom> span) // MemoryMarshal.Cast, but without constraints or validation
+        /// <remarks>
+        /// This is the same as MemoryMarshal.Cast, except only to be used when TFrom and TTo are the same type or effectively
+        /// the same type (e.g. int and nint in a 32-bit process). MemoryMarshal.Cast can't currently be used as it's
+        /// TFrom/TTo are constrained to be value types.
+        /// </remarks>
+        private static unsafe ReadOnlySpan<TTo> Rename<TFrom, TTo>(ReadOnlySpan<TFrom> span)
         {
             Debug.Assert(sizeof(TFrom) == sizeof(TTo));
-            return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TFrom, TTo>(ref MemoryMarshal.GetReference(span)), span.Length);
+            return *(ReadOnlySpan<TTo>*)(&span);
         }
 
         /// <summary>Mask used to handle alignment elements before vectorized handling of the input.</summary>
