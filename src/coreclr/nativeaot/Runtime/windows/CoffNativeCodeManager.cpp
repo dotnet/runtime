@@ -369,7 +369,7 @@ uintptr_t CoffNativeCodeManager::GetResumeSp(MethodInfo *   pMethodInfo,
     }
 
     const uintptr_t curEBP = pRegisterSet->GetFP();
-    return curEBP - infoBuf.stackSize + sizeof(int);
+    return GetOutermostBaseFP(curEBP, &infoBuf);
 }
 #endif // TARGET_X86
 

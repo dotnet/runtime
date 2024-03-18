@@ -149,10 +149,10 @@ private:
         SkipNativeFrames = 0x80,
 
         // Set SP to an address that is valid for funclet resumption (x86 only)
-        UseResumeSp = 0x100,
+        UpdateResumeSp = 0x100,
 
         GcStackWalkFlags = (CollapseFunclets | RemapHardwareFaultsToSafePoint | SkipNativeFrames),
-        EHStackWalkFlags = (ApplyReturnAddressAdjustment | UseResumeSp),
+        EHStackWalkFlags = (ApplyReturnAddressAdjustment | UpdateResumeSp),
         StackTraceStackWalkFlags = GcStackWalkFlags
     };
 

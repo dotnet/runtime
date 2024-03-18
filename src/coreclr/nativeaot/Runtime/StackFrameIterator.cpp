@@ -1678,9 +1678,9 @@ void StackFrameIterator::CalculateCurrentMethodState()
     m_FramePointer = GetCodeManager()->GetFramePointer(&m_methodInfo, &m_RegDisplay);
 
 #ifdef TARGET_X86
-    if (m_dwFlags & UseResumeSp)
+    if (m_dwFlags & UpdateResumeSp)
     {
-        m_RegDisplay.SP = GetCodeManager()->GetResumeSp(&m_methodInfo, &m_RegDisplay);
+        m_RegDisplay.ResumeSP = GetCodeManager()->GetResumeSp(&m_methodInfo, &m_RegDisplay);
     }
 #endif
 
