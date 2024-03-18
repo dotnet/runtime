@@ -4,6 +4,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StartupHookSupport>true</StartupHookSupport>
     <NoWarn>$(NoWarn);IL2026</NoWarn>
+
+    <!-- Uses a custom test environment variable. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
 

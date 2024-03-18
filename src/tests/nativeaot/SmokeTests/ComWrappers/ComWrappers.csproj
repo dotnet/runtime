@@ -2,6 +2,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+
+    <!-- Registers a global 'ComWrappers' instance for marshalling. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
 
