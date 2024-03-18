@@ -51,12 +51,12 @@ RegisterType regType(T type)
     {
         return IntRegisterType;
     }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if (defined(TARGET_XARCH) || defined(TARGET_ARM64)) && defined(FEATURE_SIMD)
     else if (varTypeUsesMaskReg(type))
     {
         return MaskRegisterType;
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // (TARGET_XARCH || TARGET_ARM64) && FEATURE_SIMD
     else
     {
         assert(varTypeUsesFloatReg(type));
@@ -1662,12 +1662,12 @@ private:
     PhasedVar<regMaskTP> availableIntRegs;
     PhasedVar<regMaskTP> availableFloatRegs;
     PhasedVar<regMaskTP> availableDoubleRegs;
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     PhasedVar<regMaskTP> availableMaskRegs;
 #endif
     PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 #define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
 #else
 #define allAvailableRegs (availableIntRegs | availableFloatRegs)

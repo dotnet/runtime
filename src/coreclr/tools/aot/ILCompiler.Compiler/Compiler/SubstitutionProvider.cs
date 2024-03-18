@@ -73,18 +73,14 @@ namespace ILCompiler
                 if (featureGuardAttribute.FixedArguments is not [CustomAttributeTypedArgument<TypeDesc> { Value: EcmaType featureType }])
                     continue;
 
-                if (featureType.Namespace == "System.Diagnostics.CodeAnalysis") {
-                    switch (featureType.Name) {
-                    case "RequiresAssemblyFilesAttribute":
-                    case "RequiresUnreferencedCodeAttribute":
-                        return true;
-                    case "RequiresDynamicCodeAttribute":
-                        if (_hashtable._switchValues.TryGetValue(
-                                "System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported",
-                                out bool isDynamicCodeSupported)
-                            && !isDynamicCodeSupported)
+                if (featureType.Namespace == "System.Diagnostics.CodeAnalysis")
+                {
+                    switch (featureType.Name)
+                    {
+                        case "RequiresAssemblyFilesAttribute":
+                        case "RequiresUnreferencedCodeAttribute":
+                        case "RequiresDynamicCodeAttribute":
                             return true;
-                        break;
                     }
                 }
             }

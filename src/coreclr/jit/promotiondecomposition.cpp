@@ -760,7 +760,7 @@ private:
             // If the destination has replacements we still have usable
             // liveness information for the remainder. This case happens if the
             // source was also promoted.
-            if (m_dstInvolvesReplacements && deaths.IsRemainderDying())
+            if (m_dstInvolvesReplacements && !m_hasNonRemainderUseOfStructLocal && deaths.IsRemainderDying())
             {
 #ifdef DEBUG
                 if (dump)

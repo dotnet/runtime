@@ -199,9 +199,9 @@ namespace Internal.JitInterface
                             }
                             else
                             {
+                                loweredTypes.Add((CorInfoType.CORINFO_TYPE_BYTE, opaqueIntervalStart));
                                 opaqueIntervalStart++;
                                 remainingIntervalSize--;
-                                loweredTypes.Add((CorInfoType.CORINFO_TYPE_BYTE, opaqueIntervalStart));
                             }
                         }
                     }
