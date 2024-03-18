@@ -20,29 +20,20 @@ internal static partial class MsQuicConfiguration
     private const string DisableCacheEnvironmentVariable = "DOTNET_SYSTEM_NET_QUIC_DISABLE_CONFIGURATION_CACHE";
     private const string DisableCacheCtxSwitch = "System.Net.Quic.DisableConfigurationCache";
 
-    private static volatile int s_configurationCacheEnabled = -1;
-    internal static bool ConfigurationCacheEnabled
+    internal static bool ConfigurationCacheEnabled { get; } = GetConfigurationCacheEnabled();
+    private static bool GetConfigurationCacheEnabled()
     {
-        get
+        // AppContext switch takes precedence
+        if (AppContext.TryGetSwitch(DisableCacheCtxSwitch, out bool value))
         {
-            int enabled = s_configurationCacheEnabled;
-            if (enabled != -1)
-            {
-                return enabled != 0;
-            }
-
-            // AppContext switch takes precedence
-            if (AppContext.TryGetSwitch(DisableCacheCtxSwitch, out bool value))
-            {
-                s_configurationCacheEnabled = value ? 0 : 1;
-            }
-            else
-            {
-                // check environment variable
-                s_configurationCacheEnabled = Environment.GetEnvironmentVariable(DisableCacheEnvironmentVariable) is string envVar && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 0 : 1;
-            }
-
-            return s_configurationCacheEnabled != 0;
+            return !value;
+        }
+        else
+        {
+            // check environment variable
+            return
+                Environment.GetEnvironmentVariable(DisableCacheEnvironmentVariable) is string envVar &&
+                !(envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase));
         }
     }
 
@@ -191,12 +182,15 @@ internal static partial class MsQuicConfiguration
         }
 
         // we added a new handle, check if we need to cleanup
-        if (s_configurationCache.Count % CheckExpiredModulo == 0)
+        var count = s_configurationCache.Count;
+        if (count % CheckExpiredModulo == 0)
         {
             // let only one thread perform cleanup at a time
             lock (s_configurationCache)
             {
-                if (s_configurationCache.Count % CheckExpiredModulo == 0)
+                // check again, if another thread just cleaned up (and cached count went down) we are unlikely
+                // to clean anything
+                if (s_configurationCache.Count >= count)
                 {
                     CleanupCache();
                 }
@@ -208,14 +202,12 @@ internal static partial class MsQuicConfiguration
 
     private static void CleanupCache()
     {
-        KeyValuePair<CacheKey, MsQuicConfigurationSafeHandle>[] toRemoveAttempt = s_configurationCache.ToArray();
-
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Info(null, $"Cleaning up MsQuicConfiguration cache, current size: {toRemoveAttempt.Length}.");
+            NetEventSource.Info(null, $"Cleaning up MsQuicConfiguration cache, current size: {s_configurationCache.Count}.");
         }
 
-        foreach ((CacheKey key, MsQuicConfigurationSafeHandle handle) in toRemoveAttempt)
+        foreach ((CacheKey key, MsQuicConfigurationSafeHandle handle) in s_configurationCache)
         {
             if (!handle.TryMarkForDispose())
             {
@@ -228,6 +220,7 @@ internal static partial class MsQuicConfiguration
             {
                 NetEventSource.Info(null, $"Removing cached MsQuicConfiguration {handle}.");
             }
+
             bool removed = s_configurationCache.TryRemove(key, out _);
             Debug.Assert(removed);
             handle.Dispose();
