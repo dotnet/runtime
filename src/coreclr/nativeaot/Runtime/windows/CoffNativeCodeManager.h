@@ -44,12 +44,23 @@ class CoffNativeCodeManager : public ICodeManager
     PTR_PTR_VOID m_pClasslibFunctions;
     uint32_t m_nClasslibFunctions;
 
+    // used to publish a reference to the index once initialized.
+    // if the reference is not null, the index can be accessed through it.
+    uint32_t** volatile m_initializedIndices;
+    uint32_t m_indexCount;
+    uint32_t* m_indices[8];
+
+    int LookupUnwindInfoIdx(uint32_t relativePc);
+
 public:
     CoffNativeCodeManager(TADDR moduleBase,
                           PTR_VOID pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
                           PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, uint32_t nRuntimeFunctionTable,
                           PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions);
     ~CoffNativeCodeManager();
+
+    bool AllocFuncTableIndex();
+    uint32_t** InitFuncTableIndex();
 
     //
     // Code manager methods
