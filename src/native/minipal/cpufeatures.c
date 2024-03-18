@@ -281,22 +281,22 @@ int minipal_getcpufeatures(void)
                                             if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                                // Avx10
                                             {
                                                 __cpuidex(cpuidInfo, 0x00000024, 0x00000000);
-                                                const int versionMask = 0xFF; // [7:0]
-                                                if((cpuidInfo[CPUID_EBX] & versionMask) >= 1) // version higher than 1
+                                                if((cpuidInfo[CPUID_EBX] & 0xFF) >= 1)                                  // Avx10v1 - CPUID.(EAX=24H, ECX=00H):EBX[7:0] >= 1
                                                 {
-                                                    result |= XArchIntrinsicConstants_Avx10v1;
-                                                }
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)
+                                                    {
+                                                        result |= XArchIntrinsicConstants_Avx10v1;
+                                                    }
 
-                                                const int vector256Mask = (1 << 17);
-                                                const int vector512Mask = (1 << 18);
-                                                if((cpuidInfo[CPUID_EBX] & vector256Mask) != 0)
-                                                {
-                                                    result |= XArchIntrinsicConstants_Avx10v1_V256;
-                                                }
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)
+                                                    {
+                                                        result |= XArchIntrinsicConstants_Avx10v1_V256;
+                                                    }
 
-                                                if((cpuidInfo[CPUID_EBX] & vector512Mask) != 0)
-                                                {
-                                                    result |= XArchIntrinsicConstants_Avx10v1_V512;
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0)
+                                                    {
+                                                        result |= XArchIntrinsicConstants_Avx10v1_V512;
+                                                    }
                                                 }
                                             }
                                         }

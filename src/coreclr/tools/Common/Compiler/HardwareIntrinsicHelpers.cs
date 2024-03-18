@@ -69,9 +69,9 @@ namespace ILCompiler
             public const int VectorT128 = 0x4000000;
             public const int VectorT256 = 0x8000000;
             public const int VectorT512 = 0x10000000;
-            public const int Avx10v1 = 20000000;
-            public const int Avx10v1_v256 = 40000000;
-            public const int Avx10v1_v512 = 50000000;
+            public const int Avx10v1 = 0x20000000;
+            public const int Avx10v1_v256 = 0x40000000;
+            public const int Avx10v1_v512 = unchecked((int)0x80000000);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
