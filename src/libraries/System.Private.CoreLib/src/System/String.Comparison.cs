@@ -831,7 +831,7 @@ namespace System
                 // a very wide net because it will change, e.g., '^' to '~'. But that should
                 // be ok because we expect this to be very rare in practice.
 
-                if(Vector128.IsHardwareAccelerated && length >= Vector128<ushort>.Count)
+                if(Vector128.IsHardwareAccelerated && length >= 2 * Vector128<ushort>.Count)
                 {
                     Vector128<uint> hashVector = Vector128.Create(hash1);
 
@@ -912,7 +912,7 @@ namespace System
                 // be ok because we expect this to be very rare in practice.
                 const uint NormalizeToLowercase = 0x0020_0020u; // valid both for big-endian and for little-endian
 
-                if(Vector128.IsHardwareAccelerated && length >= Vector128<ushort>.Count)
+                if(Vector128.IsHardwareAccelerated && length >= 2 * Vector128<ushort>.Count)
                 {
                     Vector128<uint> hashVector = Vector128.Create(hash1);
                     Vector128<uint> NormalizeToLowercaseVec = Vector128.Create(NormalizeToLowercase);
