@@ -27365,7 +27365,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
 //    of return registers and wants to know the set of return registers.
 //
 // static
-AllRegsMask ReturnTypeDesc::GetABIReturnRegs(CorInfoCallConvExtension callCon) const
+AllRegsMask ReturnTypeDesc::GetABIReturnRegs(CorInfoCallConvExtension callConv) const
 {
     AllRegsMask resultMask;
 
