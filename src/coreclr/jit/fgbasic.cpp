@@ -4828,16 +4828,13 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
         assert(newBlock->bbCodeOffs == BAD_IL_OFFSET);
         assert(newBlock->bbCodeOffsEnd == BAD_IL_OFFSET);
 
-        if (!newBlock->HasFlag(BBF_INTERNAL))
-        {
-            // curr->bbCodeOffs remains the same
-            newBlock->bbCodeOffsEnd = curr->bbCodeOffsEnd;
+        // curr->bbCodeOffs remains the same
+        newBlock->bbCodeOffsEnd = curr->bbCodeOffsEnd;
 
-            IL_OFFSET splitPointILOffset = fgFindBlockILOffset(newBlock);
+        IL_OFFSET splitPointILOffset = fgFindBlockILOffset(newBlock);
 
-            curr->bbCodeOffsEnd  = max(curr->bbCodeOffs, splitPointILOffset);
-            newBlock->bbCodeOffs = min(splitPointILOffset, newBlock->bbCodeOffsEnd);
-        }
+        curr->bbCodeOffsEnd  = max(curr->bbCodeOffs, splitPointILOffset);
+        newBlock->bbCodeOffs = min(splitPointILOffset, newBlock->bbCodeOffsEnd);
     }
     else
     {
