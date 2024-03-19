@@ -4243,6 +4243,124 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
 
 /*****************************************************************************
  *
+ *  Add a SVE instruction referencing three registers and two constants.
+ */
+
+void emitter::emitInsSve_R_R_R_I_I(instruction ins,
+                                   emitAttr    attr,
+                                   regNumber   reg1,
+                                   regNumber   reg2,
+                                   regNumber   reg3,
+                                   ssize_t     imm1,
+                                   ssize_t     imm2,
+                                   insOpts     opt)
+{
+    insFormat fmt = IF_NONE;
+    ssize_t   imm;
+
+    switch (ins)
+    {
+        case INS_sve_cdot:
+            assert(isVectorRegister(reg1));    // ddddd
+            assert(isVectorRegister(reg2));    // nnnnn
+            assert(isLowVectorRegister(reg3)); // mmmm
+            assert(isValidRot(imm2));          // rr
+            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
+            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+
+            if (opt == INS_OPTS_SCALABLE_B)
+            {
+                assert(isValidUimm<2>(imm1));                 // ii
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                fmt = IF_SVE_FA_3A;
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_H);
+                assert(isValidUimm<1>(imm1)); // i
+                fmt = IF_SVE_FA_3B;
+            }
+            break;
+
+        case INS_sve_cmla:
+            assert(isVectorRegister(reg1));    // ddddd
+            assert(isVectorRegister(reg2));    // nnnnn
+            assert(isLowVectorRegister(reg3)); // mmmm
+            assert(isValidRot(imm2));          // rr
+            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
+            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert(isValidUimm<2>(imm1));                 // ii
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                fmt = IF_SVE_FB_3A;
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_S);
+                assert(isValidUimm<1>(imm1)); // i
+                fmt = IF_SVE_FB_3B;
+            }
+            break;
+
+        case INS_sve_sqrdcmlah:
+            assert(isVectorRegister(reg1));    // ddddd
+            assert(isVectorRegister(reg2));    // nnnnn
+            assert(isLowVectorRegister(reg3)); // mmmm
+            assert(isValidRot(imm2));          // rr
+            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
+            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert(isValidUimm<2>(imm1));                 // ii
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                fmt = IF_SVE_FC_3A;
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_S);
+                assert(isValidUimm<1>(imm1)); // i
+                fmt = IF_SVE_FC_3B;
+            }
+            break;
+
+        case INS_sve_fcmla:
+            assert(opt == INS_OPTS_SCALABLE_S);
+            assert(isVectorRegister(reg1));    // ddddd
+            assert(isVectorRegister(reg2));    // nnnnn
+            assert(isLowVectorRegister(reg3)); // mmmm
+            assert(isValidUimm<1>(imm1));      // i
+            assert(isValidRot(imm2));          // rr
+
+            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
+            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+            fmt = IF_SVE_GV_3A;
+            break;
+
+        default:
+            unreached();
+            break;
+    }
+
+    assert(fmt != IF_NONE);
+
+    instrDesc* id = emitNewInstrCns(attr, imm);
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idInsOpt(opt);
+
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idReg3(reg3);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
  *  Add a SVE instruction referencing four registers.
  *  Do not call this directly. Use 'emitIns_R_R_R_R' instead.
  */

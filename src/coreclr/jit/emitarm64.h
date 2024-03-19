@@ -1572,6 +1572,15 @@ void emitIns_R_R_R_I_I(instruction ins,
                        ssize_t     imm2,
                        insOpts     opt);
 
+void emitInsSve_R_R_R_I_I(instruction ins,
+                          emitAttr    attr,
+                          regNumber   reg1,
+                          regNumber   reg2,
+                          regNumber   reg3,
+                          ssize_t     imm1,
+                          ssize_t     imm2,
+                          insOpts     opt);
+
 void emitIns_R_R_R_Ext(instruction ins,
                        emitAttr    attr,
                        regNumber   reg1,

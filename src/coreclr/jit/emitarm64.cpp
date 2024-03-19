@@ -9767,7 +9767,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
 void emitter::emitIns_R_R_F(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, double immDbl, insOpts opt /* = INS_OPTS_NONE */)
 {
-    // As of writing, only SVE instructions use this format.
+    // Currently, only SVE instructions use this format.
     emitInsSve_R_R_F(ins, attr, reg1, reg2, immDbl, opt);
 }
 
@@ -11113,108 +11113,8 @@ void emitter::emitIns_R_R_R_I_I(instruction ins,
                                 ssize_t     imm2,
                                 insOpts     opt)
 {
-    insFormat fmt = IF_NONE;
-    ssize_t   imm;
-
-    switch (ins)
-    {
-        case INS_sve_cdot:
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidRot(imm2));          // rr
-            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
-
-            if (opt == INS_OPTS_SCALABLE_B)
-            {
-                assert(isValidUimm<2>(imm1));                 // ii
-                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                fmt = IF_SVE_FA_3A;
-            }
-            else
-            {
-                assert(opt == INS_OPTS_SCALABLE_H);
-                assert(isValidUimm<1>(imm1)); // i
-                fmt = IF_SVE_FA_3B;
-            }
-            break;
-
-        case INS_sve_cmla:
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidRot(imm2));          // rr
-            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
-
-            if (opt == INS_OPTS_SCALABLE_H)
-            {
-                assert(isValidUimm<2>(imm1));                 // ii
-                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                fmt = IF_SVE_FB_3A;
-            }
-            else
-            {
-                assert(opt == INS_OPTS_SCALABLE_S);
-                assert(isValidUimm<1>(imm1)); // i
-                fmt = IF_SVE_FB_3B;
-            }
-            break;
-
-        case INS_sve_sqrdcmlah:
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidRot(imm2));          // rr
-            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
-
-            if (opt == INS_OPTS_SCALABLE_H)
-            {
-                assert(isValidUimm<2>(imm1));                 // ii
-                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                fmt = IF_SVE_FC_3A;
-            }
-            else
-            {
-                assert(opt == INS_OPTS_SCALABLE_S);
-                assert(isValidUimm<1>(imm1)); // i
-                fmt = IF_SVE_FC_3B;
-            }
-            break;
-
-        case INS_sve_fcmla:
-            assert(opt == INS_OPTS_SCALABLE_S);
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidUimm<1>(imm1));      // i
-            assert(isValidRot(imm2));          // rr
-
-            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
-            fmt = IF_SVE_GV_3A;
-            break;
-
-        default:
-            unreached();
-            break;
-    }
-
-    assert(fmt != IF_NONE);
-
-    instrDesc* id = emitNewInstrCns(attr, imm);
-    id->idIns(ins);
-    id->idInsFmt(fmt);
-    id->idInsOpt(opt);
-
-    id->idReg1(reg1);
-    id->idReg2(reg2);
-    id->idReg3(reg3);
-
-    dispIns(id);
-    appendToCurIG(id);
+    // Currently, only SVE instructions use this format.
+    emitInsSve_R_R_R_I_I(ins, attr, reg1, reg2, reg3, imm1, imm2, opt);
 }
 
 /*****************************************************************************
