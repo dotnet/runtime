@@ -1536,6 +1536,14 @@ void emitIns_R_R_R(instruction     ins,
                    insOpts         opt  = INS_OPTS_NONE,
                    insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
+void emitInsSve_R_R_R(instruction     ins,
+                      emitAttr        attr,
+                      regNumber       reg1,
+                      regNumber       reg2,
+                      regNumber       reg3,
+                      insOpts         opt  = INS_OPTS_NONE,
+                      insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+
 void emitIns_R_R_R_I(instruction     ins,
                      emitAttr        attr,
                      regNumber       reg1,

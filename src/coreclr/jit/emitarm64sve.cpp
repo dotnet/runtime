@@ -447,7 +447,7 @@ void emitter::emitInsSve_R_R(instruction     ins,
             if (opt != INS_OPTS_SCALABLE_B)
             {
                 assert(insOptsScalableStandard(opt));
-                return emitIns_R_R_I(INS_sve_pmov, attr, reg1, reg2, 0, opt, sopt);
+                return emitInsSve_R_R_I(INS_sve_pmov, attr, reg1, reg2, 0, opt, sopt);
             }
             if (sopt == INS_SCALABLE_OPTS_TO_PREDICATE)
             {
@@ -972,7 +972,7 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
         case INS_sve_mov:
             if (sopt == INS_SCALABLE_OPTS_BROADCAST)
             {
-                return emitIns_R_R_I(INS_sve_dup, attr, reg1, reg2, imm, opt, sopt);
+                return emitInsSve_R_R_I(INS_sve_dup, attr, reg1, reg2, imm, opt, sopt);
             }
             FALLTHROUGH;
         case INS_sve_cpy:
@@ -1407,6 +1407,1502 @@ void emitter::emitInsSve_R_R_F(
 
     id->idReg1(reg1);
     id->idReg2(reg2);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add a SVE instruction referencing three registers.
+ */
+
+void emitter::emitInsSve_R_R_R(instruction     ins,
+                               emitAttr        attr,
+                               regNumber       reg1,
+                               regNumber       reg2,
+                               regNumber       reg3,
+                               insOpts         opt /* = INS_OPTS_NONE */,
+                               insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
+{
+    emitAttr size = EA_SIZE(attr);
+    bool      pmerge         = false;
+    bool      vectorLength4x = false;
+    insFormat fmt = IF_NONE;
+
+    /* Figure out the encoding format of the instruction */
+    switch (ins)
+    {
+        case INS_sve_and:
+        case INS_sve_bic:
+        case INS_sve_eor:
+        case INS_sve_orr:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1)); // mmmmm
+            assert(isVectorRegister(reg3)); // ddddd
+
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(opt == INS_OPTS_SCALABLE_D);
+                assert(isVectorRegister(reg2)); // nnnnn
+                fmt = IF_SVE_AU_3A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isLowPredicateRegister(reg2)); // ggg
+                fmt = IF_SVE_AA_3A;
+            }
+            break;
+
+        case INS_sve_add:
+        case INS_sve_sub:
+        case INS_sve_subr:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(isVectorRegister(reg2));
+                assert(ins != INS_sve_subr);
+                fmt = IF_SVE_AT_3A;
+            }
+            else
+            {
+                assert(isLowPredicateRegister(reg2));
+                assert(insScalableOptsNone(sopt));
+                fmt = IF_SVE_AB_3A;
+            }
+            break;
+
+        case INS_sve_addpt:
+        case INS_sve_subpt:
+            unreached(); // TODO-SVE: Not yet supported.
+            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg3)); // mmmmm
+
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(isVectorRegister(reg2)); // nnnnn
+                fmt = IF_SVE_AT_3B;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isLowPredicateRegister(reg2)); // ggg
+                fmt = IF_SVE_AB_3B;
+            }
+            break;
+
+        case INS_sve_sdiv:
+        case INS_sve_sdivr:
+        case INS_sve_udiv:
+        case INS_sve_udivr:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableWords(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AC_3A;
+            break;
+
+        case INS_sve_sabd:
+        case INS_sve_smax:
+        case INS_sve_smin:
+        case INS_sve_uabd:
+        case INS_sve_umax:
+        case INS_sve_umin:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AD_3A;
+            break;
+
+        case INS_sve_mul:
+        case INS_sve_smulh:
+        case INS_sve_umulh:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(isVectorRegister(reg2));
+                fmt = IF_SVE_BD_3A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isLowPredicateRegister(reg2));
+                fmt = IF_SVE_AE_3A;
+            }
+            break;
+
+        case INS_sve_pmul:
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            fmt = IF_SVE_BD_3B;
+            break;
+
+        case INS_sve_andv:
+        case INS_sve_eorv:
+        case INS_sve_orv:
+            assert(isFloatReg(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AF_3A;
+            break;
+
+        case INS_sve_andqv:
+        case INS_sve_eorqv:
+        case INS_sve_orqv:
+            unreached(); // TODO-SVE: Not yet supported.
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AG_3A;
+            break;
+
+        case INS_sve_movprfx:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            if (sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE)
+            {
+                pmerge = true;
+            }
+            fmt = IF_SVE_AH_3A;
+            break;
+
+        case INS_sve_saddv:
+        case INS_sve_uaddv:
+            assert(isFloatReg(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableWide(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AI_3A;
+            break;
+
+        case INS_sve_addqv:
+            unreached(); // TODO-SVE: Not yet supported.
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AJ_3A;
+            break;
+
+        case INS_sve_smaxv:
+        case INS_sve_sminv:
+        case INS_sve_umaxv:
+        case INS_sve_uminv:
+            assert(isFloatReg(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AK_3A;
+            break;
+
+        case INS_sve_smaxqv:
+        case INS_sve_sminqv:
+        case INS_sve_umaxqv:
+        case INS_sve_uminqv:
+            unreached(); // TODO-SVE: Not yet supported.
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AL_3A;
+            break;
+
+        case INS_sve_asrr:
+        case INS_sve_lslr:
+        case INS_sve_lsrr:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AN_3A;
+            break;
+
+        case INS_sve_asr:
+        case INS_sve_lsl:
+        case INS_sve_lsr:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg3));
+            if (sopt == INS_SCALABLE_OPTS_WIDE)
+            {
+                assert(isLowPredicateRegister(reg2));
+                assert(insOptsScalableWide(opt));
+                fmt = IF_SVE_AO_3A;
+            }
+            else if (sopt == INS_SCALABLE_OPTS_UNPREDICATED_WIDE)
+            {
+                assert(isVectorRegister(reg2));
+                assert(insOptsScalableWide(opt));
+                fmt = IF_SVE_BG_3A;
+            }
+            else
+            {
+                assert(isLowPredicateRegister(reg2));
+                assert(insScalableOptsNone(sopt));
+                assert(insOptsScalableStandard(opt));
+                fmt = IF_SVE_AN_3A;
+            }
+            break;
+
+        case INS_sve_uzp1:
+        case INS_sve_trn1:
+        case INS_sve_zip1:
+        case INS_sve_uzp2:
+        case INS_sve_trn2:
+        case INS_sve_zip2:
+            assert(insOptsScalable(opt));
+
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(isVectorRegister(reg1)); // ddddd
+                assert(isVectorRegister(reg2)); // nnnnn
+                assert(isVectorRegister(reg3)); // mmmmm
+
+                if (opt == INS_OPTS_SCALABLE_Q)
+                {
+                    fmt = IF_SVE_BR_3B;
+                }
+                else
+                {
+                    assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+                    fmt = IF_SVE_BR_3A;
+                }
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isPredicateRegister(reg1)); // DDDD
+                assert(isPredicateRegister(reg2)); // NNNN
+                assert(isPredicateRegister(reg3)); // MMMM
+                fmt = IF_SVE_CI_3A;
+            }
+            break;
+
+        case INS_sve_tbl:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+
+            if (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR)
+            {
+                fmt = IF_SVE_BZ_3A_A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                fmt = IF_SVE_BZ_3A;
+            }
+            break;
+
+        case INS_sve_tbx:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_BZ_3A;
+            break;
+
+        case INS_sve_tbxq:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_CA_3A;
+            break;
+
+        case INS_sve_sdot:
+        case INS_sve_udot:
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                fmt = IF_SVE_EF_3A;
+            }
+            else
+            {
+                fmt = IF_SVE_EH_3A;
+                assert(insOptsScalableWords(opt));
+                assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            }
+            break;
+
+        case INS_sve_usdot:
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            fmt = IF_SVE_EI_3A;
+            break;
+
+        case INS_sve_smlalb:
+        case INS_sve_smlalt:
+        case INS_sve_umlalb:
+        case INS_sve_umlalt:
+        case INS_sve_smlslb:
+        case INS_sve_smlslt:
+        case INS_sve_umlslb:
+        case INS_sve_umlslt:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_EL_3A;
+            break;
+
+        case INS_sve_sqrdmlah:
+        case INS_sve_sqrdmlsh:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_EM_3A;
+            break;
+
+        case INS_sve_sqdmlalbt:
+        case INS_sve_sqdmlslbt:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_EN_3A;
+            break;
+
+        case INS_sve_sqdmlalb:
+        case INS_sve_sqdmlalt:
+        case INS_sve_sqdmlslb:
+        case INS_sve_sqdmlslt:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_EO_3A;
+            break;
+
+        case INS_sve_sclamp:
+        case INS_sve_uclamp:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_EV_3A;
+            break;
+
+        case INS_sve_zipq1:
+        case INS_sve_zipq2:
+        case INS_sve_uzpq1:
+        case INS_sve_uzpq2:
+        case INS_sve_tblq:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_EX_3A;
+            break;
+
+        case INS_sve_saddlb:
+        case INS_sve_saddlt:
+        case INS_sve_uaddlb:
+        case INS_sve_uaddlt:
+        case INS_sve_ssublb:
+        case INS_sve_ssublt:
+        case INS_sve_usublb:
+        case INS_sve_usublt:
+        case INS_sve_sabdlb:
+        case INS_sve_sabdlt:
+        case INS_sve_uabdlb:
+        case INS_sve_uabdlt:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_FL_3A;
+            break;
+
+        case INS_sve_saddwb:
+        case INS_sve_saddwt:
+        case INS_sve_uaddwb:
+        case INS_sve_uaddwt:
+        case INS_sve_ssubwb:
+        case INS_sve_ssubwt:
+        case INS_sve_usubwb:
+        case INS_sve_usubwt:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_FM_3A;
+            break;
+
+        case INS_sve_smullb:
+        case INS_sve_smullt:
+        case INS_sve_umullb:
+        case INS_sve_umullt:
+        case INS_sve_sqdmullb:
+        case INS_sve_sqdmullt:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_FN_3A;
+            break;
+
+        case INS_sve_pmullb:
+        case INS_sve_pmullt:
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+
+            if (opt == INS_OPTS_SCALABLE_Q)
+            {
+                fmt = IF_SVE_FN_3B;
+            }
+            else
+            {
+                assert((opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_D));
+                assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+                fmt = IF_SVE_FN_3A;
+            }
+            break;
+
+        case INS_sve_smmla:
+        case INS_sve_usmmla:
+        case INS_sve_ummla:
+            assert(opt == INS_OPTS_SCALABLE_S);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            fmt = IF_SVE_FO_3A;
+            break;
+
+        case INS_sve_rax1:
+        case INS_sve_sm4ekey:
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+
+            if (ins == INS_sve_rax1)
+            {
+                assert(opt == INS_OPTS_SCALABLE_D);
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_S);
+            }
+
+            fmt = IF_SVE_GJ_3A;
+            break;
+
+        case INS_sve_fmlalb:
+        case INS_sve_fmlalt:
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+
+            if (opt == INS_OPTS_SCALABLE_B)
+            {
+                unreached(); // TODO-SVE: Not yet supported.
+                fmt = IF_SVE_GN_3A;
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_H);
+                fmt = IF_SVE_HB_3A;
+            }
+            break;
+
+        case INS_sve_fmlslb:
+        case INS_sve_fmlslt:
+        case INS_sve_bfmlalb:
+        case INS_sve_bfmlalt:
+        case INS_sve_bfmlslb:
+        case INS_sve_bfmlslt:
+            assert(opt == INS_OPTS_SCALABLE_H);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            fmt = IF_SVE_HB_3A;
+            break;
+
+        case INS_sve_bfmmla:
+            assert(opt == INS_OPTS_SCALABLE_H);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            fmt = IF_SVE_HD_3A;
+            break;
+
+        case INS_sve_fmmla:
+            unreached(); // TODO-SVE: Not yet supported.
+            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            fmt = IF_SVE_HD_3A_A;
+            break;
+
+        case INS_sve_fmlallbb:
+        case INS_sve_fmlallbt:
+        case INS_sve_fmlalltb:
+        case INS_sve_fmlalltt:
+            unreached(); // TODO-SVE: Not yet supported.
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            fmt = IF_SVE_GO_3A;
+            break;
+
+        case INS_sve_bfclamp:
+            assert(opt == INS_OPTS_SCALABLE_H);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            fmt = IF_SVE_GW_3B;
+            break;
+
+        case INS_sve_bfdot:
+            assert(opt == INS_OPTS_SCALABLE_H);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            fmt = IF_SVE_HA_3A;
+            break;
+
+        case INS_sve_fdot:
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                fmt = IF_SVE_HA_3A;
+            }
+            else if (opt == INS_OPTS_SCALABLE_B)
+            {
+                unreached(); // TODO-SVE: Not yet supported.
+                fmt = IF_SVE_HA_3A_E;
+            }
+            else
+            {
+                unreached(); // TODO-SVE: Not yet supported.
+                assert(insOptsNone(opt));
+                fmt = IF_SVE_HA_3A_F;
+            }
+            break;
+
+        case INS_sve_eorbt:
+        case INS_sve_eortb:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_FP_3A;
+            break;
+
+        case INS_sve_bext:
+        case INS_sve_bdep:
+        case INS_sve_bgrp:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_FQ_3A;
+            break;
+
+        case INS_sve_saddlbt:
+        case INS_sve_ssublbt:
+        case INS_sve_ssubltb:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_FS_3A;
+            break;
+
+        case INS_sve_saba:
+        case INS_sve_uaba:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_FW_3A;
+            break;
+
+        case INS_sve_sabalb:
+        case INS_sve_sabalt:
+        case INS_sve_uabalb:
+        case INS_sve_uabalt:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_FX_3A;
+            break;
+
+        case INS_sve_addhnb:
+        case INS_sve_addhnt:
+        case INS_sve_raddhnb:
+        case INS_sve_raddhnt:
+        case INS_sve_subhnb:
+        case INS_sve_subhnt:
+        case INS_sve_rsubhnb:
+        case INS_sve_rsubhnt:
+            unreached(); // TODO-SVE: Not yet supported.
+            assert(insOptsScalableWide(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_GC_3A;
+            break;
+
+        case INS_sve_histseg:
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_GF_3A;
+            break;
+
+        case INS_sve_fclamp:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_GW_3A;
+            break;
+
+        case INS_sve_clz:
+        case INS_sve_cls:
+        case INS_sve_cnt:
+        case INS_sve_cnot:
+        case INS_sve_not:
+        case INS_sve_nots:
+            if (isPredicateRegister(reg1) && sopt != INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(opt == INS_OPTS_SCALABLE_B);
+                assert(isPredicateRegister(reg1)); // DDDD
+                assert(isPredicateRegister(reg2)); // gggg
+                assert(isPredicateRegister(reg3)); // NNNN
+                fmt = IF_SVE_CZ_4A;
+            }
+            else
+            {
+                assert(isVectorRegister(reg1));
+                assert(isLowPredicateRegister(reg2));
+                assert(isVectorRegister(reg3));
+                assert(insOptsScalableStandard(opt));
+                assert(insScalableOptsNone(sopt));
+                fmt = IF_SVE_AP_3A;
+            }
+            break;
+
+        case INS_sve_fabs:
+        case INS_sve_fneg:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableFloat(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AP_3A;
+            break;
+
+        case INS_sve_abs:
+        case INS_sve_neg:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AQ_3A;
+            break;
+
+        case INS_sve_sxtb:
+        case INS_sve_uxtb:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AQ_3A;
+            break;
+
+        case INS_sve_sxth:
+        case INS_sve_uxth:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableWords(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AQ_3A;
+            break;
+
+        case INS_sve_sxtw:
+        case INS_sve_uxtw:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_AQ_3A;
+            break;
+
+        case INS_sve_index:
+            assert(isValidScalarDatasize(size));
+            assert(isVectorRegister(reg1));
+            assert(isGeneralRegisterOrZR(reg2));
+            assert(isGeneralRegisterOrZR(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_BA_3A;
+            break;
+
+        case INS_sve_sqdmulh:
+        case INS_sve_sqrdmulh:
+            assert(isScalableVectorSize(size));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_BE_3A;
+            break;
+
+        case INS_sve_ftssel:
+            assert(isScalableVectorSize(size));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableFloat(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_BK_3A;
+            break;
+
+        case INS_sve_compact:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableWords(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_CL_3A;
+            break;
+
+        case INS_sve_clasta:
+        case INS_sve_clastb:
+            assert(insOptsScalableStandard(opt));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            if (isGeneralRegister(reg1))
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isValidScalarDatasize(size));
+                fmt = IF_SVE_CO_3A;
+            }
+            else if (sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
+            {
+                assert(isFloatReg(reg1));
+                assert(isValidVectorElemsize(size));
+                fmt = IF_SVE_CN_3A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isVectorRegister(reg1));
+                fmt = IF_SVE_CM_3A;
+            }
+            break;
+
+        case INS_sve_cpy:
+        case INS_sve_mov:
+            assert(insOptsScalableStandard(opt));
+            // TODO-SVE: Following checks can be simplified to check reg1 as predicate register only after adding
+            // definitions for predicate registers. Currently, predicate registers P0 to P15 are aliased to simd
+            // registers V0 to V15.
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(ins == INS_sve_mov);
+                assert(opt == INS_OPTS_SCALABLE_D);
+                assert(isVectorRegister(reg1)); // ddddd
+                assert(isVectorRegister(reg2)); // nnnnn
+                assert(isVectorRegister(reg3)); // mmmmm
+                fmt = IF_SVE_AU_3A;
+                // ORR is an alias for MOV, and is always the preferred disassembly.
+                ins = INS_sve_orr;
+            }
+            else if (isPredicateRegister(reg3) &&
+                     (sopt == INS_SCALABLE_OPTS_NONE || sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE))
+            {
+                assert(opt == INS_OPTS_SCALABLE_B);
+                assert(isPredicateRegister(reg1)); // DDDD
+                assert(isPredicateRegister(reg2)); // gggg
+                assert(isPredicateRegister(reg3)); // NNNN
+                fmt = sopt == INS_SCALABLE_OPTS_NONE ? IF_SVE_CZ_4A : IF_SVE_CZ_4A_K;
+                // MOV is an alias for CPY, and is always the preferred disassembly.
+                ins = INS_sve_mov;
+            }
+            else if (sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE)
+            {
+                assert(isVectorRegister(reg1));
+                assert(isPredicateRegister(reg2));
+                assert(isVectorRegister(reg3));
+                assert(insOptsScalableStandard(opt));
+                fmt = IF_SVE_CW_4A;
+            }
+            else
+            {
+                assert(isVectorRegister(reg1));
+                assert(isLowPredicateRegister(reg2));
+                if (isGeneralRegisterOrSP(reg3))
+                {
+                    assert(insScalableOptsNone(sopt));
+                    fmt  = IF_SVE_CQ_3A;
+                    reg3 = encodingSPtoZR(reg3);
+                }
+                else
+                {
+                    assert(sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
+                    assert(isVectorRegister(reg3));
+                    fmt = IF_SVE_CP_3A;
+                }
+
+                // MOV is an alias for CPY, and is always the preferred disassembly.
+                ins = INS_sve_mov;
+            }
+            break;
+
+        case INS_sve_lasta:
+        case INS_sve_lastb:
+            assert(insOptsScalableStandard(opt));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            if (isGeneralRegister(reg1))
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isGeneralRegister(reg1));
+                fmt = IF_SVE_CS_3A;
+            }
+            else if (sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
+            {
+                assert(isVectorRegister(reg1));
+                fmt = IF_SVE_CR_3A;
+            }
+            break;
+
+        case INS_sve_revd:
+            assert(isVectorRegister(reg1));       // ddddd
+            assert(isLowPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));       // nnnnn
+            fmt = IF_SVE_CT_3A;
+            break;
+
+        case INS_sve_rbit:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_CU_3A;
+            break;
+
+        case INS_sve_revb:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_CU_3A;
+            break;
+
+        case INS_sve_revh:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableWords(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_CU_3A;
+            break;
+
+        case INS_sve_revw:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_CU_3A;
+            break;
+
+        case INS_sve_splice:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            fmt = (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR) ? IF_SVE_CV_3A : IF_SVE_CV_3B;
+            break;
+
+        case INS_sve_brka:
+        case INS_sve_brkb:
+            assert(isPredicateRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isPredicateRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            if (sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE)
+            {
+                pmerge = true;
+            }
+            fmt = IF_SVE_DB_3A;
+            break;
+
+        case INS_sve_brkas:
+        case INS_sve_brkbs:
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(isPredicateRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isPredicateRegister(reg3));
+            fmt = IF_SVE_DB_3B;
+            break;
+
+        case INS_sve_brkn:
+        case INS_sve_brkns:
+            assert(insOptsScalable(opt));
+            assert(isPredicateRegister(reg1)); // MMMM
+            assert(isPredicateRegister(reg2)); // gggg
+            assert(isPredicateRegister(reg3)); // NNNN
+            fmt = IF_SVE_DC_3A;
+            break;
+
+        case INS_sve_cntp:
+            assert(size == EA_8BYTE);
+            assert(isGeneralRegister(reg1));                       // ddddd
+            assert(isPredicateRegister(reg2));                     // gggg
+            assert(isPredicateRegister(reg3));                     // NNNN
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_DK_3A;
+            break;
+
+        case INS_sve_shadd:
+        case INS_sve_shsub:
+        case INS_sve_shsubr:
+        case INS_sve_srhadd:
+        case INS_sve_uhadd:
+        case INS_sve_uhsub:
+        case INS_sve_uhsubr:
+        case INS_sve_urhadd:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_EP_3A;
+            break;
+
+        case INS_sve_sadalp:
+        case INS_sve_uadalp:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_EQ_3A;
+            break;
+
+        case INS_sve_addp:
+        case INS_sve_smaxp:
+        case INS_sve_sminp:
+        case INS_sve_umaxp:
+        case INS_sve_uminp:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_ER_3A;
+            break;
+
+        case INS_sve_sqabs:
+        case INS_sve_sqneg:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_ES_3A;
+            break;
+
+        case INS_sve_urecpe:
+        case INS_sve_ursqrte:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(opt == INS_OPTS_SCALABLE_S);
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_ES_3A;
+            break;
+
+        case INS_sve_sqadd:
+        case INS_sve_sqsub:
+        case INS_sve_uqadd:
+        case INS_sve_uqsub:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(isScalableVectorSize(size));
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(isVectorRegister(reg2));
+                fmt = IF_SVE_AT_3A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isLowPredicateRegister(reg2));
+                fmt = IF_SVE_ET_3A;
+            }
+            break;
+
+        case INS_sve_sqsubr:
+        case INS_sve_suqadd:
+        case INS_sve_uqsubr:
+        case INS_sve_usqadd:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            assert(isScalableVectorSize(size));
+            fmt = IF_SVE_ET_3A;
+            break;
+
+        case INS_sve_sqrshl:
+        case INS_sve_sqrshlr:
+        case INS_sve_sqshl:
+        case INS_sve_sqshlr:
+        case INS_sve_srshl:
+        case INS_sve_srshlr:
+        case INS_sve_uqrshl:
+        case INS_sve_uqrshlr:
+        case INS_sve_uqshl:
+        case INS_sve_uqshlr:
+        case INS_sve_urshl:
+        case INS_sve_urshlr:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableStandard(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_EU_3A;
+            break;
+
+        case INS_sve_fcvtnt:
+        case INS_sve_fcvtlt:
+            assert(insOptsConvertFloatStepwise(opt));
+            FALLTHROUGH;
+        case INS_sve_fcvtxnt:
+        case INS_sve_bfcvtnt:
+            assert(isVectorRegister(reg1));       // ddddd
+            assert(isLowPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));       // nnnnn
+            fmt = IF_SVE_GQ_3A;
+            break;
+
+        case INS_sve_faddp:
+        case INS_sve_fmaxnmp:
+        case INS_sve_fmaxp:
+        case INS_sve_fminnmp:
+        case INS_sve_fminp:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableFloat(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_GR_3A;
+            break;
+
+        case INS_sve_faddqv:
+        case INS_sve_fmaxnmqv:
+        case INS_sve_fminnmqv:
+        case INS_sve_fmaxqv:
+        case INS_sve_fminqv:
+            unreached(); // TODO-SVE: Not yet supported.
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableFloat(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_GS_3A;
+            break;
+
+        case INS_sve_fmaxnmv:
+        case INS_sve_fmaxv:
+        case INS_sve_fminnmv:
+        case INS_sve_fminv:
+        case INS_sve_faddv:
+            assert(isFloatReg(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableFloat(opt));
+            assert(isValidVectorElemsizeSveFloat(size));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_HE_3A;
+            break;
+
+        case INS_sve_fadda:
+            assert(isFloatReg(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableFloat(opt));
+            assert(isValidVectorElemsizeSveFloat(size));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_HJ_3A;
+            break;
+
+        case INS_sve_frecps:
+        case INS_sve_frsqrts:
+        case INS_sve_ftsmul:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_HK_3A;
+            break;
+
+        case INS_sve_fadd:
+        case INS_sve_fsub:
+        case INS_sve_fmul:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(isVectorRegister(reg2)); // nnnnn
+                fmt = IF_SVE_HK_3A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isLowPredicateRegister(reg2)); // ggg
+                fmt = IF_SVE_HL_3A;
+            }
+            break;
+
+        case INS_sve_fabd:
+        case INS_sve_fdiv:
+        case INS_sve_fdivr:
+        case INS_sve_fmax:
+        case INS_sve_fmaxnm:
+        case INS_sve_fmin:
+        case INS_sve_fminnm:
+        case INS_sve_fmulx:
+        case INS_sve_fscale:
+        case INS_sve_fsubr:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_HL_3A;
+            break;
+
+        case INS_sve_famax:
+        case INS_sve_famin:
+            unreached(); // TODO-SVE: Not yet supported.
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableFloat(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_HL_3A;
+            break;
+
+        case INS_sve_bfmul:
+        case INS_sve_bfadd:
+        case INS_sve_bfsub:
+        case INS_sve_bfmaxnm:
+        case INS_sve_bfminnm:
+        case INS_sve_bfmax:
+        case INS_sve_bfmin:
+            assert(opt == INS_OPTS_SCALABLE_H);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg3)); // mmmmm
+
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(isVectorRegister(reg2)); // nnnnn
+                fmt = IF_SVE_HK_3B;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isLowPredicateRegister(reg2)); // ggg
+                fmt = IF_SVE_HL_3B;
+            }
+            break;
+
+        case INS_sve_bsl:
+        case INS_sve_eor3:
+        case INS_sve_bcax:
+        case INS_sve_bsl1n:
+        case INS_sve_bsl2n:
+        case INS_sve_nbsl:
+            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // mmmmm
+            assert(isVectorRegister(reg3)); // kkkkk
+            fmt = IF_SVE_AV_3A;
+            break;
+
+        case INS_sve_frintn:
+        case INS_sve_frintm:
+        case INS_sve_frintp:
+        case INS_sve_frintz:
+        case INS_sve_frinta:
+        case INS_sve_frintx:
+        case INS_sve_frinti:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableFloat(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_HQ_3A;
+            break;
+
+        case INS_sve_bfcvt:
+            assert(isVectorRegister(reg1));       // ddddd
+            assert(isLowPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));       // nnnnn
+            fmt = IF_SVE_HO_3A;
+            break;
+
+        case INS_sve_fcvt:
+            assert(isVectorRegister(reg1));       // ddddd
+            assert(isLowPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));       // nnnnn
+            fmt = IF_SVE_HO_3B;
+            break;
+
+        case INS_sve_fcvtx:
+            assert(isVectorRegister(reg1));       // ddddd
+            assert(isLowPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));       // nnnnn
+            fmt = IF_SVE_HO_3C;
+            break;
+
+        case INS_sve_fcvtzs:
+        case INS_sve_fcvtzu:
+            assert(insOptsScalableFloat(opt) || opt == INS_OPTS_H_TO_S || opt == INS_OPTS_H_TO_D ||
+                   opt == INS_OPTS_S_TO_D || opt == INS_OPTS_D_TO_S);
+            assert(isVectorRegister(reg1));       // ddddd
+            assert(isLowPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));       // nnnnn
+            fmt = IF_SVE_HP_3B;
+            break;
+
+        case INS_sve_scvtf:
+        case INS_sve_ucvtf:
+            assert(insOptsScalableAtLeastHalf(opt) || opt == INS_OPTS_S_TO_H || opt == INS_OPTS_S_TO_D ||
+                   opt == INS_OPTS_D_TO_H || opt == INS_OPTS_D_TO_S);
+            assert(isVectorRegister(reg1));       // ddddd
+            assert(isLowPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));       // nnnnn
+            fmt = IF_SVE_HS_3A;
+            break;
+
+        case INS_sve_frecpx:
+        case INS_sve_fsqrt:
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(insOptsScalableFloat(opt));
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_HR_3A;
+            break;
+
+        case INS_sve_whilege:
+        case INS_sve_whilegt:
+        case INS_sve_whilelt:
+        case INS_sve_whilele:
+        case INS_sve_whilehs:
+        case INS_sve_whilehi:
+        case INS_sve_whilelo:
+        case INS_sve_whilels:
+            assert(isGeneralRegister(reg2));                       // nnnnn
+            assert(isGeneralRegister(reg3));                       // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            assert(insOptsScalableStandard(opt));
+
+            if (insScalableOptsNone(sopt))
+            {
+                assert(isPredicateRegister(reg1));    // DDDD
+                assert(isValidGeneralDatasize(size)); // X
+                fmt = IF_SVE_DT_3A;
+            }
+            else if (insScalableOptsWithPredicatePair(sopt))
+            {
+                assert(isLowPredicateRegister(reg1)); // DDD
+                assert(size == EA_8BYTE);
+                fmt = IF_SVE_DX_3A;
+            }
+            else
+            {
+                assert(insScalableOptsWithVectorLength(sopt)); // l
+                assert(isHighPredicateRegister(reg1));         // DDD
+                assert(size == EA_8BYTE);
+                vectorLength4x = (sopt == INS_SCALABLE_OPTS_VL_4X);
+                fmt            = IF_SVE_DY_3A;
+            }
+            break;
+
+        case INS_sve_whilewr:
+        case INS_sve_whilerw:
+            assert(insOptsScalableStandard(opt));
+            assert(isPredicateRegister(reg1)); // DDDD
+            assert(isGeneralRegister(reg2));   // nnnnn
+            assert(size == EA_8BYTE);
+            assert(isGeneralRegister(reg3));                       // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_DU_3A;
+            break;
+
+        case INS_sve_movs:
+            assert(insOptsScalable(opt));
+            assert(isPredicateRegister(reg1)); // DDDD
+            assert(isPredicateRegister(reg2)); // gggg
+            assert(isPredicateRegister(reg3)); // NNNN
+            fmt = IF_SVE_CZ_4A;
+            break;
+
+        case INS_sve_adclb:
+        case INS_sve_adclt:
+        case INS_sve_sbclb:
+        case INS_sve_sbclt:
+            assert(insOptsScalableWords(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // x
+            fmt = IF_SVE_FY_3A;
+            break;
+
+        case INS_sve_mlapt:
+            unreached(); // TODO-SVE: Not yet supported.
+            assert(insOptsNone(opt));
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            fmt = IF_SVE_EW_3A;
+            break;
+
+        case INS_sve_madpt:
+            unreached(); // TODO-SVE: Not yet supported.
+            assert(insOptsNone(opt));
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // mmmmm
+            assert(isVectorRegister(reg3)); // aaaaa
+            fmt = IF_SVE_EW_3B;
+            break;
+
+        case INS_sve_fcmeq:
+        case INS_sve_fcmge:
+        case INS_sve_fcmgt:
+        case INS_sve_fcmlt:
+        case INS_sve_fcmle:
+        case INS_sve_fcmne:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(insScalableOptsNone(sopt));
+            assert(isPredicateRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isScalableVectorSize(size));
+            fmt = IF_SVE_HI_3A;
+            break;
+
+        case INS_sve_flogb:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(insScalableOptsNone(sopt));
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isScalableVectorSize(size));
+            fmt = IF_SVE_HP_3A;
+            break;
+
+        case INS_sve_ld1b:
+        case INS_sve_ld1h:
+        case INS_sve_ld1w:
+        case INS_sve_ld1d:
+            return emitIns_R_R_R_I(ins, size, reg1, reg2, reg3, 0, opt);
+
+        default:
+            unreached();
+            break;
+    }
+
+    assert(fmt != IF_NONE);
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idInsOpt(opt);
+
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idReg3(reg3);
+
+    if (pmerge)
+    {
+        id->idPredicateReg2Merge(pmerge);
+    }
+    else if (vectorLength4x)
+    {
+        id->idVectorLength4x(vectorLength4x);
+    }
 
     dispIns(id);
     appendToCurIG(id);
@@ -2772,7 +4268,7 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
                 if (reg1 == reg4)
                 {
                     // mov is a preferred alias for sel
-                    return emitIns_R_R_R(INS_sve_mov, attr, reg1, reg2, reg3, opt, INS_SCALABLE_OPTS_PREDICATE_MERGE);
+                    return emitInsSve_R_R_R(INS_sve_mov, attr, reg1, reg2, reg3, opt, INS_SCALABLE_OPTS_PREDICATE_MERGE);
                 }
 
                 assert(insOptsScalableStandard(opt));
