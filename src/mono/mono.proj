@@ -85,6 +85,15 @@
                       PrivateAssets="all"
                       Version="$(MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version)"
                       GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.osx-arm64"
+                      PrivateAssets="all"
+                      Version="$(MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version)" />
+    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Node.osx-arm64"
+                      PrivateAssets="all"
+                      Version="$(MicrosoftNETRuntimeEmscripten3134Nodeosxarm64Version)" />
+    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Sdk.osx-arm64"
+                      PrivateAssets="all"
+                      Version="$(MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version)" />
   </ItemGroup>
 
   <!--
@@ -157,6 +166,32 @@
       <BrowserLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'browser'))</BrowserLocalPath>
       <EmsdkLocalPath>emsdk</EmsdkLocalPath>
       <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
+      <_EmsdkPaths Condition="'$(HostOS)' != 'windows'">
+export EMSDK_PATH=$(EMSDK_PATH)
+export DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EMSDK_PATH)bin/
+export DOTNET_EMSCRIPTEN_NODE_JS=$(EMSDK_PATH)bin/node
+export DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EMSDK_PATH)
+
+      </_EmsdkPaths>
+      <_EmsdkPaths Condition="'$(HostOS)' == 'windows'">
+set EMSDK_PATH=&quot;$(EMSDK_PATH)&quot;
+set DOTNET_EMSCRIPTEN_LLVM_ROOT=&quot;$(EMSDK_PATH)bin/&quot;
+set DOTNET_EMSCRIPTEN_NODE_JS=&quot;$(EMSDK_PATH)bin/node&quot;
+set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=&quot;$(EMSDK_PATH)&quot;
+
+      </_EmsdkPaths>
+      <_EmscriptenPaths>
+import os
+
+LLVM_ROOT = os.path.expanduser('$(EMSDK_PATH)bin/')
+NODE_JS = os.path.expanduser('$(EMSDK_PATH)bin/node')
+BINARYEN_ROOT = os.path.expanduser('$(EMSDK_PATH)')
+
+FROZEN_CACHE = bool(os.getenv('FROZEN_CACHE', 'True'))
+
+COMPILER_ENGINE = NODE_JS
+JS_ENGINES = [NODE_JS]
+      </_EmscriptenPaths>
 
       <InstallCmd>$(EMSDK_PATH)/emsdk$(EmsdkExt) install $(EmscriptenVersion)</InstallCmd>
       <ActivateCmd>$(EMSDK_PATH)/emsdk$(EmsdkExt) activate $(EmscriptenVersion)</ActivateCmd>
@@ -166,6 +201,24 @@
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
+    
+    <ItemGroup>
+      <EmsdkFiles Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(EmsdkFiles)" DestinationFolder="$(EMSDK_PATH)\%(RecursiveDir)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
+    <ReadLinesFromFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)">
+      <Output TaskParameter="Lines" PropertyName="_EmsdkEnvFileText" />
+    </ReadLinesFromFile>
+    <WriteLinesToFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)" 
+                      Overwrite="true"
+                      Lines="$(_EmsdkPaths);$(_EmsdkEnvFileText)" />
+    <WriteLinesToFile File="$(EMSDK_PATH)emscripten/.emscripten"
+                      Overwrite="true"
+                      Lines="$(_EmscriptenPaths)" />
+    <!--
     <Exec Command="git clone https://github.com/emscripten-core/emsdk.git emsdk"
           WorkingDirectory="$(BrowserLocalPath)"
           IgnoreStandardErrorWarningFormat="true" />
@@ -176,6 +229,7 @@
           Condition="'$(HostOS)' == 'windows'"
           WorkingDirectory="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
+    -->
   </Target>
 
   <!-- Sets up WASI SDK if you don't have the WASI_SDK_PATH env variable set -->
@@ -796,7 +850,7 @@
       <MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(MonoLibClang)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotOffsetsPrefix)' != ''" Include="--prefix=&quot;$(MonoAotOffsetsPrefix)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotCMakeSysroot)' != ''" Include="--sysroot=&quot;$(MonoAotCMakeSysroot)&quot;" />
-      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsBrowser)' == 'true'" Include="--emscripten-sdk=&quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'emscripten').TrimEnd('\/'))&quot;" />
+      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsBrowser)' == 'true'" Include="--emscripten-sdk=&quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emscripten').TrimEnd('\/'))&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(TargetsWasi)' == 'true'" Include="--wasi-sdk=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)').TrimEnd('\/'))&quot;" />
     </ItemGroup>
 
