@@ -1548,10 +1548,6 @@ Thread::Thread()
     m_RedirectContextInUse = false;
 #endif
 
-#ifdef FEATURE_COMINTEROP
-    m_pRCWStack = new RCWStackHeader();
-#endif
-
 #ifdef _DEBUG
     m_bGCStressing = FALSE;
     m_bUniqueStacking = FALSE;
@@ -2647,11 +2643,6 @@ Thread::~Thread()
 
     MarkRedirectContextInUse(m_pSavedRedirectContext);
     m_pSavedRedirectContext = NULL;
-
-#ifdef FEATURE_COMINTEROP
-    if (m_pRCWStack)
-        delete m_pRCWStack;
-#endif
 
     if (m_pExceptionDuringStartup)
     {
