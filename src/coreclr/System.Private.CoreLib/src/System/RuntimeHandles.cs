@@ -845,13 +845,6 @@ namespace System
             QCallModule sourceModule);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IRuntimeMethodInfo? _GetCurrentMethod(ref StackCrawlMark stackMark);
-        internal static IRuntimeMethodInfo? GetCurrentMethod(ref StackCrawlMark stackMark)
-        {
-            return _GetCurrentMethod(ref stackMark);
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern MethodAttributes GetAttributes(RuntimeMethodHandleInternal method);
 
         internal static MethodAttributes GetAttributes(IRuntimeMethodInfo method)
