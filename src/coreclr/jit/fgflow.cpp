@@ -189,7 +189,6 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
         {
             // Copy likelihood from old edge.
             //
-            assert(oldEdge->hasLikelihood());
             flow->setLikelihood(oldEdge->getLikelihood());
         }
 

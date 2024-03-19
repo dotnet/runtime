@@ -674,6 +674,7 @@ public:
 
     weight_t getLikelihood() const
     {
+        assert(m_likelihoodSet);
         return m_likelihood;
     }
 

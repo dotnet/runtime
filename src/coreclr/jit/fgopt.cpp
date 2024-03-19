@@ -1849,7 +1849,6 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             // Update edge likelihoods
             // Note old edge may still be "in use" so we decrease its likelihood.
             //
-            assert(oldEdge->hasLikelihood());
 
             // We want to move this much likelihood from old->new
             //
