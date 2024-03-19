@@ -17720,7 +17720,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
     } // end switch (ins)
 
-    assert(scale <= (isVectorStore || !isSimple) ? 4 : 3);
+    assert(scale <= ((isVectorStore || !isSimple) ? 4 : 3));
 
     if (isSimple)
     {
