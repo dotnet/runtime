@@ -37,11 +37,14 @@ namespace System.Net.Security
         public bool TargetIsServer { get; set; } = false;
         public bool PreferUnicode { get; set; } = true;
         public bool ForceNegotiateVersion { get; set; } = true;
+        public bool SupportsEncryption { get; set; } = true;
 
         // Negotiation results
         public bool IsAuthenticated { get; private set; }
         public bool IsMICPresent { get; private set; }
         public string? ClientSpecifiedSpn { get; private set; }
+        public Flags InitialClientFlags { get; private set; }
+        public Flags NegotiatedFlags => _negotiatedFlags;
 
         private NetworkCredential _expectedCredential;
 
@@ -83,7 +86,7 @@ namespace System.Net.Security
         }
 
         [Flags]
-        private enum Flags : uint
+        public enum Flags : uint
         {
             NegotiateUnicode = 0x00000001,
             NegotiateOEM = 0x00000002,
@@ -177,17 +180,17 @@ namespace System.Net.Security
                 case MessageType.Negotiate:
                     // We don't negotiate, we just verify
                     Assert.True(incomingBlob.Length >= 32);
-                    Flags flags = (Flags)BinaryPrimitives.ReadUInt32LittleEndian(incomingBlob.AsSpan(12, 4));
-                    Assert.Equal(_requiredFlags, (flags & _requiredFlags));
-                    Assert.True((flags & (Flags.NegotiateOEM | Flags.NegotiateUnicode)) != 0);
-                    if (flags.HasFlag(Flags.NegotiateDomainSupplied))
+                    InitialClientFlags = (Flags)BinaryPrimitives.ReadUInt32LittleEndian(incomingBlob.AsSpan(12, 4));
+                    Assert.Equal(_requiredFlags, (InitialClientFlags & _requiredFlags));
+                    Assert.True((InitialClientFlags & (Flags.NegotiateOEM | Flags.NegotiateUnicode)) != 0);
+                    if (InitialClientFlags.HasFlag(Flags.NegotiateDomainSupplied))
                     {
                         string domain = Encoding.ASCII.GetString(GetField(incomingBlob, 16));
                         Assert.Equal(_expectedCredential.Domain, domain);
                     }
                     _expectedMessageType = MessageType.Authenticate;
                     _negotiateMessage = incomingBlob;
-                    return _challengeMessage = GenerateChallenge(flags);
+                    return _challengeMessage = GenerateChallenge(InitialClientFlags);
 
                 case MessageType.Authenticate:
                     // Validate the authentication!
@@ -229,6 +232,10 @@ namespace System.Net.Security
             if (ForceNegotiateVersion)
             {
                 flags |= Flags.NegotiateVersion;
+            }
+            if (!SupportsEncryption)
+            {
+                flags &= ~Flags.NegotiateSeal;
             }
             // Remove any unsupported flags here
             flags &= Flags.AllSupported;
