@@ -19,6 +19,7 @@ $dockerFilePrefix="$PSScriptRoot/libraries-sdk"
 if ($buildWindowsContainers)
 {
   write-host "Dumping present MSVC versions"
+
   gci "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/*"
 
 #   gi "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.38.33130"
@@ -28,8 +29,10 @@ if ($buildWindowsContainers)
   gi "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.38.33130/bin/HostX64/x64"
   gi "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.38.33130/bin/HostX64/x64/cl.exe"
 
-  write-host "Removing older MSVC versions"
-  rm -r -fo "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.37.32822"
+  write-host "specifying explicit MSVC version"
+
+  $ENV:CMAKE_VS_PLATFORM_TOOLSET="v143,version=14.38"
+  $ENV:CMAKE_GENERATOR_TOOLSET="v143,version=14.38"
 
   # Due to size concerns, we don't currently do docker builds on windows.
   # Build on the host machine, then simply copy artifacts to the target docker image.
