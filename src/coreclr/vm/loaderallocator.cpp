@@ -2251,12 +2251,12 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
                 cbMem = ALIGN_UP(cbMem, sizeof(TADDR));
             }
             uint8_t* pbMem = (uint8_t*)(void*)GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMem));
+#ifndef TARGET_64BIT // Second part of alignment work
             if (initialcbMem >= 8)
             {
-#ifdef TARGET_64BIT
                 pbMem = (uint8_t*)ALIGN_UP(pbMem, 8);
-#endif
             }
+#endif
             pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)pbMem);
         }
     }
