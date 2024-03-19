@@ -217,6 +217,8 @@ typedef struct {
 	guint32  size;
 } MonoStreamHeader;
 
+#define MONO_TABLE_INFO_MAX_COLUMNS 9
+
 struct _MonoTableInfo {
 	const char *base;
 	guint       rows_     : 24;	/* don't access directly, use table_info_get_rows */
@@ -239,7 +241,7 @@ struct _MonoTableInfo {
 	 * optimize out the loop in mono_metadata_decode_row_col_raw.
 	 * 4 * 9 easily fits in a uint8
 	 */
-	guint8    column_offsets[9];
+	guint8    column_offsets[MONO_TABLE_INFO_MAX_COLUMNS];
 };
 
 #define REFERENCE_MISSING ((gpointer) -1)

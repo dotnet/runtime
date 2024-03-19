@@ -1004,10 +1004,10 @@ mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int to
 }
 
 static void
-mono_metadata_compute_column_offsets (guint32 bitfield, guint8 column_offsets[9])
+compute_column_offsets (guint32 bitfield, guint8 column_offsets[MONO_TABLE_INFO_MAX_COLUMNS])
 {
 	int offset = 0, c = mono_metadata_table_count (bitfield);
-	for (int i = 0; i < 9; i++) {
+	for (int i = 0; i < MONO_TABLE_INFO_MAX_COLUMNS; i++) {
 		if (i >= c) {
 			column_offsets[i] = 0xFFu;
 		} else {
@@ -1037,7 +1037,7 @@ mono_metadata_compute_table_bases (MonoImage *meta)
 			continue;
 
 		table->row_size = mono_metadata_compute_size (meta, i, &table->size_bitfield);
-		mono_metadata_compute_column_offsets (table->size_bitfield, table->column_offsets);
+		compute_column_offsets (table->size_bitfield, table->column_offsets);
 		table->base = base;
 		base += table_info_get_rows (table) * table->row_size;
 	}
