@@ -1266,6 +1266,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ProcessorIdCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadAbortException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadBlockingInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadExceptionEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadInt64PersistentCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadInterruptedException.cs" />
