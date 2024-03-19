@@ -329,6 +329,13 @@ void AllocateThreadStaticBoxes(MethodTable *pMT, PTRARRAYREF *ppRef)
 
 void FreeThreadStaticData(ThreadLocalData *pThreadLocalData)
 {
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     if (pThreadLocalData->cLoaderHandles > 0)
     {
         CrstHolder ch(&g_TLSCrst);
@@ -341,6 +348,7 @@ void FreeThreadStaticData(ThreadLocalData *pThreadLocalData)
     delete[] (uint8_t*)pThreadLocalData->pTLSArrayData;
 
     pThreadLocalData->pTLSArrayData = 0;
+    pThreadLocalData->cTLSData = 0;
 
     while (pThreadLocalData->pInFlightData != NULL)
     {
