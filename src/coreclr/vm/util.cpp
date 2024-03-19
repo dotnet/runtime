@@ -1774,24 +1774,14 @@ static BOOL TrustMeIAmSafe(void *pLock)
 
 LockOwner g_lockTrustMeIAmThreadSafe = { NULL, TrustMeIAmSafe };
 
-static DangerousNonHostedSpinLock g_randomLock;
-static CLRRandom g_random;
+static thread_local CLRRandom t_random;
 
 int GetRandomInt(int maxVal)
 {
-    // Use the thread-local Random instance if possible
-    Thread* pThread = GetThreadNULLOk();
-    if (pThread)
-        return pThread->GetRandom()->Next(maxVal);
-
-    // No Thread object - need to fall back to the global generator.
-    // In DAC builds we don't need the lock (DAC is single-threaded) and can't get it anyway (DNHSL isn't supported)
-#ifndef DACCESS_COMPILE
-    DangerousNonHostedSpinLockHolder lh(&g_randomLock);
-#endif
-    if (!g_random.IsInitialized())
-        g_random.Init();
-    return g_random.Next(maxVal);
+    // Use the thread-local Random instance
+    if (!t_random.IsInitialized())
+        t_random.Init();
+    return t_random.Next(maxVal);
 }
 
 // These wrap the SString:L:CompareCaseInsensitive function in a way that makes it

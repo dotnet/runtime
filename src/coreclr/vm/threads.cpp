@@ -1738,8 +1738,6 @@ void Thread::InitThread()
 
     _ASSERTE(HasValidThreadHandle());
 
-    m_random.Init();
-
     // Set floating point mode to round to nearest
 #ifndef TARGET_UNIX
     (void) _controlfp_s( NULL, _RC_NEAR, _RC_CHOP|_RC_UP|_RC_DOWN|_RC_NEAR );
