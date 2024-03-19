@@ -1522,6 +1522,9 @@ void emitInsSve_R_R_I(instruction     ins,
 void emitIns_R_R_F(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, double immDbl, insOpts opt = INS_OPTS_NONE);
 
+void emitInsSve_R_R_F(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, double immDbl, insOpts opt = INS_OPTS_NONE);
+
 // Checks for a large immediate that needs a second instruction
 void emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm);
 
