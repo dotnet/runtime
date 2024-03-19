@@ -43,7 +43,6 @@ class StringLiteralMap;
 class FrozenObjectHeapManager;
 class MngStdInterfacesInfo;
 class DomainAssembly;
-class LoadLevelLimiter;
 class TypeEquivalenceHashTable;
 
 #ifdef FEATURE_COMINTEROP
@@ -822,6 +821,7 @@ typedef FileLoadLock::Holder FileLoadLockHolder;
 #endif
 class LoadLevelLimiter
 {
+    static thread_local LoadLevelLimiter* t_currentLoadLevelLimiter;
     FileLoadLevel                   m_currentLevel;
     LoadLevelLimiter* m_previousLimit;
     BOOL m_bActive;
@@ -839,10 +839,10 @@ public:
     void Activate()
     {
         WRAPPER_NO_CONTRACT;
-        m_previousLimit= GetThread()->GetLoadLevelLimiter();
+        m_previousLimit= t_currentLoadLevelLimiter;
         if(m_previousLimit)
             m_currentLevel=m_previousLimit->GetLoadLevel();
-        GetThread()->SetLoadLevelLimiter(this);
+        t_currentLoadLevelLimiter = this;
         m_bActive=TRUE;
     }
 
@@ -851,7 +851,7 @@ public:
         WRAPPER_NO_CONTRACT;
         if (m_bActive)
         {
-            GetThread()->SetLoadLevelLimiter(m_previousLimit);
+            t_currentLoadLevelLimiter = m_previousLimit;
             m_bActive=FALSE;
         }
     }
@@ -881,6 +881,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_currentLevel = level;
+    }
+
+    static LoadLevelLimiter* GetCurrent()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return t_currentLoadLevelLimiter;
     }
 };
 #ifdef _MSC_VER
@@ -1798,7 +1804,6 @@ public:
     CHECK CheckLoading(DomainAssembly *pFile, FileLoadLevel level);
 
     BOOL IsLoading(DomainAssembly *pFile, FileLoadLevel level);
-    static FileLoadLevel GetThreadFileLoadLevel();
 
     void LoadDomainAssembly(DomainAssembly *pFile,
                         FileLoadLevel targetLevel);

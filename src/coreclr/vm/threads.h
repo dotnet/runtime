@@ -131,7 +131,6 @@ class     NDirect;
 class     Frame;
 class     ThreadBaseObject;
 class     AppDomainStack;
-class     LoadLevelLimiter;
 class     DomainAssembly;
 class     DeadlockAwareLock;
 struct    HelperMethodFrameCallerList;
@@ -1187,24 +1186,6 @@ public:
         return (dbg_m_cSuspendedThreads - dbg_m_cSuspendedThreadsWithoutOSLock);
     }
 #endif
-
- private:
-    LoadLevelLimiter *m_pLoadLimiter;
-
- public:
-    LoadLevelLimiter *GetLoadLevelLimiter()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pLoadLimiter;
-    }
-
-    void SetLoadLevelLimiter(LoadLevelLimiter *limiter)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pLoadLimiter = limiter;
-    }
-
-
 
 public:
     //--------------------------------------------------------------
