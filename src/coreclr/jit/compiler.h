@@ -8512,18 +8512,18 @@ public:
 
     bool IsGprRegMask(regMaskTP regMask)
     {
-        return (regMask & ~RBM_ALLFLOAT) == regMask;
+        return (regMask & RBM_ALLFLOAT) == RBM_NONE;
     }
 
     bool IsFloatRegMask(regMaskTP regMask)
     {
-        return (regMask & RBM_ALLFLOAT) == regMask;
+        return (regMask & ~RBM_ALLFLOAT) == RBM_NONE;
     }
 
 #ifdef HAS_PREDICATE_REGS
     bool IsPredicateRegMask(regMaskTP regMask)
     {
-        return (regMask & RBM_ALLMASK) == regMask;
+        return (regMask & ~RBM_ALLMASK) == RBM_NONE;
     }
 #endif // HAS_PREDICATE_REGS
 

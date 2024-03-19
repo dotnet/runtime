@@ -14163,7 +14163,6 @@ _regMaskAll AllRegsMask::operator&(const regNumber reg)
     return result;
 }
 
-// TODO: Can have version of AddGprMask(regMaskOnlyOne maskToAdd) and AddFloatMask(regMaskOnlyOne maskToAdd)
 void AllRegsMask::AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type)
 {
     registers[regIndexForType(type)] |= maskToAdd;
