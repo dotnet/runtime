@@ -414,5 +414,17 @@
       <Uri>https://github.com/dotnet/installer</Uri>
       <Sha>dc43d363d284c26cb1b463683d6ebb2c88ab0b58</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Node.osx-arm64" Version="9.0.0-alpha.1.23471.2">
+      <Uri>https://github.com/dotnet/emsdk</Uri>
+      <Sha>fc01829cbf76b7bbf48a39161562468715a0a3b4</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Sdk.osx-arm64" Version="9.0.0-alpha.1.23471.2">
+      <Uri>https://github.com/dotnet/emsdk</Uri>
+      <Sha>fc01829cbf76b7bbf48a39161562468715a0a3b4</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.osx-arm64" Version="9.0.0-alpha.1.23471.2">
+      <Uri>https://github.com/dotnet/emsdk</Uri>
+      <Sha>fc01829cbf76b7bbf48a39161562468715a0a3b4</Sha>
+    </Dependency>
   </ToolsetDependencies>
 </Dependencies>

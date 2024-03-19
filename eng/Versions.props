@@ -255,5 +255,8 @@
     <!-- installer version, for testing workloads -->
     <MicrosoftDotnetSdkInternalVersion>9.0.100-preview.4.24175.5</MicrosoftDotnetSdkInternalVersion>
     <SdkVersionForWorkloadTesting>$(MicrosoftDotnetSdkInternalVersion)</SdkVersionForWorkloadTesting>
+    <MicrosoftNETRuntimeEmscripten3134Nodeosxarm64Version>9.0.0-alpha.1.23471.2</MicrosoftNETRuntimeEmscripten3134Nodeosxarm64Version>
+    <MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version>9.0.0-alpha.1.23471.2</MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version>
+    <MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version>9.0.0-alpha.1.23471.2</MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version>
   </PropertyGroup>
 </Project>
