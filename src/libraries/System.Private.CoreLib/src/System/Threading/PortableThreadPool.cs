@@ -30,6 +30,8 @@ namespace System.Threading
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
 
+        private int _numThreadsBeingKeptAlive;
+
 #if CORECLR
 #pragma warning disable CA1823
         private static readonly bool s_initialized = ThreadPool.EnsureConfigInitialized();
