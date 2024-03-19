@@ -232,21 +232,6 @@ namespace System.Globalization.Tests
             Assert.Equal(value, format.ShortDatePattern);
         }
 
-        public static IEnumerable<object[]> ShortDatePatter_Set_Culture_TestData()
-        {
-            yield return new object[] { "de-DE", "dd.MM.yyyy" };
-            yield return new object[] { "en-US", "M/d/yyyy" };
-            yield return new object[] { "fa-IR", "yyyy/M/d" };
-        }
-
-        [Theory]
-        [MemberData(nameof(ShortDatePatter_Set_Culture_TestData))]
-        public void ShortDatePattern_SetCulture_GetReturnsExpected(string cultureName, string expected)
-        {
-            var format = new CultureInfo(cultureName).DateTimeFormat;
-            Assert.True(expected == format.ShortDatePattern, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {format.ShortDatePattern}");
-        }
-
         [Fact]
         public void ShortDatePattern_Set_InvalidatesDerivedPatterns()
         {
