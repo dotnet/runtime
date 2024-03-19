@@ -1604,6 +1604,17 @@ namespace System.Net.Sockets
             int optLen = sizeof(int);
             Interop.Error err = Interop.Sys.GetSockOpt(handle, optionLevel, optionName, (byte*)&value, &optLen);
 
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+            // macOS fails to even query it if socket is not actively listening.
+            // To provide consistent platform experience we will track if
+            // it was ret and we will use it later as needed.
+            if (optionLevel == SocketOptionLevel.Tcp && optionName == SocketOptionName.FastOpen && err != Interop.Error.SUCCESS)
+            {
+                value = handle.TfoEnabled ? 1 : 0;
+                err = Interop.Error.SUCCESS;
+            }
+#endif
+
             optionValue = value;
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
