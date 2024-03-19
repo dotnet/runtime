@@ -9,7 +9,6 @@ import { ControllablePromise, GCHandle, MarshalerToCs } from "./types/internal";
 import { ManagedObject } from "./marshal";
 import { compareExchangeI32, forceThreadMemoryViewRefresh } from "./memory";
 import { mono_log_debug } from "./logging";
-import { settleUnsettledPromise } from "./pthreads";
 import { complete_task } from "./managed-exports";
 import { marshal_cs_object_to_cs } from "./marshal-to-cs";
 
@@ -163,7 +162,6 @@ export class PromiseHolder extends ManagedObject {
             this.isPosted = true;
             if (WasmEnableThreads) {
                 forceThreadMemoryViewRefresh();
-                settleUnsettledPromise();
             }
 
             // we can unregister the GC handle just on JS side

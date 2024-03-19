@@ -339,13 +339,13 @@ namespace System.Net.Http
             arg5 ??= "";
             arg7 ??= "";
 
-            const int NumEventDatas = 7;
-            EventData* descrs = stackalloc EventData[NumEventDatas];
-
             fixed (char* arg4Ptr = arg4)
             fixed (char* arg5Ptr = arg5)
             fixed (char* arg7Ptr = arg7)
             {
+                const int NumEventDatas = 7;
+                EventData* descrs = stackalloc EventData[NumEventDatas];
+
                 descrs[0] = new EventData
                 {
                     DataPointer = (IntPtr)(&arg1),
@@ -381,9 +381,9 @@ namespace System.Net.Http
                     DataPointer = (IntPtr)arg7Ptr,
                     Size = (arg7.Length + 1) * sizeof(char)
                 };
-            }
 
-            WriteEventCore(eventId, NumEventDatas, descrs);
+                WriteEventCore(eventId, NumEventDatas, descrs);
+            }
         }
     }
 }

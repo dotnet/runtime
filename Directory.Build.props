@@ -11,6 +11,9 @@
          all cases, rather than ordinarily where we build them during mobile or wasm
          build legs. This makes the manifests available on source-only builds. -->
     <ForceBuildMobileManifests Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ForceBuildMobileManifests>
+    <!-- Propagate the configuration and platform to project references. When building in VS, this defaults to true.
+         Explicitly setting it to false ensures projects are built in the corresponding configuration both in VS and on the command line. -->
+    <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateTargetOS">
