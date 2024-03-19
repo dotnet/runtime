@@ -6,10 +6,12 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-unsafe class Program
+public unsafe class Program
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         s_success = true;
 
@@ -26,7 +28,9 @@ unsafe class Program
 
         if (fileSize < lowerBound || fileSize > upperBound)
         {
-            Console.WriteLine($"BUG: File size is not in the expected range ({lowerBound} to {upperBound} bytes). Did a libraries change regress size of Hello World?");
+            Console.WriteLine($"BUG: File size is not in the expected range"
+                              + " ({lowerBound} to {upperBound} bytes). Did a"
+                              + " libraries change regress size of Hello World?");
             return 1;
         }
 
