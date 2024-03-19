@@ -110,6 +110,7 @@ void emitter::emitInsSve_R(instruction ins, emitAttr attr, regNumber reg, insOpt
 
         default:
             unreached();
+            break;
     }
 
     instrDesc* id = emitNewInstrSmall(attr);
@@ -346,6 +347,7 @@ void emitter::emitInsSve_R_I(instruction     ins,
 
         default:
             unreached();
+            break;
     }
 
     assert(canEncode);
@@ -368,6 +370,56 @@ void emitter::emitInsSve_R_I(instruction     ins,
     id->idReg1(reg);
 
     id->idHasShift(hasShift);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add a SVE instruction referencing a register and a floating point constant.
+ */
+
+void emitter::emitInsSve_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, insOpts opt /* = INS_OPTS_NONE */)
+{
+    ssize_t imm = 0;
+    bool canEncode = false;
+    insFormat fmt;
+
+    /* Figure out the encoding format of the instruction */
+    switch (ins)
+    {
+        floatImm8 fpi;
+
+        case INS_sve_fmov:
+        case INS_sve_fdup:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg));                         // ddddd
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+
+            fpi.immFPIVal = 0;
+            canEncode     = canEncodeFloatImm8(immDbl, &fpi);
+            imm           = fpi.immFPIVal;
+            fmt           = IF_SVE_EA_1A;
+
+            // FMOV is an alias for FDUP, and is always the preferred disassembly.
+            ins = INS_sve_fmov;
+            break;
+
+        default:
+            unreached();
+            break;
+    }
+
+    assert(canEncode);
+
+    instrDesc* id = emitNewInstrSC(attr, imm);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idInsOpt(opt);
+
+    id->idReg1(reg);
 
     dispIns(id);
     appendToCurIG(id);

@@ -8061,24 +8061,9 @@ void emitter::emitIns_R_F(
             }
             break;
 
-        case INS_sve_fmov:
-        case INS_sve_fdup:
-            assert(insOptsScalableAtLeastHalf(opt));
-            assert(isVectorRegister(reg));                         // ddddd
-            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
-
-            fpi.immFPIVal = 0;
-            canEncode     = canEncodeFloatImm8(immDbl, &fpi);
-            imm           = fpi.immFPIVal;
-            fmt           = IF_SVE_EA_1A;
-
-            // FMOV is an alias for FDUP, and is always the preferred disassembly.
-            ins = INS_sve_fmov;
-            break;
-
         default:
-            unreached();
-            break;
+            // fallback to emit SVE instructions.
+            return emitInsSve_R_F(ins, attr, reg, immDbl, opt);
 
     } // end switch (ins)
 
