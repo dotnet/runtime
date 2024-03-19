@@ -3942,7 +3942,7 @@ compare_type_literals (MonoImage *image, int class_type, int type_type, MonoErro
 		if (class_type == MONO_TYPE_STRING || class_type == MONO_TYPE_OBJECT)
 			return TRUE;
 		//XXX stringify this argument
-		mono_error_set_bad_image (error, image, "Expected reference type but got type kind %d", class_type);
+		mono_error_set_type_load_name (error, NULL, NULL, "Expected reference type but got type kind %d", class_type);
 		return FALSE;
 	}
 
@@ -3966,7 +3966,7 @@ compare_type_literals (MonoImage *image, int class_type, int type_type, MonoErro
 		return TRUE;
 	default:
 		//XXX stringify this argument
-		mono_error_set_bad_image (error, image, "Expected value type but got type kind %d", class_type);
+		mono_error_set_type_load_name (error, NULL, NULL, "Expected value type but got type kind %d", class_type);
 		return FALSE;
 	}
 }

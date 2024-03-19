@@ -1817,6 +1817,15 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
                 }
             }
 
+#if defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+            // TODO-Cleanup: Unify this with hasFixedRetBuffReg. That will
+            // likely be necessary for the reverse pinvoke support regardless.
+            if (cc == CorInfoCallConvExtension::Swift)
+            {
+                return REG_SWIFT_ARG_RET_BUFF;
+            }
+#endif
+
             break;
 
         case WellKnownArg::VirtualStubCell:
@@ -3406,6 +3415,13 @@ AGAIN:
                 {
 #if defined(FEATURE_SIMD)
 #if defined(TARGET_XARCH)
+                    case TYP_MASK:
+                    {
+                        add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[1]);
+                        add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[0]);
+                        break;
+                    }
+
                     case TYP_SIMD64:
                     {
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[15]);
@@ -7710,8 +7726,8 @@ GenTreeFlags Compiler::gtTokenToIconFlags(unsigned token)
 //    Returns a GT_IND node representing value at the address provided by 'addr'
 //
 // Notes:
-//    The GT_IND node is marked as non-faulting
-//    If the indType is GT_REF we also mark the indNode as GTF_GLOB_REF
+//    The GT_IND node is marked as non-faulting.
+//    If the indirection is not invariant, we also mark the indNode as GTF_GLOB_REF.
 //
 GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags, bool isInvariant)
 {
@@ -7720,9 +7736,7 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
 
     if (isInvariant)
     {
-        assert(iconFlags != GTF_ICON_STATIC_HDL); // Pointer to a mutable class Static variable
-        assert(iconFlags != GTF_ICON_BBC_PTR);    // Pointer to a mutable basic block count value
-        assert(iconFlags != GTF_ICON_GLOBAL_PTR); // Pointer to mutable data from the VM state
+        assert(GenTree::HandleKindDataIsInvariant(iconFlags));
 
         // This indirection also is invariant.
         indirFlags |= GTF_IND_INVARIANT;
@@ -9092,7 +9106,9 @@ GenTree* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
 //    can't be represented in jitted code. If this happens, this method will return
 //    nullptr.
 //
-GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool useParent)
+GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                             CORINFO_METHOD_HANDLE   callerHandle,
+                                             bool                    useParent)
 {
     const bool      mustRestoreHandle     = true;
     bool* const     pRuntimeLookup        = nullptr;
@@ -9108,7 +9124,7 @@ GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedTo
         helper                                        = CORINFO_HELP_READYTORUN_NEW;
         CORINFO_LOOKUP_KIND* const pGenericLookupKind = nullptr;
         usingReadyToRunHelper =
-            info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, &lookup);
+            info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, callerHandle, &lookup);
     }
 #endif
 
@@ -10796,6 +10812,27 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
     }
 }
 
+//------------------------------------------------------------------------------
+// HandleKindDataIsInvariant: Returns true if the data referred to by a handle
+// address is guaranteed to be invariant. Note that GTF_ICON_FTN_ADDR handles may
+// or may not point to invariant data.
+//
+// Arguments:
+//    flags - GenTree flags for handle.
+//
+/* static */
+bool GenTree::HandleKindDataIsInvariant(GenTreeFlags flags)
+{
+    GenTreeFlags handleKind = flags & GTF_ICON_HDL_MASK;
+    assert(handleKind != GTF_EMPTY);
+
+    // All handle types are assumed invariant except those specifically listed here.
+
+    return (handleKind != GTF_ICON_STATIC_HDL) && // Pointer to a mutable class Static variable
+           (handleKind != GTF_ICON_BBC_PTR) &&    // Pointer to a mutable basic block count value
+           (handleKind != GTF_ICON_GLOBAL_PTR);   // Pointer to mutable data from the VM state
+}
+
 #ifdef DEBUG
 
 /* static */ int GenTree::gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags)
@@ -12235,6 +12272,12 @@ void Compiler::gtDispConst(GenTree* tree)
                            vecCon->gtSimdVal.u64[6], vecCon->gtSimdVal.u64[7]);
                     break;
                 }
+
+                case TYP_MASK:
+                {
+                    printf("<0x%08x, 0x%08x>", vecCon->gtSimdVal.u32[0], vecCon->gtSimdVal.u32[1]);
+                    break;
+                }
 #endif // TARGET_XARCH
 
                 default:
@@ -13299,48 +13342,45 @@ void Compiler::gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, Indent
 //
 void Compiler::gtDispStmt(Statement* stmt, const char* msg /* = nullptr */)
 {
-    if (opts.compDbgInfo)
+    if (msg != nullptr)
     {
-        if (msg != nullptr)
-        {
-            printf("%s ", msg);
-        }
-        printStmtID(stmt);
-        printf(" ( ");
-        const DebugInfo& di = stmt->GetDebugInfo();
-        // For statements in the root we display just the location without the
-        // inline context info.
-        if (di.GetInlineContext() == nullptr || di.GetInlineContext()->IsRoot())
-        {
-            di.GetLocation().Dump();
-        }
-        else
-        {
-            stmt->GetDebugInfo().Dump(false);
-        }
-        printf(" ... ");
-
-        IL_OFFSET lastILOffs = stmt->GetLastILOffset();
-        if (lastILOffs == BAD_IL_OFFSET)
-        {
-            printf("???");
-        }
-        else
-        {
-            printf("0x%03X", lastILOffs);
-        }
-
-        printf(" )");
-
-        DebugInfo par;
-        if (stmt->GetDebugInfo().GetParent(&par))
-        {
-            printf(" <- ");
-            par.Dump(true);
-        }
-
-        printf("\n");
+        printf("%s ", msg);
     }
+    printStmtID(stmt);
+    printf(" ( ");
+    const DebugInfo& di = stmt->GetDebugInfo();
+    // For statements in the root we display just the location without the
+    // inline context info.
+    if (di.GetInlineContext() == nullptr || di.GetInlineContext()->IsRoot())
+    {
+        di.GetLocation().Dump();
+    }
+    else
+    {
+        stmt->GetDebugInfo().Dump(false);
+    }
+    printf(" ... ");
+
+    IL_OFFSET lastILOffs = stmt->GetLastILOffset();
+    if (lastILOffs == BAD_IL_OFFSET)
+    {
+        printf("???");
+    }
+    else
+    {
+        printf("0x%03X", lastILOffs);
+    }
+
+    printf(" )");
+
+    DebugInfo par;
+    if (stmt->GetDebugInfo().GetParent(&par))
+    {
+        printf(" <- ");
+        par.Dump(true);
+    }
+    printf("\n");
+
     gtDispTree(stmt->GetRootNode());
 }
 
@@ -14075,6 +14115,18 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     if (clsHnd == NO_CLASS_HANDLE)
     {
         return tree;
+    }
+
+    // Check if an object of this type can even exist
+    if (info.compCompHnd->getExactClasses(clsHnd, 0, nullptr) == 0)
+    {
+        JITDUMP("Runtime reported %p (%s) is never allocated\n", dspPtr(clsHnd), eeGetClassName(clsHnd));
+
+        const bool operatorIsEQ  = (oper == GT_EQ);
+        const int  compareResult = operatorIsEQ ? 0 : 1;
+        JITDUMP("Runtime reports comparison is known at jit time: %u\n", compareResult);
+        GenTree* result = gtNewIconNode(compareResult);
+        return result;
     }
 
     // We're good to go.
@@ -26070,8 +26122,11 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
-
                 addr = Op(3);
+                break;
+
+            case NI_Sve_LoadVector:
+                addr = Op(2);
                 break;
 #endif // TARGET_ARM64
 
@@ -26841,6 +26896,14 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
         {
             assert(varTypeIsStruct(returnType));
 
+#ifdef SWIFT_SUPPORT
+            if (callConv == CorInfoCallConvExtension::Swift)
+            {
+                InitializeSwiftReturnRegs(comp, retClsHnd);
+                break;
+            }
+#endif
+
 #ifdef UNIX_AMD64_ABI
 
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
@@ -26944,6 +27007,31 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 #endif
 }
 
+#ifdef SWIFT_SUPPORT
+//---------------------------------------------------------------------------------------
+// InitializeSwiftReturnRegs:
+//   Initialize the Return Type Descriptor for a method that returns with the
+//   Swift calling convention.
+//
+// Parameters:
+//   comp   - Compiler instance
+//   clsHnd - Struct type being returned
+//
+void ReturnTypeDesc::InitializeSwiftReturnRegs(Compiler* comp, CORINFO_CLASS_HANDLE clsHnd)
+{
+    const CORINFO_SWIFT_LOWERING* lowering = comp->GetSwiftLowering(clsHnd);
+    assert(!lowering->byReference);
+
+    static_assert_no_msg(MAX_SWIFT_LOWERED_ELEMENTS <= MAX_RET_REG_COUNT);
+    assert(lowering->numLoweredElements <= MAX_RET_REG_COUNT);
+
+    for (size_t i = 0; i < lowering->numLoweredElements; i++)
+    {
+        m_regType[i] = JITtype2varType(lowering->loweredElements[i]);
+    }
+}
+#endif
+
 //---------------------------------------------------------------------------------------
 // InitializeLongReturnType:
 //    Initialize the Return Type Descriptor for a method that returns a TYP_LONG
@@ -27007,8 +27095,9 @@ void ReturnTypeDesc::InitializeReturnType(Compiler*                comp,
 // GetABIReturnReg:  Return i'th return register as per target ABI
 //
 // Arguments:
-//     idx   -   Index of the return register.
-//               The first return register has an index of 0 and so on.
+//     idx       -   Index of the return register.
+//                   The first return register has an index of 0 and so on.
+//     callConv  -   Associated calling convention
 //
 // Return Value:
 //     Returns i'th return register as per target ABI.
@@ -27017,12 +27106,43 @@ void ReturnTypeDesc::InitializeReturnType(Compiler*                comp,
 //     x86 and ARM return long in multiple registers.
 //     ARM and ARM64 return HFA struct in multiple registers.
 //
-regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
+regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension callConv) const
 {
     unsigned count = GetReturnRegCount();
     assert(idx < count);
 
     regNumber resultReg = REG_NA;
+
+#ifdef SWIFT_SUPPORT
+    if (callConv == CorInfoCallConvExtension::Swift)
+    {
+        static const regNumber swiftIntReturnRegs[]   = {REG_SWIFT_INTRET_ORDER};
+        static const regNumber swiftFloatReturnRegs[] = {REG_SWIFT_FLOATRET_ORDER};
+        assert((idx < ArrLen(swiftIntReturnRegs)) && (idx < ArrLen(swiftFloatReturnRegs)));
+        unsigned intRegIdx   = 0;
+        unsigned floatRegIdx = 0;
+        for (unsigned i = 0; i < idx; i++)
+        {
+            if (varTypeUsesIntReg(GetReturnRegType(i)))
+            {
+                intRegIdx++;
+            }
+            else
+            {
+                floatRegIdx++;
+            }
+        }
+
+        if (varTypeUsesIntReg(GetReturnRegType(idx)))
+        {
+            return swiftIntReturnRegs[intRegIdx];
+        }
+        else
+        {
+            return swiftFloatReturnRegs[floatRegIdx];
+        }
+    }
+#endif
 
 #ifdef UNIX_AMD64_ABI
     var_types regType0 = GetReturnRegType(0);
@@ -27171,7 +27291,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
 // GetABIReturnRegs: get the mask of return registers as per target arch ABI.
 //
 // Arguments:
-//    None
+//    callConv - The calling convention
 //
 // Return Value:
 //    reg mask of return registers in which the return type is returned.
@@ -27181,14 +27301,14 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
 //    of return registers and wants to know the set of return registers.
 //
 // static
-regMaskTP ReturnTypeDesc::GetABIReturnRegs() const
+regMaskTP ReturnTypeDesc::GetABIReturnRegs(CorInfoCallConvExtension callConv) const
 {
     regMaskTP resultMask = RBM_NONE;
 
     unsigned count = GetReturnRegCount();
     for (unsigned i = 0; i < count; ++i)
     {
-        resultMask |= genRegMask(GetABIReturnReg(i));
+        resultMask |= genRegMask(GetABIReturnReg(i, callConv));
     }
 
     return resultMask;
