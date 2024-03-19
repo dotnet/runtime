@@ -17311,22 +17311,22 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
  */
 void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
-    emitAttr  size       = EA_SIZE(attr);
-    insFormat fmt        = IF_NONE;
-    unsigned  scale      = 0;
-    bool      isLdrStr   = false;
-    bool      isSimple   = true;
+    emitAttr  size         = EA_SIZE(attr);
+    insFormat fmt          = IF_NONE;
+    unsigned  scale        = 0;
+    bool      isLdrStr     = false;
+    bool      isSimple     = true;
     bool      useRegForImm = false;
 
     assert(offs >= 0);
 
     /* Figure out the variable's frame position */
-    bool         FPbased;
-    int          base = emitComp->lvaFrameAddress(varx, &FPbased);
-    int          disp = base + offs;
-    ssize_t   imm;
+    bool    FPbased;
+    int     base = emitComp->lvaFrameAddress(varx, &FPbased);
+    int     disp = base + offs;
+    ssize_t imm;
 
-    regNumber    reg2 = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
+    regNumber reg2 = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
 
     // TODO-ARM64-CQ: use unscaled loads?
     /* Figure out the encoding format of the instruction */
@@ -17358,7 +17358,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         case INS_lea:
             assert(size == EA_8BYTE);
             isSimple = false;
-            scale = 0;
+            scale    = 0;
 
             if (disp >= 0)
             {
@@ -17384,59 +17384,59 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             break;
 
         case INS_sve_ldr:
+        {
+            assert(isPredicateRegister(reg1));
+            isSimple = false;
+            size     = EA_SCALABLE;
+            attr     = size;
+            fmt      = IF_SVE_IE_2A;
+            imm      = disp;
+
+            // TODO-SVE: Don't assume 128bit vectors
+            scale        = NaturalScale_helper(EA_16BYTE);
+            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+
+            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
             {
-                assert(isPredicateRegister(reg1));
-                isSimple = false;
-                size     = EA_SCALABLE;
-                attr     = size;
-                fmt      = IF_SVE_IE_2A;
-                imm      = disp;
-
-                // TODO-SVE: Don't assume 128bit vectors
-                scale = NaturalScale_helper(EA_16BYTE);
-                ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-                if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
-                {
-                    imm >>= scale; // The immediate is scaled by the size of the ld/st
-                }
-                else
-                {
-                    useRegForImm = true;
-                    regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                    codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-                }
+                imm >>= scale; // The immediate is scaled by the size of the ld/st
             }
-            break;
+            else
+            {
+                useRegForImm      = true;
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+            }
+        }
+        break;
 
         // TODO-SVE: Fold into INS_sve_ldr once REG_V0 and REG_P0 are distinct
         case INS_sve_ldr_mask:
+        {
+            assert(isPredicateRegister(reg1));
+            isSimple = false;
+            size     = EA_SCALABLE;
+            attr     = size;
+            fmt      = IF_SVE_ID_2A;
+            ins      = INS_sve_ldr;
+            imm      = disp;
+
+            // TODO-SVE: Don't assume 128bit vectors
+            // Predicate size is vector length / 8
+            scale        = NaturalScale_helper(EA_2BYTE);
+            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+
+            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
             {
-                assert(isPredicateRegister(reg1));
-                isSimple = false;
-                size     = EA_SCALABLE;
-                attr     = size;
-                fmt      = IF_SVE_ID_2A;
-                ins      = INS_sve_ldr;
-                imm      = disp;
-
-                // TODO-SVE: Don't assume 128bit vectors
-                // Predicate size is vector length / 8
-                scale = NaturalScale_helper(EA_2BYTE);
-                ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-                if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
-                {
-                    imm >>= scale; // The immediate is scaled by the size of the ld/st
-                }
-                else
-                {
-                    useRegForImm = true;
-                    regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                    codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-                }
+                imm >>= scale; // The immediate is scaled by the size of the ld/st
             }
-            break;
+            else
+            {
+                useRegForImm      = true;
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+            }
+        }
+        break;
 
         default:
             NYI("emitIns_R_S"); // FP locals?
@@ -17626,13 +17626,13 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     bool      useRegForImm  = false;
 
     /* Figure out the variable's frame position */
-    bool FPbased;
-    int  base = emitComp->lvaFrameAddress(varx, &FPbased);
-    int  disp = base + offs;
-    ssize_t   imm = disp;
+    bool    FPbased;
+    int     base = emitComp->lvaFrameAddress(varx, &FPbased);
+    int     disp = base + offs;
+    ssize_t imm  = disp;
 
     // TODO-ARM64-CQ: with compLocallocUsed, should we use REG_SAVED_LOCALLOC_SP instead?
-    regNumber    reg2 = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
+    regNumber reg2 = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
 
     // TODO-ARM64-CQ: use unscaled loads?
     /* Figure out the encoding format of the instruction */
@@ -17665,57 +17665,57 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             break;
 
         case INS_sve_str:
+        {
+            assert(isVectorRegister(reg1));
+            isSimple = false;
+            size     = EA_SCALABLE;
+            attr     = size;
+            fmt      = IF_SVE_JH_2A;
+
+            // TODO-SVE: Don't assume 128bit vectors
+            scale        = NaturalScale_helper(EA_16BYTE);
+            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+
+            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
             {
-                assert(isVectorRegister(reg1));
-                isSimple = false;
-                size       = EA_SCALABLE;
-                attr       = size;
-                fmt        = IF_SVE_JH_2A;
-
-                // TODO-SVE: Don't assume 128bit vectors
-                scale = NaturalScale_helper(EA_16BYTE);
-                ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-                if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
-                {
-                    imm >>= scale; // The immediate is scaled by the size of the ld/st
-                }
-                else
-                {
-                    useRegForImm = true;
-                    regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                    codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-                }
+                imm >>= scale; // The immediate is scaled by the size of the ld/st
             }
-            break;
+            else
+            {
+                useRegForImm      = true;
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+            }
+        }
+        break;
 
         // TODO-SVE: Fold into INS_sve_str once REG_V0 and REG_P0 are distinct
         case INS_sve_str_mask:
+        {
+            assert(isPredicateRegister(reg1));
+            isSimple = false;
+            size     = EA_SCALABLE;
+            attr     = size;
+            fmt      = IF_SVE_JG_2A;
+            ins      = INS_sve_str;
+
+            // TODO-SVE: Don't assume 128bit vectors
+            // Predicate size is vector length / 8
+            scale        = NaturalScale_helper(EA_2BYTE);
+            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+
+            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
             {
-                assert(isPredicateRegister(reg1));
-                isSimple = false;
-                size       = EA_SCALABLE;
-                attr       = size;
-                fmt        = IF_SVE_JG_2A;
-                ins        = INS_sve_str;
-
-                // TODO-SVE: Don't assume 128bit vectors
-                // Predicate size is vector length / 8
-                scale = NaturalScale_helper(EA_2BYTE);
-                ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-                if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
-                {
-                    imm >>= scale; // The immediate is scaled by the size of the ld/st
-                }
-                else
-                {
-                    useRegForImm = true;
-                    regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                    codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-                }
+                imm >>= scale; // The immediate is scaled by the size of the ld/st
             }
-            break;
+            else
+            {
+                useRegForImm      = true;
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+            }
+        }
+        break;
 
         default:
             NYI("emitIns_S_R"); // FP locals?
