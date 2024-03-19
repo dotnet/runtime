@@ -972,7 +972,7 @@ namespace System.Text.Json.Serialization
         KebabCaseLower = 4,
         KebabCaseUpper = 5,
     }
-    public sealed partial class JsonNumberEnumConverter<TEnum> : System.Text.Json.Serialization.JsonConverterFactory where TEnum : struct
+    public sealed partial class JsonNumberEnumConverter<TEnum> : System.Text.Json.Serialization.JsonConverterFactory where TEnum : struct, System.Enum
     {
         public JsonNumberEnumConverter() { }
         public override bool CanConvert(System.Type typeToConvert) { throw null; }
