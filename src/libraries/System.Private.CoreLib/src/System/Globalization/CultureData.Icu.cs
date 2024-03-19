@@ -203,6 +203,12 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.IcuGetLocaleInfo] Expected _sWindowsName to be populated already");
+#if TARGET_BROWSER
+            if (type == LocaleStringData.NativeDisplayName)
+            {
+                return JSGetNativeName(_sWindowsName, uiCultureName);
+            }
+#endif
             return IcuGetLocaleInfo(_sWindowsName, type, uiCultureName);
         }
 
@@ -302,7 +308,14 @@ namespace System.Globalization
         // no support to lookup by region name, other than the hard-coded list in CultureData
         private static CultureData? IcuGetCultureDataFromRegionName() => null;
 
-        private string IcuGetLanguageDisplayName(string cultureName) => IcuGetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name);
+        private string IcuGetLanguageDisplayName(string cultureName)
+        {
+#if TARGET_BROWSER
+            return JSGetNativeName(CultureInfo.CurrentUICulture.Name, cultureName);
+#else
+            return IcuGetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name);
+#endif
+        }
 
         // use the fallback which is to return NativeName
         private static string? IcuGetRegionDisplayName() => null;

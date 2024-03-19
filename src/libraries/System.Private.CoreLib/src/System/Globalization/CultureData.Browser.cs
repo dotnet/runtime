@@ -11,6 +11,22 @@ namespace System.Globalization
     {
         private const int CULTURE_INFO_BUFFER_LEN = 50;
 
+        private unsafe string JSGetNativeName(string localeName, string? uiCultureName = null)
+        {
+            if (string.IsNullOrEmpty(localeName))
+                return "Invariant Language (Invariant Country)";
+
+            string cultureName = uiCultureName ?? localeName;
+            // the longest possible NativeName is 50 characters
+            char* buffer = stackalloc char[CULTURE_INFO_BUFFER_LEN];
+            int exception;
+            object exResult;
+            int resultLength = Interop.JsGlobalization.GetNativeName(localeName, cultureName, buffer, CULTURE_INFO_BUFFER_LEN, out exception, out exResult);
+            if (exception != 0)
+                throw new Exception((string)exResult);
+            return new string(buffer, 0, resultLength);
+        }
+
         private static unsafe CultureData JSLoadCultureInfoFromBrowser(string localeName, CultureData culture)
         {
             char* buffer = stackalloc char[CULTURE_INFO_BUFFER_LEN];

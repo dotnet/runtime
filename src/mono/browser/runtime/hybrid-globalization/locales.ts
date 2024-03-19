@@ -3,10 +3,46 @@
 
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { mono_wasm_new_external_root } from "../roots";
-import { monoStringToString } from "../strings";
+import { monoStringToString, stringToUTF16 } from "../strings";
 import { Int32Ptr } from "../types/emscripten";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { normalizeLocale } from "./helpers";
+
+export function mono_wasm_get_native_display_name(locale: MonoStringRef, culture: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef) : number
+{
+    const localeRoot = mono_wasm_new_external_root<MonoString>(locale),
+        cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
+        exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
+    try {
+        const localeName = monoStringToString(localeRoot);
+        const cultureName = monoStringToString(cultureRoot);
+        if (!localeName || !cultureName)
+            throw new Error("Locale or culture name is null or empty.");
+
+        const [language, region] = cultureName.split("-");
+        const languageName = new Intl.DisplayNames([localeName], {type: "language"}).of(language);
+        const regionName = region ? new Intl.DisplayNames([localeName], {type: "region"}).of(region) : undefined;
+        const result = region ? `${languageName} (${regionName})` : languageName;
+
+        if (!result)
+            throw new Error(`Native display name for culture=${cultureName} is null or empty.`);    
+    
+        if (result.length > dstLength)
+            throw new Error(`Native display name for culture=${cultureName} exceeds length of ${dstLength}.`);
+
+        stringToUTF16(dst, dst + 2 * result.length, result);
+        wrap_no_error_root(isException, exceptionRoot);
+        return result.length;
+    }
+    catch (ex: any) {
+        wrap_error_root(isException, ex, exceptionRoot);
+        return -1;
+    }
+    finally {
+        cultureRoot.release();
+        exceptionRoot.release();
+    }
+}
 
 export function mono_wasm_get_first_day_of_week(culture: MonoStringRef, isException: Int32Ptr, exAddress: MonoObjectRef): number{
 
@@ -53,7 +89,7 @@ function getFirstDayOfWeek(locale: string)
     const weekInfo = getWeekInfo(locale);
     if (weekInfo)
     {
-        // JS's Sunday == 7 while dotnet's Sunday == 0
+        // JS"s Sunday == 7 while dotnet"s Sunday == 0
         return weekInfo.firstDay == 7 ? 0 : weekInfo.firstDay;
     }
     // Firefox does not support it rn but we can make a temporary workaround for it,
