@@ -7685,8 +7685,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
 
 void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt /* = INS_OPTS_NONE */)
 {
-    insFormat  fmt = IF_NONE;
-    instrDesc* id  = emitNewInstrSmall(attr);
+    insFormat fmt = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -7707,58 +7706,14 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
             fmt = IF_SR_1A;
             break;
 
-        case INS_sve_aesmc:
-        case INS_sve_aesimc:
-            id->idInsOpt(INS_OPTS_SCALABLE_B);
-            assert(isVectorRegister(reg)); // ddddd
-            assert(isScalableVectorSize(attr));
-            fmt = IF_SVE_GL_1A;
-            break;
-
-        case INS_sve_rdffr:
-            id->idInsOpt(INS_OPTS_SCALABLE_B);
-            assert(isPredicateRegister(reg)); // DDDD
-            fmt = IF_SVE_DH_1A;
-            break;
-
-        case INS_sve_pfalse:
-            id->idInsOpt(INS_OPTS_SCALABLE_B);
-            assert(isPredicateRegister(reg)); // DDDD
-            fmt = IF_SVE_DJ_1A;
-            break;
-
-        case INS_sve_wrffr:
-            id->idInsOpt(INS_OPTS_SCALABLE_B);
-            assert(isPredicateRegister(reg)); // NNNN
-            fmt = IF_SVE_DR_1A;
-            break;
-
-        case INS_sve_ptrue:
-            assert(insOptsScalableStandard(opt));
-            assert(isHighPredicateRegister(reg));                  // DDD
-            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
-            id->idInsOpt(opt);
-            fmt = IF_SVE_DZ_1A;
-            break;
-
-        case INS_sve_fmov:
-            assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg));                         // ddddd
-            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
-            id->idReg1(reg);
-            id->idInsOpt(opt);
-            fmt = IF_SVE_EB_1B;
-
-            // FMOV is a pseudo-instruction for DUP, which is aliased by MOV;
-            // MOV is the preferred disassembly
-            ins = INS_sve_mov;
-            break;
-
         default:
-            unreached();
+            // fallback to emit SVE instructions.
+            return emitInsSve_R(ins, attr, reg, opt);
     }
 
     assert(fmt != IF_NONE);
+
+    instrDesc* id = emitNewInstrSmall(attr);
 
     id->idIns(ins);
     id->idInsFmt(fmt);

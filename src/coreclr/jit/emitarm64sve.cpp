@@ -22,26 +22,102 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "instr.h"
 
+/*****************************************************************************
+ *
+ *  Add a SVE instruction with a single immediate value.
+ */
+
 void emitter::emitInsSve_I(instruction ins, emitAttr attr, ssize_t imm)
 {
-	insFormat fmt;
+    insFormat fmt;
 
     /* Figure out the encoding format of the instruction */
-	if (ins == INS_sve_setffr)
-	{
-		fmt  = IF_SVE_DQ_0A;
+    if (ins == INS_sve_setffr)
+    {
+        fmt  = IF_SVE_DQ_0A;
         attr = EA_PTRSIZE;
         imm  = 0;
-	}
-	else
-	{
-		unreached();
-	}
+    }
+    else
+    {
+        unreached();
+    }
 
-	instrDesc* id = emitNewInstrSC(attr, imm);
+    instrDesc* id = emitNewInstrSC(attr, imm);
 
-	id->idIns(ins);
+    id->idIns(ins);
     id->idInsFmt(fmt);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add a SVE instruction referencing a single register.
+ */
+
+void emitter::emitInsSve_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt /* = INS_OPTS_NONE */)
+{
+    insFormat fmt;
+
+    /* Figure out the encoding format of the instruction */
+    switch (ins)
+    {
+        case INS_sve_aesmc:
+        case INS_sve_aesimc:
+            opt = INS_OPTS_SCALABLE_B;
+            assert(isVectorRegister(reg)); // ddddd
+            assert(isScalableVectorSize(attr));
+            fmt = IF_SVE_GL_1A;
+            break;
+
+        case INS_sve_rdffr:
+            opt = INS_OPTS_SCALABLE_B;
+            assert(isPredicateRegister(reg)); // DDDD
+            fmt = IF_SVE_DH_1A;
+            break;
+
+        case INS_sve_pfalse:
+            opt = INS_OPTS_SCALABLE_B;
+            assert(isPredicateRegister(reg)); // DDDD
+            fmt = IF_SVE_DJ_1A;
+            break;
+
+        case INS_sve_wrffr:
+            opt = INS_OPTS_SCALABLE_B;
+            assert(isPredicateRegister(reg)); // NNNN
+            fmt = IF_SVE_DR_1A;
+            break;
+
+        case INS_sve_ptrue:
+            assert(insOptsScalableStandard(opt));
+            assert(isHighPredicateRegister(reg));                  // DDD
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_DZ_1A;
+            break;
+
+        case INS_sve_fmov:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg));                         // ddddd
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_EB_1B;
+
+            // FMOV is a pseudo-instruction for DUP, which is aliased by MOV;
+            // MOV is the preferred disassembly
+            ins = INS_sve_mov;
+            break;
+
+        default:
+            unreached();
+    }
+
+    instrDesc* id = emitNewInstrSmall(attr);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idInsOpt(opt);
+    id->idReg1(reg);
 
     dispIns(id);
     appendToCurIG(id);
