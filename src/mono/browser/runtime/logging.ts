@@ -35,6 +35,7 @@ export function mono_log_error(msg: string, ...data: any) {
 }
 
 export const wasm_func_map = new Map<number, string>();
+const wasm_pending_symbol_tables = new Array<string>();
 const regexes: any[] = [];
 
 // V8
@@ -54,6 +55,8 @@ regexes.push(/(?<replaceSection><[^ >]+>[.:]wasm-function\[(?<funcNum>[0-9]+)\])
 
 export function mono_wasm_symbolicate_string(message: string): string {
     try {
+        performDeferredSymbolMapParsing();
+
         if (wasm_func_map.size == 0)
             return message;
 
@@ -143,19 +146,34 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
 
 
 export function parseSymbolMapFile(text: string) {
-    text.split(/[\r\n]/).forEach((line: string) => {
-        const parts: string[] = line.split(/:/);
-        if (parts.length < 2)
-            return;
+    // Symbol map parsing is very expensive, so doing it during startup is wasteful
+    //  instead, we defer it until the first time the symbol map is needed - which
+    //  may be never
+    wasm_pending_symbol_tables.push(text);
+    mono_log_debug(`Deferred loading of ${text.length}ch symbol map`);
+}
 
-        parts[1] = parts.splice(1).join(":");
-        wasm_func_map.set(Number(parts[0]), parts[1]);
-    });
+function performDeferredSymbolMapParsing() {
+    while (wasm_pending_symbol_tables.length > 0) {
+        const text = wasm_pending_symbol_tables.shift()!;
+        try {
+            text.split(/[\r\n]/).forEach((line: string) => {
+                const parts: string[] = line.split(/:/);
+                if (parts.length < 2)
+                    return;
 
-    mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
+                parts[1] = parts.splice(1).join(":");
+                wasm_func_map.set(Number(parts[0]), parts[1]);
+            });
+            mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
+        } catch (exc) {
+            mono_log_warn(`Failed to load symbol map: ${exc}`);
+        }
+    }
 }
 
 export function mono_wasm_get_func_id_to_name_mappings() {
+    performDeferredSymbolMapParsing();
     return [...wasm_func_map.values()];
 }
 
