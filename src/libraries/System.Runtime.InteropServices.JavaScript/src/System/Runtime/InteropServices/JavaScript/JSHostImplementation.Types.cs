@@ -72,6 +72,8 @@ namespace System.Runtime.InteropServices.JavaScript
             UIThread = 0,
             // Running the managed main thread on dedicated WebWorker. Marshaling all JavaScript calls to and from the main thread.
             DeputyThread = 1,
+            // TODO comments
+            DeputyAndIOThreads = 2,
         }
 
         // keep in sync with types\internal.ts
@@ -80,6 +82,8 @@ namespace System.Runtime.InteropServices.JavaScript
             // throw PlatformNotSupportedException if blocking .Wait is called on threads with JS interop, like JSWebWorker and Main thread.
             // Avoids deadlocks (typically with pending JS promises on the same thread) by throwing exceptions.
             NoBlockingWait = 0,
+            // TODO comments
+            AllowBlockingWaitInAsyncCode = 1,
             // allow .Wait on all threads.
             // Could cause deadlocks with blocking .Wait on a pending JS Task/Promise on the same thread or similar Task/Promise chain.
             AllowBlockingWait = 100,

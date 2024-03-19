@@ -104,6 +104,20 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Theory]
+		[MemberData (nameof (TestDatabase.Substitutions), MemberType = typeof (TestDatabase))]
+		public void Substitutions (string t)
+		{
+			switch (t) {
+			case "FeatureGuardSubstitutions":
+				Run (t);
+				break;
+			default:
+				// Skip the rest for now
+				break;
+			}
+		}
+
+		[Theory]
 		[MemberData (nameof (TestDatabase.TopLevelStatements), MemberType = typeof (TestDatabase))]
 		public void TopLevelStatements (string t)
 		{

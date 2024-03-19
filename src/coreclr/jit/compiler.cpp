@@ -854,6 +854,42 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     }
     assert(structSize > 0);
 
+#ifdef SWIFT_SUPPORT
+    if (callConv == CorInfoCallConvExtension::Swift)
+    {
+        const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(clsHnd);
+        if (lowering->byReference)
+        {
+            howToReturnStruct = SPK_ByReference;
+            useType           = TYP_UNKNOWN;
+        }
+        else if (lowering->numLoweredElements == 1)
+        {
+            useType = JITtype2varType(lowering->loweredElements[0]);
+            if (genTypeSize(useType) == structSize)
+            {
+                howToReturnStruct = SPK_PrimitiveType;
+            }
+            else
+            {
+                howToReturnStruct = SPK_EnclosingType;
+            }
+        }
+        else
+        {
+            howToReturnStruct = SPK_ByValue;
+            useType           = TYP_STRUCT;
+        }
+
+        if (wbReturnStruct != nullptr)
+        {
+            *wbReturnStruct = howToReturnStruct;
+        }
+
+        return useType;
+    }
+#endif
+
 #ifdef UNIX_AMD64_ABI
     // An 8-byte struct may need to be returned in a floating point register
     // So we always consult the struct "Classifier" routine
@@ -1950,6 +1986,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     fgSsaValid                 = false;
     fgVNPassesCompleted        = 0;
 
+#ifdef SWIFT_SUPPORT
+    m_swiftLoweringCache = nullptr;
+#endif
+
     // check that HelperCallProperties are initialized
 
     assert(s_helperCallProperties.IsPure(CORINFO_HELP_GETSHARED_GCSTATIC_BASE));
@@ -2742,6 +2782,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoFailReason  = nullptr;
     fgPgoSource      = ICorJitInfo::PgoSource::Unknown;
     fgPgoHaveWeights = false;
+    fgPgoSynthesized = false;
+
+#ifdef DEBUG
+    fgPgoConsistent = false;
+#endif
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
@@ -4824,18 +4869,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
 
-        // Compute reachability sets and dominators.
+        // Compute DFS tree and remove all unreachable blocks.
         //
-        DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
-
-        // Scale block weights and mark run rarely blocks.
-        //
-        DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
+        DoPhase(this, PHASE_DFS_BLOCKS2, &Compiler::fgDfsBlocksAndRemove);
 
         // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
         // and sets bbWeight to the loop nesting levels.
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
+
+        // Scale block weights and mark run rarely blocks.
+        //
+        DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
 
         // Clone loops with optimization opportunities, and choose one based on dynamic condition evaluation.
         //
@@ -4849,11 +4894,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
     }
-
-    // Disable profile checks now.
-    // Over time we will move this further and further back in the phase list, as we fix issues.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
 #ifdef DEBUG
     fgDebugCheckLinks();
@@ -5851,19 +5891,20 @@ void Compiler::RecomputeFlowGraphAnnotations()
     // Recompute reachability sets, dominators, and loops.
     optResetLoopInfo();
 
-    fgComputeReachability();
-    optSetBlockWeights();
-
+    fgRenumberBlocks();
     fgInvalidateDfsTree();
-    m_dfsTree = fgComputeDfs();
+    fgDfsBlocksAndRemove();
     optFindLoops();
 
-    if (fgHasLoops)
-    {
-        optFindAndScaleGeneralLoopBlocks();
-    }
+    // Should we call this using the phase method:
+    //    DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
+    // ? It could be called multiple times.
+    optSetBlockWeights();
 
-    m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    if (m_domTree == nullptr)
+    {
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    }
 }
 
 /*****************************************************************************/

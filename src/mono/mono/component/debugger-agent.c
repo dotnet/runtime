@@ -5581,6 +5581,7 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t) &&
 		!(t->type == MONO_TYPE_I && type == MONO_TYPE_VALUETYPE) &&
 		!(type == VALUE_TYPE_ID_FIXED_ARRAY) &&
+		!(type == MDBGPROT_VALUE_TYPE_ID_NULL) &&
 		!(t->type == MONO_TYPE_U && type == MONO_TYPE_VALUETYPE) &&
 		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_FNPTR && type == MONO_TYPE_I8) &&

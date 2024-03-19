@@ -183,7 +183,7 @@ namespace System.Diagnostics
 
             // Indicate completion to all subscribers.
             DiagnosticSubscription? subscriber = null;
-            Interlocked.Exchange(ref subscriber, _subscriptions);
+            subscriber = Interlocked.Exchange(ref _subscriptions, subscriber);
             while (subscriber != null)
             {
                 subscriber.Observer.OnCompleted();

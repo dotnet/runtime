@@ -9,7 +9,6 @@ import { ControllablePromise, GCHandle, MarshalerToCs } from "./types/internal";
 import { ManagedObject } from "./marshal";
 import { compareExchangeI32, forceThreadMemoryViewRefresh } from "./memory";
 import { mono_log_debug } from "./logging";
-import { settleUnsettledPromise } from "./pthreads";
 import { complete_task } from "./managed-exports";
 import { marshal_cs_object_to_cs } from "./marshal-to-cs";
 
@@ -78,12 +77,12 @@ export class PromiseHolder extends ManagedObject {
     }
 
     resolve(data: any) {
-        mono_assert(!this.isResolved, "resolve could be called only once");
-        mono_assert(!this.isDisposed, "resolve is already disposed.");
         if (!loaderHelpers.is_runtime_running()) {
             mono_log_debug("This promise resolution can't be propagated to managed code, mono runtime already exited.");
             return;
         }
+        mono_assert(!this.isResolved, "resolve could be called only once");
+        mono_assert(!this.isDisposed, "resolve is already disposed.");
         if (WasmEnableThreads && !this.setIsResolving()) {
             // we know that cancelation is in flight
             // because we need to keep the GCHandle alive until until the cancelation arrives
@@ -102,12 +101,12 @@ export class PromiseHolder extends ManagedObject {
     }
 
     reject(reason: any) {
-        mono_assert(!this.isResolved, "reject could be called only once");
-        mono_assert(!this.isDisposed, "resolve is already disposed.");
         if (!loaderHelpers.is_runtime_running()) {
             mono_log_debug("This promise rejection can't be propagated to managed code, mono runtime already exited.");
             return;
         }
+        mono_assert(!this.isResolved, "reject could be called only once");
+        mono_assert(!this.isDisposed, "resolve is already disposed.");
         const isCancelation = reason && reason[promise_holder_symbol] === this;
         if (WasmEnableThreads && !isCancelation && !this.setIsResolving()) {
             // we know that cancelation is in flight
@@ -127,6 +126,10 @@ export class PromiseHolder extends ManagedObject {
     }
 
     cancel() {
+        if (!loaderHelpers.is_runtime_running()) {
+            mono_log_debug("This promise cancelation can't be propagated to managed code, mono runtime already exited.");
+            return;
+        }
         mono_assert(!this.isResolved, "cancel could be called only once");
         mono_assert(!this.isDisposed, "resolve is already disposed.");
 
@@ -159,7 +162,6 @@ export class PromiseHolder extends ManagedObject {
             this.isPosted = true;
             if (WasmEnableThreads) {
                 forceThreadMemoryViewRefresh();
-                settleUnsettledPromise();
             }
 
             // we can unregister the GC handle just on JS side

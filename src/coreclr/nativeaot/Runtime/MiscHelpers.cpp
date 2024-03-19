@@ -411,9 +411,8 @@ FCIMPL2(uint32_t, RhGetKnobValues, char *** pResultKeys, char *** pResultValues)
 FCIMPLEND
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-FCIMPL3(void, RhCpuIdEx, int* cpuInfo, int functionId, int subFunctionId)
+EXTERN_C void QCALLTYPE RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId)
 {
     __cpuidex(cpuInfo, functionId, subFunctionId);
 }
-FCIMPLEND
 #endif
