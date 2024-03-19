@@ -9663,8 +9663,6 @@ int CEEInfo::getExactClasses (
         MODE_ANY;
     } CONTRACTL_END;
 
-    int exactClassesCount = 0;
-
     JIT_TO_EE_TRANSITION();
 
     // This function is currently implemented only on NativeAOT
@@ -9672,7 +9670,7 @@ int CEEInfo::getExactClasses (
 
     EE_TO_JIT_TRANSITION();
 
-    return exactClassesCount;
+    return -1;
 }
 
 /*********************************************************************/
@@ -10721,7 +10719,11 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             // so we no longer need to use indirections and can emit a direct call instead.
             //
             // Avoid taking the lock for foreground jit compilations
-            if (!GetAppDomain()->GetTieredCompilationManager()->IsTieringDelayActive())
+            //
+            // JitEnableOptionalRelocs being false means we should avoid non-deterministic
+            // optimizations that can randomly change codegen.
+            if (!GetAppDomain()->GetTieredCompilationManager()->IsTieringDelayActive() &&
+                g_pConfig->JitEnableOptionalRelocs())
             {
                 MethodDesc* helperMD = pPrecode->GetMethodDesc();
                 _ASSERT(helperMD != nullptr);

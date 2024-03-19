@@ -2025,7 +2025,7 @@ bool Compiler::fgNormalizeEHCase1()
             newHndStart->bbCodeOffs    = handlerStart->bbCodeOffs;
             newHndStart->bbCodeOffsEnd = newHndStart->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
             newHndStart->inheritWeight(handlerStart);
-            newHndStart->SetFlags(BBF_DONT_REMOVE | BBF_INTERNAL | BBF_NONE_QUIRK);
+            newHndStart->SetFlags(BBF_DONT_REMOVE | BBF_INTERNAL);
             modified = true;
 
 #ifdef DEBUG
@@ -2194,12 +2194,8 @@ bool Compiler::fgNormalizeEHCase2()
 
                         // Note that we don't need to clear any flags on the old try start, since it is still a 'try'
                         // start.
-                        newTryStart->SetFlags(BBF_DONT_REMOVE | BBF_INTERNAL | BBF_NONE_QUIRK);
-
-                        if (insertBeforeBlk->HasFlag(BBF_BACKWARD_JUMP_TARGET))
-                        {
-                            newTryStart->SetFlags(BBF_BACKWARD_JUMP_TARGET);
-                        }
+                        newTryStart->SetFlags(BBF_DONT_REMOVE | BBF_INTERNAL);
+                        newTryStart->CopyFlags(insertBeforeBlk, BBF_BACKWARD_JUMP_TARGET);
 
                         // Now we need to split any flow edges targeting the old try begin block between the old
                         // and new block. Note that if we are handling a multiply-nested 'try', we may have already
@@ -2682,7 +2678,7 @@ bool Compiler::fgNormalizeEHCase3()
                     newLast->bbCodeOffs    = insertAfterBlk->bbCodeOffsEnd;
                     newLast->bbCodeOffsEnd = newLast->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
                     newLast->inheritWeight(insertAfterBlk);
-                    newLast->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
+                    newLast->SetFlags(BBF_INTERNAL);
                     FlowEdge* const newEdge = fgAddRefPred(newLast, insertAfterBlk);
                     insertAfterBlk->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
