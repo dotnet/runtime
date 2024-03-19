@@ -1552,8 +1552,6 @@ Thread::Thread()
     m_bUniqueStacking = FALSE;
 #endif
 
-    m_pPendingTypeLoad = NULL;
-
     m_dwAVInRuntimeImplOkayCount = 0;
 
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX) // GCCOVER

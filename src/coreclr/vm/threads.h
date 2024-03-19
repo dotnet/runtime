@@ -140,7 +140,6 @@ class     FaultingExceptionFrame;
 enum      BinderMethodID : int;
 class     CRWLock;
 struct    LockEntry;
-class     PendingTypeLoadHolder;
 class     PrepareCodeConfig;
 class     NativeCodeVersion;
 
@@ -2233,26 +2232,6 @@ public:
     }
 #endif // !DACCESS_COMPILE
 #endif // FEATURE_EMULATE_SINGLESTEP
-
-    private:
-
-    PendingTypeLoadHolder* m_pPendingTypeLoad;
-
-    public:
-
-#ifndef DACCESS_COMPILE
-    PendingTypeLoadHolder* GetPendingTypeLoad()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pPendingTypeLoad;
-    }
-
-    void SetPendingTypeLoad(PendingTypeLoadHolder* pPendingTypeLoad)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pPendingTypeLoad = pPendingTypeLoad;
-    }
-#endif
 
     public:
 
