@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using TestLibrary;
 using Xunit;
 
 struct Struct { }
@@ -96,7 +95,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         extern static ref string GetPrivateStaticFieldStruct(MyList<Struct> d);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<int>.StaticGenericFieldName)]
-        extern static ref T GetPrivateStaticField<T>(MyList<T> d);
+        extern static ref V GetPrivateStaticField<V>(MyList<V> d);
     }
 
     [Fact]
@@ -118,7 +117,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=MyList<object>.GenericFieldName)]
-        extern static ref List<T> GetPrivateField<T>(MyList<T> a);
+        extern static ref List<V> GetPrivateField<V>(MyList<V> a);
     }
 
     class Base
@@ -128,8 +127,8 @@ public static unsafe class UnsafeAccessorsTestsGenerics
 
     class GenericBase<T> : Base
     {
-        protected virtual string CreateMessage(T u) => $"{nameof(GenericBase<T>)}:{u}";
-        protected override string CreateMessageGeneric<U>(U t) => $"{nameof(GenericBase<T>)}:{t}";
+        protected virtual string CreateMessage(T t) => $"{nameof(GenericBase<T>)}:{t}";
+        protected override string CreateMessageGeneric<U>(U u) => $"{nameof(GenericBase<T>)}:{u}";
     }
 
     sealed class Derived1 : GenericBase<string>
@@ -187,49 +186,49 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessageGeneric")]
-        extern static string CreateMessage<U>(Base b, U t);
+        extern static string CreateMessage<W>(Base b, W w);
     }
 
-    sealed class Accessors<T>
+    sealed class Accessors<V>
     {
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-        public extern static MyList<T> Create(int a);
+        public extern static MyList<V> Create(int a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-        public extern static MyList<T> CreateWithList(List<T> a);
+        public extern static MyList<V> CreateWithList(List<V> a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = ".ctor")]
-        public extern static void CallCtorAsMethod(MyList<T> l, List<T> a);
+        public extern static void CallCtorAsMethod(MyList<V> l, List<V> a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
-        public extern static void AddInt(MyList<T> l, int a);
+        public extern static void AddInt(MyList<V> l, int a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
-        public extern static void AddString(MyList<T> l, string a);
+        public extern static void AddString(MyList<V> l, string a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
-        public extern static void AddStruct(MyList<T> l, Struct a);
+        public extern static void AddStruct(MyList<V> l, Struct a);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Clear")]
-        public extern static void Clear(MyList<T> l);
+        public extern static void Clear(MyList<V> l);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
-        public extern static void Add(MyList<T> l, T element);
+        public extern static void Add(MyList<V> l, V element);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AddWithIgnore")]
-        public extern static void AddWithIgnore<U>(MyList<T> l, T element, U ignore);
+        public extern static void AddWithIgnore<W>(MyList<V> l, V element, W ignore);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CanCastToElementType")]
-        public extern static bool CanCastToElementType<U>(MyList<T> l, U element);
+        public extern static bool CanCastToElementType<W>(MyList<V> l, W element);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessage")]
-        public extern static string CreateMessage(GenericBase<T> b, T t);
+        public extern static string CreateMessage(GenericBase<V> b, V v);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "ElementType")]
-        public extern static Type ElementType(MyList<T> l);
+        public extern static Type ElementType(MyList<V> l);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "CanUseElementType")]
-        public extern static bool CanUseElementType<U>(MyList<T> l, U element);
+        public extern static bool CanUseElementType<W>(MyList<V> l, W element);
     }
 
     [Fact]
@@ -409,33 +408,28 @@ public static unsafe class UnsafeAccessorsTestsGenerics
 
         Assert.Equal($"{typeof(string)}|{typeof(object)}", CallMethod<string, object>(new ClassWithConstraints()));
         Assert.Equal($"{typeof(string)}|{typeof(object)}", CallStaticMethod<string, object>(null));
-
-        // Constraint validation isn't performed in AOT scenarios.
-        if (Utilities.IsNotNativeAot)
-        {
-            Assert.Throws<InvalidProgramException>(() => CallMethod_NoConstraints<string, object>(new ClassWithConstraints()));
-            Assert.Throws<InvalidProgramException>(() => CallMethod_MissingConstraint<string, object>(new ClassWithConstraints()));
-            Assert.Throws<InvalidProgramException>(() => CallStaticMethod_NoConstraints<string, object>(null));
-            Assert.Throws<InvalidProgramException>(() => CallStaticMethod_MissingConstraint<string, object>(null));
-        }
+        Assert.Throws<InvalidProgramException>(() => CallMethod_NoConstraints<string, object>(new ClassWithConstraints()));
+        Assert.Throws<InvalidProgramException>(() => CallMethod_MissingConstraint<string, object>(new ClassWithConstraints()));
+        Assert.Throws<InvalidProgramException>(() => CallStaticMethod_NoConstraints<string, object>(null));
+        Assert.Throws<InvalidProgramException>(() => CallStaticMethod_MissingConstraint<string, object>(null));
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
-        extern static string CallMethod<T,U>(ClassWithConstraints c) where T : U, IEquatable<T>;
+        extern static string CallMethod<V,W>(ClassWithConstraints c) where V : W, IEquatable<V>;
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
-        extern static string CallMethod_NoConstraints<T,U>(ClassWithConstraints c);
+        extern static string CallMethod_NoConstraints<V,W>(ClassWithConstraints c);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
-        extern static string CallMethod_MissingConstraint<T,U>(ClassWithConstraints c) where T : U;
+        extern static string CallMethod_MissingConstraint<V,W>(ClassWithConstraints c) where V : W;
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
-        extern static string CallStaticMethod<T,U>(ClassWithConstraints c) where T : U, IEquatable<T>;
+        extern static string CallStaticMethod<V,W>(ClassWithConstraints c) where V : W, IEquatable<V>;
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
-        extern static string CallStaticMethod_NoConstraints<T,U>(ClassWithConstraints c);
+        extern static string CallStaticMethod_NoConstraints<V,W>(ClassWithConstraints c);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
-        extern static string CallStaticMethod_MissingConstraint<T,U>(ClassWithConstraints c) where T : U;
+        extern static string CallStaticMethod_MissingConstraint<V,W>(ClassWithConstraints c) where V : W;
     }
 
     class Invalid

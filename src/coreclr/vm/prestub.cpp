@@ -1271,7 +1271,7 @@ namespace
         return true;
     }
 
-    void VerifyDeclarationSatifiesTargetConstraints(MethodDesc* declaration, MethodTable* targetType, MethodDesc* targetMethod)
+    void VerifyDeclarationSatisfiesTargetConstraints(MethodDesc* declaration, MethodTable* targetType, MethodDesc* targetMethod)
     {
         CONTRACTL
         {
@@ -1396,7 +1396,7 @@ namespace
         }
 
         if (targetMaybe != NULL)
-            VerifyDeclarationSatifiesTargetConstraints(cxt.Declaration, pMT, targetMaybe);
+            VerifyDeclarationSatisfiesTargetConstraints(cxt.Declaration, pMT, targetMaybe);
 
         cxt.TargetMethod = targetMaybe;
         return cxt.TargetMethod != NULL;
