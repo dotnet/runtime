@@ -19,9 +19,7 @@ namespace System.Globalization
             string cultureName = uiCultureName ?? localeName;
             // the longest possible NativeName is 50 characters
             char* buffer = stackalloc char[CULTURE_INFO_BUFFER_LEN];
-            int exception;
-            object exResult;
-            int resultLength = Interop.JsGlobalization.GetNativeName(localeName, cultureName, buffer, CULTURE_INFO_BUFFER_LEN, out exception, out exResult);
+            int resultLength = Interop.JsGlobalization.GetNativeName(localeName, cultureName, buffer, CULTURE_INFO_BUFFER_LEN, out int exception, out object exResult);
             if (exception != 0)
                 throw new Exception((string)exResult);
             return new string(buffer, 0, resultLength);
