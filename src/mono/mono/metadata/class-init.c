@@ -3879,7 +3879,7 @@ mono_class_setup_interface_id (MonoClass *klass)
 /*
  * mono_class_setup_interfaces:
  *
- *   Initialize klass->interfaces/interfaces_count.
+ *   Initialize klass->interfaces/interface_count.
  * LOCKING: Acquires the loader lock.
  * This function can fail the type.
  */
