@@ -22,6 +22,31 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "instr.h"
 
+void emitter::emitInsSve_I(instruction ins, emitAttr attr, ssize_t imm)
+{
+	insFormat fmt;
+
+    /* Figure out the encoding format of the instruction */
+	if (ins == INS_sve_setffr)
+	{
+		fmt  = IF_SVE_DQ_0A;
+        attr = EA_PTRSIZE;
+        imm  = 0;
+	}
+	else
+	{
+		unreached();
+	}
+
+	instrDesc* id = emitNewInstrSC(attr, imm);
+
+	id->idIns(ins);
+    id->idInsFmt(fmt);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
 /*****************************************************************************
  *
  *  Add a SVE instruction referencing three registers and a constant.

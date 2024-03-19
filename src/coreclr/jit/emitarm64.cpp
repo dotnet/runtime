@@ -7662,15 +7662,10 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
             assert(!"Instruction cannot be encoded: IF_SI_0A");
         }
     }
-    else if (ins == INS_sve_setffr)
-    {
-        fmt  = IF_SVE_DQ_0A;
-        attr = EA_PTRSIZE;
-        imm  = 0;
-    }
     else
     {
-        unreached();
+        // fallback to emit SVE instructions.
+        return emitInsSve_I(ins, attr, imm);
     }
     assert(fmt != IF_NONE);
 
