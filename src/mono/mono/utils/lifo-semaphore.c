@@ -14,7 +14,7 @@ mono_lifo_semaphore_init (void)
 	if (semaphore == NULL)
 		return NULL;
 
-	mono_coop_mutex_init (&semaphore->base.mutex);
+	mono_coop_mutex_init (&semaphore->mutex);
 
 	return semaphore;
 }
@@ -23,7 +23,7 @@ void
 mono_lifo_semaphore_delete (LifoSemaphore *semaphore)
 {
 	g_assert (semaphore->head == NULL);
-	mono_coop_mutex_destroy (&semaphore->base.mutex);
+	mono_coop_mutex_destroy (&semaphore->mutex);
 	g_free (semaphore);
 }
 
@@ -33,12 +33,12 @@ mono_lifo_semaphore_timed_wait (LifoSemaphore *semaphore, int32_t timeout_ms)
 	LifoSemaphoreWaitEntry wait_entry = {0};
 
 	mono_coop_cond_init (&wait_entry.condition);
-	mono_coop_mutex_lock (&semaphore->base.mutex);
+	mono_coop_mutex_lock (&semaphore->mutex);
 
-	if (semaphore->base.pending_signals > 0) {
-		--semaphore->base.pending_signals;
+	if (semaphore->pending_signals > 0) {
+		--semaphore->pending_signals;
 		mono_coop_cond_destroy (&wait_entry.condition);
-		mono_coop_mutex_unlock (&semaphore->base.mutex);
+		mono_coop_mutex_unlock (&semaphore->mutex);
 		return 1;
 	}
 
@@ -52,7 +52,7 @@ mono_lifo_semaphore_timed_wait (LifoSemaphore *semaphore, int32_t timeout_ms)
 	// Wait for a signal or timeout
 	int wait_error = 0;
 	do {
-		wait_error = mono_coop_cond_timedwait (&wait_entry.condition, &semaphore->base.mutex, timeout_ms);
+		wait_error = mono_coop_cond_timedwait (&wait_entry.condition, &semaphore->mutex, timeout_ms);
 	} while (wait_error == 0 && !wait_entry.signaled);
 
 	if (wait_error == -1) {
@@ -65,7 +65,7 @@ mono_lifo_semaphore_timed_wait (LifoSemaphore *semaphore, int32_t timeout_ms)
 	}
 
 	mono_coop_cond_destroy (&wait_entry.condition);
-	mono_coop_mutex_unlock (&semaphore->base.mutex);
+	mono_coop_mutex_unlock (&semaphore->mutex);
 
 	return wait_entry.signaled;
 }
@@ -73,7 +73,7 @@ mono_lifo_semaphore_timed_wait (LifoSemaphore *semaphore, int32_t timeout_ms)
 void
 mono_lifo_semaphore_release (LifoSemaphore *semaphore, uint32_t count)
 {
-	mono_coop_mutex_lock (&semaphore->base.mutex);
+	mono_coop_mutex_lock (&semaphore->mutex);
 
 	while (count > 0) {
 		LifoSemaphoreWaitEntry *wait_entry = semaphore->head;
@@ -87,10 +87,10 @@ mono_lifo_semaphore_release (LifoSemaphore *semaphore, uint32_t count)
 			mono_coop_cond_signal (&wait_entry->condition);
 			--count;
 		} else {
-			semaphore->base.pending_signals += count;
+			semaphore->pending_signals += count;
 			count = 0;
 		}
 	}
 
-	mono_coop_mutex_unlock (&semaphore->base.mutex);
+	mono_coop_mutex_unlock (&semaphore->mutex);
 }

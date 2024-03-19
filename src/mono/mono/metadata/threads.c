@@ -4937,8 +4937,8 @@ ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (void)
 void
 ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_ptr)
 {
-	LifoSemaphoreBase *sem = (LifoSemaphoreBase *)sem_ptr;
-	mono_lifo_semaphore_delete ((LifoSemaphore*)sem);
+	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
+	mono_lifo_semaphore_delete (sem);
 }
 
 gint32
@@ -4951,6 +4951,6 @@ ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal (gpointer sem
 void
 ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count)
 {
-	LifoSemaphoreBase *sem = (LifoSemaphoreBase *)sem_ptr;
-	mono_lifo_semaphore_release ((LifoSemaphore*)sem, count);
+	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
+	mono_lifo_semaphore_release (sem, count);
 }

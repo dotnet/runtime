@@ -3,15 +3,6 @@
 
 #include <mono/utils/mono-coop-mutex.h>
 
-typedef struct _LifoSemaphoreBase LifoSemaphoreBase;
-
-struct _LifoSemaphoreBase
-{
-	MonoCoopMutex mutex;
-	uint32_t pending_signals;
-	uint8_t       kind;
-};
-
 typedef struct _LifoSemaphore LifoSemaphore;
 typedef struct _LifoSemaphoreWaitEntry LifoSemaphoreWaitEntry;
 
@@ -23,7 +14,8 @@ struct _LifoSemaphoreWaitEntry {
 };
 
 struct _LifoSemaphore {
-	LifoSemaphoreBase base;
+	MonoCoopMutex mutex;
+	uint32_t pending_signals;
 	LifoSemaphoreWaitEntry *head;
 };
 
