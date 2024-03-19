@@ -11,7 +11,7 @@ namespace System.Threading
     /// <summary>
     /// A LIFO semaphore implemented using the PAL's semaphore with uninterruptible waits.
     /// </summary>
-    internal sealed partial class LowLevelLifoSemaphore : LowLevelLifoSemaphoreBase, IDisposable
+    internal sealed partial class LowLevelLifoSemaphore : IDisposable
     {
         private Semaphore? _semaphore;
 

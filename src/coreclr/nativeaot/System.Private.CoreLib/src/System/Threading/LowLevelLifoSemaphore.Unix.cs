@@ -9,7 +9,7 @@ namespace System.Threading
     /// A LIFO semaphore.
     /// Waits on this semaphore are uninterruptible.
     /// </summary>
-    internal sealed partial class LowLevelLifoSemaphore : LowLevelLifoSemaphoreBase, IDisposable
+    internal sealed partial class LowLevelLifoSemaphore : IDisposable
     {
         private WaitSubsystem.WaitableObject _semaphore;
 
