@@ -1007,14 +1007,11 @@ static void
 compute_column_offsets (guint32 bitfield, guint8 column_offsets[MONO_TABLE_INFO_MAX_COLUMNS])
 {
 	int offset = 0, c = mono_metadata_table_count (bitfield);
-	for (int i = 0; i < MONO_TABLE_INFO_MAX_COLUMNS; i++) {
-		if (i >= c) {
-			column_offsets[i] = 0xFFu;
-		} else {
-			int size = mono_metadata_table_size (bitfield, i);
-			column_offsets[i] = (guint8)offset;
-			offset += size;
-		}
+	memset(column_offsets, 0, MONO_TABLE_INFO_MAX_COLUMNS);
+	for (int i = 0; i < c; i++) {
+		int size = mono_metadata_table_size (bitfield, i);
+		column_offsets[i] = (guint8)offset;
+		offset += size;
 	}
 }
 
@@ -1488,16 +1485,10 @@ mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
 	int n;
 	guint8 column_offset;
 
-	guint32 bitfield = t->size_bitfield;
-
 	g_assert (GINT_TO_UINT32(idx) < table_info_get_rows (t));
-	g_assert (col < mono_metadata_table_count (bitfield));
-	data = t->base + idx * t->row_size;
-
-	n = mono_metadata_table_size (bitfield, col);
-	column_offset = t->column_offsets [col];
-	g_assert (column_offset < 0xFFu);
-	data += column_offset;
+	g_assert (col < mono_metadata_table_count (t->size_bitfield));
+	data = t->base + idx * t->row_size + t->column_offsets [col];
+	n = mono_metadata_table_size (t->size_bitfield, col);
 	switch (n) {
 	case 1:
 		return *data;
