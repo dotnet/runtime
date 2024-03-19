@@ -6,7 +6,7 @@
     <linux_V8Version>12.2.281</linux_V8Version>
     <win_ChromeVersion>122.0.6261.129</win_ChromeVersion>
     <win_ChromeRevision>1250580</win_ChromeRevision>
-    <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1250580</win_ChromeBaseSnapshotUrl>
+    <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1250586</win_ChromeBaseSnapshotUrl>
     <win_V8Version>12.2.281</win_V8Version>
   </PropertyGroup>
 </Project>
