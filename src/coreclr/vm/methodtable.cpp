@@ -2688,24 +2688,17 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
 
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
-#if defined(TARGET_LOONGARCH64)
-
-bool MethodTable::IsLoongArch64OnlyOneField(MethodTable * pMT)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+bool MethodTable::IsOnlyOneField(MethodTable * pMT)
 {
     TypeHandle th(pMT);
 
-    bool useNativeLayout      = false;
-    bool ret                  = false;
-    MethodTable* pMethodTable = nullptr;
+    bool ret = false;
 
     if (!th.IsTypeDesc())
     {
-        pMethodTable = th.AsMethodTable();
-        if (pMethodTable->HasLayout())
-        {
-            useNativeLayout = true;
-        }
-        else if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
+        MethodTable* pMethodTable = th.AsMethodTable();
+        if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNumIntroducedInstanceFields();
 
@@ -2714,6 +2707,19 @@ bool MethodTable::IsLoongArch64OnlyOneField(MethodTable * pMT)
                 FieldDesc *pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
 
                 CorElementType fieldType = pFieldStart[0].GetFieldType();
+
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
+
+                if (hasImpliedRepeatedFields)
+                {
+                    numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
+                    if (numIntroducedFields != 1)
+                    {
+                        goto _End_arg;
+                    }
+                }
 
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
@@ -2724,24 +2730,16 @@ bool MethodTable::IsLoongArch64OnlyOneField(MethodTable * pMT)
                     pMethodTable  = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
-                        ret = IsLoongArch64OnlyOneField(pMethodTable);
+                        ret = IsOnlyOneField(pMethodTable);
                     }
                 }
             }
-            goto _End_arg;
         }
     }
     else
     {
-        _ASSERTE(th.IsNativeValueType());
+        MethodTable* pMethodTable = th.AsNativeValueType();
 
-        useNativeLayout = true;
-        pMethodTable = th.AsNativeValueType();
-    }
-    _ASSERTE(pMethodTable != nullptr);
-
-    if (useNativeLayout)
-    {
         if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNativeLayoutInfo()->GetNumFields();
@@ -2777,7 +2775,7 @@ bool MethodTable::IsLoongArch64OnlyOneField(MethodTable * pMT)
                     if (nfc == NativeFieldCategory::NESTED)
                     {
                         pMethodTable = pNativeFieldDescs->GetNestedNativeMethodTable();
-                        ret = IsLoongArch64OnlyOneField(pMethodTable);
+                        ret = IsOnlyOneField(pMethodTable);
                     }
                     else if (nfc != NativeFieldCategory::ILLEGAL)
                     {
@@ -2795,23 +2793,19 @@ _End_arg:
 
     return ret;
 }
+#endif
 
+#if defined(TARGET_LOONGARCH64)
 int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 {
     TypeHandle th(cls);
 
-    bool useNativeLayout           = false;
     int size = STRUCT_NO_FLOAT_FIELD;
-    MethodTable* pMethodTable      = nullptr;
 
     if (!th.IsTypeDesc())
     {
-        pMethodTable = th.AsMethodTable();
-        if (pMethodTable->HasLayout())
-        {
-            useNativeLayout = true;
-        }
-        else if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
+        MethodTable* pMethodTable = th.AsMethodTable();
+        if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNumIntroducedInstanceFields();
 
@@ -2820,6 +2814,44 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                 FieldDesc *pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
 
                 CorElementType fieldType = pFieldStart[0].GetFieldType();
+
+                // InlineArray types and fixed buffer types have implied repeated fields.
+                // Checking if a type is an InlineArray type is cheap, so we'll do that first.
+                bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
+
+                if (hasImpliedRepeatedFields)
+                {
+                    numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
+                    if (numIntroducedFields > 2)
+                    {
+                        goto _End_arg;
+                    }
+
+                    if (fieldType == ELEMENT_TYPE_R4)
+                    {
+                        if (numIntroducedFields == 1)
+                        {
+                            size = STRUCT_FLOAT_FIELD_ONLY_ONE;
+                        }
+                        else if (numIntroducedFields == 2)
+                        {
+                            size = STRUCT_FLOAT_FIELD_ONLY_TWO;
+                        }
+                        goto _End_arg;
+                    }
+                    else if (fieldType == ELEMENT_TYPE_R8)
+                    {
+                        if (numIntroducedFields == 1)
+                        {
+                            size = STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8;
+                        }
+                        else if (numIntroducedFields == 2)
+                        {
+                            size = STRUCT_FIELD_TWO_DOUBLES;
+                        }
+                        goto _End_arg;
+                    }
+                }
 
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
@@ -2858,6 +2890,11 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                     goto _End_arg;
                 }
 
+                if (pFieldFirst->GetSize() > pFieldSecond->GetOffset())
+                {
+                    goto _End_arg;
+                }
+
                 CorElementType fieldType = pFieldFirst[0].GetFieldType();
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
@@ -2878,7 +2915,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     pMethodTable  = pFieldFirst->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                    if (IsLoongArch64OnlyOneField(pMethodTable))
+                    if (IsOnlyOneField(pMethodTable))
                     {
                         size = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if ((size & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
@@ -2934,7 +2971,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     pMethodTable  = pFieldSecond[0].GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                    if (IsLoongArch64OnlyOneField(pMethodTable))
+                    if (IsOnlyOneField(pMethodTable))
                     {
                         int size2 = GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if ((size2 & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
@@ -2975,21 +3012,11 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                     size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                 }
             }
-
-            goto _End_arg;
         }
     }
     else
     {
-        _ASSERTE(th.IsNativeValueType());
-
-        useNativeLayout = true;
-        pMethodTable = th.AsNativeValueType();
-    }
-    _ASSERTE(pMethodTable != nullptr);
-
-    if (useNativeLayout)
-    {
+        MethodTable* pMethodTable = th.AsNativeValueType();
         if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNativeLayoutInfo()->GetNumFields();
@@ -3141,7 +3168,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
 
                         MethodTable* pMethodTable2 = pNativeFieldDescs->GetNestedNativeMethodTable();
 
-                        if (!IsLoongArch64OnlyOneField(pMethodTable2))
+                        if (!IsOnlyOneField(pMethodTable2))
                         {
                             size = STRUCT_NO_FLOAT_FIELD;
                             goto _End_arg;
@@ -3236,7 +3263,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
 
                         MethodTable* pMethodTable2 = pNativeFieldDescs[1].GetNestedNativeMethodTable();
 
-                        if (!IsLoongArch64OnlyOneField(pMethodTable2))
+                        if (!IsOnlyOneField(pMethodTable2))
                         {
                             size = STRUCT_NO_FLOAT_FIELD;
                             goto _End_arg;
@@ -3305,23 +3332,16 @@ _End_arg:
 #endif
 
 #if defined(TARGET_RISCV64)
-
-bool MethodTable::IsRiscV64OnlyOneField(MethodTable * pMT)
+int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 {
-    TypeHandle th(pMT);
+    TypeHandle th(cls);
 
-    bool useNativeLayout      = false;
-    bool ret                  = false;
-    MethodTable* pMethodTable = nullptr;
+    int size = STRUCT_NO_FLOAT_FIELD;
 
     if (!th.IsTypeDesc())
     {
-        pMethodTable = th.AsMethodTable();
-        if (pMethodTable->HasLayout())
-        {
-            useNativeLayout = true;
-        }
-        else if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
+        MethodTable* pMethodTable = th.AsMethodTable();
+        if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNumIntroducedInstanceFields();
 
@@ -3330,44 +3350,6 @@ bool MethodTable::IsRiscV64OnlyOneField(MethodTable * pMT)
                 FieldDesc *pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
 
                 CorElementType fieldType = pFieldStart[0].GetFieldType();
-
-                if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
-                {
-                    ret = true;
-                }
-                else if (fieldType == ELEMENT_TYPE_VALUETYPE)
-                {
-                    pMethodTable  = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                    if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
-                    {
-                        ret = IsRiscV64OnlyOneField(pMethodTable);
-                    }
-                }
-            }
-            goto _End_arg;
-        }
-    }
-    else
-    {
-        _ASSERTE(th.IsNativeValueType());
-
-        useNativeLayout = true;
-        pMethodTable = th.AsNativeValueType();
-    }
-    _ASSERTE(pMethodTable != nullptr);
-
-    if (useNativeLayout)
-    {
-        if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
-        {
-            DWORD numIntroducedFields = pMethodTable->GetNativeLayoutInfo()->GetNumFields();
-            FieldDesc *pFieldStart = nullptr;
-
-            if (numIntroducedFields == 1)
-            {
-                pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
-
-                CorElementType fieldType = pFieldStart->GetFieldType();
 
                 // InlineArray types and fixed buffer types have implied repeated fields.
                 // Checking if a type is an InlineArray type is cheap, so we'll do that first.
@@ -3376,66 +3358,36 @@ bool MethodTable::IsRiscV64OnlyOneField(MethodTable * pMT)
                 if (hasImpliedRepeatedFields)
                 {
                     numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
-                    if (numIntroducedFields != 1)
+                    if (numIntroducedFields > 2)
                     {
                         goto _End_arg;
                     }
-                }
 
-                if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
-                {
-                    ret = true;
-                }
-                else if (fieldType == ELEMENT_TYPE_VALUETYPE)
-                {
-                    const NativeFieldDescriptor *pNativeFieldDescs = pMethodTable->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
-                    NativeFieldCategory nfc = pNativeFieldDescs->GetCategory();
-                    if (nfc == NativeFieldCategory::NESTED)
+                    if (fieldType == ELEMENT_TYPE_R4)
                     {
-                        pMethodTable = pNativeFieldDescs->GetNestedNativeMethodTable();
-                        ret = IsRiscV64OnlyOneField(pMethodTable);
+                        if (numIntroducedFields == 1)
+                        {
+                            size = STRUCT_FLOAT_FIELD_ONLY_ONE;
+                        }
+                        else if (numIntroducedFields == 2)
+                        {
+                            size = STRUCT_FLOAT_FIELD_ONLY_TWO;
+                        }
+                        goto _End_arg;
                     }
-                    else if (nfc != NativeFieldCategory::ILLEGAL)
+                    else if (fieldType == ELEMENT_TYPE_R8)
                     {
-                        ret = true;
+                        if (numIntroducedFields == 1)
+                        {
+                            size = STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8;
+                        }
+                        else if (numIntroducedFields == 2)
+                        {
+                            size = STRUCT_FIELD_TWO_DOUBLES;
+                        }
+                        goto _End_arg;
                     }
                 }
-            }
-            else
-            {
-                ret = false;
-            }
-        }
-    }
-_End_arg:
-
-    return ret;
-}
-
-int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
-{
-    TypeHandle th(cls);
-
-    bool useNativeLayout           = false;
-    int size = STRUCT_NO_FLOAT_FIELD;
-    MethodTable* pMethodTable      = nullptr;
-
-    if (!th.IsTypeDesc())
-    {
-        pMethodTable = th.AsMethodTable();
-        if (pMethodTable->HasLayout())
-        {
-            useNativeLayout = true;
-        }
-        else if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
-        {
-            DWORD numIntroducedFields = pMethodTable->GetNumIntroducedInstanceFields();
-
-            if (numIntroducedFields == 1)
-            {
-                FieldDesc *pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
-
-                CorElementType fieldType = pFieldStart[0].GetFieldType();
 
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
@@ -3474,6 +3426,11 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                     goto _End_arg;
                 }
 
+                if (pFieldFirst->GetSize() > pFieldSecond->GetOffset())
+                {
+                    goto _End_arg;
+                }
+
                 CorElementType fieldType = pFieldFirst[0].GetFieldType();
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
@@ -3494,7 +3451,7 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     pMethodTable  = pFieldFirst->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                    if (IsRiscV64OnlyOneField(pMethodTable))
+                    if (IsOnlyOneField(pMethodTable))
                     {
                         size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if ((size & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
@@ -3550,7 +3507,7 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     pMethodTable  = pFieldSecond[0].GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                    if (IsRiscV64OnlyOneField(pMethodTable))
+                    if (IsOnlyOneField(pMethodTable))
                     {
                         int size2 = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if ((size2 & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
@@ -3591,21 +3548,12 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                     size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                 }
             }
-
-            goto _End_arg;
         }
     }
     else
     {
-        _ASSERTE(th.IsNativeValueType());
+        MethodTable* pMethodTable = th.AsNativeValueType();
 
-        useNativeLayout = true;
-        pMethodTable = th.AsNativeValueType();
-    }
-    _ASSERTE(pMethodTable != nullptr);
-
-    if (useNativeLayout)
-    {
         if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
         {
             DWORD numIntroducedFields = pMethodTable->GetNativeLayoutInfo()->GetNumFields();
@@ -3757,7 +3705,7 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                         MethodTable* pMethodTable2 = pNativeFieldDescs->GetNestedNativeMethodTable();
 
-                        if (!IsRiscV64OnlyOneField(pMethodTable2))
+                        if (!IsOnlyOneField(pMethodTable2))
                         {
                             size = STRUCT_NO_FLOAT_FIELD;
                             goto _End_arg;
@@ -3853,7 +3801,7 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                         MethodTable* pMethodTable2 = pNativeFieldDescs[1].GetNestedNativeMethodTable();
 
-                        if (!IsRiscV64OnlyOneField(pMethodTable2))
+                        if (!IsOnlyOneField(pMethodTable2))
                         {
                             size = STRUCT_NO_FLOAT_FIELD;
                             goto _End_arg;

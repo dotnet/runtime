@@ -363,24 +363,17 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.Atanh, T.Atanh);
             yield return Create(TensorPrimitives.AtanPi, T.AtanPi);
             yield return Create(TensorPrimitives.Atan, T.Atan);
-            // TODO https://github.com/dotnet/runtime/issues/98861
             yield return Create(TensorPrimitives.Cbrt, T.Cbrt, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13));
             yield return Create(TensorPrimitives.Ceiling, T.Ceiling);
             yield return Create(TensorPrimitives.Cos, T.Cos, trigTolerance);
-            // TODO https://github.com/dotnet/runtime/issues/98861
             yield return Create(TensorPrimitives.Cosh, T.Cosh, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14));
-            // TODO https://github.com/dotnet/runtime/issues/98861
             yield return Create(TensorPrimitives.CosPi, T.CosPi, trigTolerance ?? Helpers.DetermineTolerance<T>(floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.DegreesToRadians, T.DegreesToRadians);
             yield return Create(TensorPrimitives.Exp, T.Exp);
-            // TODO https://github.com/dotnet/runtime/issues/98861
             yield return Create(TensorPrimitives.Exp2, T.Exp2, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-5f));
-            // TODO https://github.com/dotnet/runtime/issues/98861
             yield return Create(TensorPrimitives.Exp10, T.Exp10, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.ExpM1, T.ExpM1);
-            // TODO https://github.com/dotnet/runtime/issues/98861
             yield return Create(TensorPrimitives.Exp2M1, T.Exp2M1, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-5f));
-            // TODO https://github.com/dotnet/runtime/issues/98861
             yield return Create(TensorPrimitives.Exp10M1, T.Exp10M1, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.Floor, T.Floor);
             yield return Create(TensorPrimitives.Log, T.Log);
@@ -396,9 +389,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.ReciprocalSqrtEstimate, T.ReciprocalSqrtEstimate, T.CreateTruncating(Helpers.DefaultToleranceForEstimates));
             yield return Create(TensorPrimitives.Round, T.Round);
             yield return Create(TensorPrimitives.Sin, T.Sin, trigTolerance);
-            // TODO https://github.com/dotnet/runtime/issues/98861
             yield return Create(TensorPrimitives.Sinh, T.Sinh, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14));
-            // TODO https://github.com/dotnet/runtime/issues/98861
             yield return Create(TensorPrimitives.SinPi, T.SinPi, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-4f));
             yield return Create(TensorPrimitives.Sqrt, T.Sqrt);
             yield return Create(TensorPrimitives.Tan, T.Tan, trigTolerance);
@@ -520,8 +511,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.Hypot, T.Hypot);
             yield return Create(TensorPrimitives.Ieee754Remainder, T.Ieee754Remainder);
             yield return Create(TensorPrimitives.Log, T.Log);
-            // TODO https://github.com/dotnet/runtime/issues/98861
-            yield return Create(TensorPrimitives.Pow, T.Pow, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-4f));
+            yield return Create(TensorPrimitives.Pow, T.Pow, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-5f));
 
             static object[] Create(SpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> expectedMethod, T? tolerance = null)
                 => new object[] { tensorPrimitivesMethod, expectedMethod, tolerance };
@@ -650,8 +640,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi);
             yield return Create(TensorPrimitives.CopySign, T.CopySign);
             yield return Create(TensorPrimitives.Ieee754Remainder, T.Ieee754Remainder);
-            // TODO https://github.com/dotnet/runtime/issues/98861
-            yield return Create(TensorPrimitives.Pow, T.Pow, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-4f));
+            yield return Create(TensorPrimitives.Pow, T.Pow, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.Log, T.Log);
             yield return Create(TensorPrimitives.Max, T.Max);
             yield return Create(TensorPrimitives.MaxMagnitude, T.MaxMagnitude);
@@ -755,8 +744,7 @@ namespace System.Numerics.Tensors.Tests
         {
             yield return Create(TensorPrimitives.Atan2, T.Atan2);
             yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi);
-            // TODO https://github.com/dotnet/runtime/issues/98861
-            yield return Create(TensorPrimitives.Pow, T.Pow, Helpers.DetermineTolerance<T>(floatTolerance: 1e-4f));
+            yield return Create(TensorPrimitives.Pow, T.Pow, Helpers.DetermineTolerance<T>(floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.Ieee754Remainder, T.Ieee754Remainder);
 
             static object[] Create(ScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> expectedMethod, T? tolerance = null)
@@ -854,7 +842,6 @@ namespace System.Numerics.Tensors.Tests
         #region Span,Int,Span -> Destination
         public static IEnumerable<object[]> SpanIntDestinationFunctionsToTest()
         {
-            // TODO https://github.com/dotnet/runtime/issues/98861
             yield return Create(TensorPrimitives.RootN, T.RootN, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13));
             yield return Create(TensorPrimitives.ScaleB, T.ScaleB);
 

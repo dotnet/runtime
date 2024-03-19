@@ -429,7 +429,13 @@ inline void SetSSP(CONTEXT *context, DWORD64 ssp)
 }
 #endif // !DACCESS_COMPILE
 
-#define SetFP(context, ebp)
+inline void SetFP(CONTEXT *context, TADDR rbp)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    context->Rbp = (DWORD64)rbp;
+}
+
 inline TADDR GetFP(const CONTEXT * context)
 {
     LIMITED_METHOD_CONTRACT;

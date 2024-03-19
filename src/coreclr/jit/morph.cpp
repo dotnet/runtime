@@ -13229,7 +13229,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 edgeTaken = block->GetFalseEdge();
                 block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
-                block->SetFlags(BBF_NONE_QUIRK);
             }
 
             if (fgHaveValidEdgeWeights)
@@ -13401,11 +13400,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             }
 
             assert(foundVal);
-            if (block->JumpsToNext())
-            {
-                block->SetFlags(BBF_NONE_QUIRK);
-            }
-
 #ifdef DEBUG
             if (verbose)
             {
@@ -14659,8 +14653,8 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     assert(condBlock->JumpsToNext());
     assert(elseBlock->JumpsToNext());
 
-    condBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
-    elseBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
+    condBlock->SetFlags(propagateFlagsToAll);
+    elseBlock->SetFlags(propagateFlagsToAll);
 
     BasicBlock* thenBlock = nullptr;
     if (hasTrueExpr && hasFalseExpr)

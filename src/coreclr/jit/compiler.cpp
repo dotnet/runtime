@@ -2782,6 +2782,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoFailReason  = nullptr;
     fgPgoSource      = ICorJitInfo::PgoSource::Unknown;
     fgPgoHaveWeights = false;
+    fgPgoSynthesized = false;
+
+#ifdef DEBUG
+    fgPgoConsistent = false;
+#endif
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
@@ -5169,11 +5174,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         codeGen->regSet.rsMaskResvd |= RBM_SAVED_LOCALLOC_SP;
     }
 #endif // TARGET_ARM
-
-    // Disable profile checks now.
-    // Over time we will move this further and further back in the phase list, as we fix issues.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     // Assign registers to variables, etc.
 

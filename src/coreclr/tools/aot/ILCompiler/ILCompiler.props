@@ -30,11 +30,6 @@
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(IncludeCoreDisTools)' == 'true'" />
 
   <ItemGroup>
-    <!-- Workaround until the SDK does this, see https://github.com/dotnet/sdk/issues/24799 -->
-    <PackageReference Include="NETStandard.Library">
-      <Version>$(NetStandardLibraryVersion)</Version>
-    </PackageReference>
-
     <Content Include="$(CoreDisToolsLibrary)" Condition="Exists('$(CoreDisToolsLibrary)') and '$(IncludeCoreDisTools)' == 'true'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

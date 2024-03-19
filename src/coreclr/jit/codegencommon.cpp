@@ -7987,7 +7987,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 
     unsigned   lclNum = lclNode->GetLclNum();
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
-    if (op1->OperIs(GT_CALL))
+    if (actualOp1->OperIs(GT_CALL))
     {
         assert(regCount <= MAX_RET_REG_COUNT);
         noway_assert(varDsc->lvIsMultiRegRet);
@@ -8048,9 +8048,9 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 
 #ifdef SWIFT_SUPPORT
     const uint32_t* offsets = nullptr;
-    if (op1->IsCall() && (op1->AsCall()->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift))
+    if (actualOp1->IsCall() && (actualOp1->AsCall()->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift))
     {
-        const CORINFO_SWIFT_LOWERING* lowering = compiler->GetSwiftLowering(op1->AsCall()->gtRetClsHnd);
+        const CORINFO_SWIFT_LOWERING* lowering = compiler->GetSwiftLowering(actualOp1->AsCall()->gtRetClsHnd);
         assert(!lowering->byReference && (regCount == lowering->numLoweredElements));
         offsets = lowering->offsets;
     }
