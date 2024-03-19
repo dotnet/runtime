@@ -18,6 +18,9 @@ $dockerFilePrefix="$PSScriptRoot/libraries-sdk"
 
 if ($buildWindowsContainers)
 {
+  write-host "Dumping present MSVC versions"
+  gci "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/*"
+
   # Due to size concerns, we don't currently do docker builds on windows.
   # Build on the host machine, then simply copy artifacts to the target docker image.
   # This should result in significantly lower build times, for now.
@@ -29,7 +32,7 @@ if ($buildWindowsContainers)
   }
 
   $dockerFile="$dockerFilePrefix.windows.Dockerfile"
-  
+
   # Collect the following artifacts to folder, that will be used as build context for the container,
   # so projects can build and test against the live-built runtime:
   # 1. Reference assembly pack (microsoft.netcore.app.ref)
@@ -54,13 +57,13 @@ if ($buildWindowsContainers)
                      -Destination $dockerContext\targetingpacks.targets
   Copy-Item -Recurse -Path $REPO_ROOT_DIR\src\libraries\System.Net.Quic\src\System\Net\Quic\Interop `
                      -Destination $dockerContext\msquic-interop
-  
+
   # In case of non-CI builds, testhost may already contain Microsoft.AspNetCore.App (see build-local.ps1 in HttpStress):
   $testHostAspNetCorePath="$dockerContext\testhost\net$dotNetVersion-windows-$configuration-x64/shared/Microsoft.AspNetCore.App"
   if (Test-Path $testHostAspNetCorePath) {
     Remove-Item -Recurse -Force $testHostAspNetCorePath
   }
-  
+
   docker build --tag $imageName `
     --build-arg CONFIGURATION=$configuration `
     --file $dockerFile `
