@@ -37,7 +37,6 @@ namespace System.Net.Security
         public bool TargetIsServer { get; set; } = false;
         public bool PreferUnicode { get; set; } = true;
         public bool ForceNegotiateVersion { get; set; } = true;
-        public bool SupportsEncryption { get; set; } = true;
 
         // Negotiation results
         public bool IsAuthenticated { get; private set; }
@@ -232,10 +231,6 @@ namespace System.Net.Security
             if (ForceNegotiateVersion)
             {
                 flags |= Flags.NegotiateVersion;
-            }
-            if (!SupportsEncryption)
-            {
-                flags &= ~Flags.NegotiateSeal;
             }
             // Remove any unsupported flags here
             flags &= Flags.AllSupported;

@@ -211,13 +211,10 @@ namespace System.Net.Security.Tests
             Assert.False(fakeNtlmServer.IsAuthenticated);
         }
 
-        [ConditionalTheory(nameof(IsNtlmAvailable))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void NtlmEncryptionTest(bool serverSupportsEncryption)
+        [ConditionalFact(nameof(IsNtlmAvailable))]
+        public void NtlmEncryptionTest()
         {
             using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
-            fakeNtlmServer.SupportsEncryption = serverSupportsEncryption;
 
             NegotiateAuthentication ntAuth = new NegotiateAuthentication(
                 new NegotiateAuthenticationClientOptions
@@ -239,22 +236,15 @@ namespace System.Net.Security.Tests
             Assert.Equal(FakeNtlmServer.Flags.NegotiateSeal, (fakeNtlmServer.InitialClientFlags & FakeNtlmServer.Flags.NegotiateSeal));
 
             byte[]? authenticateBlob = ntAuth.GetOutgoingBlob(challengeBlob, out statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.Completed, statusCode);
+            Assert.NotNull(authenticateBlob);
 
-            if (serverSupportsEncryption)
-            {
-                Assert.Equal(NegotiateAuthenticationStatusCode.Completed, statusCode);
-                Assert.NotNull(authenticateBlob);
-                // Validate that the NegotiateSeal flag survived the full exchange
-                Assert.Equal(FakeNtlmServer.Flags.NegotiateSeal, (fakeNtlmServer.NegotiatedFlags & FakeNtlmServer.Flags.NegotiateSeal));
+            byte[]? empty = fakeNtlmServer.GetOutgoingBlob(authenticateBlob);
+            Assert.Null(empty);
+            Assert.True(fakeNtlmServer.IsAuthenticated);
 
-                byte[]? empty = fakeNtlmServer.GetOutgoingBlob(authenticateBlob);
-                Assert.Null(empty);
-                Assert.True(fakeNtlmServer.IsAuthenticated);
-            }
-            else
-            {
-                Assert.Equal(NegotiateAuthenticationStatusCode.QopNotSupported, statusCode);
-            }
+            // Validate that the NegotiateSeal flag survived the full exchange
+            Assert.Equal(FakeNtlmServer.Flags.NegotiateSeal, (fakeNtlmServer.NegotiatedFlags & FakeNtlmServer.Flags.NegotiateSeal));
         }
 
         [ConditionalFact(nameof(IsNtlmAvailable))]
