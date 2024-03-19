@@ -423,9 +423,15 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task TcpFastOpen_Roundrip_Succeeds()
         {
+            if (PlatformDetection.IsWindows && !PlatformDetection.IsWindows10OrLater)
+            {
+                // Old Windows versions do not support fast open and SetSocketOption fails with error.
+                throw new SkipTestException("TCP fast open is not supported");
+            }
+
             using (Socket l = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 l.Bind(new IPEndPoint(IPAddress.Loopback, 0));
