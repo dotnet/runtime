@@ -2365,7 +2365,7 @@ void           LinearScan::buildIntervals()
                 assert(inArgReg < REG_COUNT);
                 mask = genRegMask(inArgReg);
                 assignPhysReg(inArgReg, interval);
-                INDEBUG(registersToDump.AddRegNumInMask(inArgReg, interval->registerType));
+                INDEBUG(registersToDump.AddRegNumInMask(inArgReg ARM_ARG(interval->registerType)));
             }
             RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, mask);
             pos->setRegOptional(true);

@@ -271,6 +271,8 @@ typedef struct _regMaskAll
 {
 private:
     regMaskTP registers[REGISTER_TYPE_COUNT];
+    regMaskOnlyOne  operator[](int index) const;
+    regMaskOnlyOne& operator[](int index);
 
 public:
     inline regMaskGpr gprRegs() const
@@ -317,9 +319,16 @@ public:
         registers[2] = _registers[2];
     }
 
+#ifdef TARGET_ARM
     _regMaskAll(regNumber reg) : _regMaskAll()
     {
-        *this |= reg;
+        AddRegNumInMask(reg);
+    }
+#endif
+
+    _regMaskAll(regNumber reg ARM_ARG(var_types type)) : _regMaskAll()
+    {
+        AddRegNumInMask(reg ARM_ARG(type));
     }
 
     void Clear();
@@ -328,29 +337,30 @@ public:
     void     Create(regNumber reg);
     // Rename this to AddRegNum
     void AddGprRegInMask(regNumber reg);
-    void AddRegNumInMask(regNumber reg);
-    void AddRegNumInMask(regNumber reg, var_types type);
+    void           AddRegNumInMask(regNumber reg ARM_ARG(var_types type));
     void AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type);
     void           AddGprRegMask(regMaskGpr maskToAdd);
     void           AddFloatRegMask(regMaskFloat maskToAdd);
-    void RemoveRegNumFromMask(regNumber reg);
-    void RemoveRegNumFromMask(regNumber reg, var_types type);
-    void RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type);
-    bool IsRegNumInMask(regNumber reg, var_types type);
+
+#ifdef TARGET_ARM
+    void AddRegNumInMask(regNumber reg);
+    void           RemoveRegNumFromMask(regNumber reg);
     bool IsRegNumInMask(regNumber reg);
+#endif
+    void           RemoveRegNumFromMask(regNumber reg ARM_ARG(var_types type));
+    void RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type);
+    bool           IsRegNumInMask(regNumber reg ARM_ARG(var_types type));
     bool IsGprMaskPresent(regMaskGpr maskToCheck) const;
     bool           IsFloatMaskPresent(regMaskFloat maskToCheck) const;
-    bool IsOnlyRegNumInMask(regNumber reg);
+    //bool IsOnlyRegNumInMask(regNumber reg);
     regMaskOnlyOne GetRegMaskForType(var_types type) const;
     regMaskOnlyOne GetMaskForRegNum(regNumber reg) const;
-    regMaskOnlyOne OrMask(const _regMaskAll& second, var_types regType) const;
 
     // TODO: this might go away once we have just `regMaskTP` gpr_float field
     bool      IsGprOrFloatPresent() const;
     regMaskTP      GetGprFloatCombinedMask() const;
 
-    regMaskOnlyOne operator[](int index) const;
-    regMaskOnlyOne& operator[](int index);
+
     void operator|=(const _regMaskAll& other);
     void operator&=(const _regMaskAll& other);
     void operator|=(const regNumber reg);
