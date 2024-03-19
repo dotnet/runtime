@@ -89,7 +89,7 @@ function getFirstDayOfWeek(locale: string)
     const weekInfo = getWeekInfo(locale);
     if (weekInfo)
     {
-        // JS"s Sunday == 7 while dotnet"s Sunday == 0
+        // JS's Sunday == 7 while dotnet's Sunday == 0
         return weekInfo.firstDay == 7 ? 0 : weekInfo.firstDay;
     }
     // Firefox does not support it rn but we can make a temporary workaround for it,
