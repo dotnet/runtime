@@ -967,3 +967,11 @@ extern "C" EXPORT_API gboolean EXPORT_CC coreclr_unity_gc_set_chain_fatal_error(
     g_chainFatalError = (bool)state;
     return prev;
 }
+
+typedef void (__cdecl *OnFatalErrorFunc)(EXCEPTION_POINTERS* pExceptionPointers);
+extern OnFatalErrorFunc g_unityOnFatalError;
+
+extern "C" EXPORT_API void EXPORT_CC coreclr_unity_set_on_fatal_error(OnFatalErrorFunc on_fatal_func)
+{
+    g_unityOnFatalError = on_fatal_func;
+}

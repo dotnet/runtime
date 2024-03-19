@@ -73,3 +73,4 @@ EXPORTS
         mono_unity_g_free
         unity_coreclr_create_delegate
         coreclr_unity_gc_set_chain_fatal_error
+        coreclr_unity_set_on_fatal_error
