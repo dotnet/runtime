@@ -66,10 +66,6 @@ enum instruction : uint32_t
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 
-    // TODO-SVE: Removable once REG_V0 and REG_P0 are distinct
-    INS_sve_str_mask, // Not a real instruction. It is used to load masks from the stack
-    INS_sve_ldr_mask, // Not a real instruction. It is used to store masks to the stack
-
 #elif defined(TARGET_LOONGARCH64)
     #define INST(id, nm, ldst, e1, msk, fmt) INS_##id,
     #include "instrs.h"
