@@ -8,11 +8,21 @@
 // https://github.com/Tencent/rapidjson/issues/1596#issuecomment-548774663
 #define RAPIDJSON_48BITPOINTER_OPTIMIZATION 0
 
+// see https://github.com/Tencent/rapidjson/issues/1448
+// including windows.h on purpose to provoke a compile time problem as GetObject is a 
+// macro that gets defined when windows.h is included
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#endif
+
 #include "pal.h"
 #include <external/rapidjson/document.h>
 #include <external/rapidjson/fwd.h>
 #include <vector>
 #include "bundle/info.h"
+
+#undef GetObject
 
 class json_parser_t {
     public:

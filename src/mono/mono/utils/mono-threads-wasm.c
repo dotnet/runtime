@@ -496,7 +496,7 @@ mono_threads_wasm_on_thread_attached (pthread_t tid, const char* thread_name, gb
 #else
 	if (mono_threads_wasm_is_ui_thread ()) {
 		// FIXME: we should not be attaching UI thread with deputy design
-		// but right now we do, because mono_wasm_load_runtime is running in UI thread
+		// but right now we do
 		// g_assert(!mono_threads_wasm_is_ui_thread ());
 		return;
 	}
@@ -541,9 +541,17 @@ mono_threads_wasm_on_thread_registered (void)
 }
 
 #ifndef DISABLE_THREADS
-extern void mono_wasm_start_deputy_thread_async (void);
-extern void mono_wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data);
 static pthread_t deputy_thread_tid;
+static pthread_t io_thread_tid;
+extern void mono_wasm_start_deputy_thread_async (void);
+extern void mono_wasm_start_io_thread_async (void);
+extern void mono_wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data);
+extern void mono_wasm_dump_threads (void);
+
+void mono_wasm_dump_threads_async (void)
+{
+	mono_threads_wasm_async_run_in_target_thread (mono_threads_wasm_ui_thread_tid (), mono_wasm_dump_threads);
+}
 
 gboolean
 mono_threads_wasm_is_deputy_thread (void)
@@ -576,9 +584,54 @@ mono_wasm_create_deputy_thread (void)
 	return deputy_thread_tid;
 }
 
+gboolean
+mono_threads_wasm_is_io_thread (void)
+{
+	return pthread_self () == io_thread_tid;
+}
+
+MonoNativeThreadId
+mono_threads_wasm_io_thread_tid (void)
+{
+	return (MonoNativeThreadId) io_thread_tid;
+}
+
+// this is running in io thread
+static gsize
+io_thread_fn (void* unused_arg G_GNUC_UNUSED)
+{
+	io_thread_tid = pthread_self ();
+
+	// this will throw JS "unwind"
+	mono_wasm_start_io_thread_async();
+	
+	return 0;// never reached
+}
+
+EMSCRIPTEN_KEEPALIVE MonoNativeThreadId
+mono_wasm_create_io_thread (void)
+{
+	pthread_create (&io_thread_tid, NULL, (void *(*)(void *)) io_thread_fn, NULL);
+	return io_thread_tid;
+}
+
 // TODO ideally we should not need to have UI thread registered as managed
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_register_ui_thread (void)
+{
+	MonoThread *thread = mono_thread_internal_attach (mono_get_root_domain ());
+	mono_thread_set_state (thread, ThreadState_Background);
+	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
+
+	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	g_assert (info);
+	info->runtime_thread = TRUE;
+	MONO_ENTER_GC_SAFE_UNBALANCED;
+}
+
+// TODO ideally we should not need to have UI thread registered as managed
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_register_io_thread (void)
 {
 	MonoThread *thread = mono_thread_internal_attach (mono_get_root_domain ());
 	mono_thread_set_state (thread, ThreadState_Background);

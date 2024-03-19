@@ -114,7 +114,7 @@ private:
     void ContainCheckIntrinsic(GenTreeOp* node);
 #endif // TARGET_XARCH
 #ifdef FEATURE_HW_INTRINSICS
-    void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr);
+    void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr, unsigned size);
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
 #ifdef TARGET_XARCH
     void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* childNode);
@@ -140,6 +140,7 @@ private:
     GenTree* LowerCall(GenTree* call);
     bool LowerCallMemmove(GenTreeCall* call, GenTree** next);
     bool LowerCallMemcmp(GenTreeCall* call, GenTree** next);
+    bool LowerCallMemset(GenTreeCall* call, GenTree** next);
     void LowerCFGCall(GenTreeCall* call);
     void MoveCFGCallArgs(GenTreeCall* call);
     void MoveCFGCallArg(GenTreeCall* call, GenTree* node);
@@ -350,8 +351,12 @@ private:
     void TryRetypingFloatingPointStoreToIntegerStore(GenTree* store);
 
     GenTree* LowerSwitch(GenTree* node);
-    bool TryLowerSwitchToBitTest(
-        FlowEdge* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue);
+    bool TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
+                                 unsigned    jumpCount,
+                                 unsigned    targetCount,
+                                 BasicBlock* bbSwitch,
+                                 GenTree*    switchValue,
+                                 weight_t    defaultLikelihood);
 
     void LowerCast(GenTree* node);
 
@@ -490,6 +495,8 @@ public:
 
         return false;
     }
+
+    bool IsContainableLclAddr(GenTreeLclFld* lclAddr, unsigned accessSize) const;
 
 #ifdef TARGET_ARM64
     bool IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const;

@@ -462,7 +462,7 @@ namespace Mono.Linker
 		/// DefaultInterfaceMethod is the method that implements <paramref name="method"/>.
 		/// </summary>
 		/// <param name="method">The interface method to find default implementations for</param>
-		public IEnumerable<(TypeDefinition ImplementingType, InterfaceImplementation InterfaceImpl, MethodDefinition DefaultInterfaceMethod)>? GetDefaultInterfaceImplementations (MethodDefinition method)
+		public IEnumerable<OverrideInformation>? GetDefaultInterfaceImplementations (MethodDefinition method)
 		{
 			return TypeMapInfo.GetDefaultInterfaceImplementations (method);
 		}
