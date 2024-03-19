@@ -10,7 +10,7 @@ variant of the LLVM backend is used since webassembly doesn't support inline ass
 
 `mini-llvm.c`: The LLVM backend.
 `mini-wasm.h/c`: The wasm backend. This is a minimal version of a normal mono JIT backend which only supports llvm.
-`llvm-runtime.cpp`: Code to throw/catch c++ exceptions.
+`llvm-runtime.cpp`: Code to throw/catch C++ exceptions.
 `aot-runtime-wasm.c`: Code related to interpreter/native transitions on wasm.
 `llvmonly-runtime.c`:  Runtime support for the generated AOT code.
 
@@ -41,16 +41,16 @@ is used.
 ## Exception handling
 
 On wasm, its not possible to walk the stack so the normal mono exception handling/unwind code
-cannot be used as is. Its also hard to map the .net exception handling concepts like filter clauses
+cannot be used as is. Its also hard to map the .NET exception handling concepts like filter clauses
 to the llvm concepts. Instead, c++/wasm exceptions are used to implement unwinding, and the
 interpreter is used to execute EH code.
 When an exception needs to be thrown, we store the exception info in TLS, and throw a dummy C++ exception instead.
 Internally, this is implemented by emscripten either by calling into JS, or by using the wasm exception handling
 spec.
 The c++ exception is caught in the generated AOT code using the relevant llvm catch instructions. Then execution is
-transferred to the interpreter. This is done by creating a data structure on the stack contain all the IL level state like
+transferred to the interpreter. This is done by creating a data structure on the stack containing all the IL level state like
 the IL offset and the values of all the IL level variables. The generated code continuously updates this state during
-execution. When an exception is caught, this il state is passed to the interpreter which continues execution from
+execution. When an exception is caught, this IL state is passed to the interpreter which continues execution from
 that point.  This process is called `deopt` in the runtime code.
 Exceptions are also caught in various other places like the interpreter-aot boundary.
 

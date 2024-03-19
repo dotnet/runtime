@@ -8,7 +8,7 @@ having to JIT the IL code.
 
 ## Usage
 
-The AOT compiler is integreated into the mono runtime executable, and can be run using the `--aot` command
+The AOT compiler is integrated into the mono runtime executable, and can be run using the `--aot` command
 line argument, i.e.
 `<mono-executable> --aot HelloWorld.dll`
 
@@ -69,9 +69,9 @@ The AOT images exports one symbol named `mono_aot_module_<assembly name>_info` w
 which contains pointers to the tables/structures. The AOT image contains:
 - the native code
 - data structures required to load the code
-- cached data intented to speed up runtime operation
+- cached data intended to speed up runtime operation
 
-The AOT image contains serialized versions of many .net objects like methods/types etc. This uses ad-hoc binary encodings.
+The AOT image contains serialized versions of many .NET objects like methods/types etc. This uses ad-hoc binary encodings.
 
 ## Runtime support
 
@@ -90,7 +90,7 @@ a hash table inside the AOT image mapping extra methods to their AOT indexes. Lo
 - finding its method index
 - finding the method code/data corresponding to the method index
 
-The mapping from method index to the code is done in architecture specific way, designed to minimalize the amount of
+The mapping from method index to the code is done in an architecture specific way, designed to minimize the amount of
 runtime relocations in the AOT image. In some cases, this involves generating an extra table with assembly call instructions to
 all the methods, then disassembling this table at runtime.
 
@@ -139,6 +139,6 @@ Its possible to use the AOT compiler to target a platform different than the hos
 build of the runtime.
 The generated code depends on offsets inside runtime structures like `MonoClass`/`MonoVTable` etc. which could
 differ between the host and the target. This is handled by having a tool called the offsets-tool, which is a python
-script which uses the clang python interface to compute an emit a C header file containing these offsets. The header
+script which uses the clang python interface to compute and emit a C header file containing these offsets. The header
 file is passed as a cmake argument during the runtime build. Inside the runtime code, the `MONO_STRUCT_OFFSET`
 C macro reads the data from the offsets file to produce the offset corresponding to the target platform.
