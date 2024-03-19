@@ -181,20 +181,20 @@ namespace System.Reflection.Metadata.Tests
             Assert.False(TypeName.TryParse(tooMany.AsSpan(), out _, options));
 
             TypeName parsed = TypeName.Parse(notTooMany.AsSpan(), options);
-            ValidateUnderlyingType(maxDepth, parsed, decorator);
+            ValidateElementType(maxDepth, parsed, decorator);
 
             Assert.True(TypeName.TryParse(notTooMany.AsSpan(), out parsed, options));
-            ValidateUnderlyingType(maxDepth, parsed, decorator);
+            ValidateElementType(maxDepth, parsed, decorator);
 
-            static void ValidateUnderlyingType(int maxDepth, TypeName parsed, string decorator)
+            static void ValidateElementType(int maxDepth, TypeName parsed, string decorator)
             {
                 for (int i = 0; i < maxDepth - 1; i++)
                 {
-                    Assert.Equal(decorator == "*", parsed.IsUnmanagedPointerType);
-                    Assert.Equal(decorator == "[]", parsed.IsSzArrayType);
+                    Assert.Equal(decorator == "*", parsed.IsPointer);
+                    Assert.Equal(decorator == "[]", parsed.IsSZArray);
                     Assert.False(parsed.IsConstructedGenericType);
 
-                    parsed = parsed.UnderlyingType;
+                    parsed = parsed.GetElementType();
                 }
             }
         }
@@ -238,7 +238,7 @@ namespace System.Reflection.Metadata.Tests
                 for (int i = 0; i < maxDepth - 1; i++)
                 {
                     Assert.True(parsed.IsConstructedGenericType);
-                    parsed = parsed.GetGenericArguments()[0];
+                    parsed = parsed.GetGenericArguments().Span[0];
                 }
             }
         }
@@ -396,7 +396,7 @@ namespace System.Reflection.Metadata.Tests
 
             for (int i = 0; i < genericTypesFullNames.Length; i++)
             {
-                TypeName genericArg = parsed.GetGenericArguments()[i];
+                TypeName genericArg = parsed.GetGenericArguments().Span[i];
                 Assert.Equal(genericTypesFullNames[i], genericArg.FullName);
                 Assert.True(genericArg.IsElementalType);
                 Assert.False(genericArg.IsConstructedGenericType);
@@ -447,21 +447,21 @@ namespace System.Reflection.Metadata.Tests
 
             Assert.Equal(input, parsed.FullName);
             Assert.Equal(isArray, parsed.IsArray);
-            Assert.Equal(isSzArray, parsed.IsSzArrayType);
+            Assert.Equal(isSzArray, parsed.IsSZArray);
             if (isArray) Assert.Equal(arrayRank, parsed.GetArrayRank());
-            Assert.Equal(isByRef, parsed.IsManagedPointerType);
-            Assert.Equal(isPointer, parsed.IsUnmanagedPointerType);
+            Assert.Equal(isByRef, parsed.IsByRef);
+            Assert.Equal(isPointer, parsed.IsPointer);
             Assert.False(parsed.IsElementalType);
 
-            TypeName underlyingType = parsed.UnderlyingType;
-            Assert.NotNull(underlyingType);
-            Assert.Equal(typeNameWithoutDecorators, underlyingType.FullName);
-            Assert.True(underlyingType.IsElementalType);
-            Assert.False(underlyingType.IsArray);
-            Assert.False(underlyingType.IsSzArrayType);
-            Assert.False(underlyingType.IsManagedPointerType);
-            Assert.False(underlyingType.IsUnmanagedPointerType);
-            Assert.Null(underlyingType.UnderlyingType);
+            TypeName elementType = parsed.GetElementType();
+            Assert.NotNull(elementType);
+            Assert.Equal(typeNameWithoutDecorators, elementType.FullName);
+            Assert.True(elementType.IsElementalType);
+            Assert.False(elementType.IsArray);
+            Assert.False(elementType.IsSZArray);
+            Assert.False(elementType.IsByRef);
+            Assert.False(elementType.IsPointer);
+            Assert.Throws<InvalidOperationException>(elementType.GetElementType);
         }
 
         public static IEnumerable<object[]> GetAdditionalConstructedTypeData()
@@ -505,7 +505,7 @@ namespace System.Reflection.Metadata.Tests
         {
             TypeName parsed = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
 
-            Assert.Equal(expectedComplexity, parsed.TotalComplexity);
+            Assert.Equal(expectedComplexity, parsed.Complexity);
 
             Assert.Equal(type.Name, parsed.Name);
             Assert.Equal(type.FullName, parsed.FullName);
@@ -557,9 +557,10 @@ namespace System.Reflection.Metadata.Tests
             if (type.IsGenericType)
             {
                 Type genericType = type.GetGenericTypeDefinition();
-                Assert.Equal(genericType.Name, parsed.UnderlyingType.Name);
-                Assert.Equal(genericType.FullName, parsed.UnderlyingType.FullName);
-                Assert.Equal(genericType.AssemblyQualifiedName, parsed.UnderlyingType.AssemblyQualifiedName);
+                TypeName genericTypeName = parsed.GetGenericTypeDefinition();
+                Assert.Equal(genericType.Name, genericTypeName.Name);
+                Assert.Equal(genericType.FullName, genericTypeName.FullName);
+                Assert.Equal(genericType.AssemblyQualifiedName, genericTypeName.AssemblyQualifiedName);
             }
         }
 
@@ -627,27 +628,34 @@ namespace System.Reflection.Metadata.Tests
 #endif
             static Type? GetType(TypeName typeName, bool throwOnError = true, bool ignoreCase = false)
             {
-                if (typeName.ContainingType is not null) // nested type
+                if (typeName.IsNested)
                 {
                     BindingFlags flagsCopiedFromClr = BindingFlags.NonPublic | BindingFlags.Public;
                     if (ignoreCase)
                     {
                         flagsCopiedFromClr |= BindingFlags.IgnoreCase;
                     }
-                    return Make(GetType(typeName.ContainingType, throwOnError, ignoreCase)?.GetNestedType(typeName.Name, flagsCopiedFromClr));
+                    return Make(GetType(typeName.DeclaringType!, throwOnError, ignoreCase)?.GetNestedType(typeName.Name, flagsCopiedFromClr));
                 }
-                else if (typeName.UnderlyingType is null) // elemental
+                else if (typeName.IsConstructedGenericType)
                 {
-                    AssemblyName? assemblyName = typeName.GetAssemblyName();
+                    return Make(GetType(typeName.GetGenericTypeDefinition(), throwOnError, ignoreCase));
+                }
+                else if(typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
+                {
+                    return Make(GetType(typeName.GetElementType(), throwOnError, ignoreCase));
+                }
+                else
+                {
+                    Assert.Equal(1, typeName.Complexity);
 
+                    AssemblyName? assemblyName = typeName.GetAssemblyName();
                     Type? type = assemblyName is null
                         ? Type.GetType(typeName.FullName, throwOnError, ignoreCase)
                         : Assembly.Load(assemblyName).GetType(typeName.FullName, throwOnError, ignoreCase);
 
                     return Make(type);
                 }
-
-                return Make(GetType(typeName.UnderlyingType, throwOnError, ignoreCase));
 
                 Type? Make(Type? type)
                 {
@@ -657,7 +665,7 @@ namespace System.Reflection.Metadata.Tests
                     }
                     else if (typeName.IsConstructedGenericType)
                     {
-                        ReadOnlySpan<TypeName> genericArgs = typeName.GetGenericArguments();
+                        ReadOnlySpan<TypeName> genericArgs = typeName.GetGenericArguments().Span;
                         Type[] genericTypes = new Type[genericArgs.Length];
                         for (int i = 0; i < genericArgs.Length; i++)
                         {
@@ -671,15 +679,15 @@ namespace System.Reflection.Metadata.Tests
 
                         return type.MakeGenericType(genericTypes);
                     }
-                    else if (typeName.IsManagedPointerType)
+                    else if (typeName.IsByRef)
                     {
                         return type.MakeByRefType();
                     }
-                    else if (typeName.IsUnmanagedPointerType)
+                    else if (typeName.IsPointer)
                     {
                         return type.MakePointerType();
                     }
-                    else if (typeName.IsSzArrayType)
+                    else if (typeName.IsSZArray)
                     {
                         return type.MakeArrayType();
                     }

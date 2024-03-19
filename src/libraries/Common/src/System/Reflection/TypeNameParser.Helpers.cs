@@ -108,36 +108,42 @@ namespace System.Reflection
 
         private Type? Resolve(Metadata.TypeName typeName)
         {
-            if (typeName.IsNestedType)
+            if (typeName.IsNested)
             {
                 Metadata.TypeName? current = typeName;
                 int nestingDepth = 0;
-                while (current is not null && current.IsNestedType)
+                while (current is not null && current.IsNested)
                 {
                     nestingDepth++;
-                    current = current.ContainingType;
+                    current = current.DeclaringType;
                 }
 
                 string[] nestedTypeNames = new string[nestingDepth];
                 current = typeName;
-                while (current is not null && current.IsNestedType)
+                while (current is not null && current.IsNested)
                 {
                     nestedTypeNames[--nestingDepth] = current.Name;
-                    current = current.ContainingType;
+                    current = current.DeclaringType;
                 }
                 string nonNestedParentName = current!.FullName;
 
                 Type? type = GetType(nonNestedParentName, nestedTypeNames, typeName.GetAssemblyName(), typeName.FullName);
                 return Make(type, typeName);
             }
-            else if (typeName.UnderlyingType is null)
+            else if (typeName.IsConstructedGenericType)
+            {
+                return Make(Resolve(typeName.GetGenericTypeDefinition()), typeName);
+            }
+            else if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
+            {
+                return Make(Resolve(typeName.GetElementType()), typeName);
+            }
+            else
             {
                 Type? type = GetType(typeName.FullName, nestedTypeNames: ReadOnlySpan<string>.Empty, typeName.GetAssemblyName(), typeName.FullName);
 
                 return Make(type, typeName);
             }
-
-            return Make(Resolve(typeName.UnderlyingType), typeName);
         }
 
 #if !NETSTANDARD2_0 // needed for ILVerification project
@@ -146,13 +152,13 @@ namespace System.Reflection
 #endif
         private Type? Make(Type? type, Metadata.TypeName typeName)
         {
-            if (type is null || typeName.IsElementalType)
+            if (type is null)
             {
                 return type;
             }
             else if (typeName.IsConstructedGenericType)
             {
-                ReadOnlySpan<Metadata.TypeName> genericArgs = typeName.GetGenericArguments();
+                ReadOnlySpan<Metadata.TypeName> genericArgs = typeName.GetGenericArguments().Span;
                 Type[] genericTypes = new Type[genericArgs.Length];
                 for (int i = 0; i < genericArgs.Length; i++)
                 {
@@ -166,21 +172,25 @@ namespace System.Reflection
 
                 return type.MakeGenericType(genericTypes);
             }
-            else if (typeName.IsManagedPointerType)
+            else if (typeName.IsByRef)
             {
                 return type.MakeByRefType();
             }
-            else if (typeName.IsUnmanagedPointerType)
+            else if (typeName.IsPointer)
             {
                 return type.MakePointerType();
             }
-            else if (typeName.IsSzArrayType)
+            else if (typeName.IsSZArray)
             {
                 return type.MakeArrayType();
             }
-            else
+            else if(typeName.IsArray)
             {
                 return type.MakeArrayType(rank: typeName.GetArrayRank());
+            }
+            else
+            {
+                return type;
             }
         }
     }

@@ -87,20 +87,20 @@ namespace System.Reflection.Metadata.Tests
                 }
                 else if (parsed.IsArray)
                 {
-                    TypeName arrayElementTypeName = parsed.UnderlyingType; // equivalent of type.GetElementType()
+                    TypeName arrayElementTypeName = parsed.GetElementType();
                     Type arrayElementType = GetTypeFromParsedTypeName(arrayElementTypeName); // recursive call allows for creating arrays of arrays etc
 
-                    return parsed.IsSzArrayType
+                    return parsed.IsSZArray
                             ? arrayElementType.MakeArrayType()
                             : arrayElementType.MakeArrayType(parsed.GetArrayRank());
                 }
                 else if (parsed.IsConstructedGenericType)
                 {
-                    TypeName genericTypeDefinitionName = parsed.UnderlyingType; // equivalent of type.GetGenericTypeDefinition()
+                    TypeName genericTypeDefinitionName = parsed.GetGenericTypeDefinition();
                     Type genericTypeDefinition = GetTypeFromParsedTypeName(genericTypeDefinitionName);
                     Debug.Assert(genericTypeDefinition.IsGenericTypeDefinition);
 
-                    ReadOnlySpan<TypeName> genericArgs = parsed.GetGenericArguments();
+                    ReadOnlySpan<TypeName> genericArgs = parsed.GetGenericArguments().Span;
                     Type[] typeArguments = new Type[genericArgs.Length];
                     for (int i = 0; i < genericArgs.Length; i++)
                     {

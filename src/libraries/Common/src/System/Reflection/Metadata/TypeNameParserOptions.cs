@@ -15,7 +15,7 @@ namespace System.Reflection.Metadata
         public bool AllowFullyQualifiedName { get; set; } = true;
 
         /// <summary>
-        /// Limits the maximum value of <seealso cref="TypeName.TotalComplexity"/> that parser can handle.
+        /// Limits the maximum value of <seealso cref="TypeName.Complexity"/> that parser can handle.
         /// </summary>
         public int MaxTotalComplexity
         {

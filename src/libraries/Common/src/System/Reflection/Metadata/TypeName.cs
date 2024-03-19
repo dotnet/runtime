@@ -23,6 +23,7 @@ namespace System.Reflection.Metadata
         private readonly int _rankOrModifier;
         private readonly TypeName[]? _genericArguments;
         private readonly AssemblyName? _assemblyName;
+        private readonly TypeName? _underlyingType;
         private string? _assemblyQualifiedName;
 
         internal TypeName(string name, string fullName,
@@ -36,10 +37,13 @@ namespace System.Reflection.Metadata
             FullName = fullName;
             _assemblyName = assemblyName;
             _rankOrModifier = rankOrModifier;
-            UnderlyingType = underlyingType;
-            ContainingType = containingType;
+            _underlyingType = underlyingType;
+            DeclaringType = containingType;
             _genericArguments = genericTypeArguments;
-            TotalComplexity = GetTotalComplexity(underlyingType, containingType, genericTypeArguments);
+            Complexity = GetComplexity(underlyingType, containingType, genericTypeArguments);
+
+            Debug.Assert(!(IsArray || IsPointer || IsByRef) || _underlyingType is not null);
+            Debug.Assert(_genericArguments is null || _underlyingType is not null);
         }
 
         /// <summary>
@@ -52,13 +56,13 @@ namespace System.Reflection.Metadata
             => _assemblyQualifiedName ??= _assemblyName is null ? FullName : $"{FullName}, {_assemblyName.FullName}";
 
         /// <summary>
-        /// If this type is a nested type (see <see cref="IsNestedType"/>), gets
-        /// the containing type. If this type is not a nested type, returns null.
+        /// If this type is a nested type (see <see cref="IsNested"/>), gets
+        /// the declaring type. If this type is not a nested type, returns null.
         /// </summary>
         /// <remarks>
-        /// For example, given "Namespace.Containing+Nested", unwraps the outermost type and returns "Namespace.Containing".
+        /// For example, given "Namespace.Declaring+Nested", unwraps the outermost type and returns "Namespace.Declaring".
         /// </remarks>
-        public TypeName? ContainingType { get; }
+        public TypeName? DeclaringType { get; }
 
         /// <summary>
         /// The full name of this type, including namespace, but without the assembly name; e.g., "System.Int32".
@@ -97,35 +101,35 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <remarks>
         /// <para>This property returning true doesn't mean that the type is a primitive like string
-        /// or int; it just means that there's no underlying type (<see cref="UnderlyingType"/> returns null).</para>
+        /// or int; it just means that there's no underlying type.</para>
         /// <para>This property will return true for generic type definitions (e.g., "Dictionary&lt;,&gt;").
         /// This is because determining whether a type truly is a generic type requires loading the type
         /// and performing a runtime check.</para>
         /// </remarks>
-        public bool IsElementalType => UnderlyingType is null;
+        public bool IsElementalType => _underlyingType is null;
 
         /// <summary>
         /// Returns true if this is a managed pointer type (e.g., "ref int").
         /// Managed pointer types are sometimes called byref types (<seealso cref="Type.IsByRef"/>)
         /// </summary>
-        public bool IsManagedPointerType => _rankOrModifier == TypeNameParserHelpers.ByRef; // name inconsistent with Type.IsByRef
+        public bool IsByRef => _rankOrModifier == TypeNameParserHelpers.ByRef;
 
         /// <summary>
         /// Returns true if this is a nested type (e.g., "Namespace.Containing+Nested").
-        /// For nested types <seealso cref="ContainingType"/> returns their containing type.
+        /// For nested types <seealso cref="DeclaringType"/> returns their containing type.
         /// </summary>
-        public bool IsNestedType => ContainingType is not null;
+        public bool IsNested => DeclaringType is not null;
 
         /// <summary>
         /// Returns true if this type represents a single-dimensional, zero-indexed array (e.g., "int[]").
         /// </summary>
-        public bool IsSzArrayType => _rankOrModifier == TypeNameParserHelpers.SZArray; // name could be more user-friendly
+        public bool IsSZArray => _rankOrModifier == TypeNameParserHelpers.SZArray;
 
         /// <summary>
         /// Returns true if this type represents an unmanaged pointer (e.g., "int*" or "void*").
         /// Unmanaged pointer types are often just called pointers (<seealso cref="Type.IsPointer"/>)
         /// </summary>
-        public bool IsUnmanagedPointerType => _rankOrModifier == TypeNameParserHelpers.Pointer; // name inconsistent with Type.IsPointer
+        public bool IsPointer => _rankOrModifier == TypeNameParserHelpers.Pointer;
 
         /// <summary>
         /// Returns true if this type represents a variable-bound array; that is, an array of rank greater
@@ -166,17 +170,29 @@ namespace System.Reflection.Metadata
         /// </list>
         /// </para>
         /// </remarks>
-        public int TotalComplexity { get; }
+        public int Complexity { get; }
 
         /// <summary>
-        /// If this type is not an elemental type (see <see cref="IsElementalType"/>), gets
-        /// the underlying type. If this type is an elemental type, returns null.
+        /// The TypeName of the object encompassed or referred to by the current array, pointer, or reference type.
         /// </summary>
         /// <remarks>
         /// For example, given "int[][]", unwraps the outermost array and returns "int[]".
+        /// </remarks>
+        public TypeName GetElementType()
+            => IsArray || IsPointer || IsByRef
+                ? _underlyingType!
+                : throw new InvalidOperationException();
+
+        /// <summary>
+        /// Returns a TypeName object that represents a generic type name definition from which the current generic type name can be constructed.
+        /// </summary>
+        /// <remarks>
         /// Given "Dictionary&lt;string, int&gt;", returns the generic type definition "Dictionary&lt;,&gt;".
         /// </remarks>
-        public TypeName? UnderlyingType { get; }
+        public TypeName GetGenericTypeDefinition()
+            => IsConstructedGenericType
+                ? _underlyingType!
+                : throw new InvalidOperationException("SR.InvalidOperation_NotGenericType"); // TODO: use actual resource
 
         public static TypeName Parse(ReadOnlySpan<char> typeName, TypeNameParserOptions? options = default)
             => TypeNameParser.Parse(typeName, throwOnError: true, options)!;
@@ -219,28 +235,28 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// If this <see cref="TypeName"/> represents a constructed generic type, returns a span
-        /// of all the generic arguments. Otherwise it returns an empty span.
+        /// If this <see cref="TypeName"/> represents a constructed generic type, returns a buffer
+        /// of all the generic arguments. Otherwise it returns an empty buffer.
         /// </summary>
         /// <remarks>
         /// <para>For example, given "Dictionary&lt;string, int&gt;", returns a 2-element span containing
         /// string and int.</para>
         /// </remarks>
-        public ReadOnlySpan<TypeName> GetGenericArguments()
-            => _genericArguments is null ? ReadOnlySpan<TypeName>.Empty : _genericArguments.AsSpan();
+        public ReadOnlyMemory<TypeName> GetGenericArguments()
+            => _genericArguments is null ? ReadOnlyMemory<TypeName>.Empty : _genericArguments.AsMemory();
 
-        private static int GetTotalComplexity(TypeName? underlyingType, TypeName? containingType, TypeName[]? genericTypeArguments)
+        private static int GetComplexity(TypeName? underlyingType, TypeName? containingType, TypeName[]? genericTypeArguments)
         {
             int result = 1;
 
             if (underlyingType is not null)
             {
-                result = checked(result + underlyingType.TotalComplexity);
+                result = checked(result + underlyingType.Complexity);
             }
 
             if (containingType is not null)
             {
-                result = checked(result + containingType.TotalComplexity);
+                result = checked(result + containingType.Complexity);
             }
 
             if (genericTypeArguments is not null)
@@ -251,7 +267,7 @@ namespace System.Reflection.Metadata
                 // - and the cumulative complexity of all the arguments
                 foreach (TypeName genericArgument in genericTypeArguments)
                 {
-                    result = checked(result + genericArgument.TotalComplexity);
+                    result = checked(result + genericArgument.Complexity);
                 }
             }
 
