@@ -27,7 +27,7 @@ namespace System.Threading
             return WaitSubsystem.Wait(_semaphore, timeoutMs, false, true) == WaitHandle.WaitSuccess;
         }
 
-        protected override void ReleaseCore(int count)
+        private void ReleaseCore(int count)
         {
             WaitSubsystem.ReleaseSemaphore(_semaphore, count);
         }

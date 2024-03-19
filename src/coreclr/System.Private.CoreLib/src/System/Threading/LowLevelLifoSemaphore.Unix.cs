@@ -34,7 +34,7 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WaitHandle_CorWaitOnePrioritizedNative")]
         private static partial int WaitNative(SafeWaitHandle handle, int timeoutMs);
 
-        protected override void ReleaseCore(int count)
+        private void ReleaseCore(int count)
         {
             Debug.Assert(_semaphore != null);
             Debug.Assert(count > 0);
