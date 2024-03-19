@@ -17324,7 +17324,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     bool    FPbased;
     int     base = emitComp->lvaFrameAddress(varx, &FPbased);
     int     disp = base + offs;
-    ssize_t imm;
+    ssize_t imm  = disp;
 
     regNumber reg2 = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
 
@@ -17363,7 +17363,6 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             if (disp >= 0)
             {
                 ins = INS_add;
-                imm = disp;
             }
             else
             {
@@ -17390,7 +17389,6 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             size     = EA_SCALABLE;
             attr     = size;
             fmt      = IF_SVE_IE_2A;
-            imm      = disp;
 
             // TODO-SVE: Don't assume 128bit vectors
             scale        = NaturalScale_helper(EA_16BYTE);
@@ -17418,7 +17416,6 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             attr     = size;
             fmt      = IF_SVE_ID_2A;
             ins      = INS_sve_ldr;
-            imm      = disp;
 
             // TODO-SVE: Don't assume 128bit vectors
             // Predicate size is vector length / 8
@@ -17449,7 +17446,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     if (isSimple)
     {
         ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-        imm          = disp;
+
         if (imm == 0)
         {
             fmt = IF_LS_2A;
