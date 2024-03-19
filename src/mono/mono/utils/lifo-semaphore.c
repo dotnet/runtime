@@ -11,7 +11,6 @@ LifoSemaphore *
 mono_lifo_semaphore_init (void)
 {
 	LifoSemaphore *semaphore = g_new0 (LifoSemaphore, 1);
-	semaphore->base.kind = LIFO_SEMAPHORE_NORMAL;
 	if (semaphore == NULL)
 		return NULL;
 

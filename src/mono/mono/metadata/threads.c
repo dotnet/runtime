@@ -4938,20 +4938,13 @@ void
 ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_ptr)
 {
 	LifoSemaphoreBase *sem = (LifoSemaphoreBase *)sem_ptr;
-	switch (sem->kind) {
-	case LIFO_SEMAPHORE_NORMAL:
-		mono_lifo_semaphore_delete ((LifoSemaphore*)sem);
-		break;
-	default:
-		g_assert_not_reached();
-	}
+	mono_lifo_semaphore_delete ((LifoSemaphore*)sem);
 }
 
 gint32
 ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal (gpointer sem_ptr, gint32 timeout_ms)
 {
 	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	g_assert (sem->base.kind == LIFO_SEMAPHORE_NORMAL);
 	return mono_lifo_semaphore_timed_wait (sem, timeout_ms);
 }
 
@@ -4959,11 +4952,5 @@ void
 ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count)
 {
 	LifoSemaphoreBase *sem = (LifoSemaphoreBase *)sem_ptr;
-	switch (sem->kind) {
-	case LIFO_SEMAPHORE_NORMAL:
-		mono_lifo_semaphore_release ((LifoSemaphore*)sem, count);
-		break;
-	default:
-		g_assert_not_reached();
-	}
+	mono_lifo_semaphore_release ((LifoSemaphore*)sem, count);
 }

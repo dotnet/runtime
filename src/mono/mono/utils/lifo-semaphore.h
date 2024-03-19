@@ -12,10 +12,6 @@ struct _LifoSemaphoreBase
 	uint8_t       kind;
 };
 
-enum {
-	LIFO_SEMAPHORE_NORMAL = 1,
-};
-	
 typedef struct _LifoSemaphore LifoSemaphore;
 typedef struct _LifoSemaphoreWaitEntry LifoSemaphoreWaitEntry;
 
