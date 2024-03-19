@@ -7740,8 +7740,6 @@ void emitter::emitIns_R_I(instruction     ins,
     emitAttr  elemsize  = EA_UNKNOWN;
     insFormat fmt       = IF_NONE;
     bool      canEncode = false;
-    bool      signedImm = false;
-    bool      hasShift  = false;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -7970,231 +7968,21 @@ void emitter::emitIns_R_I(instruction     ins,
             }
             break;
 
-        case INS_sve_rdvl:
-            assert(insOptsNone(opt));
-            assert(size == EA_8BYTE);
-            assert(isGeneralRegister(reg)); // ddddd
-            assert(isValidSimm<6>(imm));    // iiiiii
-            fmt       = IF_SVE_BC_1A;
-            canEncode = true;
-            break;
-
-        case INS_sve_smax:
-        case INS_sve_smin:
-            signedImm = true;
-
-            FALLTHROUGH;
-        case INS_sve_umax:
-        case INS_sve_umin:
-            assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg));                         // ddddd
-            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
-
-            if (signedImm)
-            {
-                assert(isValidSimm<8>(imm)); // iiiiiiii
-            }
-            else
-            {
-                assert(isValidUimm<8>(imm)); // iiiiiiii
-            }
-
-            fmt       = IF_SVE_ED_1A;
-            canEncode = true;
-            break;
-
-        case INS_sve_mul:
-            assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg));                         // ddddd
-            assert(isValidSimm<8>(imm));                           // iiiiiiii
-            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
-            fmt       = IF_SVE_EE_1A;
-            canEncode = true;
-            break;
-
-        case INS_sve_mov:
-            assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg)); // ddddd
-
-            if (sopt == INS_SCALABLE_OPTS_IMM_BITMASK)
-            {
-                bmi.immNRS = 0;
-                canEncode  = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-
-                if (!useMovDisasmForBitMask(imm))
-                {
-                    ins = INS_sve_dupm;
-                }
-
-                imm = bmi.immNRS; // iiiiiiiiiiiii
-                assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
-                fmt = IF_SVE_BT_1A;
-            }
-            else
-            {
-                assert(insScalableOptsNone(sopt));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
-
-                if (!isValidSimm<8>(imm))
-                {
-                    // Size specifier must be able to fit a left-shifted immediate
-                    assert((isValidSimm_MultipleOf<8, 256>(imm))); // iiiiiiii
-                    assert(insOptsScalableAtLeastHalf(opt));
-                    hasShift = true;
-                    imm >>= 8;
-                }
-
-                fmt       = IF_SVE_EB_1A;
-                canEncode = true;
-            }
-            break;
-
-        case INS_sve_dup:
-            assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg));                         // ddddd
-            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
-
-            if (!isValidSimm<8>(imm))
-            {
-                // Size specifier must be able to fit a left-shifted immediate
-                assert((isValidSimm_MultipleOf<8, 256>(imm))); // iiiiiiii
-                assert(insOptsScalableAtLeastHalf(opt));
-                hasShift = true;
-                imm >>= 8;
-            }
-
-            fmt       = IF_SVE_EB_1A;
-            canEncode = true;
-
-            // MOV is an alias for DUP, and is always the preferred disassembly.
-            ins = INS_sve_mov;
-            break;
-
-        case INS_sve_add:
-        case INS_sve_sub:
-        case INS_sve_sqadd:
-        case INS_sve_sqsub:
-        case INS_sve_uqadd:
-        case INS_sve_uqsub:
-        case INS_sve_subr:
-            assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg));                         // ddddd
-            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
-            if (!isValidUimm<8>(imm))
-            {
-                // Size specifier must be able to fit left-shifted immediate
-                assert((isValidUimm_MultipleOf<8, 256>(imm))); // iiiiiiii
-                assert(insOptsScalableAtLeastHalf(opt));
-                hasShift = true;
-                imm >>= 8;
-            }
-
-            fmt       = IF_SVE_EC_1A;
-            canEncode = true;
-            break;
-
-        case INS_sve_and:
-        case INS_sve_orr:
-        case INS_sve_eor:
-            assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg)); // ddddd
-
-            bmi.immNRS = 0;
-            canEncode  = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-            imm        = bmi.immNRS; // iiiiiiiiiiiii
-            assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
-            fmt = IF_SVE_BS_1A;
-            break;
-
-        case INS_sve_bic:
-            assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg)); // ddddd
-
-            // AND is an alias for BIC, and is always the preferred disassembly.
-            ins = INS_sve_and;
-            imm = -imm - 1;
-
-            bmi.immNRS = 0;
-            canEncode  = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-            imm        = bmi.immNRS; // iiiiiiiiiiiii
-            assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
-            fmt = IF_SVE_BS_1A;
-            break;
-
-        case INS_sve_eon:
-            assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg)); // ddddd
-
-            // EOR is an alias for EON, and is always the preferred disassembly.
-            ins = INS_sve_eor;
-            imm = -imm - 1;
-
-            bmi.immNRS = 0;
-            canEncode  = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-            imm        = bmi.immNRS; // iiiiiiiiiiiii
-            assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
-            fmt = IF_SVE_BS_1A;
-            break;
-
-        case INS_sve_orn:
-            assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg)); // ddddd
-
-            // ORR is an alias for ORN, and is always the preferred disassembly.
-            ins = INS_sve_orr;
-            imm = -imm - 1;
-
-            bmi.immNRS = 0;
-            canEncode  = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-            imm        = bmi.immNRS; // iiiiiiiiiiiii
-            assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
-            fmt = IF_SVE_BS_1A;
-            break;
-
-        case INS_sve_dupm:
-            assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg)); // ddddd
-
-            bmi.immNRS = 0;
-            canEncode  = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-            fmt        = IF_SVE_BT_1A;
-
-            if (useMovDisasmForBitMask(imm))
-            {
-                ins = INS_sve_mov;
-            }
-
-            imm = bmi.immNRS; // iiiiiiiiiiiii
-            assert(isValidImmNRS(imm, optGetSveElemsize(opt)));
-            break;
-
         default:
-            unreached();
-            break;
-
+            // fallback to emit SVE instructions.
+            return emitInsSve_R_I(ins, attr, reg, imm, opt, sopt);
     } // end switch (ins)
 
     assert(canEncode);
     assert(fmt != IF_NONE);
 
-    // For encodings with shifted immediates, we need a way to determine if the immediate has been shifted or not.
-    // We could just leave the immediate in its unshifted form, and call emitNewInstrSC,
-    // but that would allocate unnecessarily large descriptors. Therefore:
-    // - For encodings without any shifting, just call emitNewInstrSC.
-    // - For unshifted immediates, call emitNewInstrSC.
-    //   If it allocates a small descriptor, idHasShift() will always return false.
-    //   Else, idHasShift still returns false, as we set the dedicated bit in large descriptors to false.
-    // - For immediates that need a shift, call emitNewInstrCns so a normal or large descriptor is used.
-    //   idHasShift will always check the dedicated bit, as it is always available. We set this bit to true below.
-    instrDesc* id = !hasShift ? emitNewInstrSC(attr, imm) : emitNewInstrCns(attr, imm);
+    instrDesc* id = emitNewInstrSC(attr, imm);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idInsOpt(opt);
 
     id->idReg1(reg);
-
-    id->idHasShift(hasShift);
 
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;

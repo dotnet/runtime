@@ -1455,6 +1455,13 @@ void emitIns_R_I(instruction     ins,
                  insScalableOpts sopt = INS_SCALABLE_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
                      DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
+void emitInsSve_R_I(instruction     ins,
+                    emitAttr        attr,
+                    regNumber       reg,
+                    ssize_t         imm,
+                    insOpts         opt  = INS_OPTS_NONE,
+                    insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+
 void emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_Mov(
