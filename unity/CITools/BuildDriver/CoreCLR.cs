@@ -49,6 +49,15 @@ public static class CoreCLR
             args.Add($"-ninja{crossbuild}");
         }
 
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            // The default build uses `dsymutil --flat`, which generates .dwarf files that are
+            // not automatically picked up by anything. Standard .dSYM are a pain to deal with.
+            // So we tell the build to keep symbols & debug info (if present) in the binaries.
+            args.Add("/p:StripSymbols=false");
+            args.Add($"--cmakeargs \"-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=TRUE\"");
+        }
+
         ProcessStartInfo sInfo = new()
         {
             FileName = BuildScript,
