@@ -1,24 +1,16 @@
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:8.0
 FROM $SDK_BASE_IMAGE
 
-# Build latest msquic locally
-WORKDIR /msquic
-RUN apt-get update -y && \
-    apt-get upgrade -y && \
-    apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
-    gem install fpm
-RUN git clone --recursive https://github.com/dotnet/msquic
-RUN cd msquic/src/msquic && \
-    mkdir build && \
-    cmake -B build -DCMAKE_BUILD_TYPE=Release -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off -DQUIC_TLS=openssl3 && \
-    cd build && \
-    cmake --build . --config Release
-RUN cd msquic/src/msquic/build/bin/Release && \
-    rm libmsquic.so && \
-    fpm -f -s dir -t deb -n libmsquic -v $( find -type f | cut -d "." -f 4- ) \
-    --license MIT --url https://github.com/microsoft/msquic --log error \
-    $( ls ./* | cut -d "/" -f 2 | sed -r "s/(.*)/\1=\/usr\/lib\/\1/g" ) && \
-    dpkg -i libmsquic_*.deb
+# Add MsQuic
+RUN apt-get update && apt-get install -y gnupg && \
+    curl -LO https://packages.microsoft.com/keys/microsoft.asc && \
+    echo 2cfd20a306b2fa5e25522d78f2ef50a1f429d35fd30bd983e2ebffc2b80944fa microsoft.asc| sha256sum --check - && \
+    apt-key add microsoft.asc && \
+    rm microsoft.asc && \
+    echo deb https://packages.microsoft.com/debian/12/prod bookworm main >> /etc/apt/sources.list.d/microsoft.list && \
+    apt-get update && \
+    apt-get install -y libmsquic && \
+    rm -rf /var/lib/apt/lists/*
 
 ARG VERSION=9.0
 ARG CONFIGURATION=Release
