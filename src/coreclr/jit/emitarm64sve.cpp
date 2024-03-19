@@ -380,10 +380,11 @@ void emitter::emitInsSve_R_I(instruction     ins,
  *  Add a SVE instruction referencing a register and a floating point constant.
  */
 
-void emitter::emitInsSve_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, insOpts opt /* = INS_OPTS_NONE */)
+void emitter::emitInsSve_R_F(
+    instruction ins, emitAttr attr, regNumber reg, double immDbl, insOpts opt /* = INS_OPTS_NONE */)
 {
-    ssize_t imm = 0;
-    bool canEncode = false;
+    ssize_t   imm       = 0;
+    bool      canEncode = false;
     insFormat fmt;
 
     /* Figure out the encoding format of the instruction */
@@ -818,15 +819,11 @@ void emitter::emitInsSve_R_R(instruction     ins,
  *  Add a SVE instruction referencing a register and two constants.
  */
 
-void emitter::emitInsSve_R_I_I(instruction ins,
-                            emitAttr    attr,
-                            regNumber   reg,
-                            ssize_t     imm1,
-                            ssize_t     imm2,
-                            insOpts     opt /* = INS_OPTS_NONE */)
+void emitter::emitInsSve_R_I_I(
+    instruction ins, emitAttr attr, regNumber reg, ssize_t imm1, ssize_t imm2, insOpts opt /* = INS_OPTS_NONE */)
 {
     insFormat fmt;
-    ssize_t immOut;
+    ssize_t   immOut;
 
     if (ins == INS_sve_index)
     {
@@ -868,8 +865,8 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
                                insOpts         opt /* = INS_OPTS_NONE */,
                                insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
-    emitAttr  size = EA_SIZE(attr);
-    bool hasShift = false;
+    emitAttr  size     = EA_SIZE(attr);
+    bool      hasShift = false;
     insFormat fmt;
 
     /* Figure out the encoding format of the instruction */
@@ -1425,10 +1422,10 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
                                insOpts         opt /* = INS_OPTS_NONE */,
                                insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
-    emitAttr size = EA_SIZE(attr);
+    emitAttr  size           = EA_SIZE(attr);
     bool      pmerge         = false;
     bool      vectorLength4x = false;
-    insFormat fmt = IF_NONE;
+    insFormat fmt            = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -4386,7 +4383,8 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
                 if (reg1 == reg4)
                 {
                     // mov is a preferred alias for sel
-                    return emitInsSve_R_R_R(INS_sve_mov, attr, reg1, reg2, reg3, opt, INS_SCALABLE_OPTS_PREDICATE_MERGE);
+                    return emitInsSve_R_R_R(INS_sve_mov, attr, reg1, reg2, reg3, opt,
+                                            INS_SCALABLE_OPTS_PREDICATE_MERGE);
                 }
 
                 assert(insOptsScalableStandard(opt));
