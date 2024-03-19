@@ -33,6 +33,7 @@ if ($buildWindowsContainers)
 
   $ENV:CMAKE_VS_PLATFORM_TOOLSET="v143,version=14.38"
   $ENV:CMAKE_GENERATOR_TOOLSET="v143,version=14.38"
+  $ENV:CMAKE_GENERATOR="Visual Studio 17 2022"
 
   # Due to size concerns, we don't currently do docker builds on windows.
   # Build on the host machine, then simply copy artifacts to the target docker image.
