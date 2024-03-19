@@ -106,6 +106,8 @@ if not "%__ConfigureOnly%" == "1" (
     )
 )
 
+echo %path%
+
 if /i "%__UseEmcmake%" == "1" (
     call "!EMSDK_PATH!/emsdk_env.bat" > nul 2>&1 && emcmake "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 ) else (

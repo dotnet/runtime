@@ -20,6 +20,11 @@ if ($buildWindowsContainers)
 {
   write-host "Dumping present MSVC versions"
   gci "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/*"
+  gi "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.38.33130"
+  gi "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.38.33130/bin"
+  gi "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.38.33130/bin/HostX64"
+  gi "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.38.33130/bin/HostX64/x64"
+  gi "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.38.33130/bin/HostX64/x64/cl.exe"
 
   # Due to size concerns, we don't currently do docker builds on windows.
   # Build on the host machine, then simply copy artifacts to the target docker image.
