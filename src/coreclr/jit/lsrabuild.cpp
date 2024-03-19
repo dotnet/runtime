@@ -4122,8 +4122,9 @@ int LinearScan::BuildReturn(GenTree* tree)
                         RegisterType dstType = regType(retTypeDesc.GetReturnRegType(i));
                         if (srcType != dstType)
                         {
-                            hasMismatchedRegTypes     = true;
-                            regMaskOnlyOne dstRegMask = genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv));
+                            hasMismatchedRegTypes = true;
+                            regMaskOnlyOne dstRegMask =
+                                genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv));
 
                             if (varTypeUsesIntReg(dstType))
                             {

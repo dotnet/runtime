@@ -119,7 +119,7 @@ const int regIndexForRegister(regNumber reg)
 #else
 #define REGDEF(name, rnum, mask, sname, regTypeTag) regTypeTag,
 #endif
-    #include "register.h"
+#include "register.h"
     };
 
     return _registerTypeIndex[reg];

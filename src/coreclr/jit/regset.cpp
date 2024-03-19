@@ -271,9 +271,9 @@ void RegSet::rsSetRegsModified(regMaskOnlyOne& trackingMask,
                                regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump)
                                    DEBUGARG(regMaskOnlyOne calleeSaveMask))
 {
-    //TODO: Commented this, so that caller don't have to check if modifiedMask is not RBM_NONE
+    // TODO: Commented this, so that caller don't have to check if modifiedMask is not RBM_NONE
     // It doesn't harm if this was RBM_NONE, as it will not modify the trackingMask
-    //assert(modifiedMask != RBM_NONE);
+    // assert(modifiedMask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
 
 #ifdef DEBUG

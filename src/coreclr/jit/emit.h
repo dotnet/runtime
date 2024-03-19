@@ -2477,7 +2477,7 @@ public:
 private:
 #if defined(TARGET_AMD64)
     regMaskFloat rbmAllFloat;
-    regMaskFloat             rbmFltCalleeTrash;
+    regMaskFloat rbmFltCalleeTrash;
 
     FORCEINLINE regMaskFloat get_RBM_ALLFLOAT() const
     {

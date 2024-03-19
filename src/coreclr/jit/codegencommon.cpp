@@ -8237,13 +8237,13 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 
 #ifdef DEBUG
 
-        if (targetReg != sourceReg)
-        {
-            singleRegMask targetRegMask = genRegMask(targetReg);
-            assert((busyRegs.GetMaskForRegNum(targetReg) & targetRegMask) == 0);
-            busyRegs.RemoveRegNumFromMask(sourceReg);
-        }
-        busyRegs.AddRegNumInMask(targetReg);
+            if (targetReg != sourceReg)
+            {
+                singleRegMask targetRegMask = genRegMask(targetReg);
+                assert((busyRegs.GetMaskForRegNum(targetReg) & targetRegMask) == 0);
+                busyRegs.RemoveRegNumFromMask(sourceReg);
+            }
+            busyRegs.AddRegNumInMask(targetReg);
 #endif // DEBUG
         }
         return;

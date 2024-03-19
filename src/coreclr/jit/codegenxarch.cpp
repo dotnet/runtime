@@ -6035,7 +6035,7 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 
     assert(!killMask.IsGprMaskPresent(gcInfo.gcRegGCrefSetCur));
-    assert(!killMask.IsGprMaskPresent(gcInfo.gcRegByrefSetCur));    
+    assert(!killMask.IsGprMaskPresent(gcInfo.gcRegByrefSetCur));
 #endif
 
     var_types returnType = call->TypeGet();

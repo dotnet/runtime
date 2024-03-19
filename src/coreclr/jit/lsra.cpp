@@ -541,10 +541,10 @@ regMaskOnlyOne LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskOnly
     {
         // The refPosition could be null, for example when called
         // by getTempRegForResolution().
-        int          minRegCount = 1;
+        int minRegCount = 1;
         if (refPosition != nullptr)
         {
-            minRegCount = refPosition->minRegCandidateCount;
+            minRegCount              = refPosition->minRegCandidateCount;
             RegisterType currRegType = refPosition->isIntervalRef() ? refPosition->getInterval()->registerType
                                                                     : refPosition->getReg()->registerType;
             assert(regtype == currRegType);
@@ -4398,7 +4398,6 @@ void LinearScan::resetAllRegistersState()
     }
 }
 
-
 void LinearScan::updateDeadCandidatesAtBlockStart(regMaskTP deadRegMask, VarToRegMap inVarToRegMap)
 {
     while (deadRegMask != RBM_NONE)
@@ -4572,7 +4571,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                     // Case #1 above.
                     assert(getVarReg(predVarToRegMap, varIndex) == targetReg ||
                            getLsraBlockBoundaryLocations() == LSRA_BLOCK_BOUNDARY_ROTATE);
-                }// Keep the register assignment - if another var has it, it will get unassigned.
+                } // Keep the register assignment - if another var has it, it will get unassigned.
                 else if (!nextRefPosition->copyReg)
                 {
                     // case #2 above.
@@ -5229,7 +5228,7 @@ void LinearScan::allocateRegistersMinimal()
                 if (currentRefPosition.delayRegFree)
                 {
                     regsInUseNextLocation.AddRegMaskForType(currentRefPosition.registerAssignment,
-                                                         regRecord->registerType);
+                                                            regRecord->registerType);
                 }
 #endif // SWIFT_SUPPORT
             }
@@ -5482,7 +5481,7 @@ void LinearScan::allocateRegistersMinimal()
         // If we allocated a register, record it
         if (assignedRegister != REG_NA)
         {
-            assignedRegBit         = genRegMask(assignedRegister);
+            assignedRegBit              = genRegMask(assignedRegister);
             AllRegsMask assignedRegMask = AllRegsMask(assignedRegister ARM_ARG(currentInterval->registerType));
 
             regsInUseThisLocation |= assignedRegMask;
@@ -5945,7 +5944,7 @@ void LinearScan::allocateRegisters()
                 if (currentRefPosition.delayRegFree)
                 {
                     regsInUseNextLocation.AddRegMaskForType(currentRefPosition.registerAssignment,
-                                                         regRecord->registerType);
+                                                            regRecord->registerType);
                 }
 #endif // SWIFT_SUPPORT
             }
@@ -6707,7 +6706,7 @@ void LinearScan::allocateRegisters()
         // If we allocated a register, record it
         if (assignedRegister != REG_NA)
         {
-            assignedRegBit = genRegMask(assignedRegister);
+            assignedRegBit              = genRegMask(assignedRegister);
             AllRegsMask assignedRegMask = AllRegsMask(assignedRegister ARM_ARG(currentInterval->registerType));
 
             regsInUseThisLocation |= assignedRegMask;
@@ -9040,7 +9039,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         regNumber fromReg = getVarReg(outVarToRegMap, liveOutVarIndex);
         if (fromReg != REG_STK)
         {
-            var_types      varType     = getIntervalForLocalVar(liveOutVarIndex)->registerType;
+            var_types varType = getIntervalForLocalVar(liveOutVarIndex)->registerType;
             liveOutRegs.AddRegNumInMask(fromReg ARM_ARG(varType));
         }
     }
@@ -9254,7 +9253,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             VarSetOps::AddElemD(compiler, diffResolutionSet, outResolutionSetVarIndex);
             if (fromReg != REG_STK)
             {
-                diffReadRegs.AddRegNumInMask(fromReg ARM_ARG(getIntervalForLocalVar(outResolutionSetVarIndex)->registerType));
+                diffReadRegs.AddRegNumInMask(
+                    fromReg ARM_ARG(getIntervalForLocalVar(outResolutionSetVarIndex)->registerType));
             }
         }
         else if (sameToReg != fromReg)
@@ -14119,7 +14119,7 @@ _regMaskAll AllRegsMask::operator~()
                                        ,
                        ~predicateRegs()
 #endif
-    );
+                           );
 }
 
 bool AllRegsMask::operator==(const AllRegsMask& other)
@@ -14128,7 +14128,7 @@ bool AllRegsMask::operator==(const AllRegsMask& other)
 #ifdef HAS_PREDICATE_REGS
             && (predicateRegs() == other.predicateRegs())
 #endif
-    );
+                );
 }
 
 bool AllRegsMask::operator!=(const AllRegsMask& other)
@@ -14140,20 +14140,20 @@ _regMaskAll AllRegsMask::operator&(const AllRegsMask& other)
 {
     return _regMaskAll(gprRegs() & other.gprRegs(), floatRegs() & other.floatRegs()
 #ifdef HAS_PREDICATE_REGS
-                                                         ,
+                                                        ,
                        predicateRegs() & other.predicateRegs()
 #endif
-    );
+                           );
 }
 
 _regMaskAll AllRegsMask::operator|(const _regMaskAll& other)
 {
     return _regMaskAll(gprRegs() | other.gprRegs(), floatRegs() | other.floatRegs()
 #ifdef HAS_PREDICATE_REGS
-                                                         ,
+                                                        ,
                        predicateRegs() | other.predicateRegs()
 #endif
-    );
+                           );
 }
 
 _regMaskAll AllRegsMask::operator&(const regNumber reg)
@@ -14192,15 +14192,19 @@ void AllRegsMask::AddRegNumInMask(regNumber reg)
     regMaskOnlyOne regMask = genRegMask(reg);
     registers[regIndexForRegister(reg)] |= regMask;
 }
-#endif
 
-//
-//void AllRegsMask::AddRegNumInMask(regNumber reg, var_types type)
-//{
-//    //TODO: All these methods should be revisited to see if they should be operated on `type` or `reg`
-//    regMaskOnlyOne regMask = genRegMask(reg, type);
-//    AddRegMaskForType(regMask, type);
-//}
+void AllRegsMask::RemoveRegNumFromMask(regNumber reg)
+{
+    regMaskOnlyOne regMaskToRemove = genRegMask(reg);
+    registers[regIndexForRegister(reg)] &= ~regMaskToRemove;
+}
+
+bool AllRegsMask::IsRegNumInMask(regNumber reg)
+{
+    regMaskOnlyOne regMaskToCheck = genRegMask(reg);
+    return (registers[regIndexForRegister(reg)] & regMaskToCheck) != RBM_NONE;
+}
+#endif
 
 // ----------------------------------------------------------
 //  AddRegNumForType: Adds `reg` to the mask. It is same as AddRegNumInMask(reg) except
@@ -14229,20 +14233,6 @@ bool AllRegsMask::IsRegNumInMask(regNumber reg ARM_ARG(var_types type))
     return (registers[regIndexForRegister(reg)] & regMaskToCheck) != RBM_NONE;
 }
 
-#ifdef TARGET_ARM
-void AllRegsMask::RemoveRegNumFromMask(regNumber reg)
-{
-    regMaskOnlyOne regMaskToRemove = genRegMask(reg);
-    registers[regIndexForRegister(reg)] &= ~regMaskToRemove;
-}
-
-bool AllRegsMask::IsRegNumInMask(regNumber reg)
-{
-    regMaskOnlyOne regMaskToCheck = genRegMask(reg);
-    return (registers[regIndexForRegister(reg)] & regMaskToCheck) != RBM_NONE;
-}
-#endif
-
 bool AllRegsMask::IsGprMaskPresent(regMaskGpr maskToCheck) const
 {
     return (gprRegs() & maskToCheck) != RBM_NONE;
@@ -14252,12 +14242,6 @@ bool AllRegsMask::IsFloatMaskPresent(regMaskFloat maskToCheck) const
 {
     return (floatRegs() & maskToCheck) != RBM_NONE;
 }
-//
-//bool AllRegsMask::IsOnlyRegNumInMask(regNumber reg)
-//{
-//    regMaskOnlyOne regMask = genRegMask(reg);
-//    return (registers[regIndexForRegister(reg)] & regMask) == regMask;
-//}
 
 regMaskOnlyOne AllRegsMask::GetRegMaskForType(var_types type) const
 {
@@ -14271,12 +14255,12 @@ regMaskOnlyOne AllRegsMask::GetMaskForRegNum(regNumber reg) const
 
 regMaskTP AllRegsMask::GetGprFloatCombinedMask() const
 {
-    //TODO: NEed to revert this once we change floatRegs to 32-bits
-//#ifdef TARGET_64BIT
-//    return ((regMaskTP)floatRegs() << 32) | gprRegs();
-//#else
-//    return ((regMaskTP)floatRegs() << REG_INT_COUNT) | gprRegs();
-//#endif
+    // TODO: NEed to revert this once we change floatRegs to 32-bits
+    //#ifdef TARGET_64BIT
+    //    return ((regMaskTP)floatRegs() << 32) | gprRegs();
+    //#else
+    //    return ((regMaskTP)floatRegs() << REG_INT_COUNT) | gprRegs();
+    //#endif
     // TODO: Cannot get RBM_ALLFLOAT because it is not defined for AllRegsMask
     // Moving this definition to lsra might work, but this is temporary so
     // just create gprMAsk. Eventually, we will use the `<< 32` mentioned in

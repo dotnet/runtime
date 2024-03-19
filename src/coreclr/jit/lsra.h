@@ -1025,7 +1025,7 @@ private:
     // Record variable locations at start/end of block
     void processBlockStartLocations(BasicBlock* current);
     void processBlockEndLocations(BasicBlock* current);
-    void resetAllRegistersState();
+    void             resetAllRegistersState();
     FORCEINLINE void updateDeadCandidatesAtBlockStart(regMaskTP deadRegMask, VarToRegMap inVarToRegMap);
 
 #ifdef TARGET_ARM
@@ -1744,14 +1744,14 @@ private:
     VARSET_TP largeVectorCalleeSaveCandidateVars;
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
-//-----------------------------------------------------------------------
-// Register status
-//-----------------------------------------------------------------------
+    //-----------------------------------------------------------------------
+    // Register status
+    //-----------------------------------------------------------------------
 
-// TODO: One option is to also just have another current_AvailableREgs that
-// gets reset for every refposition we are processing depending on the
-// register type. That wawy we do not have to query and fetch the appropriate
-// entry again and agin.
+    // TODO: One option is to also just have another current_AvailableREgs that
+    // gets reset for every refposition we are processing depending on the
+    // register type. That wawy we do not have to query and fetch the appropriate
+    // entry again and agin.
     AllRegsMask m_AvailableRegs;
 
     regNumber getRegForType(regNumber reg, var_types regType)
@@ -1783,9 +1783,10 @@ private:
     {
         m_AvailableRegs = AllRegsMask(availableIntRegs, availableFloatRegs
 #ifdef HAS_PREDICATE_REGS
-        , availableMaskRegs
+                                      ,
+                                      availableMaskRegs
 #endif
-            );
+                                      );
         m_RegistersWithConstants.Clear();
     }
 
@@ -1812,7 +1813,6 @@ private:
 #ifdef HAS_PREDICATE_REGS
         assert(compiler->IsPredicateRegMask(m_AvailableRegs.predicateRegs()));
 #endif
-
     }
     void makeRegAvailable(regNumber reg, var_types regType)
     {
@@ -1851,7 +1851,7 @@ private:
     }
     bool isRegConstant(regNumber reg, var_types regType)
     {
-        reg                    = getRegForType(reg, regType);
+        reg = getRegForType(reg, regType);
         return m_RegistersWithConstants.IsRegNumInMask(reg ARM_ARG(regType));
     }
     regMaskOnlyOne getMatchingConstants(regMaskOnlyOne mask, Interval* currentInterval, RefPosition* refPosition);
@@ -2082,7 +2082,7 @@ private:
 #endif // FEATURE_ARG_SPLIT
     int BuildLclHeap(GenTree* tree);
 
-//#if defined(TARGET_AMD64)
+    //#if defined(TARGET_AMD64)
     regMaskFloat rbmAllFloat;
     regMaskFloat rbmFltCalleeTrash;
 

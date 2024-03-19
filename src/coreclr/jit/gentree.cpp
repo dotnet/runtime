@@ -1081,7 +1081,7 @@ AllRegsMask GenTree::gtGetContainedRegMask()
 // Return Value:
 //    Reg Mask of GenTree node.
 //
-//TODO: All the callers of gtGetRegMask() are just interested in gpr
+// TODO: All the callers of gtGetRegMask() are just interested in gpr
 // so, this can just return gpr mask and if none exist, just return RBM_NONE
 AllRegsMask GenTree::gtGetRegMask() const
 {

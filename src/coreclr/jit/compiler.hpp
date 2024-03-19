@@ -1197,7 +1197,7 @@ inline const char* varTypeGCstring(var_types type)
 /*****************************************************************************/
 
 const char* varTypeName(var_types);
-const int   regIndexForRegister(regNumber reg);
+const int regIndexForRegister(regNumber reg);
 
 /*****************************************************************************/
 //  Helpers to pull little-endian values out of a byte stream.
