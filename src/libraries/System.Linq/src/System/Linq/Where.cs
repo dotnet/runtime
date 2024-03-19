@@ -38,6 +38,11 @@ namespace System.Linq
 
             if (source is List<TSource> list)
             {
+                if (list.Count == 0)
+                {
+                    return list; // Simply return the original list, it is empty anyway. Saves creating an extra iterator
+                }
+                
                 return new ListWhereIterator<TSource>(list, predicate);
             }
 
