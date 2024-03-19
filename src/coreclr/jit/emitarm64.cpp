@@ -11443,77 +11443,8 @@ void emitter::emitIns_R_R_R_R_I(instruction ins,
                                 ssize_t     imm,
                                 insOpts     opt /* = INS_OPT_NONE*/)
 {
-    emitAttr  size = EA_SIZE(attr);
-    insFormat fmt  = IF_NONE;
-
-    /* Figure out the encoding format of the instruction */
-    switch (ins)
-    {
-        case INS_sve_fcmla:
-            assert(insOptsScalableAtLeastHalf(opt));
-            assert(isVectorRegister(reg1));
-            assert(isLowPredicateRegister(reg2));
-            assert(isVectorRegister(reg3));
-            assert(isVectorRegister(reg4));
-            assert(isScalableVectorSize(size));
-            imm = emitEncodeRotationImm0_to_270(imm);
-            fmt = IF_SVE_GT_4A;
-            break;
-
-        case INS_sve_psel:
-            unreached(); // TODO-SVE: Not yet supported.
-            assert(insOptsScalableStandard(opt));
-            assert(isPredicateRegister(reg1)); // DDDD
-            assert(isPredicateRegister(reg2)); // NNNN
-            assert(isPredicateRegister(reg3)); // MMMM
-            assert(isGeneralRegister(reg4));   // vv
-            assert((REG_R12 <= reg4) && (reg4 <= REG_R15));
-
-            switch (opt)
-            {
-                case INS_OPTS_SCALABLE_B:
-                    assert(isValidUimm<4>(imm));
-                    break;
-
-                case INS_OPTS_SCALABLE_H:
-                    assert(isValidUimm<3>(imm));
-                    break;
-
-                case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm<2>(imm));
-                    break;
-
-                case INS_OPTS_SCALABLE_D:
-                    assert(isValidUimm<1>(imm));
-                    break;
-
-                default:
-                    unreached();
-                    break;
-            }
-
-            fmt = IF_SVE_DV_4A;
-            break;
-
-        default:
-            unreached();
-            break;
-    }
-    assert(fmt != IF_NONE);
-
-    instrDesc* id = emitNewInstrCns(attr, imm);
-
-    id->idIns(ins);
-    id->idInsFmt(fmt);
-    id->idInsOpt(opt);
-
-    id->idReg1(reg1);
-    id->idReg2(reg2);
-    id->idReg3(reg3);
-    id->idReg4(reg4);
-
-    dispIns(id);
-    appendToCurIG(id);
+    // Currently, only SVE instructions use this format.
+    emitInsSve_R_R_R_R_I(ins, attr, reg1, reg2, reg3, reg4, imm, opt);
 }
 
 /*****************************************************************************
