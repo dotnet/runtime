@@ -32,7 +32,7 @@ parameters:
   preBuildSteps: []
   enableRichCodeNavigation: false
   richCodeNavigationLanguage: 'csharp'
-  disableComponentGovernance: false
+  disableComponentGovernance: ''
 
 jobs:
 - template: /eng/common/templates/job/job.yml

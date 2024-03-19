@@ -34,6 +34,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Libraries_Release_CoreCLR
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -58,6 +59,7 @@ jobs:
             creator: dotnet-bot
             testRunNamePrefixSuffix: NET48_$(_BuildConfig)
             extraHelixArguments: /p:BuildTargetFramework=net48
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -87,6 +89,7 @@ jobs:
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 120
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -129,6 +132,7 @@ jobs:
       runtimeVariant: llvmfullaot
       buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       timeoutInMinutes: 300
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
 
       condition: >-
         or(
@@ -168,6 +172,7 @@ jobs:
       runtimeVariant: monointerpreter
       buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release
       timeoutInMinutes: 180
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
@@ -204,6 +209,7 @@ jobs:
       runtimeVariant: minijit
       buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release
       timeoutInMinutes: 180
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),

@@ -2248,12 +2248,40 @@ namespace Internal.JitInterface
             //       and STS::AccessCheck::CanAccess.
         }
 
+        private bool CanNeverHaveInstanceOfSubclassOf(TypeDesc type)
+        {
+            // Don't try to optimize nullable
+            if (type.IsNullable)
+                return false;
+
+            // We don't track unconstructable types very well and they are rare anyway
+            if (!ConstructedEETypeNode.CreationAllowed(type))
+                return false;
+
+            TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+            // If we don't have a constructed MethodTable for the exact type or for its template,
+            // this type or any of its subclasses can never be instantiated.
+            return !_compilation.CanReferenceConstructedTypeOrCanonicalFormOfType(type)
+                && (type == canonType || !_compilation.CanReferenceConstructedMethodTable(canonType));
+        }
+
         private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
         {
             MetadataType type = HandleToObject(baseType) as MetadataType;
             if (type == null)
             {
+                return -1;
+            }
+
+            if (CanNeverHaveInstanceOfSubclassOf(type))
+            {
                 return 0;
+            }
+
+            if (maxExactClasses == 0)
+            {
+                return -1;
             }
 
             // type is already sealed, return it
@@ -2266,7 +2294,7 @@ namespace Internal.JitInterface
             TypeDesc[] implClasses = _compilation.GetImplementingClasses(type);
             if (implClasses == null || implClasses.Length > maxExactClasses)
             {
-                return 0;
+                return -1;
             }
 
             int index = 0;
