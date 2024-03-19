@@ -153,7 +153,6 @@ typedef void(*ADCallBackFcnType)(LPVOID);
 
 #include "stackwalktypes.h"
 #include "log.h"
-#include "stackingallocator.h"
 #include "excep.h"
 #include "synch.h"
 #include "exstate.h"
@@ -874,15 +873,6 @@ public:
     }
 
 public:
-    // Allocator used during marshaling for temporary buffers, much faster than
-    // heap allocation.
-    //
-    // Uses of this allocator should be effectively statically scoped, i.e. a "region"
-    // is started using a CheckPointHolder and GetCheckpoint, and this region can then be used for allocations
-    // from that point onwards, and then all memory is reclaimed when the static scope for the
-    // checkpoint is exited by the running thread.
-    StackingAllocator* m_stackLocalAllocator = NULL;
-
     // If we are trying to suspend a thread, we set the appropriate pending bit to
     // indicate why we want to suspend it (TS_GCSuspendPending or TS_DebugSuspendPending).
     //
