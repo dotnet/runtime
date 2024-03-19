@@ -16,7 +16,7 @@ typedef struct
 
 // expands to:      {"impl", (void*)impl},
 #define DllImportEntry(impl) \
-    {#impl, (void*)impl},
+    {#impl, (void*)&impl},
 
 static const void* minipal_resolve_dllimport(const Entry* resolutionTable, size_t tableLength, const char* name)
 {
