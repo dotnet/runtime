@@ -164,6 +164,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.AppleCryptoNative)]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial int AppleCryptoNative_ChaCha20Poly1305Encrypt(
             byte* keyPtr,
             int keyLength,
@@ -179,6 +180,7 @@ internal static partial class Interop
             int aadLength);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial int AppleCryptoNative_ChaCha20Poly1305Decrypt(
             byte* keyPtr,
             int keyLength,
@@ -194,6 +196,7 @@ internal static partial class Interop
             int aadLength);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial int AppleCryptoNative_AesGcmEncrypt(
             byte* keyPtr,
             int keyLength,
@@ -209,6 +212,7 @@ internal static partial class Interop
             int aadLength);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial int AppleCryptoNative_AesGcmDecrypt(
             byte* keyPtr,
             int keyLength,
