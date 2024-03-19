@@ -53,7 +53,7 @@ if ($Internal) {
         "perftiger" { $Queue = "Windows.11.Amd64.Tiger.Perf" }
         "perftiger_crossgen" { $Queue = "Windows.11.Amd64.Tiger.Perf" }
         "perfowl" { $Queue = "Windows.11.Amd64.Owl.Perf" }
-        "perfsurf" { $Queue = "Windows.11.Arm64.Perf.Surf" }
+        "perfsurf" { $Queue = "Windows.11.Arm64.Surf.Perf" }
         "perfpixel4a" { $Queue = "Windows.11.Amd64.Pixel.Perf" }
         "perfampere" { $Queue = "Windows.Server.Arm64.Perf" }
         "perfviper" { $Queue = "Windows.11.Amd64.Viper.Perf" }
