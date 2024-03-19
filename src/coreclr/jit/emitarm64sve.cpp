@@ -815,6 +815,48 @@ void emitter::emitInsSve_R_R(instruction     ins,
 
 /*****************************************************************************
  *
+ *  Add a SVE instruction referencing a register and two constants.
+ */
+
+void emitter::emitInsSve_R_I_I(instruction ins,
+                            emitAttr    attr,
+                            regNumber   reg,
+                            ssize_t     imm1,
+                            ssize_t     imm2,
+                            insOpts     opt /* = INS_OPTS_NONE */)
+{
+    insFormat fmt;
+    ssize_t immOut;
+
+    if (ins == INS_sve_index)
+    {
+        assert(insOptsScalableStandard(opt));
+        assert(isVectorRegister(reg));                         // ddddd
+        assert(isValidSimm<5>(imm1));                          // iiiii
+        assert(isValidSimm<5>(imm2));                          // iiiii
+        assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+        immOut = insEncodeTwoSimm5(imm1, imm2);
+        fmt    = IF_SVE_AX_1A;
+    }
+    else
+    {
+        unreached();
+    }
+
+    instrDesc* id = emitNewInstrSC(attr, immOut);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idInsOpt(opt);
+
+    id->idReg1(reg);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
  *  Add a SVE instruction referencing three registers and a constant.
  *  Do not call this directly. Use 'emitIns_R_R_R_I' instead.
  */

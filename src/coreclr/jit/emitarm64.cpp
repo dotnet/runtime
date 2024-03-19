@@ -9008,20 +9008,9 @@ void emitter::emitIns_R_I_I(instruction ins,
             }
             break;
 
-        case INS_sve_index:
-            assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg));                         // ddddd
-            assert(isValidSimm<5>(imm1));                          // iiiii
-            assert(isValidSimm<5>(imm2));                          // iiiii
-            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
-            immOut    = insEncodeTwoSimm5(imm1, imm2);
-            canEncode = true;
-            fmt       = IF_SVE_AX_1A;
-            break;
-
         default:
-            unreached();
-            break;
+            // fallback to emit SVE instructions.
+            return emitInsSve_R_I_I(ins, attr, reg, imm1, imm2, opt);
 
     } // end switch (ins)
 
