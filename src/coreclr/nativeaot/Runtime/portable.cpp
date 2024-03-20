@@ -405,7 +405,6 @@ FCIMPLEND
 
 FCIMPL3(int32_t, RhpLockCmpXchg32, int32_t * location, int32_t value, int32_t comparand)
 {
-    // @TODO: USE_PORTABLE_HELPERS - Null check
     return PalInterlockedCompareExchange(location, value, comparand);
 }
 FCIMPLEND

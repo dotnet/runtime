@@ -17,6 +17,8 @@ namespace System.Threading
 #if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
+            if (Unsafe.IsNullRef(ref location1))
+                ThrowHelper.ThrowNullReferenceException();
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
 #endif
         }
@@ -27,6 +29,8 @@ namespace System.Threading
 #if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
+            if (Unsafe.IsNullRef(ref location1))
+                ThrowHelper.ThrowNullReferenceException();
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
 #endif
         }
@@ -37,6 +41,8 @@ namespace System.Threading
 #if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
+            if (Unsafe.IsNullRef(ref location1))
+                ThrowHelper.ThrowNullReferenceException();
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
 #endif
         }

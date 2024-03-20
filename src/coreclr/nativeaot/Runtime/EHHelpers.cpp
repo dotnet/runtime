@@ -326,11 +326,6 @@ EXTERN_C CODE_LOCATION RhpCheckedAssignRefESIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEDIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
 #endif
-#if !defined(HOST_AMD64) && !defined(HOST_ARM64)
-EXTERN_C CODE_LOCATION RhpLockCmpXchg8AVLocation;
-EXTERN_C CODE_LOCATION RhpLockCmpXchg16AVLocation;
-EXTERN_C CODE_LOCATION RhpLockCmpXchg32AVLocation;
-#endif
 EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
 
 #if !defined(HOST_ARM64)
