@@ -69,9 +69,7 @@ private:
 private:
     bool             rsNeededSpillReg;   // true if this method needed to spill any registers
     AllRegsMask      rsModifiedRegsMask; // mask of the registers modified by the current function.
-    FORCEINLINE void rsSetRegsModified(regMaskOnlyOne& trackingMask,
-                                       regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump = false)
-                                           DEBUGARG(regMaskOnlyOne calleeSaveMask = RBM_NONE));
+
 #ifdef DEBUG
     bool rsModifiedRegsMaskInitialized; // Has rsModifiedRegsMask been initialized? Guards against illegal use.
     void printModifiedRegsMask(regMaskOnlyOne currentMask,
@@ -80,8 +78,8 @@ private:
 #endif // DEBUG
 
 public:
-    FORCEINLINE void rsSetRegsModified(AllRegsMask& modifiedMask DEBUGARG(bool suppressDump = false));
-    FORCEINLINE void rsSetRegModified(regNumber reg DEBUGARG(bool suppressDump = false));
+    void rsSetRegsModified(AllRegsMask& modifiedMask DEBUGARG(bool suppressDump = false));
+    void rsSetRegModified(regNumber reg DEBUGARG(bool suppressDump = false));
 
 #ifdef DEBUG
     AllRegsMask rsGetModifiedRegsMask() const

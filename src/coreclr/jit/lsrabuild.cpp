@@ -700,11 +700,9 @@ bool LinearScan::isContainableMemoryOp(GenTree* node)
 //    refType     - the type of refposition
 //    isLastUse   - true IFF this is a last use of the register
 //
-void LinearScan::addRefsForPhysRegMask(AllRegsMask mask, LsraLocation currentLoc, RefType refType, bool isLastUse)
+void LinearScan::addRefsForPhysRegMask(AllRegsMask& mask, LsraLocation currentLoc, RefType refType, bool isLastUse)
 {
     assert(refType == RefTypeKill);
-
-    compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
 
     // The mask identifies a set of registers that will be used during
     // codegen. Mark these as modified here, so when we do final frame
@@ -715,6 +713,8 @@ void LinearScan::addRefsForPhysRegMask(AllRegsMask mask, LsraLocation currentLoc
     // CORINFO_HELP_ASSIGN_BYREF helper, which kills callee-saved RSI and
     // RDI, if LSRA doesn't assign RSI/RDI, they wouldn't get marked as
     // modified until codegen, which is too late.
+    compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
+
     while (!mask.IsEmpty())
     {
         regNumber reg = genFirstRegNumFromMaskAndToggle(mask);

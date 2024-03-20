@@ -227,12 +227,14 @@ void RegSet::rsSetRegModified(regNumber reg DEBUGARG(bool suppressDump))
         printModifiedRegsMask(rsModifiedRegsMask.floatRegs(),
                               genRegMask(reg) DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_FLT_CALLEE_SAVED));
     }
+#ifdef HAS_PREDICATE_REGS
     else
     {
         assert(genIsValidMaskReg(reg));
         printModifiedRegsMask(rsModifiedRegsMask.predicateRegs(),
                               genRegMask(reg) DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_MSK_CALLEE_SAVED));
     }
+#endif // HAS_PREDICATE_REGS
 #endif // DEBUG
 
     rsModifiedRegsMask.AddRegNumInMask(reg);
@@ -250,27 +252,13 @@ void RegSet::rsSetRegsModified(AllRegsMask& modifiedMask DEBUGARG(bool suppressD
                           modifiedMask.gprRegs() DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_INT_CALLEE_SAVED));
     printModifiedRegsMask(rsModifiedRegsMask.floatRegs(),
                           modifiedMask.floatRegs() DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_FLT_CALLEE_SAVED));
+#ifdef HAS_PREDICATE_REGS
     printModifiedRegsMask(rsModifiedRegsMask.predicateRegs(),
                           modifiedMask.predicateRegs() DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_MSK_CALLEE_SAVED));
+#endif // HAS_PREDICATE_REGS
 #endif // DEBUG
 
     rsModifiedRegsMask |= modifiedMask;
-}
-
-void RegSet::rsSetRegsModified(regMaskOnlyOne& trackingMask,
-                               regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump)
-                                   DEBUGARG(regMaskOnlyOne calleeSaveMask))
-{
-    // TODO: Commented this, so that caller don't have to check if modifiedMask is not RBM_NONE
-    // It doesn't harm if this was RBM_NONE, as it will not modify the trackingMask
-    // assert(modifiedMask != RBM_NONE);
-    assert(rsModifiedRegsMaskInitialized);
-
-#ifdef DEBUG
-    printModifiedRegsMask(trackingMask, modifiedMask DEBUG_ARG(suppressDump) DEBUG_ARG(calleeSaveMask));
-#endif // DEBUG
-
-    trackingMask |= modifiedMask;
 }
 
 void RegSet::rsRemoveRegsModified(regMaskGpr mask)
