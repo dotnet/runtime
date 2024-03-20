@@ -66,7 +66,15 @@ set(NATIVEGLOBALIZATION_SOURCES
 
 if (DEFINED CMAKE_ICU_DIR)
     include_directories(${CMAKE_ICU_DIR}/include)
-    link_libraries(${CMAKE_ICU_DIR}/lib/libicuuc.a ${CMAKE_ICU_DIR}/lib/libicui18n.a ${CMAKE_ICU_DIR}/lib/libicudata.a)
+    if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+        add_linker_flag(-Wl,-L${CMAKE_ICU_DIR}/lib)
+        add_linker_flag(-Wl,-hidden-licuuc)
+        add_linker_flag(-Wl,-hidden-licui18n)
+        add_linker_flag(-Wl,-hidden-licudata)
+    else()
+        link_libraries(${CMAKE_ICU_DIR}/lib/libicuuc.a ${CMAKE_ICU_DIR}/lib/libicui18n.a ${CMAKE_ICU_DIR}/lib/libicudata.a)
+    endif()
+
     link_libraries(stdc++)
 endif()
 
