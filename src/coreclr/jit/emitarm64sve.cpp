@@ -11129,7 +11129,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                 case INS_sve_st2w:
                 case INS_sve_st2d:
                 case INS_sve_st2q:
-                    code |= insEncodeSimm4_MultipleOf2_19_to_16(imm); // iiii
+                    code |= insEncodeSimm_MultipleOf<4, 2, 16>(imm); // iiii
                     break;
 
                 case INS_sve_ld3b:

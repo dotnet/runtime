@@ -12148,17 +12148,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns the encoding for the immediate value that is a multiple of 2 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf2_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 2>(imm)));
-    return insEncodeSimm<19, 16>(imm / 2);
-}
-
-/*****************************************************************************
- *
  *  Returns the encoding for the immediate value that is a multiple of 3 as 4-bits at bit locations '19-16'.
  */
 
