@@ -394,7 +394,73 @@ namespace System.Collections.Generic
             }
         }
 
+        internal ref TValue FindValue_OrdinalComparer(string? key)
+        {
+            if (key == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+            }
+
+            ref Entry entry = ref Unsafe.NullRef<Entry>();
+            if (_buckets != null)
+            {
+                Debug.Assert(_entries != null, "expected entries to be != null");
+                Debug.Assert(_comparer is NonRandomizedStringEqualityComparer.OrdinalComparer);
+
+                uint hashCode = (uint)key.GetNonRandomizedHashCode();
+                int i = GetBucket(hashCode);
+                Entry[]? entries = _entries;
+                uint collisionCount = 0;
+                i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
+                do
+                {
+                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
+                    // Test in if to drop range check for following array access
+                    if ((uint)i >= (uint)entries.Length)
+                    {
+                        goto ReturnNotFound;
+                    }
+
+                    entry = ref entries[i];
+                    if (entry.hashCode == hashCode && string.Equals(Unsafe.As<TKey, string>(ref entry.key), key))
+                    {
+                        goto ReturnFound;
+                    }
+
+                    i = entry.next;
+
+                    collisionCount++;
+                } while (collisionCount <= (uint)entries.Length);
+
+                // The chain of entries forms a loop; which means a concurrent update has happened.
+                // Break out of the loop and throw, rather than looping forever.
+
+                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+            }
+
+            goto ReturnNotFound;
+
+        ReturnFound:
+            ref TValue value = ref entry.value;
+        Return:
+            return ref value;
+        ReturnNotFound:
+            value = ref Unsafe.NullRef<TValue>();
+            goto Return;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ref TValue FindValue(TKey key)
+        {
+            if (RuntimeHelpers.IsKnownConstant(typeof(TKey)) && typeof(TKey) == typeof(string) &&
+                _comparer is NonRandomizedStringEqualityComparer.OrdinalComparer)
+            {
+                return ref FindValue_OrdinalComparer((string)(object)key);
+            }
+            return ref FindValueHelper(key);
+        }
+
+        internal ref TValue FindValueHelper(TKey key)
         {
             if (key == null)
             {

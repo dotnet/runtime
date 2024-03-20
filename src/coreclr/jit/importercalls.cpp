@@ -3336,6 +3336,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to true early\n");
                     // We can also consider FTN_ADDR here
                 }
+                else if (op1->IsHelperCall() && gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()) &&
+                         op1->AsCall()->gtArgs.GetArgByIndex(0)->GetNode()->IsIconHandle(GTF_ICON_CLASS_HDL))
+                {
+                    // We don't use gtIsTypeof here because it may return true for shared generic types
+                    retNode = gtNewIconNode(1);
+                    JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant(typeof(T)) to true early\n");
+                }
                 else if (opts.OptimizationDisabled())
                 {
                     // It doesn't make sense to carry it as GT_INTRINSIC till Morph in Tier0

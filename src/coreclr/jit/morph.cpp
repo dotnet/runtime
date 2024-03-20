@@ -9660,9 +9660,10 @@ DONE_MORPHING_CHILDREN:
                 assert(!optValnumCSE_phase);
 
                 JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to ");
-                if (op1->OperIsConst() || gtIsTypeof(op1))
+                if (op1->OperIsConst())
                 {
-                    // We're lucky to catch a constant here while importer was not
+                    // We're lucky to catch a constant here while importer was not.
+                    // typeof(T) is expected to be expanded into a nongc constant handle by now.
                     JITDUMP("true\n");
                     DEBUG_DESTROY_NODE(tree, op1);
                     tree = gtNewIconNode(1);
