@@ -489,7 +489,6 @@ public:
     // The constructor. Most things can just be zero'ed.
     //
     // Initialize the ArgRegs to REG_STK.
-    // Morph will update if this local is passed in a register.
     LclVarDsc()
         : _lvArgReg(REG_STK)
 #if FEATURE_MULTIREG_ARGS
@@ -3981,6 +3980,8 @@ public:
                        CORINFO_CLASS_HANDLE    typeHnd,
                        CORINFO_ARG_LIST_HANDLE varList,
                        CORINFO_SIG_INFO*       varSig);
+
+    bool lvaInitSpecialSwiftParam(LclVarDsc* varDsc, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd);
 
     var_types lvaGetActualType(unsigned lclNum);
     var_types lvaGetRealType(unsigned lclNum);
