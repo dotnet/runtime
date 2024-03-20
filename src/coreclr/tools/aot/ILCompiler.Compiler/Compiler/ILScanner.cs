@@ -413,7 +413,8 @@ namespace ILCompiler
 
         private sealed class ScannedDevirtualizationManager : DevirtualizationManager
         {
-            private HashSet<TypeDesc> _constructedTypes = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _constructedMethodTables = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _canonConstructedMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _implementators = new();
@@ -442,7 +443,12 @@ namespace ILCompiler
 
                     if (type != null)
                     {
-                        _constructedTypes.Add(type);
+                        _constructedMethodTables.Add(type);
+                        TypeDesc canonForm = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                        if (canonForm != type)
+                        {
+                            _canonConstructedMethodTables.Add(canonForm);
+                        }
 
                         if (type.IsInterface)
                         {
@@ -687,7 +693,11 @@ namespace ILCompiler
                 return result;
             }
 
-            public override bool CanConstructType(TypeDesc type) => _constructedTypes.Contains(type);
+            public override bool CanReferenceConstructedMethodTable(TypeDesc type)
+                => _constructedMethodTables.Contains(type);
+
+            public override bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type)
+                => _constructedMethodTables.Contains(type) || _canonConstructedMethodTables.Contains(type);
 
             public override TypeDesc[] GetImplementingClasses(TypeDesc type)
             {

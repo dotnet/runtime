@@ -28,14 +28,7 @@ namespace System.Net.WebSockets.Client.Tests
                     if (headerName == "Sec-WebSocket-Key")
                     {
                         string headerValue = tokens[1].Trim();
-                        string responseSecurityAcceptValue = ComputeWebSocketHandshakeSecurityAcceptValue(headerValue);
-                        serverResponse =
-                            "HTTP/1.1 101 Switching Protocols\r\n" +
-                            "Content-Length: 0\r\n" +
-                            "Upgrade: websocket\r\n" +
-                            "Connection: Upgrade\r\n" +
-                            (extensions is null ? null : $"Sec-WebSocket-Extensions: {extensions}\r\n") +
-                            "Sec-WebSocket-Accept: " + responseSecurityAcceptValue + "\r\n\r\n";
+                        serverResponse = GetServerResponseString(headerValue, extensions);
                     }
                 }
             }
@@ -48,6 +41,18 @@ namespace System.Net.WebSockets.Client.Tests
             }
 
             return null;
+        }
+
+        public static string GetServerResponseString(string secWebSocketKey, string? extensions = null)
+        {
+            var responseSecurityAcceptValue = ComputeWebSocketHandshakeSecurityAcceptValue(secWebSocketKey);
+            return
+                "HTTP/1.1 101 Switching Protocols\r\n" +
+                "Content-Length: 0\r\n" +
+                "Upgrade: websocket\r\n" +
+                "Connection: Upgrade\r\n" +
+                (extensions is null ? null : $"Sec-WebSocket-Extensions: {extensions}\r\n") +
+                "Sec-WebSocket-Accept: " + responseSecurityAcceptValue + "\r\n\r\n";
         }
 
         private static string ComputeWebSocketHandshakeSecurityAcceptValue(string secWebSocketKey)

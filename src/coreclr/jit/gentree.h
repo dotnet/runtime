@@ -2249,6 +2249,7 @@ public:
     }
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+
     bool IsEmbMaskOp()
     {
         return OperIsHWIntrinsic() && ((gtFlags & GTF_HW_EM_OP) != 0);
@@ -2262,6 +2263,8 @@ public:
     }
 
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+
+    static bool HandleKindDataIsInvariant(GenTreeFlags flags);
 
     bool IsCall() const
     {
@@ -4202,6 +4205,8 @@ private:
     bool m_inited;
 #endif
 
+    void InitializeSwiftReturnRegs(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
+
 public:
     ReturnTypeDesc()
     {
@@ -4323,10 +4328,10 @@ public:
     }
 
     // Get i'th ABI return register
-    regNumber GetABIReturnReg(unsigned idx) const;
+    regNumber GetABIReturnReg(unsigned idx, CorInfoCallConvExtension callConv) const;
 
     // Get reg mask of ABI return registers
-    regMaskTP GetABIReturnRegs() const;
+    regMaskTP GetABIReturnRegs(CorInfoCallConvExtension callConv) const;
 };
 
 class TailCallSiteInfo
@@ -4430,10 +4435,6 @@ struct CallArgABIInformation
         , ByteOffset(0)
         , ByteSize(0)
         , ByteAlignment(0)
-#ifdef UNIX_AMD64_ABI
-        , StructIntRegs(0)
-        , StructFloatRegs(0)
-#endif
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         , StructFloatFieldType()
 #endif
@@ -4469,8 +4470,6 @@ public:
     // Unix amd64 will split floating point types and integer types in structs
     // between floating point and general purpose registers. Keep track of that
     // information so we do not need to recompute it later.
-    unsigned                                            StructIntRegs;
-    unsigned                                            StructFloatRegs;
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
 #endif // UNIX_AMD64_ABI
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -6510,8 +6509,9 @@ struct GenTreeVecCon : public GenTree
         simd16_t gtSimd16Val;
 
 #if defined(TARGET_XARCH)
-        simd32_t gtSimd32Val;
-        simd64_t gtSimd64Val;
+        simd32_t   gtSimd32Val;
+        simd64_t   gtSimd64Val;
+        simdmask_t gtSimdMaskVal;
 #endif // TARGET_XARCH
 
         simd_t gtSimdVal;
@@ -6763,6 +6763,11 @@ struct GenTreeVecCon : public GenTree
             {
                 return gtSimd64Val.IsAllBitsSet();
             }
+
+            case TYP_MASK:
+            {
+                return gtSimdMaskVal.IsAllBitsSet();
+            }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -6810,6 +6815,11 @@ struct GenTreeVecCon : public GenTree
             {
                 return left->gtSimd64Val == right->gtSimd64Val;
             }
+
+            case TYP_MASK:
+            {
+                return left->gtSimdMaskVal == right->gtSimdMaskVal;
+            }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -6849,6 +6859,11 @@ struct GenTreeVecCon : public GenTree
             case TYP_SIMD64:
             {
                 return gtSimd64Val.IsZero();
+            }
+
+            case TYP_MASK:
+            {
+                return gtSimdMaskVal.IsZero();
             }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD

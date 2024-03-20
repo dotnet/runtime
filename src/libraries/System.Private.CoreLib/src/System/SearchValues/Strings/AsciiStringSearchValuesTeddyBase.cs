@@ -109,7 +109,7 @@ namespace System.Buffers
         // We may have up to 8 buckets.
         // If we have <= 8 strings, the buckets will be the strings themselves, and TBucketized.Value will be false.
         // If we have more than 8, the buckets will be string[], and TBucketized.Value will be true.
-        private readonly EightPackedReferences _buckets;
+        private readonly EightObjects _buckets;
 
         private readonly Vector512<byte>
             _n0Low, _n0High,
@@ -121,9 +121,7 @@ namespace System.Buffers
             Debug.Assert(!TBucketized.Value);
             Debug.Assert(n is 2 or 3);
 
-            _buckets = new EightPackedReferences(MemoryMarshal.CreateReadOnlySpan(
-                ref Unsafe.As<string, object>(ref MemoryMarshal.GetReference(values)),
-                values.Length));
+            ReadOnlySpan<object?>.CastUp(values).CopyTo(_buckets);
 
             (_n0Low, _n0High) = TeddyBucketizer.GenerateNonBucketizedFingerprint(values, offset: 0);
             (_n1Low, _n1High) = TeddyBucketizer.GenerateNonBucketizedFingerprint(values, offset: 1);
@@ -139,7 +137,7 @@ namespace System.Buffers
             Debug.Assert(TBucketized.Value);
             Debug.Assert(n is 2 or 3);
 
-            _buckets = new EightPackedReferences(buckets);
+            ((ReadOnlySpan<object?>)buckets).CopyTo(_buckets);
 
             (_n0Low, _n0High) = TeddyBucketizer.GenerateBucketizedFingerprint(buckets, offset: 0);
             (_n1Low, _n1High) = TeddyBucketizer.GenerateBucketizedFingerprint(buckets, offset: 1);

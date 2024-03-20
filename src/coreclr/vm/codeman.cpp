@@ -1297,9 +1297,6 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_VectorT512);
     }
 
-    // TODO-XArch: Add support for 512-bit Vector<T>
-    _ASSERTE(!CPUCompileFlags.IsSet(InstructionSet_VectorT512));
-
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
     {
         CPUCompileFlags.Set(InstructionSet_X86Base);
