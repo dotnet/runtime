@@ -1414,7 +1414,11 @@ void emitIns(instruction ins);
 
 void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
 
+void emitInsSve_I(instruction ins, emitAttr attr, ssize_t imm);
+
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt = INS_OPTS_NONE);
+
+void emitInsSve_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_R_I(instruction     ins,
                  emitAttr        attr,
@@ -1424,7 +1428,16 @@ void emitIns_R_I(instruction     ins,
                  insScalableOpts sopt = INS_SCALABLE_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
                      DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
+void emitInsSve_R_I(instruction     ins,
+                    emitAttr        attr,
+                    regNumber       reg,
+                    ssize_t         imm,
+                    insOpts         opt  = INS_OPTS_NONE,
+                    insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+
 void emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, insOpts opt = INS_OPTS_NONE);
+
+void emitInsSve_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
@@ -1435,6 +1448,13 @@ void emitIns_R_R(instruction     ins,
                  regNumber       reg2,
                  insOpts         opt  = INS_OPTS_NONE,
                  insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+
+void emitInsSve_R_R(instruction     ins,
+                    emitAttr        attr,
+                    regNumber       reg1,
+                    regNumber       reg2,
+                    insOpts         opt  = INS_OPTS_NONE,
+                    insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
 {
@@ -1449,6 +1469,9 @@ void emitIns_R_I_I(instruction ins,
                    insOpts opt = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
                        DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
+void emitInsSve_R_I_I(
+    instruction ins, emitAttr attr, regNumber reg1, ssize_t imm1, ssize_t imm2, insOpts opt = INS_OPTS_NONE);
+
 void emitIns_R_R_I(instruction     ins,
                    emitAttr        attr,
                    regNumber       reg1,
@@ -1457,7 +1480,18 @@ void emitIns_R_R_I(instruction     ins,
                    insOpts         opt  = INS_OPTS_NONE,
                    insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
+void emitInsSve_R_R_I(instruction     ins,
+                      emitAttr        attr,
+                      regNumber       reg1,
+                      regNumber       reg2,
+                      ssize_t         imm,
+                      insOpts         opt  = INS_OPTS_NONE,
+                      insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+
 void emitIns_R_R_F(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, double immDbl, insOpts opt = INS_OPTS_NONE);
+
+void emitInsSve_R_R_F(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, double immDbl, insOpts opt = INS_OPTS_NONE);
 
 // Checks for a large immediate that needs a second instruction
@@ -1470,6 +1504,14 @@ void emitIns_R_R_R(instruction     ins,
                    regNumber       reg3,
                    insOpts         opt  = INS_OPTS_NONE,
                    insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+
+void emitInsSve_R_R_R(instruction     ins,
+                      emitAttr        attr,
+                      regNumber       reg1,
+                      regNumber       reg2,
+                      regNumber       reg3,
+                      insOpts         opt  = INS_OPTS_NONE,
+                      insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_R_R_I(instruction     ins,
                      emitAttr        attr,
@@ -1498,6 +1540,15 @@ void emitIns_R_R_R_I_I(instruction ins,
                        ssize_t     imm1,
                        ssize_t     imm2,
                        insOpts     opt);
+
+void emitInsSve_R_R_R_I_I(instruction ins,
+                          emitAttr    attr,
+                          regNumber   reg1,
+                          regNumber   reg2,
+                          regNumber   reg3,
+                          ssize_t     imm1,
+                          ssize_t     imm2,
+                          insOpts     opt);
 
 void emitIns_R_R_R_Ext(instruction ins,
                        emitAttr    attr,
@@ -1536,6 +1587,15 @@ void emitIns_R_R_R_R_I(instruction ins,
                        regNumber   reg4,
                        ssize_t     imm,
                        insOpts     opt = INS_OPTS_NONE);
+
+void emitInsSve_R_R_R_R_I(instruction ins,
+                          emitAttr    attr,
+                          regNumber   reg1,
+                          regNumber   reg2,
+                          regNumber   reg3,
+                          regNumber   reg4,
+                          ssize_t     imm,
+                          insOpts     opt = INS_OPTS_NONE);
 
 void emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond);
 
