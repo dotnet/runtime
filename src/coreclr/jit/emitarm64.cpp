@@ -16828,27 +16828,6 @@ void emitter::emitDispExtendOpts(insOpts opt)
         assert(!"Bad value");
 }
 
-/*****************************************************************************
- *
- *  Prints the encoding for the Extend Type encoding in loads/stores
- */
-
-void emitter::emitDispLSExtendOpts(insOpts opt)
-{
-    if (opt == INS_OPTS_LSL)
-        printf("LSL");
-    else if (opt == INS_OPTS_UXTW)
-        printf("UXTW");
-    else if (opt == INS_OPTS_UXTX)
-        printf("UXTX");
-    else if (opt == INS_OPTS_SXTW)
-        printf("SXTW");
-    else if (opt == INS_OPTS_SXTX)
-        printf("SXTX");
-    else
-        assert(!"Bad value");
-}
-
 //------------------------------------------------------------------------
 // emitDispReg: Display a general-purpose register name or SIMD and floating-point scalar register name
 //

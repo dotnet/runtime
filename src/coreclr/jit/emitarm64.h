@@ -56,7 +56,6 @@ void emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2, insOpts
 void emitDispSveImm(regNumber reg1, ssize_t imm, insOpts opt);
 void emitDispSveImmMulVl(regNumber reg1, ssize_t imm);
 void emitDispSveImmIndex(regNumber reg1, insOpts opt, ssize_t imm);
-void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
 void emitDispSveReg(regNumber reg, bool addComma);
 void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
