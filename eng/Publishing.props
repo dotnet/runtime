@@ -2,22 +2,27 @@
 
   <PropertyGroup>
     <ProducesDotNetReleaseShippingAssets>true</ProducesDotNetReleaseShippingAssets>
+    <!-- This avoids creating VS.*.symbols.nupkg packages that are identical to the original package. -->
+    <AutoGenerateSymbolPackages>false</AutoGenerateSymbolPackages>
   </PropertyGroup>
 
-  <!-- Include installer archives and packages which aren't globbed by default.
-       Don't include Symbols archive as it is already included in Arcade's Publish.proj, with correct blob path. -->
-  <Target Name="PublishRuntimeInstallers"
-          BeforeTargets="BeforePublish"
-          Condition="'$(DotNetBuildRepo)' == 'true'">
-    <!-- Retrieve runtime's runtime pack product version.
-         Don't stabilize the package version in order to retrieve the VersionSuffix. -->
+  <!-- Retrieve the runtime pack product version.
+       Don't stabilize the package version in order to retrieve the VersionSuffix. -->
+  <Target Name="GetProductVersion">
     <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
              Targets="ReturnProductVersion"
              Properties="IsShipping=false;
                          Crossgen2SdkOverridePropsPath=;
                          Crossgen2SdkOverrideTargetsPath=">
-      <Output TaskParameter="TargetOutputs" PropertyName="RuntimeRuntimePackProductVersion" />
+      <Output TaskParameter="TargetOutputs" PropertyName="RuntimePackProductVersion" />
     </MSBuild>
+  </Target>
+
+  <!-- Include installer archives and packages which aren't globbed by default.
+       Don't include Symbols archive as it is already included in Arcade's Publish.proj, with correct blob path. -->
+  <Target Name="PublishInstallers"
+          DependsOnTargets="GetProductVersion"
+          BeforeTargets="PublishToAzureDevOpsArtifacts">
 
     <ItemGroup>
       <InstallerToPublish Include="$(ArtifactsPackagesDir)**\*.tar.gz;
@@ -32,7 +37,38 @@
       <ItemsToPushToBlobFeed Include="@(InstallerToPublish)"
                              IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))"
                              PublishFlatContainer="true"
-                             RelativeBlobPath="Runtime/$(RuntimeRuntimePackProductVersion)/%(Filename)%(Extension)" />
+                             RelativeBlobPath="Runtime/$(RuntimePackProductVersion)/%(Filename)%(Extension)" />
+
+      <!-- Include checksums -->
+      <ChecksumToPublish Include="$(ArtifactsPackagesDir)**\*.sha512" />
+      <ItemsToPushToBlobFeed Include="@(ChecksumToPublish)"
+                             IsShipping="false"
+                             PublishFlatContainer="true"
+                             RelativeBlobPath="Runtime/$(RuntimePackProductVersion)/%(Filename)%(Extension)" />
+    </ItemGroup>
+  </Target>
+
+
+  <Target Name="GenerateAndPublishProductVersionFiles"
+          DependsOnTargets="GetProductVersion"
+          Condition="'$(EnableDefaultPublishItems)' == 'true'"
+          BeforeTargets="PublishToAzureDevOpsArtifacts">
+    <ItemGroup>
+      <ProductVersionFile Include="$(ArtifactsShippingPackagesDir)productVersion.txt" />
+      <ProductVersionFile Include="$(ArtifactsShippingPackagesDir)runtime-productVersion.txt" />
+    </ItemGroup>
+
+    <!-- Generate productVersion.txt file containing the product version. -->
+    <WriteLinesToFile File="%(ProductVersionFile.Identity)"
+                      Lines="$(RuntimePackProductVersion)"
+                      Overwrite="true"
+                      Encoding="ASCII" />
+    
+    <ItemGroup>
+      <ItemsToPushToBlobFeed Include="@(ProductVersionFile)"
+                             IsShipping="false"
+                             PublishFlatContainer="true"
+                             RelativeBlobPath="WindowsDesktop/$(RuntimePackProductVersion)/%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
 
