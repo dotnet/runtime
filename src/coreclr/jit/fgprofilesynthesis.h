@@ -40,8 +40,7 @@ public:
     static constexpr weight_t epsilon = 0.001;
 
 private:
-    ProfileSynthesis(Compiler* compiler)
-        : m_comp(compiler), m_loops(nullptr), m_improperLoopHeaders(0), m_cappedCyclicProbabilities(0)
+    ProfileSynthesis(Compiler* compiler) : m_comp(compiler)
     {
     }
 
@@ -77,11 +76,11 @@ private:
 
 private:
     Compiler* const        m_comp;
-    FlowGraphDfsTree*      m_dfsTree;
-    FlowGraphNaturalLoops* m_loops;
-    weight_t*              m_cyclicProbabilities;
-    unsigned               m_improperLoopHeaders;
-    unsigned               m_cappedCyclicProbabilities;
+    FlowGraphDfsTree*      m_dfsTree                   = nullptr;
+    FlowGraphNaturalLoops* m_loops                     = nullptr;
+    weight_t*              m_cyclicProbabilities       = nullptr;
+    unsigned               m_improperLoopHeaders       = 0;
+    unsigned               m_cappedCyclicProbabilities = 0;
 };
 
 #endif // !_FGPROFILESYNTHESIS_H_
