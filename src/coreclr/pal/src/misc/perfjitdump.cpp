@@ -61,6 +61,22 @@ namespace
         JIT_CODE_LOAD = 0,
     };
 
+#if defined(__linux__)
+    static uint32_t sys_gettid()
+    {
+        return syscall(SYS_gettid);
+    }
+#else
+    static uint32_t sys_gettid()
+    {
+        // macOS SYS_gettid is completely unrelated to linux gettid (it returns
+        // effective uid/gid a thread is operating under)
+        // There is pthread_threadid_np(), but it returns a uint64_t.
+        // Given that we need a uint32_t, just return 0 here for now.
+        return 0;
+    }
+#endif
+
     uint64_t GetTimeStampNS()
     {
 #if HAVE_CLOCK_MONOTONIC
@@ -115,7 +131,7 @@ namespace
     {
         JitCodeLoadRecord() :
             pid(getpid()),
-            tid(syscall(SYS_gettid))
+            tid(sys_gettid())
         {
             header.id = JIT_CODE_LOAD;
             header.timestamp = GetTimeStampNS();
