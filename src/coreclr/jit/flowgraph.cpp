@@ -582,6 +582,15 @@ PhaseStatus Compiler::fgImport()
         compInlineResult->SetImportedILSize(info.compILImportSize);
     }
 
+    // Now that we've made it through the importer, we know the IL was valid.
+    // If we synthesized profile data and though it should be consistent,
+    // verify that it was consistent.
+    //
+    if (fgPgoSynthesized && fgPgoConsistent)
+    {
+        assert(fgPgoConsistentCheck);
+    }
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -1038,7 +1047,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                 GenTree*       targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
                 CORINFO_LOOKUP pLookup;
                 info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
-                                                                  clsHnd, &pLookup);
+                                                                  clsHnd, info.compMethodHnd, &pLookup);
                 if (!pLookup.lookupKind.needsRuntimeLookup)
                 {
                     call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
@@ -1050,7 +1059,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                     assert(oper != GT_FTN_ADDR);
                     CORINFO_CONST_LOOKUP genericLookup;
                     info.compCompHnd->getReadyToRunHelper(&ldftnToken->m_token, &pLookup.lookupKind,
-                                                          CORINFO_HELP_READYTORUN_GENERIC_HANDLE, &genericLookup);
+                                                          CORINFO_HELP_READYTORUN_GENERIC_HANDLE, info.compMethodHnd,
+                                                          &genericLookup);
                     GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
                     call             = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
                                                targetObjPointers, ctxTree);
@@ -1073,7 +1083,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
             CORINFO_LOOKUP entryPoint;
             info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
-                                                              clsHnd, &entryPoint);
+                                                              clsHnd, info.compMethodHnd, &entryPoint);
             assert(!entryPoint.lookupKind.needsRuntimeLookup);
             call->setEntryPoint(entryPoint.constLookup);
         }
@@ -1150,13 +1160,25 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     //
     // Is the tree as GT_CAST or a GT_CALL ?
     //
-    if (tree->OperGet() == GT_CAST)
+    if (tree->OperIs(GT_CAST))
     {
         fromType = tree->CastToType();
     }
-    else if (tree->OperGet() == GT_CALL)
+    else if (tree->OperIs(GT_CALL))
     {
         fromType = (var_types)tree->AsCall()->gtReturnType;
+    }
+    else if (tree->OperIs(GT_LCL_VAR))
+    {
+        LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
+        if (varDsc->lvNormalizeOnStore())
+        {
+            fromType = varDsc->TypeGet();
+        }
+        else
+        {
+            fromType = tree->TypeGet();
+        }
     }
     else
     {
@@ -2762,7 +2784,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     /* Allocate a new basic block */
 
     BasicBlock* newHead = BasicBlock::New(this);
-    newHead->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
+    newHead->SetFlags(BBF_INTERNAL);
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
 
@@ -3907,6 +3929,26 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
     }
 }
 
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// FlowGraphDfsTree::Dump: Dump a textual representation of the DFS tree.
+//
+void FlowGraphDfsTree::Dump() const
+{
+    printf("DFS tree. %s.\n", HasCycle() ? "Has cycle" : "No cycle");
+    printf("PO RPO -> BB [pre, post]\n");
+    for (unsigned i = 0; i < GetPostOrderCount(); i++)
+    {
+        unsigned          rpoNum = GetPostOrderCount() - i - 1;
+        BasicBlock* const block  = GetPostOrder(i);
+        printf("%02u %02u -> " FMT_BB "[%u, %u]\n", i, rpoNum, block->bbNum, block->bbPreorderNum,
+               block->bbPostorderNum);
+    }
+}
+
+#endif // DEBUG
+
 //------------------------------------------------------------------------
 // FlowGraphDfsTree::Contains: Check if a block is contained in the DFS tree;
 // i.e., if it is reachable.
@@ -4170,10 +4212,11 @@ unsigned FlowGraphNaturalLoop::NumLoopBlocks()
 //   dfs - A DFS tree.
 //
 FlowGraphNaturalLoops::FlowGraphNaturalLoops(const FlowGraphDfsTree* dfsTree)
-    : m_dfsTree(dfsTree), m_loops(m_dfsTree->GetCompiler()->getAllocator(CMK_Loops))
+    : m_dfsTree(dfsTree), m_loops(m_dfsTree->GetCompiler()->getAllocator(CMK_Loops)), m_improperLoopHeaders(0)
 {
 }
 
+//------------------------------------------------------------------------
 // GetLoopByIndex: Get loop by a specified index.
 //
 // Parameters:
@@ -4188,6 +4231,7 @@ FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByIndex(unsigned index)
     return m_loops[index];
 }
 
+//------------------------------------------------------------------------
 // GetLoopByHeader: See if a block is a loop header, and if so return the
 // associated loop.
 //
@@ -4287,7 +4331,6 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         JITDUMP("%02u -> " FMT_BB "[%u, %u]\n", rpoNum, block->bbNum, block->bbPreorderNum, block->bbPostorderNum);
     }
 
-    unsigned improperLoopHeaders = 0;
 #endif
 
     FlowGraphNaturalLoops* loops = new (comp, CMK_Loops) FlowGraphNaturalLoops(dfsTree);
@@ -4342,7 +4385,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 
         if (!FindNaturalLoopBlocks(loop, worklist))
         {
-            INDEBUG(improperLoopHeaders++);
+            loops->m_improperLoopHeaders++;
             continue;
         }
 
@@ -4447,9 +4490,9 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         JITDUMP("\nFound %zu loops\n", loops->m_loops.size());
     }
 
-    if (improperLoopHeaders > 0)
+    if (loops->m_improperLoopHeaders > 0)
     {
-        JITDUMP("Rejected %u loop headers\n", improperLoopHeaders);
+        JITDUMP("Rejected %u loop headers\n", loops->m_improperLoopHeaders);
     }
 
     JITDUMPEXEC(Dump(loops));
@@ -6130,6 +6173,37 @@ BlockToNaturalLoopMap* BlockToNaturalLoopMap::Build(FlowGraphNaturalLoops* loops
 
     return new (comp, CMK_Loops) BlockToNaturalLoopMap(loops, indices);
 }
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// BlockToNaturalLoopMap::Dump: Dump a textual representation of the map.
+//
+void BlockToNaturalLoopMap::Dump() const
+{
+    const FlowGraphDfsTree* dfs        = m_loops->GetDfsTree();
+    unsigned                blockCount = dfs->GetPostOrderCount();
+
+    printf("Block -> natural loop map: %u blocks\n", blockCount);
+    if (blockCount > 0)
+    {
+        printf("block : loop index\n");
+        for (unsigned i = 0; i < blockCount; i++)
+        {
+            if (m_indices[i] == UINT_MAX)
+            {
+                // Just leave the loop space empty if there is no enclosing loop
+                printf(FMT_BB " : \n", dfs->GetPostOrder(i)->bbNum);
+            }
+            else
+            {
+                printf(FMT_BB " : " FMT_LP "\n", dfs->GetPostOrder(i)->bbNum, m_indices[i]);
+            }
+        }
+    }
+}
+
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // BlockReachabilitySets::Build: Build the reachability sets.

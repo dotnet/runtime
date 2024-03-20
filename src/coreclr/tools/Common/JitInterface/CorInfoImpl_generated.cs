@@ -291,12 +291,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static void _expandRawHandleIntrinsic(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult)
+        private static void _expandRawHandleIntrinsic(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.expandRawHandleIntrinsic(ref *pResolvedToken, ref *pResult);
+                _this.expandRawHandleIntrinsic(ref *pResolvedToken, callerHandle, ref *pResult);
             }
             catch (Exception ex)
             {
@@ -1033,12 +1033,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static byte _getReadyToRunHelper(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_LOOKUP_KIND* pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP* pLookup)
+        private static byte _getReadyToRunHelper(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_LOOKUP_KIND* pGenericLookupKind, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONST_LOOKUP* pLookup)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getReadyToRunHelper(ref *pResolvedToken, ref *pGenericLookupKind, id, ref *pLookup) ? (byte)1 : (byte)0;
+                return _this.getReadyToRunHelper(ref *pResolvedToken, ref *pGenericLookupKind, id, callerHandle, ref *pLookup) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -1048,12 +1048,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static void _getReadyToRunDelegateCtorHelper(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_STRUCT_* delegateType, CORINFO_LOOKUP* pLookup)
+        private static void _getReadyToRunDelegateCtorHelper(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_STRUCT_* delegateType, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_LOOKUP* pLookup)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.getReadyToRunDelegateCtorHelper(ref *pTargetMethod, targetConstraint, delegateType, ref *pLookup);
+                _this.getReadyToRunDelegateCtorHelper(ref *pTargetMethod, targetConstraint, delegateType, callerHandle, ref *pLookup);
             }
             catch (Exception ex)
             {
@@ -2007,12 +2007,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static void _embedGenericHandle(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, byte fEmbedParent, CORINFO_GENERICHANDLE_RESULT* pResult)
+        private static void _embedGenericHandle(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, byte fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.embedGenericHandle(ref *pResolvedToken, fEmbedParent != 0, ref *pResult);
+                _this.embedGenericHandle(ref *pResolvedToken, fEmbedParent != 0, callerHandle, ref *pResult);
             }
             catch (Exception ex)
             {
@@ -2600,7 +2600,7 @@ namespace Internal.JitInterface
             callbacks[16] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, bool*, CORINFO_METHOD_STRUCT_*>)&_getUnboxedEntry;
             callbacks[17] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*>)&_getDefaultComparerClass;
             callbacks[18] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*>)&_getDefaultEqualityComparerClass;
-            callbacks[19] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_GENERICHANDLE_RESULT*, void>)&_expandRawHandleIntrinsic;
+            callbacks[19] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void>)&_expandRawHandleIntrinsic;
             callbacks[20] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte>)&_isIntrinsicType;
             callbacks[21] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_SIG_INFO*, bool*, CorInfoCallConvExtension>)&_getUnmanagedCallConv;
             callbacks[22] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_SIG_INFO*, byte>)&_pInvokeMarshalingRequired;
@@ -2650,8 +2650,8 @@ namespace Internal.JitInterface
             callbacks[66] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, byte>)&_isObjectImmutable;
             callbacks[67] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, int, ushort*, byte>)&_getStringChar;
             callbacks[68] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, CORINFO_CLASS_STRUCT_*>)&_getObjectType;
-            callbacks[69] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_LOOKUP_KIND*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, byte>)&_getReadyToRunHelper;
-            callbacks[70] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, mdToken, CORINFO_CLASS_STRUCT_*, CORINFO_LOOKUP*, void>)&_getReadyToRunDelegateCtorHelper;
+            callbacks[69] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_LOOKUP_KIND*, CorInfoHelpFunc, CORINFO_METHOD_STRUCT_*, CORINFO_CONST_LOOKUP*, byte>)&_getReadyToRunHelper;
+            callbacks[70] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, mdToken, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_LOOKUP*, void>)&_getReadyToRunDelegateCtorHelper;
             callbacks[71] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_CONTEXT_STRUCT*, CorInfoInitClassResult>)&_initClass;
             callbacks[72] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, void>)&_classMustBeLoadedBeforeCodeIsRun;
             callbacks[73] = (delegate* unmanaged<IntPtr, IntPtr*, CorInfoClassId, CORINFO_CLASS_STRUCT_*>)&_getBuiltinClass;
@@ -2716,7 +2716,7 @@ namespace Internal.JitInterface
             callbacks[132] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, void**, CORINFO_CLASS_STRUCT_*>)&_embedClassHandle;
             callbacks[133] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, void**, CORINFO_METHOD_STRUCT_*>)&_embedMethodHandle;
             callbacks[134] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, void**, CORINFO_FIELD_STRUCT_*>)&_embedFieldHandle;
-            callbacks[135] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, CORINFO_GENERICHANDLE_RESULT*, void>)&_embedGenericHandle;
+            callbacks[135] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void>)&_embedGenericHandle;
             callbacks[136] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_LOOKUP_KIND*, void>)&_getLocationOfThisType;
             callbacks[137] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CONST_LOOKUP*, void>)&_getAddressOfPInvokeTarget;
             callbacks[138] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, void**, void*>)&_GetCookieForPInvokeCalliSig;

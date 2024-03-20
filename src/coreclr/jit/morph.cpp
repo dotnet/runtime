@@ -7006,7 +7006,8 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
 }
 
 //------------------------------------------------------------------------
-// getTokenHandleTree: get a handle tree for a token
+// getTokenHandleTree: get a handle tree for a token. This method should never
+//    be called for tokens imported from inlinees.
 //
 // Arguments:
 //    pResolvedToken - token to get a handle for
@@ -7018,7 +7019,14 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
 GenTree* Compiler::getTokenHandleTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool parent)
 {
     CORINFO_GENERICHANDLE_RESULT embedInfo;
-    info.compCompHnd->embedGenericHandle(pResolvedToken, parent, &embedInfo);
+
+    // NOTE: inlining is done at this point, so we don't know which method contained this token.
+    // It's fine because currently this is never used for something that belongs to an inlinee.
+    // Namely, we currently use it for:
+    //   1) Methods with EH are never inlined
+    //   2) Methods with explicit tail calls are never inlined
+    //
+    info.compCompHnd->embedGenericHandle(pResolvedToken, parent, info.compMethodHnd, &embedInfo);
 
     GenTree* result = getLookupTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
                                     embedInfo.compileTimeHandle);
@@ -13221,7 +13229,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 edgeTaken = block->GetFalseEdge();
                 block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
-                block->SetFlags(BBF_NONE_QUIRK);
             }
 
             if (fgHaveValidEdgeWeights)
@@ -13393,11 +13400,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             }
 
             assert(foundVal);
-            if (block->JumpsToNext())
-            {
-                block->SetFlags(BBF_NONE_QUIRK);
-            }
-
 #ifdef DEBUG
             if (verbose)
             {
@@ -14651,8 +14653,8 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     assert(condBlock->JumpsToNext());
     assert(elseBlock->JumpsToNext());
 
-    condBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
-    elseBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
+    condBlock->SetFlags(propagateFlagsToAll);
+    elseBlock->SetFlags(propagateFlagsToAll);
 
     BasicBlock* thenBlock = nullptr;
     if (hasTrueExpr && hasFalseExpr)
