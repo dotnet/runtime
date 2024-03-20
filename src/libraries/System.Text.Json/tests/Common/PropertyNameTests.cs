@@ -34,6 +34,7 @@ namespace System.Text.Json.Serialization.Tests
             await DeserializeAndAssert(JsonNamingPolicy.SnakeCaseUpper, @"{""MY_INT16"":1}", 1);
             await DeserializeAndAssert(JsonNamingPolicy.KebabCaseLower, @"{""my-int16"":1}", 1);
             await DeserializeAndAssert(JsonNamingPolicy.KebabCaseUpper, @"{""MY-INT16"":1}", 1);
+            await DeserializeAndAssert(JsonNamingPolicy.PascalCase, @"{""MyInt16"":1}", 1);
         }
 
         private async Task DeserializeAndAssert(JsonNamingPolicy policy, string json, short expected)
@@ -52,6 +53,7 @@ namespace System.Text.Json.Serialization.Tests
             await SerializeAndAssert(JsonNamingPolicy.SnakeCaseUpper, @"""MY_INT16"":0", @"""MY_INT32"":0");
             await SerializeAndAssert(JsonNamingPolicy.KebabCaseLower, @"""my-int16"":0", @"""my-int32"":0");
             await SerializeAndAssert(JsonNamingPolicy.KebabCaseUpper, @"""MY-INT16"":0", @"""MY-INT32"":0");
+            await SerializeAndAssert(JsonNamingPolicy.PascalCase, @"""MyInt16"":1", @"""MyInt32"":1");
 
             async Task SerializeAndAssert(JsonNamingPolicy policy, string myInt16, string myInt32)
             {
