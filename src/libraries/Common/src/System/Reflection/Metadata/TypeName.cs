@@ -183,14 +183,17 @@ namespace System.Reflection.Metadata
         {
             int result = 1;
 
-            if (_underlyingType is not null)
+            if (IsNested)
             {
-                result = checked(result + _underlyingType.GetNodeCount());
+                result = checked(result + DeclaringType.GetNodeCount());
             }
-
-            if (_declaringType is not null)
+            else if (IsConstructedGenericType)
             {
-                result = checked(result + _declaringType.GetNodeCount());
+                result = checked(result + 1);
+            }
+            else if (IsArray || IsPointer || IsByRef)
+            {
+                result = checked(result + GetElementType().GetNodeCount());
             }
 
             if (_genericArguments is not null)
@@ -224,7 +227,7 @@ namespace System.Reflection.Metadata
         public TypeName GetGenericTypeDefinition()
             => IsConstructedGenericType
                 ? _underlyingType!
-                : throw new InvalidOperationException("SR.InvalidOperation_NotGenericType"); // TODO: use actual resource
+                : throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
 
         public static TypeName Parse(ReadOnlySpan<char> typeName, TypeNameParserOptions? options = default)
             => TypeNameParser.Parse(typeName, throwOnError: true, options)!;
@@ -244,7 +247,7 @@ namespace System.Reflection.Metadata
             {
                 TypeNameParserHelpers.SZArray => 1,
                 _ when _rankOrModifier > 0 => _rankOrModifier,
-                _ => throw new ArgumentException("SR.Argument_HasToBeArrayClass") // TODO: use actual resource (used by Type.GetArrayRank)
+                _ => throw new InvalidOperationException(SR.Argument_HasToBeArrayClass)
             };
 
         /// <summary>

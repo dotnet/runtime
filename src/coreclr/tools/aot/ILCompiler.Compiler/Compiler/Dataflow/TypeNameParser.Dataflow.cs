@@ -19,8 +19,8 @@ namespace System.Reflection
         {
             if (!TypeName.TryParse(name, out TypeName parsed))
             {
-                typeWasNotFoundInAssemblyNorBaseLibrary = true;
-                return null; // TODO adsitnik: verify that this is desired
+                typeWasNotFoundInAssemblyNorBaseLibrary = false;
+                return null;
             }
 
             var parser = new TypeNameParser()

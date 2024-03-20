@@ -47,7 +47,6 @@ namespace System.Reflection.Metadata.Tests
         public void GetGenericArgumentCountReturnsExpectedValue(string input, int expected)
             => Assert.Equal(expected, TypeNameParserHelpers.GetGenericArgumentCount(input.AsSpan()));
 
-
         [Theory]
         [InlineData("A[]", 1, false)]
         [InlineData("AB[a,b]", 2, false)]
@@ -99,7 +98,6 @@ namespace System.Reflection.Metadata.Tests
             yield return new object[] { "0123456789", -1 };
             yield return new object[] { "BacktickIsOk`1", -1 };
         }
-
 
         [Theory]
         [MemberData(nameof(InvalidNamesArguments))]

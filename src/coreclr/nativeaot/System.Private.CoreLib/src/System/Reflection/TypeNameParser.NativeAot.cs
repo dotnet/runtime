@@ -80,7 +80,7 @@ namespace System.Reflection
             {
                 return null;
             }
-            else if (parsed.GetAssemblyName() is not null && topLevelAssembly is not null)
+            else if (topLevelAssembly is not null && parsed.GetAssemblyName() is not null)
             {
                 return throwOnError ? throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly) : null;
             }
@@ -102,7 +102,7 @@ namespace System.Reflection
             }
             else
             {
-                assembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(RuntimeAssemblyName.Parse(assemblyName.FullName)); // TODO adsitnik: remove the redundant parsing
+                assembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(RuntimeAssemblyName.FromAssemblyName(assemblyName));
             }
 
             if (assembly is null && _throwOnError)

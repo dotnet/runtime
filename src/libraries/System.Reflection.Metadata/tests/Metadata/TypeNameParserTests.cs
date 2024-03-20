@@ -168,7 +168,7 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(10, "[]")] // array of arrays
         [InlineData(100, "*")]
         [InlineData(100, "[]")]
-        public void MaxTotalComplexityIsRespected_TooManyDecorators(int maxDepth, string decorator)
+        public void MaxNodesIsRespected_TooManyDecorators(int maxDepth, string decorator)
         {
             TypeNameParserOptions options = new()
             {
@@ -203,7 +203,7 @@ namespace System.Reflection.Metadata.Tests
         [Theory]
         [InlineData(10)]
         [InlineData(100)]
-        public void MaxTotalComplexityIsRespected_TooDeepGenerics(int maxDepth)
+        public void MaxNodesIsRespected_TooDeepGenerics(int maxDepth)
         {
             TypeNameParserOptions options = new()
             {
@@ -247,7 +247,7 @@ namespace System.Reflection.Metadata.Tests
         [Theory]
         [InlineData(10)]
         [InlineData(100)]
-        public void MaxTotalComplexityIsRespected_TooManyGenericArguments(int maxDepth)
+        public void MaxNodesIsRespected_TooManyGenericArguments(int maxDepth)
         {
             TypeNameParserOptions options = new()
             {
@@ -503,6 +503,11 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(typeof(int[]), 2)]
         [InlineData(typeof(int[,][]), 3)]
         [InlineData(typeof(Nullable<>), 1)] // open generic type treated as elemental
+        [InlineData(typeof(NestedNonGeneric_0), 2)] // declaring and nested
+        [InlineData(typeof(NestedGeneric_0<int>), 3)] // declaring, nested and generic arg
+        [InlineData(typeof(NestedNonGeneric_0.NestedNonGeneric_1), 3)] // declaring, nested 0 and nested 1
+        // TypeNameParserTests+NestedGeneric_0`1+NestedGeneric_1`2[[Int32],[String],[Boolean]] (simplified for brevity)
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>), 6)] // declaring, nested 0 and nested 1 and 3 generic args
         [MemberData(nameof(GetAdditionalConstructedTypeData))]
         public void GetNodeCountReturnsExpectedValue(Type type, int expected)
         {

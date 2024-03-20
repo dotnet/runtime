@@ -49,13 +49,11 @@ namespace System.Reflection.Metadata
                 return null;
             }
 
-            // there was an error and we need to throw
-#if !SYSTEM_PRIVATE_CORELIB
             if (recursiveDepth >= parser._parseOptions.MaxNodes)
             {
-                throw new InvalidOperationException("SR.RecursionCheck_MaxDepthExceeded");
+                throw new InvalidOperationException(SR.Format(SR.MaxNodesExceeded, parser._parseOptions.MaxNodes));
             }
-#endif
+
             int errorIndex = typeName.Length - parser._inputString.Length;
             return ThrowInvalidTypeNameOrReturnNull(throwOnError, errorIndex);
 
@@ -69,7 +67,7 @@ namespace System.Reflection.Metadata
 #if SYSTEM_PRIVATE_CORELIB
                 throw new ArgumentException(SR.Arg_ArgumentException, $"typeName@{errorIndex}");
 #else
-                throw new ArgumentException("SR.Argument_InvalidTypeName");
+                throw new ArgumentException(SR.Argument_InvalidTypeName);
 #endif
             }
         }
@@ -203,13 +201,14 @@ namespace System.Reflection.Metadata
                     return null;
                 }
 
-                if (previousDecorator == ByRef) // it's illegal for managed reference to be followed by any other decorator
+                if (previousDecorator == ByRef // it's illegal for managed reference to be followed by any other decorator
+                    || parsedDecorator > MaxArrayRank)
                 {
+#if SYSTEM_PRIVATE_CORELIB
+                    throw new TypeLoadException(); // CLR throws TypeLoadException on purpose
+#else
                     return null;
-                }
-                else if (parsedDecorator > MaxArrayRank)
-                {
-                    return null;
+#endif
                 }
                 previousDecorator = parsedDecorator;
             }

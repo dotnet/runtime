@@ -85,7 +85,7 @@ namespace System.Reflection
             {
                 return null;
             }
-            else if (parsed.GetAssemblyName() is not null && topLevelAssembly is not null)
+            else if (topLevelAssembly is not null && parsed.GetAssemblyName() is not null)
             {
                 return throwOnError ? throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly) : null;
             }
@@ -110,7 +110,7 @@ namespace System.Reflection
 
             RuntimeAssembly requestingAssembly = scope.GetRuntimeAssembly();
 
-            var parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError: true)!;
+            var parsed = Metadata.TypeName.Parse(typeName);
             RuntimeType? type = (RuntimeType?)new TypeNameParser()
             {
                 _throwOnError = true,

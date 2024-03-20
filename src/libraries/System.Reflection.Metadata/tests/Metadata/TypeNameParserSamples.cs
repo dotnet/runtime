@@ -155,7 +155,7 @@ namespace System.Reflection.Metadata.Tests
                 allowedTypes:
                 [
                     typeof(CustomUserDefinedType),
-                    typeof(List<>) // TODO adsitnik: make it work for List<DateTime> too (currently does not work due to type forwarding)
+                    typeof(List<>) // using List<DateTime> would require using type forwarding info in dictionary
                 ]);
 
             CustomUserDefinedType deserialized = SerializeDeserialize(parent, binder);

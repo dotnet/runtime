@@ -515,17 +515,21 @@ namespace System.Tests
 
         public static IEnumerable<object[]> GetTypeByName_InvalidElementType()
         {
-            yield return new object[] { "System.Int32&&", typeof(ArgumentException), true };
-            yield return new object[] { "System.Int32&*", typeof(ArgumentException), true };
-            yield return new object[] { "System.Int32&[]", typeof(ArgumentException), true };
-            yield return new object[] { "System.Int32&[*]", typeof(ArgumentException), true };
-            yield return new object[] { "System.Int32&[,]", typeof(ArgumentException), true };
+            Type expectedException = PlatformDetection.IsMonoRuntime
+                ? typeof(ArgumentException) // https://github.com/dotnet/runtime/issues/45033
+                : typeof(TypeLoadException);
+
+            yield return new object[] { "System.Int32&&", expectedException, true };
+            yield return new object[] { "System.Int32&*", expectedException, true };
+            yield return new object[] { "System.Int32&[]", expectedException, true };
+            yield return new object[] { "System.Int32&[*]", expectedException, true };
+            yield return new object[] { "System.Int32&[,]", expectedException, true };
 
             // https://github.com/dotnet/runtime/issues/45033
             if (!PlatformDetection.IsMonoRuntime)
             {
-                yield return new object[] { "System.Void[]", typeof(TypeLoadException), true };
-                yield return new object[] { "System.TypedReference[]", typeof(TypeLoadException), true };
+                yield return new object[] { "System.Void[]", expectedException, true };
+                yield return new object[] { "System.TypedReference[]", expectedException, true };
             }
         }
 
