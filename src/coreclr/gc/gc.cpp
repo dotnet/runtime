@@ -20841,6 +20841,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
 
     if (settings.reason == reason_induced_aggressive)
     {
+        gc_data_global.gen_to_condemn_reasons.set_condition (gen_joined_aggressive);
         settings.loh_compaction = TRUE;
     }
 
