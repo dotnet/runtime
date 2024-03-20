@@ -3798,7 +3798,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, srcRegNum, /* canSkip */ false);
                     assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(srcRegNum));
 
-                    regSet.verifyRegUsed(destRegNum, destMemType);
+                    regSet.verifyRegUsed(destRegNum);
 
                     /* mark 'src' as processed */
                     noway_assert(srcReg < argMax);
@@ -3850,7 +3850,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, xtraReg, /* canSkip */ false);
                 assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(xtraReg));
 
-                regSet.verifyRegUsed(destRegNum, destMemType);
+                regSet.verifyRegUsed(destRegNum);
                 /* mark the beginning register as processed */
 
                 regArgTab[srcReg].processed = true;
@@ -4305,7 +4305,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
         GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
 #endif // !TARGET_LOONGARCH64
 
-        regSet.verifyRegUsed(regNum, regType);
+        regSet.verifyRegUsed(regNum);
     }
 }
 
@@ -5342,12 +5342,7 @@ void CodeGen::genFinalizeFrame()
     if (verbose)
     {
         printf("Modified regs: ");
-        dspRegMask(AllRegsMask(regSet.rsGetModifiedGprRegsMask(), regSet.rsGetModifiedFloatRegsMask()
-#ifdef HAS_PREDICATE_REGS
-                                                                      ,
-                               regSet.rsGetModifiedPredicateRegsMask()
-#endif
-                                   ));
+        dspRegMask(regSet.rsGetModifiedRegsMask());
         printf("\n");
     }
 #endif // DEBUG

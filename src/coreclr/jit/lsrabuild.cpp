@@ -704,30 +704,7 @@ void LinearScan::addRefsForPhysRegMask(AllRegsMask mask, LsraLocation currentLoc
 {
     assert(refType == RefTypeKill);
 
-    compiler->codeGen->regSet.rsSetGprRegsModified(mask.gprRegs() DEBUGARG(true));
-    compiler->codeGen->regSet.rsSetFloatRegsModified(mask.floatRegs() DEBUGARG(true));
-
-    addRefsForPhysRegMask(mask.gprRegs(), currentLoc, refType, isLastUse);
-    addRefsForPhysRegMask(mask.floatRegs(), currentLoc, refType, isLastUse);
-
-#ifdef HAS_PREDICATE_REGS
-    compiler->codeGen->regSet.rsSetPredicateRegsModified(mask.predicateRegs() DEBUGARG(true));
-    addRefsForPhysRegMask(mask.predicateRegs(), currentLoc, refType, isLastUse);
-#endif
-}
-
-//------------------------------------------------------------------------
-// addRefsForPhysRegMask: Adds RefPositions of the given type for specific registers in 'mask'.
-//
-// Arguments:
-//    mask        - the mask (set) of registers - either gpr/float/predicate
-//    currentLoc  - the location at which they should be added
-//    refType     - the type of refposition
-//    isLastUse   - true IFF this is a last use of the register
-//
-void LinearScan::addRefsForPhysRegMask(regMaskOnlyOne mask, LsraLocation currentLoc, RefType refType, bool isLastUse)
-{
-    assert(compiler->IsOnlyOneRegMask(mask));
+    compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
 
     // The mask identifies a set of registers that will be used during
     // codegen. Mark these as modified here, so when we do final frame
@@ -738,9 +715,9 @@ void LinearScan::addRefsForPhysRegMask(regMaskOnlyOne mask, LsraLocation current
     // CORINFO_HELP_ASSIGN_BYREF helper, which kills callee-saved RSI and
     // RDI, if LSRA doesn't assign RSI/RDI, they wouldn't get marked as
     // modified until codegen, which is too late.
-    for (regMaskOnlyOne candidates = mask; candidates != RBM_NONE;)
+    while (!mask.IsEmpty())
     {
-        regNumber reg = genFirstRegNumFromMaskAndToggle(candidates);
+        regNumber reg = genFirstRegNumFromMaskAndToggle(mask);
         // This assumes that these are all "special" RefTypes that
         // don't need to be recorded on the tree (hence treeNode is nullptr)
         RefPosition* pos = newRefPosition(reg, currentLoc, refType, nullptr,

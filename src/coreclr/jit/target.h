@@ -311,11 +311,13 @@ public:
     {
     }
 
-    _regMaskAll(int (&_registers)[3])
+    _regMaskAll(int (&_registers)[REGISTER_TYPE_COUNT])
     {
         registers[0] = _registers[0];
         registers[1] = _registers[1];
+#ifdef HAS_PREDICATE_REGS
         registers[2] = _registers[2];
+#endif
     }
 
 #ifdef TARGET_ARM

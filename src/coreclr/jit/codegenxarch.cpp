@@ -1143,7 +1143,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     {
         var_types op1Type = op1->TypeGet();
         inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
-        regSet.verifyRegUsed(targetReg, targetType);
+        regSet.verifyRegUsed(targetReg);
         gcInfo.gcMarkRegPtrVal(targetReg, op1Type);
         dst = treeNode;
         src = op2;

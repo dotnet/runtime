@@ -1050,7 +1050,6 @@ private:
 
     // add physreg refpositions for a tree node, based on calling convention and instruction selection predictions
     void addRefsForPhysRegMask(AllRegsMask mask, LsraLocation currentLoc, RefType refType, bool isLastUse);
-    void addRefsForPhysRegMask(regMaskOnlyOne mask, LsraLocation currentLoc, RefType refType, bool isLastUse);
 
     void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 

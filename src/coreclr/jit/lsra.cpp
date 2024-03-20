@@ -3508,27 +3508,12 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
 // Assign the given physical register interval to the given interval
 void LinearScan::assignPhysReg(RegRecord* regRec, Interval* interval)
 {
-    regNumber     reg             = regRec->regNum;
-    singleRegMask assignedRegMask = genRegMask(reg);
+    regNumber reg = regRec->regNum;
 
     // TODO: genIsValid* is heavy operation because it does 2 comparisons, but unfortunately
     // we cannot use `varTypeRegister[interval->registerType] == VTR_INT` because sometimes
     // we do `vmovd xmm1, rcx` where we assign gpr for interval of type TYP_SIMD8
-    if (genIsValidIntReg(reg))
-    {
-        compiler->codeGen->regSet.rsSetGprRegsModified(assignedRegMask DEBUGARG(true));
-    }
-#ifdef HAS_PREDICATE_REGS
-    else if (genIsValidMaskReg(reg))
-    {
-        compiler->codeGen->regSet.rsSetPredicateRegsModified(assignedRegMask DEBUGARG(true));
-    }
-#endif
-    else
-    {
-        assert(genIsValidFloatReg(reg));
-        compiler->codeGen->regSet.rsSetFloatRegsModified(assignedRegMask DEBUGARG(true));
-    }
+    compiler->codeGen->regSet.rsSetRegModified(reg DEBUGARG(true));
 
     interval->assignedReg = regRec;
     checkAndAssignInterval(regRec, interval);
@@ -3538,7 +3523,7 @@ void LinearScan::assignPhysReg(RegRecord* regRec, Interval* interval)
     if (interval->isLocalVar)
     {
         // Prefer this register for future references
-        interval->updateRegisterPreferences(assignedRegMask);
+        interval->updateRegisterPreferences(genRegMask(reg));
     }
 }
 
@@ -10019,15 +10004,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 }
                 else
                 {
-                    if (emitter::isFloatReg(tempReg))
-                    {
-                        compiler->codeGen->regSet.rsSetFloatRegsModified(genRegMask(tempReg) DEBUGARG(true));
-                    }
-                    else
-                    {
-                        assert(emitter::isGeneralRegister(tempReg));
-                        compiler->codeGen->regSet.rsSetGprRegsModified(genRegMask(tempReg) DEBUGARG(true));
-                    }
+                    compiler->codeGen->regSet.rsSetRegModified(tempReg DEBUGARG(true));
 #ifdef TARGET_ARM
                     if (sourceIntervals[fromReg]->registerType == TYP_DOUBLE)
                     {

@@ -67,78 +67,71 @@ private:
     //
 
 private:
-    bool             rsNeededSpillReg;            // true if this method needed to spill any registers
-    regMaskGpr       rsModifiedGprRegsMask;       // mask of the registers modified by the current function.
-    regMaskFloat     rsModifiedFloatRegsMask;     // mask of the registers modified by the current function.
-    regMaskPredicate rsModifiedPredicateRegsMask; // mask of the registers modified by the current function.
+    bool             rsNeededSpillReg;   // true if this method needed to spill any registers
+    AllRegsMask      rsModifiedRegsMask; // mask of the registers modified by the current function.
     FORCEINLINE void rsSetRegsModified(regMaskOnlyOne& trackingMask,
                                        regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump = false)
                                            DEBUGARG(regMaskOnlyOne calleeSaveMask = RBM_NONE));
-
 #ifdef DEBUG
     bool rsModifiedRegsMaskInitialized; // Has rsModifiedRegsMask been initialized? Guards against illegal use.
-#endif                                  // DEBUG
+    void printModifiedRegsMask(regMaskOnlyOne currentMask,
+                               regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump = false)
+                                   DEBUGARG(regMaskOnlyOne calleeSaveMask = RBM_NONE)) const;
+#endif // DEBUG
 
 public:
-    regMaskGpr rsGetModifiedRegsMask(var_types type) const
+    FORCEINLINE void rsSetRegsModified(AllRegsMask& modifiedMask DEBUGARG(bool suppressDump = false));
+    FORCEINLINE void rsSetRegModified(regNumber reg DEBUGARG(bool suppressDump = false));
+
+#ifdef DEBUG
+    AllRegsMask rsGetModifiedRegsMask() const
     {
-        if (varTypeUsesIntReg(type))
-        {
-            return rsGetModifiedGprRegsMask();
-        }
-#ifdef HAS_PREDICATE_REGS
-        else if (varTypeUsesMaskReg(type))
-        {
-            return rsGetModifiedPredicateRegsMask();
-        }
-#endif // HAS_PREDICATE_REGS
-        else
-        {
-            assert(varTypeUsesFloatReg(type));
-            return rsGetModifiedFloatRegsMask();
-        }
+        assert(rsModifiedRegsMaskInitialized);
+        return rsModifiedRegsMask;
     }
 
     regMaskGpr rsGetModifiedGprRegsMask() const
     {
         assert(rsModifiedRegsMaskInitialized);
-        return rsModifiedGprRegsMask;
+        return rsModifiedRegsMask.gprRegs();
     }
 
     regMaskFloat rsGetModifiedFloatRegsMask() const
     {
         assert(rsModifiedRegsMaskInitialized);
-        return rsModifiedFloatRegsMask;
+        return rsModifiedRegsMask.floatRegs();
     }
 
+#ifdef HAS_PREDICATE_REGS
     regMaskPredicate rsGetModifiedPredicateRegsMask() const
     {
         assert(rsModifiedRegsMaskInitialized);
-        return rsModifiedPredicateRegsMask;
+        return rsModifiedRegsMask.predicateRegs();
+    }
+#endif // HAS_PREDICATE_REGS
+
+#endif
+
+    regMaskGpr rsGetModifiedRegsMask(var_types type) const
+    {
+        return rsModifiedRegsMask.GetRegMaskForType(type);
     }
 
     void rsClearRegsModified();
     void rsSetGprRegsModified(regMaskGpr mask DEBUGARG(bool suppressDump = false));
     void rsSetFloatRegsModified(regMaskFloat mask DEBUGARG(bool suppressDump = false));
-#ifdef HAS_PREDICATE_REGS
-    void rsSetPredicateRegsModified(regMaskPredicate mask DEBUGARG(bool suppressDump = false));
-#endif // HAS_PREDICATE_REGS
 
     void rsRemoveRegsModified(regMaskGpr mask);
 
     bool rsRegsModified(regMaskGpr mask) const
     {
         assert(rsModifiedRegsMaskInitialized);
-        return (rsModifiedGprRegsMask & mask) != 0;
+        return (rsModifiedRegsMask.gprRegs() & mask) != 0;
+        // return (rsModifiedGprRegsMask & mask) != 0;
     }
 
     void verifyRegUsed(regNumber reg);
-    void verifyRegUsed(regNumber reg, var_types type);
     void verifyGprRegUsed(regNumber reg);
-    void verifyFloatRegUsed(regNumber reg);
-#ifdef HAS_PREDICATE_REGS
-    void verifyPredicateRegUsed(regNumber reg);
-#endif // HAS_PREDICATE_REGS
 
     void verifyRegistersUsed(AllRegsMask mask);
 
