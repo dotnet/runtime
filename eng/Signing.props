@@ -6,16 +6,13 @@
 
       During post build signing, there are no packages to sign during SignFinalPackages.
     -->
-    <AllowEmptySignList>true</AllowEmptySignList>
+    <AllowEmptySignList Condition="'$(DotNetBuildOrchestrator)' != 'true'">true</AllowEmptySignList>
+    <!-- TODO: Change condition when runtime's official publishing starts using Publishing.proj:
+         https://github.com/dotnet/source-build/issues/4239 -->
+    <EnableDefaultArtifacts Condition="'$(DotNetBuildOrchestrator)' != 'true'">false</EnableDefaultArtifacts>
   </PropertyGroup>
 
   <ItemGroup>
-    <!--
-      Replace the default items to sign with the specific set we want. This allows the build to call
-      Arcade's Sign.proj multiple times for different sets of files as the build progresses.
-    -->
-    <ItemsToSign Remove="@(ItemsToSign)" />
-
     <!-- apphost and comhost template files are not signed, by design. -->
     <FileSignInfo Include="apphost.exe;singlefilehost.exe;comhost.dll" CertificateName="None" />
 
@@ -37,12 +34,6 @@
     <FileSignInfo Include="Mono.Cecil.Pdb.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
 
-    <!-- Exclude symbol packages from have a NuGet signature. These are never pushed to NuGet.org or
-         other feeds (in fact, that have identical identity to their non-symbol variant) -->
-    <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
-    <DownloadedSymbolPackagesWithoutPaths Include="@(DownloadedSymbolPackages->'%(Filename)%(Extension)')" />
-    <FileSignInfo Include="@(DownloadedSymbolPackagesWithoutPaths->Distinct())" CertificateName="None" />
-
     <FileExtensionSignInfo Include=".msi" CertificateName="MicrosoftDotNet500" />
     <FileExtensionSignInfo Include=".pkg" CertificateName="8003" />
     <FileExtensionSignInfo Include=".deb;.rpm" CertificateName="LinuxSign" />
@@ -55,7 +46,13 @@
     <FileSignInfo Update="@(FileSignInfo->WithMetadataValue('CertificateName','Microsoft400'))" CertificateName="MicrosoftDotNet500" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(PrepareArtifacts)' == 'true'">
+  <ItemGroup Condition="'$(EnableDefaultArtifacts)' != 'true'">
+    <!-- Exclude symbol packages from have a NuGet signature. These are never pushed to NuGet.org or
+         other feeds (in fact, that have identical identity to their non-symbol variant) -->
+    <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
+    <DownloadedSymbolPackagesWithoutPaths Include="@(DownloadedSymbolPackages->'%(Filename)%(Extension)')" />
+    <FileSignInfo Include="@(DownloadedSymbolPackagesWithoutPaths->Distinct())" CertificateName="None" />
+
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.msi" />
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.exe" />
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.nupkg" />
@@ -65,4 +62,21 @@
     <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" Condition="'$(PostBuildSign)' == 'true'" />
     <ItemsToSign Include="@(ItemsToSignWithPaths->Distinct())" Condition="'$(PostBuildSign)' != 'true'" />
   </ItemGroup>
+
+  <!-- Include installers -->
+  <ItemGroup Condition="'$(EnableDefaultArtifacts)' == 'true'">
+    <Artifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
+                       $(ArtifactsPackagesDir)**\*.zip;
+                       $(ArtifactsPackagesDir)**\*.deb;
+                       $(ArtifactsPackagesDir)**\*.rpm;
+                       $(ArtifactsPackagesDir)**\*.pkg;
+                       $(ArtifactsPackagesDir)**\*.exe;
+                       $(ArtifactsPackagesDir)**\*.msi"
+              Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
+              IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))">
+      <!-- Exclude wixpack.zip files from checksum generation -->
+      <ChecksumPath Condition="$([System.String]::Copy('%(Filename)%(Extension)').EndsWith('.wixpack.zip')) != 'true'">%(FullPath).sha512</ChecksumPath>
+    </Artifact>
+  </ItemGroup>
+
 </Project>

@@ -1,12 +1,4 @@
 <Project Sdk="Microsoft.Build.NoTargets">
-  <PropertyGroup>
-    <!-- Set IsStableBuild to mimic https://github.com/dotnet/arcade/blob/694d59f090b743f894779d04a7ffe11cbaf352e7/src/Microsoft.DotNet.Arcade.Sdk/tools/Publish.proj#L30-L31 -->
-    <IsStableBuild>false</IsStableBuild>
-    <IsStableBuild Condition="'$(DotNetFinalVersionKind)' == 'release'">true</IsStableBuild>
-
-    <ChecksumExtension>.sha512</ChecksumExtension>
-    <DownloadDirectory>$(ArtifactsDir)PackageDownload/</DownloadDirectory>
-  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Feed" Version="$(MicrosoftDotNetBuildTasksFeedVersion)" />
@@ -15,21 +7,14 @@
 
   <!-- When doing post build sign, pull in the arcade sign.props file, which will
        create some initial sign groups and then pulls in the repo's custom Signing.props overrides.
-       Before importing the signing props. Set PrepareArtifactst=true. Depending on context (SDK project vs. not),
-       the initial imports of livebuilds.targets and Configuration.props are already imported and thus cannot
-       be imported again. Without those imports, the globbing of files to sign will not work properly. -->
-  <PropertyGroup>
-    <PrepareArtifacts>true</PrepareArtifacts>
-  </PropertyGroup>
+       Before importing the Signing props. -->
   <Import Project="../tools/Sign.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
+  <!-- Needed for checksum generation -->
+  <Import Project="../tools/BuildTasks.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+  <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.GenerateChecksums" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)" />
+
   <Import Project="$(RepositoryEngineeringDir)Publishing.props" Condition="Exists('$(RepositoryEngineeringDir)Publishing.props')" />
-
-  <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(InstallerTasksAssemblyPath)" />
-
-  <PropertyGroup>
-    <SuppressFinalPackageVersion>true</SuppressFinalPackageVersion>
-  </PropertyGroup>
 
   <!-- Pulled from arcade's publish.proj see https://github.com/dotnet/arcade/issues/5790 for
        issue on making this common in arcade so it doesn't have to be duplicated here -->
@@ -58,7 +43,7 @@
     <ManifestBuildData Include="AzureDevOpsBranch=$(BUILD_SOURCEBRANCH)" />
   </ItemGroup>
 
-  <!-- 
+  <!--
     Set metadata for assets that are not marked as NonShipping. 
     This is used to determine if the asset should be shipped as part of .NET release.
   -->
@@ -77,43 +62,26 @@
     <MSBuild
       Projects="$(ArcadeSdkSignProject)"
       Targets="Sign"
-      Properties="
-        DownloadDirectory=$(DownloadDirectory);
-        PrepareArtifacts=$(PrepareArtifacts)" />
+      Properties="DownloadDirectory=$(DownloadDirectory)" />
   </Target>
 
   <!--
     Take assets from the build jobs, prepare them for publishing (signing, arrangement) then upload
     them to the pipeline for Arcade and custom steps to publish.
   -->
-  <Target Name="PreparePublishToAzureBlobFeed"
+  <Target Name="PublishToAzureDevOpsArtifacts"
           AfterTargets="Build"
-          DependsOnTargets="GetProductVersions;FindDownloadedArtifacts;SignArtifacts;CreateChecksums">
+          DependsOnTargets="GetNonStableProductVersion;FindDownloadedArtifacts;SignArtifacts;CreateChecksums">
     <PropertyGroup>
+      <!-- Set IsStableBuild to mimic https://github.com/dotnet/arcade/blob/694d59f090b743f894779d04a7ffe11cbaf352e7/src/Microsoft.DotNet.Arcade.Sdk/tools/Publish.proj#L30-L31 -->
+      <IsStableBuild>false</IsStableBuild>
+      <IsStableBuild Condition="'$(DotNetFinalVersionKind)' == 'release'">true</IsStableBuild>
+
       <AssetManifestFilename>Manifest.xml</AssetManifestFilename>
       <AssetManifestFile>$(ArtifactsLogDir)AssetManifest/$(AssetManifestFilename)</AssetManifestFile>
-
-      <ProductVersionTxtContents Condition="'$(StabilizePackageVersion)'=='true'">$(ProductionVersion)</ProductVersionTxtContents>
-      <ProductVersionTxtContents Condition="'$(StabilizePackageVersion)'!='true'">$(ProductVersion)</ProductVersionTxtContents>
     </PropertyGroup>
 
-    <!-- Generate productVersion.txt containing the value of $(PackageVersion) -->
-    <WriteLinesToFile
-      File="$(ArtifactsShippingPackagesDir)productVersion.txt"
-      Lines="$(ProductVersionTxtContents)"
-      Overwrite="true"
-      Encoding="ASCII" />
-
-    <!-- Generate runtime-productVersion.txt containing the value of $(PackageVersion) -->
-    <WriteLinesToFile
-      File="$(ArtifactsShippingPackagesDir)runtime-productVersion.txt"
-      Lines="$(ProductVersionTxtContents)"
-      Overwrite="true"
-      Encoding="ASCII" />
-
     <ItemGroup>
-      <ItemsToPush Remove="@(ItemsToPush)" />
-
       <ItemsToPush Include="@(ShippingNupkgToPublishFile)" />
       <ItemsToPush Include="@(NonShippingNupkgToPublishFile)" ManifestArtifactData="NonShipping=true" />
       <ItemsToPush Include="@(SymbolNupkgToPublishFile)" />
@@ -121,28 +89,27 @@
       <ItemsToPush
         Include="@(UploadToBlobStorageFile)"
         Exclude="@(NupkgToPublishFile);@(SymbolNupkgToPublishFile)">
-        <RelativeBlobPath>$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
+        <RelativeBlobPath>Runtime/$(NonStableProductVersion)/%(Filename)%(Extension)</RelativeBlobPath>
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
       <ItemsToPush Include="@(GeneratedChecksumFile)">
-        <RelativeBlobPath>$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
-        <Category>Checksum</Category>
+        <RelativeBlobPath>Runtime/$(NonStableProductVersion)/%(Filename)%(Extension)</RelativeBlobPath>
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
       <ItemsToPush Include="$(ArtifactsShippingPackagesDir)productVersion.txt">
-        <RelativeBlobPath>$(InstallersRelativePath)productVersion.txt</RelativeBlobPath>
+        <RelativeBlobPath>Runtime/$(NonStableProductVersion)/productVersion.txt</RelativeBlobPath>
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
       <ItemsToPush Include="$(ArtifactsShippingPackagesDir)runtime-productVersion.txt">
-        <RelativeBlobPath>$(InstallersRelativePath)runtime-productVersion.txt</RelativeBlobPath>
+        <RelativeBlobPath>Runtime/$(NonStableProductVersion)/runtime-productVersion.txt</RelativeBlobPath>
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
       <ItemsToPush Include="@(WorkloadsVSInsertionFile)">
-        <RelativeBlobPath>$(InstallersRelativePath)workloads/%(Filename)%(Extension)</RelativeBlobPath>
+        <RelativeBlobPath>Runtime/$(NonStableProductVersion)/workloads/%(Filename)%(Extension)</RelativeBlobPath>
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
@@ -182,13 +149,12 @@
       $(DownloadDirectory)IntermediateUnsignedArtifacts\Windows_x64\Shipping\a.nupkg
   -->
   <Target Name="FindDownloadedArtifacts">
-
     <ItemGroup>
+      <Error Condition="'$(DownloadDirectory)' == ''" Text="DownloadDirectory property must be set." />
+
       <DownloadedArtifactFile Include="$(DownloadDirectory)**" />
 
-      <Error
-        Condition="'@(DownloadedArtifactFile)' == ''"
-        Text="No downloaded artifacts found." />
+      <Error Condition="'@(DownloadedArtifactFile)' == ''" Text="No downloaded artifacts found." />
 
       <DownloadedSymbolNupkgFile Include="$(DownloadDirectory)**\*.symbols.nupkg" />
       <DownloadedWixPdbFile Include="$(DownloadDirectory)**\*.wixpdb" />
@@ -226,9 +192,7 @@
         Workloads VS insertion artifacts produced by src/workloads/workloads.csproj. Only grab
         the zip artifacts as they're grouped by SDK feature band which correlates with specific VS versions.
       -->
-      <WorkloadsVSInsertionFile
-        Include="
-          $(DownloadDirectory)*\workloads-vs\**\*.zip"/>
+      <WorkloadsVSInsertionFile Include="$(DownloadDirectory)*\workloads-vs\**\*.zip" />
 
       <!--
         Runtime packages associated with some identity packages. Need to exclude "runtime.native.*"
@@ -288,12 +252,9 @@
       <NonShippingNupkgToPublishFile
         Include="@(NupkgToPublishFile)"
         Exclude="@(ShippingNupkgToPublishFile)" />
-
     </ItemGroup>
 
-    <Error
-      Condition="'@(SymbolNupkgToPublishFile)' == ''"
-      Text="No symbol packages found." />
+    <Error Condition="'@(SymbolNupkgToPublishFile)' == ''" Text="No symbol packages found." />
 
     <!--
       Duplicate RuntimeNupkgFile items mean artifact upload will fail, but only after another hour
@@ -301,16 +262,14 @@
       however the patterns should be fairly specific: this is likely a build infra mistake that
       should be corrected.
     -->
-    <Error
-      Text="Duplicate RuntimeNupkgFile entries for: %(RuntimeNupkgFile.Identity)"
-      Condition="@(RuntimeNupkgFile->Count()) &gt; 1" />
+    <Error Text="Duplicate RuntimeNupkgFile entries for: %(RuntimeNupkgFile.Identity)" Condition="@(RuntimeNupkgFile->Count()) &gt; 1" />
   </Target>
 
   <Target Name="CreateChecksums">
     <ItemGroup>
       <ArtifactsForGeneratingChecksums Include="@(UploadToBlobStorageFile)"
-                                       DestinationPath="%(FullPath)$(ChecksumExtension)" />
-      <GeneratedChecksumFile Include="@(ArtifactsForGeneratingChecksums -> '%(DestinationPath)')" />
+                                       DestinationPath="%(FullPath).sha512" />
+      <GeneratedChecksumFile Include="@(ArtifactsForGeneratingChecksums->Metadata('DestinationPath'))" />
     </ItemGroup>
 
     <GenerateChecksums Items="@(ArtifactsForGeneratingChecksums)" />

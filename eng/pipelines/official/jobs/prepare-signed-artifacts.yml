@@ -50,6 +50,7 @@ jobs:
       -subset publish
       -configuration Release
       /p:PublishRidAgnosticPackagesFromPlatform=${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
+      /p:DownloadDirectory=$(Build.SourcesDirectory)\artifacts\PackageDownload\
       /p:OfficialBuildId=$(Build.BuildNumber)
       /p:SignType=$(SignType)
       /p:DotNetSignType=$(SignType)

@@ -24,10 +24,5 @@
 
   <Target Name="CreateManifestResourceNames" />
   <Target Name="CoreCompile" />
-  <Target Name="_SetProductVersion" DependsOnTargets="GetProductVersions" BeforeTargets="Pack">
-    <PropertyGroup>
-      <PackageVersion>$(ProductVersion)</PackageVersion>
-    </PropertyGroup>
-  </Target>
 
 </Project>
