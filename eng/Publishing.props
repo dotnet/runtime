@@ -4,6 +4,7 @@
     <ProducesDotNetReleaseShippingAssets>true</ProducesDotNetReleaseShippingAssets>
     <!-- This avoids creating VS.*.symbols.nupkg packages that are identical to the original package. -->
     <AutoGenerateSymbolPackages>false</AutoGenerateSymbolPackages>
+    <EnableDefaultPublishItems Condition="'$(DotNetBuildRepo)' == 'true'">true</EnableDefaultPublishItems>
   </PropertyGroup>
 
   <!-- Retrieve the runtime pack product version.
@@ -22,7 +23,8 @@
        Don't include Symbols archive as it is already included in Arcade's Publish.proj, with correct blob path. -->
   <Target Name="PublishInstallers"
           DependsOnTargets="GetProductVersion"
-          BeforeTargets="PublishToAzureDevOpsArtifacts">
+          BeforeTargets="PublishToAzureDevOpsArtifacts"
+          Condition="'$(DotNetBuildRepo)' == 'true'">
 
     <ItemGroup>
       <InstallerToPublish Include="$(ArtifactsPackagesDir)**\*.tar.gz;
