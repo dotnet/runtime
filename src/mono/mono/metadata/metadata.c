@@ -1484,11 +1484,12 @@ mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
 	const char *data;
 	int n;
 	guint8 column_offset;
+	guint32 bitfield = t->size_bitfield;
 
 	g_assert (GINT_TO_UINT32(idx) < table_info_get_rows (t));
-	g_assert (col < mono_metadata_table_count (t->size_bitfield));
+	g_assert (col < mono_metadata_table_count (bitfield));
 	data = t->base + idx * t->row_size + t->column_offsets [col];
-	n = mono_metadata_table_size (t->size_bitfield, col);
+	n = mono_metadata_table_size (bitfield, col);
 	switch (n) {
 	case 1:
 		return *data;
