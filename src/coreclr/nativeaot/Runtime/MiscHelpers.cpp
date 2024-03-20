@@ -417,10 +417,8 @@ EXTERN_C void QCALLTYPE RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionI
 }
 #endif
 
-#if defined(TARGET_X86) || defined(TARGET_ARM)
 FCIMPL3(int64_t, RhpLockCmpXchg64, int64_t * location, int64_t value, int64_t comparand)
 {
     return PalInterlockedCompareExchange64(location, value, comparand);
 }
 FCIMPLEND
-#endif
