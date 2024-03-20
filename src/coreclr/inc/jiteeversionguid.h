@@ -43,11 +43,11 @@ typedef const GUID *LPCGUID;
 #define GUID_DEFINED
 #endif // !GUID_DEFINED
 
-constexpr GUID JITEEVersionIdentifier = { /* 59b817d0-2673-4698-b08c-44b37a4407da */
-    0x59b817d0,
-    0x2673,
-    0x4698,
-    {0xb0, 0x8c, 0x44, 0xb3, 0x7a, 0x44, 0x07, 0xda}
+constexpr GUID JITEEVersionIdentifier = { /* 3c216494-65f8-49e2-b69a-7f272193bcc6 */
+    0x3c216494,
+    0x65f8,
+    0x49e2,
+    {0xb6, 0x9a, 0x7f, 0x27, 0x21, 0x93, 0xbc, 0xc6}
   };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
