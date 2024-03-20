@@ -1721,8 +1721,6 @@ void CodeGen::psiBegProlog()
                     regNumber otherRegNum = REG_NA;
                     for (unsigned nCnt = 0; nCnt < structDesc.eightByteCount; nCnt++)
                     {
-                        var_types regType = TYP_UNDEF;
-
                         if (nCnt == 0)
                         {
                             regNum = lclVarDsc->GetArgReg();
@@ -1735,12 +1733,6 @@ void CodeGen::psiBegProlog()
                         {
                             assert(false && "Invalid eightbyte number.");
                         }
-
-                        regType = compiler->GetEightByteType(structDesc, nCnt);
-#ifdef DEBUG
-                        regType = compiler->mangleVarArgsType(regType);
-                        assert(genMapRegNumToRegArgNum((nCnt == 0 ? regNum : otherRegNum), regType) != (unsigned)-1);
-#endif // DEBUG
                     }
 
                     varLocation.storeVariableInRegisters(regNum, otherRegNum);
@@ -1789,7 +1781,6 @@ void CodeGen::psiBegProlog()
                     regType = lclVarDsc->GetHfaType();
                 }
 #endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                assert(genMapRegNumToRegArgNum(lclVarDsc->GetArgReg(), regType) != (unsigned)-1);
 #endif // DEBUG
                 varLocation.storeVariableInRegisters(lclVarDsc->GetArgReg(), REG_NA);
             }
