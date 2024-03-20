@@ -177,7 +177,7 @@ public:
         bool IsCollectible;
         bool IsGCStatic;
         bool IsClearedValue;
-        uint16_t ClearedMarker;
+        uint8_t ClearedMarker;
         TLSIndex TlsIndex;
     };
 
@@ -307,16 +307,16 @@ public:
         return (value & 0x3FF) == value && value != 0;
     }
 
-    static uint16_t GetClearedMarker(TADDR value)
+    static uint8_t GetClearedMarker(TADDR value)
     {
         LIMITED_METHOD_CONTRACT;
-        return (uint16_t)((value & 0x3FFFF) >> 2);
+        return (uint8_t)((value & 0x3FF) >> 2);
     }
 
 #ifndef DACCESS_COMPILE
     void Set(TLSIndex index, PTR_MethodTable pMT, bool isGCStatic);
-    bool FindClearedIndex(uint16_t whenClearedMarkerToAvoid, TLSIndex* pIndex);
-    void Clear(TLSIndex index, uint16_t whenCleared);
+    bool FindClearedIndex(uint8_t whenClearedMarkerToAvoid, TLSIndex* pIndex);
+    void Clear(TLSIndex index, uint8_t whenCleared);
 #endif // !DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE

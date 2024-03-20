@@ -134,7 +134,7 @@ bool ReportTLSIndexCarefully(TLSIndex index, int32_t cLoaderHandles, PTR_LOADERH
 
 // We use a scheme where the TLS data on each thread will be cleaned up within a GC promotion round or two.
 #ifndef DACCESS_COMPILE
-static Volatile<uint16_t> s_GCsWhichDoRelocateAndCanEmptyOutTheTLSIndices = 0;
+static Volatile<uint8_t> s_GCsWhichDoRelocateAndCanEmptyOutTheTLSIndices = 0;
 
 void NotifyThreadStaticGCHappened()
 {
@@ -229,7 +229,7 @@ void TLSIndexToMethodTableMap::Set(TLSIndex index, PTR_MethodTable pMT, bool isG
     pMap[index.TLSIndexRawIndex] = rawValue;
 }
 
-void TLSIndexToMethodTableMap::Clear(TLSIndex index, uint16_t whenCleared)
+void TLSIndexToMethodTableMap::Clear(TLSIndex index, uint8_t whenCleared)
 {
     CONTRACTL
     {
@@ -248,15 +248,16 @@ void TLSIndexToMethodTableMap::Clear(TLSIndex index, uint16_t whenCleared)
     }
     pMap[index.TLSIndexRawIndex] = (whenCleared << 2) | 0x3;
     _ASSERTE(GetClearedMarker(pMap[index.TLSIndexRawIndex]) == whenCleared);
+    _ASSERTE(IsClearedValue(pMap[index.TLSIndexRawIndex]));
 }
 
-bool TLSIndexToMethodTableMap::FindClearedIndex(uint16_t whenClearedMarkerToAvoid, TLSIndex* pIndex)
+bool TLSIndexToMethodTableMap::FindClearedIndex(uint8_t whenClearedMarkerToAvoid, TLSIndex* pIndex)
 {
     for (const auto& entry : *this)
     {
         if (entry.IsClearedValue)
         {
-            uint16_t whenClearedMarker = entry.ClearedMarker;
+            uint8_t whenClearedMarker = entry.ClearedMarker;
             if ((whenClearedMarker == whenClearedMarkerToAvoid) ||
                 (whenClearedMarker == (whenClearedMarkerToAvoid - 1)) ||
                 (whenClearedMarker == (whenClearedMarkerToAvoid - 2)))
