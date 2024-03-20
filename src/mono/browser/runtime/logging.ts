@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable no-console */
-import { INTERNAL, runtimeHelpers } from "./globals";
+import { INTERNAL, runtimeHelpers, mono_assert } from "./globals";
 import { utf8ToString } from "./strings";
 import { CharPtr, VoidPtr } from "./types/emscripten";
 
@@ -35,7 +35,7 @@ export function mono_log_error(msg: string, ...data: any) {
 }
 
 export const wasm_func_map = new Map<number, string>();
-const wasm_pending_symbol_tables = new Array<string>();
+let wasm_pending_symbol_table : string | undefined;
 const regexes: any[] = [];
 
 // V8
@@ -149,26 +149,29 @@ export function parseSymbolMapFile(text: string) {
     // Symbol map parsing is very expensive, so doing it during startup is wasteful
     //  instead, we defer it until the first time the symbol map is needed - which
     //  may be never
-    wasm_pending_symbol_tables.push(text);
+    mono_assert(!wasm_pending_symbol_table, "Another symbol map was already loaded");
+    wasm_pending_symbol_table = text;
     mono_log_debug(`Deferred loading of ${text.length}ch symbol map`);
 }
 
 function performDeferredSymbolMapParsing() {
-    while (wasm_pending_symbol_tables.length > 0) {
-        const text = wasm_pending_symbol_tables.shift()!;
-        try {
-            text.split(/[\r\n]/).forEach((line: string) => {
-                const parts: string[] = line.split(/:/);
-                if (parts.length < 2)
-                    return;
+    if (!wasm_pending_symbol_table)
+        return;
 
-                parts[1] = parts.splice(1).join(":");
-                wasm_func_map.set(Number(parts[0]), parts[1]);
-            });
-            mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
-        } catch (exc) {
-            mono_log_warn(`Failed to load symbol map: ${exc}`);
-        }
+    const text = wasm_pending_symbol_table!;
+    wasm_pending_symbol_table = undefined;
+    try {
+        text.split(/[\r\n]/).forEach((line: string) => {
+            const parts: string[] = line.split(/:/);
+            if (parts.length < 2)
+                return;
+
+            parts[1] = parts.splice(1).join(":");
+            wasm_func_map.set(Number(parts[0]), parts[1]);
+        });
+        mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
+    } catch (exc) {
+        mono_log_warn(`Failed to load symbol map: ${exc}`);
     }
 }
 
