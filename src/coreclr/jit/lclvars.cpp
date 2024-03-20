@@ -68,6 +68,7 @@ void Compiler::lvaInit()
     lvaArg0Var          = BAD_VAR_NUM;
     lvaMonAcquired      = BAD_VAR_NUM;
     lvaRetAddrVar       = BAD_VAR_NUM;
+    lvaSwiftSelfArg     = BAD_VAR_NUM;
 
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
 
@@ -627,7 +628,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #ifdef SWIFT_SUPPORT
         if ((info.compCallConv == CorInfoCallConvExtension::Swift) &&
-            lvaInitSpecialSwiftParam(varDsc, strip(corInfoType), typeHnd))
+            lvaInitSpecialSwiftParam(varDscInfo, strip(corInfoType), typeHnd))
         {
             continue;
         }
@@ -1321,7 +1322,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 // Remarks:
 //   Handles SwiftSelf.
 //
-bool Compiler::lvaInitSpecialSwiftParam(LclVarDsc* varDsc, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd)
+bool Compiler::lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd)
 {
     if (type != CORINFO_TYPE_VALUECLASS)
     {
@@ -1337,9 +1338,12 @@ bool Compiler::lvaInitSpecialSwiftParam(LclVarDsc* varDsc, CorInfoType type, COR
     const char* className = info.compCompHnd->getClassNameFromMetadata(typeHnd, &namespaceName);
     if ((strcmp(className, "SwiftSelf") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
     {
+        LclVarDsc* varDsc = varDscInfo->varDsc;
         varDsc->SetArgReg(REG_SWIFT_SELF);
         varDsc->SetOtherArgReg(REG_NA);
         varDsc->lvIsRegArg = true;
+        lvaSwiftSelfArg    = varDscInfo->varNum;
+        lvaSetVarDoNotEnregister(lvaSwiftSelfArg DEBUGARG(DoNotEnregisterReason::NonStandardParameter));
         return true;
     }
 
