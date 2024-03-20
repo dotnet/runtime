@@ -360,11 +360,6 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
         (uintptr_t)&RhpCheckedAssignRefEDIAVLocation,
         (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
 #endif
-#if defined(HOST_ARM)
-        (uintptr_t)&RhpLockCmpXchg8AVLocation,
-        (uintptr_t)&RhpLockCmpXchg16AVLocation,
-        (uintptr_t)&RhpLockCmpXchg32AVLocation,
-#endif
         (uintptr_t)&RhpByRefAssignRefAVLocation1,
 #if !defined(HOST_ARM64)
         (uintptr_t)&RhpByRefAssignRefAVLocation2,
