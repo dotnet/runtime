@@ -1003,14 +1003,14 @@ mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int to
         return mono_metadata_update_table_bounds_check (image, table_index, token_index);
 }
 
-static void
-compute_column_offsets (guint32 bitfield, guint8 column_offsets[MONO_TABLE_INFO_MAX_COLUMNS])
+void
+mono_metadata_compute_column_offsets (MonoTableInfo *table)
 {
-	int offset = 0, c = mono_metadata_table_count (bitfield);
-	memset(column_offsets, 0, MONO_TABLE_INFO_MAX_COLUMNS);
+	int offset = 0, c = mono_metadata_table_count (table->size_bitfield);
+	memset(table->column_offsets, 0, MONO_TABLE_INFO_MAX_COLUMNS);
 	for (int i = 0; i < c; i++) {
-		int size = mono_metadata_table_size (bitfield, i);
-		column_offsets[i] = (guint8)offset;
+		int size = mono_metadata_table_size (table->size_bitfield, i);
+		table->column_offsets[i] = (guint8)offset;
 		offset += size;
 	}
 }
@@ -1034,7 +1034,7 @@ mono_metadata_compute_table_bases (MonoImage *meta)
 			continue;
 
 		table->row_size = mono_metadata_compute_size (meta, i, &table->size_bitfield);
-		compute_column_offsets (table->size_bitfield, table->column_offsets);
+		mono_metadata_compute_column_offsets (table);
 		table->base = base;
 		base += table_info_get_rows (table) * table->row_size;
 	}

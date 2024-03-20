@@ -896,6 +896,7 @@ mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_i
 MONO_COMPONENT_API
 const char *   mono_meta_table_name              (int table);
 void           mono_metadata_compute_table_bases (MonoImage *meta);
+void           mono_metadata_compute_column_offsets (MonoTableInfo *table);
 
 gboolean
 mono_metadata_interfaces_from_typedef_full  (MonoImage             *image,
