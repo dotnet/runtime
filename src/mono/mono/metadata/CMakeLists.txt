@@ -211,6 +211,9 @@ if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
 endif()
 
 add_library(metadata_objects OBJECT ${metadata_sources})
+if(HOST_WASM)
+  set_target_properties(metadata_objects PROPERTIES COMPILE_FLAGS "-msimd128")
+endif()
 target_compile_definitions(metadata_objects PRIVATE ${metadata_compile_definitions})
 target_link_libraries(metadata_objects PRIVATE monoapi eglib_api utils_objects)
 # note: metadata_objects is an object library, so this doesn't force linking with sgen,
