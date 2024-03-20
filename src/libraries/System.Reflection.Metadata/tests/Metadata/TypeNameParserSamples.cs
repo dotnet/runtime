@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -57,23 +58,27 @@ namespace System.Reflection.Metadata.Tests
 
                 _options ??= new() // there is no need for lazy initialization, I just wanted to have everything important in one method
                 {
-                    // We parse only type names, because the attackers may create such a payload,
-                    // where "typeName" passed to BindToType contains the assembly name
-                    // and "assemblyName" passed to this method contains something else
-                    // (some garbage or a different assembly name). Example:
-                    // typeName: System.Int32, MyHackyDll.dll
-                    // assemblyName: mscorlib.dll
-                    AllowFullyQualifiedName = false,
                     // To prevent from unbounded recursion, we set the max depth for parser options.
                     // By ensuring that the max depth limit is enforced, we can safely use recursion in
                     // GetTypeFromParsedTypeName to get arrays of arrays and generics of generics.
-                    MaxTotalComplexity = 10
+                    MaxNodes = 10
                 };
 
                 if (!TypeName.TryParse(typeName.AsSpan(), out TypeName parsed, _options))
                 {
                     // we can throw any exception, log the information etc
                     throw new InvalidOperationException($"Invalid type name: '{typeName}'");
+                }
+
+                if (parsed.GetAssemblyName() is not null)
+                {
+                    // The attackers may create such a payload,
+                    // where "typeName" passed to BindToType contains the assembly name
+                    // and "assemblyName" passed to this method contains something else
+                    // (some garbage or a different assembly name). Example:
+                    // typeName: System.Int32, MyHackyDll.dll
+                    // assemblyName: mscorlib.dll
+                    throw new InvalidOperationException($"Type name '{typeName}' contained assembly name.");
                 }
 
                 return GetTypeFromParsedTypeName(parsed);
@@ -100,7 +105,7 @@ namespace System.Reflection.Metadata.Tests
                     Type genericTypeDefinition = GetTypeFromParsedTypeName(genericTypeDefinitionName);
                     Debug.Assert(genericTypeDefinition.IsGenericTypeDefinition);
 
-                    ReadOnlySpan<TypeName> genericArgs = parsed.GetGenericArguments().Span;
+                    ImmutableArray<TypeName> genericArgs = parsed.GetGenericArguments();
                     Type[] typeArguments = new Type[genericArgs.Length];
                     for (int i = 0; i < genericArgs.Length; i++)
                     {

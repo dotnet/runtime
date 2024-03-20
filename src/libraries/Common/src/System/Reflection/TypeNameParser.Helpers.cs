@@ -152,13 +152,13 @@ namespace System.Reflection
 #endif
         private Type? Make(Type? type, Metadata.TypeName typeName)
         {
-            if (type is null)
+            if (type is null || typeName.IsSimple)
             {
                 return type;
             }
             else if (typeName.IsConstructedGenericType)
             {
-                ReadOnlySpan<Metadata.TypeName> genericArgs = typeName.GetGenericArguments().Span;
+                var genericArgs = typeName.GetGenericArguments();
                 Type[] genericTypes = new Type[genericArgs.Length];
                 for (int i = 0; i < genericArgs.Length; i++)
                 {
@@ -184,13 +184,9 @@ namespace System.Reflection
             {
                 return type.MakeArrayType();
             }
-            else if(typeName.IsArray)
-            {
-                return type.MakeArrayType(rank: typeName.GetArrayRank());
-            }
             else
             {
-                return type;
+                return type.MakeArrayType(rank: typeName.GetArrayRank());
             }
         }
     }

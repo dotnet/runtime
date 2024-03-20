@@ -10,16 +10,14 @@ namespace System.Reflection.Metadata
 #endif
     sealed class TypeNameParserOptions
     {
-        private int _maxComplexity = int.MaxValue;
-
-        public bool AllowFullyQualifiedName { get; set; } = true;
+        private int _maxNodes = int.MaxValue; // TODO: choose the right default based on facts
 
         /// <summary>
-        /// Limits the maximum value of <seealso cref="TypeName.Complexity"/> that parser can handle.
+        /// Limits the maximum value of <seealso cref="TypeName.GetNodeCount">node count</seealso> that parser can handle.
         /// </summary>
-        public int MaxTotalComplexity
+        public int MaxNodes
         {
-            get => _maxComplexity;
+            get => _maxNodes;
             set
             {
 #if NET8_0_OR_GREATER
@@ -31,7 +29,7 @@ namespace System.Reflection.Metadata
                 }
 #endif
 
-                _maxComplexity = value;
+                _maxNodes = value;
             }
         }
 
@@ -42,6 +40,6 @@ namespace System.Reflection.Metadata
         /// When parsing AssemblyName, only Version, Culture and PublicKeyToken attributes are allowed.
         /// The comparison is also case-sensitive (in contrary to <seealso cref="AssemblyName(string)"/> constructor).
         /// </remarks>
-        public bool StrictValidation { get; set; }
+        internal bool StrictValidation { get; set; } // it's internal for now, will very soon be changed after we have full requirements and the API gets approved
     }
 }

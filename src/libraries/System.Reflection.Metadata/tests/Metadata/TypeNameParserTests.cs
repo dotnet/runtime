@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Emit;
@@ -117,6 +118,7 @@ namespace System.Reflection.Metadata.Tests
                 Assert.NotNull(parsedAssemblyName);
 
                 Assert.Equal(expectedAssemblyName.Name, parsedAssemblyName.Name);
+                Assert.Equal(expectedAssemblyName.Name, parsed.AssemblySimpleName);
                 Assert.Equal(expectedAssemblyName.Version, parsedAssemblyName.Version);
                 Assert.Equal(expectedAssemblyName.CultureName, parsedAssemblyName.CultureName);
                 Assert.Equal(expectedAssemblyName.GetPublicKeyToken(), parsedAssemblyName.GetPublicKeyToken());
@@ -155,7 +157,6 @@ namespace System.Reflection.Metadata.Tests
             TypeNameParserOptions options = new()
             {
                 StrictValidation = true,
-                AllowFullyQualifiedName = true
             };
 
             Assert.False(TypeName.TryParse(fullName.AsSpan(), out _, options));
@@ -171,7 +172,7 @@ namespace System.Reflection.Metadata.Tests
         {
             TypeNameParserOptions options = new()
             {
-                MaxTotalComplexity = maxDepth
+                MaxNodes = maxDepth
             };
 
             string notTooMany = $"System.Int32{string.Join("", Enumerable.Repeat(decorator, maxDepth - 1))}";
@@ -206,7 +207,7 @@ namespace System.Reflection.Metadata.Tests
         {
             TypeNameParserOptions options = new()
             {
-                MaxTotalComplexity = maxDepth
+                MaxNodes = maxDepth
             };
 
             string tooDeep = GetName(maxDepth);
@@ -238,7 +239,7 @@ namespace System.Reflection.Metadata.Tests
                 for (int i = 0; i < maxDepth - 1; i++)
                 {
                     Assert.True(parsed.IsConstructedGenericType);
-                    parsed = parsed.GetGenericArguments().Span[0];
+                    parsed = parsed.GetGenericArguments()[0];
                 }
             }
         }
@@ -250,7 +251,7 @@ namespace System.Reflection.Metadata.Tests
         {
             TypeNameParserOptions options = new()
             {
-                MaxTotalComplexity = maxDepth
+                MaxNodes = maxDepth
             };
 
             string tooMany = GetName(maxDepth);
@@ -271,7 +272,7 @@ namespace System.Reflection.Metadata.Tests
             static void Validate(TypeName parsed, int maxDepth)
             {
                 Assert.True(parsed.IsConstructedGenericType);
-                TypeName[] genericArgs = parsed.GetGenericArguments().ToArray();
+                ImmutableArray<TypeName> genericArgs = parsed.GetGenericArguments();
                 Assert.Equal(maxDepth - 1, genericArgs.Length);
                 Assert.All(genericArgs, arg => Assert.False(arg.IsConstructedGenericType));
             }
@@ -392,13 +393,14 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(name, parsed.Name);
             Assert.Equal(fullName, parsed.FullName);
             Assert.True(parsed.IsConstructedGenericType);
-            Assert.False(parsed.IsElementalType);
+            Assert.False(parsed.IsSimple);
 
+            ImmutableArray<TypeName> typeNames = parsed.GetGenericArguments();
             for (int i = 0; i < genericTypesFullNames.Length; i++)
             {
-                TypeName genericArg = parsed.GetGenericArguments().Span[i];
+                TypeName genericArg = typeNames[i];
                 Assert.Equal(genericTypesFullNames[i], genericArg.FullName);
-                Assert.True(genericArg.IsElementalType);
+                Assert.True(genericArg.IsSimple);
                 Assert.False(genericArg.IsConstructedGenericType);
 
                 if (assemblyNames is not null)
@@ -410,6 +412,7 @@ namespace System.Reflection.Metadata.Tests
                     else
                     {
                         Assert.Equal(assemblyNames[i].FullName, genericArg.GetAssemblyName().FullName);
+                        Assert.Equal(assemblyNames[i].Name, genericArg.AssemblySimpleName);
                     }
                 }
             }
@@ -451,12 +454,12 @@ namespace System.Reflection.Metadata.Tests
             if (isArray) Assert.Equal(arrayRank, parsed.GetArrayRank());
             Assert.Equal(isByRef, parsed.IsByRef);
             Assert.Equal(isPointer, parsed.IsPointer);
-            Assert.False(parsed.IsElementalType);
+            Assert.False(parsed.IsSimple);
 
             TypeName elementType = parsed.GetElementType();
             Assert.NotNull(elementType);
             Assert.Equal(typeNameWithoutDecorators, elementType.FullName);
-            Assert.True(elementType.IsElementalType);
+            Assert.True(elementType.IsSimple);
             Assert.False(elementType.IsArray);
             Assert.False(elementType.IsSZArray);
             Assert.False(elementType.IsByRef);
@@ -501,15 +504,36 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(typeof(int[,][]), 3)]
         [InlineData(typeof(Nullable<>), 1)] // open generic type treated as elemental
         [MemberData(nameof(GetAdditionalConstructedTypeData))]
-        public void TotalComplexityReturnsExpectedValue(Type type, int expectedComplexity)
+        public void GetNodeCountReturnsExpectedValue(Type type, int expected)
         {
             TypeName parsed = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
 
-            Assert.Equal(expectedComplexity, parsed.Complexity);
+            Assert.Equal(expected, parsed.GetNodeCount());
 
             Assert.Equal(type.Name, parsed.Name);
             Assert.Equal(type.FullName, parsed.FullName);
             Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
+        }
+
+        [Fact]
+        public void IsSimpleReturnsTrueForNestedNonGenericTypes()
+        {
+            Assert.True(TypeName.Parse("Containing+Nested".AsSpan()).IsSimple);
+            Assert.False(TypeName.Parse(typeof(NestedGeneric_0<int>).FullName.AsSpan()).IsSimple);
+        }
+
+        [Theory]
+        [InlineData("SingleDimensionNonZeroIndexed[*]", true)]
+        [InlineData("SingleDimensionZeroIndexed[]", false)]
+        [InlineData("MultiDimensional[,,,,,,]", true)]
+        public void IsVariableBoundArrayTypeReturnsTrueForNonSZArrays(string typeName, bool expected)
+        {
+            TypeName parsed = TypeName.Parse(typeName.AsSpan());
+
+            Assert.True(parsed.IsArray);
+            Assert.Equal(expected, parsed.IsVariableBoundArrayType);
+            Assert.NotEqual(expected, parsed.IsSZArray);
+            Assert.InRange(parsed.GetArrayRank(), 1, 32);
         }
 
         public static IEnumerable<object[]> GetTypesThatRequireEscaping()
@@ -635,7 +659,7 @@ namespace System.Reflection.Metadata.Tests
                     {
                         flagsCopiedFromClr |= BindingFlags.IgnoreCase;
                     }
-                    return Make(GetType(typeName.DeclaringType!, throwOnError, ignoreCase)?.GetNestedType(typeName.Name, flagsCopiedFromClr));
+                    return Make(GetType(typeName.DeclaringType, throwOnError, ignoreCase)?.GetNestedType(typeName.Name, flagsCopiedFromClr));
                 }
                 else if (typeName.IsConstructedGenericType)
                 {
@@ -647,7 +671,7 @@ namespace System.Reflection.Metadata.Tests
                 }
                 else
                 {
-                    Assert.Equal(1, typeName.Complexity);
+                    Assert.True(typeName.IsSimple);
 
                     AssemblyName? assemblyName = typeName.GetAssemblyName();
                     Type? type = assemblyName is null
@@ -659,13 +683,13 @@ namespace System.Reflection.Metadata.Tests
 
                 Type? Make(Type? type)
                 {
-                    if (type is null || typeName.IsElementalType)
+                    if (type is null || typeName.IsSimple)
                     {
                         return type;
                     }
                     else if (typeName.IsConstructedGenericType)
                     {
-                        ReadOnlySpan<TypeName> genericArgs = typeName.GetGenericArguments().Span;
+                        ImmutableArray<TypeName> genericArgs = typeName.GetGenericArguments();
                         Type[] genericTypes = new Type[genericArgs.Length];
                         for (int i = 0; i < genericArgs.Length; i++)
                         {

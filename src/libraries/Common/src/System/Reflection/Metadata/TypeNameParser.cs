@@ -38,7 +38,7 @@ namespace System.Reflection.Metadata
 
             int recursiveDepth = 0;
             TypeNameParser parser = new(trimmedName, throwOnError, options);
-            TypeName? parsedName = parser.ParseNextTypeName(parser._parseOptions.AllowFullyQualifiedName, ref recursiveDepth);
+            TypeName? parsedName = parser.ParseNextTypeName(allowFullyQualifiedName: true, ref recursiveDepth);
 
             if (parsedName is not null && parser._inputString.IsEmpty) // unconsumed input == error
             {
@@ -51,7 +51,7 @@ namespace System.Reflection.Metadata
 
             // there was an error and we need to throw
 #if !SYSTEM_PRIVATE_CORELIB
-            if (recursiveDepth >= parser._parseOptions.MaxTotalComplexity)
+            if (recursiveDepth >= parser._parseOptions.MaxNodes)
             {
                 throw new InvalidOperationException("SR.RecursionCheck_MaxDepthExceeded");
             }
@@ -147,9 +147,9 @@ namespace System.Reflection.Metadata
                 {
                     // Parsing the rest would hit the limit.
                     // -1 because the first generic arg has been already parsed.
-                    if (maxObservedRecursionCheck + genericArgCount - 1 > _parseOptions.MaxTotalComplexity)
+                    if (maxObservedRecursionCheck + genericArgCount - 1 > _parseOptions.MaxNodes)
                     {
-                        recursiveDepth = _parseOptions.MaxTotalComplexity;
+                        recursiveDepth = _parseOptions.MaxNodes;
                         return null;
                     }
 
@@ -336,7 +336,7 @@ namespace System.Reflection.Metadata
 
         private bool TryDive(ref int depth)
         {
-            if (depth >= _parseOptions.MaxTotalComplexity)
+            if (depth >= _parseOptions.MaxNodes)
             {
                 return false;
             }

@@ -24,6 +24,7 @@ namespace System.Reflection.Metadata
         private readonly TypeName[]? _genericArguments;
         private readonly AssemblyName? _assemblyName;
         private readonly TypeName? _underlyingType;
+        private readonly TypeName? _declaringType;
         private string? _assemblyQualifiedName;
 
         internal TypeName(string name, string fullName,
@@ -38,9 +39,8 @@ namespace System.Reflection.Metadata
             _assemblyName = assemblyName;
             _rankOrModifier = rankOrModifier;
             _underlyingType = underlyingType;
-            DeclaringType = containingType;
+            _declaringType = containingType;
             _genericArguments = genericTypeArguments;
-            Complexity = GetComplexity(underlyingType, containingType, genericTypeArguments);
 
             Debug.Assert(!(IsArray || IsPointer || IsByRef) || _underlyingType is not null);
             Debug.Assert(_genericArguments is null || _underlyingType is not null);
@@ -56,13 +56,21 @@ namespace System.Reflection.Metadata
             => _assemblyQualifiedName ??= _assemblyName is null ? FullName : $"{FullName}, {_assemblyName.FullName}";
 
         /// <summary>
+        /// Returns the name of the assembly (not the full name>).
+        /// </summary>
+        /// <remarks>
+        /// If <see cref="GetAssemblyName()"/> returns null, simply returns null.
+        /// </remarks>
+        public string? AssemblySimpleName => _assemblyName?.Name;
+
+        /// <summary>
         /// If this type is a nested type (see <see cref="IsNested"/>), gets
-        /// the declaring type. If this type is not a nested type, returns null.
+        /// the declaring type. If this type is not a nested type, throws.
         /// </summary>
         /// <remarks>
         /// For example, given "Namespace.Declaring+Nested", unwraps the outermost type and returns "Namespace.Declaring".
         /// </remarks>
-        public TypeName? DeclaringType { get; }
+        public TypeName DeclaringType => _declaringType is not null ? _declaringType : throw new InvalidOperationException();
 
         /// <summary>
         /// The full name of this type, including namespace, but without the assembly name; e.g., "System.Int32".
@@ -95,7 +103,7 @@ namespace System.Reflection.Metadata
         public bool IsConstructedGenericType => _genericArguments is not null;
 
         /// <summary>
-        /// Returns true if this is a "plain" type; that is, not an array, not a pointer, and
+        /// Returns true if this is a "plain" type; that is, not an array, not a pointer, not a reference, and
         /// not a constructed generic type. Examples of elemental types are "System.Int32",
         /// "System.Uri", and "YourNamespace.YourClass".
         /// </summary>
@@ -106,7 +114,7 @@ namespace System.Reflection.Metadata
         /// This is because determining whether a type truly is a generic type requires loading the type
         /// and performing a runtime check.</para>
         /// </remarks>
-        public bool IsElementalType => _underlyingType is null;
+        public bool IsSimple => _underlyingType is null;
 
         /// <summary>
         /// Returns true if this is a managed pointer type (e.g., "ref int").
@@ -115,10 +123,10 @@ namespace System.Reflection.Metadata
         public bool IsByRef => _rankOrModifier == TypeNameParserHelpers.ByRef;
 
         /// <summary>
-        /// Returns true if this is a nested type (e.g., "Namespace.Containing+Nested").
-        /// For nested types <seealso cref="DeclaringType"/> returns their containing type.
+        /// Returns true if this is a nested type (e.g., "Namespace.Declaring+Nested").
+        /// For nested types <seealso cref="DeclaringType"/> returns their declaring type.
         /// </summary>
-        public bool IsNested => DeclaringType is not null;
+        public bool IsNested => _declaringType is not null;
 
         /// <summary>
         /// Returns true if this type represents a single-dimensional, zero-indexed array (e.g., "int[]").
@@ -135,7 +143,7 @@ namespace System.Reflection.Metadata
         /// Returns true if this type represents a variable-bound array; that is, an array of rank greater
         /// than 1 (e.g., "int[,]") or a single-dimensional array which isn't necessarily zero-indexed.
         /// </summary>
-        public bool IsVariableBoundArrayType => _rankOrModifier > 1;
+        public bool IsVariableBoundArrayType => _rankOrModifier >= 1;
 
         /// <summary>
         /// The name of this type, without the namespace and the assembly name; e.g., "Int32".
@@ -144,19 +152,20 @@ namespace System.Reflection.Metadata
         public string Name { get; }
 
         /// <summary>
-        /// Represents the total amount of work that needs to be performed to fully inspect
+        /// Represents the total number of <see cref="TypeName"/> instances that are used to describe
         /// this instance, including any generic arguments or underlying types.
         /// </summary>
         /// <remarks>
+        /// <para>This value is computed every time this method gets called, it's not cached.</para>
         /// <para>There's not really a parallel concept to this in reflection. Think of it
         /// as the total number of <see cref="TypeName"/> instances that would be created if
         /// you were to totally deconstruct this instance and visit each intermediate <see cref="TypeName"/>
         /// that occurs as part of deconstruction.</para>
         /// <para>"int" and "Person" each have complexities of 1 because they're standalone types.</para>
-        /// <para>"int[]" has a complexity of 2 because to fully inspect it involves inspecting the
+        /// <para>"int[]" has a node count of 2 because to fully inspect it involves inspecting the
         /// array type itself, <em>plus</em> unwrapping the underlying type ("int") and inspecting that.</para>
         /// <para>
-        /// "Dictionary&lt;string, List&lt;int[][]&gt;&gt;" has complexity 8 because fully visiting it
+        /// "Dictionary&lt;string, List&lt;int[][]&gt;&gt;" has node count 8 because fully visiting it
         /// involves inspecting 8 <see cref="TypeName"/> instances total:
         /// <list type="bullet">
         /// <item>Dictionary&lt;string, List&lt;int[][]&gt;&gt; (the original type)</item>
@@ -170,7 +179,30 @@ namespace System.Reflection.Metadata
         /// </list>
         /// </para>
         /// </remarks>
-        public int Complexity { get; }
+        public int GetNodeCount()
+        {
+            int result = 1;
+
+            if (_underlyingType is not null)
+            {
+                result = checked(result + _underlyingType.GetNodeCount());
+            }
+
+            if (_declaringType is not null)
+            {
+                result = checked(result + _declaringType.GetNodeCount());
+            }
+
+            if (_genericArguments is not null)
+            {
+                foreach (TypeName genericArgument in _genericArguments)
+                {
+                    result = checked(result + genericArgument.GetNodeCount());
+                }
+            }
+
+            return result;
+        }
 
         /// <summary>
         /// The TypeName of the object encompassed or referred to by the current array, pointer, or reference type.
@@ -242,36 +274,16 @@ namespace System.Reflection.Metadata
         /// <para>For example, given "Dictionary&lt;string, int&gt;", returns a 2-element span containing
         /// string and int.</para>
         /// </remarks>
-        public ReadOnlyMemory<TypeName> GetGenericArguments()
-            => _genericArguments is null ? ReadOnlyMemory<TypeName>.Empty : _genericArguments.AsMemory();
-
-        private static int GetComplexity(TypeName? underlyingType, TypeName? containingType, TypeName[]? genericTypeArguments)
-        {
-            int result = 1;
-
-            if (underlyingType is not null)
-            {
-                result = checked(result + underlyingType.Complexity);
-            }
-
-            if (containingType is not null)
-            {
-                result = checked(result + containingType.Complexity);
-            }
-
-            if (genericTypeArguments is not null)
-            {
-                // New total complexity will be the sum of the cumulative args' complexity + 2:
-                // - one for the generic type definition "MyGeneric`x"
-                // - one for the constructed type definition "MyGeneric`x[[...]]"
-                // - and the cumulative complexity of all the arguments
-                foreach (TypeName genericArgument in genericTypeArguments)
-                {
-                    result = checked(result + genericArgument.Complexity);
-                }
-            }
-
-            return result;
-        }
+#if SYSTEM_PRIVATE_CORELIB
+        public TypeName[] GetGenericArguments() => _genericArguments ?? Array.Empty<TypeName>();
+#else
+        public Collections.Immutable.ImmutableArray<TypeName> GetGenericArguments()
+            => _genericArguments is null ? Collections.Immutable.ImmutableArray<TypeName>.Empty :
+#if NET8_0_OR_GREATER
+            Runtime.InteropServices.ImmutableCollectionsMarshal.AsImmutableArray(_genericArguments);
+#else
+            Collections.Immutable.ImmutableArray.Create(_genericArguments);
+    #endif
+#endif
     }
 }
