@@ -42,6 +42,10 @@ jobs:
         value: '/p:OfficialBuildId=$(Build.BuildNumber)'
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
+    - name: workloadPackagesPath
+      value: $(Build.SourcesDirectory)/artifacts/workloadPackages
+    - name: workloadArtifactsPath
+      value: $(Build.SourcesDirectory)/artifacts/workloads
     - ${{ parameters.variables }}
 
     steps:

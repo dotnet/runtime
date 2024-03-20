@@ -582,6 +582,15 @@ PhaseStatus Compiler::fgImport()
         compInlineResult->SetImportedILSize(info.compILImportSize);
     }
 
+    // Now that we've made it through the importer, we know the IL was valid.
+    // If we synthesized profile data and though it should be consistent,
+    // verify that it was consistent.
+    //
+    if (fgPgoSynthesized && fgPgoConsistent)
+    {
+        assert(fgPgoConsistentCheck);
+    }
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -2775,7 +2784,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     /* Allocate a new basic block */
 
     BasicBlock* newHead = BasicBlock::New(this);
-    newHead->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
+    newHead->SetFlags(BBF_INTERNAL);
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
 
@@ -4203,10 +4212,11 @@ unsigned FlowGraphNaturalLoop::NumLoopBlocks()
 //   dfs - A DFS tree.
 //
 FlowGraphNaturalLoops::FlowGraphNaturalLoops(const FlowGraphDfsTree* dfsTree)
-    : m_dfsTree(dfsTree), m_loops(m_dfsTree->GetCompiler()->getAllocator(CMK_Loops))
+    : m_dfsTree(dfsTree), m_loops(m_dfsTree->GetCompiler()->getAllocator(CMK_Loops)), m_improperLoopHeaders(0)
 {
 }
 
+//------------------------------------------------------------------------
 // GetLoopByIndex: Get loop by a specified index.
 //
 // Parameters:
@@ -4221,6 +4231,7 @@ FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByIndex(unsigned index)
     return m_loops[index];
 }
 
+//------------------------------------------------------------------------
 // GetLoopByHeader: See if a block is a loop header, and if so return the
 // associated loop.
 //
@@ -4320,7 +4331,6 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         JITDUMP("%02u -> " FMT_BB "[%u, %u]\n", rpoNum, block->bbNum, block->bbPreorderNum, block->bbPostorderNum);
     }
 
-    unsigned improperLoopHeaders = 0;
 #endif
 
     FlowGraphNaturalLoops* loops = new (comp, CMK_Loops) FlowGraphNaturalLoops(dfsTree);
@@ -4375,7 +4385,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 
         if (!FindNaturalLoopBlocks(loop, worklist))
         {
-            INDEBUG(improperLoopHeaders++);
+            loops->m_improperLoopHeaders++;
             continue;
         }
 
@@ -4480,9 +4490,9 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         JITDUMP("\nFound %zu loops\n", loops->m_loops.size());
     }
 
-    if (improperLoopHeaders > 0)
+    if (loops->m_improperLoopHeaders > 0)
     {
-        JITDUMP("Rejected %u loop headers\n", improperLoopHeaders);
+        JITDUMP("Rejected %u loop headers\n", loops->m_improperLoopHeaders);
     }
 
     JITDUMPEXEC(Dump(loops));

@@ -16,7 +16,22 @@ namespace ILCompiler
         /// </summary>
         public static bool IsHardwareIntrinsic(MethodDesc method)
         {
-            return !string.IsNullOrEmpty(InstructionSetSupport.GetHardwareIntrinsicId(method.Context.Target.Architecture, method.OwningType));
+            // Matches logic in
+            // https://github.com/dotnet/runtime/blob/5c40bb5636b939fb548492fdeb9d501b599ac5f5/src/coreclr/vm/methodtablebuilder.cpp#L1491-L1512
+            TypeDesc owningType = method.OwningType;
+            if (owningType.IsIntrinsic && !owningType.HasInstantiation)
+            {
+                var owningMdType = (MetadataType)owningType;
+                string ns = owningMdType.ContainingType?.Namespace ?? owningMdType.Namespace;
+                return method.Context.Target.Architecture switch
+                {
+                    TargetArchitecture.ARM64 => ns == "System.Runtime.Intrinsics.Arm",
+                    TargetArchitecture.X64 or TargetArchitecture.X86 => ns == "System.Runtime.Intrinsics.X86",
+                    _ => false,
+                };
+            }
+
+            return false;
         }
 
         public static void AddRuntimeRequiredIsaFlagsToBuilder(InstructionSetSupportBuilder builder, int flags)

@@ -1907,9 +1907,11 @@ ProcessFuncletsForGCReporting:
 
                                         if (g_isNewExceptionHandlingEnabled)
                                         {
-                                            if (!m_fFoundFirstFunclet &&  pExInfo > (void*)GetRegdisplaySP(m_crawl.GetRegisterSet()))
+                                            if (!m_fFoundFirstFunclet && (pExInfo > (void*)GetRegdisplaySP(m_crawl.GetRegisterSet())) && ((void*)m_sfParent.SP > pExInfo))
                                             {
-                                                // For the first funclet we encounter below the topmost ExInfo, we instruct the GC scanning of the frame
+                                                // For the first funclet we encounter below the topmost ExInfo that has a parent above that ExInfo
+                                                // (so it is an exceptionally called funclet for the exception represented by the ExInfo),
+                                                // we instruct the GC scanning of the frame
                                                 // to save information on the funclet so that we can use it to report references in the parent frame if
                                                 // no such funclet is found in future GC scans for the same exception.
                                                 _ASSERTE(pExInfo != NULL);

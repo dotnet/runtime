@@ -649,6 +649,23 @@ namespace System.Reflection.Emit.Tests
             Assert.Null(method3.ReturnParameter.Name);
             Assert.True(method3.ReturnParameter.IsRetval);
         }
+
+        public class BaseType<T> { }
+
+        [Fact]
+        public void GenericTypeWithTypeBuilderGenericParameter_UsedAsParent()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+
+            Type type = typeBuilder.CreateType();
+            var baseType = typeof(BaseType<>).GetGenericTypeDefinition().MakeGenericType(type);
+
+            var typeBuilder2 = ab.GetDynamicModule("MyModule")
+                .DefineType("TestService", TypeAttributes.Public | TypeAttributes.Class, baseType);
+            typeBuilder2.CreateType();
+
+            Assert.NotNull(type.GetConstructor(Type.EmptyTypes)); // Default constructor created
+        }
     }
 
     // Test Types
