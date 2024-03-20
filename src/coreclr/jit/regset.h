@@ -89,6 +89,7 @@ public:
         assert(rsModifiedRegsMaskInitialized);
         return rsModifiedRegsMask;
     }
+#endif
 
     regMaskGpr rsGetModifiedGprRegsMask() const
     {
@@ -109,8 +110,6 @@ public:
         return rsModifiedRegsMask.predicateRegs();
     }
 #endif // HAS_PREDICATE_REGS
-
-#endif
 
     regMaskGpr rsGetModifiedRegsMask(var_types type) const
     {
