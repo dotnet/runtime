@@ -69,7 +69,7 @@ Once the CoreCLR runtime has been built locally you can find the runtime artifac
 You can use the script to deploy an update of CoreCLR to your Unity build using:
 
 ```
-.yamato/scripts/build_yamato.sh --config Debug --deploy-to-player ..../build/MacEditor/arm64/Debug/Unity.app/Contents/CoreCLR
+.yamato/scripts/build_yamato.sh --config Debug --deploy-to-player <path-to-coreclr-folder>
 ```
 
 Notes:
