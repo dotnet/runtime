@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 
+#pragma warning disable CS3016 // Arrays as attribute arguments are not CLS Compliant
+
 internal static partial class Interop
 {
     internal static partial class AppleCrypto
