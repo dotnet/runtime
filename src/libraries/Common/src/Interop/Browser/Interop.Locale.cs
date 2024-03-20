@@ -14,6 +14,6 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe int GetFirstWeekOfYear(in string culture, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe int GetNativeName(in string locale, in string culture, char* buffer, int bufferLength, out int exceptionalResult, out object result);
+        internal static extern unsafe int GetLocaleInfo(in string locale, in string culture, char* buffer, int bufferLength, out int exceptionalResult, out object result);
     }
 }

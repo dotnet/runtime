@@ -6,29 +6,81 @@ import { mono_wasm_new_external_root } from "../roots";
 import { monoStringToString, stringToUTF16 } from "../strings";
 import { Int32Ptr } from "../types/emscripten";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
-import { normalizeLocale } from "./helpers";
+import { OUTER_SEPARATOR, normalizeLocale } from "./helpers";
 
-export function mono_wasm_get_native_display_name(locale: MonoStringRef, culture: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef) : number
+export function mono_wasm_get_locale_info(culture: MonoStringRef, locale: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef) : number
 {
     const localeRoot = mono_wasm_new_external_root<MonoString>(locale),
         cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
     try {
-        const localeName = monoStringToString(localeRoot);
-        const cultureName = monoStringToString(cultureRoot);
+        const localeNameOriginal = monoStringToString(localeRoot);
+        const localeName = normalizeLocale(localeNameOriginal);
+        if (!localeName && localeNameOriginal)
+        {
+            // handle non-standard or malformed locales by forwarding the locale code
+            stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
+            wrap_no_error_root(isException, exceptionRoot);
+            return localeNameOriginal.length;
+        }
+        const cultureNameOriginal = monoStringToString(cultureRoot);
+        const cultureName = normalizeLocale(cultureNameOriginal);
+        
         if (!localeName || !cultureName)
-            throw new Error("Locale or culture name is null or empty.");
+            throw new Error(`Locale or culture name is null or empty. localeName=${localeName}, cultureName=${cultureName}`);
 
-        const [language, region] = cultureName.split("-");
-        const languageName = new Intl.DisplayNames([localeName], {type: "language"}).of(language);
-        const regionName = region ? new Intl.DisplayNames([localeName], {type: "region"}).of(region) : undefined;
-        const result = region ? `${languageName} (${regionName})` : languageName;
+        const localeParts = localeName.split("-"); // de-DE-u-co-phonebk-u-xx
+        // cultureName can be in a form of:
+        // 1) "language", e.g. "zh"
+        // 2) "language-region", e.g. "zn-CN"
+        // 3) "language-script-region", e.g. "zh-Hans-CN"
+        // 4) "language-script", e.g. "zh-Hans" (served in the catch block below)
+        let languageName, regionName;
+        try
+        {
+            const region = localeParts.length > 1 ? localeParts.pop() : undefined;
+            // this line might fail if form 4 from the comment above is used:
+            regionName = region ? new Intl.DisplayNames([cultureName], {type: "region"}).of(region) : undefined;
+            const language = localeParts.join("-");
+            languageName = new Intl.DisplayNames([cultureName], {type: "language"}).of(language);
+        }
+        catch (error)
+        {
+            if (error instanceof RangeError && error.message === "invalid_argument")
+            {
+                // it failed from this reason then cultureName is in a form "language-script", without region
+                try
+                {
+                    languageName = new Intl.DisplayNames([cultureName], {type: "language"}).of(localeName);
+                }
+                catch (error)
+                {
+                    if (error instanceof RangeError && error.message === "invalid_argument" && localeNameOriginal)
+                    {
+                        // handle non-standard or malformed locales by forwarding the locale code, e.g. "xx-u-xx"
+                        stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
+                        wrap_no_error_root(isException, exceptionRoot);
+                        return localeNameOriginal.length;
+                    }
+                    throw error;
+                }
+            }
+            else
+            {
+                throw error;
+            }
+        }
+        const localeInfo = {
+            LanguageName: languageName,
+            RegionName: regionName,
+        };
+        const result = Object.values(localeInfo).join(OUTER_SEPARATOR);
 
         if (!result)
-            throw new Error(`Native display name for culture=${cultureName} is null or empty.`);    
+            throw new Error(`Locale info for locale=${localeName} is null or empty.`);    
     
         if (result.length > dstLength)
-            throw new Error(`Native display name for culture=${cultureName} exceeds length of ${dstLength}.`);
+            throw new Error(`Locale info for locale=${localeName} exceeds length of ${dstLength}.`);
 
         stringToUTF16(dst, dst + 2 * result.length, result);
         wrap_no_error_root(isException, exceptionRoot);

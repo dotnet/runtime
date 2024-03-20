@@ -10,27 +10,63 @@ namespace System.Globalization
     internal sealed partial class CultureData
     {
         private const int CULTURE_INFO_BUFFER_LEN = 50;
+        private const int LOCALE_INFO_BUFFER_LEN = 80;
 
-        private unsafe string JSGetNativeName(string localeName, string? uiCultureName = null)
+        private static CultureData JSInitLocaleInfo(string? localeName, CultureData culture)
         {
             if (string.IsNullOrEmpty(localeName))
-                return "Invariant Language (Invariant Country)";
+            {
+                culture._sEnglishLanguage = "Invariant Language";
+                culture._sNativeLanguage = culture._sEnglishLanguage;
+                culture._sEnglishCountry = "Invariant Country";
+                culture._sNativeCountry = culture._sEnglishCountry;
+                culture._sEnglishDisplayName = $"{culture._sEnglishLanguage} ({culture._sEnglishCountry})";
+                culture._sNativeDisplayName = culture._sEnglishDisplayName;
+            }
+            else
+            {
+                // ToDo: make sure we do not re-ask for it
+                // English locale info
+                (culture._sEnglishLanguage, culture._sEnglishCountry) = culture.JSGetLocaleInfo("en-US", localeName);
+                culture._sEnglishDisplayName = string.IsNullOrEmpty(culture._sEnglishCountry) ?
+                    culture._sEnglishLanguage :
+                    $"{culture._sEnglishLanguage} ({culture._sEnglishCountry})";
+                // Native locale info
+                (culture._sNativeLanguage, culture._sNativeCountry) = culture.JSGetLocaleInfo(localeName, localeName);
+                culture._sNativeDisplayName = string.IsNullOrEmpty(culture._sNativeCountry) ?
+                    culture._sNativeLanguage :
+                    $"{culture._sNativeLanguage} ({culture._sNativeCountry})";
+            }
+            return culture;
+        }
 
-            string cultureName = uiCultureName ?? localeName;
-            // the longest possible NativeName is 50 characters
-            char* buffer = stackalloc char[CULTURE_INFO_BUFFER_LEN];
-            int resultLength = Interop.JsGlobalization.GetNativeName(localeName, cultureName, buffer, CULTURE_INFO_BUFFER_LEN, out int exception, out object exResult);
+        private unsafe (string, string) JSGetLocaleInfo(string cultureName, string localeName)
+        {
+            char* buffer = stackalloc char[LOCALE_INFO_BUFFER_LEN];
+            int resultLength = Interop.JsGlobalization.GetLocaleInfo(cultureName, localeName, buffer, LOCALE_INFO_BUFFER_LEN, out int exception, out object exResult);
             if (exception != 0)
                 throw new Exception((string)exResult);
-            return new string(buffer, 0, resultLength);
+            string result = new string(buffer, 0, resultLength);
+            string[] subresults = result.Split("##");
+            if (subresults.Length == 0)
+                throw new Exception("LocaleInfo recieved from the Browser is in incorrect format.");
+            if (subresults.Length == 1)
+                return (subresults[0], ""); // Neutral culture
+            return (subresults[0], subresults[1]);
+        }
+
+        private string JSGetNativeDisplayName(string localeName, string cultureName)
+        {
+            (string languageName, string countryName) = JSGetLocaleInfo(localeName, cultureName);
+            return string.IsNullOrEmpty(countryName) ?
+                    languageName :
+                    $"{languageName} ({countryName})";
         }
 
         private static unsafe CultureData JSLoadCultureInfoFromBrowser(string localeName, CultureData culture)
         {
             char* buffer = stackalloc char[CULTURE_INFO_BUFFER_LEN];
-            int exception;
-            object exResult;
-            int resultLength = Interop.JsGlobalization.GetCultureInfo(localeName, buffer, CULTURE_INFO_BUFFER_LEN, out exception, out exResult);
+            int resultLength = Interop.JsGlobalization.GetCultureInfo(localeName, buffer, CULTURE_INFO_BUFFER_LEN, out int exception, out object exResult);
             if (exception != 0)
                 throw new Exception((string)exResult);
             string result = new string(buffer, 0, resultLength);
