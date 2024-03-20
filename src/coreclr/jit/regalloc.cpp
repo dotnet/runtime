@@ -117,10 +117,12 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
             // We should have recorded the variable number for the return buffer arg
             noway_assert(info.compRetBuffArg != BAD_VAR_NUM);
         }
+#ifdef SWIFT_SUPPORT
         else if ((info.compCallConv == CorInfoCallConvExtension::Swift) && (inArgReg == REG_SWIFT_SELF))
         {
             noway_assert((lvaSwiftSelfArg != BAD_VAR_NUM) && (argDsc == lvaGetDesc(lvaSwiftSelfArg)));
         }
+#endif
         else // we have a regular arg
         {
             noway_assert(inArgMask & RBM_ARG_REGS);
