@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
@@ -20,6 +21,53 @@ namespace System.IO.Pipes
         // on the server end, but WaitForConnection will not return until we have returned.  Any data written to the
         // pipe by us after we have connected but before the server has called WaitForConnection will be available
         // to the server after it calls WaitForConnection.
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public NamedPipeClientStream(string serverName, string pipeName, PipeAccessRights desiredAccessRights,
+            PipeOptions options, TokenImpersonationLevel impersonationLevel, HandleInheritability inheritability)
+            : this(serverName, pipeName, DirectionFromRights(desiredAccessRights), options, impersonationLevel, inheritability)
+        {
+            _accessRights = (int)desiredAccessRights;
+        }
+
+        private static PipeDirection DirectionFromRights(PipeAccessRights desiredAccessRights, [CallerArgumentExpression(nameof(desiredAccessRights))] string? argumentName = null)
+        {
+            // Validate the desiredAccessRights parameter here to ensure an invalid value does not result
+            // in an argument exception being thrown for the direction argument
+            if (desiredAccessRights == 0 || (desiredAccessRights & ~(PipeAccessRights.FullControl | PipeAccessRights.AccessSystemSecurity)) != 0)
+            {
+                throw new ArgumentOutOfRangeException(argumentName, SR.ArgumentOutOfRange_NeedValidPipeAccessRights);
+            }
+
+            PipeDirection direction = 0;
+
+            if ((desiredAccessRights & PipeAccessRights.ReadData) != 0)
+            {
+                direction |= PipeDirection.In;
+            }
+            if ((desiredAccessRights & PipeAccessRights.WriteData) != 0)
+            {
+                direction |= PipeDirection.Out;
+            }
+
+            return direction;
+        }
+
+        private static int AccessRightsFromDirection(PipeDirection direction)
+        {
+            int access = 0;
+
+            if ((PipeDirection.In & direction) != 0)
+            {
+                access |= Interop.Kernel32.GenericOperations.GENERIC_READ;
+            }
+            if ((PipeDirection.Out & direction) != 0)
+            {
+                access |= Interop.Kernel32.GenericOperations.GENERIC_WRITE;
+            }
+
+            return access;
+        }
+
         private bool TryConnect(int timeout)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(_inheritability);
@@ -34,17 +82,7 @@ namespace System.IO.Pipes
                 _pipeFlags |= (((int)_impersonationLevel - 1) << 16);
             }
 
-            int access = 0;
-            if ((PipeDirection.In & _direction) != 0)
-            {
-                access |= Interop.Kernel32.GenericOperations.GENERIC_READ;
-            }
-            if ((PipeDirection.Out & _direction) != 0)
-            {
-                access |= Interop.Kernel32.GenericOperations.GENERIC_WRITE;
-            }
-
-            SafePipeHandle handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, access);
+            SafePipeHandle handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, _accessRights);
 
             if (handle.IsInvalid)
             {
@@ -81,7 +119,7 @@ namespace System.IO.Pipes
                 }
 
                 // Pipe server should be free. Let's try to connect to it.
-                handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, access);
+                handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, _accessRights);
 
                 if (handle.IsInvalid)
                 {

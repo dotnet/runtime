@@ -17,6 +17,7 @@ namespace System.IO.Pipes.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("pipeName", () => new NamedPipeClientStream(null));
             AssertExtensions.Throws<ArgumentNullException>("pipeName", () => new NamedPipeClientStream(".", null));
+            AssertExtensions.Throws<ArgumentNullException>("pipeName", () => new NamedPipeClientStream(".", null, PipeAccessRights.FullControl, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None));
         }
 
         [Fact]
@@ -24,6 +25,7 @@ namespace System.IO.Pipes.Tests
         {
             AssertExtensions.Throws<ArgumentException>("pipeName", () => new NamedPipeClientStream(""));
             AssertExtensions.Throws<ArgumentException>("pipeName", () => new NamedPipeClientStream(".", ""));
+            AssertExtensions.Throws<ArgumentException>("pipeName", () => new NamedPipeClientStream(".", "", PipeAccessRights.FullControl, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None));
         }
 
         [Theory]
@@ -36,6 +38,7 @@ namespace System.IO.Pipes.Tests
             AssertExtensions.Throws<ArgumentNullException>("serverName", () => new NamedPipeClientStream(null, "client1", direction));
             AssertExtensions.Throws<ArgumentNullException>("serverName", () => new NamedPipeClientStream(null, "client1", direction, PipeOptions.None));
             AssertExtensions.Throws<ArgumentNullException>("serverName", () => new NamedPipeClientStream(null, "client1", direction, PipeOptions.None, TokenImpersonationLevel.None));
+            AssertExtensions.Throws<ArgumentNullException>("serverName", () => new NamedPipeClientStream(null, "client1", PipeAccessRights.FullControl, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None));
         }
 
         [Theory]
@@ -48,6 +51,7 @@ namespace System.IO.Pipes.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeClientStream("", "client1", direction));
             AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeClientStream("", "client1", direction, PipeOptions.None));
             AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeClientStream("", "client1", direction, PipeOptions.None, TokenImpersonationLevel.None));
+            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeClientStream("", "client1", PipeAccessRights.FullControl, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None));
         }
 
         [Theory]
@@ -63,6 +67,25 @@ namespace System.IO.Pipes.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeClientStream(serverName, reservedName, direction));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeClientStream(serverName, reservedName, direction, PipeOptions.None));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeClientStream(serverName, reservedName, direction, PipeOptions.None, TokenImpersonationLevel.Impersonation));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeClientStream(serverName, reservedName, PipeAccessRights.FullControl, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public static void NotSupportedPipeAccessRights_Throws_PlatformNotSupportedException()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(".", "client1", PipeAccessRights.FullControl, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None));
+        }
+
+        [Theory]
+        [InlineData(0)]  // No bits set
+        [InlineData(32)] // Invalid bit
+        [InlineData(33)] // ReadData plus an invalid bit
+        [InlineData(34)] // WriteData plus an invalid bit
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void InvalidPipeAccessRights_Throws_ArgumentOutOfRangeException(int rights)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("desiredAccessRights", () => new NamedPipeClientStream(".", "client1", (PipeAccessRights)rights, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None));
         }
 
         [Fact]
@@ -78,6 +101,7 @@ namespace System.IO.Pipes.Tests
             Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "/tmp/foobar/"));
             Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "/"));
             Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "\0"));
+            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "\0", PipeAccessRights.FullControl, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None));
         }
 
         [Theory]
@@ -97,6 +121,7 @@ namespace System.IO.Pipes.Tests
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new NamedPipeClientStream(".", "client1", direction, (PipeOptions)255));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new NamedPipeClientStream(".", "client1", direction, (PipeOptions)255, TokenImpersonationLevel.None));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new NamedPipeClientStream(".", "client1", PipeAccessRights.FullControl, (PipeOptions)255, TokenImpersonationLevel.None, HandleInheritability.None));
         }
 
         [Theory]
@@ -106,6 +131,7 @@ namespace System.IO.Pipes.Tests
         public static void InvalidImpersonationLevel_Throws_ArgumentOutOfRangeException(PipeDirection direction)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("impersonationLevel", () => new NamedPipeClientStream(".", "client1", direction, PipeOptions.None, (TokenImpersonationLevel)999));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("impersonationLevel", () => new NamedPipeClientStream(".", "client1", PipeAccessRights.FullControl, PipeOptions.None, (TokenImpersonationLevel)999, HandleInheritability.None));
         }
 
         [Theory]
@@ -159,6 +185,8 @@ namespace System.IO.Pipes.Tests
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => new NamedPipeClientStream("a", "b", PipeDirection.Out, 0, TokenImpersonationLevel.Delegation, HandleInheritability.None - 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => new NamedPipeClientStream("a", "b", PipeDirection.Out, 0, TokenImpersonationLevel.Delegation, HandleInheritability.Inheritable + 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => new NamedPipeClientStream("a", "b", PipeAccessRights.FullControl, 0, TokenImpersonationLevel.Delegation, HandleInheritability.None - 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => new NamedPipeClientStream("a", "b", PipeAccessRights.FullControl, 0, TokenImpersonationLevel.Delegation, HandleInheritability.Inheritable + 1));
         }
     }
 }
