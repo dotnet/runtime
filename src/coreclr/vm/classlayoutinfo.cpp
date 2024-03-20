@@ -136,7 +136,7 @@ namespace
     )
     {
         UINT32 cbCurOffset = parentSize;
-        BYTE LargestAlignmentRequirement = max(1, min(packingSize, parentAlignmentRequirement));
+        BYTE LargestAlignmentRequirement = max<BYTE>(1, min(packingSize, parentAlignmentRequirement));
 
         // Start with the size inherited from the parent (if any).
         uint32_t calcTotalSize = parentSize;
@@ -198,7 +198,7 @@ namespace
                 COMPlusThrowOM();
 
             // size must be large enough to accommodate layout. If not, we use the layout size instead.
-            calcTotalSize = max(classSize, calcTotalSize);
+            calcTotalSize = max((uint32_t)classSize, calcTotalSize);
         }
         else
         {

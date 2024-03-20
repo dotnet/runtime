@@ -1459,7 +1459,12 @@ public:
                         
                         // This level is completely empty. Free it, and then null out the pointer to it.
                         pointerToLevelData->Uninstall();
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfree-nonheap-object" // The compiler can't tell that this pointer always comes from a malloc call.
                         free((void*)rawData);
+#pragma GCC diagnostic pop
+#endif
                     }
                 }
 

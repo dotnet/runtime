@@ -2293,7 +2293,7 @@ VOID EEJitManager::EnsureJumpStubReserve(BYTE * pImageBase, SIZE_T imageSize, SI
     int allocMode = 0;
 
     // Try to reserve at least 16MB at a time
-    SIZE_T allocChunk = max(ALIGN_UP(reserveSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY), 16*1024*1024);
+    SIZE_T allocChunk = max<SIZE_T>(ALIGN_UP(reserveSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY), 16*1024*1024);
 
     while (reserveSize > 0)
     {
@@ -2813,11 +2813,11 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
 
     if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
     {
-        alignment = max(alignment, 32);
+        alignment = max(alignment, 32u);
     }
     else if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
     {
-        alignment = max(alignment, 16);
+        alignment = max(alignment, 16u);
     }
 
 #if defined(TARGET_X86)
@@ -2825,7 +2825,7 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
     // the JIT can in turn 8-byte align the loop entry headers.
     else if ((g_pConfig->GenOptimizeType() != OPT_SIZE))
     {
-        alignment = max(alignment, 8);
+        alignment = max(alignment, 8u);
     }
 #endif
 
@@ -3201,7 +3201,7 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
         CrstHolder ch(&m_CodeHeapCritSec);
 
         mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(CodeHeader), blockSize, CODE_SIZE_ALIGN, &pCodeHeap);
-        if (mem == NULL)
+        if (mem == (TADDR)NULL)
         {
             _ASSERTE(!throwOnOutOfMemoryWithinRange);
             RETURN(NULL);
@@ -3751,7 +3751,7 @@ static CodeHeader * GetCodeHeaderFromDebugInfoRequest(const DebugInfoRequest & r
     } CONTRACTL_END;
 
     TADDR address = (TADDR) request.GetStartAddress();
-    _ASSERTE(address != NULL);
+    _ASSERTE(address != (TADDR)NULL);
 
     CodeHeader * pHeader = dac_cast<PTR_CodeHeader>(address & ~3) - 1;
     _ASSERTE(pHeader != NULL);
@@ -3923,7 +3923,7 @@ BOOL EEJitManager::JitCodeToMethodInfo(
         return FALSE;
 
     TADDR start = dac_cast<PTR_EEJitManager>(pRangeSection->_pjit)->FindMethodCode(pRangeSection, currentPC);
-    if (start == NULL)
+    if (start == (TADDR)NULL)
         return FALSE;
 
     CodeHeader * pCHdr = PTR_CodeHeader(start - sizeof(CodeHeader));
@@ -3968,7 +3968,7 @@ StubCodeBlockKind EEJitManager::GetStubCodeBlockKind(RangeSection * pRangeSectio
     }
 
     TADDR start = dac_cast<PTR_EEJitManager>(pRangeSection->_pjit)->FindMethodCode(pRangeSection, currentPC);
-    if (start == NULL)
+    if (start == (TADDR)NULL)
         return STUB_CODE_BLOCK_NOCODE;
     CodeHeader * pCHdr = PTR_CodeHeader(start - sizeof(CodeHeader));
     return pCHdr->IsStubCodeBlock() ? pCHdr->GetStubCodeBlockKind() : STUB_CODE_BLOCK_MANAGED;
@@ -4423,7 +4423,7 @@ ExecutionManager::FindCodeRange(PCODE currentPC, ScanFlag scanFlag)
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    if (currentPC == NULL)
+    if (currentPC == (PCODE)NULL)
         return NULL;
 
     if (scanFlag == ScanReaderLock)
@@ -4461,7 +4461,7 @@ ExecutionManager::FindCodeRangeWithLock(PCODE currentPC)
 PCODE ExecutionManager::GetCodeStartAddress(PCODE currentPC)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(currentPC != NULL);
+    _ASSERTE(currentPC != (PCODE)NULL);
 
     EECodeInfo codeInfo(currentPC);
     if (!codeInfo.IsValid())
@@ -4509,7 +4509,7 @@ BOOL ExecutionManager::IsManagedCode(PCODE currentPC)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    if (currentPC == NULL)
+    if (currentPC == (PCODE)NULL)
         return FALSE;
 
     if (GetScanFlags() == ScanReaderLock)
@@ -4595,7 +4595,7 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC, RangeSectionLockStat
         // but on we could also be in a stub, so we check for that
         // as well and we don't consider stub to be real managed code.
         TADDR start = dac_cast<PTR_EEJitManager>(pRS->_pjit)->FindMethodCode(pRS, currentPC);
-        if (start == NULL)
+        if (start == (TADDR)NULL)
             return FALSE;
         CodeHeader * pCHdr = PTR_CodeHeader(start - sizeof(CodeHeader));
         if (!pCHdr->IsStubCodeBlock())
@@ -5002,7 +5002,7 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
         POSTCONDITION((RETVAL != NULL) || !throwOnOutOfMemoryWithinRange);
     } CONTRACT_END;
 
-    PCODE jumpStub = NULL;
+    PCODE jumpStub = (PCODE)NULL;
 
     if (pLoaderAllocator == NULL)
     {
@@ -5052,7 +5052,7 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
     {
         jumpStub = i->m_jumpStub;
 
-        _ASSERTE(jumpStub != NULL);
+        _ASSERTE(jumpStub != (PCODE)NULL);
 
         // Is the matching entry with the requested range?
         if (((TADDR)loAddr <= jumpStub) && (jumpStub <= (TADDR)hiAddr))
@@ -5064,10 +5064,10 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
     // If we get here we need to create a new jump stub
     // add or change the jump stub table to point at the new one
     jumpStub = getNextJumpStub(pMD, target, loAddr, hiAddr, pLoaderAllocator, throwOnOutOfMemoryWithinRange); // this statement can throw
-    if (jumpStub == NULL)
+    if (jumpStub == (PCODE)NULL)
     {
         _ASSERTE(!throwOnOutOfMemoryWithinRange);
-        RETURN(NULL);
+        RETURN((PCODE)NULL);
     }
 
     _ASSERTE(((TADDR)loAddr <= jumpStub) && (jumpStub <= (TADDR)hiAddr));
@@ -5167,7 +5167,7 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
     if (curBlock == NULL)
     {
         _ASSERTE(!throwOnOutOfMemoryWithinRange);
-        RETURN(NULL);
+        RETURN((PCODE)NULL);
     }
 
     curBlockWriterHolder.AssignExecutableWriterHolder(curBlock, sizeof(JumpStubBlockHeader) + ((size_t) (curBlock->m_used + 1) * BACK_TO_BACK_JUMP_ALLOCATE_SIZE));

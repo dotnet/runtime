@@ -58,7 +58,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <winwrap.h>
-
+#include <algorithm>
 
 #include <windef.h>
 #include <winnt.h>
@@ -66,12 +66,15 @@
 #include <wchar.h>
 #include <objbase.h>
 #include <float.h>
-#include <math.h>
+#include <cmath>
 #include <time.h>
 #include <limits.h>
 #include <assert.h>
 
 #include <olectl.h>
+
+using std::max;
+using std::min;
 
 #ifdef _MSC_VER
 //non inline intrinsics are faster

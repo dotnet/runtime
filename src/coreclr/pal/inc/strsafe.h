@@ -27,15 +27,6 @@
 #include <string.h>     // for memset
 #include <stdarg.h>     // for va_start, etc.
 
-#ifndef _SIZE_T_DEFINED
-#ifdef  HOST_64BIT
-typedef unsigned __int64    size_t;
-#else
-typedef __w64 unsigned int  size_t;
-#endif  // !HOST_64BIT
-#define _SIZE_T_DEFINED
-#endif  // !_SIZE_T_DEFINED
-
 #ifndef SUCCEEDED
 #define SUCCEEDED(hr)  ((HRESULT)(hr) >= 0)
 #endif

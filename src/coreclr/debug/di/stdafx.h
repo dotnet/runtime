@@ -10,6 +10,9 @@
 #include <stdio.h>
 #include <windows.h>
 #include <winnt.h>
+#include <algorithm>
+using std::min;
+using std::max;
 
 #include <dbgtargetcontext.h>
 

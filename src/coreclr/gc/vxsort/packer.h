@@ -56,7 +56,7 @@ class packer {
    public:
 
     static void pack(TFrom *mem, size_t len, TFrom base) {
-        TFrom offset = MT::template shift_n_sub<Shift>(base, (TFrom) std::numeric_limits<TTo>::Min());
+        TFrom offset = MT::template shift_n_sub<Shift>(base, (TFrom) std::numeric_limits<TTo>::min());
         auto baseVec = MT::broadcast(offset);
 
         auto pre_aligned_mem = reinterpret_cast<TFrom *>(reinterpret_cast<size_t>(mem) & ~ALIGN_MASK);
@@ -156,7 +156,7 @@ class packer {
 
 
     static void unpack(TTo *mem, size_t len, TFrom base) {
-        TFrom offset = MT::template shift_n_sub<Shift>(base, (TFrom) std::numeric_limits<TTo>::Min());
+        TFrom offset = MT::template shift_n_sub<Shift>(base, (TFrom) std::numeric_limits<TTo>::min());
         auto baseVec = MT::broadcast(offset);
 
         auto mem_read = mem + len;

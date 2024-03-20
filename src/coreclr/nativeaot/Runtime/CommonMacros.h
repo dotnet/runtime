@@ -89,16 +89,6 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 #define ZeroMemory(_dst, _size) memset((_dst), 0, (_size))
 #endif
 
-//-------------------------------------------------------------------------------------------------
-// min/max
-
-#ifndef min
-#define min(_a, _b) ((_a) < (_b) ? (_a) : (_b))
-#endif
-#ifndef max
-#define max(_a, _b) ((_a) < (_b) ? (_b) : (_a))
-#endif
-
 #endif // !DACCESS_COMPILE
 
 //-------------------------------------------------------------------------------------------------

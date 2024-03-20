@@ -53,6 +53,7 @@ if(CLR_CMAKE_HOST_WIN32)
   add_definitions(-D_WIN32_WINNT=0x0602)
   add_definitions(-DWIN32_LEAN_AND_MEAN)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+  add_compile_definitions(NOMINMAX)
 endif(CLR_CMAKE_HOST_WIN32)
 
 if (NOT (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX))

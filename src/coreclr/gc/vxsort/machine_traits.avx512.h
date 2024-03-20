@@ -92,7 +92,7 @@ class vxsort_machine_traits<int64_t, AVX512> {
 
     template <int Shift>
     static constexpr bool can_pack(T span) {
-        const auto PACK_LIMIT = (((TU) std::numeric_limits<uint32_t>::Max() + 1)) << Shift;
+        const auto PACK_LIMIT = (((TU) std::numeric_limits<uint32_t>::max() + 1)) << Shift;
         return ((TU) span) < PACK_LIMIT;
     }
 

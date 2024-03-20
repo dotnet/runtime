@@ -1747,7 +1747,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 #if defined(FEATURE_SIMD)
     // getMaxVectorByteLength() represents the size of the largest primitive type that we can struct promote.
     const unsigned maxSize =
-        MAX_NumOfFieldsInPromotableStruct * max(compiler->getMaxVectorByteLength(), sizeof(double));
+        MAX_NumOfFieldsInPromotableStruct * max(compiler->getMaxVectorByteLength(), (uint32_t)sizeof(double));
 #else  // !FEATURE_SIMD
     // sizeof(double) represents the size of the largest primitive type that we can struct promote.
     const unsigned maxSize = MAX_NumOfFieldsInPromotableStruct * sizeof(double);

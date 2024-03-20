@@ -6972,7 +6972,7 @@ void gc_heap::gc_thread_function ()
 
                 dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[dynamic_heap_count_data.sample_index];
                 wait_time = min (wait_time, (uint32_t)(sample.elapsed_between_gcs / 1000 / 3));
-                wait_time = max (wait_time, 1);
+                wait_time = max (wait_time, 1u);
 
                 dprintf (6666, ("gc#0 thread waiting for %d ms (betwen GCs %I64d)", wait_time, sample.elapsed_between_gcs));
             }
@@ -7022,7 +7022,7 @@ void gc_heap::gc_thread_function ()
             }
 
             // wait till the threads that should have gone idle at least reached the place where they are about to wait on the idle event.
-            if ((gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) && 
+            if ((gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) &&
                 (n_heaps != dynamic_heap_count_data.last_n_heaps))
             {
                 int spin_count = 1024;
@@ -13520,7 +13520,7 @@ void gc_heap::distribute_free_regions()
     if (ephemeral_elapsed >= DECOMMIT_TIME_STEP_MILLISECONDS)
     {
         gc_last_ephemeral_decommit_time = dd_time_clock (dd0);
-        size_t decommit_step_milliseconds = min (ephemeral_elapsed, (10*1000));
+        size_t decommit_step_milliseconds = min (ephemeral_elapsed, (size_t)(10*1000));
 
         decommit_step (decommit_step_milliseconds);
     }
@@ -13896,7 +13896,7 @@ uint32_t adjust_heaps_hard_limit_worker (uint32_t nhp, size_t limit)
     size_t aligned_limit =  align_on_segment_hard_limit (limit);
     uint32_t nhp_oh = (uint32_t)(aligned_limit / min_segment_size_hard_limit);
     nhp = min (nhp_oh, nhp);
-    return (max (nhp, 1));
+    return (max (nhp, 1u));
 }
 
 uint32_t gc_heap::adjust_heaps_hard_limit (uint32_t nhp)
@@ -14300,7 +14300,7 @@ gc_heap::init_semi_shared()
 #endif //!USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
-    mark_list_size = min (100*1024, max (8192, soh_segment_size/(2*10*32)));
+    mark_list_size = min (100*1024u, max (8192u, soh_segment_size/(2*10*32)));
 #ifdef DYNAMIC_HEAP_COUNT
     if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
     {
@@ -14322,7 +14322,7 @@ gc_heap::init_semi_shared()
     }
 #else //MULTIPLE_HEAPS
 
-    mark_list_size = min(100*1024, max (8192, soh_segment_size/(64*32)));
+    mark_list_size = min(100*1024u, max (8192u, soh_segment_size/(64*32)));
     g_mark_list_total_size = mark_list_size;
     g_mark_list = make_mark_list (mark_list_size);
 
@@ -14444,7 +14444,7 @@ gc_heap::init_semi_shared()
     if (bgc_tuning::enable_fl_tuning && (current_memory_load < bgc_tuning::memory_load_goal))
     {
         uint32_t distance_to_goal = bgc_tuning::memory_load_goal - current_memory_load;
-        bgc_tuning::stepping_interval = max (distance_to_goal / 10, 1);
+        bgc_tuning::stepping_interval = max (distance_to_goal / 10, 1u);
         bgc_tuning::last_stepping_mem_load = current_memory_load;
         bgc_tuning::last_stepping_bgc_count = 0;
         dprintf (BGC_TUNING_LOG, ("current ml: %d, %d to goal, interval: %d",
@@ -21815,7 +21815,7 @@ size_t gc_heap::min_reclaim_fragmentation_threshold (uint32_t num_heaps)
 inline
 uint64_t gc_heap::min_high_fragmentation_threshold(uint64_t available_mem, uint32_t num_heaps)
 {
-    return min (available_mem, (256*1024*1024)) / num_heaps;
+    return min (available_mem, (256*1024*1024u)) / num_heaps;
 }
 
 enum {
@@ -22076,7 +22076,7 @@ size_t gc_heap::exponential_smoothing (int gen, size_t collection_count, size_t 
 {
     // to avoid spikes in mem usage due to short terms fluctuations in survivorship,
     // apply some smoothing.
-    size_t smoothing = min(3, collection_count);
+    size_t smoothing = min(3u, collection_count);
 
     size_t desired_total = desired_per_heap * n_heaps;
     size_t new_smoothed_desired_total = desired_total / smoothing + ((smoothed_desired_total[gen] / smoothing) * (smoothing - 1));
@@ -22365,7 +22365,7 @@ void gc_heap::gc1()
         if (alloc_contexts_used >= 1)
         {
             allocation_quantum = Align (min ((size_t)CLR_SIZE,
-                                            (size_t)max (1024, get_new_allocation (0) / (2 * alloc_contexts_used))),
+                                            (size_t)max ((size_t)1024, get_new_allocation (0) / (2 * alloc_contexts_used))),
                                             get_alignment_constant(FALSE));
             dprintf (3, ("New allocation quantum: %zd(0x%zx)", allocation_quantum, allocation_quantum));
         }
@@ -28530,7 +28530,7 @@ recheck:
         if (grow_mark_array_p)
         {
             // Try to grow the array.
-            size_t new_size = max (MARK_STACK_INITIAL_LENGTH, 2*background_mark_stack_array_length);
+            size_t new_size = max ((size_t)MARK_STACK_INITIAL_LENGTH, 2*background_mark_stack_array_length);
 
             if ((new_size * sizeof(mark)) > 100*1024)
             {
@@ -28870,7 +28870,7 @@ recheck:
         overflow_p = TRUE;
         // Try to grow the array.
         size_t new_size =
-            max (MARK_STACK_INITIAL_LENGTH, 2*mark_stack_array_length);
+            max ((size_t)MARK_STACK_INITIAL_LENGTH, 2*mark_stack_array_length);
 
         if ((new_size * sizeof(mark)) > 100*1024)
         {
@@ -42390,8 +42390,8 @@ adjust:
 #endif // SEG_REUSE_STATS
         if (free_space_items)
         {
-            max_free_space_items = min (MAX_NUM_FREE_SPACES, free_space_items * 2);
-            max_free_space_items = max (max_free_space_items, MIN_NUM_FREE_SPACES);
+            max_free_space_items = min ((size_t)MAX_NUM_FREE_SPACES, free_space_items * 2);
+            max_free_space_items = max (max_free_space_items, (size_t)MIN_NUM_FREE_SPACES);
         }
         else
         {
@@ -42622,8 +42622,8 @@ BOOL gc_heap::can_expand_into_p (heap_segment* seg, size_t min_free_size, size_t
                 memcpy (ordered_free_space_indices,
                         saved_ordered_free_space_indices,
                         sizeof(ordered_free_space_indices));
-                max_free_space_items = max (MIN_NUM_FREE_SPACES, free_space_items * 3 / 2);
-                max_free_space_items = min (MAX_NUM_FREE_SPACES, max_free_space_items);
+                max_free_space_items = max ((size_t)MIN_NUM_FREE_SPACES, free_space_items * 3 / 2);
+                max_free_space_items = min ((size_t)MAX_NUM_FREE_SPACES, max_free_space_items);
                 dprintf (SEG_REUSE_LOG_0, ("could fit! %zd free spaces, %zd max", free_space_items, max_free_space_items));
             }
 
@@ -43307,14 +43307,14 @@ void gc_heap::init_static_data()
 
     size_t gen0_max_size =
 #ifdef MULTIPLE_HEAPS
-        max (6*1024*1024, min ( Align(soh_segment_size/2), 200*1024*1024));
+        max ((size_t)6*1024*1024u, min ( Align(soh_segment_size/2), (size_t)200*1024*1024u));
 #else //MULTIPLE_HEAPS
         (
 #ifdef BACKGROUND_GC
             gc_can_use_concurrent ?
             6*1024*1024 :
 #endif //BACKGROUND_GC
-            max (6*1024*1024,  min ( Align(soh_segment_size/2), 200*1024*1024))
+            max ((size_t)6*1024*1024,  min ( Align(soh_segment_size/2), (size_t)200*1024*1024))
         );
 #endif //MULTIPLE_HEAPS
 
@@ -43344,14 +43344,14 @@ void gc_heap::init_static_data()
     // TODO: gen0_max_size has a 200mb cap; gen1_max_size should also have a cap.
     size_t gen1_max_size = (size_t)
 #ifdef MULTIPLE_HEAPS
-        max (6*1024*1024, Align(soh_segment_size/2));
+        max (6*1024u, Align(soh_segment_size/2));
 #else //MULTIPLE_HEAPS
         (
 #ifdef BACKGROUND_GC
             gc_can_use_concurrent ?
             6*1024*1024 :
 #endif //BACKGROUND_GC
-            max (6*1024*1024, Align(soh_segment_size/2))
+            max (6*1024*1024u, Align(soh_segment_size/2))
         );
 #endif //MULTIPLE_HEAPS
 
@@ -44184,7 +44184,7 @@ void gc_heap::decommit_ephemeral_segment_pages()
 
     // we do a max of DECOMMIT_SIZE_PER_MILLISECOND per millisecond of elapsed time since the last GC
     // we limit the elapsed time to 10 seconds to avoid spending too much time decommitting
-    ptrdiff_t max_decommit_size = min (ephemeral_elapsed, (10*1000)) * DECOMMIT_SIZE_PER_MILLISECOND;
+    ptrdiff_t max_decommit_size = min (ephemeral_elapsed, (10*1000u)) * DECOMMIT_SIZE_PER_MILLISECOND;
     decommit_size = min (decommit_size, max_decommit_size);
 
     slack_space = heap_segment_committed (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment) - decommit_size;
@@ -47164,7 +47164,7 @@ enable_no_gc_region_callback_status gc_heap::enable_no_gc_callback(NoGCRegionCal
                 soh_withheld_budget = soh_withheld_budget / gc_heap::n_heaps;
                 loh_withheld_budget = loh_withheld_budget / gc_heap::n_heaps;
 #endif
-                soh_withheld_budget = max(soh_withheld_budget, 1);
+                soh_withheld_budget = max(soh_withheld_budget, 1u);
                 soh_withheld_budget = Align(soh_withheld_budget, get_alignment_constant (TRUE));
                 loh_withheld_budget = Align(loh_withheld_budget, get_alignment_constant (FALSE));
 #ifdef MULTIPLE_HEAPS
@@ -48429,7 +48429,7 @@ HRESULT GCHeap::Initialize()
 
     nhp = ((nhp_from_config == 0) ? g_num_active_processors : nhp_from_config);
 
-    nhp = min (nhp, MAX_SUPPORTED_CPUS);
+    nhp = min (nhp, (uint32_t)MAX_SUPPORTED_CPUS);
 
     gc_heap::gc_thread_no_affinitize_p = (gc_heap::heap_hard_limit ?
         !affinity_config_specified_p : (GCConfig::GetNoAffinitize() != 0));
@@ -48578,7 +48578,7 @@ HRESULT GCHeap::Initialize()
     /*
      * Allocation requests less than loh_size_threshold will be allocated on the small object heap.
      *
-     * An object cannot span more than one region and regions in small object heap are of the same size - gc_region_size. 
+     * An object cannot span more than one region and regions in small object heap are of the same size - gc_region_size.
      * However, the space available for actual allocations is reduced by the following implementation details -
      *
      * 1.) heap_segment_mem is set to the new pages + sizeof(aligned_plug_and_gap) in make_heap_segment.
@@ -48594,7 +48594,7 @@ HRESULT GCHeap::Initialize()
 #ifdef FEATURE_STRUCTALIGN
     /*
      * The above assumed FEATURE_STRUCTALIGN is not turned on for platforms where USE_REGIONS is supported, otherwise it is possible
-     * that the allocation size is inflated by ComputeMaxStructAlignPad in GCHeap::Alloc and we have to compute an upper bound of that 
+     * that the allocation size is inflated by ComputeMaxStructAlignPad in GCHeap::Alloc and we have to compute an upper bound of that
      * function.
      *
      * Note that ComputeMaxStructAlignPad is defined to be 0 if FEATURE_STRUCTALIGN is turned off.
@@ -51220,11 +51220,11 @@ size_t gc_heap::get_gen0_min_size()
 #ifdef SERVER_GC
         // performance data seems to indicate halving the size results
         // in optimal perf.  Ask for adjusted gen0 size.
-        gen0size = max(GCToOSInterface::GetCacheSizePerLogicalCpu(FALSE),(256*1024));
+        gen0size = max(GCToOSInterface::GetCacheSizePerLogicalCpu(FALSE), (size_t)(256*1024u));
 
         // if gen0 size is too large given the available memory, reduce it.
         // Get true cache size, as we don't want to reduce below this.
-        size_t trueSize = max(GCToOSInterface::GetCacheSizePerLogicalCpu(TRUE),(256*1024));
+        size_t trueSize = max(GCToOSInterface::GetCacheSizePerLogicalCpu(TRUE), (size_t)(256*1024u));
         dprintf (1, ("cache: %zd-%zd",
             GCToOSInterface::GetCacheSizePerLogicalCpu(FALSE),
             GCToOSInterface::GetCacheSizePerLogicalCpu(TRUE)));
@@ -51232,8 +51232,8 @@ size_t gc_heap::get_gen0_min_size()
         int n_heaps = gc_heap::n_heaps;
 #else //SERVER_GC
         size_t trueSize = GCToOSInterface::GetCacheSizePerLogicalCpu(TRUE);
-        gen0size = max((4*trueSize/5),(256*1024));
-        trueSize = max(trueSize, (256*1024));
+        gen0size = max((4*trueSize/5),(size_t)(256*1024));
+        trueSize = max(trueSize, (size_t)(256*1024));
         int n_heaps = 1;
 #endif //SERVER_GC
 
@@ -51241,7 +51241,7 @@ size_t gc_heap::get_gen0_min_size()
         if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
         {
             // if we are asked to be stingy with memory, limit gen 0 size
-            gen0size = min (gen0size, (4*1024*1024));
+            gen0size = min (gen0size, (size_t)(4*1024*1024));
         }
 #endif //DYNAMIC_HEAP_COUNT
 
@@ -52765,7 +52765,7 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
             if (is_initialization)
 #endif //USE_REGIONS
             {
-                heap_hard_limit = (size_t)max ((20 * 1024 * 1024), physical_mem_for_gc);
+                heap_hard_limit = (size_t)max ((20ull * 1024 * 1024), physical_mem_for_gc);
             }
         }
     }
@@ -52813,8 +52813,8 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
     uint32_t highmem_th_from_config = (uint32_t)GCConfig::GetGCHighMemPercent();
     if (highmem_th_from_config)
     {
-        high_memory_load_th = min (99, highmem_th_from_config);
-        v_high_memory_load_th = min (99, (highmem_th_from_config + 7));
+        high_memory_load_th = min (99u, highmem_th_from_config);
+        v_high_memory_load_th = min (99u, (highmem_th_from_config + 7));
 #ifdef FEATURE_EVENT_TRACE
         high_mem_percent_from_config = highmem_th_from_config;
 #endif //FEATURE_EVENT_TRACE

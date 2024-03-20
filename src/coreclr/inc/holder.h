@@ -11,13 +11,8 @@
 #include "volatile.h"
 #include "palclr.h"
 
-#ifdef PAL_STDCPP_COMPAT
 #include <utility>
 #include <type_traits>
-#else
-#include "clr_std/utility"
-#include "clr_std/type_traits"
-#endif
 
 #if defined(FEATURE_COMINTEROP) && !defined(STRIKE)
 #include <Activation.h>

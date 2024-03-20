@@ -27,23 +27,6 @@ extern "C"
 
 /*++
 Function :
-
-    PAL_rand
-
-    Calls rand and mitigates the difference between RAND_MAX
-    on Windows and FreeBSD.
---*/
-int __cdecl PAL_rand(void);
-
-/*++
-Function :
-
-    PAL_time
---*/
-PAL_time_t __cdecl PAL_time(PAL_time_t*);
-
-/*++
-Function :
     MsgBoxInitialize
 
     Initialize the critical sections.

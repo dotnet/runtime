@@ -7,7 +7,7 @@
 #ifndef __QCall_h__
 #define __QCall_h__
 
-#include "clr_std/type_traits"
+#include <type_traits>
 
 //
 // QCALLS

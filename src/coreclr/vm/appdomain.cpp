@@ -313,7 +313,7 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
     // Retrieve the remaining number of handles in the bucket.
     DWORD numRemainingHandlesInBucket = (m_pHead != NULL) ? m_pHead->GetNumRemainingHandles() : 0;
     PTRARRAYREF pinnedHandleArrayObj = NULL;
-    DWORD nextBucketSize = min(m_NextBucketSize * 2, MAX_BUCKETSIZE);
+    DWORD nextBucketSize = min<DWORD>(m_NextBucketSize * 2, MAX_BUCKETSIZE);
 
     // create a new block if this request doesn't fit in the current block
     if (nRequested > numRemainingHandlesInBucket)
@@ -4176,7 +4176,7 @@ void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
         return;
     }
 
-    SIZE_T aDynamicEntries = max(16, oldDynamicEntries);
+    SIZE_T aDynamicEntries = max<SIZE_T>(16, oldDynamicEntries);
     while (aDynamicEntries <= dwID)
     {
         aDynamicEntries *= 2;

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
+#include <algorithm>
 
 #ifndef INFINITY
 #define INFINITY 1e300 // Practically good enough - not sure why we miss this in our Linux build.
@@ -41,6 +42,9 @@ bool IsInCantAllocStressLogRegion()
 #include <stddef.h>
 #include "../../../inc/stresslog.h"
 #include "StressMsgReader.h"
+
+using std::min;
+using std::max;
 
 size_t StressLog::writing_base_address;
 size_t StressLog::reading_base_address;
@@ -1323,7 +1327,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     double latestTime = FindLatestTime(hdr);
     if (s_timeFilterStart < 0)
     {
-        s_timeFilterStart = max(latestTime + s_timeFilterStart, 0);
+        s_timeFilterStart = max(latestTime + s_timeFilterStart, 0.0);
         s_timeFilterEnd = latestTime;
     }
     for (ThreadStressLog* tsl = StressLog::TranslateMemoryMappedPointer(hdr->logs.t); tsl != nullptr; tsl = StressLog::TranslateMemoryMappedPointer(tsl->next))
@@ -1346,7 +1350,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     SYSTEM_INFO systemInfo;
     GetSystemInfo(&systemInfo);
 
-    DWORD threadCount = min(systemInfo.dwNumberOfProcessors, MAXIMUM_WAIT_OBJECTS);
+    DWORD threadCount = min(systemInfo.dwNumberOfProcessors, (DWORD)MAXIMUM_WAIT_OBJECTS);
     HANDLE threadHandle[64];
     for (DWORD i = 0; i < threadCount; i++)
     {
@@ -1361,7 +1365,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
 
     // the interlocked increment may have increased s_msgCount beyond MAX_MESSAGE_COUNT -
     // make sure we don't go beyond the end of the buffer
-    s_msgCount = min(s_msgCount, MAX_MESSAGE_COUNT);
+    s_msgCount = min<LONG64>((LONG64)s_msgCount, MAX_MESSAGE_COUNT);
 
     if (s_gcFilterStart != 0)
     {

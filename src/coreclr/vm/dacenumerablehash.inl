@@ -7,7 +7,7 @@
 // See DacEnumerableHash.h for a more detailed description.
 //
 
-#include "clr_std/type_traits"
+#include <type_traits>
 
 // Our implementation embeds entry data supplied by the hash sub-class into a larger entry structure
 // containing DacEnumerableHash metadata. We often end up returning pointers to the inner entry to sub-class code and

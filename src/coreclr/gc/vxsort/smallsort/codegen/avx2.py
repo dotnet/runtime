@@ -303,7 +303,7 @@ extern "C" const uint8_t mask_table_8[64];
 
 template<> struct bitonic<{t}, AVX2> {{
     static const int N = {self.vector_size()};
-    static constexpr {t} MAX = std::numeric_limits<{t}>::Max();
+    static constexpr {t} MAX = std::numeric_limits<{t}>::max();
 public:
 """
         print(s, file=f)

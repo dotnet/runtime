@@ -131,7 +131,6 @@ else()
   include_directories(unix)
 
   # sal.h, pshpack/poppack.h
-  add_definitions(-DPAL_STDCPP_COMPAT)
   include_directories(../../pal/inc/rt)
 
   include(CheckIncludeFiles)

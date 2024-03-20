@@ -11,7 +11,11 @@
 #include <string.h>
 #include <float.h>
 #include <cstdlib>
+#include <cmath>
 #include <intrin.h>
+#ifdef HOST_WINDOWS
+#include <malloc.h>
+#endif
 
 // Don't allow using the windows.h #defines for the BitScan* APIs. Using the #defines means our
 // `BitOperations::BitScan*` functions have their name mapped, which is confusing and messes up

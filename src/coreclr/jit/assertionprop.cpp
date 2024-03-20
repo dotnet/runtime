@@ -673,7 +673,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
         // Local assertion prop keeps mappings from each local var to the assertions about that var.
         //
         optAssertionDep =
-            new (this, CMK_AssertionProp) JitExpandArray<ASSERT_TP>(getAllocator(CMK_AssertionProp), max(1, lvaCount));
+            new (this, CMK_AssertionProp) JitExpandArray<ASSERT_TP>(getAllocator(CMK_AssertionProp), max(1u, lvaCount));
 
         if (optCrossBlockLocalAssertionProp)
         {

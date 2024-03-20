@@ -58,6 +58,9 @@
 
 #include "exinfo.h"
 
+using std::isfinite;
+using std::isnan;
+
 //========================================================================
 //
 // This file contains implementation of all JIT helpers. The helpers are
@@ -264,7 +267,7 @@ HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
         }
         else if (divisor == -1)
         {
-            if (dividend == _I32_MIN)
+            if (dividend == INT32_MIN)
             {
                 ehKind = kOverflowException;
                 goto ThrowExcep;
@@ -296,7 +299,7 @@ HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
         }
         else if (divisor == -1)
         {
-            if (dividend == _I32_MIN)
+            if (dividend == INT32_MIN)
             {
                 ehKind = kOverflowException;
                 goto ThrowExcep;
@@ -673,32 +676,6 @@ HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
     FCThrow(kOverflowException);
 }
 HCIMPLEND
-
-#ifndef TARGET_WINDOWS
-namespace
-{
-    bool isnan(float val)
-    {
-        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
-        return (bits & 0x7FFFFFFFU) > 0x7F800000U;
-    }
-    bool isnan(double val)
-    {
-        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
-        return (bits & 0x7FFFFFFFFFFFFFFFULL) > 0x7FF0000000000000ULL;
-    }
-    bool isfinite(float val)
-    {
-        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
-        return (~bits & 0x7F800000U) != 0;
-    }
-    bool isfinite(double val)
-    {
-        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
-        return (~bits & 0x7FF0000000000000ULL) != 0;
-    }
-}
-#endif
 
 HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
 {

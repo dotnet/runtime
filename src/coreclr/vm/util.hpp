@@ -16,7 +16,7 @@
 #include "clrdata.h"
 #include "xclrdata.h"
 #include "posterror.h"
-#include "clr_std/type_traits"
+#include <type_traits>
 
 // Hot cache lines need to be aligned to cache line size to improve performance
 #if defined(TARGET_ARM64)
