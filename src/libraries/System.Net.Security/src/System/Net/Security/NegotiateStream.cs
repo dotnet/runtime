@@ -883,7 +883,7 @@ namespace System.Net.Security
 
             if (_framer.ReadHeader.MessageId == FrameHeader.HandshakeDoneId)
             {
-                if (message.Length > 0)
+                if (HandshakeComplete && message.Length > 0)
                 {
                     Debug.Assert(_context != null);
                     _context.GetOutgoingBlob(message, out NegotiateAuthenticationStatusCode statusCode);
