@@ -3,7 +3,7 @@
 //!
 //! This is generated file, see src/mono/wasm/runtime/rollup.config.js
 
-//! This is not considered public API with backward compatibility guarantees.
+//! This is not considered public API with backward compatibility guarantees. 
 
 declare interface NativePointer {
     __brandNativePointer: "NativePointer";
@@ -336,7 +336,7 @@ interface AssetEntry {
      */
     pendingDownload?: LoadingResource;
 }
-type SingleAssetBehaviors =
+type SingleAssetBehaviors = 
 /**
  * The binary of the .NET runtime.
  */
@@ -362,14 +362,14 @@ type SingleAssetBehaviors =
  */
  | "manifest"
 /**
- * The debugging symbols used to demangle wasm stack traces; from 'wasm:0x123456' to a C function name
+ * The debugging symbols
  */
  | "symbols"
 /**
  * Load segmentation rules file for Hybrid Globalization.
  */
  | "segmentation-rules";
-type AssetBehaviors = SingleAssetBehaviors |
+type AssetBehaviors = SingleAssetBehaviors | 
 /**
  * Load asset as a managed resource assembly.
  */
