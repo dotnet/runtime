@@ -9929,7 +9929,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_HR_3A: // ........xx...... ...gggnnnnnddddd -- SVE floating-point unary operations
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                     // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                   // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());                     // mmmmm or nnnnn
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
@@ -9939,7 +9939,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_HL_3B: // ................ ...gggmmmmmddddd -- SVE floating-point arithmetic (predicated)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());   // mmmmm
             dst += emitOutput_Instr(dst, code);
             break;
@@ -9948,7 +9948,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_AH_3A: // ........xx.....M ...gggnnnnnddddd -- SVE constructive prefix (predicated)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                     // nnnnn
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                   // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());                     // ddddd
             code |= insEncodePredQualifier_16(id->idPredicateReg2Merge());   // M
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -9962,7 +9962,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             imm               = emitGetInsSC(id);
             code              = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |=
                 insEncodeSveShift_23_to_22_9_to_0(optGetSveElemsize(id->idInsOpt()), isRightShift, imm); // xx, xxiii
             dst += emitOutput_Instr(dst, code);
@@ -9976,7 +9976,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_HU_4A: // ........xx.mmmmm ...gggnnnnnddddd -- SVE floating-point multiply-accumulate writing addend
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                     // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                   // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());                     // nnnnn
             code |= insEncodeReg_V<20, 16>(id->idReg4());                   // mmmmm
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -9988,7 +9988,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                            // (predicated)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                     // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                   // ggg
             code |= insEncodeReg_V<20, 16>(id->idReg3());                   // mmmmm
             code |= insEncodeReg_V<9, 5>(id->idReg4());                     // aaaaa
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -10120,7 +10120,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                  // ddddd
             code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
-            code |= insEncodeReg_P_19_to_16(id->idReg2());                // gggg
+            code |= insEncodeReg_P<19, 16>(id->idReg2());                // gggg
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10130,7 +10130,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                  // ddddd
-            code |= insEncodeReg_P_19_to_16(id->idReg2());                // gggg
+            code |= insEncodeReg_P<19, 16>(id->idReg2());                // gggg
             code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
             code |= (id->idHasShift() ? 0x2000 : 0);                      // h
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -10144,7 +10144,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             // Thus, always pass FMOV here, and use MOV elsewhere for simplicity.
             code = emitInsCodeSve(INS_sve_fmov, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                  // ddddd
-            code |= insEncodeReg_P_19_to_16(id->idReg2());                // gggg
+            code |= insEncodeReg_P<19, 16>(id->idReg2());                // gggg
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10160,14 +10160,14 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1()); // DDDD
+            code |= insEncodeReg_P<3, 0>(id->idReg1()); // DDDD
             code |= insEncodeReg_V<9, 5>(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_CE_2B: // .........i...ii. ......nnnnn.DDDD -- SVE move predicate from vector
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
+            code |= insEncodeReg_P<3, 0>(id->idReg1());                  // DDDD
             code |= insEncodeReg_V<9, 5>(id->idReg2());                  // nnnnn
             code |= insEncodeSplitUimm<22, 22, 18, 17>(emitGetInsSC(id)); // i...ii
             dst += emitOutput_Instr(dst, code);
@@ -10175,7 +10175,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_CE_2C: // ..............i. ......nnnnn.DDDD -- SVE move predicate from vector
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());     // DDDD
+            code |= insEncodeReg_P<3, 0>(id->idReg1());     // DDDD
             code |= insEncodeReg_V<9, 5>(id->idReg2());     // nnnnn
             code |= insEncodeUimm<17, 17>(emitGetInsSC(id)); // i
             dst += emitOutput_Instr(dst, code);
@@ -10183,7 +10183,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_CE_2D: // .............ii. ......nnnnn.DDDD -- SVE move predicate from vector
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());     // DDDD
+            code |= insEncodeReg_P<3, 0>(id->idReg1());     // DDDD
             code |= insEncodeReg_V<9, 5>(id->idReg2());     // nnnnn
             code |= insEncodeUimm<18, 17>(emitGetInsSC(id)); // ii
             dst += emitOutput_Instr(dst, code);
@@ -10192,14 +10192,14 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_CF_2A: // ................ .......NNNNddddd -- SVE move predicate into vector
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1()); // ddddd
-            code |= insEncodeReg_P_8_to_5(id->idReg2()); // NNNN
+            code |= insEncodeReg_P<8, 5>(id->idReg2()); // NNNN
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_CF_2B: // .........i...ii. .......NNNNddddd -- SVE move predicate into vector
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                  // ddddd
-            code |= insEncodeReg_P_8_to_5(id->idReg2());                  // NNNN
+            code |= insEncodeReg_P<8, 5>(id->idReg2());                  // NNNN
             code |= insEncodeSplitUimm<22, 22, 18, 17>(emitGetInsSC(id)); // i...ii
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10207,7 +10207,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_CF_2C: // ..............i. .......NNNNddddd -- SVE move predicate into vector
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());     // ddddd
-            code |= insEncodeReg_P_8_to_5(id->idReg2());     // NNNN
+            code |= insEncodeReg_P<8, 5>(id->idReg2());     // NNNN
             code |= insEncodeUimm<17, 17>(emitGetInsSC(id)); // i
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10215,7 +10215,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_CF_2D: // .............ii. .......NNNNddddd -- SVE move predicate into vector
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());     // ddddd
-            code |= insEncodeReg_P_8_to_5(id->idReg2());     // NNNN
+            code |= insEncodeReg_P<8, 5>(id->idReg2());     // NNNN
             code |= insEncodeUimm<18, 17>(emitGetInsSC(id)); // ii
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10238,25 +10238,25 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
-            code |= insEncodeReg_P_8_to_5(id->idReg2());                  // NNNN
-            code |= insEncodeReg_P_19_to_16(id->idReg3());                // MMMM
+            code |= insEncodeReg_P<3, 0>(id->idReg1());                  // DDDD
+            code |= insEncodeReg_P<8, 5>(id->idReg2());                  // NNNN
+            code |= insEncodeReg_P<19, 16>(id->idReg3());                // MMMM
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_CJ_2A: // ........xx...... .......nnnn.dddd -- SVE reverse predicate elements
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
-            code |= insEncodeReg_P_8_to_5(id->idReg2());                  // NNNN
+            code |= insEncodeReg_P<3, 0>(id->idReg1());                  // DDDD
+            code |= insEncodeReg_P<8, 5>(id->idReg2());                  // NNNN
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_CK_2A: // ................ .......NNNN.DDDD -- SVE unpack predicate elements
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1()); // DDDD
-            code |= insEncodeReg_P_8_to_5(id->idReg2()); // NNNN
+            code |= insEncodeReg_P<3, 0>(id->idReg1()); // DDDD
+            code |= insEncodeReg_P<8, 5>(id->idReg2()); // NNNN
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -10273,7 +10273,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             }
 
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());   // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10283,7 +10283,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_CS_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to general register
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_Rd(id->idReg1());                           // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                   // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());                     // mmmmm
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
@@ -10293,7 +10293,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_CQ_3A: // ........xx...... ...gggnnnnnddddd -- SVE copy general register to vector (predicated)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                     // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                   // ggg
             code |= insEncodeReg_Rn(id->idReg3());                           // mmmmm
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
@@ -10302,7 +10302,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_CT_3A: // ................ ...gggnnnnnddddd -- SVE reverse doublewords
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());   // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10311,7 +10311,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_CV_3B: // ........xx...... ...VVVmmmmmddddd -- SVE vector splice (destructive)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                  // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                // VVV
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                // VVV
             code |= insEncodeReg_V<9, 5>(id->idReg3());                  // nnnnn/mmmmm
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
@@ -10322,7 +10322,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             regNumber reg4 = (ins == INS_sve_mov ? id->idReg1() : id->idReg4());
             code           = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                  // ddddd
-            code |= insEncodeReg_P_13_to_10(id->idReg2());                // VVVV
+            code |= insEncodeReg_P<13, 10>(id->idReg2());                // VVVV
             code |= insEncodeReg_V<9, 5>(id->idReg3());                  // nnnnn
             code |= insEncodeReg_V<20, 16>(reg4);                        // mmmmm
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -10335,8 +10335,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_GE_4A:   // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE2 character match
         case IF_SVE_HT_4A:   // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE floating-point compare vectors
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                // ggg
+            code |= insEncodeReg_P<3, 0>(id->idReg1());                  // DDDD
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());                  // mmmmm
             code |= insEncodeReg_V<20, 16>(id->idReg4());                // nnnnn
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -10346,8 +10346,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_CY_3A: // ........xx.iiiii ...gggnnnnn.DDDD -- SVE integer compare with signed immediate
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                // ggg
+            code |= insEncodeReg_P<3, 0>(id->idReg1());                  // DDDD
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());                  // nnnnn
             code |= insEncodeSimm<20, 16>(imm);                           // iiiii
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -10357,8 +10357,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_CY_3B: // ........xx.iiiii ii.gggnnnnn.DDDD -- SVE integer compare with unsigned immediate
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                // ggg
+            code |= insEncodeReg_P<3, 0>(id->idReg1());                  // DDDD
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());                  // nnnnn
             code |= insEncodeUimm<20, 14>(imm);                           // iiiii
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -10556,9 +10556,9 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_DA_4A: // ............MMMM ..gggg.NNNN.DDDD -- SVE propagate break from previous partition
         {
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());   // DDDD
-            code |= insEncodeReg_P_13_to_10(id->idReg2()); // gggg
-            code |= insEncodeReg_P_8_to_5(id->idReg3());   // NNNN
+            code |= insEncodeReg_P<3, 0>(id->idReg1());   // DDDD
+            code |= insEncodeReg_P<13, 10>(id->idReg2()); // gggg
+            code |= insEncodeReg_P<8, 5>(id->idReg3());   // NNNN
 
             regNumber regm;
             switch (ins)
@@ -10577,7 +10577,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                     regm = id->idReg4();
             }
 
-            code |= insEncodeReg_P_19_to_16(regm); // MMMM
+            code |= insEncodeReg_P<19, 16>(regm); // MMMM
             dst += emitOutput_Instr(dst, code);
             break;
         }
@@ -10585,27 +10585,27 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_CZ_4A_A: // ............MMMM ..gggg.NNNN.DDDD -- SVE predicate logical operations
         case IF_SVE_CZ_4A_L: // ............MMMM ..gggg.NNNN.DDDD -- SVE predicate logical operations
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());   // DDDD
-            code |= insEncodeReg_P_13_to_10(id->idReg2()); // NNNN
-            code |= insEncodeReg_P_8_to_5(id->idReg2());   // NNNN
-            code |= insEncodeReg_P_19_to_16(id->idReg2()); // NNNN
+            code |= insEncodeReg_P<3, 0>(id->idReg1());   // DDDD
+            code |= insEncodeReg_P<13, 10>(id->idReg2()); // NNNN
+            code |= insEncodeReg_P<8, 5>(id->idReg2());   // NNNN
+            code |= insEncodeReg_P<19, 16>(id->idReg2()); // NNNN
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_CZ_4A_K: // ............MMMM ..gggg.NNNN.DDDD -- SVE predicate logical operations
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());   // DDDD
-            code |= insEncodeReg_P_13_to_10(id->idReg2()); // gggg
-            code |= insEncodeReg_P_8_to_5(id->idReg3());   // NNNN
-            code |= insEncodeReg_P_19_to_16(id->idReg1()); // DDDD
+            code |= insEncodeReg_P<3, 0>(id->idReg1());   // DDDD
+            code |= insEncodeReg_P<13, 10>(id->idReg2()); // gggg
+            code |= insEncodeReg_P<8, 5>(id->idReg3());   // NNNN
+            code |= insEncodeReg_P<19, 16>(id->idReg1()); // DDDD
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_DB_3A: // ................ ..gggg.NNNNMDDDD -- SVE partition break condition
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
-            code |= insEncodeReg_P_13_to_10(id->idReg2());                // gggg
-            code |= insEncodeReg_P_8_to_5(id->idReg3());                  // NNNN
+            code |= insEncodeReg_P<3, 0>(id->idReg1());                  // DDDD
+            code |= insEncodeReg_P<13, 10>(id->idReg2());                // gggg
+            code |= insEncodeReg_P<8, 5>(id->idReg3());                  // NNNN
             code |= insEncodePredQualifier_4(id->idPredicateReg2Merge()); // M
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10613,32 +10613,32 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_DB_3B: // ................ ..gggg.NNNN.DDDD -- SVE partition break condition
         case IF_SVE_DC_3A: // ................ ..gggg.NNNN.MMMM -- SVE propagate break to next partition
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());   // DDDD
-            code |= insEncodeReg_P_13_to_10(id->idReg2()); // gggg
-            code |= insEncodeReg_P_8_to_5(id->idReg3());   // NNNN
+            code |= insEncodeReg_P<3, 0>(id->idReg1());   // DDDD
+            code |= insEncodeReg_P<13, 10>(id->idReg2()); // gggg
+            code |= insEncodeReg_P<8, 5>(id->idReg3());   // NNNN
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_DD_2A: // ................ .......gggg.DDDD -- SVE predicate first active
         case IF_SVE_DG_2A: // ................ .......gggg.DDDD -- SVE predicate read from FFR (predicated)
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1()); // DDDD
-            code |= insEncodeReg_P_8_to_5(id->idReg2()); // gggg
+            code |= insEncodeReg_P<3, 0>(id->idReg1()); // DDDD
+            code |= insEncodeReg_P<8, 5>(id->idReg2()); // gggg
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_DE_1A: // ........xx...... ......ppppp.DDDD -- SVE predicate initialize
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeSvePattern(id->idSvePattern());              // ppppp
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
+            code |= insEncodeReg_P<3, 0>(id->idReg1());                  // DDDD
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_DF_2A: // ........xx...... .......VVVV.DDDD -- SVE predicate next active
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
-            code |= insEncodeReg_P_8_to_5(id->idReg2());                  // VVVV
+            code |= insEncodeReg_P<3, 0>(id->idReg1());                  // DDDD
+            code |= insEncodeReg_P<8, 5>(id->idReg2());                  // VVVV
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10646,22 +10646,22 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_DH_1A: // ................ ............DDDD -- SVE predicate read from FFR (unpredicated)
         case IF_SVE_DJ_1A: // ................ ............DDDD -- SVE predicate zero
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1()); // DDDD
+            code |= insEncodeReg_P<3, 0>(id->idReg1()); // DDDD
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_DI_2A: // ................ ..gggg.NNNN..... -- SVE predicate test
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_13_to_10(id->idReg1()); // gggg
-            code |= insEncodeReg_P_8_to_5(id->idReg2());   // NNNN
+            code |= insEncodeReg_P<13, 10>(id->idReg1()); // gggg
+            code |= insEncodeReg_P<8, 5>(id->idReg2());   // NNNN
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_DK_3A: // ........xx...... ..gggg.NNNNddddd -- SVE predicate count
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_R_4_to_0(id->idReg1());                  // ddddd
-            code |= insEncodeReg_P_13_to_10(id->idReg2());                // gggg
-            code |= insEncodeReg_P_8_to_5(id->idReg3());                  // NNNN
+            code |= insEncodeReg_P<13, 10>(id->idReg2());                // gggg
+            code |= insEncodeReg_P<8, 5>(id->idReg3());                  // NNNN
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10682,7 +10682,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeVectorLengthSpecifier(id);                      // l
             code |= insEncodeReg_R_4_to_0(id->idReg1());                     // ddddd
-            code |= insEncodeReg_P_8_to_5(id->idReg2());                     // NNNN
+            code |= insEncodeReg_P<8, 5>(id->idReg2());                     // NNNN
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10690,7 +10690,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_R_4_to_0(id->idReg1());                     // ddddd
-            code |= insEncodeReg_P_8_to_5(id->idReg2());                     // MMMM
+            code |= insEncodeReg_P<8, 5>(id->idReg2());                     // MMMM
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10699,7 +10699,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                     // ddddd
-            code |= insEncodeReg_P_8_to_5(id->idReg2());                     // MMMM
+            code |= insEncodeReg_P<8, 5>(id->idReg2());                     // MMMM
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10707,7 +10707,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_DO_2A: // ........xx...... .....X.MMMMddddd -- SVE saturating inc/dec register by predicate count
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_R_4_to_0(id->idReg1());                     // ddddd
-            code |= insEncodeReg_P_8_to_5(id->idReg2());                     // MMMM
+            code |= insEncodeReg_P<8, 5>(id->idReg2());                     // MMMM
             code |= insEncodeVLSElemsize(id->idOpSize());                    // X
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
@@ -10720,7 +10720,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_DR_1A: // ................ .......NNNN..... -- SVE FFR write from predicate
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_8_to_5(id->idReg1()); // NNNN
+            code |= insEncodeReg_P<8, 5>(id->idReg1()); // NNNN
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -10813,7 +10813,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_DT_3A: // ........xx.mmmmm ...X..nnnnn.DDDD -- SVE integer compare scalar count and limit
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                     // DDDD
+            code |= insEncodeReg_P<3, 0>(id->idReg1());                     // DDDD
             code |= insEncodeReg_R_9_to_5(id->idReg2());                     // nnnnn
             code |= (id->idOpSize() == EA_8BYTE) ? (1 << 12) : 0;            // X
             code |= insEncodeReg_R_20_to_16(id->idReg3());                   // mmmmm
@@ -10824,8 +10824,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_DW_2A: // ........xx...... ......iiNNN.DDDD -- SVE extract mask predicate from predicate-as-counter
         case IF_SVE_DW_2B: // ........xx...... .......iNNN.DDDD -- SVE extract mask predicate from predicate-as-counter
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
-            code |= insEncodeReg_P_7_to_5(id->idReg2());                  // NNN
+            code |= insEncodeReg_P<3, 0>(id->idReg1());                  // DDDD
+            code |= insEncodeReg_P<7, 5, true>(id->idReg2());                  // NNN
             code |= insEncodeUimm<9, 8>(emitGetInsSC(id));                // ii (or i)
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
@@ -10834,7 +10834,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_DX_3A: // ........xx.mmmmm ......nnnnn.DDD. -- SVE integer compare scalar count and limit (predicate
                            // pair)
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_1(id->idReg1());                     // DDD
+            code |= insEncodeReg_P<3, 1>(id->idReg1());                     // DDD
             code |= insEncodeReg_R_9_to_5(id->idReg2());                     // nnnnn
             code |= insEncodeReg_R_20_to_16(id->idReg3());                   // mmmmm
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -10845,7 +10845,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                            // (predicate-as-counter)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeVectorLengthSpecifier(id);                   // l
-            code |= insEncodeReg_P_2_to_0(id->idReg1());                  // DDD
+            code |= insEncodeReg_P<2, 0, true>(id->idReg1());                  // DDD
             code |= insEncodeReg_R_9_to_5(id->idReg2());                  // nnnnn
             code |= insEncodeReg_R_20_to_16(id->idReg3());                // mmmmm
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -10854,7 +10854,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_DZ_1A: // ........xx...... .............DDD -- sve_int_pn_ptrue
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_2_to_0(id->idReg1());                  // DDD
+            code |= insEncodeReg_P<2, 0, true>(id->idReg1());                  // DDD
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10942,7 +10942,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_DU_3A: // ........xx.mmmmm ......nnnnn.DDDD -- SVE pointer conflict compare
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                     // DDDD
+            code |= insEncodeReg_P<3, 0>(id->idReg1());                     // DDDD
             code |= insEncodeReg_R_9_to_5(id->idReg2());                     // nnnnn
             code |= insEncodeReg_R_20_to_16(id->idReg3());                   // mmmmm
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -10951,9 +10951,9 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_DV_4A: // ........ix.xxxvv ..NNNN.MMMM.DDDD -- SVE broadcast predicate element
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                                      // DDDD
-            code |= insEncodeReg_P_13_to_10(id->idReg2());                                    // NNNN
-            code |= insEncodeReg_P_8_to_5(id->idReg3());                                      // MMMM
+            code |= insEncodeReg_P<3, 0>(id->idReg1());                                      // DDDD
+            code |= insEncodeReg_P<13, 10>(id->idReg2());                                    // NNNN
+            code |= insEncodeReg_P<8, 5>(id->idReg3());                                      // MMMM
             code |= insEncodeReg_R_17_to_16(id->idReg4());                                    // vv
             code |= insEncodeSveElemsize_tszh_tszl_and_imm(id->idInsOpt(), emitGetInsSC(id)); // ix xx
             dst += emitOutput_Instr(dst, code);
@@ -10962,7 +10962,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_HO_3A: // ................ ...gggnnnnnddddd -- SVE floating-point convert precision
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());   // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10970,7 +10970,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_HO_3B: // ................ ...gggnnnnnddddd -- SVE floating-point convert precision
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());   // nnnnn
             switch (id->idInsOpt())
             {
@@ -11000,7 +11000,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_HO_3C: // ................ ...gggnnnnnddddd -- SVE floating-point convert precision
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());   // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
@@ -11008,7 +11008,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_HP_3B: // ................ ...gggnnnnnddddd -- SVE floating-point convert to integer
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());   // nnnnn
 
             switch (id->idInsOpt())
@@ -11045,7 +11045,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_HS_3A: // ................ ...gggnnnnnddddd -- SVE integer convert to floating-point
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());   // nnnnn
 
             switch (id->idInsOpt())
@@ -11115,7 +11115,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ttttt
             code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
 
             switch (ins)
             {
@@ -11195,7 +11195,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_JD_4A: // .........xxmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                              // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                            // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                            // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());                              // nnnnn
             code |= insEncodeReg_R_20_to_16(id->idReg4());                            // mmmmm
             code |= insEncodeSveElemsize_22_to_21(optGetSveElemsize(id->idInsOpt())); // xx
@@ -11205,7 +11205,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_JD_4B: // ..........xmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                           // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                         // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                         // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());                           // nnnnn
             code |= insEncodeReg_R_20_to_16(id->idReg4());                         // mmmmm
             code |= insEncodeSveElemsize_sz_21(optGetSveElemsize(id->idInsOpt())); // x
@@ -11226,7 +11226,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                              // unscaled offsets)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
             code |= insEncodeReg_V<20, 16>(id->idReg4()); // mmmmm
 
@@ -11248,7 +11248,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                              // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                            // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                            // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());                              // nnnnn
             code |= insEncodeSimm<19, 16>(imm);                                       // iiii
             code |= insEncodeSveElemsize_22_to_21(optGetSveElemsize(id->idInsOpt())); // xx
@@ -11259,7 +11259,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                           // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                         // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                         // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());                           // nnnnn
             code |= insEncodeSimm<19, 16>(imm);                                    // iiii
             code |= insEncodeSveElemsize_sz_21(optGetSveElemsize(id->idInsOpt())); // x
@@ -11282,7 +11282,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                              // scaled offsets)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
             code |= insEncodeReg_V<20, 16>(id->idReg4()); // mmmmm
 
@@ -11306,7 +11306,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                              // offsets)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
             code |= insEncodeReg_V<20, 16>(id->idReg4()); // mmmmm
             dst += emitOutput_Instr(dst, code);
@@ -11328,7 +11328,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                              // scalar)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());   // nnnnn
             code |= insEncodeReg_R_20_to_16(id->idReg4()); // mmmmm
             dst += emitOutput_Instr(dst, code);
@@ -11349,7 +11349,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_IK_4A_I: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
             code |= insEncodeReg_R_20_to_16(id->idReg4()); // mmmmm
 
@@ -11386,7 +11386,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                            // scalar)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
             code |= insEncodeReg_R_20_to_16(id->idReg4()); // mmmmm
             dst += emitOutput_Instr(dst, code);
@@ -11408,7 +11408,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                            // offsets)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
             code |= insEncodeReg_V<20, 16>(id->idReg4()); // mmmmm
             dst += emitOutput_Instr(dst, code);
@@ -11418,7 +11418,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                     // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                   // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());                     // mmmmm
             code |= insEncodeSveImm90_or_270_rot(imm);                       // r
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -11429,7 +11429,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                     // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                   // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());                     // nnnnn
             code |= insEncodeReg_V<20, 16>(id->idReg4());                   // mmmmm
             code |= insEncodeSveImm0_to_270_rot(imm);                        // rr
@@ -11439,8 +11439,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_HI_3A: // ........xx...... ...gggnnnnn.DDDD -- SVE floating-point compare with zero
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                     // DDDD
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
+            code |= insEncodeReg_P<3, 0>(id->idReg1());                     // DDDD
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                   // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());                     // nnnnn
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
@@ -11452,7 +11452,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                 imm  = emitGetInsSC(id);
                 code = emitInsCodeSve(ins, fmt);
                 code |= insEncodeReg_V<4, 0>(id->idReg1());                     // ddddd
-                code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
+                code |= insEncodeReg_P<12, 10>(id->idReg2());                   // ggg
                 code |= insEncodeSveSmallFloatImm(imm);                          // i
                 code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
                 dst += emitOutput_Instr(dst, code);
@@ -11472,7 +11472,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_HP_3A: // .............xx. ...gggnnnnnddddd -- SVE floating-point convert to integer
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                              // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                            // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                            // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());                              // nnnnn
             code |= insEncodeSveElemsize_18_to_17(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
@@ -11481,7 +11481,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_HU_4B: // ...........mmmmm ...gggnnnnnddddd -- SVE floating-point multiply-accumulate writing addend
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());   // nnnnn
             code |= insEncodeReg_V<20, 16>(id->idReg4()); // mmmmm
             dst += emitOutput_Instr(dst, code);
@@ -11491,7 +11491,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                            // multiplicand
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                     // ddddd
-            code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());                   // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());                     // mmmmm
             code |= insEncodeReg_V<20, 16>(id->idReg4());                   // aaaaa
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -11502,7 +11502,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_JG_2A: // ..........iiiiii ...iiinnnnn.TTTT -- SVE store predicate register
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());          // TTTT
+            code |= insEncodeReg_P<3, 0>(id->idReg1());          // TTTT
             code |= insEncodeReg_R_9_to_5(id->idReg2());          // nnnnn
             code |= insEncodeSimm9h9l_21_to_16_and_12_to_10(imm); // iii
                                                                   // iiiiii
@@ -11563,7 +11563,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_HY_3A_A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit
                              // scaled offsets)
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_12_to_10(id->idReg1()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg1()); // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg2());   // nnnnn
             code |= insEncodeReg_V<20, 16>(id->idReg3()); // mmmmm
             code |= id->idSvePrfop();                      // oooo
@@ -11585,7 +11585,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_HY_3B: // ...........mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit scaled
                            // offsets)
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_12_to_10(id->idReg1()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg1()); // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg2());   // nnnnn
             code |= insEncodeReg_V<20, 16>(id->idReg3()); // mmmmm
             code |= id->idSvePrfop();                      // oooo
@@ -11594,7 +11594,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_IB_3A: // ...........mmmmm ...gggnnnnn.oooo -- SVE contiguous prefetch (scalar plus scalar)
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_12_to_10(id->idReg1()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg1()); // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg2());   // nnnnn
             code |= insEncodeReg_R_20_to_16(id->idReg3()); // mmmmm
             code |= id->idSvePrfop();                      // oooo
@@ -11604,7 +11604,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_HZ_2A_B: // ...........iiiii ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (vector plus immediate)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_12_to_10(id->idReg1()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg1()); // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg2());   // nnnnn
             code |= id->idSvePrfop();                      // oooo
 
@@ -11637,7 +11637,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());   // nnnnn
             code |= insEncodeUimm<20, 16>(imm);            // iiiii
             code |= insEncodeSveElemsize_30_or_21(fmt, optGetSveElemsize(id->idInsOpt()));
@@ -11649,7 +11649,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());   // nnnnn
             code |= insEncodeSveElemsize_30_or_21(fmt, optGetSveElemsize(id->idInsOpt()));
 
@@ -11679,7 +11679,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());      // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2());    // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2());    // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());      // nnnnn
             code |= insEncodeUimm5_MultipleOf8_20_to_16(imm); // iiiii
             dst += emitOutput_Instr(dst, code);
@@ -11689,7 +11689,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());   // nnnnn
             code |= insEncodeSveElemsize_30_or_21(fmt, optGetSveElemsize(id->idInsOpt()));
 
@@ -11715,7 +11715,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_IA_2A: // ..........iiiiii ...gggnnnnn.oooo -- SVE contiguous prefetch (scalar plus immediate)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_12_to_10(id->idReg1()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg1()); // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg2());   // nnnnn
             code |= id->idSvePrfop();                      // oooo
             code |= insEncodeSimm<21, 16>(imm);            // iiiiii
@@ -11726,7 +11726,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
 
             switch (ins)
@@ -11750,7 +11750,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());   // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_P<12, 10>(id->idReg2()); // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
             code = insEncodeSveElemsize_dtypeh_dtypel(ins, fmt, optGetSveElemsize(id->idInsOpt()), code);
 
@@ -12337,110 +12337,6 @@ void emitter::emitDispSvePrfop(insSvePrfop prfop, bool addComma)
     }
 
     return 0;
-}
-
-/*****************************************************************************
- *
- *  Return an encoding for the specified 'P' register used in '19' thru '16' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_P_19_to_16(regNumber reg)
-{
-    assert(isPredicateRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
-    assert((ureg >= 0) && (ureg <= 15));
-    return ureg << 16;
-}
-
-/*****************************************************************************
- *
- *  Return an encoding for the specified 'P' register used in '3' thru '0' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_P_3_to_0(regNumber reg)
-{
-    assert(isPredicateRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
-    assert((ureg >= 0) && (ureg <= 15));
-    return ureg;
-}
-
-/*****************************************************************************
- *
- *  Return an encoding for the specified 'P' register used in '8' thru '5' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_P_8_to_5(regNumber reg)
-{
-    assert(isPredicateRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
-    assert((ureg >= 0) && (ureg <= 15));
-    return ureg << 5;
-}
-
-/*****************************************************************************
- *
- *  Return an encoding for the specified 'P' register used in '13' thru '10' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_P_13_to_10(regNumber reg)
-{
-    assert(isPredicateRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
-    assert((ureg >= 0) && (ureg <= 15));
-    return ureg << 10;
-}
-
-/*****************************************************************************
- *
- *  Return an encoding for the specified 'P' register used in '12' thru '10' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_P_12_to_10(regNumber reg)
-{
-    assert(isLowPredicateRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
-    assert((ureg >= 0) && (ureg <= 7));
-    return ureg << 10;
-}
-
-/*****************************************************************************
- *
- *  Return an encoding for the specified 'P' register used in '7' thru '5' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_P_7_to_5(regNumber reg)
-{
-    assert(isHighPredicateRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P8;
-    assert((ureg >= 0) && (ureg <= 7));
-    return ureg << 5;
-}
-
-/*****************************************************************************
- *
- *  Return an encoding for the specified 'P' register used in '3' thru '1' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_P_3_to_1(regNumber reg)
-{
-    assert(isLowPredicateRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
-    assert((ureg >= 0) && (ureg <= 15));
-    return ureg << 1;
-}
-
-/*****************************************************************************
- *
- *  Return an encoding for the specified 'P' register used in '2' thru '0' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_P_2_to_0(regNumber reg)
-{
-    assert(isPredicateRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
-    assert((ureg >= 8) && (ureg <= 15));
-    return (ureg - 8) << 0;
 }
 
 /*****************************************************************************

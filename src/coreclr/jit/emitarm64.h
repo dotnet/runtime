@@ -370,8 +370,26 @@ static code_t insEncodeReg_V(regNumber reg)
     return ureg << lo;
 }
 
-// Return an encoding for the specified 'P' register used in '12' thru '10' position.
-static code_t insEncodeReg_P_12_to_10(regNumber reg);
+// Returns an encoding for the specified 'P' register used in 'hi' thru 'lo' position.
+template <const size_t hi, const size_t lo, const bool isHighReg = false>
+static code_t insEncodeReg_P(regNumber reg)
+{
+    // lo <= hi < 32
+    static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
+    assert(isPredicateRegister(reg));
+    code_t ureg = (code_t)reg - (code_t)REG_P0;
+
+    if (isHighReg)
+    {
+        assert(isHighPredicateRegister(reg));
+        ureg -= 8;
+    }
+    
+    constexpr size_t bits = hi - lo + 1;
+    static_assert(bits <= 4);
+    assert((ureg >= 0) && (ureg < (1 << bits)));
+    return ureg << lo;
+}
 
 // Return an encoding for the specified 'R' register used in '20' thru '16' position.
 static code_t insEncodeReg_R_20_to_16(regNumber reg);
@@ -382,29 +400,8 @@ static code_t insEncodeReg_R_9_to_5(regNumber reg);
 // Return an encoding for the specified 'R' register used in '4' thru '0' position.
 static code_t insEncodeReg_R_4_to_0(regNumber reg);
 
-// Return an encoding for the specified 'P' register used in '19' thru '16' position.
-static code_t insEncodeReg_P_19_to_16(regNumber reg);
-
-// Return an encoding for the specified 'P' register used in '3' thru '0' position.
-static code_t insEncodeReg_P_3_to_0(regNumber reg);
-
-// Return an encoding for the specified 'P' register used in '8' thru '5' position.
-static code_t insEncodeReg_P_8_to_5(regNumber reg);
-
-// Return an encoding for the specified 'P' register used in '13' thru '10' position.
-static code_t insEncodeReg_P_13_to_10(regNumber reg);
-
 // Return an encoding for the specified 'R' register used in '17' thru '16' position.
 static code_t insEncodeReg_R_17_to_16(regNumber reg);
-
-// Return an encoding for the specified 'P' register used in '7' thru '5' position.
-static code_t insEncodeReg_P_7_to_5(regNumber reg);
-
-// Return an encoding for the specified 'P' register used in '3' thru '1' position.
-static code_t insEncodeReg_P_3_to_1(regNumber reg);
-
-// Return an encoding for the specified 'P' register used in '2' thru '0' position.
-static code_t insEncodeReg_P_2_to_0(regNumber reg);
 
 // Return an encoding for the specified predicate type used in '16' position.
 static code_t insEncodePredQualifier_16(bool merge);
