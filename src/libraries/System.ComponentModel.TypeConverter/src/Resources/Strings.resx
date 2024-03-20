@@ -172,6 +172,9 @@
   <data name="CultureInfoConverterInvalidCulture" xml:space="preserve">
     <value>The {0} culture cannot be converted to a CultureInfo object on this computer.</value>
   </data>
+  <data name="IDesignerHostNotSupported" xml:space="preserve">
+    <value>Designer support has been disabled in the app configuration and is not supported.</value>
+  </data>
   <data name="ErrorInvalidServiceInstance" xml:space="preserve">
     <value>The service instance must derive from or implement {0}.</value>
   </data>

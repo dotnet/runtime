@@ -272,7 +272,6 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        disableClrTest: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Runtime-dev-innerloop build
@@ -463,7 +462,6 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        disableClrTest: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # WASI WebAssembly
@@ -920,7 +918,6 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        disableClrTest: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Windows x64
