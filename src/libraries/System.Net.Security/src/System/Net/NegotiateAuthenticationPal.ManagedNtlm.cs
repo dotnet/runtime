@@ -628,7 +628,7 @@ namespace System.Net
                 NtlmHeader.CopyTo(responseAsSpan);
 
                 response.Header.MessageType = MessageType.Authenticate;
-                response.Flags = s_requiredFlags;
+                response.Flags = s_requiredFlags | (flags & Flags.NegotiateSeal);
                 response.Version = s_version;
 
                 // Calculate hash for hmac - same for lm2 and ntlm2
