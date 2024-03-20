@@ -677,22 +677,23 @@ static code_t insEncodeSimm(ssize_t imm)
 }
 
 // Returns the encoding for unsigned immediate `imm` that is a multiple of `mul` with `bits` number of bits,
-// starting at bit location `lo`.
-template <const size_t bits, const ssize_t mul, const size_t lo>
+// for bit locations `hi-lo`.
+template <const size_t hi, const size_t lo, const ssize_t mul>
 static code_t insEncodeUimm_MultipleOf(ssize_t imm)
 {
+
+    constexpr size_t bits = hi - lo + 1;
     assert((isValidUimm_MultipleOf<bits, mul>(imm)));
-    constexpr size_t hi = lo + bits - 1;
     return insEncodeUimm<hi, lo>(imm / mul);
 }
 
 // Returns the encoding for signed immediate `imm` that is a multiple of `mul` with `bits` number of bits,
-// starting at bit location `lo`.
-template <const size_t bits, const ssize_t mul, const size_t lo>
+// for bit locations `hi-lo`.
+template <const size_t hi, const size_t lo, const ssize_t mul>
 static code_t insEncodeSimm_MultipleOf(ssize_t imm)
 {
+    constexpr size_t bits = hi - lo + 1;
     assert((isValidSimm_MultipleOf<bits, mul>(imm)));
-    constexpr size_t hi = lo + bits - 1;
     return insEncodeSimm<hi, lo>(imm / mul);
 }
 
