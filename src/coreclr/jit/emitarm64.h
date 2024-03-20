@@ -741,14 +741,14 @@ static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift
 // for an Arm64 Sve instruction.
 static code_t insEncodeSveElemsize_R_22(emitAttr size);
 
-// Returns the immediate value for instructions that encode it as a difference from tszh:tszl:imm3.
-static ssize_t insGetImmDiff(const ssize_t imm, const insOpts opt);
+// Returns the immediate value for SVE instructions that encode it as a difference from tszh:tszl:imm3.
+static ssize_t insSveGetImmDiff(const ssize_t imm, const insOpts opt);
 
 // Returns the two 5-bit signed immediates encoded as one ssize_t.
-static ssize_t insEncodeTwoSimm5(ssize_t imm1, ssize_t imm2);
+static ssize_t insSveEncodeTwoSimm5(ssize_t imm1, ssize_t imm2);
 
-// Decodes imm into two 5-bit signed immediates, using the encoding format from insEncodeTwoSimm5.
-static void insDecodeTwoSimm5(ssize_t imm, /* OUT */ ssize_t* const imm1, /* OUT */ ssize_t* const imm2);
+// Decodes imm into two 5-bit signed immediates, using the encoding format from insSveEncodeTwoSimm5.
+static void insSveDecodeTwoSimm5(ssize_t imm, /* OUT */ ssize_t* const imm1, /* OUT */ ssize_t* const imm2);
 
 // Returns the encoding to select an insSvePattern
 static code_t insEncodeSvePattern(insSvePattern pattern);
