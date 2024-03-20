@@ -603,9 +603,9 @@ private:
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
 
-                if ((call->gtCallMoreFlags & GTF_CALL_M_HAS_LATE_DEVIRT_INFO) != 0)
+                if ((call->gtCallMoreFlags & GTF_CALL_M_HAS_EXACT_CONTEXT_INFO) != 0)
                 {
-                    context = call->gtLateDevirtualizationInfo->exactContextHnd;
+                    context = call->gtExactContextInfo->exactContextHnd;
                     // Note: we might call this multiple times for the same trees.
                     // If the devirtualization below succeeds, the call becomes
                     // non-virtual and we won't get here again. If it does not
