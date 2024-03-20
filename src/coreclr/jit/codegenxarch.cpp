@@ -10229,7 +10229,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 //    lea esp, [ebp - compiler->compCalleeRegsPushed * REGSIZE_BYTES]
                 needLea = true;
             }
-            else if (!regSet.rsRegsModified(RBM_CALLEE_SAVED))
+            else if (!regSet.rsRegsModified(AllRegsMask_CALLEE_SAVED))
             {
                 if (compiler->compLclFrameSize != 0)
                 {

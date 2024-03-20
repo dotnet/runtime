@@ -130,6 +130,12 @@ public:
         // return (rsModifiedGprRegsMask & mask) != 0;
     }
 
+    bool rsRegsModified(const AllRegsMask& mask) const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return !((rsModifiedRegsMask & mask).IsEmpty());
+    }
+
     void verifyRegUsed(regNumber reg);
     void verifyGprRegUsed(regNumber reg);
 

@@ -368,9 +368,9 @@ public:
     _regMaskAll operator~();
     bool operator==(const _regMaskAll& other);
     bool operator!=(const _regMaskAll& other);
-    _regMaskAll operator&(const _regMaskAll& other);
-    _regMaskAll operator|(const _regMaskAll& other);
-    _regMaskAll operator&(const regNumber reg);
+    _regMaskAll operator&(const _regMaskAll& other) const;
+    _regMaskAll operator|(const _regMaskAll& other) const;
+    _regMaskAll operator&(const regNumber reg) const;
 
 } AllRegsMask;
 

@@ -14113,7 +14113,7 @@ bool AllRegsMask::operator!=(const AllRegsMask& other)
     return !(*this == other);
 }
 
-_regMaskAll AllRegsMask::operator&(const AllRegsMask& other)
+_regMaskAll AllRegsMask::operator&(const AllRegsMask& other) const
 {
     return _regMaskAll(gprRegs() & other.gprRegs(), floatRegs() & other.floatRegs()
 #ifdef HAS_PREDICATE_REGS
@@ -14123,7 +14123,7 @@ _regMaskAll AllRegsMask::operator&(const AllRegsMask& other)
                            );
 }
 
-_regMaskAll AllRegsMask::operator|(const _regMaskAll& other)
+_regMaskAll AllRegsMask::operator|(const _regMaskAll& other) const
 {
     return _regMaskAll(gprRegs() | other.gprRegs(), floatRegs() | other.floatRegs()
 #ifdef HAS_PREDICATE_REGS
@@ -14133,7 +14133,7 @@ _regMaskAll AllRegsMask::operator|(const _regMaskAll& other)
                            );
 }
 
-_regMaskAll AllRegsMask::operator&(const regNumber reg)
+_regMaskAll AllRegsMask::operator&(const regNumber reg) const
 {
     _regMaskAll result = *this;
     result[regIndexForRegister(reg)] &= genRegMask(reg);
