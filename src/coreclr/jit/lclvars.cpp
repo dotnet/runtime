@@ -2802,6 +2802,10 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("Promoted struct used by a SIMD/HWI node\n");
             break;
 
+        case DoNotEnregisterReason::NonStandardParameter:
+            JITDUMP("Non-standard parameter\n");
+            break;
+
         default:
             unreached();
             break;

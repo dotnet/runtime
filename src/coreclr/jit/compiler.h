@@ -10639,6 +10639,7 @@ public:
         unsigned m_returnSpCheck;
         unsigned m_callSpCheck;
         unsigned m_simdUserForcesDep;
+        unsigned m_nonStandardParameter;
         unsigned m_liveInOutHndlr;
         unsigned m_depField;
         unsigned m_noRegVars;
