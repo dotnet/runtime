@@ -6603,22 +6603,6 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
 
 /************************************************************************
  *
- *  Convert a 32-bit immediate into its 'byteShifted immediate' representation imm(i8,by)
- */
-
-/*static*/ emitter::byteShiftedImm emitter::emitEncodeByteShiftedImm(INT64 imm, emitAttr size, bool allow_MSL)
-{
-    emitter::byteShiftedImm result;
-    result.immBSVal = 0;
-
-    bool canEncode = canEncodeByteShiftedImm(imm, size, allow_MSL, &result);
-    assert(canEncode);
-
-    return result;
-}
-
-/************************************************************************
- *
  *  Convert a 'float 8-bit immediate' into a double.
  *  inputs 'fpImm' a floatImm8 struct
  */

@@ -270,8 +270,6 @@ union byteShiftedImm {
 *   representation imm(i8,by)
 */
 
-static emitter::byteShiftedImm emitEncodeByteShiftedImm(INT64 imm, emitAttr size, bool allow_MSL);
-
 static UINT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size);
 
 /************************************************************************
