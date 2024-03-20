@@ -44,7 +44,7 @@ namespace System.Text.Json
         public static JsonNamingPolicy KebabCaseUpper { get; } = new JsonKebabCaseUpperNamingPolicy();
 
         /// <summary>
-        /// Test
+        /// Returns the naming policy for pascal-casing.
         /// </summary>
         public static JsonNamingPolicy PascalCase { get; } = new JsonPascalCaseNamingPolicy();
 

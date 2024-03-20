@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization
         KebabCaseUpper = 5,
 
         /// <summary>
-        /// Test
+        /// Specifies that the built-in <see cref="Json.JsonNamingPolicy.PascalCase"/> be used to convert JSON property names.
         /// </summary>
         PascalCase = 6,
     }
