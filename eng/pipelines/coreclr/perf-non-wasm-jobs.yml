@@ -2,53 +2,53 @@ jobs:
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
-  # # build coreclr and libraries
-  # - template: /eng/pipelines/common/platform-matrix.yml
-  #   parameters:
-  #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-  #     buildConfig: release
-  #     platforms:
-  #     - linux_x64
-  #     - windows_x64
-  #     - windows_x86
-  #     - linux_musl_x64
-  #     jobParameters:
-  #       nameSuffix: coreclr
-  #       buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
-  #       isOfficialBuild: false
-  #       postBuildSteps:
-  #       - template: /eng/pipelines/common/upload-artifact-step.yml
-  #         parameters:
-  #           rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-  #           includeRootFolder: false
-  #           archiveType: $(archiveType)
-  #           archiveExtension: $(archiveExtension)
-  #           tarCompression: $(tarCompression)
-  #           artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
-  #           displayName: Build Assets
+  # build coreclr and libraries
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      platforms:
+      - linux_x64
+      # - windows_x64
+      # - windows_x86
+      # - linux_musl_x64
+      jobParameters:
+        nameSuffix: coreclr
+        buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
+        isOfficialBuild: false
+        postBuildSteps:
+        - template: /eng/pipelines/common/upload-artifact-step.yml
+          parameters:
+            rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+            includeRootFolder: false
+            archiveType: $(archiveType)
+            archiveExtension: $(archiveExtension)
+            tarCompression: $(tarCompression)
+            artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
+            displayName: Build Assets
 
-  # # build mono for AOT
-  # - template: /eng/pipelines/common/platform-matrix.yml
-  #   parameters:
-  #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-  #     buildConfig: release
-  #     runtimeFlavor: mono
-  #     platforms:
-  #     - linux_x64
-  #     jobParameters:
-  #       buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoEnableLLVM=true /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so.16" /p:AotHostArchitecture=x64 /p:AotHostOS=linux
-  #       nameSuffix: AOT
-  #       isOfficialBuild: false
-  #       postBuildSteps:
-  #         - template: /eng/pipelines/common/upload-artifact-step.yml
-  #           parameters:
-  #             rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-  #             includeRootFolder: true
-  #             displayName: AOT Mono Artifacts
-  #             artifactName: LinuxMonoAOTx64
-  #             archiveExtension: '.tar.gz'
-  #             archiveType: tar
-  #             tarCompression: gz
+  # build mono for AOT
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - linux_x64
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoEnableLLVM=true /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so.16" /p:AotHostArchitecture=x64 /p:AotHostOS=linux
+        nameSuffix: AOT
+        isOfficialBuild: false
+        postBuildSteps:
+          - template: /eng/pipelines/common/upload-artifact-step.yml
+            parameters:
+              rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+              includeRootFolder: true
+              displayName: AOT Mono Artifacts
+              artifactName: LinuxMonoAOTx64
+              archiveExtension: '.tar.gz'
+              archiveType: tar
+              tarCompression: gz
 
   # # build mono Android scenarios
   # - template: /eng/pipelines/common/platform-matrix.yml
