@@ -1056,7 +1056,7 @@ void ProfileSynthesis::ComputeBlockWeight(BasicBlock* block)
     }
     else
     {
-        // Sum all incoming edges that aren't EH flow
+        // Sum all incoming edges that aren't EH flow.
         //
         for (FlowEdge* const edge : block->PredEdges())
         {
@@ -1205,6 +1205,7 @@ void ProfileSynthesis::GaussSeidelSolver()
                     for (FlowEdge* const edge : loop->EntryEdges())
                     {
                         BasicBlock* const predBlock = edge->getSourceBlock();
+
                         if (BasicBlock::sameHndRegion(block, predBlock))
                         {
                             newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
@@ -1217,13 +1218,39 @@ void ProfileSynthesis::GaussSeidelSolver()
                 }
                 else
                 {
+                    // A self-edge that's part of a bigger SCC may
+                    // not be detected as simple loop.
+                    //
+                    FlowEdge* selfEdge = nullptr;
+
                     for (FlowEdge* const edge : block->PredEdges())
                     {
                         BasicBlock* const predBlock = edge->getSourceBlock();
+
+                        if (predBlock == block)
+                        {
+                            // We might see a degenerate self BBJ_COND. Hoepfully not.
+                            //
+                            assert(selfEdge == nullptr);
+                            selfEdge = edge;
+                            continue;
+                        }
+
                         if (BasicBlock::sameHndRegion(block, predBlock))
                         {
                             newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
                         }
+                    }
+
+                    if (selfEdge != nullptr)
+                    {
+                        weight_t selfLikelihood = selfEdge->getLikelihood();
+                        if (selfLikelihood > cappedLikelihood)
+                        {
+                            m_cappedCyclicProbabilities++;
+                            selfLikelihood = cappedLikelihood;
+                        }
+                        newWeight = newWeight / (1.0 - selfLikelihood);
                     }
                 }
             }
@@ -1301,6 +1328,14 @@ void ProfileSynthesis::GaussSeidelSolver()
     JITDUMP("%s at iteration %u rel residual " FMT_WT " eigenvalue " FMT_WT "\n",
             converged ? "converged" : "failed to converge", i, relResidual, eigenvalue);
 
+    // TODO: computation above may be on the edge of diverging as there is
+    // nothing preventing a general cycle from having 1.0 likelihood. That
+    // is, there is nothing analogous to the capped cyclic check for more
+    // general cycles.
+    //
+    // We should track if the overall residual error (say L1 or L2 norm).
+    // If it is not decreasing, consider not using the data.
+    //
     // Propagate the computed weights to the blocks.
     //
     for (unsigned j = m_dfsTree->GetPostOrderCount(); j != 0; j--)
