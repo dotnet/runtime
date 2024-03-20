@@ -64,41 +64,87 @@ namespace System.Collections.Frozen
 
                     if (!_ignoreCase)
                     {
-                        for (; bucketIndex < bucketEndIndex; bucketIndex++)
+                        int branchSize = LengthBuckets.MaxPerLength / 2;
+
+                        do
                         {
                             int index = lengthBuckets[bucketIndex];
-                            if ((uint)index < (uint)items.Length)
+
+                            if (index >= 0)
                             {
+                                // Leaf Node
                                 if (item == items[index])
                                 {
                                     return index;
                                 }
+
+                                break;
+                            }
+
+                            if (index == LengthBuckets.NullSentinel)
+                            {
+                                break;
+                            }
+
+                            int comparison = string.CompareOrdinal(item, items[~index]);
+                            if (comparison == 0)
+                            {
+                                return ~index;
+                            }
+
+                            if (comparison < 0)
+                            {
+                                bucketIndex += 1;
                             }
                             else
                             {
-                                // -1 is used to indicate a null, when it's casted to uint it becomes > items.Length
-                                break;
+                                bucketIndex += 1 + branchSize;
                             }
-                        }
+
+                            branchSize -= 2;
+                        } while (branchSize >= -1);
                     }
                     else
                     {
-                        for (; bucketIndex < bucketEndIndex; bucketIndex++)
+                        int branchSize = LengthBuckets.MaxPerLength / 2;
+
+                        do
                         {
                             int index = lengthBuckets[bucketIndex];
-                            if ((uint)index < (uint)items.Length)
+
+                            if (index >= 0)
                             {
+                                // Leaf Node
                                 if (StringComparer.OrdinalIgnoreCase.Equals(item, items[index]))
                                 {
                                     return index;
                                 }
+
+                                break;
+                            }
+
+                            if (index == LengthBuckets.NullSentinel)
+                            {
+                                break;
+                            }
+
+                            int comparison = StringComparer.OrdinalIgnoreCase.Compare(item, items[~index]);
+                            if (comparison == 0)
+                            {
+                                return ~index;
+                            }
+
+                            if (comparison < 0)
+                            {
+                                bucketIndex += 1;
                             }
                             else
                             {
-                                // -1 is used to indicate a null, when it's casted to unit it becomes > items.Length
-                                break;
+                                bucketIndex += 1 + branchSize;
                             }
-                        }
+
+                            branchSize -= 2;
+                        } while (branchSize >= -1);
                     }
                 }
             }
