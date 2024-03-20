@@ -331,7 +331,7 @@ export function compareExchangeI32(offset: MemOffset, value: number, expected: n
         }
         return actual;
     }
-    return globalThis.Atomics.compareExchange(localHeapViewI32(), <any>offset >>> 2, value, expected);
+    return globalThis.Atomics.compareExchange(localHeapViewI32(), <any>offset >>> 2, expected, value);
 }
 
 export function storeI32(offset: MemOffset, value: number): void {

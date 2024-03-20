@@ -788,7 +788,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     availableMaskRegs = RBM_ALLMASK;
 #endif
 
@@ -1678,6 +1678,21 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
 #ifdef JIT32_GCENCODER
         compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
 #endif // JIT32_GCENCODER
+        return false;
+    }
+
+    // Avoid allocating parameters that are passed in float regs into integer
+    // registers. We currently home float registers before integer registers,
+    // so that kind of enregistration can trash integer registers containing
+    // other parameters.
+    // We assume that these cases will be homed to float registers if they are
+    // promoted.
+    // TODO-CQ: Combine integer and float register homing to handle these kinds
+    // of conflicts.
+    if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvIsRegArg && !varDsc->lvPromoted &&
+        varTypeUsesIntReg(varDsc->GetRegisterType()) && genIsValidFloatReg(varDsc->GetArgReg()))
+    {
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
         return false;
     }
 

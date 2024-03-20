@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Publish">
+    <PropertyGroup>
+        <!-- We always want to use release for publishing using NativeAOT -->
+        <NativeLibsPublishConfiguration>Release</NativeLibsPublishConfiguration>
+	<!-- we always want to make shared libs -->
+        <NativeLibKind Condition="'$(NativeLibKind)' == ''">shared</NativeLibKind>
+
+	<!-- When we publish, we want to ensure the SDK does the same thing as though we ran 'dotnet publish' -->
+	<TraversalPublishGlobalProperties>$(TraversalPublishGlobalProperties);_IsPublishing=true</TraversalPublishGlobalProperties>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- add new projects here -->
+        <!-- NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)libhellomanaged/src/libhellomanaged.csproj" -->
+    </ItemGroup>
+
+    <!-- Decide if we're going to do the NativeAOT builds -->
+    <PropertyGroup>
+        <!-- disable on Mono, for now -->
+        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(RuntimeFlavor)' == 'Mono'">false</SupportsNativeAotComponents>
+        <!-- NativeAOT doesn't support cross-OS compilation. disable for crossdac-->
+        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(HostOS)' != '$(TargetOS)'">false</SupportsNativeAotComponents>
+        <!-- unsupported targets -->
+        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'riscv64')">false</SupportsNativeAotComponents>
+        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and ('$(TargetsWindows)' == 'true' or '$(TargetsOSX)' == 'true' or ('$(TargetsLinux)' == 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsLinuxMusl)' != 'true'))">true</SupportsNativeAotComponents>
+        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == ''">false</SupportsNativeAotComponents>
+    </PropertyGroup>
+
+    <!-- some special kinds of runtime builds need extra NativeAOT flags -->
+    <PropertyGroup>
+        <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
+        <LinkerFlavor Condition="'$(CrossBuild)' == 'true' and '$(TargetsLinux)' == 'true'">lld</LinkerFlavor>
+        <CustomLinkerArgToolchainArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">--gcc-toolchain=$(ROOTFS_DIR)/usr</CustomLinkerArgToolchainArg>
+    </PropertyGroup>
+
+    <!-- properties to pass down to the subproject builds -->
+    <ItemGroup>
+        <SubprojectProps Include="Configuration" Value="$(NativeLibsPublishConfiguration)" />
+        <SubprojectProps Include="RuntimeConfiguration" Value="$(RuntimeConfiguration)" />
+        <SubprojectProps Include="LibrariesConfiguration" Value="$(LibrariesConfiguration)" />
+        <SubprojectProps Include="RuntimeIdentifier" Value="$(OutputRID)" />
+
+        <SubprojectProps Include="NativeLib" Value="$(NativeLibKind)" />
+
+        <SubprojectProps Condition="'$(SysRoot)' != ''" Include="SysRoot" Value="$(SysRoot)" />
+        <SubprojectProps Condition="'$(LinkerFlavor)' != ''" Include="LinkerFlavor" Value="$(LinkerFlavor)" />
+        <SubprojectProps Condition="'$(CustomLinkerArgToolchainArg)' != ''" Include="CustomLinkerArgToolchainArg" Value="$(CustomLinkerArgToolchainArg)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <SplitSubprojectProps>@(SubprojectProps->'%(Identity)=%(Value)', ';')</SplitSubprojectProps>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="@(NativeLibsProjectsToBuild)"
+                          ReferenceOutputAssembly="false"
+                          AdditionalProperties="%(AdditionalProperties);$(SplitSubprojectProps)"
+			  Condition="$(SupportsNativeAotComponents)"/>
+    </ItemGroup>
+</Project>

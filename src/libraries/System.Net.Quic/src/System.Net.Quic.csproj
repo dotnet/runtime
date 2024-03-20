@@ -172,7 +172,7 @@
                       GeneratePathProperty="true" />
 
     <PackageReference Include="Microsoft.Native.Quic.MsQuic.Schannel"
-                      Version="$(MicrosoftNativeQuicMsQuicVersion)"
+                      Version="$(MicrosoftNativeQuicMsQuicSchannelVersion)"
                       PrivateAssets="all"
                       Condition="'$(UseQuicTransportPackage)' != 'true'"
                       GeneratePathProperty="true" />
