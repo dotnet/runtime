@@ -687,23 +687,24 @@ LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
 // ------------------------------------------------------------------
 // Hijack function for functions which return a scalar type or a struct (value type)
 NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 0x90
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 0xa0
 
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   s1, s2, 16
     PROLOG_SAVE_REG_PAIR   s3, s4, 32
     PROLOG_SAVE_REG_PAIR   s5, s6, 48
     PROLOG_SAVE_REG_PAIR   s7, s8, 64
-    PROLOG_SAVE_REG_PAIR   s9, s10, 80 
-    PROLOG_SAVE_REG s11, 96
+    PROLOG_SAVE_REG_PAIR   s9, s10, 80
+    PROLOG_SAVE_REG_PAIR   s11, gp, 96
+    PROLOG_SAVE_REG        tp, 112
 
     // save any integral return value(s)
-    sd  a0, 104(sp)
-    sd  a1, 112(sp)
+    sd  a0, 120(sp)
+    sd  a1, 128(sp)
 
     // save any FP/HFA return value(s)
-    fsd  f0, 120(sp)
-    fsd  f1, 128(sp)
+    fsd  f0, 136(sp)
+    fsd  f1, 144(sp)
 
     addi  a0, sp, 0
     call  C_FUNC(OnHijackWorker)
@@ -711,20 +712,21 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore callee saved registers
 
     // restore any integral return value(s)
-    ld  a0, 104(sp)
-    ld  a1, 112(sp)
+    ld  a0, 120(sp)
+    ld  a1, 128(sp)
 
     // restore any FP/HFA return value(s)
-    fld  f0, 120(sp)
-    fld  f1, 128(sp)
+    fld  f0, 136(sp)
+    fld  f1, 144(sp)
 
     EPILOG_RESTORE_REG_PAIR   s1, s2, 16
     EPILOG_RESTORE_REG_PAIR   s3, s4, 32
     EPILOG_RESTORE_REG_PAIR   s5, s6, 48
     EPILOG_RESTORE_REG_PAIR   s7, s8, 64
     EPILOG_RESTORE_REG_PAIR   s9, s10, 80
-    EPILOG_RESTORE_REG  s11, 96 
-    EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x90
+    EPILOG_RESTORE_REG_PAIR   s11, gp, 96
+    EPILOG_RESTORE_REG        tp, 112
+    EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0xa0
     EPILOG_RETURN
 NESTED_END OnHijackTripThread, _TEXT
 

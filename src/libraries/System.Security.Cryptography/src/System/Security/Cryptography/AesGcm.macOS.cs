@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     public sealed partial class AesGcm
     {
-        private byte[]? _key;
+        private FixedMemoryKeyBox _keyBox;
 
         // CryptoKit added AES.GCM in macOS 10.15, which is our minimum target for macOS.
         public static bool IsSupported => true;
@@ -17,15 +17,12 @@ namespace System.Security.Cryptography
         // CryptoKit only supports 16 byte tags.
         public static KeySizes TagByteSizes { get; } = new KeySizes(16, 16, 1);
 
-        [MemberNotNull(nameof(_key))]
+        [MemberNotNull(nameof(_keyBox))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
             // We should only be calling this in the constructor, so there shouldn't be a previous key.
-            Debug.Assert(_key is null);
-
-            // Pin the array on the POH so that the GC doesn't move it around to allow zeroing to be more effective.
-            _key = GC.AllocateArray<byte>(key.Length, pinned: true);
-            key.CopyTo(_key);
+            Debug.Assert(_keyBox is null);
+            _keyBox = new FixedMemoryKeyBox(key);
         }
 
         private void EncryptCore(
@@ -35,14 +32,26 @@ namespace System.Security.Cryptography
             Span<byte> tag,
             ReadOnlySpan<byte> associatedData)
         {
-            CheckDisposed();
-            Interop.AppleCrypto.AesGcmEncrypt(
-                _key,
-                nonce,
-                plaintext,
-                ciphertext,
-                tag,
-                associatedData);
+            bool acquired = false;
+
+            try
+            {
+                _keyBox.DangerousAddRef(ref acquired);
+                Interop.AppleCrypto.AesGcmEncrypt(
+                    _keyBox.DangerousKeySpan,
+                    nonce,
+                    plaintext,
+                    ciphertext,
+                    tag,
+                    associatedData);
+            }
+            finally
+            {
+                if (acquired)
+                {
+                    _keyBox.DangerousRelease();
+                }
+            }
         }
 
         private void DecryptCore(
@@ -52,26 +61,28 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData)
         {
-            CheckDisposed();
-            Interop.AppleCrypto.AesGcmDecrypt(
-                _key,
-                nonce,
-                ciphertext,
-                tag,
-                plaintext,
-                associatedData);
+            bool acquired = false;
+
+            try
+            {
+                _keyBox.DangerousAddRef(ref acquired);
+                Interop.AppleCrypto.AesGcmDecrypt(
+                    _keyBox.DangerousKeySpan,
+                    nonce,
+                    ciphertext,
+                    tag,
+                    plaintext,
+                    associatedData);
+            }
+            finally
+            {
+                if (acquired)
+                {
+                    _keyBox.DangerousRelease();
+                }
+            }
         }
 
-        public void Dispose()
-        {
-            CryptographicOperations.ZeroMemory(_key);
-            _key = null;
-        }
-
-        [MemberNotNull(nameof(_key))]
-        private void CheckDisposed()
-        {
-            ObjectDisposedException.ThrowIf(_key is null, this);
-        }
+        public void Dispose() => _keyBox.Dispose();
     }
 }

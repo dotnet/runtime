@@ -23,7 +23,7 @@ parameters:
   additionalSetupParameters: ''   # optional -- additional setup parameters that are job-specific
 
 jobs:
-- template: xplat-pipeline-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     dependsOn: ${{ parameters.dependsOn }}
     buildConfig: ${{ parameters.buildConfig }}
@@ -107,6 +107,9 @@ jobs:
     - name: ExtraSetupArguments
       ${{ if ne(parameters.runtimeType, 'wasm') }}:
         value: --install-dir $(PayloadDirectory)/dotnet
+
+    - name: librariesDownloadDir
+      value: '$(Build.SourcesDirectory)/artifacts'
 
     workspace:
       clean: all

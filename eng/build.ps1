@@ -261,6 +261,12 @@ if ($vs) {
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
   }
 
+  if ($librariesConfiguration)
+  {
+    # Respect the LibrariesConfiguration variable for building inside VS with different libraries configurations
+    $env:LIBRARIESCONFIGURATION=$librariesConfiguration
+  }
+
   # Respect the RuntimeFlavor variable for building inside VS with a different CoreLib and runtime
   if ($runtimeFlavor)
   {

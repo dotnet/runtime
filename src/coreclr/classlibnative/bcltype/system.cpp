@@ -165,130 +165,35 @@ static StackWalkAction FindFailFastCallerCallback(CrawlFrame* frame, VOID* data)
     return SWA_ABORT;
 }
 
-// FailFast is supported in BCL.small as internal to support failing fast in places where EEE used to be thrown.
-//
-// Static message buffer used by SystemNative::FailFast to avoid reliance on a
-// managed string object buffer. This buffer is not always used, see comments in
-// the method below.
-WCHAR g_szFailFastBuffer[256];
-WCHAR *g_pFailFastBuffer = g_szFailFastBuffer;
-
-#define FAIL_FAST_STATIC_BUFFER_LENGTH (sizeof(g_szFailFastBuffer) / sizeof(WCHAR))
-
-
-// This is the common code for FailFast processing that is wrapped by the
-// FailFast FCalls below.
-void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExceptionForWatsonBucketing, StackCrawlMark* stackMark, STRINGREF refErrorSourceString)
+extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, PCWSTR message, QCall::ObjectHandleOnStack exception, PCWSTR errorSource)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }CONTRACTL_END;
+    QCALL_CONTRACT;
 
-    struct
-    {
-        STRINGREF refMesgString;
-        EXCEPTIONREF refExceptionForWatsonBucketing;
-        STRINGREF refErrorSourceString;
-    } gc;
-    gc.refMesgString = refMesgString;
-    gc.refExceptionForWatsonBucketing = refExceptionForWatsonBucketing;
-    gc.refErrorSourceString = refErrorSourceString;
+    BEGIN_QCALL;
 
-    GCPROTECT_BEGIN(gc);
+    GCX_COOP();
 
     FindFailFastCallerStruct findCallerData;
-    findCallerData.pStackMark = stackMark;
+    findCallerData.pStackMark = mark;
     findCallerData.retAddress = 0;
-    StackWalkFunctions(GetThread(), FindFailFastCallerCallback, &findCallerData);
+    GetThread()->StackWalkFrames(FindFailFastCallerCallback, &findCallerData, FUNCTIONSONLY | QUICKUNWIND);
 
-    // Managed code injected FailFast maps onto the unmanaged version
-    // (EEPolicy::HandleFatalError) in the following manner: the exit code is
-    // always set to COR_E_FAILFAST and the address passed (usually a failing
-    // EIP) is in fact the address of a unicode message buffer (explaining the
-    // reason for the fault).
-    // The message string comes from a managed string object so we can't rely on
-    // the buffer remaining in place below our feet. But equally we don't want
-    // to inject failure points (by, for example, allocating a heap buffer or a
-    // pinning handle) when we have a much higher chance than usual of actually
-    // tripping those failure points and eradicating useful debugging info.
-    // We employ various strategies to deal with this:
-    //   o  If the message is small enough we copy it into a static buffer
-    //      (g_szFailFastBuffer).
-    //   o  Otherwise we try to allocate a buffer of the required size on the
-    //      heap. This buffer will be leaked.
-    //   o  If the allocation above fails we return to the static buffer and
-    //      truncate the message.
-    //
-    // Another option would seem to be to implement a new frame type that
-    // protects object references as pinned, but that seems like overkill for
-    // just this problem.
-    WCHAR  *pszMessageBuffer = NULL;
-    DWORD   cchMessage = (gc.refMesgString == NULL) ? 0 : gc.refMesgString->GetStringLength();
-
-    WCHAR * errorSourceString = NULL;
-
-    if (gc.refErrorSourceString != NULL)
+    if (message == NULL || message[0] == W('\0'))
     {
-        DWORD cchErrorSource = gc.refErrorSourceString->GetStringLength();
-        errorSourceString = new (nothrow) WCHAR[cchErrorSource + 1];
-
-        if (errorSourceString != NULL)
-        {
-            memcpyNoGCRefs(errorSourceString, gc.refErrorSourceString->GetBuffer(), cchErrorSource * sizeof(WCHAR));
-            errorSourceString[cchErrorSource] = W('\0');
-        }
-    }
-
-    if (cchMessage < FAIL_FAST_STATIC_BUFFER_LENGTH)
-    {
-        // The static buffer can be used only once to avoid race condition with other threads
-        pszMessageBuffer = InterlockedExchangeT(&g_pFailFastBuffer, NULL);
-    }
-
-    if (pszMessageBuffer == NULL)
-    {
-        // We can fail here, but we can handle the fault.
-        CONTRACT_VIOLATION(FaultViolation);
-        pszMessageBuffer = new (nothrow) WCHAR[cchMessage + 1];
-        if (pszMessageBuffer == NULL)
-        {
-            // Truncate the message to what will fit in the static buffer.
-            cchMessage = FAIL_FAST_STATIC_BUFFER_LENGTH - 1;
-            pszMessageBuffer = InterlockedExchangeT(&g_pFailFastBuffer, NULL);
-        }
-    }
-
-    const WCHAR *pszMessage;
-    if (pszMessageBuffer != NULL)
-    {
-        if (cchMessage > 0)
-            memcpyNoGCRefs(pszMessageBuffer, gc.refMesgString->GetBuffer(), cchMessage * sizeof(WCHAR));
-        pszMessageBuffer[cchMessage] = W('\0');
-        pszMessage = pszMessageBuffer;
+        WszOutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
     }
     else
     {
-        pszMessage = W("There is not enough memory to print the supplied FailFast message.");
-        cchMessage = (DWORD)u16_strlen(pszMessage);
-    }
-
-    if (cchMessage == 0) {
-        WszOutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
-    }
-    else {
         WszOutputDebugString(W("CLR: Managed code called FailFast.\r\n"));
-        WszOutputDebugString(pszMessage);
+        WszOutputDebugString(message);
         WszOutputDebugString(W("\r\n"));
     }
 
     LPCWSTR argExceptionString = NULL;
     StackSString msg;
-    if (gc.refExceptionForWatsonBucketing != NULL)
+    if (exception.Get() != NULL)
     {
-        GetExceptionMessage(gc.refExceptionForWatsonBucketing, msg);
+        GetExceptionMessage(exception.Get(), msg);
         argExceptionString = msg.GetUnicode();
     }
 
@@ -301,7 +206,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     // skip this, if required.
     if (IsWatsonEnabled())
     {
-        if ((gc.refExceptionForWatsonBucketing == NULL) || !SetupWatsonBucketsForFailFast(gc.refExceptionForWatsonBucketing))
+        if ((exception.Get() == NULL) || !SetupWatsonBucketsForFailFast((EXCEPTIONREF)exception.Get()))
         {
             PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = pThread->GetExceptionState()->GetUEWatsonBucketTracker();
             _ASSERTE(pUEWatsonBucketTracker != NULL);
@@ -317,28 +222,10 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
 
     // stash the user-provided exception object. this will be used as
     // the inner exception object to the FatalExecutionEngineException.
-    if (gc.refExceptionForWatsonBucketing != NULL)
-        pThread->SetLastThrownObject(gc.refExceptionForWatsonBucketing);
+    if (exception.Get() != NULL)
+        pThread->SetLastThrownObject(exception.Get());
 
-    EEPolicy::HandleFatalError(COR_E_FAILFAST, findCallerData.retAddress, pszMessage, NULL, errorSourceString, argExceptionString);
-
-    GCPROTECT_END();
-}
-
-extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, QCall::StringHandleOnStack message, QCall::ObjectHandleOnStack exception, QCall::StringHandleOnStack errorSource)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-    
-    STRINGREF refMessage = message.Get();
-    EXCEPTIONREF refException = (EXCEPTIONREF)exception.Get();
-    STRINGREF refErrorSource = errorSource.Get();
-
-    // Call the actual worker to perform failfast
-    SystemNative::GenericFailFast(refMessage, refException, mark, refErrorSource);
+    EEPolicy::HandleFatalError(COR_E_FAILFAST, findCallerData.retAddress, message, NULL, errorSource, argExceptionString);
 
     END_QCALL;
 }
