@@ -6356,22 +6356,6 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
 
 /************************************************************************
  *
- *  Convert a 64-bit immediate into its 'bitmask immediate' representation imm(N,r,s)
- */
-
-/*static*/ emitter::bitMaskImm emitter::emitEncodeBitMaskImm(INT64 imm, emitAttr size)
-{
-    emitter::bitMaskImm result;
-    result.immNRS = 0;
-
-    bool canEncode = canEncodeBitMaskImm(imm, size, &result);
-    assert(canEncode);
-
-    return result;
-}
-
-/************************************************************************
- *
  *  Convert an imm(i16,hw) into a 32/64-bit immediate
  *  inputs 'hwImm' a halfwordImm struct
  *         'size' specifies the size of the result (64 or 32 bits)

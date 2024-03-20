@@ -219,8 +219,6 @@ union bitMaskImm {
 *   representation imm(i16,hw)
 */
 
-static emitter::bitMaskImm emitEncodeBitMaskImm(INT64 imm, emitAttr size);
-
 static INT64 emitDecodeBitMaskImm(const emitter::bitMaskImm bmImm, emitAttr size);
 
 /************************************************************************
