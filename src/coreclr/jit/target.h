@@ -267,7 +267,6 @@ unsigned genCountBits(uint64_t bits);
 typedef _regNumber_enum regNumber;
 typedef unsigned char   regNumberSmall;
 
-//TODO: Need to make all methods FORCEINLINE
 typedef struct _regMaskAll
 {
 private:
@@ -331,49 +330,51 @@ public:
         AddRegNumInMask(reg ARM_ARG(type));
     }
 
-    FORCEINLINE void     Clear();
-    FORCEINLINE bool IsEmpty();
+    void     Clear();
+    bool     IsEmpty();
     unsigned Count();
-    FORCEINLINE void     Create(regNumber reg);
+    void Create(regNumber reg);
     // Rename this to AddRegNum
-    FORCEINLINE void AddGprRegInMask(regNumber reg);
+    void AddGprRegInMask(regNumber reg);
     void AddRegNumInMask(regNumber reg ARM_ARG(var_types type));
-    FORCEINLINE void AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type);
+    void AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type);
     void AddGprRegMask(regMaskGpr maskToAdd);
-    FORCEINLINE void AddFloatRegMask(regMaskFloat maskToAdd);
+    void AddFloatRegMask(regMaskFloat maskToAdd);
 
 #ifdef TARGET_ARM
     void AddRegNumInMask(regNumber reg);
-    FORCEINLINE void RemoveRegNumFromMask(regNumber reg);
-    FORCEINLINE bool IsRegNumInMask(regNumber reg);
+    void RemoveRegNumFromMask(regNumber reg);
+    bool IsRegNumInMask(regNumber reg);
 #endif
-    FORCEINLINE void RemoveRegNumFromMask(regNumber reg ARM_ARG(var_types type));
+    void RemoveRegNumFromMask(regNumber reg ARM_ARG(var_types type));
     void RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type);
-    FORCEINLINE bool IsRegNumInMask(regNumber reg ARM_ARG(var_types type));
+    bool IsRegNumInMask(regNumber reg ARM_ARG(var_types type));
     bool IsGprMaskPresent(regMaskGpr maskToCheck) const;
     bool IsFloatMaskPresent(regMaskFloat maskToCheck) const;
     // bool IsOnlyRegNumInMask(regNumber reg);
-    FORCEINLINE regMaskOnlyOne GetRegMaskForType(var_types type) const;
+    regMaskOnlyOne GetRegMaskForType(var_types type) const;
     regMaskOnlyOne GetMaskForRegNum(regNumber reg) const;
 
     // TODO: this might go away once we have just `regMaskTP` gpr_float field
-    FORCEINLINE bool IsGprOrFloatPresent() const;
-    FORCEINLINE regMaskTP GetGprFloatCombinedMask() const;
+    bool      IsGprOrFloatPresent() const;
+    regMaskTP GetGprFloatCombinedMask() const;
 
-    FORCEINLINE void operator|=(const _regMaskAll& other);
-    FORCEINLINE void operator&=(const _regMaskAll& other);
-    FORCEINLINE void operator|=(const regNumber reg);
-    FORCEINLINE void operator^=(const regNumber reg);
-    FORCEINLINE _regMaskAll operator~();
-    bool        operator==(const _regMaskAll& other);
-    FORCEINLINE bool        operator!=(const _regMaskAll& other);
-    FORCEINLINE _regMaskAll operator&(const _regMaskAll& other);
-    FORCEINLINE _regMaskAll operator|(const _regMaskAll& other);
-    FORCEINLINE _regMaskAll operator&(const regNumber reg);
+    void operator|=(const _regMaskAll& other);
+    void operator&=(const _regMaskAll& other);
+    void operator|=(const regNumber reg);
+    void operator^=(const regNumber reg);
+    _regMaskAll operator~();
+    bool operator==(const _regMaskAll& other);
+    bool operator!=(const _regMaskAll& other);
+    _regMaskAll operator&(const _regMaskAll& other);
+    _regMaskAll operator|(const _regMaskAll& other);
+    _regMaskAll operator&(const regNumber reg);
 
 } AllRegsMask;
 
 #define GprRegsMask(gprRegs) AllRegsMask(gprRegs, RBM_NONE)
+#define FloatRegsMask(floatRegs) AllRegsMask(RBM_NONE, floatRegs) 3
+
 #define Create_AllRegsMask(gprRegs, floatRegs) AllRegsMask((gprRegs & ~RBM_ALLFLOAT), (floatRegs & RBM_ALLFLOAT))
 
 #if REGMASK_BITS == 32
