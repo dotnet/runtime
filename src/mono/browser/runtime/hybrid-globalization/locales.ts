@@ -29,7 +29,7 @@ export function mono_wasm_get_locale_info(culture: MonoStringRef, locale: MonoSt
         if (!localeName || !cultureName)
             throw new Error(`Locale or culture name is null or empty. localeName=${localeName}, cultureName=${cultureName}`);
 
-        const localeParts = localeName.split("-"); // de-DE-u-co-phonebk-u-xx
+        const localeParts = localeName.split("-");
         // cultureName can be in a form of:
         // 1) "language", e.g. "zh"
         // 2) "language-region", e.g. "zn-CN"
