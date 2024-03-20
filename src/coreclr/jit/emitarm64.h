@@ -29,7 +29,7 @@ enum PredicateType
     PREDICATE_N_SIZED,  // Predicate printed as counter with element size
 };
 
-const char* emitSveRegName(regNumber reg);
+const char* emitSveRegName(regNumber reg) const;
 const char* emitVectorRegName(regNumber reg);
 const char* emitPredicateRegName(regNumber reg, PredicateType ptype);
 

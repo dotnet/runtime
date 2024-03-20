@@ -25,6 +25,33 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 // clang-format off
+static const char * const  zRegNames[] =
+{
+    "z0",  "z1",  "z2",  "z3",  "z4",
+    "z5",  "z6",  "z7",  "z8",  "z9",
+    "z10", "z11", "z12", "z13", "z14",
+    "z15", "z16", "z17", "z18", "z19",
+    "z20", "z21", "z22", "z23", "z24",
+    "z25", "z26", "z27", "z28", "z29",
+    "z30", "z31"
+};
+
+static const char * const  pRegNames[] =
+{
+    "p0",  "p1",  "p2",  "p3",  "p4",
+    "p5",  "p6",  "p7",  "p8",  "p9",
+    "p10", "p11", "p12", "p13", "p14",
+    "p15"
+};
+
+static const char * const  pnRegNames[] =
+{
+    "pn0",  "pn1",  "pn2",  "pn3",  "pn4",
+    "pn5",  "pn6",  "pn7",  "pn8",  "pn9",
+    "pn10", "pn11", "pn12", "pn13", "pn14",
+    "pn15"
+};
+
 static const char * const  svePatternNames[] =
 {
     "pow2", "vl1", "vl2", "vl3",
@@ -8165,6 +8192,236 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
     assert(isValidSimm<5>(*imm2));
 }
 
+/************************************************************************
+ *
+ *  Convert a small immediate float value to an encoded version that matches one-to-one with the instructions.
+ *  The instruction determines the value.
+ */
+
+/*static*/ ssize_t emitter::emitEncodeSmallFloatImm(double immDbl, instruction ins)
+{
+#ifdef DEBUG
+    switch (ins)
+    {
+        case INS_sve_fadd:
+        case INS_sve_fsub:
+        case INS_sve_fsubr:
+            assert((immDbl == 0.5) || (immDbl == 1.0));
+            break;
+
+        case INS_sve_fmax:
+        case INS_sve_fmaxnm:
+        case INS_sve_fmin:
+        case INS_sve_fminnm:
+            assert((immDbl == 0) || (immDbl == 1.0));
+            break;
+
+        case INS_sve_fmul:
+            assert((immDbl == 0.5) || (immDbl == 2.0));
+            break;
+
+        default:
+            assert(!"Invalid instruction");
+            break;
+    }
+#endif // DEBUG
+    if (immDbl < 1.0)
+    {
+        return 0;
+    }
+    return 1;
+}
+
+/************************************************************************
+ *
+ *  Convert an encoded small float immediate value. The instruction determines the value.
+ */
+
+/*static*/ double emitter::emitDecodeSmallFloatImm(ssize_t imm, instruction ins)
+{
+    assert(emitIsValidEncodedSmallFloatImm(imm));
+    switch (ins)
+    {
+        case INS_sve_fadd:
+        case INS_sve_fsub:
+        case INS_sve_fsubr:
+            if (imm == 0)
+            {
+                return 0.5;
+            }
+            else
+            {
+                return 1.0;
+            }
+
+        case INS_sve_fmax:
+        case INS_sve_fmaxnm:
+        case INS_sve_fmin:
+        case INS_sve_fminnm:
+            if (imm == 0)
+            {
+                return 0.0;
+            }
+            else
+            {
+                return 1.0;
+            }
+            break;
+
+        case INS_sve_fmul:
+            if (imm == 0)
+            {
+                return 0.5;
+            }
+            else
+            {
+                return 2.0;
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    assert(!"Invalid instruction");
+    return 0.0;
+}
+
+/************************************************************************
+ *
+ *  Check if the immediate value is a valid encoded small float.
+ */
+
+/*static*/ bool emitter::emitIsValidEncodedSmallFloatImm(size_t imm)
+{
+    return (imm == 0) || (imm == 1);
+}
+
+/************************************************************************
+ *
+ *  Convert a rotation value that is 90 or 270 into a smaller encoding that matches one-to-one with the 'rot' field.
+ */
+
+/*static*/ ssize_t emitter::emitEncodeRotationImm90_or_270(ssize_t imm)
+{
+    switch (imm)
+    {
+        case 90:
+            return 0;
+
+        case 270:
+            return 1;
+
+        default:
+            break;
+    }
+
+    assert(!"Invalid rotation value");
+    return 0;
+}
+
+/************************************************************************
+ *
+ *  Convert an encoded rotation value to 90 or 270.
+ */
+
+/*static*/ ssize_t emitter::emitDecodeRotationImm90_or_270(ssize_t imm)
+{
+    assert(emitIsValidEncodedRotationImm0_to_270(imm));
+    switch (imm)
+    {
+        case 0:
+            return 90;
+
+        case 1:
+            return 270;
+
+        default:
+            break;
+    }
+
+    return 0;
+}
+
+/************************************************************************
+ *
+ *  Check if the immediate value is a valid encoded rotation value for 90 or 270.
+ */
+
+/*static*/ bool emitter::emitIsValidEncodedRotationImm90_or_270(ssize_t imm)
+{
+    return (imm == 0) || (imm == 1);
+}
+
+/************************************************************************
+ *
+ *  Convert a rotation value that is 0, 90, 180 or 270 into a smaller encoding that matches one-to-one with the 'rot'
+ * field.
+ */
+
+/*static*/ ssize_t emitter::emitEncodeRotationImm0_to_270(ssize_t imm)
+{
+    switch (imm)
+    {
+        case 0:
+            return 0;
+
+        case 90:
+            return 1;
+
+        case 180:
+            return 2;
+
+        case 270:
+            return 3;
+
+        default:
+            break;
+    }
+
+    assert(!"Invalid rotation value");
+    return 0;
+}
+
+/************************************************************************
+ *
+ *  Convert an encoded rotation value to 0, 90, 180 or 270.
+ */
+
+/*static*/ ssize_t emitter::emitDecodeRotationImm0_to_270(ssize_t imm)
+{
+    assert(emitIsValidEncodedRotationImm0_to_270(imm));
+    switch (imm)
+    {
+        case 0:
+            return 0;
+
+        case 1:
+            return 90;
+
+        case 2:
+            return 180;
+
+        case 3:
+            return 270;
+
+        default:
+            break;
+    }
+
+    return 0;
+}
+
+/************************************************************************
+ *
+ *  Check if the immediate value is a valid encoded rotation value for 0, 90, 180 or 270.
+ */
+
+/*static*/ bool emitter::emitIsValidEncodedRotationImm0_to_270(ssize_t imm)
+{
+    return (imm >= 0) && (imm <= 3);
+}
+
 /*****************************************************************************
  *
  * Returns the encoding to select an insSvePattern
@@ -10411,6 +10668,43 @@ void emitter::emitDispSveConsecutiveRegList(regNumber firstReg, unsigned listSiz
 }
 
 //------------------------------------------------------------------------
+// emitSveRegName: Returns a scalable vector register name.
+//
+// Arguments:
+//    reg - A SIMD and floating-point register.
+//
+// Return value:
+//    A string that represents a scalable vector register name.
+//
+const char* emitter::emitSveRegName(regNumber reg) const
+{
+    assert((reg >= REG_V0) && (reg <= REG_V31));
+
+    int index = (int)reg - (int)REG_V0;
+
+    return zRegNames[index];
+}
+
+//------------------------------------------------------------------------
+// emitPredicateRegName: Returns a predicate register name.
+//
+// Arguments:
+//    reg - A predicate register.
+//
+// Return value:
+//    A string that represents a predicate register name.
+//
+const char* emitter::emitPredicateRegName(regNumber reg, PredicateType ptype)
+{
+    assert((reg >= REG_P0) && (reg <= REG_P15));
+
+    const int  index     = (int)reg - (int)REG_P0;
+    const bool usePnRegs = (ptype == PREDICATE_N) || (ptype == PREDICATE_N_SIZED);
+
+    return usePnRegs ? pnRegNames[index] : pRegNames[index];
+}
+
+//------------------------------------------------------------------------
 // emitDispPredicateReg: Display a predicate register name with with an arrangement suffix
 //
 void emitter::emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma)
@@ -10611,6 +10905,290 @@ void emitter::emitDispSvePrfop(insSvePrfop prfop, bool addComma)
     }
 
     return 0;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '19' thru '16' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_19_to_16(regNumber reg)
+{
+    assert(isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 16;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '3' thru '0' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_3_to_0(regNumber reg)
+{
+    assert(isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '8' thru '5' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_8_to_5(regNumber reg)
+{
+    assert(isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 5;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '13' thru '10' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_13_to_10(regNumber reg)
+{
+    assert(isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 10;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '12' thru '10' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_12_to_10(regNumber reg)
+{
+    assert(isLowPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 0) && (ureg <= 7));
+    return ureg << 10;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '7' thru '5' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_7_to_5(regNumber reg)
+{
+    assert(isHighPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P8;
+    assert((ureg >= 0) && (ureg <= 7));
+    return ureg << 5;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '3' thru '1' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_3_to_1(regNumber reg)
+{
+    assert(isLowPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 0) && (ureg <= 15));
+    return ureg << 1;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified 'P' register used in '2' thru '0' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeReg_P_2_to_0(regNumber reg)
+{
+    assert(isPredicateRegister(reg));
+    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_P0;
+    assert((ureg >= 8) && (ureg <= 15));
+    return (ureg - 8) << 0;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified predicate type used in '16' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodePredQualifier_16(bool merge)
+{
+    return merge ? 1 << 16 : 0;
+}
+
+/*****************************************************************************
+ *
+ *  Return an encoding for the specified predicate type used in '4' position.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodePredQualifier_4(bool merge)
+{
+    return merge ? 1 << 4 : 0;
+}
+
+//  For the given 'elemsize' returns the 'arrangement' when used in a SVE vector register arrangement.
+//  Asserts and returns INS_OPTS_NONE if an invalid 'elemsize' is passed
+//
+/*static*/ insOpts emitter::optGetSveInsOpt(emitAttr elemsize)
+{
+    switch (elemsize)
+    {
+        case EA_1BYTE:
+            return INS_OPTS_SCALABLE_B;
+
+        case EA_2BYTE:
+            return INS_OPTS_SCALABLE_H;
+
+        case EA_4BYTE:
+            return INS_OPTS_SCALABLE_S;
+
+        case EA_8BYTE:
+            return INS_OPTS_SCALABLE_D;
+
+        case EA_16BYTE:
+            return INS_OPTS_SCALABLE_Q;
+
+        default:
+            assert(!"Invalid emitAttr for sve vector register");
+            return INS_OPTS_NONE;
+    }
+}
+
+//  For the given 'arrangement' returns the 'elemsize' specified by the SVE vector register arrangement
+//  asserts and returns EA_UNKNOWN if an invalid 'arrangement' value is passed
+//
+/*static*/ emitAttr emitter::optGetSveElemsize(insOpts arrangement)
+{
+    switch (arrangement)
+    {
+        case INS_OPTS_SCALABLE_B:
+            return EA_1BYTE;
+
+        case INS_OPTS_SCALABLE_H:
+            return EA_2BYTE;
+
+        case INS_OPTS_SCALABLE_S:
+        case INS_OPTS_SCALABLE_S_UXTW:
+        case INS_OPTS_SCALABLE_S_SXTW:
+            return EA_4BYTE;
+
+        case INS_OPTS_SCALABLE_D:
+        case INS_OPTS_SCALABLE_D_UXTW:
+        case INS_OPTS_SCALABLE_D_SXTW:
+            return EA_8BYTE;
+
+        case INS_OPTS_SCALABLE_Q:
+            return EA_16BYTE;
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+            return EA_UNKNOWN;
+    }
+}
+
+/*static*/ insOpts emitter::optWidenSveElemsizeArrangement(insOpts arrangement)
+{
+    switch (arrangement)
+    {
+        case INS_OPTS_SCALABLE_B:
+            return INS_OPTS_SCALABLE_H;
+
+        case INS_OPTS_SCALABLE_H:
+            return INS_OPTS_SCALABLE_S;
+
+        case INS_OPTS_SCALABLE_S:
+            return INS_OPTS_SCALABLE_D;
+
+        default:
+            assert(!" invalid 'arrangement' value");
+            return INS_OPTS_NONE;
+    }
+}
+
+/*static*/ insOpts emitter::optSveToQuadwordElemsizeArrangement(insOpts arrangement)
+{
+    switch (arrangement)
+    {
+        case INS_OPTS_SCALABLE_B:
+            return INS_OPTS_16B;
+
+        case INS_OPTS_SCALABLE_H:
+            return INS_OPTS_8H;
+
+        case INS_OPTS_SCALABLE_S:
+            return INS_OPTS_4S;
+
+        case INS_OPTS_SCALABLE_D:
+            return INS_OPTS_2D;
+
+        default:
+            assert(!" invalid 'arrangement' value");
+            return INS_OPTS_NONE;
+    }
+}
+
+/*****************************************************************************
+ *
+ *  Expands an option that has different size operands (INS_OPTS_*_TO_*) into
+ *  a pair of scalable options where the first describes the size of the
+ *  destination operand and the second describes the size of the source operand.
+ */
+
+/*static*/ void emitter::optExpandConversionPair(insOpts opt, insOpts& dst, insOpts& src)
+{
+    dst = INS_OPTS_NONE;
+    src = INS_OPTS_NONE;
+
+    switch (opt)
+    {
+        case INS_OPTS_H_TO_S:
+            dst = INS_OPTS_SCALABLE_S;
+            src = INS_OPTS_SCALABLE_H;
+            break;
+        case INS_OPTS_S_TO_H:
+            dst = INS_OPTS_SCALABLE_H;
+            src = INS_OPTS_SCALABLE_S;
+            break;
+        case INS_OPTS_S_TO_D:
+            dst = INS_OPTS_SCALABLE_D;
+            src = INS_OPTS_SCALABLE_S;
+            break;
+        case INS_OPTS_D_TO_S:
+            dst = INS_OPTS_SCALABLE_S;
+            src = INS_OPTS_SCALABLE_D;
+            break;
+        case INS_OPTS_H_TO_D:
+            dst = INS_OPTS_SCALABLE_D;
+            src = INS_OPTS_SCALABLE_H;
+            break;
+        case INS_OPTS_D_TO_H:
+            dst = INS_OPTS_SCALABLE_H;
+            src = INS_OPTS_SCALABLE_D;
+            break;
+        case INS_OPTS_SCALABLE_H:
+            dst = INS_OPTS_SCALABLE_H;
+            src = INS_OPTS_SCALABLE_H;
+            break;
+        case INS_OPTS_SCALABLE_S:
+            dst = INS_OPTS_SCALABLE_S;
+            src = INS_OPTS_SCALABLE_S;
+            break;
+        case INS_OPTS_SCALABLE_D:
+            dst = INS_OPTS_SCALABLE_D;
+            src = INS_OPTS_SCALABLE_D;
+            break;
+        default:
+            noway_assert(!"unreachable");
+            break;
+    }
+
+    assert(dst != INS_OPTS_NONE && src != INS_OPTS_NONE);
+    return;
 }
 
 #endif // TARGET_ARM64
