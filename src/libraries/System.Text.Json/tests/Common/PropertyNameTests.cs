@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization.Tests
             await SerializeAndAssert(JsonNamingPolicy.SnakeCaseUpper, @"""MY_INT16"":0", @"""MY_INT32"":0");
             await SerializeAndAssert(JsonNamingPolicy.KebabCaseLower, @"""my-int16"":0", @"""my-int32"":0");
             await SerializeAndAssert(JsonNamingPolicy.KebabCaseUpper, @"""MY-INT16"":0", @"""MY-INT32"":0");
-            await SerializeAndAssert(JsonNamingPolicy.PascalCase, @"""MyInt16"":1", @"""MyInt32"":1");
+            await SerializeAndAssert(JsonNamingPolicy.PascalCase, @"""MyInt16"":0", @"""MyInt32"":0");
 
             async Task SerializeAndAssert(JsonNamingPolicy policy, string myInt16, string myInt32)
             {
