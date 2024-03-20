@@ -138,6 +138,7 @@ implication        ,X86   ,AVX512VBMI           ,AVX512BW
 implication        ,X86   ,AVX512VBMI_VL        ,AVX512VBMI
 implication        ,X86   ,AVX512VBMI_VL        ,AVX512BW_VL
 implication        ,X86   ,AVX10v1_V512         ,AVX10v1_V256
+implication        ,X86   ,AVX10v1_V512         ,AVX10v1
 implication        ,X86   ,AVX10v1_V256         ,AVX10v1
 implication        ,X86   ,AVX10v1              ,AVX2
 implication        ,X86   ,AVX10v1              ,FMA
