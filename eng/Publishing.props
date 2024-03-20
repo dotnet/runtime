@@ -37,7 +37,6 @@
                                    $(ArtifactsPackagesDir)**\*.exe;
                                    $(ArtifactsPackagesDir)**\*.msi"
                           Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz" />
-
       <ItemsToPushToBlobFeed Include="@(InstallerToPublish)"
                              IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))"
                              PublishFlatContainer="true"
@@ -51,7 +50,6 @@
                              RelativeBlobPath="Runtime/$(RuntimePackProductVersion)/%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
-
 
   <Target Name="GenerateAndPublishProductVersionFiles"
           DependsOnTargets="GetProductVersion"
