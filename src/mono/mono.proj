@@ -85,12 +85,23 @@
                       PrivateAssets="all"
                       Version="$(MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version)"
                       GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <NodePkgVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'x64'">$(runtimelinuxx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+    <NodePkgVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'arm64'">$(runtimelinuxarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+    <NodePkgVersion Condition="'$(HostOS)' == 'win' and '$(BuildArchitecture)' == 'x64'">$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+    <NodePkgVersion Condition="'$(HostOS)' == 'win' and '$(BuildArchitecture)' == 'arm64'">$(runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+    <NodePkgVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'x64'">$(runtimeosxx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+    <NodePkgVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'arm64'">$(runtimeosxarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <PackageReference Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.osx-arm64"
                       PrivateAssets="all"
                       Version="$(MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version)" />
-    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Node.osx-arm64"
-                      PrivateAssets="all"
-                      Version="$(MicrosoftNETRuntimeEmscripten3134Nodeosxarm64Version)" />
+    <PackageReference Include="runtime.$(HostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport"
+                      Version="$(NodePkgVersion)"
+                      PackageArch="$(BuildArchitecture)" />
     <PackageReference Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Sdk.osx-arm64"
                       PrivateAssets="all"
                       Version="$(MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version)" />
@@ -169,14 +180,14 @@
       <_EmsdkPaths Condition="'$(HostOS)' != 'windows'">
 export EMSDK_PATH=$(EMSDK_PATH)
 export DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EMSDK_PATH)bin/
-export DOTNET_EMSCRIPTEN_NODE_JS=$(EMSDK_PATH)bin/node
+export DOTNET_EMSCRIPTEN_NODE_JS=$(EMSDK_PATH)node/bin/node
 export DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EMSDK_PATH)
 
       </_EmsdkPaths>
       <_EmsdkPaths Condition="'$(HostOS)' == 'windows'">
 set EMSDK_PATH=&quot;$(EMSDK_PATH)&quot;
 set DOTNET_EMSCRIPTEN_LLVM_ROOT=&quot;$(EMSDK_PATH)bin/&quot;
-set DOTNET_EMSCRIPTEN_NODE_JS=&quot;$(EMSDK_PATH)bin/node&quot;
+set DOTNET_EMSCRIPTEN_NODE_JS=&quot;$(EMSDK_PATH)node/bin/node&quot;
 set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=&quot;$(EMSDK_PATH)&quot;
 
       </_EmsdkPaths>
@@ -184,7 +195,7 @@ set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=&quot;$(EMSDK_PATH)&quot;
 import os
 
 LLVM_ROOT = os.path.expanduser('$(EMSDK_PATH)bin/')
-NODE_JS = os.path.expanduser('$(EMSDK_PATH)bin/node')
+NODE_JS = os.path.expanduser('$(EMSDK_PATH)node/bin/node')
 BINARYEN_ROOT = os.path.expanduser('$(EMSDK_PATH)')
 
 FROZEN_CACHE = bool(os.getenv('FROZEN_CACHE', 'True'))
@@ -192,21 +203,23 @@ FROZEN_CACHE = bool(os.getenv('FROZEN_CACHE', 'True'))
 COMPILER_ENGINE = NODE_JS
 JS_ENGINES = [NODE_JS]
       </_EmscriptenPaths>
-
-      <InstallCmd>$(EMSDK_PATH)/emsdk$(EmsdkExt) install $(EmscriptenVersion)</InstallCmd>
-      <ActivateCmd>$(EMSDK_PATH)/emsdk$(EmsdkExt) activate $(EmscriptenVersion)</ActivateCmd>
-      <InstallCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(InstallCmd); Exit $LastExitCode &quot;</InstallCmd>
-      <ActivateCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(ActivateCmd); Exit $LastExitCode &quot;</ActivateCmd>
       <PythonCmd Condition="'$(HostOS)' == 'windows'and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
     
     <ItemGroup>
-      <EmsdkFiles Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
+      <EmsdkFiles Condition="'%(PackageReference.Identity)' != 'runtime.$(HostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport'"
+                  Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
+      <NodeFiles  Condition="'%(PackageReference.Identity)' == 'runtime.$(HostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport'"
+                  Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(HostOS)-$(BuildArchitecture)\**" />
     </ItemGroup>
 
+
     <Copy SourceFiles="@(EmsdkFiles)" DestinationFolder="$(EMSDK_PATH)\%(RecursiveDir)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
+    <Copy SourceFiles="@(NodeFiles)" DestinationFolder="$(EMSDK_PATH)\node\%(RecursiveDir)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
     <ReadLinesFromFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)">
@@ -218,18 +231,15 @@ JS_ENGINES = [NODE_JS]
     <WriteLinesToFile File="$(EMSDK_PATH)emscripten/.emscripten"
                       Overwrite="true"
                       Lines="$(_EmscriptenPaths)" />
-    <!--
-    <Exec Command="git clone https://github.com/emscripten-core/emsdk.git emsdk"
-          WorkingDirectory="$(BrowserLocalPath)"
-          IgnoreStandardErrorWarningFormat="true" />
-    <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; $(InstallCmd) &amp;&amp; $(ActivateCmd)"
-          WorkingDirectory="$(EMSDK_PATH)"
-          IgnoreStandardErrorWarningFormat="true" />
-    <Exec Command="$(PythonCmd) -m pip install certifi &amp;&amp; $(PythonCmd) -m pip install pip-system-certs"
-          Condition="'$(HostOS)' == 'windows'"
-          WorkingDirectory="$(EMSDK_PATH)"
-          IgnoreStandardErrorWarningFormat="true" />
-    -->
+    <!-- Fixup files that were symlinks originally (on Linux/Mac, Windows has an equivalent already) -->
+    <ItemGroup>
+      <NodeModulesBinFiles Include="$(EMSDK_PATH)node\bin\npm.js" />
+    </ItemGroup>
+    <WriteLinesToFile
+      Condition="$([MSBuild]::IsOSPlatform(Linux)) or $([MSBuild]::IsOSPlatform(OSX))"
+      Lines="#!/usr/bin/env node;require('../lib/node_modules/%(Filename)/lib/cli.js')(process)"
+      File="%(NodeModulesBinFiles.RootDir)%(NodeModulesBinFiles.Directory)%(NodeModulesBinFiles.Filename)"
+      Overwrite="true" />
   </Target>
 
   <!-- Sets up WASI SDK if you don't have the WASI_SDK_PATH env variable set -->
