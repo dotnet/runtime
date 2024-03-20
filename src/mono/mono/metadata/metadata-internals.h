@@ -1296,4 +1296,7 @@ mono_method_signature_has_ext_callconv (MonoMethodSignature *sig, MonoExtCallCon
 	return (sig->ext_callconv & flags) != 0;
 }
 
+guint32
+mono_metadata_decode_value_simd (const guint8 *ptr, const guint8 **new_ptr);
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
