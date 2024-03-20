@@ -18,7 +18,7 @@ The CoreCLR runtime and class libraries can be built and tested locally for Wind
 ### Building the CoreCLR runtime and class libraries
 
 To build locally, use the platform-specific shell script in .yamato/scripts. Either `build_yamato.cmd` or `build_yamato.sh`:
-_Note that this will require having ninja installed, which is an optional requirement._
+_Note that this requires having the `ninja` build tool installed._
 
 To view all possible arguments run:
 ```
@@ -59,22 +59,25 @@ It is possible to provide a space separated list of desired targets to build and
 > .yamato\scripts\build_yamato.cmd --build NullGC EmbeddingHost --test EmbeddingManaged
 ```
 
-### Using a debug build of the CoreCLR runtime in Unity
+### Using a debug or custom build of the CoreCLR runtime in Unity
 
-Once the CoreCLR runtime has been built locally you can find the runtime artifacts the Unity player needs in `artifacts\bin\microsoft.netcore.app.runtime.win-x64\Debug\runtimes\win-x64`. 
+Once the CoreCLR runtime has been built locally you can find the runtime artifacts Unity needs in one of:
+* `artifacts\bin\microsoft.netcore.app.runtime.win-x64\Debug\runtimes\win-x64`
+* `artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Debug/runtimes/osx-arm64`
+* replace `Debug` with `Release` if a release build
 
-If you would like to patch a built player with your local build you can use
+You can use the script to deploy an update of CoreCLR to your Unity build using:
+
 ```
-yamato\scripts\build_yamato.cmd --deploy-to-player --config Debug <Unity player build directory>
+.yamato/scripts/build_yamato.sh --config Debug --deploy-to-player <path-to-coreclr-folder>
 ```
 
-Notes
+Notes:
 
-`--deploy-to-player` assumes the same default values as when using `--build`.
-
-You can `--build` in conjuction with `--deploy-to-player` to build and copy in a single command
-
-**Caveat:** It is _not_ possible to enable mixed mode debugging in Visual Studio and also debug the native code in coreclr.dll. Visual Studio blocks this workflow to prevent hangs. To debug in coreclr.dll in a Unity player, Native debugging must be selected in Visual Studio.
+* `--deploy-to-player` assumes the same default values as when using `--build`.
+* You can `--build` in conjuction with `--deploy-to-player` to build and copy in a single command
+* `<path-to-coreclr-folder>` is a path to a parent of CoreCLR folder in Unity Editor or Player build, e.g. `<repo-root>/build/MacEditor/arm64/Debug/Unity.app/Contents`, `<repo-root>\build\WindowsEditor\x64\Debug` 
+* **Caveat (_Windows_):** It is _not_ possible to enable mixed mode debugging in Visual Studio and also debug the native code in coreclr.dll. Visual Studio blocks this workflow to prevent hangs. To debug in coreclr.dll in a Unity player, Native debugging must be selected in Visual Studio.
 
 ## Pulling changes from upstream
 
@@ -84,6 +87,6 @@ There is a job in Unity's internal CI which runs weekly to pull the latest code 
 
 When a pull request is open against this fork, we should determine if the changes in that pull request should be pushed upstream (most should). Ideally, pull request should be organized so that all changes in a given pull request can be directly applied upstream. Any changes specific to the Unity fork should be done in a separate pull request.
 
-Assuming the branch with changes to upstream is named `great-new-feature` then a new branch of upstream [`main`](https://github.com/dotnet/runtime/tree/main) named `upstream-great-new-feature` should be created. Each commit from `great-new-feature` should be cherry-picked `upstream-great-new-feature`, and then a pull request should be opened from `upstream-great-new-feature` to [`main`](https://github.com/dotnet/runtime/tree/main) in the upstream repository.
+Assuming the branch with changes to upstream is named `great-new-feature` then a new branch of upstream [`main`](https://github.com/dotnet/runtime/tree/main) named `upstream-great-new-feature` should be created. Each commit from `great-new-feature` should be cherry-picked into `upstream-great-new-feature`, and then a pull request should be opened from `upstream-great-new-feature` to [`main`](https://github.com/dotnet/runtime/tree/main) in the upstream repository.
 
 It is acceptable to _merge_ changes to this fork from `great-new-feature` before `upstream-great-new-feature` is merged, but we should at least _open_ an upstream pull request first.
