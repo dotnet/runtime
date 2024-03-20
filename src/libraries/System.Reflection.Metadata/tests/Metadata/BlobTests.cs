@@ -1039,6 +1039,27 @@ namespace System.Reflection.Metadata.Tests
             builder2.Free();
         }
 
+        [Fact]
+        public void FreeNonEmptySuffixAndPrefixBlobAndEmptyOnes()
+        {
+            var b1 = PooledBlobBuilder.GetInstance();
+            var b2 = PooledBlobBuilder.GetInstance();
+            var b3 = PooledBlobBuilder.GetInstance();
+            var b4 = PooledBlobBuilder.GetInstance();
+            var b5 = PooledBlobBuilder.GetInstance();
+
+            b1.WriteBytes(1, 1);
+            b2.WriteBytes(1, 1);
+            b3.WriteBytes(1, 1);
+
+            b1.LinkSuffix(b2);
+            b1.LinkPrefix(b3);
+            b1.LinkSuffix(b4);
+            b1.LinkPrefix(b5);
+
+            b1.Free();
+        }
+
         private class ProperStreamRead_TestStream : TestStreamBase
         {
             private readonly byte[] _sourceArray;

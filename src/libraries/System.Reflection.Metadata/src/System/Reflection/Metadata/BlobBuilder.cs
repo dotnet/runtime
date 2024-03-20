@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
@@ -32,6 +33,7 @@ namespace System.Reflection.Metadata
         // This structure optimizes for append write operations and sequential enumeration from the start of the chain.
         // Data can only be written to the head node. Other nodes are "frozen".
         private BlobBuilder _nextOrPrevious;
+        private List<BlobBuilder> _emptyChildBlobs;
         private BlobBuilder FirstChunk => _nextOrPrevious._nextOrPrevious;
 
         // The sum of lengths of all preceding chunks (not including the current chunk),
@@ -61,6 +63,7 @@ namespace System.Reflection.Metadata
 
             _nextOrPrevious = this;
             _buffer = new byte[Math.Max(MinChunkSize, capacity)];
+            _emptyChildBlobs = new();
         }
 
         protected virtual BlobBuilder AllocateChunk(int minimalSize)
@@ -100,6 +103,12 @@ namespace System.Reflection.Metadata
                     chunk.ClearChunk();
                     chunk.FreeChunk();
                 }
+            }
+
+            foreach (BlobBuilder chunk in _emptyChildBlobs)
+            {
+                chunk.ClearChunk();
+                chunk.FreeChunk();
             }
 
             ClearChunk();
@@ -396,6 +405,7 @@ namespace System.Reflection.Metadata
             // avoid chaining empty chunks:
             if (prefix.Count == 0)
             {
+                _emptyChildBlobs.Add(prefix);
                 return;
             }
 
@@ -456,6 +466,7 @@ namespace System.Reflection.Metadata
             // avoid chaining empty chunks:
             if (suffix.Count == 0)
             {
+                _emptyChildBlobs.Add(suffix);
                 return;
             }
 
