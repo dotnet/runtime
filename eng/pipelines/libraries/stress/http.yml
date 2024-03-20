@@ -5,7 +5,7 @@ pr:
     include:
     - "*"
 
-variables:
+#variables:
   # - template: ../variables.yml
   # - name: dockerfilesFolder
   #   value: $(Build.SourcesDirectory)/eng/docker
