@@ -4,6 +4,8 @@
     <ProducesDotNetReleaseShippingAssets>true</ProducesDotNetReleaseShippingAssets>
     <!-- This avoids creating VS.*.symbols.nupkg packages that are identical to the original package. -->
     <AutoGenerateSymbolPackages>false</AutoGenerateSymbolPackages>
+    <!-- TODO: Change condition when runtime's official publishing starts using Publishing.props:
+         https://github.com/dotnet/source-build/issues/4239 -->
     <EnableDefaultPublishItems Condition="'$(DotNetBuildRepo)' == 'true'">true</EnableDefaultPublishItems>
   </PropertyGroup>
 
@@ -70,7 +72,7 @@
       <ItemsToPushToBlobFeed Include="@(ProductVersionFile)"
                              IsShipping="false"
                              PublishFlatContainer="true"
-                             RelativeBlobPath="WindowsDesktop/$(RuntimePackProductVersion)/%(Filename)%(Extension)" />
+                             RelativeBlobPath="Runtime/$(RuntimePackProductVersion)/%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
 
