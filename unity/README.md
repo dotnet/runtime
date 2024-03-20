@@ -76,6 +76,7 @@ Notes:
 
 * `--deploy-to-player` assumes the same default values as when using `--build`.
 * You can `--build` in conjuction with `--deploy-to-player` to build and copy in a single command
+* `<path-to-coreclr-folder>` is a path to a parent of CoreCLR folder in Unity Editor or Player build, e.g. `<repo-root>/build/MacEditor/arm64/Debug/Unity.app/Contents`, `<repo-root>\build\WindowsEditor\x64\Debug` 
 * **Caveat (_Windows_):** It is _not_ possible to enable mixed mode debugging in Visual Studio and also debug the native code in coreclr.dll. Visual Studio blocks this workflow to prevent hangs. To debug in coreclr.dll in a Unity player, Native debugging must be selected in Visual Studio.
 
 ## Pulling changes from upstream
