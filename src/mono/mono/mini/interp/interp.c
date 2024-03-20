@@ -3362,9 +3362,6 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		return (gpointer)no_llvmonly_interp_method_pointer;
 	}
 
-	if (method->wrapper_type && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
-		return imethod;
-
 #ifndef MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE
 	/*
 	 * Interp in wrappers get the argument in the rgctx register. If
