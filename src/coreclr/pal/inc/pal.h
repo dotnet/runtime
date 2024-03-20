@@ -3640,21 +3640,33 @@ Define_InterlockMethod(
     CHAR,
     InterlockedExchange8(IN OUT CHAR volatile *Target, CHAR Value),
     InterlockedExchange8(Target, Value),
+#ifdef __clang__
+    __sync_swap(Target, Value);
+#else
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
+#endif
 )
 
 Define_InterlockMethod(
     SHORT,
     InterlockedExchange16(IN OUT SHORT volatile *Target, SHORT Value),
     InterlockedExchange16(Target, Value),
+#ifdef __clang__
+    __sync_swap(Target, Value);
+#else
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
+#endif
 )
 
 Define_InterlockMethod(
     LONG,
     InterlockedExchange(IN OUT LONG volatile *Target, LONG Value),
     InterlockedExchange(Target, Value),
+#ifdef __clang__
+    __sync_swap(Target, Value);
+#else
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
+#endif
 )
 
 #if defined(HOST_X86)
@@ -3679,11 +3691,14 @@ Define_InterlockMethod(
     LONGLONG,
     InterlockedExchange64(IN OUT LONGLONG volatile *Target, IN LONGLONG Value),
     InterlockedExchange64(Target, Value),
+#ifdef __clang__
+    __sync_swap(Target, Value);
+#else
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
+#endif
 )
 
 #endif
-
 
 /*++
 Function:
