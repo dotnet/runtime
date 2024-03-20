@@ -22,6 +22,7 @@ struct ReplayResults
     bool IsMinOpts = false;
     uint32_t NumCodeBytes = 0;
     uint64_t NumExecutedInstructions = 0;
+    CompileResult* CompileResults = nullptr;
 };
 
 class JitInstance

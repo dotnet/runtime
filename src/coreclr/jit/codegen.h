@@ -1182,10 +1182,10 @@ protected:
     void genCodeForCpObj(GenTreeBlk* cpObjNode);
     void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
-#ifndef TARGET_X86
-    void genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode);
-#endif
     void genCodeForPhysReg(GenTreePhysReg* tree);
+#ifdef SWIFT_SUPPORT
+    void genCodeForSwiftErrorReg(GenTree* tree);
+#endif // SWIFT_SUPPORT
     void genCodeForNullCheck(GenTreeIndir* tree);
     void genCodeForCmpXchg(GenTreeCmpXchg* tree);
     void genCodeForReuseVal(GenTree* treeNode);
@@ -1257,12 +1257,10 @@ protected:
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
     void genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
-#ifndef TARGET_X86
-    void genCodeForInitBlkHelper(GenTreeBlk* initBlkNode);
-#endif
     void genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
     void genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
     void genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
+    unsigned genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
     void genJumpTable(GenTree* tree);
     void genTableBasedSwitch(GenTree* tree);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

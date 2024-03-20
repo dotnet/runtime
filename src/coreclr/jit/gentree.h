@@ -194,13 +194,13 @@ inline AssertionIndex GetAssertionIndex(unsigned index)
 
 class AssertionInfo
 {
-    // true if the assertion holds on the bbNext edge instead of the bbTarget edge (for GT_JTRUE nodes)
-    unsigned short m_isNextEdgeAssertion : 1;
+    // true if the assertion holds on the false edge instead of the true edge (for GT_JTRUE nodes)
+    unsigned short m_assertionHoldsOnFalseEdge : 1;
     // 1-based index of the assertion
     unsigned short m_assertionIndex : 15;
 
-    AssertionInfo(bool isNextEdgeAssertion, AssertionIndex assertionIndex)
-        : m_isNextEdgeAssertion(isNextEdgeAssertion), m_assertionIndex(assertionIndex)
+    AssertionInfo(bool assertionHoldsOnFalseEdge, AssertionIndex assertionIndex)
+        : m_assertionHoldsOnFalseEdge(assertionHoldsOnFalseEdge), m_assertionIndex(assertionIndex)
     {
         assert(m_assertionIndex == assertionIndex);
     }
@@ -223,8 +223,8 @@ public:
 
     void Clear()
     {
-        m_isNextEdgeAssertion = 0;
-        m_assertionIndex      = NO_ASSERTION_INDEX;
+        m_assertionHoldsOnFalseEdge = 0;
+        m_assertionIndex            = NO_ASSERTION_INDEX;
     }
 
     bool HasAssertion() const
@@ -237,9 +237,9 @@ public:
         return m_assertionIndex;
     }
 
-    bool IsNextEdgeAssertion() const
+    bool AssertionHoldsOnFalseEdge() const
     {
-        return m_isNextEdgeAssertion;
+        return m_assertionHoldsOnFalseEdge;
     }
 };
 
@@ -1216,7 +1216,7 @@ public:
 
     static bool OperIsStoreBlk(genTreeOps gtOper)
     {
-        return StaticOperIs(gtOper, GT_STORE_BLK, GT_STORE_DYN_BLK);
+        return StaticOperIs(gtOper, GT_STORE_BLK);
     }
 
     bool OperIsStoreBlk() const
@@ -1545,7 +1545,7 @@ public:
     static bool OperIsIndir(genTreeOps gtOper)
     {
         static_assert_no_msg(AreContiguous(GT_LOCKADD, GT_XAND, GT_XORR, GT_XADD, GT_XCHG, GT_CMPXCHG, GT_IND,
-                                           GT_STOREIND, GT_BLK, GT_STORE_BLK, GT_STORE_DYN_BLK, GT_NULLCHECK));
+                                           GT_STOREIND, GT_BLK, GT_STORE_BLK, GT_NULLCHECK));
         return (GT_LOCKADD <= gtOper) && (gtOper <= GT_NULLCHECK);
     }
 
@@ -2249,6 +2249,7 @@ public:
     }
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+
     bool IsEmbMaskOp()
     {
         return OperIsHWIntrinsic() && ((gtFlags & GTF_HW_EM_OP) != 0);
@@ -2262,6 +2263,8 @@ public:
     }
 
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+
+    static bool HandleKindDataIsInvariant(GenTreeFlags flags);
 
     bool IsCall() const
     {
@@ -2862,7 +2865,6 @@ class GenTreeUseEdgeIterator final
     // Advance functions for special nodes
     void AdvanceCmpXchg();
     void AdvanceArrElem();
-    void AdvanceStoreDynBlk();
     void AdvanceFieldList();
     void AdvancePhi();
     void AdvanceConditional();
@@ -4203,6 +4205,8 @@ private:
     bool m_inited;
 #endif
 
+    void InitializeSwiftReturnRegs(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
+
 public:
     ReturnTypeDesc()
     {
@@ -4324,10 +4328,10 @@ public:
     }
 
     // Get i'th ABI return register
-    regNumber GetABIReturnReg(unsigned idx) const;
+    regNumber GetABIReturnReg(unsigned idx, CorInfoCallConvExtension callConv) const;
 
     // Get reg mask of ABI return registers
-    regMaskTP GetABIReturnRegs() const;
+    regMaskTP GetABIReturnRegs(CorInfoCallConvExtension callConv) const;
 };
 
 class TailCallSiteInfo
@@ -4398,7 +4402,7 @@ enum class CFGCallKind
 
 class CallArgs;
 
-enum class WellKnownArg
+enum class WellKnownArg : unsigned
 {
     None,
     ThisPointer,
@@ -4416,6 +4420,8 @@ enum class WellKnownArg
     R2RIndirectionCell,
     ValidateIndirectCallTarget,
     DispatchIndirectCallTarget,
+    SwiftError,
+    SwiftSelf,
 };
 
 #ifdef DEBUG
@@ -4429,10 +4435,6 @@ struct CallArgABIInformation
         , ByteOffset(0)
         , ByteSize(0)
         , ByteAlignment(0)
-#ifdef UNIX_AMD64_ABI
-        , StructIntRegs(0)
-        , StructFloatRegs(0)
-#endif
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         , StructFloatFieldType()
 #endif
@@ -4468,8 +4470,6 @@ public:
     // Unix amd64 will split floating point types and integer types in structs
     // between floating point and general purpose registers. Keep track of that
     // information so we do not need to recompute it later.
-    unsigned                                            StructIntRegs;
-    unsigned                                            StructFloatRegs;
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
 #endif // UNIX_AMD64_ABI
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -5215,6 +5215,15 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;
     }
+
+#ifdef SWIFT_SUPPORT
+    bool HasSwiftErrorHandling()
+    {
+        // Most calls aren't Swift calls, so short-circuit this check by checking the calling convention first.
+        return (GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift) &&
+               (gtArgs.FindWellKnownArg(WellKnownArg::SwiftError) != nullptr);
+    }
+#endif // SWIFT_SUPPORT
 
     bool IsR2ROrVirtualStubRelativeIndir()
     {
@@ -6500,8 +6509,9 @@ struct GenTreeVecCon : public GenTree
         simd16_t gtSimd16Val;
 
 #if defined(TARGET_XARCH)
-        simd32_t gtSimd32Val;
-        simd64_t gtSimd64Val;
+        simd32_t   gtSimd32Val;
+        simd64_t   gtSimd64Val;
+        simdmask_t gtSimdMaskVal;
 #endif // TARGET_XARCH
 
         simd_t gtSimdVal;
@@ -6753,6 +6763,11 @@ struct GenTreeVecCon : public GenTree
             {
                 return gtSimd64Val.IsAllBitsSet();
             }
+
+            case TYP_MASK:
+            {
+                return gtSimdMaskVal.IsAllBitsSet();
+            }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -6800,6 +6815,11 @@ struct GenTreeVecCon : public GenTree
             {
                 return left->gtSimd64Val == right->gtSimd64Val;
             }
+
+            case TYP_MASK:
+            {
+                return left->gtSimdMaskVal == right->gtSimdMaskVal;
+            }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -6839,6 +6859,11 @@ struct GenTreeVecCon : public GenTree
             case TYP_SIMD64:
             {
                 return gtSimd64Val.IsZero();
+            }
+
+            case TYP_MASK:
+            {
+                return gtSimdMaskVal.IsZero();
             }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -7354,13 +7379,8 @@ private:
 public:
     ClassLayout* GetLayout() const
     {
+        assert(m_layout != nullptr);
         return m_layout;
-    }
-
-    void SetLayout(ClassLayout* layout)
-    {
-        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
-        m_layout = layout;
     }
 
     // The data to be stored (null for GT_BLK)
@@ -7376,8 +7396,7 @@ public:
     // The size of the buffer to be copied.
     unsigned Size() const
     {
-        assert((m_layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
-        return (m_layout != nullptr) ? m_layout->GetSize() : 0;
+        return m_layout->GetSize();
     }
 
     // Instruction selection: during codegen time, what code sequence we will be using
@@ -7388,9 +7407,6 @@ public:
         BlkOpKindCpObjUnroll,
 #ifdef TARGET_XARCH
         BlkOpKindCpObjRepInstr,
-#endif
-#ifndef TARGET_X86
-        BlkOpKindHelper,
 #endif
 #ifdef TARGET_XARCH
         BlkOpKindRepInstr,
@@ -7406,7 +7422,7 @@ public:
 
     bool ContainsReferences()
     {
-        return (m_layout != nullptr) && m_layout->HasGCPtr();
+        return m_layout->HasGCPtr();
     }
 
     bool IsOnHeapAndContainsReferences()
@@ -7437,8 +7453,8 @@ public:
 
     void Initialize(ClassLayout* layout)
     {
-        assert(OperIsBlk(OperGet()) && ((layout != nullptr) || OperIs(GT_STORE_DYN_BLK)));
-        assert((layout == nullptr) || (layout->GetSize() != 0));
+        assert(layout != nullptr);
+        assert(layout->GetSize() != 0);
 
         m_layout    = layout;
         gtBlkOpKind = BlkOpKindInvalid;
@@ -7451,35 +7467,6 @@ public:
 protected:
     friend GenTree;
     GenTreeBlk() : GenTreeIndir()
-    {
-    }
-#endif // DEBUGGABLE_GENTREE
-};
-
-// GenTreeStoreDynBlk  -- 'dynamic block store' (GT_STORE_DYN_BLK).
-//
-// This node is used to represent stores that have a dynamic size - the "cpblk" and "initblk"
-// IL instructions are implemented with it. Note that such stores assume the input has no GC
-// pointers in it, and as such do not ever use write barriers.
-//
-// The "Data()" member of this node will either be a "dummy" IND(struct) node, for "cpblk", or
-// the zero constant/INIT_VAL for "initblk".
-//
-struct GenTreeStoreDynBlk : public GenTreeBlk
-{
-public:
-    GenTree* gtDynamicSize;
-
-    GenTreeStoreDynBlk(GenTree* dstAddr, GenTree* data, GenTree* dynamicSize)
-        : GenTreeBlk(GT_STORE_DYN_BLK, TYP_VOID, dstAddr, data, nullptr), gtDynamicSize(dynamicSize)
-    {
-        gtFlags |= dynamicSize->gtFlags & GTF_ALL_EFFECT;
-    }
-
-#if DEBUGGABLE_GENTREE
-protected:
-    friend GenTree;
-    GenTreeStoreDynBlk() : GenTreeBlk()
     {
     }
 #endif // DEBUGGABLE_GENTREE
@@ -8899,10 +8886,6 @@ struct GenTreeCCMP final : public GenTreeOpCC
 
 inline bool GenTree::OperIsBlkOp()
 {
-    if (OperIs(GT_STORE_DYN_BLK))
-    {
-        return true;
-    }
     if (OperIsStore())
     {
         return varTypeIsStruct(this);
@@ -9310,7 +9293,7 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
 
 inline GenTree*& GenTree::Data()
 {
-    assert(OperIsStore() || OperIs(GT_STORE_DYN_BLK));
+    assert(OperIsStore());
     return OperIsLocalStore() ? AsLclVarCommon()->Data() : AsIndir()->Data();
 }
 

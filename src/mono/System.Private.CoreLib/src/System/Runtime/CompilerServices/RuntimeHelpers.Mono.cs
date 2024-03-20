@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Runtime.CompilerServices
@@ -137,9 +138,15 @@ namespace System.Runtime.CompilerServices
             RunModuleConstructor(module.Value);
         }
 
-        public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
+        public static unsafe IntPtr AllocateTypeAssociatedMemory(Type type, int size)
         {
-            throw new PlatformNotSupportedException();
+            if (type is not RuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
+
+            // We don't support unloading; the memory will never be freed.
+            return (IntPtr)NativeMemory.AllocZeroed((uint)size);
         }
 
         [Intrinsic]

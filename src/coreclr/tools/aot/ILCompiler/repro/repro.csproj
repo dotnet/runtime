@@ -6,7 +6,9 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <RuntimeIdentifiers>linux-x64;win-x64;osx-x64;freebsd-x64;freebsd-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
+    <!-- FreeBSD runtime/apphost packs aren't built in the official build so only reference the RIDs when targetting FreeBSD -->
+    <RuntimeIdentifiers Condition="'$(TargetOS)' == 'freebsd'">$(RuntimeIdentifiers);freebsd-x64;freebsd-arm64</RuntimeIdentifiers>
     <Configurations>Debug;Release;Checked</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RunAnalyzers>false</RunAnalyzers>
@@ -18,6 +20,7 @@
 
     <ItemGroup>
       <ReproResponseLines Include="$(OutputPath)$(AssemblyName)$(TargetExt)" />
+      <ReproResponseLines Include="--targetarch:$(Platform)" />
       <ReproResponseLines Include="-o:$(OutputPath)$(AssemblyName).obj" />
       <ReproResponseLines Include="-r:$(RuntimeBinDir)aotsdk\*.dll" />
       <ReproResponseLines Include="-r:$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />

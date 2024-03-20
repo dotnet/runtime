@@ -22,6 +22,7 @@
 #include <stdarg.h>
 #include <memory.h>
 #include <limits.h>
+#include <math.h>
 
 #include <new>
 

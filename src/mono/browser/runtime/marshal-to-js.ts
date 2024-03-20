@@ -11,7 +11,7 @@ import { Module, loaderHelpers, mono_assert } from "./globals";
 import {
     ManagedObject, ManagedError,
     get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,
-    get_arg_b8, get_arg_date, get_arg_length, get_arg, set_arg_type,
+    get_arg_bool, get_arg_date, get_arg_length, get_arg, set_arg_type,
     get_signature_arg2_type, get_signature_arg1_type, cs_to_js_marshalers,
     get_signature_res_type, get_arg_u16, array_element_size, get_string_root,
     ArraySegment, Span, MemoryViewType, get_signature_arg3_type, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize, proxy_debug_symbol, set_js_handle, is_receiver_should_free
@@ -23,6 +23,7 @@ import { get_marshaler_to_cs_by_type, jsinteropDoc, marshal_exception_to_cs } fr
 import { localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 import { call_delegate } from "./managed-exports";
 import { gc_locked } from "./gc-lock";
+import { mono_log_debug } from "./logging";
 
 export function initialize_marshalers_to_js(): void {
     if (cs_to_js_marshalers.size == 0) {
@@ -101,7 +102,7 @@ function _marshal_bool_to_js(arg: JSMarshalerArgument): boolean | null {
     if (type == MarshalerType.None) {
         return null;
     }
-    return get_arg_b8(arg);
+    return get_arg_bool(arg);
 }
 
 function _marshal_byte_to_js(arg: JSMarshalerArgument): number | null {
@@ -337,6 +338,10 @@ function create_task_holder(res_converter?: MarshalerToJs) {
 }
 
 export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments): void {
+    if (!loaderHelpers.is_runtime_running()) {
+        mono_log_debug("This promise resolution/rejection can't be propagated to managed code, mono runtime already exited.");
+        return;
+    }
     const exc = get_arg(args, 0);
     const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
     try {

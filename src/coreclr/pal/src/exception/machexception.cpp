@@ -849,7 +849,7 @@ HijackFaultingThread(
     if (fIsStackOverflow)
     {
         // Allocate the minimal stack necessary for handling stack overflow
-        int stackOverflowStackSize = 7 * 4096;
+        int stackOverflowStackSize = 15 * 4096;
         // Align the size to virtual page size and add one virtual page as a stack guard
         stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, GetVirtualPageSize()) + GetVirtualPageSize();
         void* stackOverflowHandlerStack = mmap(NULL, stackOverflowStackSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
