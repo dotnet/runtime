@@ -12148,50 +12148,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns the encoding for the immediate value that is a multiple of 3 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf3_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 3>(imm)));
-    return insEncodeSimm<19, 16>(imm / 3);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 4 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf4_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 4>(imm)));
-    return insEncodeSimm<19, 16>(imm / 4);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 16 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 16>(imm)));
-    return insEncodeSimm<19, 16>(imm / 16);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 32 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 32>(imm)));
-    return insEncodeSimm<19, 16>(imm / 32);
-}
-
-/*****************************************************************************
- *
  *  Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
  */
 

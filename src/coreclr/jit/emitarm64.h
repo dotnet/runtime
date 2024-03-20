@@ -676,7 +676,8 @@ static code_t insEncodeSimm(ssize_t imm)
     return result << lo;
 }
 
-// Returns the encoding for `imm` that is a multiple of `mul`, as `bits` number of bits, starting at bit location `lo`.
+// Returns the encoding for signed immediate `imm` that is a multiple of `mul` with `bits` number of bits,
+// starting at bit location `lo`.
 template <const size_t bits, const ssize_t mul, const size_t lo>
 static code_t insEncodeSimm_MultipleOf(ssize_t imm)
 {
@@ -687,18 +688,6 @@ static code_t insEncodeSimm_MultipleOf(ssize_t imm)
 
 // Returns the encoding for the immediate value as 9-bits at bit locations '21-16' for high and '12-10' for low.
 static code_t insEncodeSimm9h9l_21_to_16_and_12_to_10(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 3 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf3_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 4 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf4_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 16 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 32 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
 static code_t insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm);

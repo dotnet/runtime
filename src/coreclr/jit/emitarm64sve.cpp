@@ -11142,7 +11142,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                 case INS_sve_st3w:
                 case INS_sve_st3d:
                 case INS_sve_st3q:
-                    code |= insEncodeSimm4_MultipleOf3_19_to_16(imm); // iiii
+                    code |= insEncodeSimm_MultipleOf<4, 3, 16>(imm); // iiii
                     break;
 
                 case INS_sve_ld4b:
@@ -11155,21 +11155,21 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                 case INS_sve_st4w:
                 case INS_sve_st4d:
                 case INS_sve_st4q:
-                    code |= insEncodeSimm4_MultipleOf4_19_to_16(imm); // iiii
+                    code |= insEncodeSimm_MultipleOf<4, 4, 16>(imm); // iiii
                     break;
 
                 case INS_sve_ld1rqb:
                 case INS_sve_ld1rqd:
                 case INS_sve_ld1rqh:
                 case INS_sve_ld1rqw:
-                    code |= insEncodeSimm4_MultipleOf16_19_to_16(imm); // iiii
+                    code |= insEncodeSimm_MultipleOf<4, 16, 16>(imm); // iiii
                     break;
 
                 case INS_sve_ld1rob:
                 case INS_sve_ld1rod:
                 case INS_sve_ld1roh:
                 case INS_sve_ld1row:
-                    code |= insEncodeSimm4_MultipleOf32_19_to_16(imm); // iiii
+                    code |= insEncodeSimm_MultipleOf<4, 32, 16>(imm); // iiii
                     break;
 
                 default:
