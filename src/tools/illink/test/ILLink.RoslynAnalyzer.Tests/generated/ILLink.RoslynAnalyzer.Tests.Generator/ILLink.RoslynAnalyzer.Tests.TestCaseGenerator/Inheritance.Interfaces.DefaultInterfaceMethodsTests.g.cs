@@ -16,6 +16,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 		}
 
 		[Fact]
+		public Task DimProvidedByUnreferencedIfaceInHierarchy ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task GenericDefaultInterfaceMethods ()
 		{
 			return RunTest (allowMissingWarnings: true);
