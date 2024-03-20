@@ -128,8 +128,10 @@ and reduce the number of casts drastically.
 /* If this is defined, use the signals backed on Mach. Debug only as signals can't be made usable on OSX. */
 // #define USE_SIGNALS_ON_MACH
 
-#ifdef HOST_WASM
+#if (defined(HOST_WASM) && defined(DISABLE_THREADS)) || defined(HOST_BROWSER)
 #define USE_WASM_BACKEND
+#elif defined(HOST_WASM)
+#define USE_PTHREAD_WASM_BACKEND
 #elif defined (_POSIX_VERSION)
 #if defined (__MACH__) && !defined (USE_SIGNALS_ON_MACH)
 #define USE_MACH_BACKEND
@@ -846,7 +848,7 @@ void mono_threads_join_lock (void);
 void mono_threads_join_unlock (void);
 
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 typedef void (*background_job_cb)(void);
 #ifdef DISABLE_THREADS
 void mono_main_thread_schedule_background_job (background_job_cb cb);
@@ -894,7 +896,7 @@ mono_win32_abort_blocking_io_call (THREAD_INFO_TYPE *info);
 		if (GetLastError () != _last_error_restore_point) \
 			mono_SetLastError (_last_error_restore_point);
 
-#elif defined(USE_WASM_BACKEND) || defined (USE_POSIX_BACKEND)
+#elif defined(USE_WASM_BACKEND) || defined(USE_PTHREAD_WASM_BACKEND) || defined(USE_POSIX_BACKEND)
 
 #define MONO_DEFINE_LAST_ERROR_RESTORE_POINT     \
 	int _last_errno_restore_point = errno;

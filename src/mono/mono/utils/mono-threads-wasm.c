@@ -683,7 +683,113 @@ mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (
 
 #endif /* DISABLE_THREADS */
 
-#endif /* HOST_BROWSER */
+#endif /* defined(USE_WASM_BACKEND) */
+
+#elif defined(USE_PTHREAD_WASM_BACKEND)
+
+struct __pthread {
+	struct pthread *self;
+	struct pthread *prev, *next;
+	uintptr_t sysinfo;
+	uintptr_t canary;
+
+	int tid;
+	int errno_val;
+	volatile int detach_state;
+	volatile int cancel;
+	volatile unsigned char canceldisable, cancelasync;
+	unsigned char tsd_used:1;
+	unsigned char dlerror_flag:1;
+	unsigned char *map_base;
+	size_t map_size;
+	void *stack;
+	size_t stack_size;
+	size_t guard_size;
+	void *result;
+	struct __ptcb *cancelbuf;
+	void **tsd;
+	struct {
+		volatile void *volatile head;
+		long off;
+		volatile void *volatile pending;
+	} robust_list;
+	int h_errno_val;
+	volatile int timer_id;
+	locale_t locale;
+	volatile int killlock[1];
+	char *dlerror_buf;
+	void *stdio_locks;
+};
+
+uintptr_t get_wasm_stack_low(void);
+uintptr_t get_wasm_stack_high(void);
+
+void
+mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
+{
+	pthread_t self = pthread_self();
+	if (self->tid == 0x3fffffff) {
+		*staddr = (guint8*)get_wasm_stack_low ();
+		*stsize = get_wasm_stack_high() - get_wasm_stack_low();
+	} else {
+		*staddr = (guint8*)self->stack - self->stack_size;
+		*stsize = self->stack_size;
+	}
+}
+
+guint64
+mono_native_thread_os_id_get (void)
+{
+	return (guint64)pthread_self()->tid;
+}
+
+void
+mono_threads_suspend_init_signals (void)
+{
+}
+
+void
+mono_threads_platform_exit (gsize exit_code)
+{
+}
+
+void
+mono_threads_suspend_init (void)
+{
+}
+
+void
+mono_threads_suspend_register (MonoThreadInfo *info)
+{
+}
+
+gboolean
+mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
+{
+	return TRUE;
+}
+
+void
+mono_threads_suspend_free (MonoThreadInfo *info)
+{
+}
+
+gboolean
+mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
+{
+	return TRUE;
+}
+
+gboolean
+mono_threads_suspend_check_suspend_result (MonoThreadInfo *info)
+{
+	return TRUE;
+}
+
+void
+mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
+{
+}
 
 #else
 

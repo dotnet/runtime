@@ -1286,8 +1286,11 @@ start_wrapper (gpointer data)
 	}
 
 	mono_thread_info_exit (res);
-
+#ifdef HOST_WASI
+	return (mono_thread_start_return_t)res;
+#else
 	g_assert_not_reached ();
+#endif
 }
 
 static void
@@ -1754,6 +1757,8 @@ mono_thread_exit (void)
 		exit (mono_environment_exitcode_get ());
 
 	mono_thread_info_exit (0);
+
+	g_assert_not_reached ();
 }
 
 MonoThread *
@@ -2889,6 +2894,8 @@ mono_threads_set_shutting_down (void)
 
 		/* Wake up other threads potentially waiting for us */
 		mono_thread_info_exit (0);
+
+		g_assert_not_reached ();
 	} else {
 		shutting_down = TRUE;
 

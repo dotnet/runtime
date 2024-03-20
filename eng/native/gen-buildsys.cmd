@@ -22,6 +22,7 @@ set __Arch=%4
 set __Os=%5
 set __CmakeGenerator=Visual Studio
 set __UseEmcmake=0
+set __Pthreads=0
 if /i "%__Ninja%" == "1" (
     set __CmakeGenerator=Ninja
 ) else (
@@ -36,6 +37,14 @@ if /i "%__Ninja%" == "1" (
         set __CmakeGenerator=NMake Makefiles
     )
 )
+
+:loop
+if [%6] == [] goto end_loop
+if ""%6"" == """-DCMAKE_USE_PTHREADS=1""" set __Pthreads=1
+set __ExtraCmakeParams=%__ExtraCmakeParams% %6
+shift
+goto loop
+:end_loop
 
 if /i "%__Arch%" == "wasm" (
 
@@ -72,18 +81,15 @@ if /i "%__Arch%" == "wasm" (
         set "WASI_SDK_PATH=!WASI_SDK_PATH:\=/!"
         if not "!WASI_SDK_PATH:~-1!" == "/" set "WASI_SDK_PATH=!WASI_SDK_PATH!/"
         set __CmakeGenerator=Ninja
-        set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm "-DWASI_SDK_PREFIX=!WASI_SDK_PATH!" "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk.cmake" "-DCMAKE_SYSROOT=!WASI_SDK_PATH!/share/wasi-sysroot"
+        if "%__Pthreads%" == "1" (
+            set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm "-DWASI_SDK_PREFIX=!WASI_SDK_PATH!" "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk-pthread.cmake" "-DCMAKE_SYSROOT=!WASI_SDK_PATH!/share/wasi-sysroot"
+        ) else (
+            set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm "-DWASI_SDK_PREFIX=!WASI_SDK_PATH!" "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk.cmake" "-DCMAKE_SYSROOT=!WASI_SDK_PATH!/share/wasi-sysroot"
+        )
     )
 ) else (
     set __ExtraCmakeParams=%__ExtraCmakeParams%  "-DCMAKE_SYSTEM_VERSION=10.0"
 )
-
-:loop
-if [%6] == [] goto end_loop
-set __ExtraCmakeParams=%__ExtraCmakeParams% %6
-shift
-goto loop
-:end_loop
 
 set __ExtraCmakeParams="-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLR_CMAKE_HOST_ARCH=%__Arch%" %__ExtraCmakeParams%
 

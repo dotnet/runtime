@@ -153,7 +153,7 @@
 #cmakedefine01 HAVE_DIRENT_NAME_SIZE
 #cmakedefine01 DIRENT_NAME_SIZE
 
-#ifndef HOST_WASI
+#ifndef HOST_BROWSER
 #cmakedefine01 HAVE_GETRUSAGE
 #endif
 

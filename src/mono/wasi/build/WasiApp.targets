@@ -311,8 +311,10 @@
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLibToExclude)" />
 
-      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++.a" />
-      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++abi.a" />
+      <_WasmNativeFileForLinking Condition="'$(WasmEnableThreads)' != 'true'" Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++.a" />
+      <_WasmNativeFileForLinking Condition="'$(WasmEnableThreads)' != 'true'" Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++abi.a" />
+      <_WasmNativeFileForLinking Condition="'$(WasmEnableThreads)' == 'true'" Include="$(WasiSysRoot)\lib\wasm32-wasi-threads\libc++.a" />
+      <_WasmNativeFileForLinking Condition="'$(WasmEnableThreads)' == 'true'" Include="$(WasiSysRoot)\lib\wasm32-wasi-threads\libc++abi.a" />
 
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>
@@ -325,6 +327,8 @@
       <_WasiFilePathForFixup Include="@(_WasmNativeFileForLinking)" />
 
       <_WasmLinkDependencies Include="@(_WasiFilePathForFixup)" />
+
+      <_WasiLinkStepArgs Condition="'$(WasmEnableThreads)' == 'true'" Include="-target wasm32-wasi-threads -pthread" />
 
       <_WasiLinkStepArgs Condition="'$(OS)' == 'Windows_NT'" Include="&quot;$([System.String]::new(%(_WasiFilePathForFixup.Identity)).Replace('\', '/'))&quot;" />
       <_WasiLinkStepArgs Condition="'$(OS)' != 'Windows_NT'" Include="@(_WasiFilePathForFixup -> '&quot;%(Identity)&quot;')" />
