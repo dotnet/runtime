@@ -367,7 +367,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         private static ref byte Unbox(void* toTypeHnd, object obj)
         {
-            // this will throw NullReferenceException if obj is null, attributed to the user code, as expected.
+            // This will throw NullReferenceException if obj is null.
             if (RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
                 return ref obj.GetRawData();
 
@@ -387,9 +387,10 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        private static ref object? LdelemaRef(object?[]? array, nint index, void* type)
+        private static ref object? LdelemaRef(object?[] array, nint index, void* type)
         {
-            if ((nuint)index >= (uint)array!.Length)
+            // This will throw NullReferenceException if array is null.
+            if ((nuint)index >= (uint)array.Length)
                 ThrowIndexOutOfRangeException();
 
             Debug.Assert(index >= 0);
@@ -403,9 +404,10 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        private static void StelemRef(object?[]? array, nint index, object? obj)
+        private static void StelemRef(object?[] array, nint index, object? obj)
         {
-            if ((nuint)index >= (uint)array!.Length)
+            // This will throw NullReferenceException if array is null.
+            if ((nuint)index >= (uint)array.Length)
                 ThrowIndexOutOfRangeException();
 
             Debug.Assert(index >= 0);
