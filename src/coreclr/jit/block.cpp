@@ -80,6 +80,7 @@ void FlowEdge::setLikelihood(weight_t likelihood)
     assert(likelihood >= 0.0);
     assert(likelihood <= 1.0);
 
+#ifdef DEBUG
     if (m_likelihoodSet)
     {
         JITDUMP("setting likelihood of " FMT_BB " -> " FMT_BB " from " FMT_WT " to " FMT_WT "\n", m_sourceBlock->bbNum,
@@ -92,7 +93,9 @@ void FlowEdge::setLikelihood(weight_t likelihood)
     }
 
     m_likelihoodSet = true;
-    m_likelihood    = likelihood;
+#endif // DEBUG
+
+    m_likelihood = likelihood;
 }
 
 //------------------------------------------------------------------------
@@ -583,7 +586,6 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_ALIGN, "has-align"},
         {BBF_HAS_MDARRAYREF, "mdarr"},
         {BBF_NEEDS_GCPOLL, "gcpoll"},
-        {BBF_NONE_QUIRK, "q"},
     };
 
     bool first = true;
@@ -941,9 +943,6 @@ void BasicBlock::TransferTarget(BasicBlock* from)
             SetCond(from->bbTrueEdge, from->bbFalseEdge);
             break;
         case BBJ_ALWAYS:
-            SetKindAndTargetEdge(BBJ_ALWAYS, from->bbTargetEdge);
-            CopyFlags(from, BBF_NONE_QUIRK);
-            break;
         case BBJ_CALLFINALLY:
         case BBJ_CALLFINALLYRET:
         case BBJ_EHCATCHRET:
