@@ -1502,78 +1502,10 @@ mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
 	return 0;
 }
 
-typedef guint8 v128_u1 __attribute__ ((vector_size (16)));
-typedef guint32 v128_u4 __attribute__ ((vector_size (16)));
-
 MONO_ALWAYS_INLINE guint32
-mono_metadata_decode_value_simd (const guint8 *ptr, const guint8 **new_ptr)
+mono_metadata_decode_value_scalar (const guint8 *ptr, const guint8 **new_ptr)
 {
 	guint32 result;
-
-#ifdef __clang__
-	// this will generate v128-ized code on x64 and wasm as long as SIMD is enabled at build time.
-	// if simd isn't enabled, it generates fairly adequate scalar code.
-	// *(bytes *)ptr and *(guint32 *)ptr by themselves don't force an i32 load of
-	//  ptr in either x64 or wasm clang, so this is the only way to prefetch all the bytes
-	// without doing this, decode_value will do 5 individual single-byte memory loads,
-	//  and each individual load is potentially bounds-checked. we produce one wide load
-	// we could overrun the source buffer by up to 11 bytes, but doing that on wasm is
-	//  safe unless we're decoding from the absolute end of memory.
-	// we pad all buffers by 16 bytes in mono_wasm_load_bytes_into_heap, so we're fine
-	union {
-		v128_u1 b;
-		v128_u4 i;
-	} v;
-	v.b = *(v128_u1 *)ptr;
-	// mask and shift two bits so we can have a 4-element jump table in wasm
-	guint8 flags = (v.b[0] & (0x80u | 0x40u)) >> 6;
-	switch (flags) {
-		case 0b00u:
-		case 0b01u:
-			// if (b & 0x80) == 0
-			result = v.b[0] & 0x7Fu;
-			++ptr;
-			break;
-		case 0b10u:
-			// (b * 0x80) != 0, and (b & 0x40) == 0
-			// v.b = { ptr[1], ptr[0], ptr[0], ptr[0] }
-			v.b = __builtin_shufflevector(
-				v.b, v.b,
-				1, 0, 0, 0, -1, -1, -1, -1,
-				-1, -1, -1, -1, -1, -1, -1, -1
-			);
-			// result = v.b[0..3] where v.b[1..2] = 0 and v.b[0] &= 0x3F
-			result = v.i[0] & 0x3FFFu;
-			ptr += 2;
-			break;
-		case 0b11u:
-		// i don't know why the default case is necessary here, but without it the jump table has 5 entries.
-		default:
-			// (b * 0x80) != 0, and (b & 0x40) != 0
-			if (v.b[0] == 0xFFu) {
-				// v.b = { ptr[4], ptr[3], ptr[2], ptr[1] }
-				v.b = __builtin_shufflevector(
-					v.b, v.b,
-					4, 3, 2, 1, -1, -1, -1, -1,
-					-1, -1, -1, -1, -1, -1, -1, -1
-				);
-				// result = v.b[0..3];
-				result = v.i[0];
-				ptr += 5;
-			} else {
-				// v.b = { ptr[3], ptr[2], ptr[1], ptr[0] }
-				v.b = __builtin_shufflevector(
-					v.b, v.b,
-					3, 2, 1, 0, -1, -1, -1, -1,
-					-1, -1, -1, -1, -1, -1, -1, -1
-				);
-				// result = v.b[0..3] where v.b[0] &= 0x1F
-				result = v.i[0] & 0x1FFFFFFFu;
-				ptr += 4;
-			}
-			break;
-	}
-#else
 	guint8 b = *ptr;
 
 	if ((b & 0x80) == 0){
@@ -1593,12 +1525,88 @@ mono_metadata_decode_value_simd (const guint8 *ptr, const guint8 **new_ptr)
 		result = (ptr [1] << 24) | (ptr [2] << 16) | (ptr [3] << 8) | ptr [4];
 		ptr += 5;
 	}
-#endif
+
+	return result;
+}
+
+MONO_ALWAYS_INLINE guint32
+mono_metadata_decode_value_simd (const guint8 *ptr, const guint8 **new_ptr)
+{
+#ifdef __clang__
+	guint32 result;
+
+	typedef guint8 v64_u1 __attribute__ ((vector_size (8)));
+	typedef guint32 v64_u4 __attribute__ ((vector_size (8)));
+
+	// this will generate vectorized code on x64 and wasm as long as SIMD is enabled
+	// if simd isn't enabled, it generates fairly adequate scalar code.
+	// *(bytes *)ptr and *(guint32 *)ptr by themselves don't force an i32 load of
+	//  ptr in either x64 or wasm clang, so this is the only way to prefetch all the bytes
+	// without doing this, decode_value will do 5 conditional single-byte memory loads,
+	//  and each individual load is potentially bounds-checked. we produce one wide load
+	// we could overrun the source buffer by up to 7 bytes, but doing that on wasm is
+	//  safe unless we're decoding from the absolute end of memory.
+	// we pad all buffers by 16 bytes in mono_wasm_load_bytes_into_heap, so we're fine
+	// clang happily upsizes these 8-byte vectors into 16-byte ones for wasm, and uses 8-byte
+	//  insns on x64 as appropriate. armv8 looks fine too, albeit a little weird
+	union {
+		v64_u1 b;
+		v64_u4 i;
+	} v;
+	v.b = *(v64_u1 *)ptr;
+	// mask and shift two bits so we can have a 4-element jump table in wasm
+	guint8 flags = (v.b[0] & (0x80u | 0x40u)) >> 6;
+	switch (flags) {
+		case 0b00u:
+		case 0b01u:
+			// if (b & 0x80) == 0
+			result = v.b[0] & 0x7Fu;
+			++ptr;
+			break;
+		case 0b10u:
+			// (b * 0x80) != 0, and (b & 0x40) == 0
+			// v.b = { ptr[1], ptr[0], ptr[0], ptr[0] }
+			v.b = __builtin_shufflevector(
+				v.b, v.b,
+				1, 0, -1, -1, -1, -1, -1, -1
+			);
+			// result = v.b[0..3] where v.b[1..2] = 0 and v.b[0] &= 0x3F
+			result = v.i[0] & 0x3FFFu;
+			ptr += 2;
+			break;
+		case 0b11u:
+		// i don't know why the default case is necessary here, but without it the jump table has 5 entries.
+		default:
+			// (b * 0x80) != 0, and (b & 0x40) != 0
+			if (v.b[0] == 0xFFu) {
+				// v.b = { ptr[4], ptr[3], ptr[2], ptr[1] }
+				v.b = __builtin_shufflevector(
+					v.b, v.b,
+					4, 3, 2, 1, -1, -1, -1, -1
+				);
+				// result = v.b[0..3];
+				result = v.i[0];
+				ptr += 5;
+			} else {
+				// v.b = { ptr[3], ptr[2], ptr[1], ptr[0] }
+				v.b = __builtin_shufflevector(
+					v.b, v.b,
+					3, 2, 1, 0, -1, -1, -1, -1
+				);
+				// result = v.b[0..3] where v.b[0] &= 0x1F
+				result = v.i[0] & 0x1FFFFFFFu;
+				ptr += 4;
+			}
+			break;
+	}
 
 	if (new_ptr)
 		*new_ptr = ptr;
 
 	return result;
+#else
+	return mono_metadata_decode_value_scalar (ptr, rptr);
+#endif
 }
 
 
