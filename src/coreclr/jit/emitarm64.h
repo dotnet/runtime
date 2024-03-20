@@ -244,8 +244,6 @@ union halfwordImm {
 *   representation imm(i16,hw)
 */
 
-static emitter::halfwordImm emitEncodeHalfwordImm(INT64 imm, emitAttr size);
-
 static INT64 emitDecodeHalfwordImm(const emitter::halfwordImm hwImm, emitAttr size);
 
 /************************************************************************

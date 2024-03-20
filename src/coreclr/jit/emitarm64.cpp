@@ -6447,22 +6447,6 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
 
 /************************************************************************
  *
- *  Convert a 64-bit immediate into its 'halfword immediate' representation imm(i16,hw)
- */
-
-/*static*/ emitter::halfwordImm emitter::emitEncodeHalfwordImm(INT64 imm, emitAttr size)
-{
-    emitter::halfwordImm result;
-    result.immHWVal = 0;
-
-    bool canEncode = canEncodeHalfwordImm(imm, size, &result);
-    assert(canEncode);
-
-    return result;
-}
-
-/************************************************************************
- *
  *  Convert an imm(i8,sh) into a 16/32-bit immediate
  *  inputs 'bsImm' a byteShiftedImm struct
  *         'size' specifies the size of the result (16 or 32 bits)
