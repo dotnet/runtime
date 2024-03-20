@@ -1,5 +1,14 @@
 # Data Contracts
 
+The diagnostic data contract documents a subset of internal .NET runtime in-memory data structures. It enables diagnostic tools to inspect state of .NET runtime process by directly reading and interpreting process memory. It is meant to be used debuggers - for both live and post-mortem debugging, profilers, and other diagnostic tools. We expect it to enable innovative solutions like [unwinding through JITed code using eBPF filters](https://github.com/dotnet/runtime/issues/93550).
+
+The diagnostic data contract addresses multiple problems of the established .NET runtime debugger architecture. The established CoreCLR debugger architecture requires debugger to acquire and load DAC and DBI libraries that exactly match the version of .NET runtime being debugged. It comes with multiple challenges:
+- *Security*: The DBI and DAC libraries that match the exact .NET runtime may be untrusted (e.g. custom or 3rd party build of .NET runtime). https://github.com/dotnet/runtime/blob/main/docs/workflow/debugging/coreclr/debugging-runtime.md#resolving-signature-validation-errors-in-visual-studio has some additional context.
+- *Servicing*: It is difficult to ship a debugger-only fix in DBI and DAC libraries without shipping a new runtime build. Instead, we create a new runtime build and debugger behavior only improves once the new runtime build is targeted.
+- *Acquisition*: Where to acquire the DBI and DAC libraries that match the exact .NET runtime version from.
+- *Cross-architecture*: The host/target of DBI and DAC libraries may not be available. https://github.com/dotnet/runtime/blob/main/docs/design/features/cross-dac.md has some additional context.
+
+Diagnostic data contract addressed these challenges by eliminating the need for exactly matching DAC and DBI libraries.
 Data contracts represent the manner in which a tool which is not the runtime can reliably understand and observe the behavior of the runtime. Contracts are defined by their documentation, and the runtime describes what contracts are applicable to understanding that runtime.
 
 ## Data Contract Descriptor
