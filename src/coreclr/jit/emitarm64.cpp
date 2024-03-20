@@ -6702,22 +6702,6 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     return canEncode;
 }
 
-/************************************************************************
- *
- *  Convert a double into its 'float 8-bit immediate' representation
- */
-
-/*static*/ emitter::floatImm8 emitter::emitEncodeFloatImm8(double immDbl)
-{
-    emitter::floatImm8 result;
-    result.immFPIVal = 0;
-
-    bool canEncode = canEncodeFloatImm8(immDbl, &result);
-    assert(canEncode);
-
-    return result;
-}
-
 /*****************************************************************************
  *
  *  For the given 'ins' returns the reverse instruction

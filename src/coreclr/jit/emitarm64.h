@@ -295,8 +295,6 @@ union floatImm8 {
 *  Convert between a double and its 'float 8-bit immediate' representation
 */
 
-static emitter::floatImm8 emitEncodeFloatImm8(double immDbl);
-
 static double emitDecodeFloatImm8(const emitter::floatImm8 fpImm);
 
 static ssize_t emitEncodeRotationImm90_or_270(ssize_t imm);
