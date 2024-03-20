@@ -645,6 +645,7 @@ namespace System.Runtime
         //
         // Interlocked helpers
         //
+#if TARGET_ARM
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg8")]
         internal static extern byte InterlockedCompareExchange(ref byte location1, byte value, byte comparand);
@@ -656,10 +657,13 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
         internal static extern int InterlockedCompareExchange(ref int location1, int value, int comparand);
+#endif
 
+#if TARGET_ARM || TARGET_X86
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg64")]
         internal static extern long InterlockedCompareExchange(ref long location1, long value, long comparand);
+#endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpCheckedLockCmpXchg")]
