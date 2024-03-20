@@ -5,8 +5,8 @@ pr:
     include:
     - "*"
 
-#variables:
-  # - template: ../variables.yml
+variables:
+   - template: ../variables.yml
   # - name: dockerfilesFolder
   #   value: $(Build.SourcesDirectory)/eng/docker
   # - name: httpStressProject
