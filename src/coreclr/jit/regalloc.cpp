@@ -120,7 +120,9 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
 #ifdef SWIFT_SUPPORT
         else if ((info.compCallConv == CorInfoCallConvExtension::Swift) && (inArgReg == REG_SWIFT_SELF))
         {
-            noway_assert((lvaSwiftSelfArg != BAD_VAR_NUM) && (argDsc == lvaGetDesc(lvaSwiftSelfArg)));
+            noway_assert((lvaSwiftSelfArg != BAD_VAR_NUM) &&
+                         ((argDsc == lvaGetDesc(lvaSwiftSelfArg)) ||
+                          (argDsc->lvIsStructField && argDsc->lvParentLcl == lvaSwiftSelfArg)));
         }
 #endif
         else // we have a regular arg
