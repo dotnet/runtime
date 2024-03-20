@@ -17,10 +17,31 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class NamedPipeClientStream : PipeStream
     {
-        // Waits for a pipe instance to become available. This method may return before WaitForConnection is called
-        // on the server end, but WaitForConnection will not return until we have returned.  Any data written to the
-        // pipe by us after we have connected but before the server has called WaitForConnection will be available
-        // to the server after it calls WaitForConnection.
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NamedPipeClientStream"/> class with the specified pipe and server names,
+        /// the desired <see cref="PipeAccessRights"/>, and the specified impersonation level and inheritability.
+        /// </summary>
+        /// <param name="serverName">The name of the remote computer to connect to, or "." to specify the local computer.</param>
+        /// <param name="pipeName">The name of the pipe.</param>
+        /// <param name="desiredAccessRights">One of the enumeration values that specifies the desired access rights of the pipe.</param>
+        /// <param name="options">One of the enumeration values that determines how to open or create the pipe.</param>
+        /// <param name="impersonationLevel">One of the enumeration values that determines the security impersonation level.</param>
+        /// <param name="inheritability">One of the enumeration values that determines whether the underlying handle will be inheritable by child processes.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="pipeName"/> or <paramref name="serverName"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="pipeName"/> or <paramref name="serverName"/> is a zero-length string.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="pipeName"/> is set to "anonymous".</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="desiredAccessRights"/> is not a valid <see cref="PipeAccessRights"/> value.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> is not a valid <see cref="PipeOptions"/> value.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="impersonationLevel"/> is not a valid <see cref="TokenImpersonationLevel"/> value.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="inheritability"/> is not a valid <see cref="HandleInheritability"/> value.</exception>
+        /// <remarks>
+        /// The pipe direction for this constructor is determined by the <paramref name="desiredAccessRights"/> parameter.
+        /// If the <paramref name="desiredAccessRights"/> parameter specifies <see cref="PipeAccessRights.ReadData"/>,
+        /// the pipe direction is <see cref="PipeDirection.In"/>. If the <paramref name="desiredAccessRights"/> parameter
+        /// specifies <see cref="PipeAccessRights.WriteData"/>, the pipe direction is <see cref="PipeDirection.Out"/>.
+        /// If the value of <paramref name="desiredAccessRights"/> specifies both <see cref="PipeAccessRights.ReadData"/>
+        /// and <see cref="PipeAccessRights.WriteData"/>, the pipe direction is <see cref="PipeDirection.InOut"/>.
+        /// </remarks>
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public NamedPipeClientStream(string serverName, string pipeName, PipeAccessRights desiredAccessRights,
             PipeOptions options, TokenImpersonationLevel impersonationLevel, HandleInheritability inheritability)
@@ -68,6 +89,10 @@ namespace System.IO.Pipes
             return access;
         }
 
+        // Waits for a pipe instance to become available. This method may return before WaitForConnection is called
+        // on the server end, but WaitForConnection will not return until we have returned.  Any data written to the
+        // pipe by us after we have connected but before the server has called WaitForConnection will be available
+        // to the server after it calls WaitForConnection.
         private bool TryConnect(int timeout)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(_inheritability);
