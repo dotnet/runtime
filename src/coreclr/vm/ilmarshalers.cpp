@@ -3477,9 +3477,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
 
         DWORD       dwNewValueTypeLocal;
         dwNewValueTypeLocal = pslIL->NewLocal(locDesc);
-        pslILDispatch->EmitLDARG(argidx);
-        pslILDispatch->EmitSTLOC(dwNewValueTypeLocal);
-        pslILDispatch->EmitLDLOCA(dwNewValueTypeLocal);
+        pslILDispatch->EmitLDARGA(argidx);
 #else
         LocalDesc   locDesc(pargs->mm.m_pMT);
         locDesc.MakePointer();
