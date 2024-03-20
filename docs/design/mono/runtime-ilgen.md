@@ -32,8 +32,8 @@ instance method -> generic method definition -> generic wrapper -> inflated wrap
 
 ## AOT support
 
-In full-aot mode, the AOT compiler will collect and emit the wrappers need by the
-application at runtime. This involves serializing/deserializing the WrapperInfo structure.
+In full-aot mode, the AOT compiler will collect and emit the wrappers needed by the
+application at runtime. This involves serializing/deserializing the `WrapperInfo` structure.
 
 ## Wrapper types
 
@@ -63,7 +63,7 @@ Used to implement `mono_runtime_invoke ()`.
 
 These are not really wrappers, but methods created by user code using the `DynamicMethod` class.
 
-Note that these have no associated WrapperInfo structure.
+Note that these have no associated `WrapperInfo` structure.
 
 ### Alloc
 
