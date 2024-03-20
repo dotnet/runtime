@@ -12148,83 +12148,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<5, 2>(imm)));
-    return insEncodeUimm<20, 16>(imm / 2);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 4 as 5-bits at bit locations '20-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<5, 4>(imm)));
-    return insEncodeUimm<20, 16>(imm / 4);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<5, 8>(imm)));
-    return insEncodeUimm<20, 16>(imm / 8);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<6, 2>(imm)));
-    return insEncodeUimm<21, 16>(imm / 2);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 4 as 6-bits at bit locations '21-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<6, 4>(imm)));
-    return insEncodeUimm<21, 16>(imm / 4);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<6, 8>(imm)));
-    return insEncodeUimm<21, 16>(imm / 8);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 1-bit at bit locations '23'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm1_23(ssize_t imm)
-{
-    assert(isValidUimm<1>(imm));
-    return (code_t)imm << 23;
-}
-
-/*****************************************************************************
- *
  *  Returns the encoding for the immediate value as 3-bits at bit locations '23-22' for high and '12' for low.
  */
 
@@ -12236,17 +12159,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
     code_t l = (code_t)(imm & 0x1) << 12; // encode low 1-bit at locations '12'
 
     return (h | l);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm4From1_19_to_16(ssize_t imm)
-{
-    assert(isValidUimmFrom1<4>(imm));
-    return (code_t)(imm - 1) << 16;
 }
 
 /*****************************************************************************

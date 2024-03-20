@@ -699,32 +699,8 @@ static code_t insEncodeSimm_MultipleOf(ssize_t imm)
 // Returns the encoding for the immediate value as 9-bits at bit locations '21-16' for high and '12-10' for low.
 static code_t insEncodeSimm9h9l_21_to_16_and_12_to_10(ssize_t imm);
 
-// Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
-static code_t insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 4 as 5-bits at bit locations '20-16'.
-static code_t insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
-static code_t insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
-static code_t insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 4 as 6-bits at bit locations '21-16'.
-static code_t insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
-static code_t insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value as 1-bit at bit locations '23'.
-static code_t insEncodeUimm1_23(ssize_t imm);
-
 // Returns the encoding for the immediate value as 3-bits at bit locations '23-22' for high and '12' for low.
 static code_t insEncodeUimm3h3l_23_to_22_and_12(ssize_t imm);
-
-// Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
-static code_t insEncodeUimm4From1_19_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
 static code_t insEncodeImm8_12_to_5(ssize_t imm);
