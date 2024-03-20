@@ -165,7 +165,7 @@ public class EntryPointMain
             new CoreFXTestLibrary.Internal.TestInfo("GenericVirtualMethods.TestCoAndContraVariantCalls", () => global::GenericVirtualMethods.TestCoAndContraVariantCalls(), null)
         };
 
-        string[] args = Environment.GetCommandLineArgs()[1..];
+        string[] args = System.Environment.GetCommandLineArgs()[1..];
 
         bool passed = CoreFXTestLibrary.Internal.Runner.RunTests(tests, args);
         CoreFXTestLibrary.Logger.LogInformation("Passed: {0}, Failed: {1}, Number of Tests Run: {2}",
