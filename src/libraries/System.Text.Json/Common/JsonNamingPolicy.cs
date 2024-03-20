@@ -44,6 +44,11 @@ namespace System.Text.Json
         public static JsonNamingPolicy KebabCaseUpper { get; } = new JsonKebabCaseUpperNamingPolicy();
 
         /// <summary>
+        /// Test
+        /// </summary>
+        public static JsonNamingPolicy PascalCase { get; } = new JsonPascalCaseNamingPolicy();
+
+        /// <summary>
         /// When overridden in a derived class, converts the specified name according to the policy.
         /// </summary>
         /// <param name="name">The name to convert.</param>
