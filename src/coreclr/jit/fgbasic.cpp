@@ -4828,13 +4828,17 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
         assert(newBlock->bbCodeOffs == BAD_IL_OFFSET);
         assert(newBlock->bbCodeOffsEnd == BAD_IL_OFFSET);
 
-        // curr->bbCodeOffs remains the same
-        newBlock->bbCodeOffsEnd = curr->bbCodeOffsEnd;
+        // Only update the IL offsets if the original block had a valid ending offset.
+        if (curr->bbCodeOffsEnd != BAD_IL_OFFSET)
+        {
+            // curr->bbCodeOffs remains the same
+            newBlock->bbCodeOffsEnd = curr->bbCodeOffsEnd;
 
-        IL_OFFSET splitPointILOffset = fgFindBlockILOffset(newBlock);
+            IL_OFFSET splitPointILOffset = fgFindBlockILOffset(newBlock);
 
-        curr->bbCodeOffsEnd  = max(curr->bbCodeOffs, splitPointILOffset);
-        newBlock->bbCodeOffs = min(splitPointILOffset, newBlock->bbCodeOffsEnd);
+            curr->bbCodeOffsEnd  = max(curr->bbCodeOffs, splitPointILOffset);
+            newBlock->bbCodeOffs = min(splitPointILOffset, newBlock->bbCodeOffsEnd);
+        }
     }
     else
     {
@@ -6124,10 +6128,10 @@ BasicBlock* Compiler::fgNewBBFromTreeAfter(
 {
     BasicBlock* newBlock = fgNewBBafter(jumpKind, block, true);
     newBlock->SetFlags(BBF_INTERNAL);
-    assert(newBlock->bbCodeOffs == BAD_IL_OFFSET);
-    assert(newBlock->bbCodeOffsEnd == BAD_IL_OFFSET);
     Statement* stmt = fgNewStmtFromTree(tree, debugInfo);
     fgInsertStmtAtEnd(newBlock, stmt);
+    newBlock->bbCodeOffs    = block->bbCodeOffsEnd;
+    newBlock->bbCodeOffsEnd = block->bbCodeOffsEnd;
     if (updateSideEffects)
     {
         gtUpdateStmtSideEffects(stmt);
