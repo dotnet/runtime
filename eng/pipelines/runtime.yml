@@ -1772,7 +1772,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: Mono_Interpreter_LibrariesTests
-            buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+            buildArgs: -s mono+libs+libs.tests -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
             timeoutInMinutes: 480
             # extra steps, run tests
             postBuildSteps:
@@ -1804,7 +1804,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: Mono_MiniJIT_LibrariesTests
-            buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+            buildArgs: -s mono+libs+libs.tests -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
             timeoutInMinutes: 480
             # extra steps, run tests
             postBuildSteps:
