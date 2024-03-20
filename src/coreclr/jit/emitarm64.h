@@ -1045,9 +1045,6 @@ static bool canEncodeWithShiftImmBy12(INT64 imm);
 // Normalize the 'imm' so that the upper bits, as defined by 'size' are zero
 static INT64 normalizeImm64(INT64 imm, emitAttr size);
 
-// Normalize the 'imm' so that the upper bits, as defined by 'size' are zero
-static INT32 normalizeImm32(INT32 imm, emitAttr size);
-
 // true if 'imm' can be encoded using a 'bitmask immediate', also returns the encoding if wbBMI is non-null
 static bool canEncodeBitMaskImm(INT64 imm, emitAttr size, emitter::bitMaskImm* wbBMI = nullptr);
 

@@ -6104,32 +6104,6 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     return result;
 }
 
-/*****************************************************************************
- *
- *  Normalize the 'imm' so that the upper bits, as defined by 'size' are zero
- */
-
-/*static*/ INT32 emitter::normalizeImm32(INT32 imm, emitAttr size)
-{
-    unsigned immWidth = getBitWidth(size);
-    INT32    result   = imm;
-
-    if (immWidth < 32)
-    {
-        // Check that 'imm' fits in 'immWidth' bits. Don't consider "sign" bits above width.
-        INT32 maxVal       = 1 << immWidth;
-        INT32 lowBitsMask  = maxVal - 1;
-        INT32 hiBitsMask   = ~lowBitsMask;
-        INT32 signBitsMask = hiBitsMask | (1 << (immWidth - 1)); // The high bits must be set, and the top bit
-                                                                 // (sign bit) must be set.
-        assert((imm < maxVal) || ((imm & signBitsMask) == signBitsMask));
-
-        // mask off the hiBits
-        result &= lowBitsMask;
-    }
-    return result;
-}
-
 /************************************************************************
  *
  *  returns true if 'imm' of 'size bits (8/16/32/64) can be encoded
