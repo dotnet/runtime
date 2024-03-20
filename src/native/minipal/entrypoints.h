@@ -14,7 +14,7 @@ typedef struct
     const void* method;
 } Entry;
 
-// expands to:      {"impl", (void*)impl},
+// expands to:      {"impl", (void*)&impl},
 #define DllImportEntry(impl) \
     {#impl, (void*)&impl},
 
