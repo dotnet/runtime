@@ -121,7 +121,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
             for (unsigned i = 0; i < regCount; ++i)
             {
-                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i), retTypeDesc.GetReturnRegType(i));
+                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
+                                       retTypeDesc.GetReturnRegType(i));
             }
         }
     }
@@ -1318,8 +1319,8 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
     // This is a case of operand is in a single reg and needs to be
     // returned in multiple ABI return registers.
     regNumber opReg = src->GetRegNum();
-    regNumber reg0  = retTypeDesc->GetABIReturnReg(0);
-    regNumber reg1  = retTypeDesc->GetABIReturnReg(1);
+    regNumber reg0  = retTypeDesc->GetABIReturnReg(0, compiler->info.compCallConv);
+    regNumber reg1  = retTypeDesc->GetABIReturnReg(1, compiler->info.compCallConv);
 
     assert((reg0 != REG_NA) && (reg1 != REG_NA) && (opReg != REG_NA));
 
@@ -2247,7 +2248,6 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     // This case is always a call (AsCall() will assert if it is not).
     GenTreeCall*          call        = actualOp1->AsCall();
     const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-    assert(retTypeDesc->GetReturnRegCount() == MAX_RET_REG_COUNT);
 
     assert(regCount == 2);
     regNumber targetReg = lclNode->GetRegNum();
@@ -6014,17 +6014,6 @@ void CodeGen::genCall(GenTreeCall* call)
         instGen(INS_vzeroupper);
     }
 
-#ifdef SWIFT_SUPPORT
-    // Clear the Swift error register before calling a Swift method,
-    // so we can check if it set the error register after returning.
-    // (Flag is only set if we know we need to check the error register)
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
-    {
-        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
-        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_SWIFT_ERROR);
-    }
-#endif // SWIFT_SUPPORT
-
     genCallInstruction(call X86_ARG(stackArgBytes));
 
     genDefinePendingCallLabel(call);
@@ -6074,7 +6063,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 for (unsigned i = 0; i < regCount; ++i)
                 {
                     var_types regType      = retTypeDesc->GetReturnRegType(i);
-                    returnReg              = retTypeDesc->GetABIReturnReg(i);
+                    returnReg              = retTypeDesc->GetABIReturnReg(i, call->GetUnmanagedCallConv());
                     regNumber allocatedReg = call->GetRegNumByIdx(i);
                     inst_Mov(regType, allocatedReg, returnReg, /* canSkip */ true);
                 }
@@ -6085,7 +6074,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 // the native compiler doesn't guarantee it.
                 if (call->IsUnmanaged() && (returnType == TYP_SIMD12))
                 {
-                    returnReg = retTypeDesc->GetABIReturnReg(1);
+                    returnReg = retTypeDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv());
                     genSimd12UpperClear(returnReg);
                 }
 #endif // FEATURE_SIMD

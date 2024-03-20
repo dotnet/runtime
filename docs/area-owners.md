@@ -135,7 +135,7 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 | area-System.Threading.Channels                 | @ericstj             | @dotnet/area-system-threading-channels              | Consultants: @stephentoub                                                                                                                                                                                                                                                                 |
 | area-System.Threading.RateLimiting             | @rafikiassumani-msft | @BrennanConroy @halter73                            |                                                                                                                                                                                                                                                                                           |
 | area-System.Threading.Tasks                    | @ericstj             | @dotnet/area-system-threading-tasks                 | Consultants: @stephentoub                                                                                                                                                                                                                                                                 |
-| area-System.Transactions                       | @sammonort          | @roji                                               |                                                                                                                                                                                                                                                                                           |
+| area-System.Transactions                       | @sammonort           | @roji                                               |                                                                                                                                                                                                                                                                                           |
 | area-System.Xml                                | @jeffhandley         | @dotnet/area-system-xml                             |                                                                                                                                                                                                                                                                                           |
 | area-TieredCompilation-coreclr                 | @mangod9             | @kouvel                                             |                                                                                                                                                                                                                                                                                           |
 | area-Tools-ILLink                              | @agocke              | @dotnet/illink                                      |                                                                                                                                                                                                                                                                                           |
@@ -162,16 +162,16 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 > dedicated OS lead/owner, rather ownership falls back to the `area-*` label. However,
 > Windows is a supported operating system of course.
 
-| Operating System | Lead          | Owners (area experts to tag in PRs and issues)                      | Description     |
-|------------------|---------------|---------------------------------------------------------------------|-----------------|
-| os-android       | @vitek-karas  | @akoeplinger                                                        |                 |
-| os-freebsd       |               | @wfurt @Thefrank @sec                                               |                 |
-| os-maccatalyst   | @vitek-karas  | @kotlarmilos                                                        |                 |
-| os-ios           | @vitek-karas  | @vargaz, @kotlarmilos                                               |                 |
-| os-tizen         | @gbalykov     | @hjleee, @wscho77, @clamp03, @JongHeonChoi, @t-mustafin, @viewizard |                 |
-| os-tvos          | @vitek-karas  | @vargaz, @kotlarmilos                                               |                 |
-| os-wasi          | @lewing       | @pavelsavara                                                        |                 |
-| os-browser       | @lewing       | @pavelsavara                                                        |                 |
+| Operating System | Lead          | Owners (area experts to tag in PRs and issues)     | Description     |
+|------------------|---------------|----------------------------------------------------|-----------------|
+| os-android       | @vitek-karas  | @akoeplinger                                       |                 |
+| os-freebsd       |               | @wfurt @Thefrank @sec                              |                 |
+| os-maccatalyst   | @vitek-karas  | @kotlarmilos                                       |                 |
+| os-ios           | @vitek-karas  | @vargaz, @kotlarmilos                              |                 |
+| os-tizen         | @gbalykov     | @dotnet/samsung                                    |                 |
+| os-tvos          | @vitek-karas  | @vargaz, @kotlarmilos                              |                 |
+| os-wasi          | @lewing       | @pavelsavara                                       |                 |
+| os-browser       | @lewing       | @pavelsavara                                       |                 |
 
 ## Architectures
 
@@ -180,12 +180,12 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 > [!NOTE]
 > Ownership isn't the same as supported. See [operating systems](#operating-systems) for details.
 
-| Architecture     | Lead          | Owners (area experts to tag in PRs and issues)                      | Description  |
-|------------------|---------------|---------------------------------------------------------------------|--------------|
-| arch-loongarch64 | @shushanhf    | @LuckyXu-HF                                                         |              |
-| arch-riscv       | @gbalykov     | @hjleee, @wscho77, @clamp03, @JongHeonChoi, @t-mustafin, @viewizard |              |
-| arch-s390x       | @uweigand     | @uweigand                                                           |              |
-| arch-wasm        | @lewing       | @lewing, @pavelsavara                                               |              |
+| Architecture     | Lead          | Owners (area experts to tag in PRs and issues)     | Description     |
+|------------------|---------------|----------------------------------------------------|-----------------|
+| arch-loongarch64 | @shushanhf    | @LuckyXu-HF                                        |                 |
+| arch-riscv       | @gbalykov     | @dotnet/samsung                                    |                 |
+| arch-s390x       | @uweigand     | @uweigand                                          |                 |
+| arch-wasm        | @lewing       | @lewing, @pavelsavara                              |                 |
 
 ## Community Triagers
 

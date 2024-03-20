@@ -14,7 +14,6 @@
 // * vet against some real data
 // * IR based heuristics (perhaps)
 // * During Cp, avoid repeatedly propagating through nested loops
-// * Fake BB0 or always force scratch BB
 // * Stop the upweight/downweight of loops in rest of jit
 // * Durable edge properties (exit, back)
 // * Tweak RunRarely to be at or near zero
@@ -31,8 +30,9 @@
 //
 void ProfileSynthesis::Run(ProfileSynthesisOption option)
 {
-    m_dfsTree = m_comp->fgComputeDfs();
-    m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+    m_dfsTree             = m_comp->fgComputeDfs();
+    m_loops               = FlowGraphNaturalLoops::Find(m_dfsTree);
+    m_improperLoopHeaders = m_loops->ImproperLoopHeaders();
 
     // Retain or compute edge likelihood information
     //
@@ -99,6 +99,8 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
 
     m_comp->fgPgoHaveWeights = true;
     m_comp->fgPgoSource      = newSource;
+    m_comp->fgPgoSynthesized = true;
+    m_comp->fgPgoConsistent  = (m_improperLoopHeaders == 0) && (m_cappedCyclicProbabilities == 0);
 
 #ifdef DEBUG
     if (JitConfig.JitCheckSynthesizedCounts() > 0)
@@ -106,11 +108,15 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         // Verify consistency, provided we didn't see any improper headers
         // or cap any Cp values.
         //
-        if ((m_improperLoopHeaders == 0) && (m_cappedCyclicProbabilities == 0))
+        // Unfortunately invalid IL may also cause inconsistencies,
+        // so if we are running before the importer, we can't reliably
+        // assert. So we check now, but defer asserting until the end of fgImport.
+        //
+        if (m_comp->fgPgoConsistent)
         {
             // verify likely weights, assert on failure, check all blocks
-            m_comp->fgDebugCheckProfileWeights(ProfileChecks::CHECK_LIKELY | ProfileChecks::RAISE_ASSERT |
-                                               ProfileChecks::CHECK_ALL_BLOCKS);
+            m_comp->fgPgoConsistentCheck =
+                m_comp->fgDebugCheckProfileWeights(ProfileChecks::CHECK_LIKELY | ProfileChecks::CHECK_ALL_BLOCKS);
         }
     }
 #endif
@@ -943,6 +949,15 @@ void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
     {
         for (EHblkDsc* const HBtab : EHClauses(m_comp))
         {
+            // Only set weights on the filter/hander entries
+            // if the associated try is reachable.
+            //
+            BasicBlock* const tryBlock = HBtab->ebdTryBeg;
+            if (!m_dfsTree->Contains(tryBlock))
+            {
+                continue;
+            }
+
             if (HBtab->HasFilter())
             {
                 HBtab->ebdFilter->setBBProfileWeight(ehWeight);

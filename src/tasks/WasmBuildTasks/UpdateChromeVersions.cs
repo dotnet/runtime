@@ -271,12 +271,12 @@ public partial class UpdateChromeVersions : MBU.Task
 
     private async Task<string?> FindSnapshotUrlFromBasePositionAsync(string osPrefix, ChromeVersionSpec version, bool throwIfNotFound = true)
     {
-        string baseUrl = $"{s_snapshotBaseUrl}/{osPrefix}";
+        string baseUrlForRevision = $"{s_snapshotBaseUrl}?prefix={osPrefix}";
 
         int branchPosition = int.Parse(version.branch_base_position);
         for (int i = 0; i < MaxBranchPositionsToCheck; i++)
         {
-            string branchUrl = $"{baseUrl}/{branchPosition}";
+            string branchUrl = $"{baseUrlForRevision}/{branchPosition}";
             string url = $"{branchUrl}/REVISIONS";
 
             Log.LogMessage(MessageImportance.Low, $"Checking if {url} exists ..");
@@ -285,14 +285,16 @@ public partial class UpdateChromeVersions : MBU.Task
                                                     .ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                Log.LogMessage(MessageImportance.Low, $"Found {url}");
-                return branchUrl;
+                string baseUrlForDownload = $"{s_snapshotBaseUrl}/{osPrefix}";
+                string snapshotUrl = $"{baseUrlForDownload}/{branchPosition}";
+                Log.LogMessage(MessageImportance.Low, $"Found {url}. Snapshots should be under ${snapshotUrl}");
+                return snapshotUrl;
             }
 
             branchPosition += 1;
         }
 
-        string message = $"Could not find a chrome snapshot folder under {baseUrl}, " +
+        string message = $"Could not find a chrome snapshot folder under {baseUrlForRevision}, " +
                             $"for branch positions {version.branch_base_position} to " +
                             $"{branchPosition}, for version {version.version}. " +
                             "A fixed version+url can be set in eng/testing/ProvisioningVersions.props .";

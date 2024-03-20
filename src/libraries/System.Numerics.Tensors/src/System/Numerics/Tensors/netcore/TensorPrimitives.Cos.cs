@@ -241,11 +241,14 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<CosOperatorDouble>(x);
                 }
 
+                // dn = int(x / pi + 1/2) - 1/2
                 Vector128<double> almHuge = Vector128.Create(AlmHuge);
-                Vector128<double> dn = (uxMasked * Vector128.Create(1 / double.Pi)) + Vector128.Create(double.Pi / 2) + almHuge;
+                Vector128<double> half = Vector128.Create(0.5);
+                Vector128<double> dn = (uxMasked * Vector128.Create(1 / double.Pi)) + half + almHuge;
                 Vector128<ulong> odd = dn.AsUInt64() << 63;
-                dn = dn - almHuge - Vector128.Create(0.5);
+                dn = dn - almHuge - half;
 
+                // f = x - (n*pi)
                 Vector128<double> f = uxMasked;
                 f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-double.Pi), f);
                 f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(Pi_Tail2), f);
@@ -276,11 +279,14 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<CosOperatorDouble>(x);
                 }
 
+                // dn = int(x / pi + 1/2) - 1/2
                 Vector256<double> almHuge = Vector256.Create(AlmHuge);
-                Vector256<double> dn = (uxMasked * Vector256.Create(1 / double.Pi)) + Vector256.Create(double.Pi / 2) + almHuge;
+                Vector256<double> half = Vector256.Create(0.5);
+                Vector256<double> dn = (uxMasked * Vector256.Create(1 / double.Pi)) + half + almHuge;
                 Vector256<ulong> odd = dn.AsUInt64() << 63;
-                dn = dn - almHuge - Vector256.Create(0.5);
+                dn = dn - almHuge - half;
 
+                // f = x - (n*pi)
                 Vector256<double> f = uxMasked;
                 f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-double.Pi), f);
                 f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(Pi_Tail2), f);
@@ -311,11 +317,14 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<CosOperatorDouble>(x);
                 }
 
+                // dn = int(x / pi + 1/2) - 1/2
                 Vector512<double> almHuge = Vector512.Create(AlmHuge);
-                Vector512<double> dn = (uxMasked * Vector512.Create(1 / double.Pi)) + Vector512.Create(double.Pi / 2) + almHuge;
+                Vector512<double> half = Vector512.Create(0.5);
+                Vector512<double> dn = (uxMasked * Vector512.Create(1 / double.Pi)) + half + almHuge;
                 Vector512<ulong> odd = dn.AsUInt64() << 63;
-                dn = dn - almHuge - Vector512.Create(0.5);
+                dn = dn - almHuge - half;
 
+                // f = x - (n*pi)
                 Vector512<double> f = uxMasked;
                 f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-double.Pi), f);
                 f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(Pi_Tail2), f);

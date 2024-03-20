@@ -80,7 +80,6 @@ export type MonoConfigInternal = MonoConfig & {
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
-    assertAfterExit?: boolean // default true for shell/nodeJS
     interopCleanupOnExit?: boolean
     dumpThreadsOnNonZeroExit?: boolean
     logExitCode?: boolean
@@ -123,7 +122,6 @@ export type LoaderHelpers = {
 
     maxParallelDownloads: number;
     enableDownloadRetry: boolean;
-    assertAfterExit: boolean;
 
     exitCode: number | undefined;
     exitReason: any;
@@ -211,6 +209,7 @@ export type RuntimeHelpers = {
     monoThreadInfo: PThreadInfo,
     proxyGCHandle: GCHandle | undefined,
     managedThreadTID: PThreadPtr,
+    ioThreadTID: PThreadPtr,
     currentThreadTID: PThreadPtr,
     isManagedRunningOnCurrentThread: boolean,
     isPendingSynchronousCall: boolean, // true when we are in the middle of a synchronous call from managed code from same thread
@@ -224,6 +223,7 @@ export type RuntimeHelpers = {
     afterPreRun: PromiseAndController<void>,
     beforeOnRuntimeInitialized: PromiseAndController<void>,
     afterMonoStarted: PromiseAndController<GCHandle | undefined>,
+    afterIOStarted: PromiseAndController<void>,
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
 
@@ -497,6 +497,7 @@ export const enum WorkerToMainMessageType {
     deputyCreated = "createdDeputy",
     deputyFailed = "deputyFailed",
     deputyStarted = "monoStarted",
+    ioStarted = "ioStarted",
     preload = "preload",
 }
 
@@ -527,6 +528,7 @@ export interface PThreadInfo {
     isRunning?: boolean,
     isAttached?: boolean,
     isDeputy?: boolean,
+    isIo?: boolean,
     isExternalEventLoop?: boolean,
     isUI?: boolean;
     isBackground?: boolean,
@@ -575,6 +577,8 @@ export const enum MainThreadingMode {
     UIThread = 0,
     // Running the managed main thread on dedicated WebWorker. Marshaling all JavaScript calls to and from the main thread.
     DeputyThread = 1,
+    // TODO comment
+    DeputyAndIOThreads = 2,
 }
 
 // keep in sync with JSHostImplementation.Types.cs
@@ -582,6 +586,8 @@ export const enum JSThreadBlockingMode {
     // throw PlatformNotSupportedException if blocking .Wait is called on threads with JS interop, like JSWebWorker and Main thread.
     // Avoids deadlocks (typically with pending JS promises on the same thread) by throwing exceptions.
     NoBlockingWait = 0,
+    // TODO comment
+    AllowBlockingWaitInAsyncCode = 1,
     // allow .Wait on all threads. 
     // Could cause deadlocks with blocking .Wait on a pending JS Task/Promise on the same thread or similar Task/Promise chain.
     AllowBlockingWait = 100,
