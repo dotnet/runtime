@@ -11198,45 +11198,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Return an encoding for the specified 'V' register used in '4' thru '0' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_V_4_to_0(regNumber reg)
-{
-    assert(isVectorRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 31));
-    return ureg << 0;
-}
-
-/*****************************************************************************
- *
- *  Return an encoding for the specified 'V' register used in '9' thru '5' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_V_9_to_5(regNumber reg)
-{
-    assert(isVectorRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 31));
-    return ureg << 5;
-}
-
-/*****************************************************************************
- *
- *  Return an encoding for the specified 'V' register used in '20' thru '16' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_V_20_to_16(regNumber reg)
-{
-    assert(isVectorRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 31));
-    return ureg << 16;
-}
-
-/*****************************************************************************
- *
  *  Return an encoding for the specified 'R' register used in '20' thru '16' position.
  */
 
@@ -11285,45 +11246,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
     emitter::code_t ureg = (emitter::code_t)reg;
     assert((ureg >= 12) && (ureg <= 15));
     return ureg << 16;
-}
-
-/*****************************************************************************
- *
- *  Return an encoding for the specified 'V' register used in '18' thru '16' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_V_18_to_16(regNumber reg)
-{
-    assert(isVectorRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 7));
-    return ureg << 16;
-}
-
-/*****************************************************************************
- *
- *  Return an encoding for the specified 'V' register used in '19' thru '16' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_V_19_to_16(regNumber reg)
-{
-    assert(isVectorRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 15));
-    return ureg << 16;
-}
-
-/*****************************************************************************
- *
- *  Return an encoding for the specified 'V' register used in '9' thru '6' position.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_V_9_to_6(regNumber reg)
-{
-    assert(isVectorRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 15));
-    return ureg << 6;
 }
 
 /*****************************************************************************

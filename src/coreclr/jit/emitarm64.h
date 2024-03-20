@@ -355,17 +355,23 @@ static code_t insEncodeReg_Vm(regNumber reg);
 // Returns an encoding for the specified register used in the 'Va' position
 static code_t insEncodeReg_Va(regNumber reg);
 
-// Return an encoding for the specified 'V' register used in '4' thru '0' position.
-static code_t insEncodeReg_V_4_to_0(regNumber reg);
-
-// Return an encoding for the specified 'V' register used in '9' thru '5' position.
-static code_t insEncodeReg_V_9_to_5(regNumber reg);
+// Returns an encoding for the specified 'V' register used in 'hi' thru 'lo' position.
+template <const size_t hi, const size_t lo>
+static code_t insEncodeReg_V(regNumber reg)
+{
+    // lo <= hi < 32
+    static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
+    assert(isVectorRegister(reg));
+    code_t ureg = (code_t)reg - (code_t)REG_V0;
+    
+    constexpr size_t bits = hi - lo + 1;
+    static_assert(bits <= 5);
+    assert((ureg >= 0) && (ureg < (1 << bits)));
+    return ureg << lo;
+}
 
 // Return an encoding for the specified 'P' register used in '12' thru '10' position.
 static code_t insEncodeReg_P_12_to_10(regNumber reg);
-
-// Return an encoding for the specified 'V' register used in '20' thru '16' position.
-static code_t insEncodeReg_V_20_to_16(regNumber reg);
 
 // Return an encoding for the specified 'R' register used in '20' thru '16' position.
 static code_t insEncodeReg_R_20_to_16(regNumber reg);
@@ -405,15 +411,6 @@ static code_t insEncodePredQualifier_16(bool merge);
 
 // Return an encoding for the specified predicate type used in '4' position.
 static code_t insEncodePredQualifier_4(bool merge);
-
-// Return an encoding for the specified 'V' register used in '18' thru '16' position.
-static code_t insEncodeReg_V_18_to_16(regNumber reg);
-
-// Return an encoding for the specified 'V' register used in '19' thru '16' position.
-static code_t insEncodeReg_V_19_to_16(regNumber reg);
-
-// Return an encoding for the specified 'V' register used in '9' thru '6' position.
-static code_t insEncodeReg_V_9_to_6(regNumber reg);
 
 // Return an encoding for the specified 'V' register used in '9' thru '6' position with the times two encoding.
 // This encoding requires that the register number be divisible by two.
