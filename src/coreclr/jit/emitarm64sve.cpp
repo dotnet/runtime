@@ -11678,9 +11678,9 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_JL_3A: // ...........iiiii ...gggnnnnnttttt -- SVE 64-bit scatter store (vector plus immediate)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());     // ttttt
-            code |= insEncodeReg_P_12_to_10(id->idReg2());   // ggg
-            code |= insEncodeReg_V_9_to_5(id->idReg3());     // nnnnn
+            code |= insEncodeReg_V_4_to_0(id->idReg1());      // ttttt
+            code |= insEncodeReg_P_12_to_10(id->idReg2());    // ggg
+            code |= insEncodeReg_V_9_to_5(id->idReg3());      // nnnnn
             code |= insEncodeUimm_MultipleOf<20, 16, 8>(imm); // iiiii
             dst += emitOutput_Instr(dst, code);
             break;
