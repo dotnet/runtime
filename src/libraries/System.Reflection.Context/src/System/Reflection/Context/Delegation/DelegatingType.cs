@@ -325,13 +325,17 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.GetEvents(bindingAttr);
         }
 
+#if NET8_0_OR_GREATER
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+#endif
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             return _typeInfo.GetField(name, bindingAttr);
         }
 
+#if NET8_0_OR_GREATER
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+#endif
         public override FieldInfo[] GetFields(BindingFlags bindingAttr)
         {
             return _typeInfo.GetFields(bindingAttr);
@@ -347,12 +351,14 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.GetInterfaces();
         }
 
+#if NET8_0_OR_GREATER
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
             DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
             DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents |
             DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
             DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
             DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
+#endif
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             return _typeInfo.GetMembers(bindingAttr);
@@ -366,7 +372,9 @@ namespace System.Reflection.Context.Delegation
                 _typeInfo.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
+#if NET8_0_OR_GREATER
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+#endif
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
             return _typeInfo.GetMethods(bindingAttr);
@@ -382,7 +390,9 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.GetNestedTypes(bindingAttr);
         }
 
+#if NET8_0_OR_GREATER
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+#endif
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
         {
             return _typeInfo.GetProperties(bindingAttr);
