@@ -583,7 +583,7 @@ LEAF_ENTRY CopyConstructorCallStub, _TEXT
     // restore ecx and tail call to the target
     pop     ecx
     jmp     eax
-LEAF_END
+LEAF_END CopyConstructorCallStub, _TEXT
 
 #ifdef FEATURE_READYTORUN
 NESTED_ENTRY DynamicHelperArgsStub, _TEXT, NoHandler
