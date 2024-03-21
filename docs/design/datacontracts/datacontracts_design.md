@@ -131,6 +131,9 @@ Insert description of type, and what its for here.
 
 Insert description (if possible) about what is interesting about this particular version of the contract
 
+### Structure Size
+8 bytes
+
 ### Fields
 | Field Name | Type | Offset |
 | --- | --- | --- |
@@ -140,6 +143,9 @@ Insert description (if possible) about what is interesting about this particular
 ## Version <other_version_number>
 
 Insert description (if possible) about what is interesting about this particular version of the contract
+
+### Structure Size
+16 bytes
 
 ### Fields
 | Field Name | Type | Offset |
@@ -157,6 +163,9 @@ Insert description of type, and what its for here.
 
 Insert description (if possible) about what is interesting about this particular version of the contract
 
+### Structure Size
+8 bytes
+
 ### Fields
 | Field Name | Type | Offset |
 | --- | --- | --- |
@@ -166,6 +175,9 @@ Insert description (if possible) about what is interesting about this particular
 ## Version <other_version_number>
 
 Insert description (if possible) about what is interesting about this particular version of the contract
+
+### Structure Size
+16 bytes
 
 ### Fields
 | Field Name | Type | Offset |
