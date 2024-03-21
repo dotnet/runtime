@@ -46,8 +46,12 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 // Use this format for loop indices
 #define FMT_LP "L%02u"
 
-// And this format for profile weights
+// Use this format for profile weights
 #define FMT_WT "%.7g"
+
+// Use this format for profile weights where we want to conserve horizontal space, at the expense of displaying
+// less precision.
+#define FMT_WT_NARROW "%.3g"
 
 /*****************************************************************************
  *
@@ -452,11 +456,7 @@ enum BasicBlockFlags : unsigned __int64
     BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(37), // Block has recursive tailcall that may turn into a loop
     BBF_NO_CSE_IN                      = MAKE_BBFLAG(38), // Block should kill off any incoming CSE
     BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(39), // Ok to add pred edge to this block, even when "safe" edge creation disabled
-    BBF_NONE_QUIRK                     = MAKE_BBFLAG(40), // Block was created as a BBJ_ALWAYS to the next block,
-                                                          // and should be treated as if it falls through.
-                                                          // This is just to reduce diffs from removing BBJ_NONE.
-                                                          // (TODO: Remove this quirk after refactoring Compiler::fgFindInsertPoint)
-    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(41), // Block has a node that needs a value probing
+    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(40), // Block has a node that needs a value probing
 
     // The following are sets of flags.
 
@@ -482,7 +482,7 @@ enum BasicBlockFlags : unsigned __int64
     // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
     BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | \
-                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_NONE_QUIRK,
+                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL,
 
     // Flags that must be propagated to a new block if code is copied from a block to a new block. These are flags that
     // limit processing of a block if the code in question doesn't exist. This is conservative; we might not
@@ -594,7 +594,7 @@ private:
     unsigned m_dupCount;
 
     // True if likelihood has been set
-    bool m_likelihoodSet;
+    INDEBUG(bool m_likelihoodSet);
 
 public:
     FlowEdge(BasicBlock* sourceBlock, BasicBlock* destBlock, FlowEdge* rest)
@@ -605,7 +605,9 @@ public:
         , m_edgeWeightMax(0)
         , m_likelihood(0)
         , m_dupCount(0)
+#ifdef DEBUG
         , m_likelihoodSet(false)
+#endif // DEBUG
     {
     }
 
@@ -668,6 +670,7 @@ public:
 
     weight_t getLikelihood() const
     {
+        assert(m_likelihoodSet);
         return m_likelihood;
     }
 
@@ -676,14 +679,16 @@ public:
 
     void clearLikelihood()
     {
-        m_likelihood    = 0.0;
-        m_likelihoodSet = false;
+        m_likelihood = 0.0;
+        INDEBUG(m_likelihoodSet = false);
     }
 
+#ifdef DEBUG
     bool hasLikelihood() const
     {
         return m_likelihoodSet;
     }
+#endif // DEBUG
 
     weight_t getLikelyWeight() const;
 
@@ -1035,6 +1040,27 @@ public:
     {
         assert(KindIs(BBJ_COND));
         return (bbFalseEdge == nullptr) ? nullptr : bbFalseEdge->getDestinationBlock();
+    }
+
+    // Return the target edge; it might be null. Only used during dumping.
+    FlowEdge* GetTargetEdgeRaw() const
+    {
+        assert(HasTarget());
+        return bbTargetEdge;
+    }
+
+    // Return the BBJ_COND true target edge; it might be null. Only used during dumping.
+    FlowEdge* GetTrueEdgeRaw() const
+    {
+        assert(KindIs(BBJ_COND));
+        return bbTrueEdge;
+    }
+
+    // Return the BBJ_COND false target edge; it might be null. Only used during dumping.
+    FlowEdge* GetFalseEdgeRaw() const
+    {
+        assert(KindIs(BBJ_COND));
+        return bbFalseEdge;
     }
 
 #endif // DEBUG
@@ -1537,7 +1563,7 @@ public:
     }
 
     // PredBlocksEditing: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
-    //    for (BasicBlock* const predBlock : block->PredBlocksList()) ...
+    //    for (BasicBlock* const predBlock : block->PredBlocksEditing()) ...
     // This iterator tolerates modifications to bbPreds.
     //
     PredBlockList<true> PredBlocksEditing() const

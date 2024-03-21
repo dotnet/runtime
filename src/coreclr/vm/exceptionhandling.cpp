@@ -8254,6 +8254,22 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
                 }
             }
         }
+        else // pass number 2
+        {
+            if (pThis->GetFrameState() == StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION)
+            {
+                // Update context pointers using the skipped frame. This is needed when exception handling continues
+                // from ProcessCLRExceptionNew, since the RtlUnwind doesn't maintain context pointers.
+                // We explicitly don't do that for inlined frames as it would modify the PC/SP to point to
+                // a slightly different location in the managed code calling the pinvoke and the inlined
+                // call frame doesn't update the context pointers anyways.
+                Frame *pSkippedFrame = pThis->m_crawl.GetFrame();
+                if (pSkippedFrame->NeedsUpdateRegDisplay() && (pSkippedFrame->GetVTablePtr() != InlinedCallFrame::GetMethodFrameVPtr()))
+                {
+                    pSkippedFrame->UpdateRegDisplay(pThis->m_crawl.GetRegisterSet());
+                }
+            }
+        }
         StackWalkAction retVal = pThis->Next();
         result = (retVal != SWA_FAILED);
     }

@@ -11,7 +11,7 @@ function wasm_common() {
         # Put your common commands for wasm here
         ./build.sh mono+libs -os browser -c Release
         ;;
-    wasm-multithread)
+    wasm-multithreaded)
         # Put your common commands for wasm-multithread here
         ./build.sh mono+libs -os browser -c Release /p:WasmEnableThreads=true
         ;;
@@ -43,7 +43,7 @@ case "$opt" in
         wasm_common $opt
     ;;
 
-    wasm-multithread)
+    wasm-multithreaded)
         wasm_common $opt
     ;;
 esac

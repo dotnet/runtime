@@ -80,8 +80,6 @@ namespace ILCompiler
             }
             else if (architecture == TargetArchitecture.X86)
             {
-                if (potentialType.Name == "X64")
-                    potentialType = (MetadataType)potentialType.ContainingType;
                 if (potentialType.Name == "VL")
                     potentialType = (MetadataType)potentialType.ContainingType;
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")

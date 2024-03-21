@@ -353,6 +353,8 @@ typedef struct
 	guint need_optimization_retry : 1;
 	guint disable_ssa : 1;
 	guint eh_vars_computed : 1;
+	guint retry_compilation : 1;
+	guint retry_with_inlining : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0

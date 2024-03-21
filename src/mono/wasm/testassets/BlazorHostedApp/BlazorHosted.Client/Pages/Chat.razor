@@ -27,9 +27,11 @@
     private List<string> chatMessages = new List<string>();
     private string wrongQueryError = "Query string with parameters 'message' and 'transport' are required";
 
-    protected override void OnInitialized()
+    protected override void OnAfterRender(bool firstRender)
     {
-        Helper.TestOutputWriteLine($"OnInitialized on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+        base.OnAfterRender(firstRender);
+
+        Helper.TestOutputWriteLine($"OnAfterRender on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
         GetQueryParameters();
     }
 
