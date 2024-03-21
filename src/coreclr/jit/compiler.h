@@ -456,13 +456,14 @@ enum class DoNotEnregisterReason
 #endif
     LclAddrNode, // the local is accessed with LCL_ADDR_VAR/FLD.
     CastTakesAddr,
-    StoreBlkSrc,          // the local is used as STORE_BLK source.
-    SwizzleArg,           // the local is passed using LCL_FLD as another type.
-    BlockOpRet,           // the struct is returned and it promoted or there is a cast.
-    ReturnSpCheck,        // the local is used to do SP check on return from function
-    CallSpCheck,          // the local is used to do SP check on every call
-    SimdUserForcesDep,    // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
-    HiddenBufferStructArg // the argument is a hidden return buffer passed to a method.
+    StoreBlkSrc,           // the local is used as STORE_BLK source.
+    SwizzleArg,            // the local is passed using LCL_FLD as another type.
+    BlockOpRet,            // the struct is returned and it promoted or there is a cast.
+    ReturnSpCheck,         // the local is used to do SP check on return from function
+    CallSpCheck,           // the local is used to do SP check on every call
+    SimdUserForcesDep,     // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
+    HiddenBufferStructArg, // the argument is a hidden return buffer passed to a method.
+    NonStandardParameter,  // local is a parameter that is passed in a register unhandled by genFnPrologCalleeRegArgs
 };
 
 enum class AddressExposedReason
@@ -489,7 +490,6 @@ public:
     // The constructor. Most things can just be zero'ed.
     //
     // Initialize the ArgRegs to REG_STK.
-    // Morph will update if this local is passed in a register.
     LclVarDsc()
         : _lvArgReg(REG_STK)
 #if FEATURE_MULTIREG_ARGS
@@ -3865,6 +3865,10 @@ public:
     // where it is used to detect tail-call chains.
     unsigned lvaRetAddrVar;
 
+#ifdef SWIFT_SUPPORT
+    unsigned lvaSwiftSelfArg;
+#endif
+
 #if defined(DEBUG) && defined(TARGET_XARCH)
 
     unsigned lvaReturnSpCheck; // Stores SP to confirm it is not corrupted on return.
@@ -3986,6 +3990,8 @@ public:
                        CORINFO_CLASS_HANDLE    typeHnd,
                        CORINFO_ARG_LIST_HANDLE varList,
                        CORINFO_SIG_INFO*       varSig);
+
+    bool lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd);
 
     var_types lvaGetActualType(unsigned lclNum);
     var_types lvaGetRealType(unsigned lclNum);
@@ -7984,6 +7990,7 @@ protected:
 
 public:
     regNumber raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc);
+    void raCheckValidIntParamReg(LclVarDsc* dsc, regNumber inArgReg);
 
     void raMarkStkVars();
 
@@ -10636,6 +10643,7 @@ public:
         unsigned m_returnSpCheck;
         unsigned m_callSpCheck;
         unsigned m_simdUserForcesDep;
+        unsigned m_nonStandardParameter;
         unsigned m_liveInOutHndlr;
         unsigned m_depField;
         unsigned m_noRegVars;
