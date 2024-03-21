@@ -3438,6 +3438,68 @@ _End_arg:
 #endif
 
 #if defined(TARGET_RISCV64)
+
+//TODO: need to do the same for NativeLayoutInfo
+static bool GetFlattenedFieldTypes(MethodTable* pMT, CorElementType types[2], int* typeIndex)
+{
+    int nFields = pMT->GetNumIntroducedInstanceFields();
+    if (*typeIndex + nFields > 2)
+        return false;
+
+    assert(nFields == 1 || nFields == 2);
+
+    FieldDesc* fields = pMT->GetApproxFieldDescListRaw();
+    if (nFields == 2 && fields[0].GetSize() > fields[1].GetOffset()) // overlapping fields
+        return false;
+
+    int elementTypeIndex = *typeIndex;
+
+    for (int i = 0; i < nFields; ++i)
+    {
+        if (fields[i].GetSize() > TARGET_POINTER_SIZE)
+            return false;
+
+        CorElementType type = fields[i].GetFieldType();
+        if (CorTypeInfo::IsPrimitiveType_NoThrow(type))
+        {
+            assert(*typeIndex < 2);
+            types[(*typeIndex)++] = type;
+        }
+        else if (type == ELEMENT_TYPE_VALUETYPE)
+        {
+            if (!GetFlattenedFieldTypes(fields[i].GetApproxFieldTypeHandleThrowing().GetMethodTable(), types, typeIndex))
+                return false;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    if (HasImpliedRepeatedFields(pMT)) // inline array or fixed buffer
+    {
+        assert(nFields == 1);
+
+        int nFieldsPerElement = *typeIndex - elementTypeIndex;
+        assert(nFieldsPerElement == 1 || nFieldsPerElement == 2);
+
+        int nElements = pMT->GetNumInstanceFieldBytes() / fields[0].GetSize();
+        if (nElements > 2)
+            return false;
+
+        if (nElements == 2 && nFieldsPerElement == 1)
+        {
+            if (*typeIndex + 1 > 2)
+                return false;
+
+            assert(elementTypeIndex == 0);
+            assert(*typeIndex == 1);
+            types[(*typeIndex)++] = types[elementTypeIndex]; // duplicate the array element type
+        }
+    }
+    return true;
+}
+
 int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 {
     TypeHandle th(cls);
@@ -3449,211 +3511,33 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
     if (!th.IsTypeDesc())
     {
-        MethodTable* pMethodTable = th.AsMethodTable();
+        CorElementType types[2] = {ELEMENT_TYPE_END, ELEMENT_TYPE_END};
+        int nFields = 0;
+        if (!GetFlattenedFieldTypes(th.AsMethodTable(), types, &nFields) || nFields == 0)
+            goto _End_arg;
 
-        DWORD numIntroducedFields = pMethodTable->GetNumIntroducedInstanceFields();
-        if (numIntroducedFields == 1)
+        assert(nFields == 1 || nFields == 2);
+    #ifdef DEBUG
+        assert(CorTypeInfo::IsPrimitiveType_NoThrow(types[0]));
+        assert(CorTypeInfo::IsPrimitiveType_NoThrow(types[1]));
+    #endif
+
+        size =
+            (CorTypeInfo::IsFloat_NoThrow(types[0]) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
+            (CorTypeInfo::IsFloat_NoThrow(types[1]) ? STRUCT_FLOAT_FIELD_SECOND : 0) |
+            (CorTypeInfo::Size_NoThrow(types[0]) == 8 ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
+            (CorTypeInfo::Size_NoThrow(types[1]) == 8 ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
+
+        int firstOrSecond = size & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND);
+        if (firstOrSecond == (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND))
         {
-            FieldDesc *pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
-
-            CorElementType fieldType = pFieldStart[0].GetFieldType();
-
-            // InlineArray types and fixed buffer types have implied repeated fields.
-            // Checking if a type is an InlineArray type is cheap, so we'll do that first.
-            bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(pMethodTable);
-
-            if (hasImpliedRepeatedFields)
-            {
-                numIntroducedFields = pMethodTable->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
-                if (numIntroducedFields > 2)
-                {
-                    goto _End_arg;
-                }
-
-                if (fieldType == ELEMENT_TYPE_R4)
-                {
-                    if (numIntroducedFields == 1)
-                    {
-                        size = STRUCT_FLOAT_FIELD_ONLY_ONE;
-                    }
-                    else if (numIntroducedFields == 2)
-                    {
-                        size = STRUCT_FLOAT_FIELD_ONLY_TWO;
-                    }
-                    goto _End_arg;
-                }
-                else if (fieldType == ELEMENT_TYPE_R8)
-                {
-                    if (numIntroducedFields == 1)
-                    {
-                        size = STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8;
-                    }
-                    else if (numIntroducedFields == 2)
-                    {
-                        size = STRUCT_FIELD_TWO_DOUBLES;
-                    }
-                    goto _End_arg;
-                }
-            }
-
-            if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
-            {
-                if (fieldType == ELEMENT_TYPE_R4)
-                {
-                    size = STRUCT_FLOAT_FIELD_ONLY_ONE;
-                }
-                else if (fieldType == ELEMENT_TYPE_R8)
-                {
-                    size = STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8;
-                }
-            }
-            else if (fieldType == ELEMENT_TYPE_VALUETYPE)
-            {
-                pMethodTable  = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
-            }
+            size |= STRUCT_FLOAT_FIELD_ONLY_TWO;
+            size &= ~(STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND);
         }
-        else if (numIntroducedFields == 2)
+        else if (firstOrSecond != 0 && nFields == 1)
         {
-            FieldDesc *pFieldSecond;
-            FieldDesc *pFieldFirst = pMethodTable->GetApproxFieldDescListRaw();
-            if (pFieldFirst->GetOffset() == 0)
-            {
-                pFieldSecond = pFieldFirst + 1;
-            }
-            else
-            {
-                pFieldSecond = pFieldFirst;
-                pFieldFirst  = pFieldFirst + 1;
-            }
-            assert(pFieldFirst->GetOffset() == 0);
-
-            if (pFieldFirst->GetSize() > 8)
-            {
-                goto _End_arg;
-            }
-
-            if (pFieldFirst->GetSize() > pFieldSecond->GetOffset())
-            {
-                goto _End_arg;
-            }
-
-            CorElementType fieldType = pFieldFirst[0].GetFieldType();
-            if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
-            {
-                if (fieldType == ELEMENT_TYPE_R4)
-                {
-                    size = STRUCT_FLOAT_FIELD_FIRST;
-                }
-                else if (fieldType == ELEMENT_TYPE_R8)
-                {
-                    size = STRUCT_FIRST_FIELD_DOUBLE;
-                }
-                else if (pFieldFirst[0].GetSize() == 8)
-                {
-                    size = STRUCT_FIRST_FIELD_SIZE_IS8;
-                }
-
-            }
-            else if (fieldType == ELEMENT_TYPE_VALUETYPE)
-            {
-                pMethodTable  = pFieldFirst->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                if (IsOnlyOneField(pMethodTable))
-                {
-                    size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
-                    if ((size & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
-                    {
-                        size = pFieldFirst[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_DOUBLE : STRUCT_FLOAT_FIELD_FIRST;
-                    }
-                    else if (size == STRUCT_NO_FLOAT_FIELD)
-                    {
-                        size = pFieldFirst[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_SIZE_IS8: 0;
-                    }
-                    else
-                    {
-                        size = STRUCT_NO_FLOAT_FIELD;
-                        goto _End_arg;
-                    }
-                }
-                else
-                {
-                    size = STRUCT_NO_FLOAT_FIELD;
-                    goto _End_arg;
-                }
-            }
-            else if (pFieldFirst[0].GetSize() == 8)
-            {
-                size = STRUCT_FIRST_FIELD_SIZE_IS8;
-            }
-
-            fieldType = pFieldSecond[0].GetFieldType();
-            if (pFieldSecond[0].GetSize() > 8)
-            {
-                size = STRUCT_NO_FLOAT_FIELD;
-                goto _End_arg;
-            }
-            else if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
-            {
-                if (fieldType == ELEMENT_TYPE_R4)
-                {
-                    size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
-                }
-                else if (fieldType == ELEMENT_TYPE_R8)
-                {
-                    size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
-                }
-                else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
-                {
-                    size = STRUCT_NO_FLOAT_FIELD;
-                }
-                else if (pFieldSecond[0].GetSize() == 8)
-                {
-                    size |= STRUCT_SECOND_FIELD_SIZE_IS8;
-                }
-            }
-            else if (fieldType == ELEMENT_TYPE_VALUETYPE)
-            {
-                pMethodTable  = pFieldSecond[0].GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                if (IsOnlyOneField(pMethodTable))
-                {
-                    int size2 = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
-                    if ((size2 & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
-                    {
-                        if (pFieldSecond[0].GetSize() == 8)
-                        {
-                            size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
-                        }
-                        else
-                        {
-                            size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
-                        }
-                    }
-                    else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
-                    {
-                        size = STRUCT_NO_FLOAT_FIELD;
-                    }
-                    else if (size2 == STRUCT_NO_FLOAT_FIELD)
-                    {
-                        size |= pFieldSecond[0].GetSize() == 8 ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0;
-                    }
-                    else
-                    {
-                        size = STRUCT_NO_FLOAT_FIELD;
-                    }
-                }
-                else
-                {
-                    size = STRUCT_NO_FLOAT_FIELD;
-                }
-            }
-            else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
-            {
-                size = STRUCT_NO_FLOAT_FIELD;
-            }
-            else if (pFieldSecond[0].GetSize() == 8)
-            {
-                size |= STRUCT_SECOND_FIELD_SIZE_IS8;
-            }
+            size |= STRUCT_FLOAT_FIELD_ONLY_ONE;
+            size &= ~(STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND);
         }
     }
     else
