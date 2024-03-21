@@ -11,6 +11,7 @@ import { compareExchangeI32, forceThreadMemoryViewRefresh } from "./memory";
 import { mono_log_debug } from "./logging";
 import { complete_task } from "./managed-exports";
 import { marshal_cs_object_to_cs } from "./marshal-to-cs";
+import { invoke_later_when_on_ui_thread_async } from "./invoke-js";
 
 export const _are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 
@@ -35,6 +36,11 @@ export function wrap_as_cancelable<T>(inner: Promise<T>): ControllablePromise<T>
 }
 
 export function mono_wasm_cancel_promise(task_holder_gc_handle: GCHandle): void {
+    // cancelation should not arrive earlier than the promise created by marshaling in mono_wasm_invoke_jsimport_MT 
+    invoke_later_when_on_ui_thread_async(() => mono_wasm_cancel_promise_impl(task_holder_gc_handle));
+}
+
+export function mono_wasm_cancel_promise_impl(task_holder_gc_handle: GCHandle): void {
     if (!loaderHelpers.is_runtime_running()) {
         mono_log_debug("This promise can't be canceled, mono runtime already exited.");
         return;
