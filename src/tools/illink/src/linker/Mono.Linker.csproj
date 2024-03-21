@@ -74,6 +74,7 @@
     <Compile Remove="ref\**\*.cs" />
     <Compile Include="..\..\external\corert\**\*.cs" />
     <InternalsVisibleTo Include="Mono.Linker.Tests" />
+    <InternalsVisibleTo Include="ILLink.Tasks.Tests" />
   </ItemGroup>
 
   <ItemGroup>
