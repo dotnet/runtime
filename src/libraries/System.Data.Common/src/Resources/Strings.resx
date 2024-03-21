@@ -383,6 +383,7 @@
   <data name="DataSet_DefaultReadOnlyException" xml:space="preserve"><value>Column is marked read only.</value></data>
   <data name="DataSet_DefaultRowNotInTableException" xml:space="preserve"><value>Row not found in table.</value></data>
   <data name="DataSet_DefaultVersionNotFoundException" xml:space="preserve"><value>Version not found.</value></data>
+  <data name="InstanceBasedTypeDescriptorsNotSupported" xml:space="preserve"><value>Instance-based type descriptors are disabled in the app configuration and are not supported.</value></data>
   <data name="Load_ReadOnlyDataModified" xml:space="preserve"><value>ReadOnly Data is Modified.</value></data>
   <data name="DataTableReader_InvalidDataTableReader" xml:space="preserve"><value>DataTableReader is invalid for current DataTable '{0}'.</value></data>
   <data name="DataTableReader_SchemaInvalidDataTableReader" xml:space="preserve"><value>Schema of current DataTable '{0}' in DataTableReader has changed, DataTableReader is invalid.</value></data>

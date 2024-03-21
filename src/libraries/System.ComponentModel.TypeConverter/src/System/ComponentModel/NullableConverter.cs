@@ -26,8 +26,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Nullable converter is initialized with the underlying simple type.
         /// </summary>
+        [RequiresUnreferencedCode("NullableConverter")]
         public NullableConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
+            if (!IsSupported)
+                throw new NotSupportedException(SR.NullableConverterNotSupported);
             NullableType = type;
 
             UnderlyingType = Nullable.GetUnderlyingType(type)!;
