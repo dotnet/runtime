@@ -361,16 +361,16 @@ public:
     bool      IsGprOrFloatPresent() const;
     regMaskTP GetGprFloatCombinedMask() const;
 
-    void operator|=(const _regMaskAll& other);
-    void operator&=(const _regMaskAll& other);
-    void operator|=(const regNumber reg);
-    void operator^=(const regNumber reg);
-    _regMaskAll operator~();
-    bool operator==(const _regMaskAll& other);
-    bool operator!=(const _regMaskAll& other);
-    _regMaskAll operator&(const _regMaskAll& other) const;
-    _regMaskAll operator|(const _regMaskAll& other) const;
-    _regMaskAll operator&(const regNumber reg) const;
+    FORCEINLINE void        operator|=(const _regMaskAll& other);
+    FORCEINLINE void        operator&=(const _regMaskAll& other);
+    FORCEINLINE void        operator|=(const regNumber reg);
+    FORCEINLINE void        operator^=(const regNumber reg);
+    FORCEINLINE _regMaskAll operator~();
+    FORCEINLINE bool        operator==(const _regMaskAll& other);
+    FORCEINLINE bool        operator!=(const _regMaskAll& other);
+    FORCEINLINE _regMaskAll operator&(const _regMaskAll& other) const;
+    FORCEINLINE _regMaskAll operator|(const _regMaskAll& other) const;
+    FORCEINLINE _regMaskAll operator&(const regNumber reg) const;
 
 } AllRegsMask;
 

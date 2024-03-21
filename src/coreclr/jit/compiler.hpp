@@ -5053,6 +5053,90 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
     return BasicBlockVisit::Continue;
 }
 
+
+void AllRegsMask::operator|=(const _regMaskAll& other)
+{
+    // TODO: Can we optimize to reintrepret_cast<unsigned long long>
+    //  Something like https://godbolt.org/z/1KevT8Edh
+    registers[0] |= other.gprRegs();
+    registers[1] |= other.floatRegs();
+#ifdef HAS_PREDICATE_REGS
+    registers[2] |= other.predicateRegs();
+#endif
+}
+
+void AllRegsMask::operator&=(const _regMaskAll& other)
+{
+    // TODO: Can we optimize to reintrepret_cast<unsigned long long>
+    //  Something like https://godbolt.org/z/1KevT8Edh
+    registers[0] &= other.gprRegs();
+    registers[1] &= other.floatRegs();
+#ifdef HAS_PREDICATE_REGS
+    registers[2] &= other.predicateRegs();
+#endif
+}
+
+void AllRegsMask::operator|=(const regNumber reg)
+{
+    registers[regIndexForRegister(reg)] |= genRegMask(reg);
+}
+
+void AllRegsMask::operator^=(const regNumber reg)
+{
+    registers[regIndexForRegister(reg)] ^= genRegMask(reg);
+}
+
+_regMaskAll AllRegsMask::operator~()
+{
+    return _regMaskAll(~gprRegs(), ~floatRegs()
+#ifdef HAS_PREDICATE_REGS
+                                       ,
+                       ~predicateRegs()
+#endif
+    );
+}
+
+bool AllRegsMask::operator==(const AllRegsMask& other)
+{
+    return ((gprRegs() == other.gprRegs()) && (floatRegs() == other.floatRegs())
+#ifdef HAS_PREDICATE_REGS
+            && (predicateRegs() == other.predicateRegs())
+#endif
+    );
+}
+
+bool AllRegsMask::operator!=(const AllRegsMask& other)
+{
+    return !(*this == other);
+}
+
+_regMaskAll AllRegsMask::operator&(const AllRegsMask& other) const
+{
+    return _regMaskAll(gprRegs() & other.gprRegs(), floatRegs() & other.floatRegs()
+#ifdef HAS_PREDICATE_REGS
+                                                        ,
+                       predicateRegs() & other.predicateRegs()
+#endif
+    );
+}
+
+_regMaskAll AllRegsMask::operator|(const _regMaskAll& other) const
+{
+    return _regMaskAll(gprRegs() | other.gprRegs(), floatRegs() | other.floatRegs()
+#ifdef HAS_PREDICATE_REGS
+                                                        ,
+                       predicateRegs() | other.predicateRegs()
+#endif
+    );
+}
+
+_regMaskAll AllRegsMask::operator&(const regNumber reg) const
+{
+    _regMaskAll result = *this;
+    result[regIndexForRegister(reg)] &= genRegMask(reg);
+    return result;
+}
+
 /*****************************************************************************/
 #endif //_COMPILER_HPP_
 /*****************************************************************************/
