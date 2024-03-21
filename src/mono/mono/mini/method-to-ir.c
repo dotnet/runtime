@@ -2320,16 +2320,13 @@ emit_type_load_failure (MonoCompile* cfg, MonoClass* klass)
 }
 
 static void
-emit_invalid_program_with_msg (MonoCompile *cfg, MonoError *error_msg, MonoMethod *caller, MonoMethod *callee)
+emit_invalid_program_with_msg (MonoCompile *cfg, char *error_msg)
 {
-	g_assert (!is_ok (error_msg));
-
-	char *str = mono_mem_manager_strdup (cfg->mem_manager, mono_error_get_message (error_msg));
 	MonoInst *iargs[1];
 	if (cfg->compile_aot)
-		EMIT_NEW_LDSTRLITCONST (cfg, iargs [0], str);
+		EMIT_NEW_LDSTRLITCONST (cfg, iargs [0], error_msg);
 	else
-		EMIT_NEW_PCONST (cfg, iargs [0], str);
+		EMIT_NEW_PCONST (cfg, iargs [0], error_msg);
 	mono_emit_jit_icall (cfg, mono_throw_invalid_program, iargs);
 }
 
@@ -3416,8 +3413,8 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 	MonoInst *alloc, *ins;
 
 	if (G_UNLIKELY (m_class_is_byreflike (klass))) {
-		mono_error_set_bad_image (cfg->error, m_class_get_image (cfg->method->klass), "Cannot box IsByRefLike type '%s.%s'", m_class_get_name_space (klass), m_class_get_name (klass));
-		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+		mono_error_set_invalid_program (cfg->error, "Cannot box IsByRefLike type '%s.%s'", m_class_get_name_space (klass), m_class_get_name (klass));
+		mono_cfg_set_exception (cfg, MONO_EXCEPTION_INVALID_PROGRAM);
 		return NULL;
 	}
 
@@ -9282,7 +9279,7 @@ calli_end:
 
 			mono_save_token_info (cfg, image, token, cmethod);
 
-			if (!mono_class_init_internal (cmethod->klass))
+			if (mono_class_has_failure (cmethod->klass) || !mono_class_init_internal (cmethod->klass))
 				TYPE_LOAD_ERROR (cmethod->klass);
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
@@ -9995,8 +9992,8 @@ calli_end:
 		case MONO_CEE_STSFLD: {
 			MonoClassField *field;
 			guint foffset;
-			gboolean is_instance;
 			gpointer addr = NULL;
+			gboolean is_instance;
 			gboolean is_special_static;
 			MonoType *ftype;
 			MonoInst *store_val = NULL;
@@ -10080,6 +10077,7 @@ calli_end:
 				}
 				is_instance = FALSE;
 			}
+
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
@@ -11845,7 +11843,8 @@ mono_ldptr:
 					/* if we couldn't create a wrapper because cmethod isn't supposed to have an
 					UnmanagedCallersOnly attribute, follow CoreCLR behavior and throw when the
 					method with the ldftn is executing, not when it is being compiled. */
-					emit_invalid_program_with_msg (cfg, wrapper_error, method, cmethod);
+					char *err_msg = mono_mem_manager_strdup (cfg->mem_manager, mono_error_get_message (wrapper_error));
+					emit_invalid_program_with_msg (cfg, err_msg);
 					mono_error_cleanup (wrapper_error);
 					EMIT_NEW_PCONST (cfg, ins, NULL);
 					*sp++ = ins;

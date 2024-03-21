@@ -28,9 +28,7 @@ namespace System.Text.Json
             if (RuntimeFeature.IsDynamicCodeSupported)
             {
                 // Flush the dynamic method cache
-#pragma warning disable IL3050 // The analyzer doesn't understand runtime feature conditions: https://github.com/dotnet/linker/issues/2715
                 ReflectionEmitCachingMemberAccessor.Clear();
-#pragma warning restore IL3050
             }
         }
     }

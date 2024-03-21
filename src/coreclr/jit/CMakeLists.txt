@@ -239,6 +239,7 @@ set( JIT_ARM64_SOURCES
   codegenarm64.cpp
   codegenarm64test.cpp
   emitarm64.cpp
+  emitarm64sve.cpp
   lowerarmarch.cpp
   lsraarmarch.cpp
   lsraarm64.cpp

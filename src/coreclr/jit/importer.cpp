@@ -1019,8 +1019,8 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // Instead, we're going to sink the store below the COMMA.
             store->Data()      = src->AsOp()->gtOp2;
             src->AsOp()->gtOp2 = impStoreStruct(store, curLevel, pAfterStmt, usedDI, block);
-            src->SetAllEffectsFlags(src->AsOp()->gtOp1, src->AsOp()->gtOp2);
             gtUpdateNodeSideEffects(store);
+            src->SetAllEffectsFlags(src->AsOp()->gtOp1, src->AsOp()->gtOp2);
 
             return src;
         }
@@ -1273,7 +1273,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     assert(!fgGlobalMorph);
 
     CORINFO_GENERICHANDLE_RESULT embedInfo;
-    info.compCompHnd->embedGenericHandle(pResolvedToken, importParent, &embedInfo);
+    info.compCompHnd->embedGenericHandle(pResolvedToken, importParent, info.compMethodHnd, &embedInfo);
 
     if (pRuntimeLookup)
     {
@@ -1485,7 +1485,7 @@ GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolv
                                                  GenTree*                arg1)
 {
     CORINFO_CONST_LOOKUP lookup;
-    if (!info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, &lookup))
+    if (!info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, info.compMethodHnd, &lookup))
     {
         return nullptr;
     }
@@ -1548,30 +1548,56 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
 GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
 {
-    GenTree* ctxTree = nullptr;
+    GenTree* ctxTree;
 
     // Collectible types requires that for shared generic code, if we use the generic context parameter
-    // that we report it. (This is a conservative approach, we could detect some cases particularly when the
-    // context parameter is this that we don't need the eager reporting logic.)
-    lvaGenericsContextInUse = true;
+    // that we report it. Conservatively mark the root method as using generic context, MARK_LOCAL_VARS phase
+    // will clean it up if it turns out to be unnecessary.
+    impInlineRoot()->lvaGenericsContextInUse = true;
 
-    Compiler* pRoot = impInlineRoot();
-
-    if (kind == CORINFO_LOOKUP_THISOBJ)
+    // Always use generic context from the callsite if we're inlining and it's available.
+    if (compIsForInlining() && (impInlineInfo->inlInstParamArgInfo != nullptr))
     {
-        // this Object
-        ctxTree = gtNewLclvNode(pRoot->info.compThisArg, TYP_REF);
-        ctxTree->gtFlags |= GTF_VAR_CONTEXT;
+        // Create a dummy lclInfo node, we know that nobody's going to do stloc or take address
+        // of the generic context, so we don't need to scan IL for it.
+        InlLclVarInfo lclInfo = {};
+        lclInfo.lclTypeInfo   = TYP_I_IMPL;
+        ctxTree               = impInlineFetchArg(*impInlineInfo->inlInstParamArgInfo, lclInfo);
+        assert(ctxTree != nullptr);
+        assert(ctxTree->TypeIs(TYP_I_IMPL));
+        // We don't need to worry about GTF_VAR_CONTEXT here, it should be set on the callsite anyway.
+    }
+    else if (kind == CORINFO_LOOKUP_THISOBJ)
+    {
+        // Use "this" from the callsite if we're inlining
+        if (compIsForInlining())
+        {
+            // "this" is always the first argument in inlArgInfo
+            assert(impInlineInfo->argCnt > 0);
+            assert(impInlineInfo->inlArgInfo[0].argIsThis);
+
+            ctxTree = impInlineFetchArg(impInlineInfo->inlArgInfo[0], impInlineInfo->lclVarInfo[0]);
+
+            // "this" is expected to be always a local, and we must mark it as a context
+            assert(ctxTree->OperIs(GT_LCL_VAR));
+            ctxTree->gtFlags |= GTF_VAR_CONTEXT;
+        }
+        else
+        {
+            assert(info.compThisArg != BAD_VAR_NUM);
+            ctxTree = gtNewLclvNode(info.compThisArg, TYP_REF);
+            ctxTree->gtFlags |= GTF_VAR_CONTEXT;
+        }
 
         // context is the method table pointer of the this object
         ctxTree = gtNewMethodTableLookup(ctxTree);
     }
     else
     {
-        assert(kind == CORINFO_LOOKUP_METHODPARAM || kind == CORINFO_LOOKUP_CLASSPARAM);
+        assert((kind == CORINFO_LOOKUP_METHODPARAM) || (kind == CORINFO_LOOKUP_CLASSPARAM));
 
         // Exact method descriptor as passed in
-        ctxTree = gtNewLclvNode(pRoot->info.compTypeCtxtArg, TYP_I_IMPL);
+        ctxTree = gtNewLclvNode(impInlineRoot()->info.compTypeCtxtArg, TYP_I_IMPL);
         ctxTree->gtFlags |= GTF_VAR_CONTEXT;
     }
     return ctxTree;
@@ -1643,6 +1669,9 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     GenTree* slotPtrTree = ctxTree;
     GenTree* indOffTree  = nullptr;
 
+    // TODO-CQ: consider relaxing where it's safe to do so
+    const bool ctxTreeIsInvariant = !compIsForInlining();
+
     // Applied repeated indirections
     for (WORD i = 0; i < pRuntimeLookup->indirections; i++)
     {
@@ -1654,7 +1683,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
         if (i != 0)
         {
-            slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+            slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree,
+                                     ctxTreeIsInvariant ? (GTF_IND_NONFAULTING | GTF_IND_INVARIANT) : GTF_EMPTY);
         }
 
         if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
@@ -1677,7 +1707,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         return slotPtrTree;
     }
 
-    slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+    slotPtrTree =
+        gtNewIndir(TYP_I_IMPL, slotPtrTree, ctxTreeIsInvariant ? (GTF_IND_NONFAULTING | GTF_IND_INVARIANT) : GTF_EMPTY);
 
     return slotPtrTree;
 }
@@ -2021,7 +2052,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         // Create extra basic block for the spill
         //
         BasicBlock* newBlk = fgNewBBbefore(BBJ_ALWAYS, hndBlk, /* extendRegion */ true);
-        newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE | BBF_NONE_QUIRK);
+        newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
         newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
@@ -3236,7 +3267,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         Statement* const cursor = impLastStmt;
 
         const bool useParent = false;
-        op1                  = gtNewAllocObjNode(pResolvedToken, useParent);
+        op1                  = gtNewAllocObjNode(pResolvedToken, info.compMethodHnd, useParent);
         if (op1 == nullptr)
         {
             // If we fail to create the newobj node, we must be inlining
@@ -5349,6 +5380,32 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
         return nullptr;
     }
 
+    CORINFO_CLASS_HANDLE toClass = pResolvedToken->hClass;
+    if (info.compCompHnd->getExactClasses(toClass, 0, nullptr) == 0)
+    {
+        JITDUMP("\nClass %p (%s) can never be allocated\n", dspPtr(toClass), eeGetClassName(toClass));
+
+        if (!isCastClass)
+        {
+            JITDUMP("Cast will fail, optimizing to return null\n");
+
+            // If the cast was fed by a box, we can remove that too.
+            if (op1->IsBoxedValue())
+            {
+                JITDUMP("Also removing upstream box\n");
+                gtTryRemoveBoxUpstreamEffects(op1);
+            }
+
+            if (gtTreeHasSideEffects(op1, GTF_SIDE_EFFECT))
+            {
+                impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+            }
+            return gtNewNull();
+        }
+
+        JITDUMP("Cast will always throw, but not optimizing yet\n");
+    }
+
     // See what we know about the type of the object being cast.
     bool                 isExact   = false;
     bool                 isNonNull = false;
@@ -5356,7 +5413,6 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
 
     if (fromClass != nullptr)
     {
-        CORINFO_CLASS_HANDLE toClass = pResolvedToken->hClass;
         JITDUMP("\nConsidering optimization of %s from %s%p (%s) to %p (%s)\n", isCastClass ? "castclass" : "isinst",
                 isExact ? "exact " : "", dspPtr(fromClass), eeGetClassName(fromClass), dspPtr(toClass),
                 eeGetClassName(toClass));
@@ -6286,7 +6342,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (compIsForInlining())
                 {
-                    op1 = impInlineFetchArg(lclNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo);
+                    op1 = impInlineFetchArg(impInlineInfo->inlArgInfo[lclNum], impInlineInfo->lclVarInfo[lclNum]);
                     noway_assert(op1->gtOper == GT_LCL_VAR);
                     lclNum = op1->AsLclVar()->GetLclNum();
 
@@ -6491,7 +6547,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // In IL, LDARGA(_S) is used to load the byref managed pointer of struct argument,
                     // followed by a ldfld to load the field.
 
-                    op1 = impInlineFetchArg(lclNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo);
+                    op1 = impInlineFetchArg(impInlineInfo->inlArgInfo[lclNum], impInlineInfo->lclVarInfo[lclNum]);
                     if (op1->gtOper != GT_LCL_VAR)
                     {
                         compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDARGA_NOT_LOCAL_VAR);
@@ -7202,10 +7258,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         fgRemoveRefPred(block->GetFalseEdge());
                         block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
 
-                        // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense to
-                        // set BBF_NONE_QUIRK
-                        block->SetFlags(BBF_NONE_QUIRK);
-
                         jumpToNextOptimization = true;
                     }
                     else if (block->KindIs(BBJ_ALWAYS) && block->JumpsToNext())
@@ -7279,15 +7331,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
                         else
                         {
-                            // TODO-NoFallThrough: Update once false target can diverge from bbNext
                             assert(block->NextIs(block->GetFalseTarget()));
                             JITDUMP("\nThe block jumps to the next " FMT_BB "\n", block->Next()->bbNum);
                             fgRemoveRefPred(block->GetTrueEdge());
                             block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
-
-                            // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense
-                            // to set BBF_NONE_QUIRK
-                            block->SetFlags(BBF_NONE_QUIRK);
                         }
                     }
 
@@ -7464,10 +7511,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         fgRemoveRefPred(block->GetFalseEdge());
                         block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
 
-                        // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense to
-                        // set BBF_NONE_QUIRK
-                        block->SetFlags(BBF_NONE_QUIRK);
-
                         jumpToNextOptimization = true;
                     }
                     else if (block->KindIs(BBJ_ALWAYS) && block->JumpsToNext())
@@ -7560,11 +7603,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 
                     assert(foundVal);
-                    if (block->JumpsToNext())
-                    {
-                        block->SetFlags(BBF_NONE_QUIRK);
-                    }
-
 #ifdef DEBUG
                     if (verbose)
                     {
@@ -8487,7 +8525,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         const bool useParent = true;
-                        op1                  = gtNewAllocObjNode(&resolvedToken, useParent);
+                        op1                  = gtNewAllocObjNode(&resolvedToken, info.compMethodHnd, useParent);
                         if (op1 == nullptr)
                         {
                             return;
@@ -10465,7 +10503,8 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
             tiRetVal = typeInfo(type);
         }
 
-        impPushOnStack(impInlineFetchArg(ilArgNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo), tiRetVal);
+        impPushOnStack(impInlineFetchArg(impInlineInfo->inlArgInfo[ilArgNum], impInlineInfo->lclVarInfo[ilArgNum]),
+                       tiRetVal);
     }
     else
     {
@@ -12788,9 +12827,27 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 inlArgInfo[ilArgCnt].argIsThis = true;
                 break;
             case WellKnownArg::RetBuffer:
-            case WellKnownArg::InstParam:
-                // These do not appear in the table of inline arg info; do not include them
+                // This does not appear in the table of inline arg info; do not include them
                 continue;
+            case WellKnownArg::InstParam:
+            {
+                InlArgInfo* ctxInfo  = new (this, CMK_Inlining) InlArgInfo{};
+                ctxInfo->arg         = &arg;
+                ctxInfo->argTmpNum   = BAD_VAR_NUM;
+                ctxInfo->argIsLclVar = arg.GetNode()->OperIs(GT_LCL_VAR);
+                if (arg.GetNode()->IsCnsIntOrI())
+                {
+                    ctxInfo->argIsInvariant = true;
+                }
+                else
+                {
+                    // Conservative approach
+                    ctxInfo->argHasSideEff = true;
+                    ctxInfo->argHasGlobRef = true;
+                }
+                pInlineInfo->inlInstParamArgInfo = ctxInfo;
+                continue;
+            }
             default:
                 break;
         }
@@ -13161,9 +13218,8 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
 // impInlineFetchArg: return tree node for argument value in an inlinee
 //
 // Arguments:
-//    lclNum -- argument number in inlinee IL
-//    inlArgInfo -- argument info for inlinee
-//    lclVarInfo -- var info for inlinee
+//    argInfo -- argument info for inlinee
+//    lclInfo -- var info for inlinee
 //
 // Returns:
 //    Tree for the argument's value. Often an inlinee-scoped temp
@@ -13190,15 +13246,13 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
 //    This method will side effect inlArgInfo. It should only be called
 //    for actual uses of the argument in the inlinee.
 
-GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, InlLclVarInfo* lclVarInfo)
+GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& lclInfo)
 {
     // Cache the relevant arg and lcl info for this argument.
     // We will modify argInfo but not lclVarInfo.
-    InlArgInfo&          argInfo          = inlArgInfo[lclNum];
-    const InlLclVarInfo& lclInfo          = lclVarInfo[lclNum];
-    const bool           argCanBeModified = argInfo.argHasLdargaOp || argInfo.argHasStargOp;
-    const var_types      lclTyp           = lclInfo.lclTypeInfo;
-    GenTree*             op1              = nullptr;
+    const bool      argCanBeModified = argInfo.argHasLdargaOp || argInfo.argHasStargOp;
+    const var_types lclTyp           = lclInfo.lclTypeInfo;
+    GenTree*        op1              = nullptr;
 
     GenTree* argNode = argInfo.arg->GetNode();
     assert(!argNode->OperIs(GT_RET_EXPR));
@@ -13249,7 +13303,6 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
         if (argInfo.argIsUsed || ((lclTyp == TYP_BYREF) && (op1->TypeGet() != TYP_BYREF)))
         {
             assert(op1->gtOper == GT_LCL_VAR);
-            assert(lclNum == op1->AsLclVar()->gtLclILoffs);
 
             // Create a new lcl var node - remember the argument lclNum
             op1 = impCreateLocalNode(argLclNum DEBUGARG(op1->AsLclVar()->gtLclILoffs));
@@ -13362,7 +13415,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                  !argInfo.argHasCallerLocalRef))
             {
                 /* Get a *LARGE* LCL_VAR node */
-                op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp) DEBUGARG(lclNum));
+                op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp));
 
                 /* Record op1 as the very first use of this argument.
                 If there are no further uses of the arg, we may be
