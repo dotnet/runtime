@@ -6,7 +6,8 @@
 #include "asmconstants.h"
 
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
-        PROLOG_WITH_TRANSITION_BLOCK 0, 0, 0, 0, 0
+        PROLOG_WITH_TRANSITION_BLOCK 8, 0, 0, 0, 0
+        mov             [rsp + __PWTB_FloatArgumentRegisters - 8], rax
 
         //
         // call PreStubWorker
@@ -14,9 +15,11 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
         lea             rdi, [rsp + __PWTB_TransitionBlock]     // pTransitionBlock*
         mov             rsi, METHODDESC_REGISTER
         call            C_FUNC(PreStubWorker)
+        mov             r10, rax
 
+        mov             rax, [rsp + __PWTB_FloatArgumentRegisters - 8]
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-        TAILJMP_RAX
+        jmp             r10
 
 NESTED_END ThePreStub, _TEXT
 
