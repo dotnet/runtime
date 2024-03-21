@@ -666,7 +666,7 @@ static void mono_threads_wasm_sync_run_in_target_thread_vii_cb (MonoCoopSem *don
 	// in UI thread we postpone the execution via safeSetTimeout so that emscripten_proxy_execute_queue is not blocked by this call
 	// see invoke_later_on_ui_thread
 	if (mono_threads_wasm_is_ui_thread()) {
-		MonoCoopSem **semPtrPtr = (MonoCoopSem **)(args + 28/*JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr*/);
+		MonoCoopSem **semPtrPtr = (MonoCoopSem **)(((char *) args) + 28/*JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr*/);
 		*semPtrPtr = done;
 		func (user_data1, args);
 	}

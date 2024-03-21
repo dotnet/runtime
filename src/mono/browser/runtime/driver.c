@@ -271,7 +271,7 @@ mono_wasm_invoke_jsexport_async_post_cb (MonoMethod *method, void* args)
 {
 	mono_wasm_invoke_jsexport (method, args);
 	if (args) {
-		MonoBoolean *is_receiver_should_free = (MonoBoolean *)(args + 20/*JSMarshalerArgumentOffsets.ReceiverShouldFree*/);
+		MonoBoolean *is_receiver_should_free = (MonoBoolean *)(((char *) args) + 20/*JSMarshalerArgumentOffsets.ReceiverShouldFree*/);
 		if(*is_receiver_should_free != 0){
 			free (args);
 		}
