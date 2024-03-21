@@ -8154,7 +8154,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     {
                         if (genIsValidIntReg(varDsc->GetArgReg()))
                         {
-                            assert(isValidIntArgReg(varDsc->GetArgReg()));
+                            assert(isValidIntArgReg(varDsc->GetArgReg(), compiler->info.compCallConv));
                             regArg[varDsc->GetArgReg() - REG_ARG_FIRST]     = varDsc->GetArgReg();
                             regArgInit[varDsc->GetArgReg() - REG_ARG_FIRST] = varDsc->GetArgInitReg();
                             regArgAttr[varDsc->GetArgReg() - REG_ARG_FIRST] =
@@ -8404,10 +8404,11 @@ void CodeGen::genFnPrologCalleeRegArgs()
     {
         for (int i = MAX_REG_ARG + MAX_FLOAT_REG_ARG - 1; i >= 0; i--)
         {
-            if (regArg[i] != REG_NA && !isValidIntArgReg(regArgInit[i]) && !isValidFloatArgReg(regArgInit[i]))
+            if (regArg[i] != REG_NA && !isValidIntArgReg(regArgInit[i], compiler->info.compCallConv) &&
+                !isValidFloatArgReg(regArgInit[i]))
             {
                 assert(regArg[i] != regArgInit[i]);
-                assert(isValidIntArgReg(regArg[i]) || isValidFloatArgReg(regArg[i]));
+                assert(isValidIntArgReg(regArg[i], compiler->info.compCallConv) || isValidFloatArgReg(regArg[i]));
 
                 GetEmitter()->emitIns_Mov(regArgAttr[i], regArgInit[i], regArg[i], false);
 
@@ -8447,9 +8448,10 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         assert(cur != indexList[count2] && "Attempt to move several values on same register.");
                     }
                     assert(cur < MAX_REG_ARG + MAX_FLOAT_REG_ARG);
-                    assert(isValidIntArgReg(regArg[cur]) || isValidFloatArgReg(regArg[cur]));
+                    assert(isValidIntArgReg(regArg[cur], compiler->info.compCallConv) ||
+                           isValidFloatArgReg(regArg[cur]));
 
-                    if (isValidIntArgReg(regArgInit[cur]))
+                    if (isValidIntArgReg(regArgInit[cur], compiler->info.compCallConv))
                     {
                         cur = regArgInit[cur] - REG_ARG_FIRST;
                     }
