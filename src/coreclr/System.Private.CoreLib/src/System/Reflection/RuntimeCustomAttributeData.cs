@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Internal;
 
 namespace System.Reflection
 {
@@ -472,6 +473,7 @@ namespace System.Reflection
                             if (p.EncodedArgument is not null
                                 && p.EncodedArgument.CustomAttributeType.EncodedType != CustomAttributeEncoding.Undefined)
                             {
+                                Debug.Assert(p.MemberInfo is not null);
                                 namedArgs[j++] = new CustomAttributeNamedArgument(
                                     p.MemberInfo,
                                     new CustomAttributeTypedArgument(m_scope, p.EncodedArgument));
@@ -765,7 +767,7 @@ namespace System.Reflection
                     }
 
                     // Match name
-                    if (!namedParam.MemberInfo.Name.Equals(argName))
+                    if (!namedParam.Name.Equals(argName))
                     {
                         continue;
                     }
@@ -1057,12 +1059,29 @@ namespace System.Reflection
         public CustomAttributeEncodedArgument? EncodedArgument { get; set; }
     }
 
-    internal sealed class CustomAttributeNamedParameter(MemberInfo memberInfo, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
+    internal sealed class CustomAttributeNamedParameter
     {
-        public MemberInfo MemberInfo => memberInfo;
-        public CustomAttributeType CustomAttributeType => type;
-        public CustomAttributeEncoding FieldOrProperty => fieldOrProperty;
+        public CustomAttributeNamedParameter(MemberInfo memberInfo, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
+        {
+            MemberInfo = memberInfo;
+            Name = MemberInfo.Name;
+            FieldOrProperty = fieldOrProperty;
+            CustomAttributeType = type;
+        }
+
+        public CustomAttributeNamedParameter(string memberName, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
+        {
+            MemberInfo = null;
+            Name = memberName;
+            FieldOrProperty = fieldOrProperty;
+            CustomAttributeType = type;
+        }
+
+        public string Name { get; }
+        public CustomAttributeType CustomAttributeType { get; }
+        public CustomAttributeEncoding FieldOrProperty { get; }
         public CustomAttributeEncodedArgument? EncodedArgument { get; set; }
+        public MemberInfo? MemberInfo { get; }
     }
 
     internal sealed class CustomAttributeType
@@ -1783,6 +1802,23 @@ namespace System.Reflection
 
             AttributeUsageAttribute? attributeUsageAttribute = null;
 
+            CustomAttributeCtorParameter[] ctorParams =
+            {
+                new CustomAttributeCtorParameter(new CustomAttributeType((RuntimeType)typeof(int)))
+            };
+
+            CustomAttributeNamedParameter[] namedParams =
+            {
+                new CustomAttributeNamedParameter(
+                    "Inherited",
+                    CustomAttributeEncoding.Property,
+                    new CustomAttributeType((RuntimeType)typeof(bool))),
+                new CustomAttributeNamedParameter(
+                    "AllowMultiple",
+                    CustomAttributeEncoding.Property,
+                    new CustomAttributeType((RuntimeType)typeof(bool))),
+            };
+
             for (int i = 0; i < car.Length; i++)
             {
                 ref CustomAttributeRecord caRecord = ref car[i];
@@ -1794,8 +1830,26 @@ namespace System.Reflection
                 if (attributeUsageAttribute is not null)
                     throw new FormatException(SR.Format(SR.Format_AttributeUsage, attributeType));
 
-                ParseAttributeUsageAttribute(caRecord.blob, out AttributeTargets targets, out bool inherited, out bool allowMultiple);
-                attributeUsageAttribute = new AttributeUsageAttribute(targets, allowMultiple, inherited);
+                CustomAttributeEncodedArgument.ParseAttributeArguments(
+                    caRecord.blob,
+                    ctorParams,
+                    namedParams,
+                    (RuntimeModule)typeof(AttributeUsageAttribute).Module);
+
+                // Convert parsed attribute arguments
+                AttributeTargets attrTargets = ctorParams[0].EncodedArgument is not null
+                    ? (AttributeTargets)ctorParams[0].EncodedArgument!.PrimitiveValue.Byte4
+                    : 0;
+
+                bool inherited = namedParams[0].EncodedArgument is not null
+                    ? namedParams[0].EncodedArgument!.PrimitiveValue.Byte4 != 0
+                    : true; // default
+
+                bool allowMultiple = namedParams[1].EncodedArgument is not null
+                    ? namedParams[1].EncodedArgument!.PrimitiveValue.Byte4 != 0
+                    : false; // default
+
+                attributeUsageAttribute = new AttributeUsageAttribute(attrTargets, allowMultiple: allowMultiple, inherited: inherited);
             }
 
             return attributeUsageAttribute ?? AttributeUsageAttribute.Default;
@@ -1839,16 +1893,6 @@ namespace System.Reflection
         #endregion
 
         #region Private Static FCalls
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _ParseAttributeUsageAttribute(
-            IntPtr pCa, int cCa, out int targets, out bool inherited, out bool allowMultiple);
-        private static void ParseAttributeUsageAttribute(
-            ConstArray ca, out AttributeTargets targets, out bool inherited, out bool allowMultiple)
-        {
-            _ParseAttributeUsageAttribute(ca.Signature, ca.Length, out int _targets, out inherited, out allowMultiple);
-            targets = (AttributeTargets)_targets;
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object _CreateCaObject(RuntimeModule pModule, RuntimeType type, IRuntimeMethodInfo pCtor, byte** ppBlob, byte* pEndBlob, int* pcNamedArgs);
         private static object CreateCaObject(RuntimeModule module, RuntimeType type, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
@@ -1918,12 +1962,18 @@ namespace System.Reflection
         private static void VerifyPseudoCustomAttribute(RuntimeType pca)
         {
             // If any of these are invariants are no longer true will have to
-            // re-architect the PCA product logic and test cases -- you've been warned!
-            Debug.Assert(pca.BaseType == typeof(Attribute), "Pseudo CA Error");
+            // re-architect the PCA product logic and test cases.
+            Debug.Assert(pca.BaseType == typeof(Attribute), "Pseudo CA Error - Incorrect base type");
             AttributeUsageAttribute usage = CustomAttribute.GetAttributeUsage(pca);
-            Debug.Assert(!usage.Inherited, "Pseudo CA Error");
-            // AllowMultiple is true for TypeForwardedToAttribute
-            // Debug.Assert(usage.AllowMultiple == false, "Pseudo CA Error");
+            Debug.Assert(!usage.Inherited, "Pseudo CA Error - Unexpected Inherited value");
+            if (pca == typeof(TypeForwardedToAttribute))
+            {
+                Debug.Assert(usage.AllowMultiple, "Pseudo CA Error - Unexpected AllowMultiple value");
+            }
+            else
+            {
+                Debug.Assert(!usage.AllowMultiple, "Pseudo CA Error - Unexpected AllowMultiple value");
+            }
         }
         #endregion
 

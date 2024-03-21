@@ -481,47 +481,6 @@ FCIMPL6(LPVOID, COMCustomAttribute::CreateCaObject, ReflectModuleBaseObject* pAt
 }
 FCIMPLEND
 
-FCIMPL5(VOID, COMCustomAttribute::ParseAttributeUsageAttribute, PVOID pData, ULONG cData, ULONG* pTargets, CLR_BOOL* pInherited, CLR_BOOL* pAllowMultiple)
-{
-    FCALL_CONTRACT;
-
-    int inherited = 0;
-    int allowMultiple = 1;
-
-    {
-        CustomAttributeParser ca(pData, cData);
-
-        CaArg args[1];
-        args[0].InitEnum(SERIALIZATION_TYPE_I4, 0);
-        if (FAILED(::ParseKnownCaArgs(ca, args, ARRAY_SIZE(args))))
-        {
-            HELPER_METHOD_FRAME_BEGIN_0();
-            COMPlusThrow(kCustomAttributeFormatException);
-            HELPER_METHOD_FRAME_END();
-        }
-
-        *pTargets = args[0].val.u4;
-
-        CaNamedArg namedArgs[2];
-        CaType namedArgTypes[2];
-        namedArgTypes[inherited].Init(SERIALIZATION_TYPE_BOOLEAN);
-        namedArgTypes[allowMultiple].Init(SERIALIZATION_TYPE_BOOLEAN);
-        namedArgs[inherited].Init("Inherited", SERIALIZATION_TYPE_PROPERTY, namedArgTypes[inherited], TRUE);
-        namedArgs[allowMultiple].Init("AllowMultiple", SERIALIZATION_TYPE_PROPERTY, namedArgTypes[allowMultiple], FALSE);
-        if (FAILED(::ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs))))
-        {
-            HELPER_METHOD_FRAME_BEGIN_0();
-            COMPlusThrow(kCustomAttributeFormatException);
-            HELPER_METHOD_FRAME_END();
-        }
-
-        *pInherited = namedArgs[inherited].val.boolean == TRUE;
-        *pAllowMultiple = namedArgs[allowMultiple].val.boolean == TRUE;
-    }
-}
-FCIMPLEND
-
-
 FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObject *pModuleUNSAFE, BYTE** ppBlobStart, BYTE* pBlobEnd, STRINGREF* pName, CLR_BOOL* pbIsProperty, OBJECTREF* pType, OBJECTREF* value)
 {
     FCALL_CONTRACT;
