@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 import Foundation
 
 public func swiftCallbackFunc0(f: (Int16, Int32, UInt64, UInt16, Int64, Double, UInt32, UInt16, Int, UInt64) -> UInt8) -> UInt8 {
