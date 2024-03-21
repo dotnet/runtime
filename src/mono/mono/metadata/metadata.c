@@ -1538,7 +1538,7 @@ decode_value_scalar (const guint8 *ptr, const guint8 **new_ptr)
 MONO_ALWAYS_INLINE guint32
 mono_metadata_decode_value_simd (const guint8 *ptr, const guint8 **new_ptr)
 {
-#ifdef __clang__
+#if defined(__clang__) && __LITTLE_ENDIAN__
 	guint32 result;
 
 	typedef guint8 v64_u1 __attribute__ ((vector_size (8)));
