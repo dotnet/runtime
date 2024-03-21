@@ -19,7 +19,7 @@ parameters:
   timeoutInMinutes: ''
   enableMicrobuild: ''
   gatherAssetManifests: false
-  disableComponentGovernance: false
+  disableComponentGovernance: ''
 
   variables: {} ## any extra variables to add to the defaults defined below
 
@@ -64,9 +64,11 @@ jobs:
     ${{ if eq(parameters.osGroup, 'windows') }}:
       agentOs: windows
 
-    # Disable component governance if requested or on musl machines where it does not work well
-    ${{ if or(eq(parameters.disableComponentGovernance, true), eq(parameters.osSubGroup, '_musl')) }}:
+    # Component governance does not work on musl machines
+    ${{ if eq(parameters.osSubGroup, '_musl') }}:
       disableComponentGovernance: true
+    ${{ else }}:
+      disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
 
     # Setting this results in the arcade job template including a step
     # that gathers asset manifests and publishes them to pipeline

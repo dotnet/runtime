@@ -49,6 +49,8 @@ struct REGDISPLAY
 
 #ifdef TARGET_X86
     TADDR PCTAddr;
+    // SP for use by catch funclet when resuming execution
+    uintptr_t ResumeSP;
 
     inline unsigned long *GetEaxLocation() { return (unsigned long *)pRax; }
     inline unsigned long *GetEcxLocation() { return (unsigned long *)pRcx; }

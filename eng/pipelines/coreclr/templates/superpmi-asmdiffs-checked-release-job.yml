@@ -42,7 +42,7 @@ jobs:
         artifactFileName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
         artifactName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)'
         displayName: 'JIT checked build'
-        cleanupUnpackFolder: false
+        cleanUnpackFolder: false
 
     # Download jit release builds
     - template: /eng/pipelines/common/download-artifact-step.yml
@@ -51,4 +51,4 @@ jobs:
         artifactFileName: 'ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
         artifactName: 'ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)'
         displayName: 'JIT release build'
-        cleanupUnpackFolder: false
+        cleanUnpackFolder: false

@@ -50,8 +50,8 @@ jobs:
       # To run the tests we just send to helix and wait, use ubuntu hosted pools for faster providing and to not back up our build pools
       pool: ${{ parameters.pool }}
 
-      # Disable component governance if requested or on musl machines where it does not work well
-      ${{ if or(eq(parameters.disableComponentGovernance, true), eq(parameters.osSubGroup, '_musl')) }}:
+      # Component governance does not work on musl machines
+      ${{ if eq(parameters.osSubGroup, '_musl') }}:
         disableComponentGovernance: true
 
       dependsOn:
