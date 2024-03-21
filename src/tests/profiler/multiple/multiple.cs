@@ -37,7 +37,7 @@ namespace Profiler.Tests
             Console.WriteLine("Waiting for profilers to all detach");
             if (!_profilerDone.WaitOne(TimeSpan.FromMinutes(10)))
             {
-                Console.WriteLine("Test timed out waiting for the profilers to set the callback, test will fail.");
+                throw new Exception("Test timed out waiting for the profilers to set the callback, test will fail.");
             }
 
             return 100;

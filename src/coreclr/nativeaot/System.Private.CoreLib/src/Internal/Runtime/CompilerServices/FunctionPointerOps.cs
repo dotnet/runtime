@@ -149,5 +149,16 @@ namespace Internal.Runtime.CompilerServices
 
             return pointerDefA->MethodFunctionPointer == pointerDefB->MethodFunctionPointer;
         }
+
+        public static unsafe int GetHashCode(IntPtr functionPointer)
+        {
+            if (!IsGenericMethodPointer(functionPointer))
+            {
+                return functionPointer.GetHashCode();
+            }
+
+            GenericMethodDescriptor* pointerDef = ConvertToGenericDescriptor(functionPointer);
+            return pointerDef->GetHashCode();
+        }
     }
 }

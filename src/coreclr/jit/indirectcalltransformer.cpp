@@ -207,6 +207,10 @@ private:
         {
             remainderBlock = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
             remainderBlock->SetFlags(BBF_INTERNAL);
+
+            // We will be adding more blocks after currBlock, so remove edge to remainderBlock.
+            //
+            compiler->fgRemoveRefPred(currBlock->GetTargetEdge());
         }
 
         virtual void CreateCheck(uint8_t checkIdx) = 0;
@@ -266,13 +270,10 @@ private:
             assert(compiler->fgPredsComputed);
 
             // currBlock
-            compiler->fgRemoveRefPred(remainderBlock, currBlock);
-
             if (checkBlock != currBlock)
             {
                 assert(currBlock->KindIs(BBJ_ALWAYS));
                 FlowEdge* const newEdge = compiler->fgAddRefPred(checkBlock, currBlock);
-                newEdge->setLikelihood(1.0);
                 currBlock->SetTargetEdge(newEdge);
             }
 
@@ -290,7 +291,6 @@ private:
             {
                 assert(thenBlock->KindIs(BBJ_ALWAYS));
                 FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
-                newEdge->setLikelihood(1.0);
                 thenBlock->SetTargetEdge(newEdge);
             }
 
@@ -298,7 +298,6 @@ private:
             {
                 assert(elseBlock->KindIs(BBJ_ALWAYS));
                 FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, elseBlock);
-                newEdge->setLikelihood(1.0);
                 elseBlock->SetTargetEdge(newEdge);
             }
         }
@@ -378,8 +377,7 @@ private:
         {
             assert(checkIdx == 0);
 
-            checkBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, currBlock);
-            checkBlock->SetFlags(BBF_NONE_QUIRK);
+            checkBlock                 = CreateAndInsertBasicBlock(BBJ_ALWAYS, currBlock);
             GenTree*   fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
             GenTree*   fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
             GenTree*   fatPointerAnd   = compiler->gtNewOperNode(GT_AND, TYP_I_IMPL, fptrAddressCopy, fatPointerMask);
@@ -408,7 +406,6 @@ private:
         virtual void CreateElse()
         {
             elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock);
-            elseBlock->SetFlags(BBF_NONE_QUIRK);
 
             GenTree* fixedFptrAddress  = GetFixedFptrAddress();
             GenTree* actualCallAddress = compiler->gtNewIndir(pointerType, fixedFptrAddress);
@@ -569,10 +566,7 @@ private:
         {
             assert(compiler->fgPredsComputed);
 
-            // currBlock
-            compiler->fgRemoveRefPred(remainderBlock, currBlock);
-
-            // The rest of chaining is done in-place.
+            // Chaining is done in-place.
         }
 
         virtual void SetWeights()
@@ -603,25 +597,24 @@ private:
                 checkBlock                 = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock);
                 checkFallsThrough          = false;
 
-                // Calculate the total likelihood for this check as a sum of likelihoods
-                // of all previous candidates (thenBlocks)
-                unsigned checkLikelihood = 100;
-                for (uint8_t previousCandidate = 0; previousCandidate < checkIdx; previousCandidate++)
-                {
-                    checkLikelihood -= origCall->GetGDVCandidateInfo(previousCandidate)->likelihood;
-                }
-
-                // Make sure we didn't overflow
-                assert(checkLikelihood <= 100);
-                weight_t checkLikelihoodWt = ((weight_t)checkLikelihood) / 100.0;
-
-                // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
+                // We computed the "then" likelihood in CreateThen, so we
+                // just use that to figure out the "else" likelihood.
+                //
                 assert(prevCheckBlock->KindIs(BBJ_ALWAYS));
                 assert(prevCheckBlock->JumpsToNext());
-                FlowEdge* const checkEdge = compiler->fgAddRefPred(checkBlock, prevCheckBlock);
-                checkEdge->setLikelihood(checkLikelihoodWt);
-                checkBlock->inheritWeightPercentage(currBlock, checkLikelihood);
-                prevCheckBlock->SetCond(checkEdge, prevCheckBlock->GetTargetEdge());
+                FlowEdge* const prevCheckThenEdge = prevCheckBlock->GetTargetEdge();
+                weight_t        checkLikelihood   = max(0.0, 1.0 - prevCheckThenEdge->getLikelihood());
+
+                JITDUMP("Level %u Check block " FMT_BB " success likelihood " FMT_WT "\n", checkIdx, checkBlock->bbNum,
+                        checkLikelihood);
+
+                // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
+                //
+                FlowEdge* const prevCheckCheckEdge = compiler->fgAddRefPred(checkBlock, prevCheckBlock);
+                prevCheckCheckEdge->setLikelihood(checkLikelihood);
+                checkBlock->inheritWeight(prevCheckBlock);
+                checkBlock->scaleBBWeight(checkLikelihood);
+                prevCheckBlock->SetCond(prevCheckCheckEdge, prevCheckThenEdge);
             }
 
             // Find last arg with a side effect. All args with any effect
@@ -1020,27 +1013,63 @@ private:
         {
             // Compute likelihoods
             //
-            unsigned const thenLikelihood   = origCall->GetGDVCandidateInfo(checkIdx)->likelihood;
-            weight_t       thenLikelihoodWt = min(((weight_t)thenLikelihood) / 100.0, 100.0);
-            weight_t       elseLikelihoodWt = max(1.0 - thenLikelihoodWt, 0.0);
+            // If this is the first check the likelihood is just the candidate likelihood.
+            // If there are multiple checks things are a bit more complicated.
+            //
+            // Say we had three candidates with likelihoods 0.5, 0.3, and 0.1.
+            //
+            // The first one's likelihood is 0.5.
+            //
+            // The second one (given that we've already checked the first and failed)
+            // is (0.3) / (1.0 - 0.5) = 0.6.
+            //
+            // The third one is (0.1) / (1.0 - (0.5 + 0.3)) = (0.1)/(0.2) = 0.5
+            //
+            // So to figure out the proper divisor, we start with 1.0 and subtract off each
+            // preceeding test's likelihood of success.
+            //
+            unsigned const thenLikelihood = origCall->GetGDVCandidateInfo(checkIdx)->likelihood;
+            unsigned       baseLikelihood = 0;
+
+            for (uint8_t i = 0; i < checkIdx; i++)
+            {
+                baseLikelihood += origCall->GetGDVCandidateInfo(i)->likelihood;
+            }
+            assert(baseLikelihood < 100);
+            baseLikelihood = 100 - baseLikelihood;
+
+            weight_t adjustedThenLikelihood = min(((weight_t)thenLikelihood) / baseLikelihood, 100.0);
+            JITDUMP("For check in " FMT_BB ": orig likelihood " FMT_WT ", base likelihood " FMT_WT
+                    ", adjusted likelihood " FMT_WT "\n",
+                    checkBlock->bbNum, (weight_t)thenLikelihood / 100.0, (weight_t)baseLikelihood / 100.0,
+                    adjustedThenLikelihood);
 
             // thenBlock always jumps to remainderBlock
+            //
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             thenBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
-            thenBlock->inheritWeightPercentage(currBlock, thenLikelihood);
+            thenBlock->inheritWeight(currBlock);
+            thenBlock->scaleBBWeight(adjustedThenLikelihood);
+            FlowEdge* const thenRemainderEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
+            thenBlock->SetTargetEdge(thenRemainderEdge);
 
-            // Also, thenBlock has a single pred - last checkBlock
+            // thenBlock has a single pred - last checkBlock.
+            //
             assert(checkBlock->KindIs(BBJ_ALWAYS));
-            FlowEdge* const thenEdge = compiler->fgAddRefPred(thenBlock, checkBlock);
-            thenEdge->setLikelihood(thenLikelihoodWt);
-            checkBlock->SetTargetEdge(thenEdge);
-            checkBlock->SetFlags(BBF_NONE_QUIRK);
+            FlowEdge* const checkThenEdge = compiler->fgAddRefPred(thenBlock, checkBlock);
+            checkBlock->SetTargetEdge(checkThenEdge);
             assert(checkBlock->JumpsToNext());
 
-            FlowEdge* const elseEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
-            elseEdge->setLikelihood(elseLikelihoodWt);
-            thenBlock->SetTargetEdge(elseEdge);
+            // SetTargetEdge() gave checkThenEdge a (correct) likelihood of 1.0.
+            // Later on, we might convert this checkBlock into a BBJ_COND.
+            // Since we have the adjusted likelihood calculated here, set it prematurely.
+            // If we leave this block as a BBJ_ALWAYS, we'll assert later that the likelihood is 1.0.
+            //
+            checkThenEdge->setLikelihood(adjustedThenLikelihood);
 
+            // We will set the "else edge" likelihood in CreateElse later,
+            // based on the thenEdge likelihood.
+            //
             DevirtualizeCall(thenBlock, checkIdx);
         }
 
@@ -1049,30 +1078,25 @@ private:
         //
         virtual void CreateElse()
         {
-            // Calculate the likelihood of the else block as a remainder of the sum
-            // of all the other likelihoods.
-            unsigned elseLikelihood = 100;
-            for (uint8_t i = 0; i < origCall->GetInlineCandidatesCount(); i++)
-            {
-                elseLikelihood -= origCall->GetGDVCandidateInfo(i)->likelihood;
-            }
-            // Make sure it didn't overflow
-            assert(elseLikelihood <= 100);
-            weight_t elseLikelihoodDbl = ((weight_t)elseLikelihood) / 100.0;
-
             elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock);
             elseBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
-            elseBlock->SetFlags(BBF_NONE_QUIRK);
+
+            // We computed the "then" likelihood in CreateThen, so we
+            // just use that to figure out the "else" likelihood.
+            //
+            assert(checkBlock->KindIs(BBJ_ALWAYS));
+            FlowEdge* const checkThenEdge  = checkBlock->GetTargetEdge();
+            weight_t        elseLikelihood = max(0.0, 1.0 - checkThenEdge->getLikelihood());
 
             // CheckBlock flows into elseBlock unless we deal with the case
             // where we know the last check is always true (in case of "exact" GDV)
+            //
             if (!checkFallsThrough)
             {
-                assert(checkBlock->KindIs(BBJ_ALWAYS));
                 assert(checkBlock->JumpsToNext());
-                FlowEdge* const checkEdge = compiler->fgAddRefPred(elseBlock, checkBlock);
-                checkEdge->setLikelihood(elseLikelihoodDbl);
-                checkBlock->SetCond(checkEdge, checkBlock->GetTargetEdge());
+                FlowEdge* const checkElseEdge = compiler->fgAddRefPred(elseBlock, checkBlock);
+                checkElseEdge->setLikelihood(elseLikelihood);
+                checkBlock->SetCond(checkElseEdge, checkThenEdge);
             }
             else
             {
@@ -1080,17 +1104,21 @@ private:
                 // and is NativeAOT-only, we just assume the unreached block will be removed
                 // by other phases.
                 assert(origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT);
+
+                // We aren't converting checkBlock to a BBJ_COND. Its successor edge likelihood should remain 1.0.
+                //
+                assert(checkThenEdge->getLikelihood() == 1.0);
             }
 
             // elseBlock always flows into remainderBlock
-            FlowEdge* const elseEdge = compiler->fgAddRefPred(remainderBlock, elseBlock);
-            elseEdge->setLikelihood(1.0);
-            elseBlock->SetTargetEdge(elseEdge);
+            FlowEdge* const elseRemainderEdge = compiler->fgAddRefPred(remainderBlock, elseBlock);
+            elseBlock->SetTargetEdge(elseRemainderEdge);
 
             // Remove everything related to inlining from the original call
             origCall->ClearInlineInfo();
 
-            elseBlock->inheritWeightPercentage(currBlock, elseLikelihood);
+            elseBlock->inheritWeight(checkBlock);
+            elseBlock->scaleBBWeight(elseLikelihood);
 
             GenTreeCall* call    = origCall;
             Statement*   newStmt = compiler->gtNewStmt(call, stmt->GetDebugInfo());
@@ -1185,12 +1213,10 @@ private:
             // Finally, rewire the cold block to jump to the else block,
             // not fall through to the check block.
             //
-            compiler->fgRemoveRefPred(coldBlock->GetTargetEdge());
-            FlowEdge* const newEdge = compiler->fgAddRefPred(elseBlock, coldBlock, coldBlock->GetTargetEdge());
-            coldBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+            compiler->fgRedirectTargetEdge(coldBlock, elseBlock);
         }
 
-        // When the current candidate hads sufficiently high likelihood, scan
+        // When the current candidate has sufficiently high likelihood, scan
         // the remainer block looking for another GDV candidate.
         //
         // (also consider: if currBlock has sufficiently high execution frequency)

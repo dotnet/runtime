@@ -1019,8 +1019,8 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // Instead, we're going to sink the store below the COMMA.
             store->Data()      = src->AsOp()->gtOp2;
             src->AsOp()->gtOp2 = impStoreStruct(store, curLevel, pAfterStmt, usedDI, block);
-            src->SetAllEffectsFlags(src->AsOp()->gtOp1, src->AsOp()->gtOp2);
             gtUpdateNodeSideEffects(store);
+            src->SetAllEffectsFlags(src->AsOp()->gtOp1, src->AsOp()->gtOp2);
 
             return src;
         }
@@ -1273,7 +1273,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     assert(!fgGlobalMorph);
 
     CORINFO_GENERICHANDLE_RESULT embedInfo;
-    info.compCompHnd->embedGenericHandle(pResolvedToken, importParent, &embedInfo);
+    info.compCompHnd->embedGenericHandle(pResolvedToken, importParent, info.compMethodHnd, &embedInfo);
 
     if (pRuntimeLookup)
     {
@@ -1485,7 +1485,7 @@ GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolv
                                                  GenTree*                arg1)
 {
     CORINFO_CONST_LOOKUP lookup;
-    if (!info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, &lookup))
+    if (!info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, info.compMethodHnd, &lookup))
     {
         return nullptr;
     }
@@ -1548,30 +1548,56 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
 GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
 {
-    GenTree* ctxTree = nullptr;
+    GenTree* ctxTree;
 
     // Collectible types requires that for shared generic code, if we use the generic context parameter
-    // that we report it. (This is a conservative approach, we could detect some cases particularly when the
-    // context parameter is this that we don't need the eager reporting logic.)
-    lvaGenericsContextInUse = true;
+    // that we report it. Conservatively mark the root method as using generic context, MARK_LOCAL_VARS phase
+    // will clean it up if it turns out to be unnecessary.
+    impInlineRoot()->lvaGenericsContextInUse = true;
 
-    Compiler* pRoot = impInlineRoot();
-
-    if (kind == CORINFO_LOOKUP_THISOBJ)
+    // Always use generic context from the callsite if we're inlining and it's available.
+    if (compIsForInlining() && (impInlineInfo->inlInstParamArgInfo != nullptr))
     {
-        // this Object
-        ctxTree = gtNewLclvNode(pRoot->info.compThisArg, TYP_REF);
-        ctxTree->gtFlags |= GTF_VAR_CONTEXT;
+        // Create a dummy lclInfo node, we know that nobody's going to do stloc or take address
+        // of the generic context, so we don't need to scan IL for it.
+        InlLclVarInfo lclInfo = {};
+        lclInfo.lclTypeInfo   = TYP_I_IMPL;
+        ctxTree               = impInlineFetchArg(*impInlineInfo->inlInstParamArgInfo, lclInfo);
+        assert(ctxTree != nullptr);
+        assert(ctxTree->TypeIs(TYP_I_IMPL));
+        // We don't need to worry about GTF_VAR_CONTEXT here, it should be set on the callsite anyway.
+    }
+    else if (kind == CORINFO_LOOKUP_THISOBJ)
+    {
+        // Use "this" from the callsite if we're inlining
+        if (compIsForInlining())
+        {
+            // "this" is always the first argument in inlArgInfo
+            assert(impInlineInfo->argCnt > 0);
+            assert(impInlineInfo->inlArgInfo[0].argIsThis);
+
+            ctxTree = impInlineFetchArg(impInlineInfo->inlArgInfo[0], impInlineInfo->lclVarInfo[0]);
+
+            // "this" is expected to be always a local, and we must mark it as a context
+            assert(ctxTree->OperIs(GT_LCL_VAR));
+            ctxTree->gtFlags |= GTF_VAR_CONTEXT;
+        }
+        else
+        {
+            assert(info.compThisArg != BAD_VAR_NUM);
+            ctxTree = gtNewLclvNode(info.compThisArg, TYP_REF);
+            ctxTree->gtFlags |= GTF_VAR_CONTEXT;
+        }
 
         // context is the method table pointer of the this object
         ctxTree = gtNewMethodTableLookup(ctxTree);
     }
     else
     {
-        assert(kind == CORINFO_LOOKUP_METHODPARAM || kind == CORINFO_LOOKUP_CLASSPARAM);
+        assert((kind == CORINFO_LOOKUP_METHODPARAM) || (kind == CORINFO_LOOKUP_CLASSPARAM));
 
         // Exact method descriptor as passed in
-        ctxTree = gtNewLclvNode(pRoot->info.compTypeCtxtArg, TYP_I_IMPL);
+        ctxTree = gtNewLclvNode(impInlineRoot()->info.compTypeCtxtArg, TYP_I_IMPL);
         ctxTree->gtFlags |= GTF_VAR_CONTEXT;
     }
     return ctxTree;
@@ -1643,6 +1669,9 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     GenTree* slotPtrTree = ctxTree;
     GenTree* indOffTree  = nullptr;
 
+    // TODO-CQ: consider relaxing where it's safe to do so
+    const bool ctxTreeIsInvariant = !compIsForInlining();
+
     // Applied repeated indirections
     for (WORD i = 0; i < pRuntimeLookup->indirections; i++)
     {
@@ -1654,7 +1683,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
         if (i != 0)
         {
-            slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+            slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree,
+                                     ctxTreeIsInvariant ? (GTF_IND_NONFAULTING | GTF_IND_INVARIANT) : GTF_EMPTY);
         }
 
         if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
@@ -1677,7 +1707,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         return slotPtrTree;
     }
 
-    slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+    slotPtrTree =
+        gtNewIndir(TYP_I_IMPL, slotPtrTree, ctxTreeIsInvariant ? (GTF_IND_NONFAULTING | GTF_IND_INVARIANT) : GTF_EMPTY);
 
     return slotPtrTree;
 }
@@ -2021,12 +2052,11 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         // Create extra basic block for the spill
         //
         BasicBlock* newBlk = fgNewBBbefore(BBJ_ALWAYS, hndBlk, /* extendRegion */ true);
-        newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE | BBF_NONE_QUIRK);
+        newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
         newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
         FlowEdge* const newEdge = fgAddRefPred(hndBlk, newBlk);
-        newEdge->setLikelihood(1.0);
         newBlk->SetTargetEdge(newEdge);
 
         // Spill into a temp.
@@ -3237,7 +3267,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         Statement* const cursor = impLastStmt;
 
         const bool useParent = false;
-        op1                  = gtNewAllocObjNode(pResolvedToken, useParent);
+        op1                  = gtNewAllocObjNode(pResolvedToken, info.compMethodHnd, useParent);
         if (op1 == nullptr)
         {
             // If we fail to create the newobj node, we must be inlining
@@ -4404,10 +4434,10 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert(step == DUMMY_INIT(NULL));
                 callBlock = block;
 
+                // callBlock calls the finally handler
                 assert(callBlock->HasInitializedTarget());
-                fgRemoveRefPred(callBlock->GetTargetEdge());
-
-                // callBlock will call the finally handler. This will be set up later.
+                fgRedirectTargetEdge(callBlock, HBtab->ebdHndBeg);
+                callBlock->SetKind(BBJ_CALLFINALLY);
 
                 if (endCatches)
                 {
@@ -4429,16 +4459,22 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 // Calling the finally block.
 
-                // callBlock will call the finally handler. This will be set up later.
+                // callBlock calls the finally handler
                 callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, XTnum + 1, 0, step);
+
+                {
+                    FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
+                    callBlock->SetTargetEdge(newEdge);
+                }
 
                 // step's jump target shouldn't be set yet
                 assert(!step->HasInitializedTarget());
 
-                // the previous call to a finally returns to this call (to the next finally in the chain)
-                FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
-                newEdge->setLikelihood(1.0);
-                step->SetTargetEdge(newEdge);
+                {
+                    // the previous call to a finally returns to this call (to the next finally in the chain)
+                    FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
+                    step->SetTargetEdge(newEdge);
+                }
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4468,6 +4504,9 @@ void Compiler::impImportLeave(BasicBlock* block)
                 impEndTreeList(callBlock, endLFinStmt, lastStmt);
             }
 
+            // callBlock should be set up at this point
+            assert(callBlock->TargetIs(HBtab->ebdHndBeg));
+
             // Note: we don't know the jump target yet
             step = fgNewBBafter(BBJ_CALLFINALLYRET, callBlock, true);
             // The new block will inherit this block's weight.
@@ -4485,10 +4524,6 @@ void Compiler::impImportLeave(BasicBlock* block)
 
             unsigned finallyNesting = compHndBBtab[XTnum].ebdHandlerNestingLevel;
             assert(finallyNesting <= compHndBBtabCount);
-
-            FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
-            newEdge->setLikelihood(1.0);
-            callBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
 
             GenTree* endLFin = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, finallyNesting);
             endLFinStmt      = gtNewStmt(endLFin);
@@ -4539,7 +4574,6 @@ void Compiler::impImportLeave(BasicBlock* block)
 
         {
             FlowEdge* const newEdge = fgAddRefPred(finalStep, step);
-            newEdge->setLikelihood(1.0);
             step->SetTargetEdge(newEdge);
         }
 
@@ -4572,7 +4606,6 @@ void Compiler::impImportLeave(BasicBlock* block)
         // this is the ultimate destination of the LEAVE
         {
             FlowEdge* const newEdge = fgAddRefPred(leaveTarget, finalStep);
-            newEdge->setLikelihood(1.0);
             finalStep->SetTargetEdge(newEdge);
         }
 
@@ -4688,13 +4721,15 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert((step == block) || !step->HasInitializedTarget());
                 if (step == block)
                 {
-                    fgRemoveRefPred(step->GetTarget(), step);
+                    fgRedirectTargetEdge(step, exitBlock);
                 }
-
-                FlowEdge* const newEdge = fgAddRefPred(exitBlock, step);
-                newEdge->setLikelihood(1.0);
-                step->SetTargetEdge(newEdge); // the previous step (maybe a call to a nested finally, or a nested catch
-                                              // exit) returns to this block
+                else
+                {
+                    FlowEdge* const newEdge = fgAddRefPred(exitBlock, step);
+                    step->SetTargetEdge(newEdge); // the previous step (maybe a call to a nested finally, or a nested
+                                                  // catch
+                                                  // exit) returns to this block
+                }
 
                 // The new block will inherit this block's weight.
                 exitBlock->inheritWeight(block);
@@ -4735,14 +4770,16 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // the new BBJ_CALLFINALLY is in a different EH region, thus it can't just replace the BBJ_LEAVE,
                 // which might be in the middle of the "try". In most cases, the BBJ_ALWAYS will jump to the
                 // next block, and flow optimizations will remove it.
-                fgRemoveRefPred(block->GetTargetEdge());
-                FlowEdge* const newEdge = fgAddRefPred(callBlock, block);
-                newEdge->setLikelihood(1.0);
-                block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                fgRedirectTargetEdge(block, callBlock);
+                block->SetKind(BBJ_ALWAYS);
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
                 callBlock->SetFlags(BBF_IMPORTED);
+
+                // callBlock calls the finally handler
+                FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
+                callBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
 
 #ifdef DEBUG
                 if (verbose)
@@ -4757,10 +4794,10 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 callBlock = block;
 
+                // callBlock calls the finally handler
                 assert(callBlock->HasInitializedTarget());
-                fgRemoveRefPred(callBlock->GetTargetEdge());
-
-// callBlock will call the finally handler. This will be set up later.
+                fgRedirectTargetEdge(callBlock, HBtab->ebdHndBeg);
+                callBlock->SetKind(BBJ_CALLFINALLY);
 
 #ifdef DEBUG
                 if (verbose)
@@ -4803,12 +4840,14 @@ void Compiler::impImportLeave(BasicBlock* block)
                     BasicBlock* step2 = fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step);
                     if (step == block)
                     {
-                        fgRemoveRefPred(step->GetTargetEdge());
+                        fgRedirectTargetEdge(step, step2);
+                    }
+                    else
+                    {
+                        FlowEdge* const newEdge = fgAddRefPred(step2, step);
+                        step->SetTargetEdge(newEdge);
                     }
 
-                    FlowEdge* const newEdge = fgAddRefPred(step2, step);
-                    newEdge->setLikelihood(1.0);
-                    step->SetTargetEdge(newEdge);
                     step2->inheritWeight(block);
                     step2->CopyFlags(block, BBF_RUN_RARELY);
                     step2->SetFlags(BBF_IMPORTED);
@@ -4844,17 +4883,22 @@ void Compiler::impImportLeave(BasicBlock* block)
                 callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, step);
                 if (step == block)
                 {
-                    fgRemoveRefPred(step->GetTargetEdge());
+                    fgRedirectTargetEdge(step, callBlock);
                 }
-
-                FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
-                newEdge->setLikelihood(1.0);
-                step->SetTargetEdge(newEdge); // the previous call to a finally returns to this call (to the next
-                                              // finally in the chain)
+                else
+                {
+                    FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
+                    step->SetTargetEdge(newEdge); // the previous call to a finally returns to this call (to the next
+                                                  // finally in the chain)
+                }
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
                 callBlock->SetFlags(BBF_IMPORTED);
+
+                // callBlock calls the finally handler
+                FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
+                callBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
 
 #ifdef DEBUG
                 if (verbose)
@@ -4865,6 +4909,9 @@ void Compiler::impImportLeave(BasicBlock* block)
                 }
 #endif
             }
+
+            // callBlock should be set up at this point
+            assert(callBlock->TargetIs(HBtab->ebdHndBeg));
 
             // Note: we don't know the jump target yet
             step     = fgNewBBafter(BBJ_CALLFINALLYRET, callBlock, true);
@@ -4883,10 +4930,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                        XTnum, step->bbNum);
             }
 #endif
-
-            FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
-            newEdge->setLikelihood(1.0);
-            callBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
         }
         else if (HBtab->HasCatchHandler() && jitIsBetween(blkAddr, tryBeg, tryEnd) &&
                  !jitIsBetween(jmpAddr, tryBeg, tryEnd))
@@ -4950,12 +4993,13 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 if (step == block)
                 {
-                    fgRemoveRefPred(step->GetTargetEdge());
+                    fgRedirectTargetEdge(step, catchStep);
                 }
-
-                FlowEdge* const newEdge = fgAddRefPred(catchStep, step);
-                newEdge->setLikelihood(1.0);
-                step->SetTargetEdge(newEdge);
+                else
+                {
+                    FlowEdge* const newEdge = fgAddRefPred(catchStep, step);
+                    step->SetTargetEdge(newEdge);
+                }
 
                 // The new block will inherit this block's weight.
                 catchStep->inheritWeight(block);
@@ -5004,13 +5048,16 @@ void Compiler::impImportLeave(BasicBlock* block)
     {
         assert((step == block) || !step->HasInitializedTarget());
 
+        // leaveTarget is the ultimate destination of the LEAVE
         if (step == block)
         {
-            fgRemoveRefPred(step->GetTarget(), step);
+            fgRedirectTargetEdge(step, leaveTarget);
         }
-        FlowEdge* const newEdge = fgAddRefPred(leaveTarget, step);
-        newEdge->setLikelihood(1.0);
-        step->SetTargetEdge(newEdge); // this is the ultimate destination of the LEAVE
+        else
+        {
+            FlowEdge* const newEdge = fgAddRefPred(leaveTarget, step);
+            step->SetTargetEdge(newEdge);
+        }
 
 #ifdef DEBUG
         if (verbose)
@@ -5072,7 +5119,6 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
         BasicBlock* dupBlock = BasicBlock::New(this);
         dupBlock->CopyFlags(block);
         FlowEdge* const newEdge = fgAddRefPred(block->GetTarget(), dupBlock);
-        newEdge->setLikelihood(1.0);
         dupBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
         dupBlock->copyEHRegion(block);
         dupBlock->bbCatchTyp = block->bbCatchTyp;
@@ -5102,10 +5148,8 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
 
     fgInitBBLookup();
 
-    fgRemoveRefPred(block->GetTargetEdge());
-    FlowEdge* const newEdge = fgAddRefPred(fgLookupBB(jmpAddr), block);
-    newEdge->setLikelihood(1.0);
-    block->SetKindAndTargetEdge(BBJ_LEAVE, newEdge);
+    fgRedirectTargetEdge(block, fgLookupBB(jmpAddr));
+    block->SetKind(BBJ_LEAVE);
 
     // We will leave the BBJ_ALWAYS block we introduced. When it's reimported
     // the BBJ_ALWAYS block will be unreachable, and will be removed after. The
@@ -5336,6 +5380,32 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
         return nullptr;
     }
 
+    CORINFO_CLASS_HANDLE toClass = pResolvedToken->hClass;
+    if (info.compCompHnd->getExactClasses(toClass, 0, nullptr) == 0)
+    {
+        JITDUMP("\nClass %p (%s) can never be allocated\n", dspPtr(toClass), eeGetClassName(toClass));
+
+        if (!isCastClass)
+        {
+            JITDUMP("Cast will fail, optimizing to return null\n");
+
+            // If the cast was fed by a box, we can remove that too.
+            if (op1->IsBoxedValue())
+            {
+                JITDUMP("Also removing upstream box\n");
+                gtTryRemoveBoxUpstreamEffects(op1);
+            }
+
+            if (gtTreeHasSideEffects(op1, GTF_SIDE_EFFECT))
+            {
+                impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+            }
+            return gtNewNull();
+        }
+
+        JITDUMP("Cast will always throw, but not optimizing yet\n");
+    }
+
     // See what we know about the type of the object being cast.
     bool                 isExact   = false;
     bool                 isNonNull = false;
@@ -5343,7 +5413,6 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
 
     if (fromClass != nullptr)
     {
-        CORINFO_CLASS_HANDLE toClass = pResolvedToken->hClass;
         JITDUMP("\nConsidering optimization of %s from %s%p (%s) to %p (%s)\n", isCastClass ? "castclass" : "isinst",
                 isExact ? "exact " : "", dspPtr(fromClass), eeGetClassName(fromClass), dspPtr(toClass),
                 eeGetClassName(toClass));
@@ -5421,7 +5490,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
 //
 // Notes:
 //   May expand into a series of runtime checks or a helper call.
-
+//
 GenTree* Compiler::impCastClassOrIsInstToTree(
     GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, IL_OFFSET ilOffset)
 {
@@ -5466,7 +5535,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     if (!shouldExpandEarly)
     {
-        JITDUMP("\nImporting %s as call because %s\n", isCastClass ? "castclass" : "isinst");
+        JITDUMP("\nImporting %s as call\n", isCastClass ? "castclass" : "isinst");
 
         // If we CSE this class handle we prevent assertionProp from making SubType assertions
         // so instead we force the CSE logic to not consider CSE-ing this class handle.
@@ -5524,7 +5593,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     GenTreeOp*    condMT    = gtNewOperNode(GT_NE, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
     GenTreeOp*    condNull  = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
     GenTreeQmark* qmarkMT   = gtNewQmarkNode(TYP_REF, condMT, gtNewColonNode(TYP_REF, gtNewNull(), gtClone(op1)));
-    GenTreeQmark* qmarkNull = gtNewQmarkNode(TYP_REF, condNull, gtNewColonNode(TYP_REF, gtClone(op1), qmarkMT));
+    GenTreeQmark* qmarkNull = gtNewQmarkNode(TYP_REF, condNull, gtNewColonNode(TYP_REF, gtNewNull(), qmarkMT));
 
     // Make QMark node a top level node by spilling it.
     const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNull"));
@@ -6273,7 +6342,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (compIsForInlining())
                 {
-                    op1 = impInlineFetchArg(lclNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo);
+                    op1 = impInlineFetchArg(impInlineInfo->inlArgInfo[lclNum], impInlineInfo->lclVarInfo[lclNum]);
                     noway_assert(op1->gtOper == GT_LCL_VAR);
                     lclNum = op1->AsLclVar()->GetLclNum();
 
@@ -6478,7 +6547,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // In IL, LDARGA(_S) is used to load the byref managed pointer of struct argument,
                     // followed by a ldfld to load the field.
 
-                    op1 = impInlineFetchArg(lclNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo);
+                    op1 = impInlineFetchArg(impInlineInfo->inlArgInfo[lclNum], impInlineInfo->lclVarInfo[lclNum]);
                     if (op1->gtOper != GT_LCL_VAR)
                     {
                         compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDARGA_NOT_LOCAL_VAR);
@@ -7186,12 +7255,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
                                 block->GetFalseTarget()->bbNum);
-                        fgRemoveRefPred(block->GetFalseTarget(), block);
-                        block->SetKind(BBJ_ALWAYS);
-
-                        // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense to
-                        // set BBF_NONE_QUIRK
-                        block->SetFlags(BBF_NONE_QUIRK);
+                        fgRemoveRefPred(block->GetFalseEdge());
+                        block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
 
                         jumpToNextOptimization = true;
                     }
@@ -7262,19 +7327,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
                                     block->GetTrueTarget()->bbNum);
                             fgRemoveRefPred(block->GetFalseEdge());
-                            block->SetKind(BBJ_ALWAYS);
+                            block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
                         }
                         else
                         {
-                            // TODO-NoFallThrough: Update once false target can diverge from bbNext
                             assert(block->NextIs(block->GetFalseTarget()));
                             JITDUMP("\nThe block jumps to the next " FMT_BB "\n", block->Next()->bbNum);
                             fgRemoveRefPred(block->GetTrueEdge());
                             block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
-
-                            // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense
-                            // to set BBF_NONE_QUIRK
-                            block->SetFlags(BBF_NONE_QUIRK);
                         }
                     }
 
@@ -7448,12 +7508,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         JITDUMP(FMT_BB " always branches to " FMT_BB ", changing to BBJ_ALWAYS\n", block->bbNum,
                                 block->GetFalseTarget()->bbNum);
-                        fgRemoveRefPred(block->GetFalseTarget(), block);
-                        block->SetKind(BBJ_ALWAYS);
-
-                        // TODO-NoFallThrough: Once false target can diverge from bbNext, it may not make sense to
-                        // set BBF_NONE_QUIRK
-                        block->SetFlags(BBF_NONE_QUIRK);
+                        fgRemoveRefPred(block->GetFalseEdge());
+                        block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
 
                         jumpToNextOptimization = true;
                     }
@@ -7547,11 +7603,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 
                     assert(foundVal);
-                    if (block->JumpsToNext())
-                    {
-                        block->SetFlags(BBF_NONE_QUIRK);
-                    }
-
 #ifdef DEBUG
                     if (verbose)
                     {
@@ -8474,7 +8525,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         const bool useParent = true;
-                        op1                  = gtNewAllocObjNode(&resolvedToken, useParent);
+                        op1                  = gtNewAllocObjNode(&resolvedToken, info.compMethodHnd, useParent);
                         if (op1 == nullptr)
                         {
                             return;
@@ -10452,7 +10503,8 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
             tiRetVal = typeInfo(type);
         }
 
-        impPushOnStack(impInlineFetchArg(ilArgNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo), tiRetVal);
+        impPushOnStack(impInlineFetchArg(impInlineInfo->inlArgInfo[ilArgNum], impInlineInfo->lclVarInfo[ilArgNum]),
+                       tiRetVal);
     }
     else
     {
@@ -12775,9 +12827,27 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 inlArgInfo[ilArgCnt].argIsThis = true;
                 break;
             case WellKnownArg::RetBuffer:
-            case WellKnownArg::InstParam:
-                // These do not appear in the table of inline arg info; do not include them
+                // This does not appear in the table of inline arg info; do not include them
                 continue;
+            case WellKnownArg::InstParam:
+            {
+                InlArgInfo* ctxInfo  = new (this, CMK_Inlining) InlArgInfo{};
+                ctxInfo->arg         = &arg;
+                ctxInfo->argTmpNum   = BAD_VAR_NUM;
+                ctxInfo->argIsLclVar = arg.GetNode()->OperIs(GT_LCL_VAR);
+                if (arg.GetNode()->IsCnsIntOrI())
+                {
+                    ctxInfo->argIsInvariant = true;
+                }
+                else
+                {
+                    // Conservative approach
+                    ctxInfo->argHasSideEff = true;
+                    ctxInfo->argHasGlobRef = true;
+                }
+                pInlineInfo->inlInstParamArgInfo = ctxInfo;
+                continue;
+            }
             default:
                 break;
         }
@@ -13148,9 +13218,8 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
 // impInlineFetchArg: return tree node for argument value in an inlinee
 //
 // Arguments:
-//    lclNum -- argument number in inlinee IL
-//    inlArgInfo -- argument info for inlinee
-//    lclVarInfo -- var info for inlinee
+//    argInfo -- argument info for inlinee
+//    lclInfo -- var info for inlinee
 //
 // Returns:
 //    Tree for the argument's value. Often an inlinee-scoped temp
@@ -13177,15 +13246,13 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
 //    This method will side effect inlArgInfo. It should only be called
 //    for actual uses of the argument in the inlinee.
 
-GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, InlLclVarInfo* lclVarInfo)
+GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& lclInfo)
 {
     // Cache the relevant arg and lcl info for this argument.
     // We will modify argInfo but not lclVarInfo.
-    InlArgInfo&          argInfo          = inlArgInfo[lclNum];
-    const InlLclVarInfo& lclInfo          = lclVarInfo[lclNum];
-    const bool           argCanBeModified = argInfo.argHasLdargaOp || argInfo.argHasStargOp;
-    const var_types      lclTyp           = lclInfo.lclTypeInfo;
-    GenTree*             op1              = nullptr;
+    const bool      argCanBeModified = argInfo.argHasLdargaOp || argInfo.argHasStargOp;
+    const var_types lclTyp           = lclInfo.lclTypeInfo;
+    GenTree*        op1              = nullptr;
 
     GenTree* argNode = argInfo.arg->GetNode();
     assert(!argNode->OperIs(GT_RET_EXPR));
@@ -13236,7 +13303,6 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
         if (argInfo.argIsUsed || ((lclTyp == TYP_BYREF) && (op1->TypeGet() != TYP_BYREF)))
         {
             assert(op1->gtOper == GT_LCL_VAR);
-            assert(lclNum == op1->AsLclVar()->gtLclILoffs);
 
             // Create a new lcl var node - remember the argument lclNum
             op1 = impCreateLocalNode(argLclNum DEBUGARG(op1->AsLclVar()->gtLclILoffs));
@@ -13349,7 +13415,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                  !argInfo.argHasCallerLocalRef))
             {
                 /* Get a *LARGE* LCL_VAR node */
-                op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp) DEBUGARG(lclNum));
+                op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp));
 
                 /* Record op1 as the very first use of this argument.
                 If there are no further uses of the arg, we may be

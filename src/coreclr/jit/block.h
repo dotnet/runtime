@@ -46,8 +46,12 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 // Use this format for loop indices
 #define FMT_LP "L%02u"
 
-// And this format for profile weights
+// Use this format for profile weights
 #define FMT_WT "%.7g"
+
+// Use this format for profile weights where we want to conserve horizontal space, at the expense of displaying
+// less precision.
+#define FMT_WT_NARROW "%.3g"
 
 /*****************************************************************************
  *
@@ -258,7 +262,9 @@ public:
 // PredBlockList: adapter class for forward iteration of the predecessor edge linked list yielding
 // predecessor blocks, using range-based `for`, normally used via BasicBlock::PredBlocks(), e.g.:
 //    for (BasicBlock* const predBlock : block->PredBlocks()) ...
+// allowEdits controls whether the iterator should be resilient to changes to the predecessor list.
 //
+template <bool allowEdits>
 class PredBlockList
 {
     FlowEdge* m_begin;
@@ -270,13 +276,12 @@ class PredBlockList
     {
         FlowEdge* m_pred;
 
-#ifdef DEBUG
-        // Try to guard against the user of the iterator from making changes to the IR that would invalidate
-        // the iterator: cache the edge we think should be next, then check it when we actually do the `++`
+        // When allowEdits=false, try to guard against the user of the iterator from modifying the predecessor list
+        // being traversed: cache the edge we think should be next, then check it when we actually do the `++`
         // operation. This is a bit conservative, but attempts to protect against callers assuming too much about
         // this iterator implementation.
+        // When allowEdits=true, m_next is always used to update m_pred, so changes to m_pred don't break the iterator.
         FlowEdge* m_next;
-#endif
 
     public:
         iterator(FlowEdge* pred);
@@ -307,7 +312,7 @@ public:
     }
 };
 
-// BBArrayIterator: forward iterator for an array of BasicBlock*, such as the BBswtDesc->bbsDstTab.
+// BBArrayIterator: forward iterator for an array of BasicBlock*.
 // It is an error (with assert) to yield a nullptr BasicBlock* in this array.
 // `m_edgeEntry` can be nullptr, but it only makes sense if both the begin and end of an iteration range are nullptr
 // (meaning, no actual iteration will happen).
@@ -331,6 +336,41 @@ public:
     }
 
     bool operator!=(const BBArrayIterator& i) const
+    {
+        return m_edgeEntry != i.m_edgeEntry;
+    }
+};
+
+// FlowEdgeArrayIterator: forward iterator for an array of FlowEdge*, such as the BBswtDesc->bbsDstTab.
+// It is an error (with assert) to yield a nullptr FlowEdge* in this array.
+// `m_edgeEntry` can be nullptr, but it only makes sense if both the begin and end of an iteration range are nullptr
+// (meaning, no actual iteration will happen).
+//
+class FlowEdgeArrayIterator
+{
+    FlowEdge* const* m_edgeEntry;
+
+public:
+    FlowEdgeArrayIterator(FlowEdge* const* edgeEntry) : m_edgeEntry(edgeEntry)
+    {
+    }
+
+    FlowEdge* operator*() const
+    {
+        assert(m_edgeEntry != nullptr);
+        FlowEdge* const edge = *m_edgeEntry;
+        assert(edge != nullptr);
+        return edge;
+    }
+
+    FlowEdgeArrayIterator& operator++()
+    {
+        assert(m_edgeEntry != nullptr);
+        ++m_edgeEntry;
+        return *this;
+    }
+
+    bool operator!=(const FlowEdgeArrayIterator& i) const
     {
         return m_edgeEntry != i.m_edgeEntry;
     }
@@ -416,11 +456,7 @@ enum BasicBlockFlags : unsigned __int64
     BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(37), // Block has recursive tailcall that may turn into a loop
     BBF_NO_CSE_IN                      = MAKE_BBFLAG(38), // Block should kill off any incoming CSE
     BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(39), // Ok to add pred edge to this block, even when "safe" edge creation disabled
-    BBF_NONE_QUIRK                     = MAKE_BBFLAG(40), // Block was created as a BBJ_ALWAYS to the next block,
-                                                          // and should be treated as if it falls through.
-                                                          // This is just to reduce diffs from removing BBJ_NONE.
-                                                          // (TODO: Remove this quirk after refactoring Compiler::fgFindInsertPoint)
-    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(41), // Block has a node that needs a value probing
+    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(40), // Block has a node that needs a value probing
 
     // The following are sets of flags.
 
@@ -446,7 +482,7 @@ enum BasicBlockFlags : unsigned __int64
     // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
     BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | \
-                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_NONE_QUIRK,
+                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL,
 
     // Flags that must be propagated to a new block if code is copied from a block to a new block. These are flags that
     // limit processing of a block if the code in question doesn't exist. This is conservative; we might not
@@ -558,7 +594,7 @@ private:
     unsigned m_dupCount;
 
     // True if likelihood has been set
-    bool m_likelihoodSet;
+    INDEBUG(bool m_likelihoodSet);
 
 public:
     FlowEdge(BasicBlock* sourceBlock, BasicBlock* destBlock, FlowEdge* rest)
@@ -569,7 +605,9 @@ public:
         , m_edgeWeightMax(0)
         , m_likelihood(0)
         , m_dupCount(0)
+#ifdef DEBUG
         , m_likelihoodSet(false)
+#endif // DEBUG
     {
     }
 
@@ -632,27 +670,25 @@ public:
 
     weight_t getLikelihood() const
     {
+        assert(m_likelihoodSet);
         return m_likelihood;
     }
 
-    void setLikelihood(weight_t likelihood)
-    {
-        assert(likelihood >= 0.0);
-        assert(likelihood <= 1.0);
-        m_likelihoodSet = true;
-        m_likelihood    = likelihood;
-    }
+    void setLikelihood(weight_t likelihood);
+    void addLikelihood(weight_t addedLikelihod);
 
     void clearLikelihood()
     {
-        m_likelihood    = 0.0;
-        m_likelihoodSet = false;
+        m_likelihood = 0.0;
+        INDEBUG(m_likelihoodSet = false);
     }
 
+#ifdef DEBUG
     bool hasLikelihood() const
     {
         return m_likelihoodSet;
     }
+#endif // DEBUG
 
     weight_t getLikelyWeight() const;
 
@@ -818,6 +854,9 @@ public:
         assert(HasInitializedTarget());
         assert(bbTargetEdge->getSourceBlock() == this);
         assert(bbTargetEdge->getDestinationBlock() != nullptr);
+
+        // This is the only successor edge for this block, so likelihood should be 1.0
+        bbTargetEdge->setLikelihood(1.0);
     }
 
     BasicBlock* GetTrueTarget() const
@@ -903,16 +942,23 @@ public:
         SetTrueEdge(trueEdge);
     }
 
-    // Set both the block kind and target edge. This can clear `bbTargetEdge` when setting
-    // block kinds that don't use `bbTargetEdge`.
-    void SetKindAndTargetEdge(BBKinds kind, FlowEdge* targetEdge = nullptr)
+    // Set both the block kind and target edge.
+    void SetKindAndTargetEdge(BBKinds kind, FlowEdge* targetEdge)
     {
         bbKind       = kind;
         bbTargetEdge = targetEdge;
+        assert(HasInitializedTarget());
 
-        // If bbKind indicates this block has a jump, bbTargetEdge cannot be null.
-        // You shouldn't use this to set a BBJ_COND, BBJ_SWITCH, or BBJ_EHFINALLYRET.
-        assert(HasTarget() ? HasInitializedTarget() : (bbTargetEdge == nullptr));
+        // This is the only successor edge for this block, so likelihood should be 1.0
+        bbTargetEdge->setLikelihood(1.0);
+    }
+
+    // Set the block kind, and clear bbTargetEdge.
+    void SetKindAndTargetEdge(BBKinds kind)
+    {
+        bbKind       = kind;
+        bbTargetEdge = nullptr;
+        assert(!HasTarget());
     }
 
     bool HasInitializedTarget() const
@@ -994,6 +1040,27 @@ public:
     {
         assert(KindIs(BBJ_COND));
         return (bbFalseEdge == nullptr) ? nullptr : bbFalseEdge->getDestinationBlock();
+    }
+
+    // Return the target edge; it might be null. Only used during dumping.
+    FlowEdge* GetTargetEdgeRaw() const
+    {
+        assert(HasTarget());
+        return bbTargetEdge;
+    }
+
+    // Return the BBJ_COND true target edge; it might be null. Only used during dumping.
+    FlowEdge* GetTrueEdgeRaw() const
+    {
+        assert(KindIs(BBJ_COND));
+        return bbTrueEdge;
+    }
+
+    // Return the BBJ_COND false target edge; it might be null. Only used during dumping.
+    FlowEdge* GetFalseEdgeRaw() const
+    {
+        assert(KindIs(BBJ_COND));
+        return bbFalseEdge;
     }
 
 #endif // DEBUG
@@ -1283,7 +1350,11 @@ public:
     unsigned NumSucc() const;
     unsigned NumSucc(Compiler* comp);
 
-    // GetSucc: Returns the "i"th successor. Requires (0 <= i < NumSucc()).
+    // GetSuccEdge: Returns the "i"th successor edge. Requires (0 <= i < NumSucc()).
+    FlowEdge* GetSuccEdge(unsigned i) const;
+    FlowEdge* GetSuccEdge(unsigned i, Compiler* comp);
+
+    // GetSucc: Returns the "i"th successor block. Requires (0 <= i < NumSucc()).
     BasicBlock* GetSucc(unsigned i) const;
     BasicBlock* GetSucc(unsigned i, Compiler* comp);
 
@@ -1486,9 +1557,18 @@ public:
     // PredBlocks: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
     //    for (BasicBlock* const predBlock : block->PredBlocks()) ...
     //
-    PredBlockList PredBlocks() const
+    PredBlockList<false> PredBlocks() const
     {
-        return PredBlockList(bbPreds);
+        return PredBlockList<false>(bbPreds);
+    }
+
+    // PredBlocksEditing: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
+    //    for (BasicBlock* const predBlock : block->PredBlocksEditing()) ...
+    // This iterator tolerates modifications to bbPreds.
+    //
+    PredBlockList<true> PredBlocksEditing() const
+    {
+        return PredBlockList<true>(bbPreds);
     }
 
     // Pred list maintenance
@@ -1762,12 +1842,11 @@ public:
 
     bool HasPotentialEHSuccs(Compiler* comp);
 
-    // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
-    // normally used via BasicBlock::Succs(), e.g.:
-    //    for (BasicBlock* const target : block->Succs()) ...
+    // Base class for Successor block/edge iterators.
     //
-    class BBSuccList
+    class SuccList
     {
+    protected:
         // For one or two successors, pre-compute and stash the successors inline, in m_succs[], so we don't
         // need to call a function or execute another `switch` to get them. Also, pre-compute the begin and end
         // points of the iteration, for use by BBArrayIterator. `m_begin` and `m_end` will either point at
@@ -1776,10 +1855,51 @@ public:
         FlowEdge* const* m_begin;
         FlowEdge* const* m_end;
 
+        SuccList(const BasicBlock* block);
+    };
+
+    // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
+    // normally used via BasicBlock::Succs(), e.g.:
+    //    for (BasicBlock* const target : block->Succs()) ...
+    //
+    class BBSuccList : private SuccList
+    {
     public:
-        BBSuccList(const BasicBlock* block);
-        BBArrayIterator begin() const;
-        BBArrayIterator end() const;
+        BBSuccList(const BasicBlock* block) : SuccList(block)
+        {
+        }
+
+        BBArrayIterator begin() const
+        {
+            return BBArrayIterator(m_begin);
+        }
+
+        BBArrayIterator end() const
+        {
+            return BBArrayIterator(m_end);
+        }
+    };
+
+    // BBSuccEdgeList: adapter class for forward iteration of block successors edges, using range-based `for`,
+    // normally used via BasicBlock::SuccEdges(), e.g.:
+    //    for (FlowEdge* const succEdge : block->SuccEdges()) ...
+    //
+    class BBSuccEdgeList : private SuccList
+    {
+    public:
+        BBSuccEdgeList(const BasicBlock* block) : SuccList(block)
+        {
+        }
+
+        FlowEdgeArrayIterator begin() const
+        {
+            return FlowEdgeArrayIterator(m_begin);
+        }
+
+        FlowEdgeArrayIterator end() const
+        {
+            return FlowEdgeArrayIterator(m_end);
+        }
     };
 
     // BBCompilerSuccList: adapter class for forward iteration of block successors, using range-based `for`,
@@ -1793,7 +1913,7 @@ public:
         Compiler*   m_comp;
         BasicBlock* m_block;
 
-        // iterator: forward iterator for an array of BasicBlock*, such as the BBswtDesc->bbsDstTab.
+        // iterator: forward iterator for an array of BasicBlock*
         //
         class iterator
         {
@@ -1843,6 +1963,67 @@ public:
         }
     };
 
+    // BBCompilerSuccEdgeList: adapter class for forward iteration of block successors edges, using range-based `for`,
+    // normally used via BasicBlock::SuccEdges(), e.g.:
+    //    for (FlowEdge* const succEdge : block->SuccEdges(compiler)) ...
+    //
+    // This version uses NumSucc(Compiler*)/GetSucc(Compiler*). See the documentation there for the explanation
+    // of the implications of this versus the version that does not take `Compiler*`.
+    class BBCompilerSuccEdgeList
+    {
+        Compiler*   m_comp;
+        BasicBlock* m_block;
+
+        // iterator: forward iterator for an array of BasicBlock*
+        //
+        class iterator
+        {
+            Compiler*   m_comp;
+            BasicBlock* m_block;
+            unsigned    m_succNum;
+
+        public:
+            iterator(Compiler* comp, BasicBlock* block, unsigned succNum)
+                : m_comp(comp), m_block(block), m_succNum(succNum)
+            {
+            }
+
+            FlowEdge* operator*() const
+            {
+                assert(m_block != nullptr);
+                FlowEdge* succEdge = m_block->GetSuccEdge(m_succNum, m_comp);
+                assert(succEdge != nullptr);
+                return succEdge;
+            }
+
+            iterator& operator++()
+            {
+                ++m_succNum;
+                return *this;
+            }
+
+            bool operator!=(const iterator& i) const
+            {
+                return m_succNum != i.m_succNum;
+            }
+        };
+
+    public:
+        BBCompilerSuccEdgeList(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block)
+        {
+        }
+
+        iterator begin() const
+        {
+            return iterator(m_comp, m_block, 0);
+        }
+
+        iterator end() const
+        {
+            return iterator(m_comp, m_block, m_block->NumSucc(m_comp));
+        }
+    };
+
     // Succs: convenience methods for enabling range-based `for` iteration over a block's successors, e.g.:
     //    for (BasicBlock* const succ : block->Succs()) ...
     //
@@ -1857,6 +2038,16 @@ public:
     BBCompilerSuccList Succs(Compiler* comp)
     {
         return BBCompilerSuccList(comp, this);
+    }
+
+    BBSuccEdgeList SuccEdges()
+    {
+        return BBSuccEdgeList(this);
+    }
+
+    BBCompilerSuccEdgeList SuccEdges(Compiler* comp)
+    {
+        return BBCompilerSuccEdgeList(comp, this);
     }
 
     // Clone block state and statements from `from` block to `to` block (which must be new/empty)
@@ -2110,9 +2301,9 @@ inline BBArrayIterator BBEhfSuccList::end() const
     return BBArrayIterator(m_bbeDesc->bbeSuccs + m_bbeDesc->bbeCount);
 }
 
-// BBSuccList out-of-class-declaration implementations
+// SuccList out-of-class-declaration implementations
 //
-inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
+inline BasicBlock::SuccList::SuccList(const BasicBlock* block)
 {
     assert(block != nullptr);
 
@@ -2185,16 +2376,6 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
     assert(m_end >= m_begin);
 }
 
-inline BBArrayIterator BasicBlock::BBSuccList::begin() const
-{
-    return BBArrayIterator(m_begin);
-}
-
-inline BBArrayIterator BasicBlock::BBSuccList::end() const
-{
-    return BBArrayIterator(m_end);
-}
-
 // We have a simpler struct, BasicBlockList, which is simply a singly-linked
 // list of blocks.
 
@@ -2254,29 +2435,45 @@ inline PredEdgeList::iterator& PredEdgeList::iterator::operator++()
     return *this;
 }
 
-inline PredBlockList::iterator::iterator(FlowEdge* pred) : m_pred(pred)
+template <bool allowEdits>
+inline PredBlockList<allowEdits>::iterator::iterator(FlowEdge* pred) : m_pred(pred)
 {
-#ifdef DEBUG
-    m_next = (m_pred == nullptr) ? nullptr : m_pred->getNextPredEdge();
-#endif
+    bool initNextPointer = allowEdits;
+    INDEBUG(initNextPointer = true);
+    if (initNextPointer)
+    {
+        m_next = (m_pred == nullptr) ? nullptr : m_pred->getNextPredEdge();
+    }
 }
 
-inline BasicBlock* PredBlockList::iterator::operator*() const
+template <bool     allowEdits>
+inline BasicBlock* PredBlockList<allowEdits>::iterator::operator*() const
 {
     return m_pred->getSourceBlock();
 }
 
-inline PredBlockList::iterator& PredBlockList::iterator::operator++()
+template <bool                                       allowEdits>
+inline typename PredBlockList<allowEdits>::iterator& PredBlockList<allowEdits>::iterator::operator++()
 {
-    FlowEdge* next = m_pred->getNextPredEdge();
+    if (allowEdits)
+    {
+        // For editing iterators, m_next is always used and maintained
+        m_pred = m_next;
+        m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge();
+    }
+    else
+    {
+        FlowEdge* next = m_pred->getNextPredEdge();
 
 #ifdef DEBUG
-    // Check that the next block is the one we expect to see.
-    assert(next == m_next);
-    m_next = (next == nullptr) ? nullptr : next->getNextPredEdge();
+        // If allowEdits=false, check that the next block is the one we expect to see.
+        assert(next == m_next);
+        m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge();
 #endif // DEBUG
 
-    m_pred = next;
+        m_pred = next;
+    }
+
     return *this;
 }
 

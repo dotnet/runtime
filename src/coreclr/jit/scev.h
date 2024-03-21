@@ -37,6 +37,12 @@ static bool ScevOperIs(ScevOper oper, ScevOper operFirst, Args... operTail)
     return oper == operFirst || ScevOperIs(oper, operTail...);
 }
 
+enum class ScevVisit
+{
+    Abort,
+    Continue,
+};
+
 struct Scev
 {
     const ScevOper  Oper;
@@ -62,6 +68,8 @@ struct Scev
 #ifdef DEBUG
     void Dump(Compiler* comp);
 #endif
+    template <typename TVisitor>
+    ScevVisit Visit(TVisitor visitor);
 };
 
 struct ScevConstant : Scev
@@ -119,6 +127,57 @@ struct ScevAddRec : Scev
     INDEBUG(FlowGraphNaturalLoop* const Loop);
 };
 
+//------------------------------------------------------------------------
+// Scev::Visit: Recursively visit all SCEV nodes in the SCEV tree.
+//
+// Parameters:
+//   visitor - Callback with signature Scev* -> ScevVisit.
+//
+// Returns:
+//   ScevVisit::Abort if "visitor" aborted, otherwise ScevVisit::Continue.
+//
+// Remarks:
+//   The visit is done in preorder.
+//
+template <typename TVisitor>
+ScevVisit Scev::Visit(TVisitor visitor)
+{
+    if (visitor(this) == ScevVisit::Abort)
+        return ScevVisit::Abort;
+
+    switch (Oper)
+    {
+        case ScevOper::Constant:
+        case ScevOper::Local:
+            break;
+        case ScevOper::ZeroExtend:
+        case ScevOper::SignExtend:
+            return static_cast<ScevUnop*>(this)->Op1->Visit(visitor);
+        case ScevOper::Add:
+        case ScevOper::Mul:
+        case ScevOper::Lsh:
+        {
+            ScevBinop* binop = static_cast<ScevBinop*>(this);
+            if (binop->Op1->Visit(visitor) == ScevVisit::Abort)
+                return ScevVisit::Abort;
+
+            return binop->Op2->Visit(visitor);
+        }
+        case ScevOper::AddRec:
+        {
+            ScevAddRec* addrec = static_cast<ScevAddRec*>(this);
+            if (addrec->Start->Visit(visitor) == ScevVisit::Abort)
+                return ScevVisit::Abort;
+
+            return addrec->Step->Visit(visitor);
+        }
+        default:
+            unreached();
+    }
+
+    return ScevVisit::Continue;
+}
+
 typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Scev*> ScalarEvolutionMap;
 
 // Scalar evolution is analyzed in the context of a single loop, and are
@@ -130,14 +189,22 @@ class ScalarEvolutionContext
     FlowGraphNaturalLoop* m_loop = nullptr;
     ScalarEvolutionMap    m_cache;
 
+    // During analysis of PHIs we insert a symbolic node representing the
+    // "recurrence"; we use this cache to be able to invalidate things that end
+    // up depending on the symbolic node quickly.
+    ScalarEvolutionMap m_ephemeralCache;
+    bool               m_usingEphemeralCache = false;
+
     Scev* Analyze(BasicBlock* block, GenTree* tree, int depth);
     Scev* AnalyzeNew(BasicBlock* block, GenTree* tree, int depth);
     Scev* CreateSimpleAddRec(GenTreeLclVarCommon* headerStore,
                              ScevLocal*           start,
                              BasicBlock*          stepDefBlock,
                              GenTree*             stepDefData);
+    Scev* MakeAddRecFromRecursiveScev(Scev* start, Scev* scev, Scev* recursiveScev);
     Scev* CreateSimpleInvariantScev(GenTree* tree);
     Scev* CreateScevForConstant(GenTreeIntConCommon* tree);
+    void ExtractAddOperands(ScevBinop* add, ArrayStack<Scev*>& operands);
 
 public:
     ScalarEvolutionContext(Compiler* comp);

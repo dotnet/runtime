@@ -73,7 +73,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
                 runOptions: new BlazorRunOptions(
                     Config: config,
                     ExtraArgs: "--web-server-use-cors --web-server-use-cop",
-                    OnConsoleMessage: (message) =>
+                    OnConsoleMessage: (_, message) =>
                     {
                         if (message.Text.Contains("WasmEnableThreads=true"))
                             hasEmittedWasmEnableThreads = true;
