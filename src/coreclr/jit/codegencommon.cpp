@@ -7931,14 +7931,14 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             toReg      = retTypeDesc.GetABIReturnReg(1, compiler->info.compCallConv);
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         }
-#else  // !TARGET_LOONGARCH64 && !TARGET_RISCV64
+#else // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
 #ifdef SWIFT_SUPPORT
         const uint32_t* offsets = nullptr;
         if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
         {
-            CORINFO_CLASS_HANDLE retTypeHnd = compiler->info.compMethodInfo->args.retTypeClass;
-            const CORINFO_SWIFT_LOWERING* lowering = compiler->GetSwiftLowering(retTypeHnd);
+            CORINFO_CLASS_HANDLE          retTypeHnd = compiler->info.compMethodInfo->args.retTypeClass;
+            const CORINFO_SWIFT_LOWERING* lowering   = compiler->GetSwiftLowering(retTypeHnd);
             assert(!lowering->byReference && (regCount == lowering->numLoweredElements));
             offsets = lowering->offsets;
         }

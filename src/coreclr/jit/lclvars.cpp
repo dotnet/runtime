@@ -172,8 +172,8 @@ void Compiler::lvaInitTypeRef()
 #ifdef DEBUG
     if (verbose && (info.compCallConv == CorInfoCallConvExtension::Swift) && varTypeIsStruct(info.compRetType))
     {
-        CORINFO_CLASS_HANDLE retTypeHnd = info.compMethodInfo->args.retTypeClass;
-        const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(retTypeHnd);
+        CORINFO_CLASS_HANDLE          retTypeHnd = info.compMethodInfo->args.retTypeClass;
+        const CORINFO_SWIFT_LOWERING* lowering   = GetSwiftLowering(retTypeHnd);
         if (lowering->byReference)
         {
             printf("Swift compilation returns %s by reference\n", typGetObjLayout(retTypeHnd)->GetClassName());
@@ -188,7 +188,6 @@ void Compiler::lvaInitTypeRef()
                        varTypeName(JitType2PreciseVarType(lowering->loweredElements[i])));
             }
         }
-
     }
 #endif
 
