@@ -27,9 +27,11 @@
     private List<string> chatMessages = new List<string>();
     private string wrongQueryError = "Query string with parameters 'message' and 'transport' are required";
 
-    protected override void OnInitialized()
+    protected override void OnAfterRender(bool firstRender)
     {
-        Helper.TestOutputWriteLine($"OnInitialized on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+        base.OnAfterRender(firstRender);
+
+        Helper.TestOutputWriteLine($"OnAfterRender on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
         GetQueryParameters();
     }
 
@@ -86,7 +88,8 @@
     {
         await DisposeHubConnection();
         // exit the client
-        await JSRuntime.InvokeVoidAsync("eval", "import('./dotnet.js').then(module => { module.dotnet; module.exit(0); });");
+        Helper.TestOutputWriteLine($"SendExitSignal by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+        await JSRuntime.InvokeVoidAsync("eval", "setTimeout(() => { getDotnetRuntime(0).exit(0); }, 50);");
     }
 
     private async Task DisposeHubConnection()

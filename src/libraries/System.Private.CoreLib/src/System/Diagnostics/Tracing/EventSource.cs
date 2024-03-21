@@ -5498,7 +5498,7 @@ namespace System.Diagnostics.Tracing
                     if (channelInfo.Attribs != null)
                     {
                         EventChannelAttribute attribs = channelInfo.Attribs;
-                        if (Enum.IsDefined(typeof(EventChannelType), attribs.EventChannelType))
+                        if (Enum.IsDefined(attribs.EventChannelType))
                             channelType = attribs.EventChannelType.ToString();
                         enabled = attribs.Enabled;
                     }

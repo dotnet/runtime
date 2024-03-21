@@ -885,11 +885,8 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 #ifdef SWIFT_SUPPORT
     // Swift calls that throw may trash the callee-saved error register,
     // so don't use the register post-call until it is consumed by SwiftError.
-    // GTF_CALL_M_SWIFT_ERROR_HANDLING indicates the call has a SwiftError* argument,
-    // so the error register value will eventually be consumed post-call.
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    if (call->HasSwiftErrorHandling())
     {
-        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
         killMask |= RBM_SWIFT_ERROR;
     }
 #endif // SWIFT_SUPPORT
@@ -3061,7 +3058,8 @@ void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
             // For all other cases of multi-reg definitions, the registers must be in sequential order.
             if (retTypeDesc != nullptr)
             {
-                thisDstCandidates = genRegMask(tree->AsCall()->GetReturnTypeDesc()->GetABIReturnReg(i));
+                thisDstCandidates = genRegMask(
+                    tree->AsCall()->GetReturnTypeDesc()->GetABIReturnReg(i, tree->AsCall()->GetUnmanagedCallConv()));
                 assert((dstCandidates & thisDstCandidates) != RBM_NONE);
             }
             else
@@ -4006,7 +4004,8 @@ int LinearScan::BuildReturn(GenTree* tree)
                         if (srcType != dstType)
                         {
                             hasMismatchedRegTypes = true;
-                            regMaskTP dstRegMask  = genRegMask(retTypeDesc.GetABIReturnReg(i));
+                            regMaskTP dstRegMask =
+                                genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv));
 
                             if (varTypeUsesIntReg(dstType))
                             {
@@ -4033,7 +4032,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                     if (!hasMismatchedRegTypes || (regType(op1->AsLclVar()->GetFieldTypeByIndex(compiler, i)) ==
                                                    regType(retTypeDesc.GetReturnRegType(i))))
                     {
-                        BuildUse(op1, genRegMask(retTypeDesc.GetABIReturnReg(i)), i);
+                        BuildUse(op1, genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv)), i);
                     }
                     else
                     {
