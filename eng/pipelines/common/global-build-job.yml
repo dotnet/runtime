@@ -61,7 +61,7 @@ jobs:
     workspace:
       clean: all
 
-    ${{ if and(ne(parameters.dependsOn,'')) }}:
+    ${{ if ne(parameters.dependsOn,'') }}:
       dependsOn: ${{ parameters.dependsOn }}
 
     variables:
