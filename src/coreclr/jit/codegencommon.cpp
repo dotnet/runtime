@@ -7941,21 +7941,6 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             const CORINFO_SWIFT_LOWERING* lowering = compiler->GetSwiftLowering(retTypeHnd);
             assert(!lowering->byReference && (regCount == lowering->numLoweredElements));
             offsets = lowering->offsets;
-
-            if (lowering->byReference)
-            {
-                JITDUMP("Swift compilation returns %s by reference\n", compiler->typGetObjLayout(retTypeHnd)->GetClassName());
-            }
-            else
-            {
-                printf("Swift compilation returns %s as %d primitive(s) in registers\n",
-                       compiler->typGetObjLayout(retTypeHnd)->GetClassName(), lowering->numLoweredElements);
-                for (size_t i = 0; i < lowering->numLoweredElements; i++)
-                {
-                    printf("    [%zu] @ +%02u: %s\n", i, lowering->offsets[i],
-                           varTypeName(JitType2PreciseVarType(lowering->loweredElements[i])));
-                }
-            }
         }
 #endif
 

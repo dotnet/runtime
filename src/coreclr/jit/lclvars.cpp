@@ -169,6 +169,29 @@ void Compiler::lvaInitTypeRef()
         info.compRetBuffArg = BAD_VAR_NUM;
     }
 
+#ifdef DEBUG
+    if (verbose && (info.compCallConv == CorInfoCallConvExtension::Swift) && varTypeIsStruct(info.compRetType))
+    {
+        CORINFO_CLASS_HANDLE retTypeHnd = info.compMethodInfo->args.retTypeClass;
+        const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(retTypeHnd);
+        if (lowering->byReference)
+        {
+            printf("Swift compilation returns %s by reference\n", typGetObjLayout(retTypeHnd)->GetClassName());
+        }
+        else
+        {
+            printf("Swift compilation returns %s as %d primitive(s) in registers\n",
+                   typGetObjLayout(retTypeHnd)->GetClassName(), lowering->numLoweredElements);
+            for (size_t i = 0; i < lowering->numLoweredElements; i++)
+            {
+                printf("    [%zu] @ +%02u: %s\n", i, lowering->offsets[i],
+                       varTypeName(JitType2PreciseVarType(lowering->loweredElements[i])));
+            }
+        }
+
+    }
+#endif
+
     /* There is a 'hidden' cookie pushed last when the
        calling convention is varargs */
 
