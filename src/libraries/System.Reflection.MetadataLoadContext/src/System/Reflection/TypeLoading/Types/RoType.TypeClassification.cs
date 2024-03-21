@@ -54,10 +54,10 @@ namespace System.Reflection.TypeLoading
                 Type? enumType = coreTypes[CoreType.Enum];
                 Type? valueType = coreTypes[CoreType.ValueType];
 
-                if (baseType == enumType)
+                if (baseType?.Name == enumType?.Name)
                     classification |= BaseTypeClassification.IsEnum | BaseTypeClassification.IsValueType;
 
-                if (baseType == valueType && this != enumType)
+                if (baseType?.Name == valueType?.Name && this.Name != enumType?.Name)
                 {
                     classification |= BaseTypeClassification.IsValueType;
                 }

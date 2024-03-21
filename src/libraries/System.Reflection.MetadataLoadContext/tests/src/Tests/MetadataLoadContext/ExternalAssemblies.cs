@@ -34,5 +34,29 @@ namespace System.Reflection.Tests
                 Assert.Throws<FileLoadException>(() => lc.LoadFromAssemblyName("SomeAssembly"));
             }
         }
+
+        [Fact]
+        public static void TestIsEnumAfterLoadingNonCoreAssembly()
+        {
+            using MetadataLoadContext context = new MetadataLoadContext(new Resolver(), "System.Runtime");
+            Assembly? mscorlib = context.LoadFromAssemblyPath("mscorlib-net48.dll");
+            foreach(var attr in mscorlib.GetCustomAttributesData())
+            {
+                Exception exception = Record.Exception(() => attr.ConstructorArguments.Count);
+                Assert.Null(exception);
+            }
+        }
+
+        class Resolver : MetadataAssemblyResolver
+        {
+            public override Assembly? Resolve(MetadataLoadContext context, AssemblyName assemblyName)
+            {
+                if(assemblyName.Name == "System.Runtime")
+                {
+                    return context.LoadFromAssemblyPath(typeof(object).Assembly.Location);
+                }
+                return null;
+            }
+        }
     }
 }
