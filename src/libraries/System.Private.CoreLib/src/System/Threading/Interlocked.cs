@@ -84,7 +84,7 @@ namespace System.Threading
             return Exchange(ref location1, value); // Must expand intrinsic
 #else
             // this relies on GC keeping 4B alignment for refs and on subtracting to such alignment being in the same object
-            nuint offset = (nuint)Unsafe.AsPointer(ref location1) % sizeof(uint);
+            nuint offset = Unsafe.OpportunisticMisalignment(ref location1, sizeof(uint));
             ref uint alignedRef = ref Unsafe.As<byte, uint>(ref Unsafe.SubtractByteOffset(ref location1, offset));
             int bitOffset =
                 (int)((BitConverter.IsLittleEndian ? offset : sizeof(uint) - offset - sizeof(byte)) * 8); // to bit offset
@@ -98,7 +98,7 @@ namespace System.Threading
             do
             {
                 // make sure the ref is still aligned
-                Debug.Assert((nuint)Unsafe.AsPointer(ref alignedRef) % sizeof(uint) == 0);
+                Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref alignedRef, sizeof(uint));
                 newValue = originalValue & mask | shiftedValue;
             } while (originalValue !=
                      (originalValue = CompareExchange(ref alignedRef, newValue, originalValue)));
@@ -123,7 +123,7 @@ namespace System.Threading
             return Exchange(ref location1, value); // Must expand intrinsic
 #else
             // this relies on GC keeping 4B alignment for refs and on subtracting to such alignment being in the same object
-            nuint offset = (nuint)Unsafe.AsPointer(ref location1) % sizeof(uint);
+            nuint offset = Unsafe.OpportunisticMisalignment(ref location1, sizeof(uint));
             ref uint alignedRef = ref Unsafe.As<ushort, uint>(ref Unsafe.SubtractByteOffset(ref location1, offset));
             int bitOffset =
                 (int)((BitConverter.IsLittleEndian ? offset : sizeof(uint) - offset - sizeof(byte)) * 8); // to bit offset
@@ -137,7 +137,7 @@ namespace System.Threading
             do
             {
                 // make sure the ref is still aligned
-                Debug.Assert((nuint)Unsafe.AsPointer(ref alignedRef) % sizeof(uint) == 0);
+                Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref alignedRef, sizeof(uint));
                 newValue = originalValue & mask | shiftedValue;
             } while (originalValue !=
                      (originalValue = CompareExchange(ref alignedRef, newValue, originalValue)));
@@ -262,7 +262,7 @@ namespace System.Threading
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
             // this relies on GC keeping 4B alignment for refs and on subtracting to such alignment being in the same object
-            nuint offset = (nuint)Unsafe.AsPointer(ref location1) % sizeof(uint);
+            nuint offset = Unsafe.OpportunisticMisalignment(ref location1, sizeof(uint));
             ref uint alignedRef = ref Unsafe.As<byte, uint>(ref Unsafe.SubtractByteOffset(ref location1, offset));
             int bitOffset =
                 (int)((BitConverter.IsLittleEndian ? offset : sizeof(uint) - offset - sizeof(byte)) * 8); // to bit offset
@@ -277,7 +277,7 @@ namespace System.Threading
             do
             {
                 // make sure the ref is still aligned
-                Debug.Assert((nuint)Unsafe.AsPointer(ref alignedRef) % sizeof(uint) == 0);
+                Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref alignedRef, sizeof(uint));
                 uint otherMemory = originalValue & mask;
                 fullComparand = otherMemory | shiftedComparand;
                 newValue = otherMemory | shiftedValue;
@@ -305,7 +305,7 @@ namespace System.Threading
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
             // this relies on GC keeping 4B alignment for refs and on subtracting to such alignment being in the same object
-            nuint offset = (nuint)Unsafe.AsPointer(ref location1) % sizeof(uint);
+            nuint offset = Unsafe.OpportunisticMisalignment(ref location1, sizeof(uint));
             ref uint alignedRef = ref Unsafe.As<ushort, uint>(ref Unsafe.SubtractByteOffset(ref location1, offset));
             int bitOffset =
                 (int)((BitConverter.IsLittleEndian ? offset : sizeof(uint) - offset - sizeof(byte)) * 8); // to bit offset
@@ -320,7 +320,7 @@ namespace System.Threading
             do
             {
                 // make sure the ref is still aligned
-                Debug.Assert((nuint)Unsafe.AsPointer(ref alignedRef) % sizeof(uint) == 0);
+                Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref alignedRef, sizeof(uint));
                 uint otherMemory = originalValue & mask;
                 fullComparand = otherMemory | shiftedComparand;
                 newValue = otherMemory | shiftedValue;
