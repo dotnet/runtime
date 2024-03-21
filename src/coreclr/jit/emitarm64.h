@@ -333,7 +333,7 @@ static code_t insEncodeReg_V(regNumber reg)
     static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
     assert(isVectorRegister(reg));
     code_t ureg = (code_t)reg - (code_t)REG_V0;
-    
+
     constexpr size_t bits = hi - lo + 1;
     static_assert(bits <= 5);
     assert((ureg >= 0) && (ureg < (1 << bits)));
@@ -354,7 +354,7 @@ static code_t insEncodeReg_P(regNumber reg)
         assert(isHighPredicateRegister(reg));
         ureg -= 8;
     }
-    
+
     constexpr size_t bits = hi - lo + 1;
     static_assert(bits <= 4);
     assert((ureg >= 0) && (ureg < (1 << bits)));
@@ -369,7 +369,7 @@ static code_t insEncodeReg_R(regNumber reg)
     static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
     assert(isIntegerRegister(reg));
     code_t ureg = (code_t)reg;
-    
+
     constexpr size_t bits = hi - lo + 1;
     static_assert(bits <= 5);
     return ureg << lo;
