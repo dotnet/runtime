@@ -326,34 +326,64 @@ union condFlagsImm {
 };
 
 // Returns an encoding for the specified register used in the 'Rd' position
-static code_t insEncodeReg_Rd(regNumber reg);
+static code_t insEncodeReg_Rd(regNumber reg)
+{
+    return insEncodeReg_R<4, 0>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Rt' position
-static code_t insEncodeReg_Rt(regNumber reg);
+static code_t insEncodeReg_Rt(regNumber reg)
+{
+    return insEncodeReg_R<4, 0>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Rn' position
-static code_t insEncodeReg_Rn(regNumber reg);
+static code_t insEncodeReg_Rn(regNumber reg)
+{
+    return insEncodeReg_R<9, 5>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Rm' position
-static code_t insEncodeReg_Rm(regNumber reg);
+static code_t insEncodeReg_Rm(regNumber reg)
+{
+    return insEncodeReg_R<20, 16>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Ra' position
-static code_t insEncodeReg_Ra(regNumber reg);
+static code_t insEncodeReg_Ra(regNumber reg)
+{
+    return insEncodeReg_R<14, 10>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Vd' position
-static code_t insEncodeReg_Vd(regNumber reg);
+static code_t insEncodeReg_Vd(regNumber reg)
+{
+    return insEncodeReg_V<4, 0>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Vt' position
-static code_t insEncodeReg_Vt(regNumber reg);
+static code_t insEncodeReg_Vt(regNumber reg)
+{
+    return insEncodeReg_V<4, 0>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Vn' position
-static code_t insEncodeReg_Vn(regNumber reg);
+static code_t insEncodeReg_Vn(regNumber reg)
+{
+    return insEncodeReg_V<9, 5>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Vm' position
-static code_t insEncodeReg_Vm(regNumber reg);
+static code_t insEncodeReg_Vm(regNumber reg)
+{
+    return insEncodeReg_V<20, 16>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Va' position
-static code_t insEncodeReg_Va(regNumber reg);
+static code_t insEncodeReg_Va(regNumber reg)
+{
+    return insEncodeReg_V<14, 10>(reg);
+}
 
 // Returns an encoding for the specified 'V' register used in 'hi' thru 'lo' position.
 template <const size_t hi, const size_t lo>
@@ -363,7 +393,7 @@ static code_t insEncodeReg_V(regNumber reg)
     static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
     assert(isVectorRegister(reg));
     code_t ureg = (code_t)reg - (code_t)REG_V0;
-    
+
     constexpr size_t bits = hi - lo + 1;
     static_assert(bits <= 5);
     assert((ureg >= 0) && (ureg < (1 << bits)));
@@ -384,7 +414,7 @@ static code_t insEncodeReg_P(regNumber reg)
         assert(isHighPredicateRegister(reg));
         ureg -= 8;
     }
-    
+
     constexpr size_t bits = hi - lo + 1;
     static_assert(bits <= 4);
     assert((ureg >= 0) && (ureg < (1 << bits)));
@@ -399,7 +429,7 @@ static code_t insEncodeReg_R(regNumber reg)
     static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
     assert(isIntegerRegister(reg));
     code_t ureg = (code_t)reg;
-    
+
     constexpr size_t bits = hi - lo + 1;
     static_assert(bits <= 5);
     return ureg << lo;
