@@ -12092,9 +12092,6 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
         // There are some HWINTRINSICS operations that have zero args, i.e.  NI_Vector128_Zero
         if (opCount == 0)
         {
-            // Currently we don't have intrinsics with variable number of args with a parameter-less option.
-            assert(!isVariableNumArgs);
-
             if (encodeResultType)
             {
                 // There are zero arg HWINTRINSICS operations that encode the result type, i.e.  Vector128_AllBitSet

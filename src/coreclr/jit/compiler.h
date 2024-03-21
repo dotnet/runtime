@@ -3464,6 +3464,11 @@ public:
 
     GenTreeIndir* gtNewMethodTableLookup(GenTree* obj);
 
+#if defined(TARGET_ARM64)
+    GenTree* gtNewSimdConvertVectorToMaskNode(var_types type, GenTree* node, CorInfoType simdBaseJitType, unsigned simdSize);
+    GenTree* gtNewSimdConvertMaskToVectorNode(GenTreeHWIntrinsic* node, var_types type);
+#endif
+
     //------------------------------------------------------------------------
     // Other GenTree functions
 
@@ -4573,11 +4578,6 @@ protected:
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
-
-#if defined(TARGET_ARM64)
-    GenTree* convertHWIntrinsicToMask(var_types type, GenTree* node, CorInfoType simdBaseJitType, unsigned simdSize);
-    GenTree* convertHWIntrinsicFromMask(GenTreeHWIntrinsic* node, var_types type);
-#endif
 
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
