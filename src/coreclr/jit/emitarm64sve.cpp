@@ -10038,8 +10038,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                            // increment)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                     // ddddd
-            code |= insEncodeReg_R<9, 5>(id->idReg2());                           // nnnnn
-            code |= insEncodeReg_R<20, 16>(id->idReg3());                           // mmmmm
+            code |= insEncodeReg_Rn(id->idReg2());                           // nnnnn
+            code |= insEncodeReg_Rm(id->idReg3());                           // mmmmm
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10069,7 +10069,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_BM_1A: // ............iiii ......pppppddddd -- SVE inc/dec register by element count
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_R<4, 0>(id->idReg1());           // ddddd
+            code |= insEncodeReg_Rd(id->idReg1());           // ddddd
             code |= insEncodeSvePattern(id->idSvePattern()); // ppppp
             code |= insEncodeUimm4From1_19_to_16(imm);       // iiii
             dst += emitOutput_Instr(dst, code);
@@ -10078,7 +10078,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_BO_1A: // ...........Xiiii ......pppppddddd -- SVE saturating inc/dec register by element count
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_R<4, 0>(id->idReg1());              // ddddd
+            code |= insEncodeReg_Rd(id->idReg1());              // ddddd
             code |= insEncodeSvePattern(id->idSvePattern());    // ppppp
             code |= insEncodeUimm4From1_19_to_16(imm);          // iiii
             code |= insEncodeSveElemsize_sz_20(id->idOpSize()); // X
@@ -10282,7 +10282,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
         case IF_SVE_CS_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to general register
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_R<4, 0>(id->idReg1());                           // ddddd
+            code |= insEncodeReg_Rd(id->idReg1());                           // ddddd
             code |= insEncodeReg_P<12, 10>(id->idReg2());                   // ggg
             code |= insEncodeReg_V<9, 5>(id->idReg3());                     // mmmmm
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -10294,7 +10294,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                     // ddddd
             code |= insEncodeReg_P<12, 10>(id->idReg2());                   // ggg
-            code |= insEncodeReg_R<9, 5>(id->idReg3());                           // mmmmm
+            code |= insEncodeReg_Rn(id->idReg3());                           // mmmmm
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -11784,7 +11784,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_CB_2A: // ........xx...... ......nnnnnddddd -- SVE broadcast general register
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                     // ddddd
-            code |= insEncodeReg_R<9, 5>(id->idReg2());                           // nnnnn
+            code |= insEncodeReg_Rn(id->idReg2());                           // nnnnn
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;

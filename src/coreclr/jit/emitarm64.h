@@ -325,6 +325,21 @@ union condFlagsImm {
     unsigned immCFVal; // concat imm5:flags:cond forming an 13-bit unsigned immediate
 };
 
+// Returns an encoding for the specified register used in the 'Rd' position
+static code_t insEncodeReg_Rd(regNumber reg);
+
+// Returns an encoding for the specified register used in the 'Rt' position
+static code_t insEncodeReg_Rt(regNumber reg);
+
+// Returns an encoding for the specified register used in the 'Rn' position
+static code_t insEncodeReg_Rn(regNumber reg);
+
+// Returns an encoding for the specified register used in the 'Rm' position
+static code_t insEncodeReg_Rm(regNumber reg);
+
+// Returns an encoding for the specified register used in the 'Ra' position
+static code_t insEncodeReg_Ra(regNumber reg);
+
 // Returns an encoding for the specified register used in the 'Vd' position
 static code_t insEncodeReg_Vd(regNumber reg);
 
