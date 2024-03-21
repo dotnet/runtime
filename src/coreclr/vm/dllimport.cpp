@@ -2092,9 +2092,9 @@ void NDirectStubLinker::End(DWORD dwStubFlags)
     }
 }
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_X86)
+#if defined(TARGET_X86)
 EXTERN_C void STDCALL CopyConstructorCallStub(void);
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_X86)
+#endif
 
 void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc * pStubMD)
 {
@@ -2180,7 +2180,6 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
     }
 
 #if defined(TARGET_X86)
-#if defined(TARGET_WINDOWS)
     if (m_dwCopyCtorChainLocalNum != (DWORD)-1)
     {
         // If we have a copy constructor chain local, we need to call the copy constructor stub
@@ -2193,9 +2192,6 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         pcsEmit->EmitCALL(METHOD__COPY_CONSTRUCTOR_CHAIN__INSTALL, 2, 0);
         pcsEmit->EmitLDC((DWORD_PTR)&CopyConstructorCallStub);
     }
-#else
-    _ASSERTE(m_dwCopyCtorChainLocalNum == (DWORD)-1);
-#endif // defined(TARGET_WINDOWS)
 #endif // defined(TARGET_X86)
 
     // For managed-to-native calls, the rest of the work is done by the JIT. It will
@@ -6145,7 +6141,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     RETURN pVASigCookie->pNDirectILStub;
 }
 
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#if defined(TARGET_X86)
 // Copy constructor support for C++/CLI
 EXTERN_C void* STDCALL CallCopyConstructorsWorker(void* esp)
 {
