@@ -10,8 +10,7 @@
 //
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
     PUSH_ARGUMENT_REGISTERS
-    // +8 for alignment
-    alloc_stack (SIZEOF_MAX_FP_ARG_SPILL + 8)
+    alloc_stack (SIZEOF_MAX_FP_ARG_SPILL)
     SAVE_FLOAT_ARGUMENT_REGISTERS 0
     END_PROLOGUE
 
@@ -21,7 +20,7 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
     // we're going to tail call to the exec stub that we just setup
 
     RESTORE_FLOAT_ARGUMENT_REGISTERS 0
-    free_stack (SIZEOF_MAX_FP_ARG_SPILL + 8)
+    free_stack (SIZEOF_MAX_FP_ARG_SPILL)
     POP_ARGUMENT_REGISTERS
     TAILJMP_RAX
 

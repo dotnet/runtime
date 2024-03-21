@@ -118,6 +118,7 @@ struct TransitionBlock
 #elif defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
     ArgumentRegisters       m_argumentRegisters;
+    INT64                   m_raxSwiftRetBufReg;
 #endif
     CalleeSavedRegisters    m_calleeSavedRegisters;
     TADDR                   m_ReturnAddress;

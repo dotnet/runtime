@@ -186,6 +186,7 @@ C_FUNC(\Name\()_End):
 
 .macro PUSH_ARGUMENT_REGISTERS
 
+        push_argument_register rax
         push_argument_register r9
         push_argument_register r8
         push_argument_register rcx
@@ -217,6 +218,7 @@ C_FUNC(\Name\()_End):
         pop_argument_register rcx
         pop_argument_register r8
         pop_argument_register r9
+        pop_argument_register rax
 
 .endm
 
@@ -257,6 +259,7 @@ C_FUNC(\Name\()_End):
 // CalleeSavedRegisters::r14
 // CalleeSavedRegisters::r13
 // CalleeSavedRegisters::r12
+// TransitionBlock::m_raxSwiftRetBufReg
 // ArgumentRegisters::r9
 // ArgumentRegisters::r8
 // ArgumentRegisters::rcx
@@ -283,7 +286,7 @@ C_FUNC(\Name\()_End):
         __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
         .endif
 
-        __PWTB_StackAlloc = __PWTB_FloatArgumentRegisters + 8 * 16 + 8 // 8 floating point registers
+        __PWTB_StackAlloc = __PWTB_FloatArgumentRegisters + 8 * 16 // 8 floating point registers
         __PWTB_TransitionBlock = __PWTB_StackAlloc
 
         .if \stackAllocOnEntry >= 4*8
