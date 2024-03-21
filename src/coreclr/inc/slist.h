@@ -85,14 +85,20 @@ struct SLink
     }
 };
 
+class SListBase
+{
+public:
+    // used as sentinel
+    SLink  m_link; // slink.m_pNext == Null
+    PTR_SLink m_pHead;
+    PTR_SLink m_pTail;
+};
+
 //------------------------------------------------------------------
 // class SList. Intrusive singly linked list.
 //
 // To use SList with the default instantiation, your class should
-// define a data member of type SLink and named 'm_Link'. To use a
-// different field name, you need to provide an explicit LinkPtr
-// template argument. For example:
-//   'SList<MyClass, false, MyClass*, &MyClass::m_FieldName>'
+// define a data member of type SLink and named 'm_Link'.
 //
 // SList has two different behaviours depending on boolean
 // fHead variable,
@@ -104,8 +110,8 @@ struct SLink
 // argument 'fHead'
 // so there is no actual code size increase
 //--------------------------------------------------------------
-template <class T, bool fHead = false, typename __PTR = T*, SLink T::*LinkPtr = &T::m_Link>
-class SList
+template <class T, bool fHead = false, typename __PTR = T*>
+class SList : protected SListBase
 {
 public:
     // typedef used by the Queue class below
@@ -113,16 +119,11 @@ public:
 
 protected:
 
-    // used as sentinel
-    SLink  m_link; // slink.m_pNext == Null
-    PTR_SLink m_pHead;
-    PTR_SLink m_pTail;
-
     // get the list node within the object
     static SLink* GetLink (T* pLink)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return &(pLink->*LinkPtr);
+        return &(pLink->m_Link);
     }
 
     // move to the beginning of the object given the pointer within the object
@@ -138,10 +139,10 @@ protected:
 #if 1
             // Newer compilers define offsetof to be __builtin_offsetof, which doesn't use the
             // old-school memory model trick to determine offset.
-            const UINT_PTR offset = (((UINT_PTR)&(((T *)0x1000)->*LinkPtr))-0x1000);
+            const UINT_PTR offset = (((UINT_PTR)&(((T *)0x1000)->m_Link))-0x1000);
             return (T*)__PTR(dac_cast<TADDR>(pLink) - offset);
 #else
-            return (T*)__PTR(dac_cast<TADDR>(pLink) - offsetof(T, *LinkPtr));
+            return (T*)__PTR(dac_cast<TADDR>(pLink) - offsetof(T, m_Link));
 #endif
         }
     }
