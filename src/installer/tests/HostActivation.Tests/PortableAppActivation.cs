@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
@@ -17,6 +18,28 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public PortableAppActivation(SharedTestState fixture)
         {
             sharedTestState = fixture;
+        }
+
+        [Fact]
+        public void Muxer_behind_symlink()
+        {
+            var app = sharedTestState.App.Copy();
+
+            var dotnetLoc = TestContext.BuiltDotNet.DotnetExecutablePath;
+            var appDll = app.AppDll;
+            var testDir = Directory.GetParent(app.Location).ToString();
+
+            using var symlink = new SymLink(Path.Combine(testDir, Binaries.GetExeName("dotnet")), dotnetLoc);
+
+            var cmd = Command.Create(symlink.SrcPath, new[] { appDll })
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .EnvironmentVariable("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1")
+                .MultilevelLookup(false); // Avoid looking at machine state by default
+
+            cmd.Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World");
         }
 
         [Fact]

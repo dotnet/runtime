@@ -35,7 +35,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             errorMessage = string.Empty;
             if (OperatingSystem.IsWindows())
             {
-                if (!CreateSymbolicLink(symbolicLinkName, targetFileName, SymbolicLinkFlag.IsFile))
+                if (!CreateSymbolicLink(symbolicLinkName, targetFileName, SymbolicLinkFlag.IsFile | SymbolicLinkFlag.AllowUnprivilegedCreate))
                 {
                     int errno = Marshal.GetLastWin32Error();
                     errorMessage = $"CreateSymbolicLink failed with error number {errno}";
