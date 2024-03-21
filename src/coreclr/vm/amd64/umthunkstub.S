@@ -16,12 +16,13 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 
     mov rdi, METHODDESC_REGISTER
     call C_FUNC(TheUMEntryPrestubWorker)
+    mov r10, rax
 
     // we're going to tail call to the exec stub that we just setup
 
     RESTORE_FLOAT_ARGUMENT_REGISTERS 0
     free_stack (SIZEOF_MAX_FP_ARG_SPILL)
     POP_ARGUMENT_REGISTERS
-    TAILJMP_RAX
+    jmp r10
 
 NESTED_END TheUMEntryPrestub, _TEXT

@@ -71,7 +71,7 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         //
         // Save integer parameter registers.
         // Make sure to preserve r11 as well as it is used to pass the stack argument size from JIT
-        // Make sure to preserve rax as well as it is used for the return buffer for Swift calls
+        // rax is preserved by PUSH_ARGUMENT_REGISTERS as well as it is used for the return buffer for Swift calls
         //
         PUSH_ARGUMENT_REGISTERS
         push_register r11
