@@ -14,10 +14,9 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
         lea             rdi, [rsp + __PWTB_TransitionBlock]     // pTransitionBlock*
         mov             rsi, METHODDESC_REGISTER
         call            C_FUNC(PreStubWorker)
-        mov             r10, rax
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-        jmp             r10
+        TAILJMP_RAX
 
 NESTED_END ThePreStub, _TEXT
 

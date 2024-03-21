@@ -75,6 +75,7 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         //
         PUSH_ARGUMENT_REGISTERS
         push_register r11
+        push_register rax
 
         //
         // Allocate space for XMM parameter registers and alignment
@@ -102,6 +103,7 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         //
         // Restore integer parameter registers, r11 and rax
         //
+        pop_register rax
         pop_register r11
         POP_ARGUMENT_REGISTERS
 
