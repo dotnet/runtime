@@ -1041,6 +1041,11 @@ namespace ILCompiler
                 return GeneratesMetadata(targetType) || !_factory.CompilationModuleGroup.ContainsType(targetType);
             }
 
+            public bool GeneratesInterfaceImpl(MetadataType typeDef, MetadataType interfaceImpl)
+            {
+                return _factory.MetadataManager.IsInterfaceUsed(interfaceImpl.GetTypeDefinition());
+            }
+
             public bool IsBlocked(MetadataType typeDef)
             {
                 return _blockingPolicy.IsBlocked(typeDef);
