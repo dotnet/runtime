@@ -578,7 +578,7 @@ LEAF_ENTRY CopyConstructorCallStub, _TEXT
     lea     edx, [esp + 8]
     push    edx
 
-    call    _CallCopyConstructorsWorker@4
+    call    C_FUNC(CallCopyConstructorsWorker)
 
     // restore ecx and tail call to the target
     pop     ecx
