@@ -13922,11 +13922,11 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_JD_4A: // .........xxmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
-            assert(isVectorRegister(id->idReg1()));    // ttttt
-            assert(isPredicateRegister(id->idReg2())); // ggg
-            assert(isGeneralRegister(id->idReg3()));   // nnnnn
-            assert(isGeneralRegister(id->idReg4()));   // mmmmm
-            assert(isScalableVectorSize(id->idOpSize()));    // xx
+            assert(isVectorRegister(id->idReg1()));       // ttttt
+            assert(isPredicateRegister(id->idReg2()));    // ggg
+            assert(isGeneralRegister(id->idReg3()));      // nnnnn
+            assert(isGeneralRegister(id->idReg4()));      // mmmmm
+            assert(isScalableVectorSize(id->idOpSize())); // xx
             // st1h is reserved for scalable B
             assert((id->idIns() == INS_sve_st1h) ? insOptsScalableAtLeastHalf(id->idInsOpt())
                                                  : insOptsScalableStandard(id->idInsOpt()));
@@ -13934,11 +13934,11 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
 
         case IF_SVE_JD_4B: // ..........xmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
             assert(insOptsScalableWords(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));    // ttttt
-            assert(isPredicateRegister(id->idReg2())); // ggg
-            assert(isGeneralRegister(id->idReg3()));   // nnnnn
-            assert(isGeneralRegister(id->idReg4()));   // mmmmm
-            assert(isScalableVectorSize(id->idOpSize()));    // x
+            assert(isVectorRegister(id->idReg1()));       // ttttt
+            assert(isPredicateRegister(id->idReg2()));    // ggg
+            assert(isGeneralRegister(id->idReg3()));      // nnnnn
+            assert(isGeneralRegister(id->idReg4()));      // mmmmm
+            assert(isScalableVectorSize(id->idOpSize())); // x
             break;
 
         case IF_SVE_JJ_4A:   // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
@@ -13961,23 +13961,23 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_JN_3A: // .........xx.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
-            imm      = emitGetInsSC(id);
+            imm = emitGetInsSC(id);
             assert(insOptsScalableStandard(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));    // ttttt
-            assert(isPredicateRegister(id->idReg2())); // ggg
-            assert(isGeneralRegister(id->idReg3()));   // nnnnn
-            assert(isScalableVectorSize(id->idOpSize()));    // xx
-            assert(isValidSimm<4>(imm));               // iiii
+            assert(isVectorRegister(id->idReg1()));       // ttttt
+            assert(isPredicateRegister(id->idReg2()));    // ggg
+            assert(isGeneralRegister(id->idReg3()));      // nnnnn
+            assert(isScalableVectorSize(id->idOpSize())); // xx
+            assert(isValidSimm<4>(imm));                  // iiii
             break;
 
         case IF_SVE_JN_3B: // ..........x.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
-            imm      = emitGetInsSC(id);
+            imm = emitGetInsSC(id);
             assert(insOptsScalableWords(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));    // ttttt
-            assert(isPredicateRegister(id->idReg2())); // ggg
-            assert(isGeneralRegister(id->idReg3()));   // nnnnn
-            assert(isScalableVectorSize(id->idOpSize()));    // x
-            assert(isValidSimm<4>(imm));               // iiii
+            assert(isVectorRegister(id->idReg1()));       // ttttt
+            assert(isPredicateRegister(id->idReg2()));    // ggg
+            assert(isGeneralRegister(id->idReg3()));      // nnnnn
+            assert(isScalableVectorSize(id->idOpSize())); // x
+            assert(isValidSimm<4>(imm));                  // iiii
             break;
 
         case IF_SVE_HW_4A:   // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
@@ -14192,7 +14192,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_GP_3A: // ........xx.....r ...gggmmmmmddddd -- SVE floating-point complex add (predicated)
-            imm      = emitGetInsSC(id);
+            imm = emitGetInsSC(id);
             assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isLowPredicateRegister(id->idReg2()));
@@ -14202,7 +14202,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_GT_4A: // ........xx.mmmmm .rrgggnnnnnddddd -- SVE floating-point complex multiply-add (predicated)
-            imm      = emitGetInsSC(id);
+            imm = emitGetInsSC(id);
             assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isLowPredicateRegister(id->idReg2()));
@@ -14222,7 +14222,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
 
         case IF_SVE_HM_2A: // ........xx...... ...ggg....iddddd -- SVE floating-point arithmetic with immediate
                            // (predicated)
-            imm      = emitGetInsSC(id);
+            imm = emitGetInsSC(id);
             assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isLowPredicateRegister(id->idReg2()));
@@ -14231,7 +14231,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_HN_2A: // ........xx...iii ......mmmmmddddd -- SVE floating-point trig multiply-add coefficient
-            imm      = emitGetInsSC(id);
+            imm = emitGetInsSC(id);
             assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
@@ -14477,7 +14477,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
         case IF_SVE_BF_2A: // ........xx.xxiii ......nnnnnddddd -- SVE bitwise shift by immediate (unpredicated)
         case IF_SVE_FT_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift and insert
         case IF_SVE_FU_2A: // ........xx.xxiii ......nnnnnddddd -- SVE2 bitwise shift right and accumulate
-            imm      = emitGetInsSC(id);
+            imm = emitGetInsSC(id);
             assert(isValidVectorShiftAmount(imm, optGetSveElemsize(id->idInsOpt()),
                                             emitInsIsVectorRightShift(id->idIns())));
             assert(insOptsScalableStandard(id->idInsOpt()));
@@ -14495,7 +14495,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_BX_2A: // ...........ixxxx ......nnnnnddddd -- sve_int_perm_dupq_i
-            imm      = emitGetInsSC(id);
+            imm = emitGetInsSC(id);
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
@@ -14524,7 +14524,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_BY_2A: // ............iiii ......mmmmmddddd -- sve_int_perm_extq
-            imm      = emitGetInsSC(id);
+            imm = emitGetInsSC(id);
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
@@ -14548,13 +14548,13 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
 //
 void emitter::emitDispInsSveHelp(instrDesc* id)
 {
-    instruction ins = id->idIns();
-    insFormat fmt = id->idInsFmt();
-    emitAttr size = id->idOpSize();
+    instruction ins  = id->idIns();
+    insFormat   fmt  = id->idInsFmt();
+    emitAttr    size = id->idOpSize();
 
     switch (fmt)
     {
-        ssize_t imm;
+        ssize_t    imm;
         bitMaskImm bmi;
 
         //  <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
