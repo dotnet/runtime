@@ -30,9 +30,11 @@
     protected override void OnAfterRender(bool firstRender)
     {
         base.OnAfterRender(firstRender);
-
-        Helper.TestOutputWriteLine($"OnAfterRender on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
-        GetQueryParameters();
+        if (firstRender)
+        {
+            Helper.TestOutputWriteLine($"OnAfterRender on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+            GetQueryParameters();
+        }
     }
 
     private void GetQueryParameters()

@@ -55,7 +55,10 @@ public class SignalRClientTests : AppTestBase
                     _testOutput.WriteLine(msg.Text);
 
                 if (msg.Text.Contains("Finished GetQueryParameters"))
+                {
+                    await Task.Delay(500); // make sure OnAfterRender returned
                     await page.ClickAsync("button#connectButton");
+                }
 
                 if (msg.Text.Contains("SignalR connected"))
                     await page.ClickAsync("button#subscribeButton");
