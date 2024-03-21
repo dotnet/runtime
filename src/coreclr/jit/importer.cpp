@@ -1019,8 +1019,8 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // Instead, we're going to sink the store below the COMMA.
             store->Data()      = src->AsOp()->gtOp2;
             src->AsOp()->gtOp2 = impStoreStruct(store, curLevel, pAfterStmt, usedDI, block);
-            src->SetAllEffectsFlags(src->AsOp()->gtOp1, src->AsOp()->gtOp2);
             gtUpdateNodeSideEffects(store);
+            src->SetAllEffectsFlags(src->AsOp()->gtOp1, src->AsOp()->gtOp2);
 
             return src;
         }
