@@ -2381,9 +2381,11 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send response headers
                     await connection.SendResponseHeadersAsync(streamId, endStream: false);
+
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
+                    connection.IgnoreWindowUpdates();
                     // Send some data back and forth
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
@@ -2444,6 +2446,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
+                    connection.IgnoreWindowUpdates();
                     // Send some data back and forth
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
@@ -2504,6 +2507,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
+                    connection.IgnoreWindowUpdates();
                     // Send some data back and forth
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
@@ -2764,6 +2768,7 @@ namespace System.Net.Http.Functional.Tests
                     // This allows the request processing to complete.
                     duplexContent.Fail(e);
 
+                    connection.IgnoreWindowUpdates(); // The RTT algorithm may send a WINDOW_UPDATE before RST_STREAM.
                     // Client should set RST_STREAM.
                     await connection.ReadRstStreamAsync(streamId);
                 }
@@ -2837,6 +2842,7 @@ namespace System.Net.Http.Functional.Tests
                     // This allows the request processing to complete.
                     duplexContent.Fail(e);
 
+                    connection.IgnoreWindowUpdates(); // The RTT algorithm may send a WINDOW_UPDATE before RST_STREAM.
                     // Client should set RST_STREAM.
                     await connection.ReadRstStreamAsync(streamId);
                 }

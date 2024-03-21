@@ -145,13 +145,18 @@ namespace System.Net.Http
         // Assuming that the network characteristics of the connection wouldn't change much within its lifetime, we are maintaining a running minimum value.
         // The more PINGs we send, the more accurate is the estimation of MinRtt, however we should be careful not to send too many of them,
         // to avoid triggering the server's PING flood protection which may result in an unexpected GOAWAY.
-        // With most servers we are fine to send PINGs, as long as we are reading their data, this rule is well formalized for gRPC:
+        //
+        // Several strategies have been implemented to conform with real life servers.
+        // 1. With most servers we are fine to send PINGs as long as we are reading their data, a rule formalized by a gRPC spec:
         // https://github.com/grpc/proposal/blob/master/A8-client-side-keepalive.md
-        // As a rule of thumb, we can send send a PING whenever we receive DATA or HEADERS, however, there are some servers which allow receiving only
-        // a limited amount of PINGs within a given timeframe.
-        // To deal with the conflicting requirements:
-        // - We send an initial burst of 'InitialBurstCount' PINGs, to get a relatively good estimation fast
-        // - Afterwards, we send PINGs with the maximum frequency of 'PingIntervalInSeconds' PINGs per second
+        // According to this rule, we are OK to send a PING whenever we receive DATA or HEADERS, since the servers conforming to this doc
+        // will reset their unsolicited ping counter whenever they *send* DATA or HEADERS.
+        // 2. Some servers allow receiving only a limited amount of PINGs within a given timeframe.
+        // To deal with this, we send an initial burst of 'InitialBurstCount' (=4) PINGs, to get a relatively good estimation fast. Afterwards,
+        // we send PINGs each 'PingIntervalInSeconds' second, to maintain our estimation without triggering these servers.
+        // 3. Some servers in Google's backends reset their unsolicited ping counter when they *receive* DATA, HEADERS, or WINDOW_UPDATE.
+        // To deal with this, we need to make sure to send a connection WINDOW_UPDATE before sending a PING. The initial burst is an exception
+        // to this rule, since the mentioned server can tolerate 4 PINGs without receiving a WINDOW_UPDATE.
         //
         // Threading:
         // OnInitialSettingsSent() is called during initialization, all other methods are triggered by HttpConnection.ProcessIncomingFramesAsync(),
@@ -201,7 +206,7 @@ namespace System.Net.Http
                 _state = State.Waiting;
             }
 
-            internal void OnDataOrHeadersReceived(Http2Connection connection)
+            internal void OnDataOrHeadersReceived(Http2Connection connection, bool sendWindowUpdateBeforePing)
             {
                 if (_state != State.Waiting) return;
 
@@ -210,6 +215,14 @@ namespace System.Net.Http
                 if (initial || now - _pingSentTimestamp > PingIntervalInTicks)
                 {
                     if (initial) _initialBurst--;
+
+                    // When sendWindowUpdateBeforePing is true, try to send a WINDOW_UPDATE to make Google backends happy.
+                    // Unless we are doing the initial burst, do not send PING if we were not able to send the WINDOW_UPDATE.
+                    // See point 3. in the comments above the class definition for more info.
+                    if (sendWindowUpdateBeforePing && !connection.ForceSendConnectionWindowUpdate() && !initial)
+                    {
+                        return;
+                    }
 
                     // Send a PING
                     _pingCounter--;
