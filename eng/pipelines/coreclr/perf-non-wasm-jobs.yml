@@ -50,7 +50,7 @@ jobs:
               archiveType: tar
               tarCompression: gz
 
-  # # build mono Android scenarios
+  # build mono Android scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -96,7 +96,7 @@ jobs:
             artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_mono
             displayName: Build Assets
 
-  # # Build and run iOS Mono and NativeAOT scenarios
+  # Build and run iOS Mono and NativeAOT scenarios
   - template: /eng/pipelines/coreclr/templates/build-and-run-perf-ios-scenarios.yml
     parameters:
       hybridGlobalization: True
