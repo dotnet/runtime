@@ -3103,8 +3103,12 @@ public:
 #ifdef DEBUG
 #ifndef TARGET_LOONGARCH64
     void emitInsSanityCheck(instrDesc* id);
-#endif
-#endif
+
+#ifdef TARGET_ARM64
+    void emitInsSveSanityCheck(instrDesc* id);
+#endif // TARGET_ARM64
+#endif // TARGET_LOONGARCH64
+#endif // DEBUG
 
 #ifdef TARGET_ARMARCH
     // Returns true if instruction "id->idIns()" writes to a register that might be used to contain a GC
