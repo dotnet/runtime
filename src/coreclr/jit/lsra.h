@@ -64,18 +64,6 @@ RegisterType regType(T type)
     }
 }
 
-// TODO: If there are lot of callers of RegisterType, simplify it.
-template <class T>
-FORCEINLINE int regIndexForType(T vt)
-{
-    int type = varTypeRegister[TypeGet(vt)];
-    assert(type <= REGISTER_TYPE_COUNT);
-#ifndef HAS_PREDICATE_REGS
-    assert(type != VTR_MASK);
-#endif
-    return (type - 1);
-}
-
 //------------------------------------------------------------------------
 // useFloatReg: Check if the given var_type should be allocated to a FloatRegisterType
 //

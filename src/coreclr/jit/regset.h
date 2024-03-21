@@ -67,8 +67,8 @@ private:
     //
 
 private:
-    bool             rsNeededSpillReg;   // true if this method needed to spill any registers
-    AllRegsMask      rsModifiedRegsMask; // mask of the registers modified by the current function.
+    bool        rsNeededSpillReg;   // true if this method needed to spill any registers
+    AllRegsMask rsModifiedRegsMask; // mask of the registers modified by the current function.
 
 #ifdef DEBUG
     bool rsModifiedRegsMaskInitialized; // Has rsModifiedRegsMask been initialized? Guards against illegal use.

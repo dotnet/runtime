@@ -5053,8 +5053,19 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
     return BasicBlockVisit::Continue;
 }
 
+// TODO: If there are lot of callers of RegisterType, simplify it.
+template <class T>
+FORCEINLINE int regIndexForType(T vt)
+{
+    int type = varTypeRegister[TypeGet(vt)];
+    assert(type <= REGISTER_TYPE_COUNT);
+#ifndef HAS_PREDICATE_REGS
+    assert(type != VTR_MASK);
+#endif
+    return (type - 1);
+}
 
-void AllRegsMask::operator|=(const _regMaskAll& other)
+void AllRegsMask::operator|=(const AllRegsMask& other)
 {
     // TODO: Can we optimize to reintrepret_cast<unsigned long long>
     //  Something like https://godbolt.org/z/1KevT8Edh
@@ -5065,7 +5076,7 @@ void AllRegsMask::operator|=(const _regMaskAll& other)
 #endif
 }
 
-void AllRegsMask::operator&=(const _regMaskAll& other)
+void AllRegsMask::operator&=(const AllRegsMask& other)
 {
     // TODO: Can we optimize to reintrepret_cast<unsigned long long>
     //  Something like https://godbolt.org/z/1KevT8Edh
@@ -5086,14 +5097,14 @@ void AllRegsMask::operator^=(const regNumber reg)
     registers[regIndexForRegister(reg)] ^= genRegMask(reg);
 }
 
-_regMaskAll AllRegsMask::operator~()
+AllRegsMask AllRegsMask::operator~()
 {
-    return _regMaskAll(~gprRegs(), ~floatRegs()
+    return AllRegsMask(~gprRegs(), ~floatRegs()
 #ifdef HAS_PREDICATE_REGS
                                        ,
                        ~predicateRegs()
 #endif
-    );
+                           );
 }
 
 bool AllRegsMask::operator==(const AllRegsMask& other)
@@ -5102,7 +5113,7 @@ bool AllRegsMask::operator==(const AllRegsMask& other)
 #ifdef HAS_PREDICATE_REGS
             && (predicateRegs() == other.predicateRegs())
 #endif
-    );
+                );
 }
 
 bool AllRegsMask::operator!=(const AllRegsMask& other)
@@ -5110,31 +5121,180 @@ bool AllRegsMask::operator!=(const AllRegsMask& other)
     return !(*this == other);
 }
 
-_regMaskAll AllRegsMask::operator&(const AllRegsMask& other) const
+AllRegsMask AllRegsMask::operator&(const AllRegsMask& other) const
 {
-    return _regMaskAll(gprRegs() & other.gprRegs(), floatRegs() & other.floatRegs()
+    return AllRegsMask(gprRegs() & other.gprRegs(), floatRegs() & other.floatRegs()
 #ifdef HAS_PREDICATE_REGS
                                                         ,
                        predicateRegs() & other.predicateRegs()
 #endif
-    );
+                           );
 }
 
-_regMaskAll AllRegsMask::operator|(const _regMaskAll& other) const
+AllRegsMask AllRegsMask::operator|(const AllRegsMask& other) const
 {
-    return _regMaskAll(gprRegs() | other.gprRegs(), floatRegs() | other.floatRegs()
+    return AllRegsMask(gprRegs() | other.gprRegs(), floatRegs() | other.floatRegs()
 #ifdef HAS_PREDICATE_REGS
                                                         ,
                        predicateRegs() | other.predicateRegs()
 #endif
-    );
+                           );
 }
 
-_regMaskAll AllRegsMask::operator&(const regNumber reg) const
+AllRegsMask AllRegsMask::operator&(const regNumber reg) const
 {
-    _regMaskAll result = *this;
+    AllRegsMask result = *this;
     result[regIndexForRegister(reg)] &= genRegMask(reg);
     return result;
+}
+
+void AllRegsMask::Clear()
+{
+    registers[0] = RBM_NONE;
+    registers[1] = RBM_NONE;
+#ifdef HAS_PREDICATE_REGS
+    registers[2] = RBM_NONE;
+#endif
+}
+
+bool AllRegsMask::IsEmpty()
+{
+    return (gprRegs() | floatRegs()
+#ifdef HAS_PREDICATE_REGS
+            | predicateRegs()
+#endif // HAS_PREDICATE_REGS
+                ) == RBM_NONE;
+}
+
+unsigned AllRegsMask::Count()
+{
+    return genCountBits(gprRegs()) + genCountBits(floatRegs())
+#ifdef HAS_PREDICATE_REGS
+           + genCountBits(predicateRegs())
+#endif // HAS_PREDICATE_REGS
+        ;
+}
+
+regMaskOnlyOne AllRegsMask::operator[](int index) const
+{
+    assert(index <= REGISTER_TYPE_COUNT);
+    return registers[index];
+}
+
+regMaskOnlyOne& AllRegsMask::operator[](int index)
+{
+    assert(index <= REGISTER_TYPE_COUNT);
+    return registers[index];
+}
+
+void AllRegsMask::AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type)
+{
+    registers[regIndexForType(type)] |= maskToAdd;
+}
+
+void AllRegsMask::AddGprRegMask(regMaskOnlyOne maskToAdd)
+{
+    registers[0] |= maskToAdd;
+}
+
+void AllRegsMask::AddFloatRegMask(regMaskOnlyOne maskToAdd)
+{
+    registers[1] |= maskToAdd;
+}
+
+// Adds reg only if it is gpr register
+void AllRegsMask::AddGprRegInMask(regNumber reg)
+{
+    int regIndex = regIndexForRegister(reg);
+    registers[0] |= -static_cast<int>(!regIndex) & genRegMask(reg);
+}
+
+#ifdef TARGET_ARM
+void AllRegsMask::AddRegNumInMask(regNumber reg)
+{
+    regMaskOnlyOne regMask = genRegMask(reg);
+    registers[regIndexForRegister(reg)] |= regMask;
+}
+
+void AllRegsMask::RemoveRegNumFromMask(regNumber reg)
+{
+    regMaskOnlyOne regMaskToRemove = genRegMask(reg);
+    registers[regIndexForRegister(reg)] &= ~regMaskToRemove;
+}
+
+bool AllRegsMask::IsRegNumInMask(regNumber reg)
+{
+    regMaskOnlyOne regMaskToCheck = genRegMask(reg);
+    return (registers[regIndexForRegister(reg)] & regMaskToCheck) != RBM_NONE;
+}
+#endif
+
+// ----------------------------------------------------------
+//  AddRegNumForType: Adds `reg` to the mask. It is same as AddRegNumInMask(reg) except
+//  that it takes `type` as an argument and adds `reg` to the mask for that type.
+//
+void AllRegsMask::AddRegNumInMask(regNumber reg ARM_ARG(var_types type))
+{
+    regMaskOnlyOne regMask = genRegMask(reg ARM_ARG(type));
+    registers[regIndexForRegister(reg)] |= regMask;
+}
+
+void AllRegsMask::RemoveRegNumFromMask(regNumber reg ARM_ARG(var_types type))
+{
+    regMaskOnlyOne regMaskToRemove = genRegMask(reg ARM_ARG(type));
+    registers[regIndexForRegister(reg)] &= ~regMaskToRemove;
+}
+
+void AllRegsMask::RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type)
+{
+    registers[regIndexForType(type)] &= ~regMaskToRemove;
+}
+
+bool AllRegsMask::IsRegNumInMask(regNumber reg ARM_ARG(var_types type))
+{
+    regMaskOnlyOne regMaskToCheck = genRegMask(reg ARM_ARG(type));
+    return (registers[regIndexForRegister(reg)] & regMaskToCheck) != RBM_NONE;
+}
+
+bool AllRegsMask::IsGprMaskPresent(regMaskGpr maskToCheck) const
+{
+    return (gprRegs() & maskToCheck) != RBM_NONE;
+}
+
+bool AllRegsMask::IsFloatMaskPresent(regMaskFloat maskToCheck) const
+{
+    return (floatRegs() & maskToCheck) != RBM_NONE;
+}
+
+regMaskOnlyOne AllRegsMask::GetRegMaskForType(var_types type) const
+{
+    return registers[regIndexForType(type)];
+}
+
+regMaskOnlyOne AllRegsMask::GetMaskForRegNum(regNumber reg) const
+{
+    return registers[regIndexForRegister(reg)];
+}
+
+regMaskTP AllRegsMask::GetGprFloatCombinedMask() const
+{
+    // TODO: NEed to revert this once we change floatRegs to 32-bits
+    // #ifdef TARGET_64BIT
+    //    return ((regMaskTP)floatRegs() << 32) | gprRegs();
+    // #else
+    //    return ((regMaskTP)floatRegs() << REG_INT_COUNT) | gprRegs();
+    // #endif
+    // TODO: Cannot get RBM_ALLFLOAT because it is not defined for AllRegsMask
+    // Moving this definition to lsra might work, but this is temporary so
+    // just create gprMAsk. Eventually, we will use the `<< 32` mentioned in
+    // the comment above.
+    regMaskTP gprMask = (1ULL << REG_INT_COUNT) - 1;
+    return (floatRegs() & ~gprMask) | (gprRegs() & gprMask);
+}
+
+bool AllRegsMask::IsGprOrFloatPresent() const
+{
+    return GetGprFloatCombinedMask() != RBM_NONE;
 }
 
 /*****************************************************************************/
