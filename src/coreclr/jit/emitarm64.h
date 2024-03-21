@@ -391,17 +391,19 @@ static code_t insEncodeReg_P(regNumber reg)
     return ureg << lo;
 }
 
-// Return an encoding for the specified 'R' register used in '20' thru '16' position.
-static code_t insEncodeReg_R_20_to_16(regNumber reg);
-
-// Return an encoding for the specified 'R' register used in '9' thru '5' position.
-static code_t insEncodeReg_R_9_to_5(regNumber reg);
-
-// Return an encoding for the specified 'R' register used in '4' thru '0' position.
-static code_t insEncodeReg_R_4_to_0(regNumber reg);
-
-// Return an encoding for the specified 'R' register used in '17' thru '16' position.
-static code_t insEncodeReg_R_17_to_16(regNumber reg);
+// Returns an encoding for the specified 'R' register used in 'hi' thru 'lo' position.
+template <const size_t hi, const size_t lo>
+static code_t insEncodeReg_R(regNumber reg)
+{
+    // lo <= hi < 32
+    static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
+    assert(isIntegerRegister(reg));
+    code_t ureg = (code_t)reg;
+    
+    constexpr size_t bits = hi - lo + 1;
+    static_assert(bits <= 5);
+    return ureg << lo;
+}
 
 // Return an encoding for the specified predicate type used in '16' position.
 static code_t insEncodePredQualifier_16(bool merge);
