@@ -2408,7 +2408,7 @@ namespace System.Reflection.Metadata
         public int PackingSize { get { throw null; } }
         public int Size { get { throw null; } }
     }
-    public sealed partial class TypeName
+    public sealed partial class TypeName : System.IEquatable<System.Reflection.Metadata.TypeName>
     {
         internal TypeName() { }
         public string AssemblyQualifiedName { get { throw null; } }
@@ -2424,8 +2424,11 @@ namespace System.Reflection.Metadata
         public bool IsSZArray { get { throw null; } }
         public bool IsVariableBoundArrayType { get { throw null; } }
         public string Name { get { throw null; } }
-        public static System.Reflection.Metadata.TypeName Parse(System.ReadOnlySpan<char> typeName, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> typeName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Reflection.Metadata.TypeName? result, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
+        public static System.Reflection.Metadata.TypeName Parse(System.ReadOnlySpan<char> typeName, System.Reflection.Metadata.TypeNameParseOptions? options = null) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> typeName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Reflection.Metadata.TypeName? result, System.Reflection.Metadata.TypeNameParseOptions? options = null) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public bool Equals(System.Reflection.Metadata.TypeName? other) { throw null; }
+        public override int GetHashCode() { throw null; }
         public int GetArrayRank() { throw null; }
         public System.Reflection.AssemblyName? GetAssemblyName() { throw null; }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.TypeName> GetGenericArguments() { throw null; }
@@ -2433,9 +2436,9 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.TypeName GetElementType() { throw null; }
         public int GetNodeCount() { throw null; }
     }
-    public sealed partial class TypeNameParserOptions
+    public sealed partial class TypeNameParseOptions
     {
-        public TypeNameParserOptions() { }
+        public TypeNameParseOptions() { }
         public int MaxNodes { get { throw null; } set { } }
     }
     public readonly partial struct TypeReference

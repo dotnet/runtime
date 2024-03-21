@@ -8,9 +8,14 @@ namespace System.Reflection.Metadata
 #else
     public
 #endif
-    sealed class TypeNameParserOptions
+    sealed class TypeNameParseOptions
     {
-        private int _maxNodes = int.MaxValue; // TODO: choose the right default based on facts
+        private int _maxNodes =
+#if SYSTEM_PRIVATE_CORELIB
+            int.MaxValue; // CoreLib has never introduced any limits
+#else
+            20;
+#endif
 
         /// <summary>
         /// Limits the maximum value of <seealso cref="TypeName.GetNodeCount">node count</seealso> that parser can handle.

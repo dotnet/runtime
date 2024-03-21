@@ -4307,7 +4307,13 @@
   <data name="WasmThreads_BlockingWaitNotSupportedOnJSInterop" xml:space="preserve">
     <value>Blocking wait is not supported on the JS interop threads.</value>
   </data>
-  <data name="MaxNodesExceeded" xml:space="preserve">
+  <data name="InvalidOperation_MaxNodesExceeded" xml:space="preserve">
     <value>Maximum node count of {0} exceeded.</value>
+  </data>
+  <data name="InvalidOperation_NotNestedType" xml:space="preserve">
+    <value>This operation is only valid on nested types.</value>
+  </data>
+  <data name="InvalidOperation_NoElement" xml:space="preserve">
+    <value>This operation is only valid on arrays, pointers and references.</value>
   </data>
 </root>

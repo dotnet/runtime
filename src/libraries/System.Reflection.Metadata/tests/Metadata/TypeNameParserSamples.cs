@@ -16,7 +16,7 @@ namespace System.Reflection.Metadata.Tests
     {
         internal sealed class SampleSerializationBinder : SerializationBinder
         {
-            private static TypeNameParserOptions _options;
+            private static TypeNameParseOptions _options;
 
             // we could use Frozen collections here ;)
             private readonly static Dictionary<string, Type> _alwaysAllowed = new()

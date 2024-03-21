@@ -15,25 +15,25 @@ namespace System.Reflection.Metadata
     internal ref struct TypeNameParser
     {
         private const int MaxArrayRank = 32;
-        private static readonly TypeNameParserOptions _defaults = new();
+        private static readonly TypeNameParseOptions _defaults = new();
         private readonly bool _throwOnError;
-        private readonly TypeNameParserOptions _parseOptions;
+        private readonly TypeNameParseOptions _parseOptions;
         private ReadOnlySpan<char> _inputString;
 
-        private TypeNameParser(ReadOnlySpan<char> name, bool throwOnError, TypeNameParserOptions? options) : this()
+        private TypeNameParser(ReadOnlySpan<char> name, bool throwOnError, TypeNameParseOptions? options) : this()
         {
             _inputString = name;
             _throwOnError = throwOnError;
             _parseOptions = options ?? _defaults;
         }
 
-        internal static TypeName? Parse(ReadOnlySpan<char> typeName, bool throwOnError, TypeNameParserOptions? options = default)
+        internal static TypeName? Parse(ReadOnlySpan<char> typeName, bool throwOnError, TypeNameParseOptions? options = default)
         {
             ReadOnlySpan<char> trimmedName = TrimStart(typeName); // whitespaces at beginning are always OK
             if (trimmedName.IsEmpty)
             {
                 // whitespace input needs to report the error index as 0
-                return ThrowInvalidTypeNameOrReturnNull(throwOnError, errorIndex: 0);
+                return throwOnError ? throw ArgumentException_InvalidTypeName(errorIndex: 0) : null;
             }
 
             int recursiveDepth = 0;
@@ -51,25 +51,11 @@ namespace System.Reflection.Metadata
 
             if (recursiveDepth >= parser._parseOptions.MaxNodes)
             {
-                throw new InvalidOperationException(SR.Format(SR.MaxNodesExceeded, parser._parseOptions.MaxNodes));
+                throw InvalidOperation_MaxNodesExceeded(parser._parseOptions.MaxNodes);
             }
 
             int errorIndex = typeName.Length - parser._inputString.Length;
-            return ThrowInvalidTypeNameOrReturnNull(throwOnError, errorIndex);
-
-            static TypeName? ThrowInvalidTypeNameOrReturnNull(bool throwOnError, int errorIndex = 0)
-            {
-                if (!throwOnError)
-                {
-                    return null;
-                }
-
-#if SYSTEM_PRIVATE_CORELIB
-                throw new ArgumentException(SR.Arg_ArgumentException, $"typeName@{errorIndex}");
-#else
-                throw new ArgumentException(SR.Argument_InvalidTypeName);
-#endif
-            }
+            throw ArgumentException_InvalidTypeName(errorIndex);
         }
 
         // this method should return null instead of throwing, so the caller can get errorIndex and include it in error msg
@@ -205,7 +191,7 @@ namespace System.Reflection.Metadata
                     || parsedDecorator > MaxArrayRank)
                 {
 #if SYSTEM_PRIVATE_CORELIB
-                    throw new TypeLoadException(); // CLR throws TypeLoadException on purpose
+                    throw new TypeLoadException(); // CLR throws TypeLoadException for invalid decorators
 #else
                     return null;
 #endif
@@ -218,7 +204,7 @@ namespace System.Reflection.Metadata
             {
 #if SYSTEM_PRIVATE_CORELIB
                 // backward compat: throw FileLoadException for non-empty invalid strings
-                if (!_throwOnError && _inputString.TrimStart().StartsWith(",")) // TODO adsitnik: refactor
+                if (!_throwOnError && _inputString.TrimStart().StartsWith(","))
                 {
                     return null;
                 }

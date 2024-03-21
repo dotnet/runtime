@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Reflection.Metadata.Tests
 {
-    public class TypeNameParserTests
+    public class TypeNameTests
     {
         [Theory]
         [InlineData("  System.Int32", "System.Int32", "Int32")]
@@ -99,14 +99,14 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(typeof(Dictionary<string, bool>))]
         [InlineData(typeof(int[][]))]
         [InlineData(typeof(Assert))] // xUnit assembly
-        [InlineData(typeof(TypeNameParserTests))] // test assembly
+        [InlineData(typeof(TypeNameTests))] // test assembly
         [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>.NestedNonGeneric_3))]
         public void TypeNameCanContainAssemblyName(Type type)
         {
             AssemblyName expectedAssemblyName = new(type.Assembly.FullName);
 
             Verify(type, expectedAssemblyName, TypeName.Parse(type.AssemblyQualifiedName.AsSpan()));
-            Verify(type, expectedAssemblyName, TypeName.Parse(type.AssemblyQualifiedName.AsSpan(), new TypeNameParserOptions() { StrictValidation = true }));
+            Verify(type, expectedAssemblyName, TypeName.Parse(type.AssemblyQualifiedName.AsSpan(), new TypeNameParseOptions() { StrictValidation = true }));
 
             static void Verify(Type type, AssemblyName expectedAssemblyName, TypeName parsed)
             {
@@ -154,7 +154,7 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("Hello, AssemblyName, publicKeyToken=b77a5c561934e089")] // wrong case (PKT)
         public void CanNotParseTypeWithInvalidAssemblyName(string fullName)
         {
-            TypeNameParserOptions options = new()
+            TypeNameParseOptions options = new()
             {
                 StrictValidation = true,
             };
@@ -170,7 +170,7 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(100, "[]")]
         public void MaxNodesIsRespected_TooManyDecorators(int maxDepth, string decorator)
         {
-            TypeNameParserOptions options = new()
+            TypeNameParseOptions options = new()
             {
                 MaxNodes = maxDepth
             };
@@ -205,7 +205,7 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(100)]
         public void MaxNodesIsRespected_TooDeepGenerics(int maxDepth)
         {
-            TypeNameParserOptions options = new()
+            TypeNameParseOptions options = new()
             {
                 MaxNodes = maxDepth
             };
@@ -249,7 +249,7 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(100)]
         public void MaxNodesIsRespected_TooManyGenericArguments(int maxDepth)
         {
-            TypeNameParserOptions options = new()
+            TypeNameParseOptions options = new()
             {
                 MaxNodes = maxDepth
             };
@@ -393,6 +393,7 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(name, parsed.Name);
             Assert.Equal(fullName, parsed.FullName);
             Assert.True(parsed.IsConstructedGenericType);
+            Assert.NotNull(parsed.GetGenericTypeDefinition());
             Assert.False(parsed.IsSimple);
 
             ImmutableArray<TypeName> typeNames = parsed.GetGenericArguments();
@@ -402,6 +403,7 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(genericTypesFullNames[i], genericArg.FullName);
                 Assert.True(genericArg.IsSimple);
                 Assert.False(genericArg.IsConstructedGenericType);
+                Assert.Throws<InvalidOperationException>(genericArg.GetGenericTypeDefinition);
 
                 if (assemblyNames is not null)
                 {
@@ -451,7 +453,14 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(input, parsed.FullName);
             Assert.Equal(isArray, parsed.IsArray);
             Assert.Equal(isSzArray, parsed.IsSZArray);
-            if (isArray) Assert.Equal(arrayRank, parsed.GetArrayRank());
+            if (isArray)
+            {
+                Assert.Equal(arrayRank, parsed.GetArrayRank());
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => parsed.GetArrayRank());
+            }
             Assert.Equal(isByRef, parsed.IsByRef);
             Assert.Equal(isPointer, parsed.IsPointer);
             Assert.False(parsed.IsSimple);
@@ -497,7 +506,7 @@ namespace System.Reflection.Metadata.Tests
 
         [Theory]
         [InlineData(typeof(TypeName), 1)]
-        [InlineData(typeof(TypeNameParserTests), 1)]
+        [InlineData(typeof(TypeNameTests), 1)]
         [InlineData(typeof(object), 1)]
         [InlineData(typeof(Assert), 1)] // xunit
         [InlineData(typeof(int[]), 2)]
@@ -506,7 +515,7 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(typeof(NestedNonGeneric_0), 2)] // declaring and nested
         [InlineData(typeof(NestedGeneric_0<int>), 3)] // declaring, nested and generic arg
         [InlineData(typeof(NestedNonGeneric_0.NestedNonGeneric_1), 3)] // declaring, nested 0 and nested 1
-        // TypeNameParserTests+NestedGeneric_0`1+NestedGeneric_1`2[[Int32],[String],[Boolean]] (simplified for brevity)
+        // TypeNameTests+NestedGeneric_0`1+NestedGeneric_1`2[[Int32],[String],[Boolean]] (simplified for brevity)
         [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>), 6)] // declaring, nested 0 and nested 1 and 3 generic args
         [MemberData(nameof(GetAdditionalConstructedTypeData))]
         public void GetNodeCountReturnsExpectedValue(Type type, int expected)
@@ -525,6 +534,18 @@ namespace System.Reflection.Metadata.Tests
         {
             Assert.True(TypeName.Parse("Containing+Nested".AsSpan()).IsSimple);
             Assert.False(TypeName.Parse(typeof(NestedGeneric_0<int>).FullName.AsSpan()).IsSimple);
+        }
+
+        [Fact]
+        public void DeclaringTypeThrowsForNonNestedTypes()
+        {
+            TypeName nested = TypeName.Parse("Containing+Nested".AsSpan());
+            Assert.True(nested.IsNested);
+            Assert.Equal("Containing", nested.DeclaringType.Name);
+
+            TypeName notNested = TypeName.Parse("NotNested".AsSpan());
+            Assert.False(notNested.IsNested);
+            Assert.Throws<InvalidOperationException>(() => notNested.DeclaringType);
         }
 
         [Theory]
@@ -591,6 +612,31 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(genericType.FullName, genericTypeName.FullName);
                 Assert.Equal(genericType.AssemblyQualifiedName, genericTypeName.AssemblyQualifiedName);
             }
+        }
+
+        [Theory]
+        [InlineData("name", "name", true)]
+        [InlineData("Name", "Name", true)]
+        [InlineData("name", "Name", false)]
+        [InlineData("Name", "name", false)]
+        [InlineData("type, assembly", "type, assembly", true)]
+        [InlineData("Type, Assembly", "Type, Assembly", true)]
+        [InlineData("Type, Assembly", "type, assembly", false)]
+        [InlineData("Type, assembly", "type, Assembly", false)]
+        [InlineData("name[]", "name[]", true)]
+        [InlineData("name[]", "name[*]", false)]
+        [InlineData("name[]", "name[,]", false)]
+        [InlineData("name*", "name*", true)]
+        [InlineData("name&", "name&", true)]
+        [InlineData("name*", "name&", false)]
+        [InlineData("generic`1[[int]]", "generic`1[[int]]", true)] // exactly the same
+        [InlineData("generic`1[[int]]", "generic`1[int]", true)] // different generic args syntax describing same type
+        [InlineData("generic`2[[int],[bool]]", "generic`2[int,bool]", true)]
+        public void Equality(string left, string right, bool expected)
+        {
+            Assert.Equal(expected, TypeName.Parse(left.AsSpan()).Equals(TypeName.Parse(right.AsSpan())));
+            Assert.Equal(TypeName.Parse(left.AsSpan()), TypeName.Parse(left.AsSpan()));
+            Assert.Equal(TypeName.Parse(right.AsSpan()), TypeName.Parse(right.AsSpan()));
         }
 
         [Theory]

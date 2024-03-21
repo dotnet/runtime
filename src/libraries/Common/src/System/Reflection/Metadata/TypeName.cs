@@ -14,7 +14,7 @@ namespace System.Reflection.Metadata
 #else
     public
 #endif
-    sealed class TypeName
+    sealed class TypeName : IEquatable<TypeName>
     {
         /// <summary>
         /// Positive value is array rank.
@@ -56,7 +56,7 @@ namespace System.Reflection.Metadata
             => _assemblyQualifiedName ??= _assemblyName is null ? FullName : $"{FullName}, {_assemblyName.FullName}";
 
         /// <summary>
-        /// Returns the name of the assembly (not the full name>).
+        /// Returns the name of the assembly (not the full name).
         /// </summary>
         /// <remarks>
         /// If <see cref="GetAssemblyName()"/> returns null, simply returns null.
@@ -70,7 +70,10 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// For example, given "Namespace.Declaring+Nested", unwraps the outermost type and returns "Namespace.Declaring".
         /// </remarks>
-        public TypeName DeclaringType => _declaringType is not null ? _declaringType : throw new InvalidOperationException();
+        /// <exception cref="InvalidOperationException">The current type is not a nested type.</exception>
+        public TypeName DeclaringType => _declaringType is not null
+            ? _declaringType
+            : throw TypeNameParserHelpers.InvalidOperation_NotNestedType();
 
         /// <summary>
         /// The full name of this type, including namespace, but without the assembly name; e.g., "System.Int32".
@@ -151,6 +154,18 @@ namespace System.Reflection.Metadata
         /// </summary>
         public string Name { get; }
 
+        public bool Equals(TypeName? other)
+            => other is not null
+            && other._rankOrModifier == _rankOrModifier
+            // try to prevent from allocations if possible (AssemblyQualifiedName can allocate)
+            && ((other._assemblyName is null && _assemblyName is null)
+             || (other._assemblyName is not null && _assemblyName is not null))
+            && other.AssemblyQualifiedName == AssemblyQualifiedName;
+
+        public override bool Equals(object? obj) => Equals(obj as TypeName);
+
+        public override int GetHashCode() => AssemblyQualifiedName.GetHashCode();
+
         /// <summary>
         /// Represents the total number of <see cref="TypeName"/> instances that are used to describe
         /// this instance, including any generic arguments or underlying types.
@@ -213,10 +228,11 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// For example, given "int[][]", unwraps the outermost array and returns "int[]".
         /// </remarks>
+        /// <exception cref="InvalidOperationException">The current type is not an array, pointer or reference.</exception>
         public TypeName GetElementType()
             => IsArray || IsPointer || IsByRef
                 ? _underlyingType!
-                : throw new InvalidOperationException();
+                : throw TypeNameParserHelpers.InvalidOperation_NoElement();
 
         /// <summary>
         /// Returns a TypeName object that represents a generic type name definition from which the current generic type name can be constructed.
@@ -224,30 +240,51 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// Given "Dictionary&lt;string, int&gt;", returns the generic type definition "Dictionary&lt;,&gt;".
         /// </remarks>
+        /// <exception cref="InvalidOperationException">The current type is not a generic type.</exception>
         public TypeName GetGenericTypeDefinition()
             => IsConstructedGenericType
                 ? _underlyingType!
-                : throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
+                : throw TypeNameParserHelpers.InvalidOperation_NotGenericType();
 
-        public static TypeName Parse(ReadOnlySpan<char> typeName, TypeNameParserOptions? options = default)
+        /// <summary>
+        /// Parses a span of characters into a type name.
+        /// </summary>
+        /// <param name="typeName">A span containing the characters representing the type name to parse.</param>
+        /// <param name="options">An object that describes optional <seealso cref="TypeNameParseOptions"/> parameters to use.</param>
+        /// <returns>Parsed type name.</returns>
+        /// <exception cref="ArgumentException">Provided type name was invalid.</exception>
+        /// <exception cref="InvalidOperationException">Parsing has exceeded the limit set by <seealso cref="TypeNameParseOptions.MaxNodes"/>.</exception>
+        public static TypeName Parse(ReadOnlySpan<char> typeName, TypeNameParseOptions? options = default)
             => TypeNameParser.Parse(typeName, throwOnError: true, options)!;
 
+        /// <summary>
+        /// Tries to parse a span of characters into a type name.
+        /// </summary>
+        /// <param name="typeName">A span containing the characters representing the type name to parse.</param>
+        /// <param name="options">An object that describes optional <seealso cref="TypeNameParseOptions"/> parameters to use.</param>
+        /// <param name="result">Contains the result when parsing succeeds.</param>
+        /// <returns>true if type name was converted successfully, otherwise, false.</returns>
         public static bool TryParse(ReadOnlySpan<char> typeName,
-#if !INTERNAL_NULLABLE_ANNOTATIONS // remove along with the define from ILVerification.csproj when SystemReflectionMetadataVersion points to new version with the new types
+#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB // required by some tools that include this file but don't include the attribute
             [NotNullWhen(true)]
 #endif
-        out TypeName? result, TypeNameParserOptions? options = default)
+        out TypeName? result, TypeNameParseOptions? options = default)
         {
             result = TypeNameParser.Parse(typeName, throwOnError: false, options);
             return result is not null;
         }
 
+        /// <summary>
+        /// Gets the number of dimensions in an array.
+        /// </summary>
+        /// <returns>An integer that contains the number of dimensions in the current type.</returns>
+        /// <exception cref="InvalidOperationException">The current type is not an array.</exception>
         public int GetArrayRank()
             => _rankOrModifier switch
             {
                 TypeNameParserHelpers.SZArray => 1,
                 _ when _rankOrModifier > 0 => _rankOrModifier,
-                _ => throw new InvalidOperationException(SR.Argument_HasToBeArrayClass)
+                _ => throw TypeNameParserHelpers.InvalidOperation_HasToBeArrayClass()
             };
 
         /// <summary>
@@ -270,11 +307,11 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// If this <see cref="TypeName"/> represents a constructed generic type, returns a buffer
-        /// of all the generic arguments. Otherwise it returns an empty buffer.
+        /// If this <see cref="TypeName"/> represents a constructed generic type, returns an array
+        /// of all the generic arguments. Otherwise it returns an empty array.
         /// </summary>
         /// <remarks>
-        /// <para>For example, given "Dictionary&lt;string, int&gt;", returns a 2-element span containing
+        /// <para>For example, given "Dictionary&lt;string, int&gt;", returns a 2-element array containing
         /// string and int.</para>
         /// </remarks>
 #if SYSTEM_PRIVATE_CORELIB
@@ -282,9 +319,9 @@ namespace System.Reflection.Metadata
 #else
         public Collections.Immutable.ImmutableArray<TypeName> GetGenericArguments()
             => _genericArguments is null ? Collections.Immutable.ImmutableArray<TypeName>.Empty :
-#if NET8_0_OR_GREATER
+    #if NET8_0_OR_GREATER
             Runtime.InteropServices.ImmutableCollectionsMarshal.AsImmutableArray(_genericArguments);
-#else
+    #else
             Collections.Immutable.ImmutableArray.Create(_genericArguments);
     #endif
 #endif

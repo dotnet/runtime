@@ -692,6 +692,50 @@ namespace System.Reflection.Metadata
             return false;
         }
 
+        internal static InvalidOperationException InvalidOperation_MaxNodesExceeded(int limit) =>
+#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB
+            new InvalidOperationException(SR.Format(SR.InvalidOperation_MaxNodesExceeded, limit));
+#else // tools that reference this file as a link
+            new InvalidOperationException();
+#endif
+
+        internal static ArgumentException ArgumentException_InvalidTypeName(int errorIndex) =>
+#if SYSTEM_PRIVATE_CORELIB
+            new ArgumentException(SR.Arg_ArgumentException, $"typeName@{errorIndex}");
+#elif SYSTEM_REFLECTION_METADATA
+            new ArgumentException(SR.Argument_InvalidTypeName);
+#else // tools that reference this file as a link
+            new ArgumentException();
+#endif
+
+        internal static InvalidOperationException InvalidOperation_NotGenericType() =>
+#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB
+            new InvalidOperationException(SR.InvalidOperation_NotGenericType);
+#else // tools that reference this file as a link
+            new InvalidOperationException();
+#endif
+
+        internal static InvalidOperationException InvalidOperation_NotNestedType() =>
+#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB
+            new InvalidOperationException(SR.InvalidOperation_NotNestedType);
+#else // tools that reference this file as a link
+            new InvalidOperationException();
+#endif
+
+        internal static InvalidOperationException InvalidOperation_NoElement() =>
+#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB
+            new InvalidOperationException(SR.InvalidOperation_NoElement);
+#else // tools that reference this file as a link
+            new InvalidOperationException();
+#endif
+
+        internal static InvalidOperationException InvalidOperation_HasToBeArrayClass() =>
+#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB
+            new InvalidOperationException(SR.Argument_HasToBeArrayClass);
+#else // tools that reference this file as a link
+            new InvalidOperationException();
+#endif
+
 #if !NETCOREAPP
         private const int MaxLength = 2147483591;
 

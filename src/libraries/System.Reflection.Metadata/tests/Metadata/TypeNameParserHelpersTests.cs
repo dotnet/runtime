@@ -107,7 +107,7 @@ namespace System.Reflection.Metadata.Tests
         {
             Assert.Equal(expected, TypeNameParserHelpers.GetIndexOfFirstInvalidAssemblyNameCharacter(input.AsSpan(), strictMode: true));
 
-            TypeNameParserOptions strictOptions = new()
+            TypeNameParseOptions strictOptions = new()
             {
                 StrictValidation = true
             };
@@ -134,7 +134,7 @@ namespace System.Reflection.Metadata.Tests
         {
             Assert.Equal(expected, TypeNameParserHelpers.GetIndexOfFirstInvalidTypeNameCharacter(input.AsSpan(), strictMode: true));
 
-            TypeNameParserOptions strictOptions = new()
+            TypeNameParseOptions strictOptions = new()
             {
                 StrictValidation = true
             };

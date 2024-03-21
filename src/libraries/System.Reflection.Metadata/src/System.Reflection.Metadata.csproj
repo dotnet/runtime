@@ -16,6 +16,7 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
   <PropertyGroup>
     <!-- Constrained Execution Regions only apply to netstandard2.0 and net4* -->
     <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">$(DefineConstants);FEATURE_CER</DefineConstants>
+    <DefineConstants>$(DefineConstants);SYSTEM_REFLECTION_METADATA</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
