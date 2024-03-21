@@ -4346,6 +4346,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->vars [i].size = size;
 		offset = ALIGN_TO (offset, align);
 		td->vars [i].offset = offset;
+		interp_mark_ref_slots_for_var (td, i);
 		offset += size;
 	}
 	offset = ALIGN_TO (offset, MINT_STACK_ALIGNMENT);
@@ -4371,6 +4372,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->vars [index].mt = mono_mint_type (header->locals [i]);
 		td->vars [index].ext_index = -1;
 		td->vars [index].size = size;
+		interp_mark_ref_slots_for_var (td, index);
 		// Every local takes a MINT_STACK_SLOT_SIZE so IL locals have same behavior as execution locals
 		offset += size;
 	}
@@ -8507,6 +8509,75 @@ get_short_brop (int opcode)
 	return opcode;
 }
 
+static void
+interp_mark_ref_slots_for_vt (TransformData *td, int base_offset, MonoClass *klass)
+{
+	if (!m_class_has_references (klass) && !m_class_has_ref_fields (klass))
+		return;
+
+	gpointer iter = NULL;
+	MonoClassField *field;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		MonoType *ftype = mono_field_get_type_internal (field);
+		if (ftype->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		int offset = base_offset + m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject);
+retry:
+		if (mini_type_is_reference (ftype) || ftype->type == MONO_TYPE_I || ftype->type == MONO_TYPE_U || m_type_is_byref (ftype)) {
+			int index = offset / sizeof (gpointer);
+			mono_bitset_set_fast (td->ref_slots, index);
+			if (td->verbose_level)
+				g_print ("Stack ref slot vt field at off %d\n", offset);
+		} else if (ftype->type == MONO_TYPE_VALUETYPE || ftype->type == MONO_TYPE_GENERICINST) {
+			interp_mark_ref_slots_for_vt (td, offset, mono_class_from_mono_type_internal (ftype));
+		}
+
+		if (m_class_is_inlinearray (klass)) {
+			int max_offset = base_offset + m_class_get_instance_size (klass) - MONO_ABI_SIZEOF (MonoObject);
+	                int align;
+			int field_size = mono_type_size (ftype, &align);
+			offset += field_size;
+			offset = ALIGN_TO (offset, align);
+			if (offset < max_offset)
+				goto retry;
+		}
+	}
+}
+
+void
+interp_mark_ref_slots_for_var (TransformData *td, int var)
+{
+	g_assert (td->vars [var].offset != -1);
+
+	gsize max_index = (td->vars [var].offset + td->vars [var].size) / sizeof (gpointer);
+
+	if (!td->ref_slots || max_index >= td->ref_slots->size) {
+		guint32 old_size = td->ref_slots ? (guint32)td->ref_slots->size : 0;
+		guint32 new_size = old_size ? old_size * 2 : 32;
+
+		gpointer mem = mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (new_size, 0));
+		MonoBitSet *new_ref_slots = mono_bitset_mem_new (mem, new_size, 0);
+
+		if (old_size)
+			memcpy (&new_ref_slots->data, &td->ref_slots->data, old_size / 8);
+		td->ref_slots = new_ref_slots;
+	}
+
+	MonoType *type = td->vars [var].type;
+	if (td->vars [var].mt == MINT_TYPE_VT) {
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		interp_mark_ref_slots_for_vt (td, td->vars [var].offset, klass);
+	} else {
+		// Managed pointers in interp are normally MONO_TYPE_I
+		if (mini_type_is_reference (type) || type->type == MONO_TYPE_I || type->type == MONO_TYPE_U || m_type_is_byref (type)) {
+			int index = td->vars [var].offset / sizeof (gpointer);
+			mono_bitset_set_fast (td->ref_slots, index);
+			if (td->verbose_level)
+				g_print ("Stack ref slot at off %d for var %d\n", index * sizeof (gpointer), var);
+		}
+	}
+}
+
 static int
 get_var_offset (TransformData *td, int var)
 {
@@ -8526,6 +8597,7 @@ get_var_offset (TransformData *td, int var)
 	g_assert (td->vars [var].execution_stack);
 
 	td->vars [var].offset = td->total_locals_size + td->vars [var].stack_offset;
+	interp_mark_ref_slots_for_var (td, var);
 	return td->vars [var].offset;
 }
 
@@ -9154,6 +9226,21 @@ retry:
 
 	mono_interp_register_imethod_data_items (rtm->data_items, td->imethod_items);
 	rtm->patchpoint_data = td->patchpoint_data;
+
+	if (td->ref_slots) {
+		gpointer ref_slots_mem = mono_mem_manager_alloc0 (td->mem_manager, mono_bitset_alloc_size (rtm->alloca_size / sizeof (gpointer), 0));
+		rtm->ref_slots = mono_bitset_mem_new (ref_slots_mem, rtm->alloca_size / sizeof (gpointer), 0);
+		gsize copy_size = rtm->ref_slots->size;
+		if (td->ref_slots->size < copy_size)
+			copy_size = td->ref_slots->size;
+		memcpy (&rtm->ref_slots->data, &td->ref_slots->data, copy_size / 8);
+		if (!td->optimized) {
+			// Unoptimized code can have some stack slot moving patterns as part of calls.
+			// Just conservatively mark all these slots as potentially containing refs.
+			for (guint32 offset = rtm->locals_size; offset < rtm->alloca_size; offset += sizeof (gpointer))
+				mono_bitset_set (rtm->ref_slots, offset / sizeof (gpointer));
+		}
+	}
 
 	/* Save debug info */
 	interp_save_debug_info (rtm, header, td, td->line_numbers);
