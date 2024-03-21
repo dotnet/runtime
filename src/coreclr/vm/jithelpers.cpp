@@ -1534,13 +1534,13 @@ FORCEINLINE void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
     TADDR pTLSBaseAddress = NULL;
 
     int32_t cTLSData = t_ThreadStatics.cTLSData;
-    if (cTLSData <= index.GetByteIndex())
+    if (cTLSData <= index.GetIndexOffset())
     {
         return NULL;
     }
 
     TADDR pTLSArrayData = t_ThreadStatics.pTLSArrayData;
-    pTLSBaseAddress = *reinterpret_cast<TADDR*>(reinterpret_cast<uint8_t*>(pTLSArrayData) + index.GetByteIndex());
+    pTLSBaseAddress = *reinterpret_cast<TADDR*>(reinterpret_cast<uint8_t*>(pTLSArrayData) + index.GetIndexOffset());
     return reinterpret_cast<void*>(pTLSBaseAddress);
 }
 

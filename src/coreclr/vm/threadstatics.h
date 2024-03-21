@@ -36,7 +36,7 @@
 // struct TLSIndex
 // {
 //     int32_t TLSIndexRawIndex;
-//     int32_t GetByteIndex() { return TLSIndexRawIndex & 0xFFFFFF; }
+//     int32_t GetIndexOffset() { return TLSIndexRawIndex & 0xFFFFFF; }
 //     int8_t GetTLSArrayOffset() { return TLSIndexRawIndex >> 24; }
 // };
 //
@@ -51,10 +51,10 @@
 // 1. Get TLS pointer to OS managed TLS block for the current thread ie. pThreadLocalData = &t_ThreadStatics
 // 2. Get the TLSArray for the TLS index (pTLSArray = ((uint8_t*)pThreadLocalData) + index.GetTLSArrayOffset())
 // 3. Read 1 integer value (cTLSData=pThreadLocalData->cTLSData)
-// 4. Compare cTLSData against the index we're looking up (if (cTLSData < index.GetByteIndex()))
+// 4. Compare cTLSData against the index we're looking up (if (cTLSData < index.GetIndexOffset()))
 // 5. If the index is not within range, jump to step 10.
 // 6. Read 1 pointer value from TLS block (pTLSArrayData=pThreadLocalData->pTLSArrayData)
-// 7. Read 1 pointer from within the TLS Array. (pTLSBaseAddress = *(intptr_t*)(((uint8_t*)pTLSArrayData) + index.GetByteIndex());
+// 7. Read 1 pointer from within the TLS Array. (pTLSBaseAddress = *(intptr_t*)(((uint8_t*)pTLSArrayData) + index.GetIndexOffset());
 // 8. If pointer is NULL jump to step 10 (if pTLSBaseAddress == NULL)
 // 9. Return pTLSBaseAddress
 // 10. Tail-call a helper (return GetThreadLocalStaticBase(index))
@@ -95,7 +95,7 @@ struct TLSIndex
     TLSIndex() : TLSIndexRawIndex(0xFFFFFFFF) { }
     TLSIndex(uint32_t rawIndex) : TLSIndexRawIndex(rawIndex) { }
     uint32_t TLSIndexRawIndex;
-    int32_t GetByteIndex() const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex & 0xFFFFFF; }
+    int32_t GetIndexOffset() const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex & 0xFFFFFF; }
     bool IsAllocated() const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex != 0xFFFFFFFF;}
     static TLSIndex Unallocated() { LIMITED_METHOD_DAC_CONTRACT; return TLSIndex(0xFFFFFFFF); }
     bool operator == (TLSIndex index) const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex == index.TLSIndexRawIndex; }

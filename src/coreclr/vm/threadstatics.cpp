@@ -31,13 +31,13 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(ThreadLocalData* pThreadLocalData, TLS
 #endif
     TADDR pTLSBaseAddress = NULL;
     int32_t cTLSData = pThreadLocalData->cTLSData;
-    if (cTLSData <= index.GetByteIndex())
+    if (cTLSData <= index.GetIndexOffset())
     {
         return NULL;
     }
 
     TADDR pTLSArrayData = pThreadLocalData->pTLSArrayData;
-    pTLSBaseAddress = *dac_cast<PTR_TADDR>(dac_cast<PTR_BYTE>(pTLSArrayData) + index.GetByteIndex());
+    pTLSBaseAddress = *(dac_cast<PTR_TADDR>(pTLSArrayData) + index.GetIndexOffset());
     if (pTLSBaseAddress == NULL)
     {
         // Maybe it is in the InFlightData
@@ -106,9 +106,9 @@ bool ReportTLSIndexCarefully(TLSIndex index, int32_t cLoaderHandles, PTR_LOADERH
         // The TLS index is not in use. This either means that the TLS index was never used, or that it was
         // used for a collectible assembly, and that assembly has been freed. In the latter case, we may need to
         // clean this entry up
-        if (cLoaderHandles > index.GetByteIndex())
+        if (cLoaderHandles > index.GetIndexOffset())
         {
-            pLoaderHandles[index.GetByteIndex()] = NULL;
+            pLoaderHandles[index.GetIndexOffset()] = NULL;
             *ppTLSBaseAddress = NULL;
         }
         return false;
@@ -119,9 +119,9 @@ bool ReportTLSIndexCarefully(TLSIndex index, int32_t cLoaderHandles, PTR_LOADERH
         // Check to see if the associated loaderallocator is still live
         if (!pMT->GetLoaderAllocator()->IsExposedObjectLive())
         {
-            if (cLoaderHandles > index.GetByteIndex())
+            if (cLoaderHandles > index.GetIndexOffset())
             {
-                uintptr_t indexIntoLoaderHandleTable = index.GetByteIndex();
+                uintptr_t indexIntoLoaderHandleTable = index.GetIndexOffset();
                 pLoaderHandles[indexIntoLoaderHandleTable] = NULL;
                 *ppTLSBaseAddress = NULL;
             }
@@ -342,7 +342,7 @@ void FreeThreadStaticData(ThreadLocalData *pThreadLocalData)
         CrstHolder ch(&g_TLSCrst);
         for (const auto& entry : g_pThreadStaticTypeIndices->CollectibleEntries())
         {
-            pThreadLocalData->pLoaderHandles[entry.TlsIndex.GetByteIndex()] = NULL;
+            pThreadLocalData->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] = NULL;
         }
     }
 
@@ -376,16 +376,16 @@ void* GetThreadLocalStaticBase(TLSIndex index)
     MethodTable *pMT = LookupMethodTableAndFlagForThreadStatic(index, &isGCStatic, &isCollectible);
 
     int32_t cTLSData = t_ThreadStatics.cTLSData;
-    if (cTLSData <= index.GetByteIndex())
+    if (cTLSData <= index.GetIndexOffset())
     {
         // Grow the underlying TLS array
         SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
-        int32_t newcTLSData = index.GetByteIndex() + sizeof(TADDR) * 8; // Leave a bit of margin
-        uint8_t* pNewTLSArrayData = new uint8_t[newcTLSData];
+        int32_t newcTLSData = index.GetIndexOffset() +  8; // Leave a bit of margin
+        uintptr_t* pNewTLSArrayData = new uintptr_t[newcTLSData];
         memset(pNewTLSArrayData, 0, newcTLSData);
         if (cTLSData > 0)
             memcpy(pNewTLSArrayData, (void*)t_ThreadStatics.pTLSArrayData, cTLSData + 1);
-        uint8_t* pOldArray = (uint8_t*)t_ThreadStatics.pTLSArrayData;
+        uintptr_t* pOldArray = (uintptr_t*)t_ThreadStatics.pTLSArrayData;
         t_ThreadStatics.pTLSArrayData = (TADDR)pNewTLSArrayData;
         cTLSData = newcTLSData - 1;
         t_ThreadStatics.cTLSData = cTLSData;
@@ -393,11 +393,11 @@ void* GetThreadLocalStaticBase(TLSIndex index)
         t_ThreadStatics.pThread->m_ThreadLocalDataThreadObjectCopy = t_ThreadStatics;
     }
 
-    if (isCollectible && t_ThreadStatics.cLoaderHandles <= index.GetByteIndex())
+    if (isCollectible && t_ThreadStatics.cLoaderHandles <= index.GetIndexOffset())
     {
         // Grow the underlying TLS array
         SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
-        int32_t cNewTLSLoaderHandles = index.GetByteIndex() + sizeof(TADDR) * 8; // Leave a bit of margin
+        int32_t cNewTLSLoaderHandles = index.GetIndexOffset() + 8; // Leave a bit of margin
         size_t cbNewTLSLoaderHandles = sizeof(LOADERHANDLE) * cNewTLSLoaderHandles;
         LOADERHANDLE* pNewTLSLoaderHandles = new LOADERHANDLE[cNewTLSLoaderHandles];
         memset(pNewTLSLoaderHandles, 0, cbNewTLSLoaderHandles);
@@ -412,7 +412,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
     }
 
     TADDR pTLSArrayData = t_ThreadStatics.pTLSArrayData;
-    TADDR *ppTLSBaseAddress = reinterpret_cast<TADDR*>(reinterpret_cast<uint8_t*>(pTLSArrayData) + index.GetByteIndex());
+    TADDR *ppTLSBaseAddress = reinterpret_cast<TADDR*>(reinterpret_cast<uint8_t*>(pTLSArrayData) + index.GetIndexOffset());
     TADDR pTLSBaseAddress = *ppTLSBaseAddress;
 
     if (pTLSBaseAddress == NULL)
@@ -477,7 +477,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
 
             if (isCollectible)
             {
-                LOADERHANDLE *pLoaderHandle = reinterpret_cast<LOADERHANDLE*>(reinterpret_cast<uint8_t*>(pTLSArrayData) + index.GetByteIndex());
+                LOADERHANDLE *pLoaderHandle = reinterpret_cast<LOADERHANDLE*>(reinterpret_cast<uint8_t*>(pTLSArrayData) + index.GetIndexOffset());
                 // Note, that this can fail, but if it succeeds we don't have a holder in place to clean it up if future operations fail
                 // Add such a holder if we ever add a possibly failing operation after this
                 *pLoaderHandle = pMT->GetLoaderAllocator()->AllocateHandle(gc.tlsEntry);
