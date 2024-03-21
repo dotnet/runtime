@@ -47,10 +47,14 @@ public class SignalRClientTests : AppTestBase
             ServerEnvironment: new Dictionary<string, string> { ["ASPNETCORE_ENVIRONMENT"] = "Development" },
             BrowserPath: "/chat",
             BrowserQueryString: new Dictionary<string, string> { ["transport"] = transport, ["message"] = "ping" },
-            OnServerMessage: (msg) => { serverOutput.Add(msg); },
+            OnServerMessage: (msg) => { 
+                serverOutput.Add(msg);
+                Console.WriteLine($"[BUG_TRACKING_SERVER] {msg}");
+                },
             OnConsoleMessage: async (page, msg) =>
             {
                 consoleOutput.Add(msg.Text);
+                Console.WriteLine($"[BUG_TRACKING_CONSOLE] {msg.Text}");
                 if (msg.Text.Contains("TestOutput ->"))
                     _testOutput.WriteLine(msg.Text);
 
