@@ -33,6 +33,7 @@ namespace DataContracts
     struct TargetPointer
     {
         public ulong Value;
+        public static TargetPointer Null = new TargetPointer(0);
         // Add a full set of operators to support pointer arithmetic
     }
 
