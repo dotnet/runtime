@@ -5644,7 +5644,7 @@ struct GenTreeCall final : public GenTree
         jitstd::vector<InlineCandidateInfo*>* gtInlineCandidateInfoList;
 
         HandleHistogramProfileCandidateInfo* gtHandleHistogramProfileCandidateInfo;
-        ExactContextInfo*      gtExactContextInfo;
+        ExactContextInfo*                    gtExactContextInfo;
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };

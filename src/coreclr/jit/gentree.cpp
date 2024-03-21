@@ -18566,7 +18566,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                         }
                     }
                 }
-                CORINFO_SIG_INFO      sig;
+                CORINFO_SIG_INFO sig;
                 eeGetMethodSig(method, &sig, exactClass);
                 if (sig.retType == CORINFO_TYPE_VOID)
                 {
