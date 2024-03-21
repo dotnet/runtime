@@ -68,7 +68,10 @@ void Compiler::lvaInit()
     lvaArg0Var          = BAD_VAR_NUM;
     lvaMonAcquired      = BAD_VAR_NUM;
     lvaRetAddrVar       = BAD_VAR_NUM;
+
+#ifdef SWIFT_SUPPORT
     lvaSwiftSelfArg     = BAD_VAR_NUM;
+#endif
 
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
 

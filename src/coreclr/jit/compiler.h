@@ -3859,7 +3859,10 @@ public:
     // mechanism passes the address of the return address to a runtime helper
     // where it is used to detect tail-call chains.
     unsigned lvaRetAddrVar;
+
+#ifdef SWIFT_SUPPORT
     unsigned lvaSwiftSelfArg;
+#endif
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
 
