@@ -40,8 +40,6 @@ variables:
 - name: isNotSpecificPlatformOnlyBuild
   value: ${{ notin(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic') }}
 
-# We only run evaluate paths on runtime and runtime-community pipelines on PRs
-# keep in sync with /eng/pipelines/common/xplat-setup.yml
 - name: debugOnPrReleaseOnRolling
   ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
     value: Release
