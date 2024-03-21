@@ -212,17 +212,13 @@ extends:
                 parameters:
                   packageType: deb
                   target: debpkg
-                  packageStepDescription: Runtime Deps, Runtime, Framework Packs Deb installers
-                  subsetArg: -s packs.installers
-                  packagingArgs: -c $(_BuildConfig) --arch $(archType) --os $(osGroup) --ci /p:OfficialBuildId=$(Build.BuildNumber) /p:BuildDebPackage=true
+                  packagingArgs: -c $(_BuildConfig) /p:BuildDebPackage=true
                   condition: and(succeeded(), eq(variables.osSubgroup, ''), eq(variables.archType, 'x64'))
               - template: /eng/pipelines/installer/steps/build-linux-package.yml
                 parameters:
                   packageType: rpm
                   target: rpmpkg
-                  packageStepDescription: Runtime Deps, Runtime, Framework Packs RPM installers
-                  subsetArg: -s packs.installers
-                  packagingArgs: -c $(_BuildConfig) --arch $(archType) --os $(osGroup) --ci /p:OfficialBuildId=$(Build.BuildNumber) /p:BuildRpmPackage=true
+                  packagingArgs: -c $(_BuildConfig) /p:BuildRpmPackage=true
                   condition: and(succeeded(), eq(variables.osSubgroup, ''), in(variables.archType, 'x64', 'arm64'))
 
               # Upload the results.
