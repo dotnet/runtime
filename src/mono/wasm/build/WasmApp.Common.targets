@@ -50,7 +50,7 @@
       - $(EmccExtraCFlags)                  - Extra emcc flags for compiling native files
       - $(EmccEnableAssertions)             - Corresponds to `ASSERTIONS` arg for emcc. Default false.
       - $(EmccEnvironment)                  - Corresponds to `ENVIRONMENT` arg for emcc. Default is `web,webview,worker,node,shell`.
-      - $(WasmInitialHeapSize)              - Initial heap size specified with `emcc`. Default value: 16777216 or size of the DLLs, whichever is larger.
+      - $(WasmInitialHeapSize)              - Initial heap size specified with `emcc`. Default value: 33554432 or size of the DLLs, whichever is larger.
                                               Corresponds to `-s INITIAL_MEMORY=...` emcc arg.
                                               (previously named EmccTotalMemory, which is still kept as an alias)
       - $(EmccMaximumHeapSize)              - Maximum heap size specified with `emcc`. Default value: 2147483648 or size of the DLLs, whichever is larger.
@@ -501,14 +501,14 @@
            Text="$(_ToolchainMissingErrorMessage) SDK is required for AOT'ing assemblies." />
 
     <ItemGroup>
-      <_ChangedBoolPropertiesThatTriggerRelinking Include="%(_BoolPropertiesThatTriggerRelinking.Identity)" Condition="'$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '' and 
+      <_ChangedBoolPropertiesThatTriggerRelinking Include="%(_BoolPropertiesThatTriggerRelinking.Identity)" Condition="'$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '' and
                                                                                                             '$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '%(_BoolPropertiesThatTriggerRelinking.DefaultValueInRuntimePack)'" />
     </ItemGroup>
     <PropertyGroup>
       <_WasmBuildNativeRequired Condition="@(_ChangedBoolPropertiesThatTriggerRelinking->Count()) > 0">true</_WasmBuildNativeRequired>
     </PropertyGroup>
 
-    <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_WasmBuildNativeRequired)' == 'true'" 
+    <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_WasmBuildNativeRequired)' == 'true'"
            Text="WasmBuildNative is required because %(_ChangedBoolPropertiesThatTriggerRelinking.Identity)=$(%(_ChangedBoolPropertiesThatTriggerRelinking.Identity)), but WasmBuildNative is already set to 'false'." />
 
     <PropertyGroup>
@@ -584,8 +584,8 @@
       <Output TaskParameter="InitialHeapSize" PropertyName="_WasmCalculatedInitialHeapSize" />
     </WasmCalculateInitialHeapSize>
     <PropertyGroup>
-      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == '' and '$(_WasmCalculatedInitialHeapSize)' != '' and $(_WasmCalculatedInitialHeapSize) > 16777216">$(_WasmCalculatedInitialHeapSize)</WasmInitialHeapSize>
-      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">16777216</WasmInitialHeapSize>
+      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == '' and '$(_WasmCalculatedInitialHeapSize)' != '' and $(_WasmCalculatedInitialHeapSize) > 33554432">$(_WasmCalculatedInitialHeapSize)</WasmInitialHeapSize>
+      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">33554432</WasmInitialHeapSize>
     </PropertyGroup>
   </Target>
 

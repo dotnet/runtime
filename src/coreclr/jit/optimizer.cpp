@@ -246,6 +246,13 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             continue;
         }
 
+        // Don't change the block weight if it's unreachable.
+        if (!m_reachabilitySets->GetDfsTree()->Contains(curBlk))
+        {
+            reportBlockWeight(curBlk, "; unchanged: unreachable");
+            continue;
+        }
+
         // For curBlk to be part of a loop that starts at begBlk, curBlk must be reachable from begBlk and
         // (since this is a loop) begBlk must likewise be reachable from curBlk.
 
@@ -596,10 +603,6 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
     switch (blk->GetKind())
     {
         case BBJ_ALWAYS:
-            // Copy BBF_NONE_QUIRK flag for BBJ_ALWAYS blocks only
-            newBlk->CopyFlags(blk, BBF_NONE_QUIRK);
-
-            FALLTHROUGH;
         case BBJ_CALLFINALLY:
         case BBJ_CALLFINALLYRET:
         case BBJ_LEAVE:
@@ -2249,7 +2252,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     bNewCond->SetFalseEdge(newCondTopEdge);
 
     fgRedirectTargetEdge(block, bNewCond);
-    block->SetFlags(BBF_NONE_QUIRK);
     assert(block->JumpsToNext());
 
     // Move all predecessor edges that look like loop entry edges to point to the new cloned condition
@@ -2681,7 +2683,7 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
 }
 
 //-----------------------------------------------------------------------------
-// optFindLoops: find loops in the function.
+// optFindLoopsPhase: find loops in the function.
 //
 // The JIT recognizes two types of loops in a function: natural loops and "general" (or "unnatural") loops.
 // Natural loops are those which get added to Compiler::m_loops. Most downstream optimizations require
@@ -2887,8 +2889,40 @@ BasicBlock* Compiler::optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* 
     // out of the loop, and if possible find a spot that won't break up fall-through.
     BasicBlock* bottom         = loop->GetLexicallyBottomMostBlock();
     BasicBlock* insertionPoint = bottom;
-    while (insertionPoint->bbFallsThrough() && !insertionPoint->IsLast())
+    while (!insertionPoint->IsLast())
     {
+        switch (insertionPoint->GetKind())
+        {
+            case BBJ_ALWAYS:
+                if (!insertionPoint->JumpsToNext())
+                {
+                    // Found a branch that isn't to the next block, so we won't split up any fall-through.
+                    return insertionPoint;
+                }
+                break;
+
+            case BBJ_COND:
+                if (!insertionPoint->FalseTargetIs(insertionPoint->Next()))
+                {
+                    // Found a conditional branch that doesn't have a false branch to the next block,
+                    // so we won't split up any fall-through.
+                    return insertionPoint;
+                }
+                break;
+
+            case BBJ_CALLFINALLY:
+                if (!insertionPoint->isBBCallFinallyPair())
+                {
+                    // Found a retless BBJ_CALLFINALLY block, so we won't split up any fall-through.
+                    return insertionPoint;
+                }
+                break;
+
+            default:
+                // No fall-through to split up.
+                return insertionPoint;
+        }
+
         // Keep looking for a better insertion point if we can.
         BasicBlock* newInsertionPoint = optTryAdvanceLoopCompactionInsertionPoint(loop, insertionPoint, top, bottom);
         if (newInsertionPoint == nullptr)
@@ -3016,12 +3050,6 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     BasicBlock* preheader = fgNewBBbefore(BBJ_ALWAYS, insertBefore, false);
     preheader->SetFlags(BBF_INTERNAL);
     fgSetEHRegionForNewPreheaderOrExit(preheader);
-
-    if (preheader->NextIs(header))
-    {
-        preheader->SetFlags(BBF_NONE_QUIRK);
-    }
-
     preheader->bbCodeOffs = insertBefore->bbCodeOffs;
 
     JITDUMP("Created new preheader " FMT_BB " for " FMT_LP "\n", preheader->bbNum, loop->GetIndex());
@@ -3118,6 +3146,9 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 
     BasicBlock* newExit;
 
+    JITDUMP("Canonicalize exit " FMT_BB " for " FMT_LP " to have only loop predecessors\n", exit->bbNum,
+            loop->GetIndex());
+
 #if FEATURE_EH_CALLFINALLY_THUNKS
     if (exit->KindIs(BBJ_CALLFINALLY))
     {
@@ -3140,10 +3171,9 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
         }
     }
     else
-#endif
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
     {
         newExit = fgNewBBbefore(BBJ_ALWAYS, exit, false);
-        newExit->SetFlags(BBF_NONE_QUIRK);
         fgSetEHRegionForNewPreheaderOrExit(newExit);
     }
 
@@ -3154,9 +3184,6 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 
     newExit->bbCodeOffs = exit->bbCodeOffs;
 
-    JITDUMP("Created new exit " FMT_BB " to replace " FMT_BB " for " FMT_LP "\n", newExit->bbNum, exit->bbNum,
-            loop->GetIndex());
-
     for (BasicBlock* pred : exit->PredBlocksEditing())
     {
         if (loop->ContainsBlock(pred))
@@ -3166,6 +3193,9 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
     }
 
     optSetWeightForPreheaderOrExit(loop, newExit);
+
+    JITDUMP("Created new exit " FMT_BB " to replace " FMT_BB " exit for " FMT_LP "\n", newExit->bbNum, exit->bbNum,
+            loop->GetIndex());
     return true;
 }
 

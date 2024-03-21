@@ -1,13 +1,7 @@
 <linker>
   <assembly fullname="System.Linq.Expressions">
-    <type fullname="System.Linq.Expressions.LambdaExpression">
-      <method signature="System.Boolean get_CanCompileToIL()" feature="System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported" featurevalue="false" body="stub" value="false" />
-    </type>
     <type fullname="System.Dynamic.Utils.DelegateHelpers">
       <method signature="System.Boolean get_CanEmitObjectArrayDelegate()" feature="System.Linq.Expressions.CanEmitObjectArrayDelegate" featurevalue="false" body="stub" value="false" />
-    </type>
-    <type fullname="System.Linq.Expressions.Interpreter.CallInstruction">
-      <method signature="System.Boolean get_CanCreateArbitraryDelegates()" feature="System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported" featurevalue="false" body="stub" value="false" />
     </type>
   </assembly>
 </linker>

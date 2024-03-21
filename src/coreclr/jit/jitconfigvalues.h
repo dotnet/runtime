@@ -144,9 +144,11 @@ CONFIG_INTEGER(JitPrintInlinedMethodsVerbose, W("JitPrintInlinedMethodsVerboseLe
 CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
 
 CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"))
-// -1: just do internal checks
-// Else bitflag: 0x1 check classic, 0x2 check likely, 0x4 enable asserts
+
+// -1: just do internal checks (CHECK_HASLIKELIHOOD | CHECK_LIKELIHOODSUM | RAISE_ASSERT)
+// Else bitflag of ProfileChecks enum.
 CONFIG_INTEGER(JitProfileChecks, W("JitProfileChecks"), -1)
+
 CONFIG_INTEGER(JitRequired, W("JITRequired"), -1)
 CONFIG_INTEGER(JitRoundFloat, W("JITRoundFloat"), DEFAULT_ROUND_LEVEL)
 CONFIG_INTEGER(JitStackAllocToLocalSize, W("JitStackAllocToLocalSize"), DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)
@@ -326,6 +328,7 @@ CONFIG_INTEGER(EnableAVX512F,               W("EnableAVX512F"),             1) /
 CONFIG_INTEGER(EnableAVX512F_VL,            W("EnableAVX512F_VL"),          1) // Allows AVX512F+ AVX512VL+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512VBMI,            W("EnableAVX512VBMI"),          1) // Allows AVX512VBMI+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512VBMI_VL,         W("EnableAVX512VBMI_VL"),       1) // Allows AVX512VBMI_VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX10v1,               W("EnableAVX10v1"),             1) // Allows AVX10v1+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVXVNNI,               W("EnableAVXVNNI"),             1) // Allows AVXVNNI+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableBMI1,                  W("EnableBMI1"),                1) // Allows BMI1+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableBMI2,                  W("EnableBMI2"),                1) // Allows BMI2+ hardware intrinsics to be disabled

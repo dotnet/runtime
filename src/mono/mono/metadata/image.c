@@ -2511,6 +2511,7 @@ mono_image_load_file_for_image_checked (MonoImage *image, uint32_t fileidx, Mono
 	fname = mono_metadata_string_heap (image, fname_id);
 	base_dir = g_path_get_dirname (image->name);
 	name = g_build_filename (base_dir, fname, (const char*)NULL);
+	g_assert (name);
 	res = mono_image_open (name, NULL);
 	if (!res)
 		goto done;

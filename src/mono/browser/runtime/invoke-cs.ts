@@ -42,7 +42,7 @@ export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: str
     // hack until we have public API for JSType.DiscardNoWait
     if (WasmEnableThreads && shortClassName === "DefaultWebAssemblyJSRuntime"
         && namespaceName === "Microsoft.AspNetCore.Components.WebAssembly.Services"
-        && (methodName === "BeginInvokeDotNet" || methodName === "EndInvokeJS")) {
+        && (methodName === "BeginInvokeDotNet" || methodName === "EndInvokeJS" || methodName === "ReceiveByteArrayFromJS")) {
         res_marshaler_type = MarshalerType.DiscardNoWait;
     }
 
@@ -208,7 +208,7 @@ function bind_fn_1RA(closure: BindingClosure) {
             let promise = res_converter(args);
 
             // call C# side
-            invoke_async_jsexport(method, args, size);
+            invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
 
             // in case the C# side returned synchronously
             promise = end_marshal_task_to_js(args, undefined, promise);
@@ -273,7 +273,7 @@ function bind_fn_2RA(closure: BindingClosure) {
             let promise = res_converter(args);
 
             // call C# side
-            invoke_async_jsexport(method, args, size);
+            invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
 
             // in case the C# side returned synchronously
             promise = end_marshal_task_to_js(args, undefined, promise);
@@ -318,13 +318,13 @@ function bind_fn(closure: BindingClosure) {
 
             // call C# side
             if (is_async) {
-                invoke_async_jsexport(method, args, size);
+                invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
                 // in case the C# side returned synchronously
                 js_result = end_marshal_task_to_js(args, undefined, js_result);
             }
             else if (is_discard_no_wait) {
                 // call C# side, fire and forget
-                invoke_async_jsexport(method, args, size);
+                invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
             }
             else {
                 invoke_sync_jsexport(method, args);

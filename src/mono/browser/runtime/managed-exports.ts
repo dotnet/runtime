@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { GCHandle, GCHandleNull, JSMarshalerArguments, JSThreadInteropMode, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod } from "./types/internal";
+import { GCHandle, GCHandleNull, JSMarshalerArguments, JSThreadInteropMode, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod, PThreadPtr } from "./types/internal";
 import cwraps, { threads_c_functions as twraps } from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
 import { JavaScriptMarshalerArgSize, alloc_stack_frame, get_arg, get_arg_gc_handle, is_args_exception, set_arg_i32, set_arg_intptr, set_arg_type, set_gc_handle, set_receiver_should_free } from "./marshal";
@@ -11,7 +11,7 @@ import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_bool_to_cs, mars
 import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js, marshal_exception_to_js } from "./marshal-to-js";
 import { do_not_force_dispose, is_gcv_handle } from "./gc-handles";
 import { assert_c_interop, assert_js_interop } from "./invoke-js";
-import { mono_wasm_main_thread_ptr } from "./pthreads";
+import { monoThreadInfo, mono_wasm_main_thread_ptr } from "./pthreads";
 import { _zero_region, copyBytes } from "./memory";
 import { stringToUTF8Ptr } from "./strings";
 import { mono_log_debug } from "./logging";
@@ -62,7 +62,7 @@ export function call_entry_point(main_assembly_name: string, program_args: strin
         // because this is async, we could pre-allocate the promise
         let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated, marshal_int32_to_js);
 
-        invoke_async_jsexport(managedExports.CallEntrypoint, args, size);
+        invoke_async_jsexport(runtimeHelpers.managedThreadTID, managedExports.CallEntrypoint, args, size);
 
         // in case the C# side returned synchronously
         promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
@@ -124,11 +124,12 @@ export function release_js_owned_object_by_gc_handle(gc_handle: GCHandle) {
         const arg1 = get_arg(args, 2);
         set_arg_type(arg1, MarshalerType.Object);
         set_gc_handle(arg1, gc_handle);
-        if (is_gcv_handle(gc_handle)) {
-            // this must stay synchronous for free_gcv_handle sake
+        if (!WasmEnableThreads || is_gcv_handle(gc_handle) || !monoThreadInfo.isUI) {
+            // this must stay synchronous for free_gcv_handle sake, to not use-after-free
+            // also on JSWebWorker, because the message could arrive after the worker is terminated and the GCHandle of JSProxyContext is already freed
             invoke_sync_jsexport(managedExports.ReleaseJSOwnedObjectByGCHandle, args);
         } else {
-            invoke_async_jsexport(managedExports.ReleaseJSOwnedObjectByGCHandle, args, size);
+            invoke_async_jsexport(runtimeHelpers.ioThreadTID, managedExports.ReleaseJSOwnedObjectByGCHandle, args, size);
         }
     } finally {
         Module.stackRestore(sp);
@@ -154,7 +155,7 @@ export function complete_task(holder_gc_handle: GCHandle, error?: any, data?: an
             mono_assert(res_converter, "res_converter missing");
             res_converter(arg3, data);
         }
-        invoke_async_jsexport(managedExports.CompleteTask, args, size);
+        invoke_async_jsexport(runtimeHelpers.ioThreadTID, managedExports.CompleteTask, args, size);
     } finally {
         Module.stackRestore(sp);
     }
@@ -259,7 +260,7 @@ export function install_main_synchronization_context(jsThreadBlockingMode: numbe
     }
 }
 
-export function invoke_async_jsexport(method: MonoMethod, args: JSMarshalerArguments, size: number): void {
+export function invoke_async_jsexport(managedTID: PThreadPtr, method: MonoMethod, args: JSMarshalerArguments, size: number): void {
     assert_js_interop();
     if (!WasmEnableThreads || runtimeHelpers.isManagedRunningOnCurrentThread) {
         cwraps.mono_wasm_invoke_jsexport(method, args as any);
@@ -272,7 +273,7 @@ export function invoke_async_jsexport(method: MonoMethod, args: JSMarshalerArgum
         const bytes = JavaScriptMarshalerArgSize * size;
         const cpy = Module._malloc(bytes) as any;
         copyBytes(args as any, cpy, bytes);
-        twraps.mono_wasm_invoke_jsexport_async_post(runtimeHelpers.managedThreadTID, method, cpy);
+        twraps.mono_wasm_invoke_jsexport_async_post(managedTID, method, cpy);
     }
 }
 
@@ -288,7 +289,7 @@ export function invoke_sync_jsexport(method: MonoMethod, args: JSMarshalerArgume
             throw new Error("Cannot call synchronous C# method from inside a synchronous call to a JS method.");
         }
         if (runtimeHelpers.isManagedRunningOnCurrentThread) {
-            cwraps.mono_wasm_invoke_jsexport(method, args as any);
+            twraps.mono_wasm_invoke_jsexport_sync(method, args as any);
         } else {
             // this is blocking too
             twraps.mono_wasm_invoke_jsexport_sync_send(runtimeHelpers.managedThreadTID, method, args as any);
@@ -315,7 +316,7 @@ export function bind_assembly_exports(assemblyName: string): Promise<void> {
         // because this is async, we could pre-allocate the promise
         let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated);
 
-        invoke_async_jsexport(managedExports.BindAssemblyExports, args, size);
+        invoke_async_jsexport(runtimeHelpers.managedThreadTID, managedExports.BindAssemblyExports, args, size);
 
         // in case the C# side returned synchronously
         promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);

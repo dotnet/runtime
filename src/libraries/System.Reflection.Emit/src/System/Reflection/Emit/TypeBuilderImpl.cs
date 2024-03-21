@@ -211,9 +211,11 @@ namespace System.Reflection.Emit
         {
             // Get the parent class's default constructor and add it to the IL
             ConstructorInfo? con;
-            if (_typeParent!.IsConstructedGenericType && _typeParent.GetGenericTypeDefinition() is TypeBuilderImpl typeBuilder)
+            if (_typeParent!.IsConstructedGenericType &&
+                (_typeParent.GetGenericTypeDefinition() is TypeBuilderImpl || ModuleBuilderImpl.ContainsTypeBuilder(_typeParent.GetGenericArguments())))
             {
-                con = GetConstructor(_typeParent, typeBuilder.GetConstructor(
+                // When TypeBuilder involved need to construct the parent constructor using TypeBuilder.GetConstructor() static method
+                con = GetConstructor(_typeParent, _typeParent.GetGenericTypeDefinition().GetConstructor(
                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null)!);
             }
             else

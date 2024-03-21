@@ -80,6 +80,9 @@ bool CodeGen::genInstrWithConstant(instruction ins,
         case INS_flw:
         case INS_ld:
         case INS_fld:
+        case INS_lbu:
+        case INS_lhu:
+        case INS_lwu:
             break;
 
         default:
@@ -6509,7 +6512,7 @@ void CodeGen::genCall(GenTreeCall* call)
             for (unsigned i = 0; i < regCount; ++i)
             {
                 var_types regType      = pRetTypeDesc->GetReturnRegType(i);
-                returnReg              = pRetTypeDesc->GetABIReturnReg(i);
+                returnReg              = pRetTypeDesc->GetABIReturnReg(i, call->GetUnmanagedCallConv());
                 regNumber allocatedReg = call->GetRegNumByIdx(i);
                 inst_Mov(regType, allocatedReg, returnReg, /* canSkip */ true);
             }

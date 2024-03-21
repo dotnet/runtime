@@ -59,6 +59,9 @@ if /I [%XHARNESS_COMMAND%] == [test] (
     if [%BROWSER_PATH%] == [] if not [%HELIX_CORRELATION_PAYLOAD%] == [] (
         set "BROWSER_PATH=--browser-path^=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe"
     )
+    if [%JS_ENGINE_ARGS%] == [] (
+        set "JS_ENGINE_ARGS=--browser-arg^=--js-flags^=--stack-trace-limit^=1000"
+    )
 )
 
 if [%XHARNESS_ARGS%] == [] (

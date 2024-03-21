@@ -861,11 +861,6 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         noway_assert(comp->opts.OptimizationDisabled());
         originalSwitchBB->SetKindAndTargetEdge(BBJ_ALWAYS, jumpTab[0]);
 
-        if (originalSwitchBB->JumpsToNext())
-        {
-            originalSwitchBB->SetFlags(BBF_NONE_QUIRK);
-        }
-
         // Remove extra predecessor links if there was more than one case.
         for (unsigned i = 1; i < jumpCnt; ++i)
         {
@@ -960,11 +955,23 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // Fix the pred for the default case: the default block target still has originalSwitchBB
     // as a predecessor, but the fgSplitBlockAfterStatement() moved all predecessors to point
     // to afterDefaultCondBlock.
-    comp->fgRemoveRefPred(jumpTab[jumpCnt - 1]);
-    FlowEdge* const trueEdge = comp->fgAddRefPred(defaultBB, originalSwitchBB, jumpTab[jumpCnt - 1]);
+
+    // Note defaultEdge may also be the edge for some switch cases. We only probe edges,
+    // so assume each possibility is equally likely.
+    FlowEdge* const defaultEdge       = jumpTab[jumpCnt - 1];
+    weight_t const  defaultLikelihood = defaultEdge->getLikelihood() / defaultEdge->getDupCount();
+    comp->fgRemoveRefPred(defaultEdge);
+    FlowEdge* const trueEdge = comp->fgAddRefPred(defaultBB, originalSwitchBB);
+    trueEdge->setLikelihood(defaultLikelihood);
+    defaultEdge->setLikelihood(defaultEdge->getLikelihood() - defaultLikelihood);
 
     // Turn originalSwitchBB into a BBJ_COND.
-    originalSwitchBB->SetCond(trueEdge, originalSwitchBB->GetTargetEdge());
+    FlowEdge* const falseEdge        = originalSwitchBB->GetTargetEdge();
+    weight_t const  switchLikelihood = 1.0 - defaultLikelihood;
+    falseEdge->setLikelihood(switchLikelihood);
+    originalSwitchBB->SetCond(trueEdge, falseEdge);
+    afterDefaultCondBlock->inheritWeight(originalSwitchBB);
+    afterDefaultCondBlock->scaleBBWeight(switchLikelihood);
 
     bool useJumpSequence = jumpCnt < minSwitchTabJumpCnt;
 
@@ -1014,11 +1021,6 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         }
 
         afterDefaultCondBlock->SetKindAndTargetEdge(BBJ_ALWAYS, uniqueSucc);
-
-        if (afterDefaultCondBlock->JumpsToNext())
-        {
-            afterDefaultCondBlock->SetFlags(BBF_NONE_QUIRK);
-        }
     }
     // If the number of possible destinations is small enough, we proceed to expand the switch
     // into a series of conditional branches, otherwise we follow the jump table based switch
@@ -1046,14 +1048,36 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         // If no case target follows, the last one doesn't need to be a compare/branch: it can be an
         // unconditional branch.
         bool fAnyTargetFollows = false;
+
+        // We need to track how much of the original switch's likelihood has already been
+        // tested for.  We'll use this to adjust the likelihood of the branches we're adding.
+        // So far we've tested for the default case, so we'll start with that.
+        weight_t totalTestLikelihood = defaultLikelihood;
         for (unsigned i = 0; i < jumpCnt - 1; ++i)
         {
             assert(currentBlock != nullptr);
-            BasicBlock* targetBlock = jumpTab[i]->getDestinationBlock();
+            BasicBlock* const targetBlock = jumpTab[i]->getDestinationBlock();
 
             // Remove the switch from the predecessor list of this case target's block.
             // We'll add the proper new predecessor edge later.
-            comp->fgRemoveRefPred(jumpTab[i]);
+            FlowEdge* const oldEdge = jumpTab[i];
+
+            // Compute the likelihood that this test is successful.
+            // Divide by number of cases still sharing this edge (reduces likelihood)
+            // Divide by likelihood of reaching this test (increases likelihood).
+            // But if there is little chance of reaching this test, set the likelihood to 0.5
+            //
+            weight_t const edgeLikelihood          = oldEdge->getLikelihood();
+            weight_t const caseLikelihood          = edgeLikelihood / oldEdge->getDupCount();
+            bool const     unlikelyToReachThisCase = Compiler::fgProfileWeightsEqual(totalTestLikelihood, 1.0, 0.001);
+            weight_t const adjustedCaseLikelihood =
+                unlikelyToReachThisCase ? 0.5 : min(1.0, caseLikelihood / (1.0 - totalTestLikelihood));
+            comp->fgRemoveRefPred(oldEdge);
+
+            // Decrement the likelihood on the old edge, so if other cases are sharing it,
+            // they get the right values later.
+            //
+            oldEdge->setLikelihood(edgeLikelihood - caseLikelihood);
 
             if (targetBlock == followingBB)
             {
@@ -1064,23 +1088,54 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
             // We need a block to put in the new compare and/or branch.
             // If we haven't used the afterDefaultCondBlock yet, then use that.
+            //
             if (fUsedAfterDefaultCondBlock)
             {
-                BasicBlock* newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
-                newBlock->SetFlags(BBF_NONE_QUIRK);
+                BasicBlock*     newBlock  = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
                 FlowEdge* const falseEdge = comp->fgAddRefPred(newBlock, currentBlock); // The fall-through predecessor.
+
+                // We set the true edge likelihood earlier, use that to figure out the false edge likelihood
+                // and the block weight.
+                //
+                FlowEdge* const trueEdge        = currentBlock->GetTrueEdge();
+                weight_t const  falseLikelihood = 1.0 - trueEdge->getLikelihood();
+                falseEdge->setLikelihood(falseLikelihood);
                 currentBlock->SetFalseEdge(falseEdge);
+                newBlock->inheritWeight(currentBlock);
+                newBlock->scaleBBWeight(falseLikelihood);
                 currentBlock   = newBlock;
                 currentBBRange = &LIR::AsRange(currentBlock);
             }
             else
             {
                 assert(currentBlock == afterDefaultCondBlock);
+
+                // If the first switch case we peel off has the same target as
+                // other cases (that is, it has nonzero dup count, it's simpler to
+                // just make a new here block, so that as we peel off cases,
+                // we're not sharing edges with the original switch.
+                //
+                // That is, the call to fgAddRefPred below always creates a new edge.
+                //
+                if (oldEdge->getDupCount() > 0)
+                {
+                    BasicBlock* const newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
+                    FlowEdge* const   newEdge  = comp->fgAddRefPred(newBlock, currentBlock);
+                    currentBlock               = newBlock;
+                    currentBBRange             = &LIR::AsRange(currentBlock);
+                    afterDefaultCondBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                }
+
                 fUsedAfterDefaultCondBlock = true;
             }
 
+            // Update the total test case likelihood.
+            totalTestLikelihood += caseLikelihood;
+
             // Wire up the predecessor list for the "branch" case.
-            FlowEdge* const newEdge = comp->fgAddRefPred(targetBlock, currentBlock, jumpTab[i]);
+            FlowEdge* const newEdge = comp->fgAddRefPred(targetBlock, currentBlock, oldEdge);
+            // This should truly be a new edge.
+            assert(newEdge->getDupCount() == 1);
 
             if (!fAnyTargetFollows && (i == jumpCnt - 2))
             {
@@ -1097,6 +1152,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 // condition statement.
                 // We will set the false edge in a later iteration of the loop, or after.
                 currentBlock->SetCond(newEdge);
+                newEdge->setLikelihood(adjustedCaseLikelihood);
 
                 // Now, build the conditional statement for the current case that is
                 // being evaluated:
@@ -1120,6 +1176,12 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             // In this case, we need to add one back.
             FlowEdge* const falseEdge = comp->fgAddRefPred(currentBlock->Next(), currentBlock);
             currentBlock->SetFalseEdge(falseEdge);
+            FlowEdge* const trueEdge        = currentBlock->GetTrueEdge();
+            weight_t const  falseLikelihood = 1.0 - trueEdge->getLikelihood();
+            falseEdge->setLikelihood(falseLikelihood);
+
+            // The following block weight should remain unchanged. All we've done
+            // is alter the various paths that can reach it.
         }
 
         if (!fUsedAfterDefaultCondBlock)
@@ -1145,9 +1207,14 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         LIR::Range& switchBlockRange = LIR::AsRange(afterDefaultCondBlock);
         switchBlockRange.InsertAtEnd(switchValue);
 
+        // We are going to modify the switch, invalidate any desc map.
+        //
+        comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
+
         // Try generating a bit test based switch first,
         // if that's not possible a jump table based switch will be generated.
-        if (!TryLowerSwitchToBitTest(jumpTab, jumpCnt, targetCnt, afterDefaultCondBlock, switchValue))
+        if (!TryLowerSwitchToBitTest(jumpTab, jumpCnt, targetCnt, afterDefaultCondBlock, switchValue,
+                                     defaultLikelihood))
         {
             JITDUMP("Lowering switch " FMT_BB ": using jump table expansion\n", originalSwitchBB->bbNum);
 
@@ -1167,9 +1234,49 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
             // this block no longer branches to the default block
             afterDefaultCondBlock->GetSwitchTargets()->removeDefault();
-        }
 
-        comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
+            // We need to scale up the likelihood of the remaining switch edges, now that we've peeled off
+            // the default case. But if the remaining likelihood is zero (default likelihood was 1.0),
+            // we don't know the case likelihoods. Instead, divide likelihood evenly among all cases.
+            //
+            // First, rebuild the unique succ set
+            //
+            Compiler::SwitchUniqueSuccSet successors = comp->GetDescriptorForSwitch(afterDefaultCondBlock);
+
+            // Then fix each successor edge
+            //
+            if (Compiler::fgProfileWeightsEqual(defaultLikelihood, 1.0, 0.001))
+            {
+                JITDUMP("Zero weight switch block " FMT_BB ", distributing likelihoods equally per case\n",
+                        afterDefaultCondBlock->bbNum);
+                // jumpCnt-1 here because we peeled the default after copying this value.
+                weight_t const newLikelihood = 1.0 / (jumpCnt - 1);
+                for (unsigned i = 0; i < successors.numDistinctSuccs; i++)
+                {
+                    FlowEdge* const edge = successors.nonDuplicates[i];
+                    edge->setLikelihood(newLikelihood * edge->getDupCount());
+                }
+            }
+            else
+            {
+                weight_t const scaleFactor = 1.0 / (1.0 - defaultLikelihood);
+                JITDUMP("Scaling switch block " FMT_BB " likelihoods by " FMT_WT "\n", afterDefaultCondBlock->bbNum,
+                        scaleFactor);
+                for (unsigned i = 0; i < successors.numDistinctSuccs; i++)
+                {
+                    FlowEdge* const edge          = successors.nonDuplicates[i];
+                    weight_t        newLikelihood = scaleFactor * edge->getLikelihood();
+
+                    if (newLikelihood > 1.0)
+                    {
+                        // tolerate small overflows
+                        assert(Compiler::fgProfileWeightsEqual(newLikelihood, 1.0, 0.001));
+                        newLikelihood = 1.0;
+                    }
+                    edge->setLikelihood(newLikelihood);
+                }
+            }
+        }
     }
 
     GenTree* next = node->gtNext;
@@ -1190,6 +1297,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 //    targetCount - The number of distinct blocks in the jump table
 //    bbSwitch - The switch block
 //    switchValue - A LclVar node that provides the switch value
+//    defaultLikelihood - likelihood control flow took the default case (already checked)
 //
 // Return value:
 //    true if the switch has been lowered to a bit test
@@ -1210,8 +1318,12 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 //    than the traditional jump table base code. And of course, it also avoids the need
 //    to emit the jump table itself that can reach up to 256 bytes (for 64 entries).
 //
-bool Lowering::TryLowerSwitchToBitTest(
-    FlowEdge* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue)
+bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
+                                       unsigned    jumpCount,
+                                       unsigned    targetCount,
+                                       BasicBlock* bbSwitch,
+                                       GenTree*    switchValue,
+                                       weight_t    defaultLikelihood)
 {
     assert(jumpCount >= 2);
     assert(targetCount >= 2);
@@ -1285,6 +1397,8 @@ bool Lowering::TryLowerSwitchToBitTest(
         return false;
     }
 
+    JITDUMP("Lowering switch " FMT_BB " to bit test\n", bbSwitch->bbNum);
+
 #if defined(TARGET_64BIT) && defined(TARGET_XARCH)
     //
     // See if we can avoid a 8 byte immediate on 64 bit targets. If all upper 32 bits are 1
@@ -1309,9 +1423,27 @@ bool Lowering::TryLowerSwitchToBitTest(
     comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
     comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
 
-    // TODO: Use old edges to influence new edge likelihoods?
-    case0Edge = comp->fgAddRefPred(bbCase0, bbSwitch);
-    case1Edge = comp->fgAddRefPred(bbCase1, bbSwitch);
+    case0Edge = comp->fgAddRefPred(bbCase0, bbSwitch, case0Edge);
+    case1Edge = comp->fgAddRefPred(bbCase1, bbSwitch, case1Edge);
+
+    // If defaultLikelihood is not ~ 1.0
+    //   up-scale case likelihoods by 1.0 / (1.0 - defaultLikelihood)
+    // else switch block weight should be zero
+    //   edge likelihoods are unknown, use 0.5
+    //
+    bool const likelyToReachSwitch = !Compiler::fgProfileWeightsEqual(defaultLikelihood, 1.0, 0.001);
+
+    if (likelyToReachSwitch)
+    {
+        weight_t const scaleFactor = 1.0 / (1.0 - defaultLikelihood);
+        case0Edge->setLikelihood(min(1.0, scaleFactor * case0Edge->getLikelihood()));
+        case1Edge->setLikelihood(min(1.0, scaleFactor * case1Edge->getLikelihood()));
+    }
+    else
+    {
+        case0Edge->setLikelihood(0.5);
+        case1Edge->setLikelihood(0.5);
+    }
 
     if (bbSwitch->NextIs(bbCase0))
     {

@@ -14,6 +14,8 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
+        internal static bool DisableTlsResume { get; }
+
         private class FakeOptions
         {
             public string TargetHost;

@@ -7,7 +7,7 @@ import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles"
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF64, localHeapViewI32, localHeapViewU8, _zero_region, getB32, setB32, forceThreadMemoryViewRefresh } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
-import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType, PThreadPtr, PThreadPtrNull } from "./types/internal";
+import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType, PThreadPtr, PThreadPtrNull, VoidPtrNull } from "./types/internal";
 import { TypedArray, VoidPtr } from "./types/emscripten";
 import { utf16ToString } from "./strings";
 import { get_managed_stack_trace } from "./managed-exports";
@@ -39,6 +39,7 @@ const enum JSMarshalerArgumentOffsets {
     ContextHandle = 16,
     ReceiverShouldFree = 20,
     CallerNativeTID = 24,
+    SyncDoneSemaphorePtr = 28,
 }
 export const JSMarshalerTypeSize = 32;
 // keep in sync with JSFunctionBinding.JSBindingType
@@ -89,6 +90,12 @@ export function is_receiver_should_free(args: JSMarshalerArguments): boolean {
     if (!WasmEnableThreads) return false;
     mono_assert(args, "Null args");
     return getB32(<any>args + JSMarshalerArgumentOffsets.ReceiverShouldFree);
+}
+
+export function get_sync_done_semaphore_ptr(args: JSMarshalerArguments): VoidPtr {
+    if (!WasmEnableThreads) return VoidPtrNull;
+    mono_assert(args, "Null args");
+    return getI32(<any>args + JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr) as any;
 }
 
 export function get_caller_native_tid(args: JSMarshalerArguments): PThreadPtr {

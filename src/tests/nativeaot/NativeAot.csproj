@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="*/**/*.??proj" />
+
+    <!-- Due to the nature of the MultiModule tests, it is unfeasible to convert
+         them to the Merged Wrapper system.
+
+         The main idea of these ones is that we pre-NativeAOT the whole framework,
+         then NativeAOT each assembly separately, and then link them all together
+         at the end using the native linker.
+
+         So, when we try using the Merged Wrapper system, nothing ends up producing
+         the code for xunit.assert, as its assembly is not in the actual framework.
+    -->
+    <MergedWrapperProjectReference Remove="SmokeTests/MultiModule/*.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <BuildAsStandalone>false</BuildAsStandalone>
+  </PropertyGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

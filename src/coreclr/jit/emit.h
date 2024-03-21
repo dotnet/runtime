@@ -2506,6 +2506,7 @@ private:
 #if defined(TARGET_XARCH)
     CORINFO_FIELD_HANDLE emitSimd32Const(simd32_t constValue);
     CORINFO_FIELD_HANDLE emitSimd64Const(simd64_t constValue);
+    CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue);
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);

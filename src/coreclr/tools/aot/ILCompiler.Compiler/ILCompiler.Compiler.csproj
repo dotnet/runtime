@@ -608,7 +608,6 @@
     <Compile Include="Compiler\ObjectWriter\Eabi\EabiAttributesBuilder.cs" />
     <Compile Include="Compiler\ObjectWriter\Eabi\EabiNative.cs" />
     <Compile Include="Compiler\ObjectWriter\Eabi\EabiUnwindConverter.cs" />
-    <Compile Include="Compiler\ObjectWriter\LegacyObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWritingOptions.cs" />
     <Compile Include="Compiler\ObjectWriter\MachNative.cs" />

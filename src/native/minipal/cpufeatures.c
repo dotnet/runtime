@@ -277,6 +277,28 @@ int minipal_getcpufeatures(void)
                                             {
                                                 result |= XArchIntrinsicConstants_AvxVnni;
                                             }
+
+                                            if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                                // Avx10
+                                            {
+                                                __cpuidex(cpuidInfo, 0x00000024, 0x00000000);
+                                                if((cpuidInfo[CPUID_EBX] & 0xFF) >= 1)                                  // Avx10v1 - CPUID.(EAX=24H, ECX=00H):EBX[7:0] >= 1
+                                                {
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)
+                                                    {
+                                                        result |= XArchIntrinsicConstants_Avx10v1;
+                                                    }
+
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)
+                                                    {
+                                                        result |= XArchIntrinsicConstants_Avx10v1_V256;
+                                                    }
+
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0)
+                                                    {
+                                                        result |= XArchIntrinsicConstants_Avx10v1_V512;
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }

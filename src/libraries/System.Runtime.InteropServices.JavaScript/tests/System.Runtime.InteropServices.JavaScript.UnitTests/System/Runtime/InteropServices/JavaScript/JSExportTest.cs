@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             JavaScriptTestHelper.optimizedReached=0;
             JavaScriptTestHelper.invoke1O(value);
-            await JavaScriptTestHelper.Delay(0);
+            await JavaScriptTestHelper.Delay(50);
             Assert.Equal(value, JavaScriptTestHelper.optimizedReached);
         }
 

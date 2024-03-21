@@ -54,6 +54,12 @@ namespace System
     internal static class ThrowHelper
     {
         [DoesNotReturn]
+        internal static void ThrowArithmeticException(string message)
+        {
+            throw new ArithmeticException(message);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowAccessViolationException()
         {
             throw new AccessViolationException();

@@ -44,6 +44,17 @@ function verifyEnvironment() {
     }
 }
 
+export function ws_get_state(ws: WebSocketExtension) : number
+{
+    if (ws.readyState != WebSocket.CLOSED)
+        return ws.readyState ?? -1;
+    const receive_event_queue = ws[wasm_ws_pending_receive_event_queue];
+    const queued_events_count = receive_event_queue.getLength();
+    if (queued_events_count == 0)
+        return ws.readyState ?? -1;
+    return WebSocket.OPEN;
+}
+
 export function ws_wasm_create(uri: string, sub_protocols: string[] | null, receive_status_ptr: VoidPtr): WebSocketExtension {
     verifyEnvironment();
     assert_js_interop();

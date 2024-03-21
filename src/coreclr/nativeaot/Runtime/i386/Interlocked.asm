@@ -14,6 +14,10 @@ FASTCALL_FUNC  RhpLockCmpXchg64, 20
 _value$ = 16
 _comparand$ = 8
 
+ALTERNATE_ENTRY _RhpLockCmpXchg64AVLocation
+        ;; Null check
+        cmp     dword ptr [ecx], ecx
+
         mov     eax, DWORD PTR _comparand$[esp-4]
         mov     edx, DWORD PTR _comparand$[esp]
         push    ebx
@@ -21,7 +25,6 @@ _comparand$ = 8
         push    esi
         mov     esi, ecx
         mov     ecx, DWORD PTR _value$[esp+8]
-ALTERNATE_ENTRY _RhpLockCmpXchg64AVLocation
         lock cmpxchg8b QWORD PTR [esi]
         pop     esi
         pop     ebx

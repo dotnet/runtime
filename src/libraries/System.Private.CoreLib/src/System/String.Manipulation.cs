@@ -427,13 +427,13 @@ namespace System
         public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             TwoObjects two = new TwoObjects(arg0, arg1);
-            return FormatHelper(null, format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2));
+            return FormatHelper(null, format, two);
         }
 
         public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-            return FormatHelper(null, format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3));
+            return FormatHelper(null, format, three);
         }
 
         public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
@@ -456,13 +456,13 @@ namespace System
         public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             TwoObjects two = new TwoObjects(arg0, arg1);
-            return FormatHelper(provider, format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2));
+            return FormatHelper(provider, format, two);
         }
 
         public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-            return FormatHelper(provider, format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3));
+            return FormatHelper(provider, format, three);
         }
 
         public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
