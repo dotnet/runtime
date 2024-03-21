@@ -629,7 +629,6 @@ mono_wasm_register_ui_thread (void)
 	MONO_ENTER_GC_SAFE_UNBALANCED;
 }
 
-// TODO ideally we should not need to have UI thread registered as managed
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_register_io_thread (void)
 {
