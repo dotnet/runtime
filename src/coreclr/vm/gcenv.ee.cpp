@@ -314,7 +314,11 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
     // Scan the moveable GC Pointer table, which is used to ensure that
     // pointers into managed object which are kept alive by collectible
     // LoaderAllocators will be updated if their objects are moved.
-    // We use this for static variable bases and for
+    // We use this for collectible static variable bases. In the future we
+    // may also choose to use this for RuntimeType instances for collectible
+    // types. The intent is to be able to use this capability to allow the
+    // data structures for collectible assemblies to be implemented in the
+    // same way as the data structures for non-collectible assemblies.
     g_pMoveableGCPointerTracker->ScanTable(fn, sc);
 
     if (sc->thread_number == 0 || !GCHeapUtilities::IsServerHeap())
