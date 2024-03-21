@@ -169,7 +169,7 @@ void Compiler::lvaInitTypeRef()
         info.compRetBuffArg = BAD_VAR_NUM;
     }
 
-#ifdef DEBUG
+#if defined(DEBUG) && defined(SWIFT_SUPPORT)
     if (verbose && (info.compCallConv == CorInfoCallConvExtension::Swift) && varTypeIsStruct(info.compRetType))
     {
         CORINFO_CLASS_HANDLE          retTypeHnd = info.compMethodInfo->args.retTypeClass;
