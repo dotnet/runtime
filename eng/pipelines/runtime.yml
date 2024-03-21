@@ -1378,7 +1378,7 @@ extends:
           jobParameters:
             buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release -test
             dependsOn:
-              - build_${{ variables.osGroup }}${{ variables.osSubgroup }}_${{ variables.archType }}_release_CoreCLR_Libraries
+              - build_windows_x86_release_CoreCLR_Libraries
             preBuildSteps:
               - template: /eng/pipelines/common/download-artifact-step.yml
                 parameters:
@@ -1403,11 +1403,38 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
             - osx_x64
+          jobParameters:
+            buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release -test
+            dependsOn:
+              - build_osx_x64_${{ variables.debugOnPrReleaseOnRolling }}_CoreCLR_Libraries
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+                  artifactFileName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  displayName: 'unified artifacts'
+            enablePublishTestResults: true
+            testRunTitle: Installer-$(osGroup)$(osSubgroup)_$(archType)
+            postBuildSteps:
+              - template: /eng/pipelines/installer/steps/upload-job-artifacts.yml
+                parameters:
+                  name: $(osGroup)$(osSubgroup)_$(archType)
+            condition:
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          platforms:
             - windows_x64
           jobParameters:
             buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release -test
             dependsOn:
-              - build_${{ variables.osGroup }}${{ variables.osSubgroup }}_${{ variables.archType }}_${{ variables.debugOnPrReleaseOnRolling }}_CoreCLR_Libraries
+              - build_windows_x64_${{ variables.debugOnPrReleaseOnRolling }}_CoreCLR_Libraries
             preBuildSteps:
               - template: /eng/pipelines/common/download-artifact-step.yml
                 parameters:
@@ -1435,7 +1462,7 @@ extends:
           jobParameters:
             buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release -test
             dependsOn:
-              - build_${{ variables.osGroup }}${{ variables.osSubgroup }}_${{ variables.archType }}_${{ variables.debugOnPrReleaseOnRolling }}_CoreCLR_Libraries
+              - build_linux_x64_${{ variables.debugOnPrReleaseOnRolling }}_CoreCLR_Libraries
             preBuildSteps:
               - template: /eng/pipelines/common/download-artifact-step.yml
                 parameters:
