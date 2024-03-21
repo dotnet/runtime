@@ -7477,7 +7477,7 @@ HRESULT DacDbiInterfaceImpl::GetDefinesBitField(ULONG32 *pDefines)
 
     if (g_pDebugger == NULL)
         return CORDBG_E_NOTREADY;
-
+        
     *pDefines = g_pDebugger->m_defines;
     return S_OK;
 }
@@ -7487,6 +7487,7 @@ HRESULT DacDbiInterfaceImpl::GetMDStructuresVersion(ULONG32* pMDStructuresVersio
     DD_ENTER_MAY_THROW;
     if (pMDStructuresVersion == NULL)
         return E_INVALIDARG;
+
     if (g_pDebugger == NULL)
         return CORDBG_E_NOTREADY;
 

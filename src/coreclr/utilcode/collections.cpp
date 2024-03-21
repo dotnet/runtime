@@ -269,9 +269,10 @@ BYTE *CHashTable::FindNextEntry(        // The next entry, or0 for end of list.
         {
             psEntry = EntryPtr(psSrch->iNext);
 #if DACCESS_COMPILE
-            // If we have an infinite loop. Stop.
+            // If there is a simple infinite loop in the linked list
+            // If more complex forms of infinite loops are present, this code may need to be adjusted to handle an arbitrary cycle.
             if (psEntry->iNext == psSrch->iNext)
-                return (0);
+                return NULL;
 #endif
             psSrch->iNext = psEntry->iNext;
             return ((BYTE *) psEntry);
