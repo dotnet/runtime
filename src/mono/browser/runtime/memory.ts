@@ -331,6 +331,17 @@ export function mono_wasm_load_bytes_into_heap (bytes: Uint8Array): VoidPtr {
     return memoryOffset;
 }
 
+// @bytes must be a typed array. space is allocated for it in memory
+//  and it is copied to that location. returns the address of the data.
+// the result pointer *cannot* be freed because malloc is bypassed for speed.
+export function mono_wasm_load_bytes_into_heap_persistent (bytes: Uint8Array): VoidPtr {
+    // pad sizes by 16 bytes for simd
+    const memoryOffset = Module._sbrk(bytes.length + 16);
+    const heapBytes = new Uint8Array(localHeapViewU8().buffer, <any>memoryOffset, bytes.length);
+    heapBytes.set(bytes);
+    return memoryOffset;
+}
+
 export function getEnv (name: string): string | null {
     let charPtr: CharPtr = <any>0;
     try {
