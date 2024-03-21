@@ -2895,9 +2895,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     else // we are doing the integer registers
     {
         noway_assert(argMax <= MAX_REG_ARG);
-        if (hasFixedRetBuffReg())
+        if (hasFixedRetBuffReg(compiler->info.compCallConv))
         {
-            fixedRetBufIndex = theFixedRetBuffArgNum();
+            fixedRetBufIndex = theFixedRetBuffArgNum(compiler->info.compCallConv);
             // We have an additional integer register argument when hasFixedRetBuffReg() is true
             argMax = fixedRetBufIndex + 1;
             assert(argMax == (MAX_REG_ARG + 1));
@@ -3105,7 +3105,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     slotRegType = compiler->GetEightByteType(structDesc, slotCounter);
                 }
 
-                regArgNum = genMapRegNumToRegArgNum(regNum, slotRegType);
+                regArgNum = genMapRegNumToRegArgNum(regNum, slotRegType, compiler->info.compCallConv);
 
                 if ((!doingFloat && (structDesc.IsIntegralSlot(slotCounter))) ||
                     (doingFloat && (structDesc.IsSseSlot(slotCounter))))
@@ -3139,7 +3139,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #endif // defined(UNIX_AMD64_ABI)
         {
             // Bingo - add it to our table
-            regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), regType);
+            regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), regType, compiler->info.compCallConv);
             slots     = 1;
 
             if (TargetArchitecture::IsArm32 ||
@@ -3202,7 +3202,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         for (int i = 0; i < slots; i++)
         {
             regType          = regArgTab[regArgNum + i].type;
-            regNumber regNum = genMapRegArgNumToRegNum(regArgNum + i, regType);
+            regNumber regNum = genMapRegArgNumToRegNum(regArgNum + i, regType, compiler->info.compCallConv);
 
 #if !defined(UNIX_AMD64_ABI)
             assert((i > 0) || (regNum == varDsc->GetArgReg()));
@@ -3343,7 +3343,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 noway_assert(!regArgTab[argNum].stackArg);
 
                 var_types regType = regArgTab[argNum].type;
-                regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType);
+                regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType, compiler->info.compCallConv);
 
                 regNumber destRegNum = REG_NA;
                 if (varTypeIsPromotable(varDsc) &&
@@ -3423,7 +3423,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 if (genRegMask(destRegNum) & regArgMaskLive)
                 {
                     /* we are trashing a live argument register - record it */
-                    unsigned destRegArgNum = genMapRegNumToRegArgNum(destRegNum, regType);
+                    unsigned destRegArgNum = genMapRegNumToRegArgNum(destRegNum, regType, compiler->info.compCallConv);
                     noway_assert(destRegArgNum < argMax);
                     regArgTab[destRegArgNum].trashBy = argNum;
                 }
@@ -3570,7 +3570,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         noway_assert(genTypeSize(storeType) == TARGET_POINTER_SIZE);
 #endif // TARGET_X86
 
-        regNumber srcRegNum = genMapRegArgNumToRegNum(argNum, storeType);
+        regNumber srcRegNum = genMapRegArgNumToRegNum(argNum, storeType, compiler->info.compCallConv);
 
         // Stack argument - if the ref count is 0 don't care about it
 
@@ -3789,7 +3789,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 assert(xtraReg != REG_NA);
 
-                regNumber begRegNum = genMapRegArgNumToRegNum(begReg, destMemType);
+                regNumber begRegNum = genMapRegArgNumToRegNum(begReg, destMemType, compiler->info.compCallConv);
                 GetEmitter()->emitIns_Mov(insCopy, size, xtraReg, begRegNum, /* canSkip */ false);
                 assert(!genIsValidIntReg(xtraReg) || !genIsValidFloatReg(begRegNum));
 
@@ -3802,8 +3802,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     /* mov dest, src */
 
-                    regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType);
-                    regNumber srcRegNum  = genMapRegArgNumToRegNum(srcReg, destMemType);
+                    regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType, compiler->info.compCallConv);
+                    regNumber srcRegNum  = genMapRegArgNumToRegNum(srcReg, destMemType, compiler->info.compCallConv);
 
                     GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, srcRegNum, /* canSkip */ false);
                     assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(srcRegNum));
@@ -3855,7 +3855,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 /* move the dest reg (begReg) in the extra reg */
 
-                regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType);
+                regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType, compiler->info.compCallConv);
 
                 GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, xtraReg, /* canSkip */ false);
                 assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(xtraReg));
@@ -3913,7 +3913,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
             assert(varDsc->lvIsHfa());
             assert((argNum >= firstArgNum) && (argNum <= lastArgNum));
-            assert(destRegNum == genMapRegArgNumToRegNum(argNum, regType));
+            assert(destRegNum == genMapRegArgNumToRegNum(argNum, regType, compiler->info.compCallConv));
 
             // Pass 0: move the conflicting part; Pass1: insert everything else
             //
@@ -3921,7 +3921,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             {
                 for (unsigned currentArgNum = firstArgNum; currentArgNum <= lastArgNum; currentArgNum++)
                 {
-                    const regNumber regNum = genMapRegArgNumToRegNum(currentArgNum, regType);
+                    const regNumber regNum = genMapRegArgNumToRegNum(currentArgNum, regType, compiler->info.compCallConv);
                     bool            insertArg =
                         ((pass == 0) && (currentArgNum == argNum)) || ((pass == 1) && (currentArgNum != argNum));
 
@@ -3964,7 +3964,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             varNum                     = regArgTab[argNum].varNum;
             varDsc                     = compiler->lvaGetDesc(varNum);
             const var_types regType    = regArgTab[argNum].type;
-            const regNumber regNum     = genMapRegArgNumToRegNum(argNum, regType);
+            const regNumber regNum     = genMapRegArgNumToRegNum(argNum, regType, compiler->info.compCallConv);
             const var_types varRegType = varDsc->GetRegisterType();
 
 #if defined(UNIX_AMD64_ABI)
@@ -4128,7 +4128,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             {
                 argRegCount          = 2;
                 int       nextArgNum = argNum + 1;
-                regNumber nextRegNum = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type);
+                regNumber nextRegNum = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type, compiler->info.compCallConv);
                 noway_assert(regArgTab[nextArgNum].varNum == varNum);
                 // Emit a shufpd with a 0 immediate, which preserves the 0th element of the dest reg
                 // and moves the 0th element of the src reg into the 1st element of the dest reg.
@@ -4155,7 +4155,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                         {
                             int        nextArgNum  = argNum + i;
                             LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
-                            regNumber  nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type);
+                            regNumber  nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type, compiler->info.compCallConv);
                             destRegNum             = fieldVarDsc->GetRegNum();
                             noway_assert(regArgTab[nextArgNum].varNum == varNum);
                             noway_assert(genIsValidFloatReg(nextRegNum));
@@ -4177,7 +4177,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                             int         nextArgNum  = argNum + i;
                             regArgElem* nextArgElem = &regArgTab[nextArgNum];
                             var_types   nextArgType = nextArgElem->type;
-                            regNumber   nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, nextArgType);
+                            regNumber   nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, nextArgType, compiler->info.compCallConv);
                             noway_assert(nextArgElem->varNum == varNum);
                             noway_assert(genIsValidFloatReg(nextRegNum));
                             noway_assert(genIsValidFloatReg(destRegNum));
@@ -4197,7 +4197,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 int nextArgNum = argNum + regSlot;
                 assert(!regArgTab[nextArgNum].processed);
                 regArgTab[nextArgNum].processed = true;
-                regNumber nextRegNum            = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type);
+                regNumber nextRegNum            = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type, compiler->info.compCallConv);
                 regArgMaskLive &= ~genRegMask(nextRegNum);
             }
 #endif // FEATURE_MULTIREG_ARGS

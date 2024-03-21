@@ -494,7 +494,7 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
         varDsc->lvIsRegArg = 1;
         noway_assert(varDscInfo->intRegArgNum == 0);
 
-        varDsc->SetArgReg(genMapRegArgNumToRegNum(varDscInfo->allocRegArg(TYP_INT), varDsc->TypeGet()));
+        varDsc->SetArgReg(genMapRegArgNumToRegNum(varDscInfo->allocRegArg(TYP_INT), varDsc->TypeGet(), info.compCallConv));
 #if FEATURE_MULTIREG_ARGS
         varDsc->SetOtherArgReg(REG_NA);
 #endif
@@ -525,16 +525,16 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         varDsc->lvIsParam  = 1;
         varDsc->lvIsRegArg = 0;
 
-        if (useFixedRetBufReg && hasFixedRetBuffReg())
+        if (useFixedRetBufReg && hasFixedRetBuffReg(info.compCallConv))
         {
             varDsc->lvIsRegArg = 1;
-            varDsc->SetArgReg(theFixedRetBuffReg());
+            varDsc->SetArgReg(theFixedRetBuffReg(info.compCallConv));
         }
         else if (varDscInfo->canEnreg(TYP_INT))
         {
             varDsc->lvIsRegArg     = 1;
             unsigned retBuffArgNum = varDscInfo->allocRegArg(TYP_INT);
-            varDsc->SetArgReg(genMapIntRegArgNumToRegNum(retBuffArgNum));
+            varDsc->SetArgReg(genMapIntRegArgNumToRegNum(retBuffArgNum, info.compCallConv));
         }
 
 #if FEATURE_MULTIREG_ARGS
@@ -542,7 +542,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
 #endif
         varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
 
-        assert(!varDsc->lvIsRegArg || isValidIntArgReg(varDsc->GetArgReg()));
+        assert(!varDsc->lvIsRegArg || isValidIntArgReg(varDsc->GetArgReg(), info.compCallConv));
 
 #ifdef DEBUG
         if (varDsc->lvIsRegArg && verbose)
@@ -1007,17 +1007,17 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #ifdef TARGET_ARM64
             if (argType == TYP_STRUCT)
             {
-                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, TYP_I_IMPL));
+                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, TYP_I_IMPL, info.compCallConv));
                 if (cSlots == 2)
                 {
-                    varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL));
+                    varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL, info.compCallConv));
                     varDsc->lvIsMultiRegArg = true;
                 }
             }
 #elif defined(UNIX_AMD64_ABI)
             if (varTypeIsStruct(argType))
             {
-                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType));
+                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType, info.compCallConv));
 
                 // If there is a second eightbyte, get a register for it too and map the arg to the reg number.
                 if (structDesc.eightByteCount >= 2)
@@ -1029,7 +1029,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
                 if (secondEightByteType != TYP_UNDEF)
                 {
-                    varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType));
+                    varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType, info.compCallConv));
                 }
             }
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -1072,26 +1072,26 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #else  // ARM32
             if (varTypeIsStruct(argType))
             {
-                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, TYP_I_IMPL));
+                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, TYP_I_IMPL, info.compCallConv));
             }
 #endif // ARM32
             else
 #endif // FEATURE_MULTIREG_ARGS
             {
-                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argType));
+                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argType, info.compCallConv));
             }
 
 #ifdef TARGET_ARM
             if (varDsc->TypeGet() == TYP_LONG)
             {
-                varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_INT));
+                varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_INT, info.compCallConv));
             }
 
 #if FEATURE_FASTTAILCALL
             // Check if arg was split between registers and stack.
             if (varTypeUsesIntReg(argType))
             {
-                unsigned firstRegArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg());
+                unsigned firstRegArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg(), info.compCallConv);
                 unsigned lastRegArgNum  = firstRegArgNum + cSlots - 1;
                 if (lastRegArgNum >= varDscInfo->maxIntRegArgNum)
                 {
@@ -1122,7 +1122,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     else
                     {
                         printf("firstEightByte: %s",
-                               getRegName(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType)));
+                               getRegName(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType, info.compCallConv)));
                     }
 
                     if (secondEightByteType == TYP_UNDEF)
@@ -1132,7 +1132,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     else
                     {
                         printf(", secondEightByte: %s",
-                               getRegName(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType)));
+                               getRegName(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType, info.compCallConv)));
                     }
                 }
                 else
@@ -1164,7 +1164,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     assert(varTypeUsesFloatReg(argType) || varTypeUsesIntReg(argType));
 
                     bool     isFloat   = varTypeUsesFloatReg(argType);
-                    unsigned regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), argType);
+                    unsigned regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), argType, info.compCallConv);
 
                     for (unsigned ix = 0; ix < cSlots; ix++, regArgNum++)
                     {
@@ -1187,8 +1187,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                             if (argType == TYP_DOUBLE)
                             {
                                 // Print both registers, just to be clear
-                                printf("%s/%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType)),
-                                       getRegName(genMapRegArgNumToRegNum(regArgNum + 1, argType)));
+                                printf("%s/%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType, info.compCallConv)),
+                                       getRegName(genMapRegArgNumToRegNum(regArgNum + 1, argType, info.compCallConv)));
 
                                 // doubles take 2 slots
                                 assert(ix + 1 < cSlots);
@@ -1197,13 +1197,13 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                             }
                             else
                             {
-                                printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType)));
+                                printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType, info.compCallConv)));
                             }
                         }
                         else
 #endif // TARGET_ARM
                         {
-                            printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType)));
+                            printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType, info.compCallConv)));
                         }
                     }
                 }
@@ -1372,7 +1372,7 @@ void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
             /* Another register argument */
 
             varDsc->lvIsRegArg = 1;
-            varDsc->SetArgReg(genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet()));
+            varDsc->SetArgReg(genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet(), info.compCallConv));
 #if FEATURE_MULTIREG_ARGS
             varDsc->SetOtherArgReg(REG_NA);
 #endif
@@ -1439,7 +1439,7 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
             unsigned varArgHndArgNum = varDscInfo->allocRegArg(TYP_I_IMPL);
 
             varDsc->lvIsRegArg = 1;
-            varDsc->SetArgReg(genMapRegArgNumToRegNum(varArgHndArgNum, TYP_I_IMPL));
+            varDsc->SetArgReg(genMapRegArgNumToRegNum(varArgHndArgNum, TYP_I_IMPL, info.compCallConv));
 #if FEATURE_MULTIREG_ARGS
             varDsc->SetOtherArgReg(REG_NA);
 #endif
@@ -6699,10 +6699,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 }
 
 #ifdef TARGET_ARM64
-                if (info.compIsVarArgs && varDsc->GetArgReg() != theFixedRetBuffArgNum())
+                if (info.compIsVarArgs && (varDsc->GetArgReg() != theFixedRetBuffReg(info.compCallConv)))
                 {
                     // Stack offset to varargs (parameters) should point to home area which will be preallocated.
-                    const unsigned regArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg());
+                    const unsigned regArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg(), info.compCallConv);
                     varDsc->SetStackOffset(-initialStkOffs + regArgNum * REGSIZE_BYTES);
                     continue;
                 }

@@ -1808,23 +1808,14 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
             return REG_LNGARG_HI;
 #endif
         case WellKnownArg::RetBuffer:
-            if (hasFixedRetBuffReg())
+            if (hasFixedRetBuffReg(cc))
             {
                 // Windows does not use fixed ret buff arg for instance calls, but does otherwise.
                 if (!TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(cc))
                 {
-                    return theFixedRetBuffReg();
+                    return theFixedRetBuffReg(cc);
                 }
             }
-
-#if defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
-            // TODO-Cleanup: Unify this with hasFixedRetBuffReg. That will
-            // likely be necessary for the reverse pinvoke support regardless.
-            if (cc == CorInfoCallConvExtension::Swift)
-            {
-                return REG_SWIFT_ARG_RET_BUFF;
-            }
-#endif
 
             break;
 
@@ -13223,8 +13214,8 @@ void Compiler::gtGetArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned
                 }
                 else
                 {
-                    unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg) + arg->AbiInfo.NumRegs - 1;
-                    lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
+                    unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg, call->GetUnmanagedCallConv()) + arg->AbiInfo.NumRegs - 1;
+                    lastReg             = genMapIntRegArgNumToRegNum(lastRegNum, call->GetUnmanagedCallConv());
                 }
                 sprintf_s(bufp, bufLength, " %s%c%s out+%02x", compRegVarName(firstReg), separator,
                           compRegVarName(lastReg), arg->AbiInfo.ByteOffset);
@@ -13287,8 +13278,8 @@ void Compiler::gtGetLateArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsi
                 }
                 else
                 {
-                    unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg) + arg->AbiInfo.NumRegs - 1;
-                    lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
+                    unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg, call->GetUnmanagedCallConv()) + arg->AbiInfo.NumRegs - 1;
+                    lastReg             = genMapIntRegArgNumToRegNum(lastRegNum, call->GetUnmanagedCallConv());
                 }
                 sprintf_s(bufp, bufLength, " %s%c%s out+%02x", compRegVarName(firstReg), separator,
                           compRegVarName(lastReg), arg->AbiInfo.ByteOffset);

@@ -2171,7 +2171,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif // !FEATURE_EH_FUNCLETS
 
         case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & ~fullIntArgRegMask()) == 0);
+            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & ~fullIntArgRegMask(compiler->info.compCallConv)) == 0);
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
             // the runtime side requires the codegen here to be consistent

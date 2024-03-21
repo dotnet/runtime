@@ -2816,7 +2816,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 {
                     if (structDesc.IsIntegralSlot(i))
                     {
-                        *nextRegNumPtrs[i] = genMapIntRegArgNumToRegNum(intArgRegNum + structIntRegs);
+                        *nextRegNumPtrs[i] = genMapIntRegArgNumToRegNum(intArgRegNum + structIntRegs, call->GetUnmanagedCallConv());
                         ++structIntRegs;
                     }
                     else if (structDesc.IsSseSlot(i))
@@ -2831,7 +2831,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             {
                 // fill in or update the argInfo table
                 nextRegNum = passUsingFloatRegs ? genMapFloatRegArgNumToRegNum(nextFltArgRegNum)
-                                                : genMapIntRegArgNumToRegNum(intArgRegNum);
+                                                : genMapIntRegArgNumToRegNum(intArgRegNum, call->GetUnmanagedCallConv());
             }
 
 #ifdef WINDOWS_AMD64_ABI
