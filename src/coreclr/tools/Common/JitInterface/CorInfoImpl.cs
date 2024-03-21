@@ -1200,7 +1200,7 @@ namespace Internal.JitInterface
                     else
                     {
                         Debug.Assert(type.HasSameTypeDefinition(method.OwningType),
-                            $"{type.GetDisplayName()} has a different definition from {method.OwningType.GetDisplayName()}");
+                            $"{type.GetDisplayName()} is a different type definition from the parent of {method.GetDisplayName()}");
                         Instantiation methodInst = method.Instantiation;
                         Debug.Assert(type is InstantiatedType, $"{type.GetDisplayName()} is not a {nameof(InstantiatedType)}");
                         method = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)type);
