@@ -37,6 +37,7 @@ static DWORD GetGlobalNewHashCode()
 DWORD Object::ComputeHashCode()
 {
     DWORD hashCode;
+
     // note that this algorithm now uses at most HASHCODE_BITS so that it will
     // fit into the objheader if the hashcode has to be moved back into the objheader
     // such as for an object that is being frozen
@@ -83,6 +84,7 @@ INT32 Object::GetHashCodeEx()
         GC_NOTRIGGER;
     }
     CONTRACTL_END
+
     // This loop exists because we're inspecting the header dword of the object
     // and it may change under us because of races with other threads.
     // On top of that, it may have the spin lock bit set, in which case we're

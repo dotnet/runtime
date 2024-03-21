@@ -7448,6 +7448,7 @@ void Debugger::SendExceptionEventsWorker(
                     g_pDebugger->IncThreadsAtUnsafePlaces();
                 }
             } // end of GCX_CCOP_EEINTERFACE();
+
         } //end if (m_sendExceptionsOutsideOfJMC && !SentDebugFirstChance())
         //
         // If this is a JMC function, then we send a USER's first chance as well.
@@ -7573,6 +7574,7 @@ HRESULT Debugger::SendException(Thread *pThread,
         PRECONDITION((pThread->GetFilterContext() == NULL) || !fFirstChance);
     }
     CONTRACTL_END;
+
     LOG((LF_CORDB, LL_INFO10000, "D::SendException\n"));
 
     if (CORDBUnrecoverableError(this))
@@ -7635,6 +7637,7 @@ HRESULT Debugger::SendException(Thread *pThread,
                 }
                 FramePointer framePointer = FramePointer::MakeFramePointer(stackPointer);
 
+
                 // Do the real work of sending the events
                 SendExceptionEventsWorker(
                     pThread,
@@ -7650,6 +7653,7 @@ HRESULT Debugger::SendException(Thread *pThread,
                 LOG((LF_CORDB,LL_INFO100, "D:SE: Skipping SendIPCEvent because not supposed to send anything, or RS detached.\n"));
             }
         }
+
         // If we weren't at a safe place when we switched to PREEMPTIVE, then go ahead and unmark that fact now
         // that we're successfully back in COOPERATIVE mode.
         unsafePlaceHolder.Clear();
@@ -7659,6 +7663,7 @@ HRESULT Debugger::SendException(Thread *pThread,
             ProcessAnyPendingEvals(pThread);
         }
     }
+
     if (CORDebuggerAttached())
     {
         return S_FALSE;
@@ -7767,6 +7772,7 @@ bool Debugger::FirstChanceManagedException(Thread *pThread, SIZE_T currentIP, SI
         PRECONDITION(CORDebuggerAttached());
     }
     CONTRACTL_END;
+
     LOG((LF_CORDB, LL_INFO10000, "D::FCE: First chance exception, TID:0x%x, \n", GetThreadIdHelper(pThread)));
 
     _ASSERTE(GetThreadNULLOk() != NULL);
@@ -7809,6 +7815,7 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
         MODE_ANY;
     }
     CONTRACTL_END;
+
     // @@@
     // Implements DebugInterface
     // Call by EE/exception. Must be on managed thread
@@ -7903,12 +7910,14 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     // @@@
     // Implements DebugInterface
     // Can only be called from EE
+
     // If no debugger is attached, then don't bother sending the events.
     // This can't kick off a jit-attach.
     if (!CORDebuggerAttached())
     {
         return EXCEPTION_CONTINUE_SEARCH;
     }
+
     //
     // If this exception has never bubbled thru to managed code, then there is no
     // useful information for the debugger and, in fact, it may be a completely
@@ -7959,6 +7968,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     // If we have not sent a first-chance notification, do so now.
     //
     ThreadExceptionState* pExState = pThread->GetExceptionState();
+
     if (!pExState->GetFlags()->SentDebugFirstChance())
     {
         SendException(pThread,
@@ -8017,15 +8027,22 @@ BOOL Debugger::ShouldSendCatchHandlerFound(Thread* pThread)
     }
     CONTRACTL_END;
 
-    BOOL forceSendCatchHandlerFound = FALSE;
-    ThreadExceptionState* pExState = pThread->GetExceptionState();
-    OBJECTHANDLE objHandle = pThread->GetThrowableAsHandle();
-    OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle); //destroy handle
-    if (retrievedHandle != NULL)
+    if (m_sendExceptionsOutsideOfJMC || pExState->GetFlags()->SentDebugUserFirstChance())
     {
-        forceSendCatchHandlerFound = TRUE;
+        return TRUE;
     }
-    return m_sendExceptionsOutsideOfJMC || pExState->GetFlags()->SentDebugUserFirstChance() || forceSendCatchHandlerFound;
+    else
+    {
+        BOOL forceSendCatchHandlerFound = FALSE;
+        ThreadExceptionState* pExState = pThread->GetExceptionState();
+        OBJECTHANDLE objHandle = pThread->GetThrowableAsHandle();
+        OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle); //destroy handle
+        if (retrievedHandle != NULL)
+        {
+            forceSendCatchHandlerFound = TRUE;
+        }
+        return forceSendCatchHandlerFound;
+    }
 }
 
 
@@ -8097,7 +8114,6 @@ void Debugger::SendCatchHandlerFound(
                 ipce->ExceptionCallback2.vmExceptionHandle.SetRawPtr(g_pEEInterface->GetThreadException(pThread));
 
                 LOG((LF_CORDB, LL_INFO10000, "D::FCMECF: sending ExceptionCallback2"));
-
                 hr = m_pRCThread->SendIPCEvent();
 
                 _ASSERTE(SUCCEEDED(hr) && "D::FCMECF: Send ExceptionCallback2 event failed.");
@@ -8111,7 +8127,6 @@ void Debugger::SendCatchHandlerFound(
             else
             {
                 LOG((LF_CORDB,LL_INFO1000, "D:FCMECF: Skipping SendIPCEvent because RS detached.\n"));
-
             }
 
             //

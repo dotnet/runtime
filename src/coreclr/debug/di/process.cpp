@@ -7492,6 +7492,7 @@ void CordbProcess::GetEventBlock(BOOL * pfBlockExists)
 
         // This will Initialize the DAC/DBI interface.
         BOOL fDacReady = TryInitializeDac();
+
         if (fDacReady)
         {
             // Ensure that we have a DAC interface.
@@ -7506,6 +7507,7 @@ void CordbProcess::GetEventBlock(BOOL * pfBlockExists)
                 *pfBlockExists = false;
                 ThrowHR(CORDBG_E_DEBUGGING_NOT_POSSIBLE);
             }
+
             IfFailThrow(NewEventChannelForThisPlatform(pLeftSideDCB,
                                                        m_pMutableDataTarget,
                                                        GetProcessDescriptor(),
@@ -9891,7 +9893,6 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
                                          DebuggerIPCEvent* event,
                                          SIZE_T eventSize)
 {
-    LOG((LF_CORDB, LL_INFO1000, "Inside of SendIPCEvent \n"));
 
     _ASSERTE(process != NULL);
     _ASSERTE(event != NULL);
@@ -10175,9 +10176,9 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
                     // return the HR from the left side that caused the error.  Otherwise, return that we timed out and that
                     // we don't really know why.
                     HRESULT realHR = (ret == WAIT_FAILED) ? HRESULT_FROM_GetLastError() : ErrWrapper(CORDBG_E_TIMEOUT);
-                    LOG((LF_CORDB, LL_INFO1000, "HRESULT, realHR: %#010x\n", realHR));
+
                     hr = process->CheckForUnrecoverableError();
-                    LOG((LF_CORDB, LL_INFO1000, "HRESULT: %#010x\n", hr));
+
                     if (hr == S_OK)
                     {
                         CORDBSetUnrecoverableError(process, realHR, 0);
@@ -10733,7 +10734,7 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
                                                        CordbAppDomain * pAppDomain,
                                                        DebuggerIPCEvent * pEvent)
 {
-    LOG((LF_CORDB, LL_INFO1000, "For Sanity, making sure that logging is working, inside WaitForIPCEventFromProcess\n"));
+
     CORDBRequireProcessStateOKAndSync(pProcess, pAppDomain);
 
     DWORD dwStatus;
@@ -10785,9 +10786,9 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
         // out and that we don't really know why.
         //
         HRESULT realHR = ErrWrapper(CORDBG_E_TIMEOUT);
-        LOG((LF_CORDB, LL_INFO1000, "dwStatus equals WAIT_TIMEOUT, HRESULT, realHR: %#010x\n", realHR));
+
         hr = pProcess->CheckForUnrecoverableError();
-        LOG((LF_CORDB, LL_INFO1000, "dwStatus equals WAIT_TIMEOUT, HRESULT: %#010x\n", hr));
+
         if (hr == S_OK)
         {
             CORDBSetUnrecoverableError(pProcess, realHR, 0);
