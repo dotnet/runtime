@@ -124,7 +124,7 @@ namespace ILCompiler.Dataflow
 
             if (memberTypes.HasFlag(DynamicallyAccessedMemberTypes.Interfaces))
             {
-                foreach (DefType iface in typeDefinition.GetAllInterfaceImplementations(declaredOnly: true))
+                foreach (DefType iface in typeDefinition.GetAllInterfaceImplementations(declaredOnly))
                     yield return iface;
             }
         }
