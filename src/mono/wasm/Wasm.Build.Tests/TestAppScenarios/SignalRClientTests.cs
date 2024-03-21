@@ -47,13 +47,15 @@ public class SignalRClientTests : AppTestBase
             ServerEnvironment: new Dictionary<string, string> { ["ASPNETCORE_ENVIRONMENT"] = "Development" },
             BrowserPath: "/chat",
             BrowserQueryString: new Dictionary<string, string> { ["transport"] = transport, ["message"] = "ping" },
-            OnPageLoaded: async page => await page.ClickAsync("button#connectButton"),
             OnServerMessage: (msg) => { serverOutput.Add(msg); },
             OnConsoleMessage: async (page, msg) =>
             {
                 consoleOutput.Add(msg.Text);
                 if (msg.Text.Contains("TestOutput ->"))
                     _testOutput.WriteLine(msg.Text);
+
+                if (msg.Text.Contains("Finished GetQueryParameters"))
+                    await page.ClickAsync("button#connectButton");
 
                 if (msg.Text.Contains("SignalR connected"))
                     await page.ClickAsync("button#subscribeButton");

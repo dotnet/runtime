@@ -49,7 +49,7 @@
         }
         transport = Helper.GetValue(parameters, "transport");
         message = $"{transport} {Helper.GetValue(parameters, "message")}" ;
-        Helper.TestOutputWriteLine($"GetQueryParameters on CurrentManagedThreadId={Environment.CurrentManagedThreadId} finished");
+        Helper.TestOutputWriteLine($"Finished GetQueryParameters on CurrentManagedThreadId={Environment.CurrentManagedThreadId}.");
     }
 
     private async Task Connect()
