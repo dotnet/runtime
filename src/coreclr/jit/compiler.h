@@ -7987,6 +7987,7 @@ protected:
 
 public:
     regNumber raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc);
+    void raCheckValidIntParamReg(LclVarDsc* dsc, regNumber inArgReg);
 
     void raMarkStkVars();
 

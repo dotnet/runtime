@@ -10529,6 +10529,7 @@ HelperCallProperties Compiler::s_helperCallProperties;
 // Return Value:
 //    true       - tree kills GC refs on callee save registers
 //    false      - tree doesn't affect GC refs on callee save registers
+//
 bool Compiler::killGCRefs(GenTree* tree)
 {
     if (tree->IsCall())
