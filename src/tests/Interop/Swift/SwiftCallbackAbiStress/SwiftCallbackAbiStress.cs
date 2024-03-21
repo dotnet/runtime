@@ -14,29 +14,12 @@ public unsafe class SwiftCallbackAbiStress
 {
     private const string SwiftLib = "libSwiftCallbackAbiStress.dylib";
 
-    [StructLayout(LayoutKind.Sequential, Size = 24)]
-    struct F0_Ret
-    {
-        public ushort F0;
-        public float F1;
-        public int F2;
-        public ulong F3;
-
-        public F0_Ret(ushort f0, float f1, int f2, ulong f3)
-        {
-            F0 = f0;
-            F1 = f1;
-            F2 = f2;
-            F3 = f3;
-        }
-    }
-
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func01fAA6F0_RetVAEs5Int16V_s5Int32Vs6UInt64Vs6UInt16Vs5Int64VSds6UInt32VAMSiAKtXE_tF")]
-    private static extern F0_Ret SwiftCallbackFunc0(delegate* unmanaged[Swift]<short, int, ulong, ushort, long, double, uint, ushort, nint, ulong, SwiftSelf, F0_Ret> func, void* funcContext);
+    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func01fs5UInt8VAEs5Int16V_s5Int32Vs6UInt64Vs6UInt16Vs5Int64VSds6UInt32VAMSiAKtXE_tF")]
+    private static extern byte SwiftCallbackFunc0(delegate* unmanaged[Swift]<short, int, ulong, ushort, long, double, uint, ushort, nint, ulong, SwiftSelf, byte> func, void* funcContext);
 
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    private static F0_Ret SwiftCallbackFunc0Callback(short a0, int a1, ulong a2, ushort a3, long a4, double a5, uint a6, ushort a7, nint a8, ulong a9, SwiftSelf self)
+    private static byte SwiftCallbackFunc0Callback(short a0, int a1, ulong a2, ushort a3, long a4, double a5, uint a6, ushort a7, nint a8, ulong a9, SwiftSelf self)
     {
         try
         {
@@ -56,7 +39,7 @@ public unsafe class SwiftCallbackAbiStress
             *(ExceptionDispatchInfo*)self.Value = ExceptionDispatchInfo.Capture(ex);
         }
 
-        return new F0_Ret(65117, 981990, 1192391225, 7001579272668151908);
+        return 254;
     }
 
     [Fact]
@@ -64,46 +47,34 @@ public unsafe class SwiftCallbackAbiStress
     {
         Console.Write("Running SwiftCallbackFunc0: ");
         ExceptionDispatchInfo ex = null;
-        F0_Ret val = SwiftCallbackFunc0(&SwiftCallbackFunc0Callback, &ex);
+        byte val = SwiftCallbackFunc0(&SwiftCallbackFunc0Callback, &ex);
         if (ex != null)
             ex.Throw();
 
-        Assert.Equal((ushort)65117, val.F0);
-        Assert.Equal((float)981990, val.F1);
-        Assert.Equal((int)1192391225, val.F2);
-        Assert.Equal((ulong)7001579272668151908, val.F3);
+        Assert.Equal((byte)254, val);
         Console.WriteLine("OK");
     }
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func11fS2uSd_s4Int8Vs5Int32Vs6UInt16Vs5UInt8VSdAKs6UInt64Vs5Int16VS2fAmEtXE_tF")]
-    private static extern nuint SwiftCallbackFunc1(delegate* unmanaged[Swift]<double, sbyte, int, ushort, byte, double, byte, ulong, short, float, float, ulong, sbyte, SwiftSelf, nuint> func, void* funcContext);
+    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func11fS2ds4Int8V_s5Int16VSfs5Int64VtXE_tF")]
+    private static extern double SwiftCallbackFunc1(delegate* unmanaged[Swift]<sbyte, short, float, long, SwiftSelf, double> func, void* funcContext);
 
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    private static nuint SwiftCallbackFunc1Callback(double a0, sbyte a1, int a2, ushort a3, byte a4, double a5, byte a6, ulong a7, short a8, float a9, float a10, ulong a11, sbyte a12, SwiftSelf self)
+    private static double SwiftCallbackFunc1Callback(sbyte a0, short a1, float a2, long a3, SwiftSelf self)
     {
         try
         {
-            Assert.Equal((double)3867437130564654, a0);
-            Assert.Equal((sbyte)-64, a1);
-            Assert.Equal((int)31081182, a2);
-            Assert.Equal((ushort)20316, a3);
-            Assert.Equal((byte)73, a4);
-            Assert.Equal((double)3543740592144911, a5);
-            Assert.Equal((byte)250, a6);
-            Assert.Equal((ulong)6680393408153342744, a7);
-            Assert.Equal((short)23758, a8);
-            Assert.Equal((float)7189013, a9);
-            Assert.Equal((float)5438196, a10);
-            Assert.Equal((ulong)3310322731568932038, a11);
-            Assert.Equal((sbyte)3, a12);
+            Assert.Equal((sbyte)-117, a0);
+            Assert.Equal((short)24667, a1);
+            Assert.Equal((float)7203656, a2);
+            Assert.Equal((long)2859275717293113701, a3);
         }
         catch (Exception ex)
         {
             *(ExceptionDispatchInfo*)self.Value = ExceptionDispatchInfo.Capture(ex);
         }
 
-        return unchecked((nuint)2172476334497055933);
+        return 1815003852073252;
     }
 
     [Fact]
@@ -111,58 +82,44 @@ public unsafe class SwiftCallbackAbiStress
     {
         Console.Write("Running SwiftCallbackFunc1: ");
         ExceptionDispatchInfo ex = null;
-        nuint val = SwiftCallbackFunc1(&SwiftCallbackFunc1Callback, &ex);
+        double val = SwiftCallbackFunc1(&SwiftCallbackFunc1Callback, &ex);
         if (ex != null)
             ex.Throw();
 
-        Assert.Equal((nuint)unchecked((nuint)2172476334497055933), val);
+        Assert.Equal((double)1815003852073252, val);
         Console.WriteLine("OK");
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 12)]
-    struct F2_Ret_S0
-    {
-        public long F0;
-        public int F1;
-
-        public F2_Ret_S0(long f0, int f1)
-        {
-            F0 = f0;
-            F1 = f1;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential, Size = 14)]
-    struct F2_Ret
-    {
-        public F2_Ret_S0 F0;
-        public short F1;
-
-        public F2_Ret(F2_Ret_S0 f0, short f1)
-        {
-            F0 = f0;
-            F1 = f1;
-        }
-    }
-
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func21fAA6F2_RetVAESu_s5UInt8VtXE_tF")]
-    private static extern F2_Ret SwiftCallbackFunc2(delegate* unmanaged[Swift]<nuint, byte, SwiftSelf, F2_Ret> func, void* funcContext);
+    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func21fs5UInt8VAEs4Int8V_s6UInt32VSfSuAegIs6UInt64Vs5Int64Vs5Int16Vs5Int32VAOSiSutXE_tF")]
+    private static extern byte SwiftCallbackFunc2(delegate* unmanaged[Swift]<sbyte, uint, float, nuint, byte, sbyte, uint, ulong, long, short, int, short, nint, nuint, SwiftSelf, byte> func, void* funcContext);
 
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    private static F2_Ret SwiftCallbackFunc2Callback(nuint a0, byte a1, SwiftSelf self)
+    private static byte SwiftCallbackFunc2Callback(sbyte a0, uint a1, float a2, nuint a3, byte a4, sbyte a5, uint a6, ulong a7, long a8, short a9, int a10, short a11, nint a12, nuint a13, SwiftSelf self)
     {
         try
         {
-            Assert.Equal((nuint)unchecked((nuint)2153637757371267722), a0);
-            Assert.Equal((byte)150, a1);
+            Assert.Equal((sbyte)93, a0);
+            Assert.Equal((uint)571731946, a1);
+            Assert.Equal((float)1958727, a2);
+            Assert.Equal((nuint)unchecked((nuint)3919017851053326963), a3);
+            Assert.Equal((byte)156, a4);
+            Assert.Equal((sbyte)-17, a5);
+            Assert.Equal((uint)747962023, a6);
+            Assert.Equal((ulong)1104840539654964163, a7);
+            Assert.Equal((long)5642679323997486487, a8);
+            Assert.Equal((short)29557, a9);
+            Assert.Equal((int)660273506, a10);
+            Assert.Equal((short)-14877, a11);
+            Assert.Equal((nint)unchecked((nint)3546952189496193868), a12);
+            Assert.Equal((nuint)unchecked((nuint)3599444831393612282), a13);
         }
         catch (Exception ex)
         {
             *(ExceptionDispatchInfo*)self.Value = ExceptionDispatchInfo.Capture(ex);
         }
 
-        return new F2_Ret(new F2_Ret_S0(5628852360797741825, 939232542), -9943);
+        return 141;
     }
 
     [Fact]
@@ -170,70 +127,54 @@ public unsafe class SwiftCallbackAbiStress
     {
         Console.Write("Running SwiftCallbackFunc2: ");
         ExceptionDispatchInfo ex = null;
-        F2_Ret val = SwiftCallbackFunc2(&SwiftCallbackFunc2Callback, &ex);
+        byte val = SwiftCallbackFunc2(&SwiftCallbackFunc2Callback, &ex);
         if (ex != null)
             ex.Throw();
 
-        Assert.Equal((long)5628852360797741825, val.F0.F0);
-        Assert.Equal((int)939232542, val.F0.F1);
-        Assert.Equal((short)-9943, val.F1);
+        Assert.Equal((byte)141, val);
         Console.WriteLine("OK");
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 10)]
-    struct F3_Ret_S0
-    {
-        public short F0;
-        public int F1;
-        public ushort F2;
-
-        public F3_Ret_S0(short f0, int f1, ushort f2)
-        {
-            F0 = f0;
-            F1 = f1;
-            F2 = f2;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential, Size = 33)]
-    struct F3_Ret
-    {
-        public nint F0;
-        public F3_Ret_S0 F1;
-        public nuint F2;
-        public sbyte F3;
-
-        public F3_Ret(nint f0, F3_Ret_S0 f1, nuint f2, sbyte f3)
-        {
-            F0 = f0;
-            F1 = f1;
-            F2 = f2;
-            F3 = f3;
-        }
-    }
-
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func31fAA6F3_RetVAEs6UInt16V_S2uSiSfAGtXE_tF")]
-    private static extern F3_Ret SwiftCallbackFunc3(delegate* unmanaged[Swift]<ushort, nuint, nuint, nint, float, ushort, SwiftSelf, F3_Ret> func, void* funcContext);
+    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func31fS2dSi_s5UInt8Vs4Int8Vs5Int64VAGs6UInt16VS2uSiSfAKs6UInt32VSiAEs5Int16Vs5Int32VAKSuAgESdSiAmGtXE_tF")]
+    private static extern double SwiftCallbackFunc3(delegate* unmanaged[Swift]<nint, byte, sbyte, long, sbyte, ushort, nuint, nuint, nint, float, ushort, uint, nint, byte, short, int, ushort, nuint, sbyte, byte, double, nint, uint, sbyte, SwiftSelf, double> func, void* funcContext);
 
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    private static F3_Ret SwiftCallbackFunc3Callback(ushort a0, nuint a1, nuint a2, nint a3, float a4, ushort a5, SwiftSelf self)
+    private static double SwiftCallbackFunc3Callback(nint a0, byte a1, sbyte a2, long a3, sbyte a4, ushort a5, nuint a6, nuint a7, nint a8, float a9, ushort a10, uint a11, nint a12, byte a13, short a14, int a15, ushort a16, nuint a17, sbyte a18, byte a19, double a20, nint a21, uint a22, sbyte a23, SwiftSelf self)
     {
         try
         {
-            Assert.Equal((ushort)45065, a0);
-            Assert.Equal((nuint)unchecked((nuint)8506742096411295359), a1);
-            Assert.Equal((nuint)unchecked((nuint)8619375465417625458), a2);
-            Assert.Equal((nint)unchecked((nint)5288917394772427257), a3);
-            Assert.Equal((float)5678138, a4);
-            Assert.Equal((ushort)33467, a5);
+            Assert.Equal((nint)unchecked((nint)5610153900386943274), a0);
+            Assert.Equal((byte)236, a1);
+            Assert.Equal((sbyte)-6, a2);
+            Assert.Equal((long)3316874161259890183, a3);
+            Assert.Equal((sbyte)-53, a4);
+            Assert.Equal((ushort)37580, a5);
+            Assert.Equal((nuint)unchecked((nuint)1683057726956349710), a6);
+            Assert.Equal((nuint)unchecked((nuint)415152378126297632), a7);
+            Assert.Equal((nint)unchecked((nint)2870393941738319551), a8);
+            Assert.Equal((float)1652893, a9);
+            Assert.Equal((ushort)16825, a10);
+            Assert.Equal((uint)419224712, a11);
+            Assert.Equal((nint)unchecked((nint)7680849977572141563), a12);
+            Assert.Equal((byte)200, a13);
+            Assert.Equal((short)22892, a14);
+            Assert.Equal((int)2118994921, a15);
+            Assert.Equal((ushort)44276, a16);
+            Assert.Equal((nuint)unchecked((nuint)4006990310546323213), a17);
+            Assert.Equal((sbyte)-39, a18);
+            Assert.Equal((byte)67, a19);
+            Assert.Equal((double)3008014901411425, a20);
+            Assert.Equal((nint)unchecked((nint)7039812168807528075), a21);
+            Assert.Equal((uint)1057070707, a22);
+            Assert.Equal((sbyte)103, a23);
         }
         catch (Exception ex)
         {
             *(ExceptionDispatchInfo*)self.Value = ExceptionDispatchInfo.Capture(ex);
         }
 
-        return new F3_Ret(unchecked((nint)3330016214205716187), new F3_Ret_S0(-29819, 2075852318, 671), unchecked((nuint)2368015527878194540), -79);
+        return 171601370856717;
     }
 
     [Fact]
@@ -241,72 +182,54 @@ public unsafe class SwiftCallbackAbiStress
     {
         Console.Write("Running SwiftCallbackFunc3: ");
         ExceptionDispatchInfo ex = null;
-        F3_Ret val = SwiftCallbackFunc3(&SwiftCallbackFunc3Callback, &ex);
+        double val = SwiftCallbackFunc3(&SwiftCallbackFunc3Callback, &ex);
         if (ex != null)
             ex.Throw();
 
-        Assert.Equal((nint)unchecked((nint)3330016214205716187), val.F0);
-        Assert.Equal((short)-29819, val.F1.F0);
-        Assert.Equal((int)2075852318, val.F1.F1);
-        Assert.Equal((ushort)671, val.F1.F2);
-        Assert.Equal((nuint)unchecked((nuint)2368015527878194540), val.F2);
-        Assert.Equal((sbyte)-79, val.F3);
+        Assert.Equal((double)171601370856717, val);
         Console.WriteLine("OK");
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 24)]
-    struct F4_Ret
-    {
-        public ulong F0;
-        public uint F1;
-        public ulong F2;
-
-        public F4_Ret(ulong f0, uint f1, ulong f2)
-        {
-            F0 = f0;
-            F1 = f1;
-            F2 = f2;
-        }
-    }
-
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func41fAA6F4_RetVAEs5Int64V_s6UInt16Vs5Int32VAISiSdAISfAkIs4Int8VSfs6UInt64Vs5Int16VSdA2mKSiAk2GtXE_tF")]
-    private static extern F4_Ret SwiftCallbackFunc4(delegate* unmanaged[Swift]<long, ushort, int, ushort, nint, double, ushort, float, int, ushort, sbyte, float, ulong, short, double, sbyte, sbyte, int, nint, int, long, long, SwiftSelf, F4_Ret> func, void* funcContext);
+    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func41fs5Int64VAEs6UInt16V_Sfs5Int32VAGs4Int8VSfs6UInt64Vs5Int16VSdA2kISiAi2eiMs6UInt32VAMs5UInt8VAISuAKtXE_tF")]
+    private static extern long SwiftCallbackFunc4(delegate* unmanaged[Swift]<ushort, float, int, ushort, sbyte, float, ulong, short, double, sbyte, sbyte, int, nint, int, long, long, int, ulong, uint, ulong, byte, int, nuint, sbyte, SwiftSelf, long> func, void* funcContext);
 
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    private static F4_Ret SwiftCallbackFunc4Callback(long a0, ushort a1, int a2, ushort a3, nint a4, double a5, ushort a6, float a7, int a8, ushort a9, sbyte a10, float a11, ulong a12, short a13, double a14, sbyte a15, sbyte a16, int a17, nint a18, int a19, long a20, long a21, SwiftSelf self)
+    private static long SwiftCallbackFunc4Callback(ushort a0, float a1, int a2, ushort a3, sbyte a4, float a5, ulong a6, short a7, double a8, sbyte a9, sbyte a10, int a11, nint a12, int a13, long a14, long a15, int a16, ulong a17, uint a18, ulong a19, byte a20, int a21, nuint a22, sbyte a23, SwiftSelf self)
     {
         try
         {
-            Assert.Equal((long)8771527078890676837, a0);
-            Assert.Equal((ushort)18667, a1);
-            Assert.Equal((int)224631333, a2);
-            Assert.Equal((ushort)13819, a3);
-            Assert.Equal((nint)unchecked((nint)8888237425788084647), a4);
-            Assert.Equal((double)2677321682649925, a5);
-            Assert.Equal((ushort)50276, a6);
-            Assert.Equal((float)2703201, a7);
-            Assert.Equal((int)545337834, a8);
-            Assert.Equal((ushort)11190, a9);
-            Assert.Equal((sbyte)112, a10);
-            Assert.Equal((float)4053251, a11);
-            Assert.Equal((ulong)7107857019164433129, a12);
-            Assert.Equal((short)-3092, a13);
-            Assert.Equal((double)2176685406663423, a14);
-            Assert.Equal((sbyte)57, a15);
-            Assert.Equal((sbyte)-61, a16);
-            Assert.Equal((int)866840318, a17);
-            Assert.Equal((nint)unchecked((nint)5927291145767969522), a18);
-            Assert.Equal((int)1818333546, a19);
-            Assert.Equal((long)6272248211765159948, a20);
-            Assert.Equal((long)6555966806846053216, a21);
+            Assert.Equal((ushort)64787, a0);
+            Assert.Equal((float)1472942, a1);
+            Assert.Equal((int)2042281537, a2);
+            Assert.Equal((ushort)18667, a3);
+            Assert.Equal((sbyte)-102, a4);
+            Assert.Equal((float)1768897, a5);
+            Assert.Equal((ulong)8888237425788084647, a6);
+            Assert.Equal((short)20853, a7);
+            Assert.Equal((double)3454973030441503, a8);
+            Assert.Equal((sbyte)-46, a9);
+            Assert.Equal((sbyte)-63, a10);
+            Assert.Equal((int)366699691, a11);
+            Assert.Equal((nint)unchecked((nint)4641984012938514811), a12);
+            Assert.Equal((int)1691113876, a13);
+            Assert.Equal((long)6912906265890433291, a14);
+            Assert.Equal((long)6701017449244003958, a15);
+            Assert.Equal((int)568887433, a16);
+            Assert.Equal((ulong)9099941242643212987, a17);
+            Assert.Equal((uint)1380054056, a18);
+            Assert.Equal((ulong)595836183051442276, a19);
+            Assert.Equal((byte)174, a20);
+            Assert.Equal((int)1047364523, a21);
+            Assert.Equal((nuint)unchecked((nuint)1417646176372805029), a22);
+            Assert.Equal((sbyte)-35, a23);
         }
         catch (Exception ex)
         {
             *(ExceptionDispatchInfo*)self.Value = ExceptionDispatchInfo.Capture(ex);
         }
 
-        return new F4_Ret(2182947204061522719, 1721424472, 7504841280611598884);
+        return 3100893724073759448;
     }
 
     [Fact]
@@ -314,70 +237,45 @@ public unsafe class SwiftCallbackAbiStress
     {
         Console.Write("Running SwiftCallbackFunc4: ");
         ExceptionDispatchInfo ex = null;
-        F4_Ret val = SwiftCallbackFunc4(&SwiftCallbackFunc4Callback, &ex);
+        long val = SwiftCallbackFunc4(&SwiftCallbackFunc4Callback, &ex);
         if (ex != null)
             ex.Throw();
 
-        Assert.Equal((ulong)2182947204061522719, val.F0);
-        Assert.Equal((uint)1721424472, val.F1);
-        Assert.Equal((ulong)7504841280611598884, val.F2);
+        Assert.Equal((long)3100893724073759448, val);
         Console.WriteLine("OK");
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 40)]
-    struct F5_Ret
-    {
-        public ulong F0;
-        public int F1;
-        public nint F2;
-        public float F3;
-        public short F4;
-        public ulong F5;
-
-        public F5_Ret(ulong f0, int f1, nint f2, float f3, short f4, ulong f5)
-        {
-            F0 = f0;
-            F1 = f1;
-            F2 = f2;
-            F3 = f3;
-            F4 = f4;
-            F5 = f5;
-        }
-    }
-
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func51fAA6F5_RetVAEs5Int32V_s6UInt16VAIs5Int16Vs5UInt8Vs4Int8VAMSis6UInt64VAQs5Int64VA2ksimItXE_tF")]
-    private static extern F5_Ret SwiftCallbackFunc5(delegate* unmanaged[Swift]<int, ushort, ushort, short, byte, sbyte, byte, nint, ulong, ulong, long, short, short, long, ushort, byte, ushort, SwiftSelf, F5_Ret> func, void* funcContext);
+    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func51fS2is4Int8V_s5UInt8VSis6UInt64VAIs5Int64Vs5Int16VAmKs6UInt16VAgOSfAIs5Int32VtXE_tF")]
+    private static extern nint SwiftCallbackFunc5(delegate* unmanaged[Swift]<sbyte, byte, nint, ulong, ulong, long, short, short, long, ushort, byte, ushort, float, ulong, int, SwiftSelf, nint> func, void* funcContext);
 
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    private static F5_Ret SwiftCallbackFunc5Callback(int a0, ushort a1, ushort a2, short a3, byte a4, sbyte a5, byte a6, nint a7, ulong a8, ulong a9, long a10, short a11, short a12, long a13, ushort a14, byte a15, ushort a16, SwiftSelf self)
+    private static nint SwiftCallbackFunc5Callback(sbyte a0, byte a1, nint a2, ulong a3, ulong a4, long a5, short a6, short a7, long a8, ushort a9, byte a10, ushort a11, float a12, ulong a13, int a14, SwiftSelf self)
     {
         try
         {
-            Assert.Equal((int)359602150, a0);
-            Assert.Equal((ushort)51495, a1);
-            Assert.Equal((ushort)37765, a2);
-            Assert.Equal((short)29410, a3);
-            Assert.Equal((byte)95, a4);
-            Assert.Equal((sbyte)-104, a5);
-            Assert.Equal((byte)32, a6);
-            Assert.Equal((nint)unchecked((nint)8530952551906271255), a7);
-            Assert.Equal((ulong)706266487837805024, a8);
-            Assert.Equal((ulong)707905209555595641, a9);
-            Assert.Equal((long)8386588676727568762, a10);
-            Assert.Equal((short)-8624, a11);
-            Assert.Equal((short)26113, a12);
-            Assert.Equal((long)8389143657021522019, a13);
-            Assert.Equal((ushort)13337, a14);
-            Assert.Equal((byte)229, a15);
-            Assert.Equal((ushort)51876, a16);
+            Assert.Equal((sbyte)-86, a0);
+            Assert.Equal((byte)201, a1);
+            Assert.Equal((nint)unchecked((nint)3436765034579128495), a2);
+            Assert.Equal((ulong)6305137336506323506, a3);
+            Assert.Equal((ulong)6280137078630028944, a4);
+            Assert.Equal((long)6252650621827449809, a5);
+            Assert.Equal((short)306, a6);
+            Assert.Equal((short)-27739, a7);
+            Assert.Equal((long)8386588676727568762, a8);
+            Assert.Equal((ushort)24144, a9);
+            Assert.Equal((byte)230, a10);
+            Assert.Equal((ushort)59907, a11);
+            Assert.Equal((float)1791462, a12);
+            Assert.Equal((ulong)8271399067416599310, a13);
+            Assert.Equal((int)1699875267, a14);
         }
         catch (Exception ex)
         {
             *(ExceptionDispatchInfo*)self.Value = ExceptionDispatchInfo.Capture(ex);
         }
 
-        return new F5_Ret(5224035852455624489, 493616651, unchecked((nint)3355493231962241213), 8151117, -6001, 2418751914358801711);
+        return unchecked((nint)5224035852455624489);
     }
 
     [Fact]
@@ -385,49 +283,48 @@ public unsafe class SwiftCallbackAbiStress
     {
         Console.Write("Running SwiftCallbackFunc5: ");
         ExceptionDispatchInfo ex = null;
-        F5_Ret val = SwiftCallbackFunc5(&SwiftCallbackFunc5Callback, &ex);
+        nint val = SwiftCallbackFunc5(&SwiftCallbackFunc5Callback, &ex);
         if (ex != null)
             ex.Throw();
 
-        Assert.Equal((ulong)5224035852455624489, val.F0);
-        Assert.Equal((int)493616651, val.F1);
-        Assert.Equal((nint)unchecked((nint)3355493231962241213), val.F2);
-        Assert.Equal((float)8151117, val.F3);
-        Assert.Equal((short)-6001, val.F4);
-        Assert.Equal((ulong)2418751914358801711, val.F5);
+        Assert.Equal((nint)unchecked((nint)5224035852455624489), val);
         Console.WriteLine("OK");
     }
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func61fs6UInt16VAEs5Int32V_s6UInt32Vs6UInt64VAGs4Int8VS2is5Int16VSiAi2Ks5Int64VAItXE_tF")]
-    private static extern ushort SwiftCallbackFunc6(delegate* unmanaged[Swift]<int, uint, ulong, int, sbyte, nint, nint, short, nint, uint, ulong, ulong, long, uint, SwiftSelf, ushort> func, void* funcContext);
+    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func61fs5Int64VAEs6UInt32V_Sfs5UInt8Vs5Int32VAGs6UInt64VAKs4Int8VS2is5Int16VSiAg2meGs6UInt16VtXE_tF")]
+    private static extern long SwiftCallbackFunc6(delegate* unmanaged[Swift]<uint, float, byte, int, uint, ulong, int, sbyte, nint, nint, short, nint, uint, ulong, ulong, long, uint, ushort, SwiftSelf, long> func, void* funcContext);
 
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    private static ushort SwiftCallbackFunc6Callback(int a0, uint a1, ulong a2, int a3, sbyte a4, nint a5, nint a6, short a7, nint a8, uint a9, ulong a10, ulong a11, long a12, uint a13, SwiftSelf self)
+    private static long SwiftCallbackFunc6Callback(uint a0, float a1, byte a2, int a3, uint a4, ulong a5, int a6, sbyte a7, nint a8, nint a9, short a10, nint a11, uint a12, ulong a13, ulong a14, long a15, uint a16, ushort a17, SwiftSelf self)
     {
         try
         {
-            Assert.Equal((int)743741783, a0);
-            Assert.Equal((uint)850236948, a1);
-            Assert.Equal((ulong)5908745692727636656, a2);
-            Assert.Equal((int)2106839818, a3);
-            Assert.Equal((sbyte)77, a4);
-            Assert.Equal((nint)unchecked((nint)291907785975160065), a5);
-            Assert.Equal((nint)unchecked((nint)3560129042279209151), a6);
-            Assert.Equal((short)-30568, a7);
-            Assert.Equal((nint)unchecked((nint)5730241035812482149), a8);
-            Assert.Equal((uint)18625011, a9);
-            Assert.Equal((ulong)242340713355417257, a10);
-            Assert.Equal((ulong)6962175160124965670, a11);
-            Assert.Equal((long)2935089705514798822, a12);
-            Assert.Equal((uint)2051956645, a13);
+            Assert.Equal((uint)743741783, a0);
+            Assert.Equal((float)3321238, a1);
+            Assert.Equal((byte)51, a2);
+            Assert.Equal((int)1315779092, a3);
+            Assert.Equal((uint)1375736443, a4);
+            Assert.Equal((ulong)7022244764256789748, a5);
+            Assert.Equal((int)156967479, a6);
+            Assert.Equal((sbyte)-120, a7);
+            Assert.Equal((nint)unchecked((nint)3560129042279209151), a8);
+            Assert.Equal((nint)unchecked((nint)9064213378356024089), a9);
+            Assert.Equal((short)7947, a10);
+            Assert.Equal((nint)unchecked((nint)8756231901741598476), a11);
+            Assert.Equal((uint)56423704, a12);
+            Assert.Equal((ulong)6962175160124965670, a13);
+            Assert.Equal((ulong)2935089705514798822, a14);
+            Assert.Equal((long)1348139258363155351, a15);
+            Assert.Equal((uint)1754662893, a16);
+            Assert.Equal((ushort)35528, a17);
         }
         catch (Exception ex)
         {
             *(ExceptionDispatchInfo*)self.Value = ExceptionDispatchInfo.Capture(ex);
         }
 
-        return 45160;
+        return 2428870998079250366;
     }
 
     [Fact]
@@ -435,64 +332,50 @@ public unsafe class SwiftCallbackAbiStress
     {
         Console.Write("Running SwiftCallbackFunc6: ");
         ExceptionDispatchInfo ex = null;
-        ushort val = SwiftCallbackFunc6(&SwiftCallbackFunc6Callback, &ex);
+        long val = SwiftCallbackFunc6(&SwiftCallbackFunc6Callback, &ex);
         if (ex != null)
             ex.Throw();
 
-        Assert.Equal((ushort)45160, val);
+        Assert.Equal((long)2428870998079250366, val);
         Console.WriteLine("OK");
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 8)]
-    struct F7_Ret_S0
-    {
-        public nint F0;
-
-        public F7_Ret_S0(nint f0)
-        {
-            F0 = f0;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential, Size = 20)]
-    struct F7_Ret
-    {
-        public sbyte F0;
-        public sbyte F1;
-        public byte F2;
-        public F7_Ret_S0 F3;
-        public uint F4;
-
-        public F7_Ret(sbyte f0, sbyte f1, byte f2, F7_Ret_S0 f3, uint f4)
-        {
-            F0 = f0;
-            F1 = f1;
-            F2 = f2;
-            F3 = f3;
-            F4 = f4;
-        }
-    }
-
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func71fAA6F7_RetVAEs6UInt64V_s5UInt8Vs5Int16VSutXE_tF")]
-    private static extern F7_Ret SwiftCallbackFunc7(delegate* unmanaged[Swift]<ulong, byte, short, nuint, SwiftSelf, F7_Ret> func, void* funcContext);
+    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func71fS2is5UInt8V_s5Int16VSus6UInt32Vs4Int8VAkESfSiAiESfs5Int64VSdAKSiAgMS2dtXE_tF")]
+    private static extern nint SwiftCallbackFunc7(delegate* unmanaged[Swift]<byte, short, nuint, uint, sbyte, sbyte, byte, float, nint, uint, byte, float, long, double, sbyte, nint, short, long, double, double, SwiftSelf, nint> func, void* funcContext);
 
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    private static F7_Ret SwiftCallbackFunc7Callback(ulong a0, byte a1, short a2, nuint a3, SwiftSelf self)
+    private static nint SwiftCallbackFunc7Callback(byte a0, short a1, nuint a2, uint a3, sbyte a4, sbyte a5, byte a6, float a7, nint a8, uint a9, byte a10, float a11, long a12, double a13, sbyte a14, nint a15, short a16, long a17, double a18, double a19, SwiftSelf self)
     {
         try
         {
-            Assert.Equal((ulong)7625368278886567558, a0);
-            Assert.Equal((byte)70, a1);
-            Assert.Equal((short)26780, a2);
-            Assert.Equal((nuint)unchecked((nuint)7739343395912136630), a3);
+            Assert.Equal((byte)134, a0);
+            Assert.Equal((short)-32369, a1);
+            Assert.Equal((nuint)unchecked((nuint)8380717554783122608), a2);
+            Assert.Equal((uint)1860099027, a3);
+            Assert.Equal((sbyte)-6, a4);
+            Assert.Equal((sbyte)86, a5);
+            Assert.Equal((byte)32, a6);
+            Assert.Equal((float)1160734, a7);
+            Assert.Equal((nint)unchecked((nint)6413974004534568863), a8);
+            Assert.Equal((uint)835905835, a9);
+            Assert.Equal((byte)1, a10);
+            Assert.Equal((float)7455267, a11);
+            Assert.Equal((long)6652417171359975799, a12);
+            Assert.Equal((double)3767979765576223, a13);
+            Assert.Equal((sbyte)-92, a14);
+            Assert.Equal((nint)unchecked((nint)2188807859088864320), a15);
+            Assert.Equal((short)22602, a16);
+            Assert.Equal((long)6695605905030342661, a17);
+            Assert.Equal((double)3516012226643358, a18);
+            Assert.Equal((double)1125481383704537, a19);
         }
         catch (Exception ex)
         {
             *(ExceptionDispatchInfo*)self.Value = ExceptionDispatchInfo.Capture(ex);
         }
 
-        return new F7_Ret(-96, -93, 251, new F7_Ret_S0(unchecked((nint)3590193056511262571)), 13223810);
+        return unchecked((nint)4420963390330795075);
     }
 
     [Fact]
@@ -500,36 +383,43 @@ public unsafe class SwiftCallbackAbiStress
     {
         Console.Write("Running SwiftCallbackFunc7: ");
         ExceptionDispatchInfo ex = null;
-        F7_Ret val = SwiftCallbackFunc7(&SwiftCallbackFunc7Callback, &ex);
+        nint val = SwiftCallbackFunc7(&SwiftCallbackFunc7Callback, &ex);
         if (ex != null)
             ex.Throw();
 
-        Assert.Equal((sbyte)-96, val.F0);
-        Assert.Equal((sbyte)-93, val.F1);
-        Assert.Equal((byte)251, val.F2);
-        Assert.Equal((nint)unchecked((nint)3590193056511262571), val.F3.F0);
-        Assert.Equal((uint)13223810, val.F4);
+        Assert.Equal((nint)unchecked((nint)4420963390330795075), val);
         Console.WriteLine("OK");
     }
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func81fs5UInt8VAESf_SutXE_tF")]
-    private static extern byte SwiftCallbackFunc8(delegate* unmanaged[Swift]<float, nuint, SwiftSelf, byte> func, void* funcContext);
+    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func81fs4Int8VAESd_Sds6UInt64Vs6UInt16VSds6UInt32VAiEs5UInt8Vs5Int16VAGSfAItXE_tF")]
+    private static extern sbyte SwiftCallbackFunc8(delegate* unmanaged[Swift]<double, double, ulong, ushort, double, uint, ushort, sbyte, byte, short, ulong, float, ushort, SwiftSelf, sbyte> func, void* funcContext);
 
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    private static byte SwiftCallbackFunc8Callback(float a0, nuint a1, SwiftSelf self)
+    private static sbyte SwiftCallbackFunc8Callback(double a0, double a1, ulong a2, ushort a3, double a4, uint a5, ushort a6, sbyte a7, byte a8, short a9, ulong a10, float a11, ushort a12, SwiftSelf self)
     {
         try
         {
-            Assert.Equal((float)6278007, a0);
-            Assert.Equal((nuint)unchecked((nuint)1620979945874429615), a1);
+            Assert.Equal((double)378554201505534, a0);
+            Assert.Equal((double)1650526878176435, a1);
+            Assert.Equal((ulong)7125767448027274022, a2);
+            Assert.Equal((ushort)19812, a3);
+            Assert.Equal((double)1173178493312463, a4);
+            Assert.Equal((uint)416842395, a5);
+            Assert.Equal((ushort)46360, a6);
+            Assert.Equal((sbyte)-60, a7);
+            Assert.Equal((byte)107, a8);
+            Assert.Equal((short)-2849, a9);
+            Assert.Equal((ulong)3245727696885859461, a10);
+            Assert.Equal((float)3340085, a11);
+            Assert.Equal((ushort)24776, a12);
         }
         catch (Exception ex)
         {
             *(ExceptionDispatchInfo*)self.Value = ExceptionDispatchInfo.Capture(ex);
         }
 
-        return 60;
+        return 30;
     }
 
     [Fact]
@@ -537,72 +427,46 @@ public unsafe class SwiftCallbackAbiStress
     {
         Console.Write("Running SwiftCallbackFunc8: ");
         ExceptionDispatchInfo ex = null;
-        byte val = SwiftCallbackFunc8(&SwiftCallbackFunc8Callback, &ex);
+        sbyte val = SwiftCallbackFunc8(&SwiftCallbackFunc8Callback, &ex);
         if (ex != null)
             ex.Throw();
 
-        Assert.Equal((byte)60, val);
+        Assert.Equal((sbyte)30, val);
         Console.WriteLine("OK");
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 26)]
-    struct F9_Ret
-    {
-        public uint F0;
-        public long F1;
-        public ulong F2;
-        public ushort F3;
-
-        public F9_Ret(uint f0, long f1, ulong f2, ushort f3)
-        {
-            F0 = f0;
-            F1 = f1;
-            F2 = f2;
-            F3 = f3;
-        }
-    }
-
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func91fAA6F9_RetVAEs4Int8V_Sis5Int16Vs5Int64VS2dSis6UInt16VAMS2fAMs6UInt32VAIs5Int32VAQs6UInt64VAiKSis5UInt8VAmISiAItXE_tF")]
-    private static extern F9_Ret SwiftCallbackFunc9(delegate* unmanaged[Swift]<sbyte, nint, short, long, double, double, nint, ushort, ushort, float, float, ushort, uint, short, int, int, ulong, short, long, nint, byte, ushort, short, nint, short, SwiftSelf, F9_Ret> func, void* funcContext);
+    [DllImport(SwiftLib, EntryPoint = "$s22SwiftCallbackAbiStress05swiftB5Func91fS2ds5Int16V_SiAEs5UInt8Vs6UInt32Vs5Int64Vs6UInt64Vs6UInt16VAOs4Int8VAkgqKSfAQtXE_tF")]
+    private static extern double SwiftCallbackFunc9(delegate* unmanaged[Swift]<short, nint, short, byte, uint, long, ulong, ushort, ushort, sbyte, long, byte, sbyte, long, float, sbyte, SwiftSelf, double> func, void* funcContext);
 
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    private static F9_Ret SwiftCallbackFunc9Callback(sbyte a0, nint a1, short a2, long a3, double a4, double a5, nint a6, ushort a7, ushort a8, float a9, float a10, ushort a11, uint a12, short a13, int a14, int a15, ulong a16, short a17, long a18, nint a19, byte a20, ushort a21, short a22, nint a23, short a24, SwiftSelf self)
+    private static double SwiftCallbackFunc9Callback(short a0, nint a1, short a2, byte a3, uint a4, long a5, ulong a6, ushort a7, ushort a8, sbyte a9, long a10, byte a11, sbyte a12, long a13, float a14, sbyte a15, SwiftSelf self)
     {
         try
         {
-            Assert.Equal((sbyte)17, a0);
+            Assert.Equal((short)4555, a0);
             Assert.Equal((nint)unchecked((nint)4720638462358523954), a1);
             Assert.Equal((short)30631, a2);
-            Assert.Equal((long)8206569929240962953, a3);
-            Assert.Equal((double)1359667226908383, a4);
-            Assert.Equal((double)3776001892555053, a5);
-            Assert.Equal((nint)unchecked((nint)747160900180286726), a6);
-            Assert.Equal((ushort)12700, a7);
-            Assert.Equal((ushort)53813, a8);
-            Assert.Equal((float)7860389, a9);
-            Assert.Equal((float)1879743, a10);
-            Assert.Equal((ushort)61400, a11);
-            Assert.Equal((uint)1962814337, a12);
-            Assert.Equal((short)17992, a13);
-            Assert.Equal((int)677814589, a14);
-            Assert.Equal((int)1019483263, a15);
-            Assert.Equal((ulong)6326265259403184370, a16);
-            Assert.Equal((short)-14633, a17);
-            Assert.Equal((long)4127072498763789519, a18);
-            Assert.Equal((nint)unchecked((nint)4008108205305320386), a19);
-            Assert.Equal((byte)128, a20);
-            Assert.Equal((ushort)21189, a21);
-            Assert.Equal((short)32104, a22);
-            Assert.Equal((nint)unchecked((nint)384827814282870543), a23);
-            Assert.Equal((short)20647, a24);
+            Assert.Equal((byte)123, a3);
+            Assert.Equal((uint)2112687301, a4);
+            Assert.Equal((long)1804058604961822948, a5);
+            Assert.Equal((ulong)8772179036715198777, a6);
+            Assert.Equal((ushort)54948, a7);
+            Assert.Equal((ushort)29928, a8);
+            Assert.Equal((sbyte)-36, a9);
+            Assert.Equal((long)7573525757641791389, a10);
+            Assert.Equal((byte)239, a11);
+            Assert.Equal((sbyte)-71, a12);
+            Assert.Equal((long)7143939705627605769, a13);
+            Assert.Equal((float)2647713, a14);
+            Assert.Equal((sbyte)-7, a15);
         }
         catch (Exception ex)
         {
             *(ExceptionDispatchInfo*)self.Value = ExceptionDispatchInfo.Capture(ex);
         }
 
-        return new F9_Ret(189282789, 114803850982111219, 4506415416389763390, 23584);
+        return 3088996708692961;
     }
 
     [Fact]
@@ -610,14 +474,11 @@ public unsafe class SwiftCallbackAbiStress
     {
         Console.Write("Running SwiftCallbackFunc9: ");
         ExceptionDispatchInfo ex = null;
-        F9_Ret val = SwiftCallbackFunc9(&SwiftCallbackFunc9Callback, &ex);
+        double val = SwiftCallbackFunc9(&SwiftCallbackFunc9Callback, &ex);
         if (ex != null)
             ex.Throw();
 
-        Assert.Equal((uint)189282789, val.F0);
-        Assert.Equal((long)114803850982111219, val.F1);
-        Assert.Equal((ulong)4506415416389763390, val.F2);
-        Assert.Equal((ushort)23584, val.F3);
+        Assert.Equal((double)3088996708692961, val);
         Console.WriteLine("OK");
     }
 

@@ -264,7 +264,8 @@
       <_EmccExportedLibraryFunction>"[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]"</_EmccExportedLibraryFunction>
       <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
-      <EmccInitialHeapSize>16777216</EmccInitialHeapSize>
+      <!-- reserve at least enough space to complete initializing sgen without growing the heap -->
+      <EmccInitialHeapSize>33554432</EmccInitialHeapSize>
       <EmccStackSize>5MB</EmccStackSize>
     </PropertyGroup>
     <ItemGroup>

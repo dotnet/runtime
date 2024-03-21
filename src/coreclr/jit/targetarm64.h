@@ -56,6 +56,9 @@
   #define REG_PREDICATE_HIGH_FIRST REG_P8  // Similarly, some instructions can only use the second half of the predicate registers.
   #define REG_PREDICATE_HIGH_LAST  REG_P15
 
+  #define REG_MASK_FIRST           REG_PREDICATE_FIRST
+  #define REG_MASK_LAST            REG_PREDICATE_LAST
+
   static_assert_no_msg(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
 
   #define REGNUM_BITS              6       // number of bits in a REG_*

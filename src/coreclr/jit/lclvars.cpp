@@ -4380,7 +4380,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
 
 #endif // !FEATURE_EH_FUNCLETS
 
-    // PSPSym and LocAllocSPvar are not used by the NativeAOT ABI
+    // PSPSym is not used by the NativeAOT ABI
     if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
 #if defined(FEATURE_EH_FUNCLETS)
@@ -4392,29 +4392,29 @@ PhaseStatus Compiler::lvaMarkLocalVars()
             lvaSetVarDoNotEnregister(lvaPSPSym DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
         }
 #endif // FEATURE_EH_FUNCLETS
+    }
 
 #ifdef JIT32_GCENCODER
-        // LocAllocSPvar is only required by the implicit frame layout expected by the VM on x86. Whether
-        // a function contains a Localloc is conveyed in the GC information, in the InfoHdrSmall.localloc
-        // field. The function must have an EBP frame. Then, the VM finds the LocAllocSP slot by assuming
-        // the following stack layout:
-        //
-        //      -- higher addresses --
-        //      saved EBP                       <-- EBP points here
-        //      other callee-saved registers    // InfoHdrSmall.savedRegsCountExclFP specifies this size
-        //      optional GS cookie              // InfoHdrSmall.security is 1 if this exists
-        //      LocAllocSP slot
-        //      -- lower addresses --
-        //
-        // See also eetwain.cpp::GetLocallocSPOffset() and its callers.
-        if (compLocallocUsed)
-        {
-            lvaLocAllocSPvar         = lvaGrabTempWithImplicitUse(false DEBUGARG("LocAllocSPvar"));
-            LclVarDsc* locAllocSPvar = lvaGetDesc(lvaLocAllocSPvar);
-            locAllocSPvar->lvType    = TYP_I_IMPL;
-        }
-#endif // JIT32_GCENCODER
+    // LocAllocSPvar is only required by the implicit frame layout expected by the VM on x86. Whether
+    // a function contains a Localloc is conveyed in the GC information, in the InfoHdrSmall.localloc
+    // field. The function must have an EBP frame. Then, the VM finds the LocAllocSP slot by assuming
+    // the following stack layout:
+    //
+    //      -- higher addresses --
+    //      saved EBP                       <-- EBP points here
+    //      other callee-saved registers    // InfoHdrSmall.savedRegsCountExclFP specifies this size
+    //      optional GS cookie              // InfoHdrSmall.security is 1 if this exists
+    //      LocAllocSP slot
+    //      -- lower addresses --
+    //
+    // See also eetwain.cpp::GetLocallocSPOffset() and its callers.
+    if (compLocallocUsed)
+    {
+        lvaLocAllocSPvar         = lvaGrabTempWithImplicitUse(false DEBUGARG("LocAllocSPvar"));
+        LclVarDsc* locAllocSPvar = lvaGetDesc(lvaLocAllocSPvar);
+        locAllocSPvar->lvType    = TYP_I_IMPL;
     }
+#endif // JIT32_GCENCODER
 
     // Ref counting is now enabled normally.
     lvaRefCountState = RCS_NORMAL;
