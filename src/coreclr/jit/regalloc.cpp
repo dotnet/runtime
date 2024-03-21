@@ -170,42 +170,6 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
 }
 
 //------------------------------------------------------------------------
-// raCheckValidIntParamReg:
-//   Check that an integer parameter's register information matches what we
-//   expect.
-//
-// Parameters:
-//   argDsc   - LclVarDsc* for the parameter
-//   inArgReg - Register used by the parameter
-//
-void Compiler::raCheckValidIntParamReg(LclVarDsc* argDsc, regNumber inArgReg)
-{
-#ifdef DEBUG
-    // This might be the fixed return buffer register argument (on ARM64)
-    // We check and allow inArgReg to be theFixedRetBuffReg
-    if (hasFixedRetBuffReg() && (inArgReg == theFixedRetBuffReg()))
-    {
-        // We should have a TYP_BYREF or TYP_I_IMPL arg and not a TYP_STRUCT arg
-        assert(argDsc->lvType == TYP_BYREF || argDsc->lvType == TYP_I_IMPL);
-        // We should have recorded the variable number for the return buffer arg
-        assert(info.compRetBuffArg != BAD_VAR_NUM);
-    }
-#ifdef SWIFT_SUPPORT
-    else if ((info.compCallConv == CorInfoCallConvExtension::Swift) && (inArgReg == REG_SWIFT_SELF))
-    {
-        assert((lvaSwiftSelfArg != BAD_VAR_NUM) &&
-               ((argDsc == lvaGetDesc(lvaSwiftSelfArg)) ||
-                (argDsc->lvIsStructField && argDsc->lvParentLcl == lvaSwiftSelfArg)));
-    }
-#endif
-    else // we have a regular arg
-    {
-        assert((genRegMask(inArgReg) & RBM_ARG_REGS) != RBM_NONE);
-    }
-#endif
-}
-
-//------------------------------------------------------------------------
 // rpMustCreateEBPFrame:
 //   Returns true when we must create an EBP frame
 //
