@@ -11068,71 +11068,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns an encoding for the specified register used in the 'Rd' position
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_Rd(regNumber reg)
-{
-    assert(isIntegerRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 31));
-    return ureg;
-}
-
-/*****************************************************************************
- *
- *  Returns an encoding for the specified register used in the 'Rt' position
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_Rt(regNumber reg)
-{
-    assert(isIntegerRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 31));
-    return ureg;
-}
-
-/*****************************************************************************
- *
- *  Returns an encoding for the specified register used in the 'Rn' position
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_Rn(regNumber reg)
-{
-    assert(isIntegerRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 31));
-    return ureg << 5;
-}
-
-/*****************************************************************************
- *
- *  Returns an encoding for the specified register used in the 'Rm' position
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_Rm(regNumber reg)
-{
-    assert(isIntegerRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 31));
-    return ureg << 16;
-}
-
-/*****************************************************************************
- *
- *  Returns an encoding for the specified register used in the 'Ra' position
- */
-
-/*static*/ emitter::code_t emitter::insEncodeReg_Ra(regNumber reg)
-{
-    assert(isIntegerRegister(reg));
-    emitter::code_t ureg = (emitter::code_t)reg;
-    assert((ureg >= 0) && (ureg <= 31));
-    return ureg << 10;
-}
-
-/*****************************************************************************
- *
  *  Returns an encoding for the specified register used in the 'Vd' position
  */
 
@@ -12212,8 +12147,8 @@ BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, inst
             emitInsCode(INS_add, IF_DI_2A);  // DI_2A  X0010001shiiiiii iiiiiinnnnnddddd   1100 0000   imm(i12, sh)
         code |= insEncodeDatasize(EA_8BYTE); // X
         code |= ((code_t)imm12 << 10);       // iiiiiiiiiiii
-        code |= insEncodeReg_Rd(dstReg);     // ddddd
-        code |= insEncodeReg_Rn(dstReg);     // nnnnn
+        code |= insEncodeReg_R<4, 0>(dstReg);     // ddddd
+        code |= insEncodeReg_R<9, 5>(dstReg);     // nnnnn
         dst += emitOutput_Instr(dst, code);
     }
     return dst;
@@ -12362,7 +12297,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                         code_t code = emitInsCode(ins, fmt);
 
                         code |= insEncodeReg_Vd(dstReg);  // ddddd
-                        code |= insEncodeReg_Rn(addrReg); // nnnnn
+                        code |= insEncodeReg_R<9, 5>(addrReg); // nnnnn
                         if (id->idOpSize() == EA_8BYTE)
                         {
                             code |= 0x80400000; // X ... X
@@ -12630,7 +12565,7 @@ BYTE* emitter::emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, 
         // INS_cbz or INS_cbnz
         assert(id != nullptr);
         code |= insEncodeDatasize(id->idOpSize()); // X
-        code |= insEncodeReg_Rt(id->idReg1());     // ttttt
+        code |= insEncodeReg_R<4, 0>(id->idReg1());     // ttttt
 
         noway_assert(isValidSimm<19>(distVal));
         distVal &= 0x7FFFFLL; // 19 bits
@@ -12648,7 +12583,7 @@ BYTE* emitter::emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, 
             code |= 0x80000000; // B
         }
         code |= ((imm & 0x1F) << 19);          // bbbbb
-        code |= insEncodeReg_Rt(id->idReg1()); // ttttt
+        code |= insEncodeReg_R<4, 0>(id->idReg1()); // ttttt
 
         noway_assert(isValidSimm<14>(distVal));
         distVal &= 0x3FFFLL; // 14 bits
@@ -12677,7 +12612,7 @@ BYTE* emitter::emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt,
     if (fmt == IF_DI_1E) // DI_1E   .ii.....iiiiiiii iiiiiiiiiiiddddd      Rd simm21
     {
         // INS_adr or INS_adrp
-        code |= insEncodeReg_Rd(reg); // ddddd
+        code |= insEncodeReg_R<4, 0>(reg); // ddddd
 
         noway_assert(isValidSimm<19>(distVal));
         distVal &= 0x7FFFFLL; // 19 bits
@@ -12731,7 +12666,7 @@ BYTE* emitter::emitOutputShortConstant(
                 code |= 0x40000000;
             }
 
-            code |= insEncodeReg_Rt(reg); // ttttt
+            code |= insEncodeReg_R<4, 0>(reg); // ttttt
         }
 
         distVal &= 0x7FFFFLL; // 19 bits
@@ -12765,8 +12700,8 @@ BYTE* emitter::emitOutputShortConstant(
             imm >>= 2;
         }
 
-        code |= insEncodeReg_Rt(reg); // ttttt
-        code |= insEncodeReg_Rn(reg); // nnnnn
+        code |= insEncodeReg_R<4, 0>(reg); // ttttt
+        code |= insEncodeReg_R<9, 5>(reg); // nnnnn
         code |= imm << 10;
     }
     else
@@ -12790,15 +12725,15 @@ BYTE* emitter::emitOutputVectorConstant(
     code_t code = emitInsCode(INS_add, IF_DI_2A); // DI_2A  X0010001shiiiiii iiiiiinnnnnddddd   1100 0000   imm(i12, sh)
     code |= insEncodeDatasize(EA_8BYTE);          // X - use EA_8BYTE, as we are calculating 64-bit address
     code |= ((code_t)imm << 10);                  // iiiiiiiiiiii
-    code |= insEncodeReg_Rd(addrReg);             // ddddd
-    code |= insEncodeReg_Rn(addrReg);             // nnnnn
+    code |= insEncodeReg_R<4, 0>(addrReg);             // ddddd
+    code |= insEncodeReg_R<9, 5>(addrReg);             // nnnnn
     dst += emitOutput_Instr(dst, code);
 
     // ld1 dstReg, addrReg -- load constant at address in addrReg into dstReg.
     code = emitInsCode(INS_ld1, IF_LS_2D);  // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn
     code |= insEncodeVectorsize(opSize);    // Q
     code |= insEncodeVLSElemsize(elemSize); // ss
-    code |= insEncodeReg_Rn(addrReg);       // nnnnn
+    code |= insEncodeReg_R<9, 5>(addrReg);       // nnnnn
     code |= insEncodeReg_Vt(dstReg);        // ttttt
     dst += emitOutput_Instr(dst, code);
 
@@ -13007,7 +12942,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(insOptsNone(id->idInsOpt()));
             assert((ins == INS_ret) || (ins == INS_br));
             code = emitInsCode(ins, fmt);
-            code |= insEncodeReg_Rn(id->idReg1()); // nnnnn
+            code |= insEncodeReg_R<9, 5>(id->idReg1()); // nnnnn
 
             dst += emitOutput_Instr(dst, code);
             break;
@@ -13021,11 +12956,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 emitRecordRelocation(odst, (CORINFO_METHOD_HANDLE)id->idAddr()->iiaAddr,
                                      IMAGE_REL_AARCH64_TLSDESC_CALL);
-                code |= insEncodeReg_Rn(id->idReg1()); // nnnnn
+                code |= insEncodeReg_R<9, 5>(id->idReg1()); // nnnnn
             }
             else
             {
-                code |= insEncodeReg_Rn(id->idReg3()); // nnnnn
+                code |= insEncodeReg_R<9, 5>(id->idReg3()); // nnnnn
             }
             dst += emitOutputCall(ig, dst, id, code);
             sz = id->idIsLargeCall() ? sizeof(instrDescCGCA) : sizeof(instrDesc);
@@ -13053,9 +12988,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else
             {
                 code |= insEncodeDatasizeLS(code, id->idOpSize()); // .X.......X
-                code |= insEncodeReg_Rt(id->idReg1());             // ttttt
+                code |= insEncodeReg_R<4, 0>(id->idReg1());             // ttttt
             }
-            code |= insEncodeReg_Rn(id->idReg2()); // nnnnn
+            code |= insEncodeReg_R<9, 5>(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
             if (id->idIsTlsGD())
             {
@@ -13078,10 +13013,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else
             {
                 code |= insEncodeDatasizeLS(code, id->idOpSize()); // .X.......X
-                code |= insEncodeReg_Rt(id->idReg1());             // ttttt
+                code |= insEncodeReg_R<4, 0>(id->idReg1());             // ttttt
             }
             code |= ((code_t)imm << 10);           // iiiiiiiiiiii
-            code |= insEncodeReg_Rn(id->idReg2()); // nnnnn
+            code |= insEncodeReg_R<9, 5>(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13101,11 +13036,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else
             {
                 code |= insEncodeDatasizeLS(code, id->idOpSize()); // .X.......X
-                code |= insEncodeReg_Rt(id->idReg1());             // ttttt
+                code |= insEncodeReg_R<4, 0>(id->idReg1());             // ttttt
             }
             code |= insEncodeIndexedOpt(id->idInsOpt()); // PP
             code |= ((code_t)imm << 12);                 // iiiiiiiii
-            code |= insEncodeReg_Rn(id->idReg2());       // nnnnn
+            code |= insEncodeReg_R<9, 5>(id->idReg2());       // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13116,7 +13051,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             code |= insEncodeVectorsize(id->idOpSize()); // Q
             code |= insEncodeVLSElemsize(elemsize);      // ss
-            code |= insEncodeReg_Rn(id->idReg2());       // nnnnn
+            code |= insEncodeReg_R<9, 5>(id->idReg2());       // nnnnn
             code |= insEncodeReg_Vt(id->idReg1());       // ttttt
 
             dst += emitOutput_Instr(dst, code);
@@ -13129,7 +13064,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code     = emitInsCode(ins, fmt);
 
             code |= insEncodeVLSIndex(elemsize, index); // Q xx S ss
-            code |= insEncodeReg_Rn(id->idReg2());      // nnnnn
+            code |= insEncodeReg_R<9, 5>(id->idReg2());      // nnnnn
             code |= insEncodeReg_Vt(id->idReg1());      // ttttt
 
             dst += emitOutput_Instr(dst, code);
@@ -13148,18 +13083,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else
             {
                 code |= insEncodeDatasizeLS(code, id->idOpSize()); // .X.......X
-                code |= insEncodeReg_Rt(id->idReg1());             // ttttt
+                code |= insEncodeReg_R<4, 0>(id->idReg1());             // ttttt
             }
             code |= insEncodeExtend(id->idInsOpt()); // ooo
-            code |= insEncodeReg_Rn(id->idReg2());   // nnnnn
+            code |= insEncodeReg_R<9, 5>(id->idReg2());   // nnnnn
             if (id->idIsLclVar())
             {
-                code |= insEncodeReg_Rm(codeGen->rsGetRsvdReg()); // mmmmm
+                code |= insEncodeReg_R<20, 16>(codeGen->rsGetRsvdReg()); // mmmmm
             }
             else
             {
                 code |= insEncodeReg3Scale(id->idReg3Scaled()); // S
-                code |= insEncodeReg_Rm(id->idReg3());          // mmmmm
+                code |= insEncodeReg_R<20, 16>(id->idReg3());          // mmmmm
             }
             dst += emitOutput_Instr(dst, code);
             break;
@@ -13178,10 +13113,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else
             {
                 code |= insEncodeDatasize(id->idOpSize()); // X
-                code |= insEncodeReg_Rt(id->idReg1());     // ttttt
-                code |= insEncodeReg_Ra(id->idReg2());     // aaaaa
+                code |= insEncodeReg_R<4, 0>(id->idReg1());     // ttttt
+                code |= insEncodeReg_R<14, 10>(id->idReg2());     // aaaaa
             }
-            code |= insEncodeReg_Rn(id->idReg3()); // nnnnn
+            code |= insEncodeReg_R<9, 5>(id->idReg3()); // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13202,12 +13137,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else
             {
                 code |= insEncodeDatasize(id->idOpSize()); // X
-                code |= insEncodeReg_Rt(id->idReg1());     // ttttt
-                code |= insEncodeReg_Ra(id->idReg2());     // aaaaa
+                code |= insEncodeReg_R<4, 0>(id->idReg1());     // ttttt
+                code |= insEncodeReg_R<14, 10>(id->idReg2());     // aaaaa
             }
             code |= insEncodePairIndexedOpt(ins, id->idInsOpt()); // PP
             code |= ((code_t)imm << 15);                          // iiiiiiiii
-            code |= insEncodeReg_Rn(id->idReg3());                // nnnnn
+            code |= insEncodeReg_R<9, 5>(id->idReg3());                // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13217,18 +13152,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(id->idReg1() != id->idReg2());
             assert(id->idReg1() != id->idReg3());
             code |= insEncodeDatasizeLS(code, id->idOpSize()); // X
-            code |= insEncodeReg_Rm(id->idReg1());             // mmmmm
-            code |= insEncodeReg_Rt(id->idReg2());             // ttttt
-            code |= insEncodeReg_Rn(id->idReg3());             // nnnnn
+            code |= insEncodeReg_R<20, 16>(id->idReg1());             // mmmmm
+            code |= insEncodeReg_R<4, 0>(id->idReg2());             // ttttt
+            code |= insEncodeReg_R<9, 5>(id->idReg3());             // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_LS_3E: // LS_3E   .X.........mmmmm ......nnnnnttttt      Rm Rt Rn ARMv8.1 LSE Atomics
             code = emitInsCode(ins, fmt);
             code |= insEncodeDatasizeLS(code, id->idOpSize()); // X
-            code |= insEncodeReg_Rm(id->idReg1());             // mmmmm
-            code |= insEncodeReg_Rt(id->idReg2());             // ttttt
-            code |= insEncodeReg_Rn(id->idReg3());             // nnnnn
+            code |= insEncodeReg_R<20, 16>(id->idReg1());             // mmmmm
+            code |= insEncodeReg_R<4, 0>(id->idReg2());             // ttttt
+            code |= insEncodeReg_R<9, 5>(id->idReg3());             // nnnnn
             dst += emitOutput_Instr(dst, code);
 
             // Some instructions with this encoding return their result in the
@@ -13255,9 +13190,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code     = emitInsCode(ins, fmt);
 
             code |= insEncodeVectorsize(id->idOpSize()); // Q
-            code |= insEncodeReg_Rm(id->idReg3());       // mmmmm
+            code |= insEncodeReg_R<20, 16>(id->idReg3());       // mmmmm
             code |= insEncodeVLSElemsize(elemsize);      // ss
-            code |= insEncodeReg_Rn(id->idReg2());       // nnnnn
+            code |= insEncodeReg_R<9, 5>(id->idReg2());       // nnnnn
             code |= insEncodeReg_Vt(id->idReg1());       // ttttt
 
             dst += emitOutput_Instr(dst, code);
@@ -13269,8 +13204,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code     = emitInsCode(ins, fmt);
 
             code |= insEncodeVLSIndex(elemsize, index); // Q xx S ss
-            code |= insEncodeReg_Rm(id->idReg3());      // mmmmm
-            code |= insEncodeReg_Rn(id->idReg2());      // nnnnn
+            code |= insEncodeReg_R<20, 16>(id->idReg3());      // mmmmm
+            code |= insEncodeReg_R<9, 5>(id->idReg2());      // nnnnn
             code |= insEncodeReg_Vt(id->idReg1());      // ttttt
 
             dst += emitOutput_Instr(dst, code);
@@ -13284,7 +13219,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeDatasize(id->idOpSize());   // X
             code |= insEncodeShiftImm12(id->idInsOpt()); // sh
             code |= ((code_t)imm << 10);                 // iiiiiiiiiiii
-            code |= insEncodeReg_Rn(id->idReg1());       // nnnnn
+            code |= insEncodeReg_R<9, 5>(id->idReg1());       // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13294,7 +13229,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCode(ins, fmt);
             code |= insEncodeDatasize(id->idOpSize()); // X
             code |= ((code_t)imm << 5);                // hwiiiii iiiiiiiiiii
-            code |= insEncodeReg_Rd(id->idReg1());     // ddddd
+            code |= insEncodeReg_R<4, 0>(id->idReg1());     // ddddd
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13304,7 +13239,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCode(ins, fmt);
             code |= ((code_t)imm << 10);               // Nrrrrrrssssss
             code |= insEncodeDatasize(id->idOpSize()); // X
-            code |= insEncodeReg_Rn(id->idReg1());     // nnnnn
+            code |= insEncodeReg_R<9, 5>(id->idReg1());     // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13314,7 +13249,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCode(ins, fmt);
             code |= ((code_t)imm << 10);               // Nrrrrrrssssss
             code |= insEncodeDatasize(id->idOpSize()); // X
-            code |= insEncodeReg_Rd(id->idReg1());     // ddddd
+            code |= insEncodeReg_R<4, 0>(id->idReg1());     // ddddd
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13324,7 +13259,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (id->idIsReloc())
             {
                 code = emitInsCode(ins, fmt);
-                code |= insEncodeReg_Rd(id->idReg1()); // ddddd
+                code |= insEncodeReg_R<4, 0>(id->idReg1()); // ddddd
                 dst += emitOutput_Instr(dst, code);
                 emitRecordRelocation(odst, id->idAddr()->iiaAddr, id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21
                                                                                   : IMAGE_REL_ARM64_PAGEBASE_REL21);
@@ -13346,7 +13281,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 cfi.immCFVal = (unsigned)imm;
                 code         = emitInsCode(ins, fmt);
                 code |= insEncodeDatasize(id->idOpSize()); // X
-                code |= insEncodeReg_Rn(id->idReg1());     // nnnnn
+                code |= insEncodeReg_R<9, 5>(id->idReg1());     // nnnnn
                 code |= ((code_t)cfi.imm5 << 16);          // iiiii
                 code |= insEncodeFlags(cfi.flags);         // nzcv
                 code |= insEncodeCond(cfi.cond);           // cccc
@@ -13362,8 +13297,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeDatasize(id->idOpSize());   // X
             code |= insEncodeShiftImm12(id->idInsOpt()); // sh
             code |= ((code_t)imm << 10);                 // iiiiiiiiiiii
-            code |= insEncodeReg_Rd(id->idReg1());       // ddddd
-            code |= insEncodeReg_Rn(id->idReg2());       // nnnnn
+            code |= insEncodeReg_R<4, 0>(id->idReg1());       // ddddd
+            code |= insEncodeReg_R<9, 5>(id->idReg2());       // nnnnn
             dst += emitOutput_Instr(dst, code);
 
             if (id->idIsReloc())
@@ -13380,9 +13315,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             imm  = emitGetInsSC(id);
             assert(isValidImmShift(imm, id->idOpSize()));
             code |= insEncodeDatasizeBF(code, id->idOpSize()); // X........X
-            code |= insEncodeReg_Rd(id->idReg1());             // ddddd
-            code |= insEncodeReg_Rn(id->idReg2());             // nnnnn
-            code |= insEncodeReg_Rm(id->idReg2());             // Reg2 also in mmmmm
+            code |= insEncodeReg_R<4, 0>(id->idReg1());             // ddddd
+            code |= insEncodeReg_R<9, 5>(id->idReg2());             // nnnnn
+            code |= insEncodeReg_R<20, 16>(id->idReg2());             // Reg2 also in mmmmm
             code |= insEncodeShiftCount(imm, id->idOpSize());  // ssssss
             dst += emitOutput_Instr(dst, code);
             break;
@@ -13393,8 +13328,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCode(ins, fmt);
             code |= ((code_t)imm << 10);               // Nrrrrrrssssss
             code |= insEncodeDatasize(id->idOpSize()); // X
-            code |= insEncodeReg_Rd(id->idReg1());     // ddddd
-            code |= insEncodeReg_Rn(id->idReg2());     // nnnnn
+            code |= insEncodeReg_R<4, 0>(id->idReg1());     // ddddd
+            code |= insEncodeReg_R<9, 5>(id->idReg2());     // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13439,8 +13374,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCode(ins, fmt);
             code |= ((code_t)imm << 10);               // Nrrrrrrssssss
             code |= insEncodeDatasize(id->idOpSize()); // X
-            code |= insEncodeReg_Rd(id->idReg1());     // ddddd
-            code |= insEncodeReg_Rn(id->idReg2());     // nnnnn
+            code |= insEncodeReg_R<4, 0>(id->idReg1());     // ddddd
+            code |= insEncodeReg_R<9, 5>(id->idReg2());     // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13452,7 +13387,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 cfi.immCFVal = (unsigned)imm;
                 code         = emitInsCode(ins, fmt);
                 code |= insEncodeDatasize(id->idOpSize()); // X
-                code |= insEncodeReg_Rd(id->idReg1());     // ddddd
+                code |= insEncodeReg_R<4, 0>(id->idReg1());     // ddddd
                 code |= insEncodeInvertedCond(cfi.cond);   // cccc
                 dst += emitOutput_Instr(dst, code);
             }
@@ -13462,8 +13397,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(insOptsNone(id->idInsOpt()));
             code = emitInsCode(ins, fmt);
             code |= insEncodeDatasize(id->idOpSize()); // X
-            code |= insEncodeReg_Rn(id->idReg1());     // nnnnn
-            code |= insEncodeReg_Rm(id->idReg2());     // mmmmm
+            code |= insEncodeReg_R<9, 5>(id->idReg1());     // nnnnn
+            code |= insEncodeReg_R<20, 16>(id->idReg2());     // mmmmm
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13474,8 +13409,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeDatasize(id->idOpSize());        // X
             code |= insEncodeShiftType(id->idInsOpt());       // sh
             code |= insEncodeShiftCount(imm, id->idOpSize()); // ssssss
-            code |= insEncodeReg_Rn(id->idReg1());            // nnnnn
-            code |= insEncodeReg_Rm(id->idReg2());            // mmmmm
+            code |= insEncodeReg_R<9, 5>(id->idReg1());            // nnnnn
+            code |= insEncodeReg_R<20, 16>(id->idReg2());            // mmmmm
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13486,8 +13421,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeDatasize(id->idOpSize()); // X
             code |= insEncodeExtend(id->idInsOpt());   // ooo
             code |= insEncodeExtendScale(imm);         // sss
-            code |= insEncodeReg_Rn(id->idReg1());     // nnnnn
-            code |= insEncodeReg_Rm(id->idReg2());     // mmmmm
+            code |= insEncodeReg_R<9, 5>(id->idReg1());     // nnnnn
+            code |= insEncodeReg_R<20, 16>(id->idReg2());     // mmmmm
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13499,9 +13434,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 cfi.immCFVal = (unsigned)imm;
                 code         = emitInsCode(ins, fmt);
                 code |= insEncodeDatasize(id->idOpSize()); // X
-                code |= insEncodeReg_Rd(id->idReg1());     // ddddd
-                code |= insEncodeReg_Rn(id->idReg2());     // nnnnn
-                code |= insEncodeReg_Rm(id->idReg2());     // mmmmm
+                code |= insEncodeReg_R<4, 0>(id->idReg1());     // ddddd
+                code |= insEncodeReg_R<9, 5>(id->idReg2());     // nnnnn
+                code |= insEncodeReg_R<20, 16>(id->idReg2());     // mmmmm
                 code |= insEncodeInvertedCond(cfi.cond);   // cccc
                 dst += emitOutput_Instr(dst, code);
             }
@@ -13510,8 +13445,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_DR_2E: // DR_2E   X..........mmmmm ...........ddddd      Rd    Rm
             code = emitInsCode(ins, fmt);
             code |= insEncodeDatasize(id->idOpSize()); // X
-            code |= insEncodeReg_Rd(id->idReg1());     // ddddd
-            code |= insEncodeReg_Rm(id->idReg2());     // mmmmm
+            code |= insEncodeReg_R<4, 0>(id->idReg1());     // ddddd
+            code |= insEncodeReg_R<20, 16>(id->idReg2());     // mmmmm
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13522,8 +13457,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeDatasize(id->idOpSize());        // X
             code |= insEncodeShiftType(id->idInsOpt());       // sh
             code |= insEncodeShiftCount(imm, id->idOpSize()); // ssssss
-            code |= insEncodeReg_Rd(id->idReg1());            // ddddd
-            code |= insEncodeReg_Rm(id->idReg2());            // mmmmm
+            code |= insEncodeReg_R<4, 0>(id->idReg1());            // ddddd
+            code |= insEncodeReg_R<20, 16>(id->idReg2());            // mmmmm
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13537,16 +13472,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code |= 0x00000400; // x - bit at location 10
                 }
             }
-            code |= insEncodeReg_Rd(id->idReg1()); // ddddd
-            code |= insEncodeReg_Rn(id->idReg2()); // nnnnn
+            code |= insEncodeReg_R<4, 0>(id->idReg1()); // ddddd
+            code |= insEncodeReg_R<9, 5>(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_DR_2H: // DR_2H   X........X...... ......nnnnnddddd      Rd Rn
             code = emitInsCode(ins, fmt);
             code |= insEncodeDatasizeBF(code, id->idOpSize()); // X........X
-            code |= insEncodeReg_Rd(id->idReg1());             // ddddd
-            code |= insEncodeReg_Rn(id->idReg2());             // nnnnn
+            code |= insEncodeReg_R<4, 0>(id->idReg1());             // ddddd
+            code |= insEncodeReg_R<9, 5>(id->idReg2());             // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13558,8 +13493,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 cfi.immCFVal = (unsigned)imm;
                 code         = emitInsCode(ins, fmt);
                 code |= insEncodeDatasize(id->idOpSize()); // X
-                code |= insEncodeReg_Rn(id->idReg1());     // nnnnn
-                code |= insEncodeReg_Rm(id->idReg2());     // mmmmm
+                code |= insEncodeReg_R<9, 5>(id->idReg1());     // nnnnn
+                code |= insEncodeReg_R<20, 16>(id->idReg2());     // mmmmm
                 code |= insEncodeFlags(cfi.flags);         // nzcv
                 code |= insEncodeCond(cfi.cond);           // cccc
                 dst += emitOutput_Instr(dst, code);
@@ -13569,15 +13504,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_DR_3A: // DR_3A   X..........mmmmm ......nnnnnmmmmm      Rd Rn Rm
             code = emitInsCode(ins, fmt);
             code |= insEncodeDatasize(id->idOpSize()); // X
-            code |= insEncodeReg_Rd(id->idReg1());     // ddddd
-            code |= insEncodeReg_Rn(id->idReg2());     // nnnnn
+            code |= insEncodeReg_R<4, 0>(id->idReg1());     // ddddd
+            code |= insEncodeReg_R<9, 5>(id->idReg2());     // nnnnn
             if (id->idIsLclVar())
             {
-                code |= insEncodeReg_Rm(codeGen->rsGetRsvdReg()); // mmmmm
+                code |= insEncodeReg_R<20, 16>(codeGen->rsGetRsvdReg()); // mmmmm
             }
             else
             {
-                code |= insEncodeReg_Rm(id->idReg3()); // mmmmm
+                code |= insEncodeReg_R<20, 16>(id->idReg3()); // mmmmm
             }
             dst += emitOutput_Instr(dst, code);
             break;
@@ -13587,9 +13522,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             imm  = emitGetInsSC(id);
             assert(isValidImmShift(imm, id->idOpSize()));
             code |= insEncodeDatasize(id->idOpSize());        // X
-            code |= insEncodeReg_Rd(id->idReg1());            // ddddd
-            code |= insEncodeReg_Rn(id->idReg2());            // nnnnn
-            code |= insEncodeReg_Rm(id->idReg3());            // mmmmm
+            code |= insEncodeReg_R<4, 0>(id->idReg1());            // ddddd
+            code |= insEncodeReg_R<9, 5>(id->idReg2());            // nnnnn
+            code |= insEncodeReg_R<20, 16>(id->idReg3());            // mmmmm
             code |= insEncodeShiftType(id->idInsOpt());       // sh
             code |= insEncodeShiftCount(imm, id->idOpSize()); // ssssss
             dst += emitOutput_Instr(dst, code);
@@ -13602,9 +13537,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeDatasize(id->idOpSize()); // X
             code |= insEncodeExtend(id->idInsOpt());   // ooo
             code |= insEncodeExtendScale(imm);         // sss
-            code |= insEncodeReg_Rd(id->idReg1());     // ddddd
-            code |= insEncodeReg_Rn(id->idReg2());     // nnnnn
-            code |= insEncodeReg_Rm(id->idReg3());     // mmmmm
+            code |= insEncodeReg_R<4, 0>(id->idReg1());     // ddddd
+            code |= insEncodeReg_R<9, 5>(id->idReg2());     // nnnnn
+            code |= insEncodeReg_R<20, 16>(id->idReg3());     // mmmmm
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13616,9 +13551,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 cfi.immCFVal = (unsigned)imm;
                 code         = emitInsCode(ins, fmt);
                 code |= insEncodeDatasize(id->idOpSize()); // X
-                code |= insEncodeReg_Rd(id->idReg1());     // ddddd
-                code |= insEncodeReg_Rn(id->idReg2());     // nnnnn
-                code |= insEncodeReg_Rm(id->idReg3());     // mmmmm
+                code |= insEncodeReg_R<4, 0>(id->idReg1());     // ddddd
+                code |= insEncodeReg_R<9, 5>(id->idReg2());     // nnnnn
+                code |= insEncodeReg_R<20, 16>(id->idReg3());     // mmmmm
                 code |= insEncodeCond(cfi.cond);           // cccc
                 dst += emitOutput_Instr(dst, code);
             }
@@ -13629,9 +13564,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             imm  = emitGetInsSC(id);
             assert(isValidImmShift(imm, id->idOpSize()));
             code |= insEncodeDatasizeBF(code, id->idOpSize()); // X........X
-            code |= insEncodeReg_Rd(id->idReg1());             // ddddd
-            code |= insEncodeReg_Rn(id->idReg2());             // nnnnn
-            code |= insEncodeReg_Rm(id->idReg3());             // mmmmm
+            code |= insEncodeReg_R<4, 0>(id->idReg1());             // ddddd
+            code |= insEncodeReg_R<9, 5>(id->idReg2());             // nnnnn
+            code |= insEncodeReg_R<20, 16>(id->idReg3());             // mmmmm
             code |= insEncodeShiftCount(imm, id->idOpSize());  // ssssss
             dst += emitOutput_Instr(dst, code);
             break;
@@ -13639,10 +13574,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_DR_4A: // DR_4A   X..........mmmmm .aaaaannnnnmmmmm      Rd Rn Rm Ra
             code = emitInsCode(ins, fmt);
             code |= insEncodeDatasize(id->idOpSize()); // X
-            code |= insEncodeReg_Rd(id->idReg1());     // ddddd
-            code |= insEncodeReg_Rn(id->idReg2());     // nnnnn
-            code |= insEncodeReg_Rm(id->idReg3());     // mmmmm
-            code |= insEncodeReg_Ra(id->idReg4());     // aaaaa
+            code |= insEncodeReg_R<4, 0>(id->idReg1());     // ddddd
+            code |= insEncodeReg_R<9, 5>(id->idReg2());     // nnnnn
+            code |= insEncodeReg_R<20, 16>(id->idReg3());     // mmmmm
+            code |= insEncodeReg_R<14, 10>(id->idReg4());     // aaaaa
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13757,7 +13692,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCode(ins, fmt);
             code |= insEncodeVectorsize(datasize);         // Q
             code |= insEncodeVectorIndex(elemsize, index); // iiiii
-            code |= insEncodeReg_Rd(id->idReg1());         // ddddd
+            code |= insEncodeReg_R<4, 0>(id->idReg1());         // ddddd
             code |= insEncodeReg_Vn(id->idReg2());         // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
@@ -13779,7 +13714,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeVectorsize(datasize);         // Q
             code |= insEncodeVectorIndex(elemsize, index); // iiiii
             code |= insEncodeReg_Vd(id->idReg1());         // ddddd
-            code |= insEncodeReg_Rn(id->idReg2());         // nnnnn
+            code |= insEncodeReg_R<9, 5>(id->idReg2());         // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13830,7 +13765,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             elemsize = id->idOpSize();
             code     = emitInsCode(ins, fmt);
             code |= insEncodeConvertOpt(fmt, id->idInsOpt()); // X   X
-            code |= insEncodeReg_Rd(id->idReg1());            // ddddd
+            code |= insEncodeReg_R<4, 0>(id->idReg1());            // ddddd
             code |= insEncodeReg_Vn(id->idReg2());            // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
@@ -13840,7 +13775,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code     = emitInsCode(ins, fmt);
             code |= insEncodeConvertOpt(fmt, id->idInsOpt()); // X   X
             code |= insEncodeReg_Vd(id->idReg1());            // ddddd
-            code |= insEncodeReg_Rn(id->idReg2());            // nnnnn
+            code |= insEncodeReg_R<9, 5>(id->idReg2());            // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -14143,7 +14078,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
             assert(insOptsNone(id->idInsOpt()));
             code = emitInsCode(ins, fmt);
-            code |= insEncodeReg_Rt(id->idReg1()); // ttttt
+            code |= insEncodeReg_R<4, 0>(id->idReg1()); // ttttt
             dst += emitOutput_Instr(dst, code);
             break;
 
