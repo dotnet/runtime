@@ -105,10 +105,16 @@ namespace System.Reflection.Metadata
                 }
             }
 
-            foreach (BlobBuilder chunk in _emptyChildBlobs)
+            if (_emptyChildBlobs.Count > 0)
             {
-                chunk.ClearChunk();
-                chunk.FreeChunk();
+                foreach (BlobBuilder chunk in _emptyChildBlobs)
+                {
+                    chunk.ClearChunk();
+                    chunk.FreeChunk();
+                }
+
+                _emptyChildBlobs.Clear();
+                _emptyChildBlobs.TrimExcess();
             }
 
             ClearChunk();
