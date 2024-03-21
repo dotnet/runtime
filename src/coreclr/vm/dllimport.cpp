@@ -1631,8 +1631,8 @@ NDirectStubLinker::NDirectStubLinker(
     }
 #endif // FEATURE_COMINTEROP
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_X86)
-    m_dwCopyCtorChainLocalNum = -1;
+#if defined(TARGET_X86)
+    m_dwCopyCtorChainLocalNum = (DWORD)-1;
 #endif
 }
 
@@ -1846,7 +1846,7 @@ DWORD NDirectStubLinker::GetReturnValueLocalNum()
     return m_dwRetValLocalNum;
 }
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_X86)
+#ifdef TARGET_X86
 DWORD NDirectStubLinker::GetCopyCtorChainLocalNum()
 {
     STANDARD_VM_CONTRACT;
@@ -2092,7 +2092,9 @@ void NDirectStubLinker::End(DWORD dwStubFlags)
     }
 }
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_X86)
 EXTERN_C void STDCALL CopyConstructorCallStub(void);
+#endif // defined(TARGET_WINDOWS) && defined(TARGET_X86)
 
 void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc * pStubMD)
 {
@@ -2177,8 +2179,9 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         }
     }
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_X86)
-    if (m_dwCopyCtorChainLocalNum != -1)
+#if defined(TARGET_X86)
+#if defined(TARGET_WINDOWS)
+    if (m_dwCopyCtorChainLocalNum != (DWORD)-1)
     {
         // If we have a copy constructor chain local, we need to call the copy constructor stub
         // to ensure that the chain is called correctly.
@@ -2190,7 +2193,10 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         pcsEmit->EmitCALL(METHOD__COPY_CONSTRUCTOR_CHAIN__INSTALL, 2, 0);
         pcsEmit->EmitLDC((DWORD_PTR)&CopyConstructorCallStub);
     }
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_X86)
+#else
+    _ASSERTE(m_dwCopyCtorChainLocalNum == (DWORD)-1);
+#endif // defined(TARGET_WINDOWS)
+#endif // defined(TARGET_X86)
 
     // For managed-to-native calls, the rest of the work is done by the JIT. It will
     // erect InlinedCallFrame, flip GC mode, and use the specified calling convention
@@ -6148,12 +6154,9 @@ EXTERN_C void* STDCALL CallCopyConstructorsWorker(void* esp)
     STATIC_CONTRACT_MODE_PREEMPTIVE; // we've already switched to preemptive
 
     using ExecuteCallback = void*(STDMETHODCALLTYPE*)(void*);
-    ExecuteCallback pExecute;
-    {
-        GCX_COOP();
-        MethodDesc* pMD = CoreLibBinder::GetMethod(METHOD__COPY_CONSTRUCTOR_CHAIN__EXECUTE_CURRENT_COPIES_AND_GET_TARGET);
-        pExecute = (ExecuteCallback)pMD->GetMultiCallableAddrOfCode();
-    }
+
+    MethodDesc* pMD = CoreLibBinder::GetMethod(METHOD__COPY_CONSTRUCTOR_CHAIN__EXECUTE_CURRENT_COPIES_AND_GET_TARGET);
+    ExecuteCallback pExecute = (ExecuteCallback)pMD->GetMultiCallableAddrOfCode();
 
     return pExecute(esp);
 }
