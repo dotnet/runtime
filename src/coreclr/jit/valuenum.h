@@ -404,8 +404,6 @@ private:
     // returns true iff vn is known to be a constant int32 that is > 0
     bool IsVNPositiveInt32Constant(ValueNum vn);
 
-    GenTreeFlags GetFoldedArithOpResultHandleFlags(ValueNum vn);
-
 public:
     // Validate that the new initializer for s_vnfOpAttribs matches the old code.
     static void ValidateValueNumStoreStatics();
