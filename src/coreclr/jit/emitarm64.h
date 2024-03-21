@@ -35,6 +35,7 @@ const char* emitPredicateRegName(regNumber reg, PredicateType ptype);
 
 void emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
+void emitDispInsSveHelp(instrDesc* id);
 void emitDispLargeJmp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
 void emitDispComma();
