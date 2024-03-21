@@ -715,9 +715,10 @@ void LinearScan::addRefsForPhysRegMask(AllRegsMask& mask, LsraLocation currentLo
     // modified until codegen, which is too late.
     compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
 
-    while (!mask.IsEmpty())
+    AllRegsMask maskForRefPositions = mask;
+    while (!maskForRefPositions.IsEmpty())
     {
-        regNumber reg = genFirstRegNumFromMaskAndToggle(mask);
+        regNumber reg = genFirstRegNumFromMaskAndToggle(maskForRefPositions);
         // This assumes that these are all "special" RefTypes that
         // don't need to be recorded on the tree (hence treeNode is nullptr)
         RefPosition* pos = newRefPosition(reg, currentLoc, refType, nullptr,
