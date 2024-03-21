@@ -193,6 +193,7 @@ namespace ILCompiler
                 try
                 {
                     corInfo.CompileMethod(methodCodeNodeNeedingCode);
+                    return;
                 }
                 catch (TypeSystemException ex)
                 {
@@ -200,23 +201,21 @@ namespace ILCompiler
                 }
             }
 
-            if (exception != null)
+            if (exception is TypeSystemException.InvalidProgramException
+                && method.OwningType is MetadataType mdOwningType
+                && mdOwningType.HasCustomAttribute("System.Runtime.InteropServices", "ClassInterfaceAttribute"))
             {
-                // Try to compile the method again, but with a throwing method body this time.
-                MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, exception);
-                corInfo.CompileMethod(methodCodeNodeNeedingCode, throwingIL);
-
-                if (exception is TypeSystemException.InvalidProgramException
-                    && method.OwningType is MetadataType mdOwningType
-                    && mdOwningType.HasCustomAttribute("System.Runtime.InteropServices", "ClassInterfaceAttribute"))
-                {
-                    Logger.LogWarning(method, DiagnosticId.COMInteropNotSupportedInFullAOT);
-                }
-                if ((_compilationOptions & RyuJitCompilationOptions.UseResilience) != 0)
-                    Logger.LogMessage($"Method '{method}' will always throw because: {exception.Message}");
-                else
-                    Logger.LogError($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
+                Logger.LogWarning(method, DiagnosticId.COMInteropNotSupportedInFullAOT);
             }
+
+            if ((_compilationOptions & RyuJitCompilationOptions.UseResilience) != 0)
+                Logger.LogMessage($"Method '{method}' will always throw because: {exception.Message}");
+            else
+                Logger.LogError($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
+
+            // Try to compile the method again, but with a throwing method body this time.
+            MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, exception);
+            corInfo.CompileMethod(methodCodeNodeNeedingCode, throwingIL);
         }
     }
 
