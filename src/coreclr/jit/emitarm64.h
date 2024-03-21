@@ -325,6 +325,21 @@ union condFlagsImm {
     unsigned immCFVal; // concat imm5:flags:cond forming an 13-bit unsigned immediate
 };
 
+// Returns an encoding for the specified register used in the 'Vd' position
+static code_t insEncodeReg_Vd(regNumber reg);
+
+// Returns an encoding for the specified register used in the 'Vt' position
+static code_t insEncodeReg_Vt(regNumber reg);
+
+// Returns an encoding for the specified register used in the 'Vn' position
+static code_t insEncodeReg_Vn(regNumber reg);
+
+// Returns an encoding for the specified register used in the 'Vm' position
+static code_t insEncodeReg_Vm(regNumber reg);
+
+// Returns an encoding for the specified register used in the 'Va' position
+static code_t insEncodeReg_Va(regNumber reg);
+
 // Returns an encoding for the specified 'V' register used in 'hi' thru 'lo' position.
 template <const size_t hi, const size_t lo>
 static code_t insEncodeReg_V(regNumber reg)
