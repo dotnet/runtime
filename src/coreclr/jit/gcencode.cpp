@@ -4479,8 +4479,8 @@ void GCInfo::gcMakeRegPtrTable(
             assert(call->u1.cdArgMask == 0 && call->cdArgCnt == 0);
 
             // Other than that, we just have to deal with the regmasks.
-            regMaskSmall gcrefRegMask = call->cdGCrefRegs & RBM_CALLEE_SAVED;
-            regMaskSmall byrefRegMask = call->cdByrefRegs & RBM_CALLEE_SAVED;
+            regMaskSmall gcrefRegMask = call->cdGCrefRegs & RBM_INT_CALLEE_SAVED;
+            regMaskSmall byrefRegMask = call->cdByrefRegs & RBM_INT_CALLEE_SAVED;
 
             assert((gcrefRegMask & byrefRegMask) == 0);
 
@@ -4628,7 +4628,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
     while (regMask)
     {
         // Get hold of the next register bit.
-        regMaskTP tmpMask = genFindLowestBit(regMask);
+        regMaskGpr tmpMask = genFindLowestBit(regMask);
         assert(tmpMask);
 
         // Remember the new state of this register.

@@ -1008,9 +1008,9 @@ public:
         return lvIsRegCandidate() && (GetRegNum() != REG_STK);
     }
 
-    regMaskTP lvRegMask() const
+    regMaskOnlyOne lvRegMask() const
     {
-        regMaskTP regMask = RBM_NONE;
+        regMaskOnlyOne regMask = RBM_NONE;
         if (GetRegNum() != REG_STK)
         {
             if (varTypeUsesFloatReg(this))
@@ -3911,7 +3911,7 @@ public:
 
     unsigned lvaGetMaxSpillTempSize();
 #ifdef TARGET_ARM
-    bool lvaIsPreSpilled(unsigned lclNum, regMaskTP preSpillMask);
+    bool lvaIsPreSpilled(unsigned lclNum, regMaskGpr preSpillMask);
 #endif // TARGET_ARM
     void lvaAssignFrameOffsets(FrameLayoutState curState);
     void lvaFixVirtualFrameOffsets();
@@ -8505,7 +8505,7 @@ public:
 
     // Gets a register mask that represent the kill set for a helper call since
     // not all JIT Helper calls follow the standard ABI on the target architecture.
-    regMaskTP compHelperCallKillSet(CorInfoHelpFunc helper);
+    AllRegsMask compHelperCallKillSet(CorInfoHelpFunc helper);
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -8526,6 +8526,28 @@ public:
     // Infrastructure functions: start/stop/reserve/emit.
     //
 
+    bool IsGprRegMask(regMaskTP regMask)
+    {
+        return (regMask & RBM_ALLFLOAT) == RBM_NONE;
+    }
+
+    bool IsFloatRegMask(regMaskTP regMask)
+    {
+        return (regMask & ~RBM_ALLFLOAT) == RBM_NONE;
+    }
+
+#ifdef HAS_PREDICATE_REGS
+    bool IsPredicateRegMask(regMaskTP regMask)
+    {
+        return (regMask & ~RBM_ALLMASK) == RBM_NONE;
+    }
+#endif // HAS_PREDICATE_REGS
+
+    bool IsOnlyOneRegMask(regMaskTP regMask)
+    {
+        return (regMask == RBM_NONE) || (IsGprRegMask(regMask) != IsFloatRegMask(regMask));
+    }
+
     void unwindBegProlog();
     void unwindEndProlog();
     void unwindBegEpilog();
@@ -8544,10 +8566,10 @@ public:
     void unwindSaveReg(regNumber reg, unsigned offset);
 
 #if defined(TARGET_ARM)
-    void unwindPushMaskInt(regMaskTP mask);
-    void unwindPushMaskFloat(regMaskTP mask);
-    void unwindPopMaskInt(regMaskTP mask);
-    void unwindPopMaskFloat(regMaskTP mask);
+    void unwindPushMaskInt(regMaskGpr mask);
+    void unwindPushMaskFloat(regMaskFloat mask);
+    void unwindPopMaskInt(regMaskGpr mask);
+    void unwindPopMaskFloat(regMaskFloat mask);
     void unwindBranch16();                    // The epilog terminates with a 16-bit branch (e.g., "bx lr")
     void unwindNop(unsigned codeSizeInBytes); // Generate unwind NOP code. 'codeSizeInBytes' is 2 or 4 bytes. Only
                                               // called via unwindPadding().
@@ -8622,8 +8644,8 @@ private:
 #endif // UNIX_AMD64_ABI
 #elif defined(TARGET_ARM)
 
-    void unwindPushPopMaskInt(regMaskTP mask, bool useOpsize16);
-    void unwindPushPopMaskFloat(regMaskTP mask);
+    void unwindPushPopMaskInt(regMaskGpr mask, bool useOpsize16);
+    void unwindPushPopMaskFloat(regMaskFloat mask);
 
 #endif // TARGET_ARM
 
@@ -8632,7 +8654,7 @@ private:
     void createCfiCode(FuncInfoDsc* func, UNATIVE_OFFSET codeOffset, UCHAR opcode, short dwarfReg, INT offset = 0);
     void unwindPushPopCFI(regNumber reg);
     void unwindBegPrologCFI();
-    void unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat);
+    void unwindPushPopMaskCFI(regMaskOnlyOne regMask, bool isFloat);
     void unwindAllocStackCFI(unsigned size);
     void unwindSetFrameRegCFI(regNumber reg, unsigned offset);
     void unwindEmitFuncCFI(FuncInfoDsc* func, void* pHotCode, void* pColdCode);
@@ -10505,7 +10527,7 @@ public:
 
 #if defined(TARGET_XARCH)
     // Mask of callee saved float regs on stack.
-    regMaskTP compCalleeFPRegsSavedMask;
+    regMaskFloat compCalleeFPRegsSavedMask;
 #endif
 #ifdef TARGET_AMD64
 // Quirk for VS debug-launch scenario to work:
@@ -10874,7 +10896,8 @@ public:
 
     bool compJitHaltMethod();
 
-    void dumpRegMask(regMaskTP regs) const;
+    void dumpRegMask(regMaskOnlyOne mask) const;
+    void dumpRegMask(AllRegsMask mask) const;
 
 #endif
 
@@ -11147,8 +11170,8 @@ private:
     //
     // Users of these values need to define four accessor functions:
     //
-    //    regMaskTP get_RBM_ALLFLOAT();
-    //    regMaskTP get_RBM_FLT_CALLEE_TRASH();
+    //    regMaskFloat get_RBM_ALLFLOAT();
+    //    regMaskFloat get_RBM_FLT_CALLEE_TRASH();
     //    unsigned get_CNT_CALLEE_TRASH_FLOAT();
     //    unsigned get_AVAILABLE_REG_COUNT();
     //
@@ -11157,16 +11180,16 @@ private:
     // This was done to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
     // TARGET_AMD64 requires one.
     //
-    regMaskTP rbmAllFloat;
-    regMaskTP rbmFltCalleeTrash;
-    unsigned  cntCalleeTrashFloat;
+    regMaskFloat rbmAllFloat;
+    regMaskFloat rbmFltCalleeTrash;
+    unsigned     cntCalleeTrashFloat;
 
 public:
-    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskFloat get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskFloat get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
@@ -11185,8 +11208,8 @@ private:
     //
     // Users of these values need to define four accessor functions:
     //
-    //    regMaskTP get_RBM_ALLMASK();
-    //    regMaskTP get_RBM_MSK_CALLEE_TRASH();
+    //    regMaskPredicate get_RBM_ALLMASK();
+    //    regMaskPredicate get_RBM_MSK_CALLEE_TRASH();
     //    unsigned get_CNT_CALLEE_TRASH_MASK();
     //    unsigned get_AVAILABLE_REG_COUNT();
     //
@@ -11195,17 +11218,17 @@ private:
     // This was done to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
     // TARGET_XARCH requires one.
     //
-    regMaskTP rbmAllMask;
-    regMaskTP rbmMskCalleeTrash;
-    unsigned  cntCalleeTrashMask;
-    regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
+    regMaskPredicate rbmAllMask;
+    regMaskPredicate rbmMskCalleeTrash;
+    unsigned         cntCalleeTrashMask;
+    regMaskOnlyOne   varTypeCalleeTrashRegs[TYP_COUNT];
 
 public:
-    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
+    FORCEINLINE regMaskPredicate get_RBM_ALLMASK() const
     {
         return this->rbmAllMask;
     }
-    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    FORCEINLINE regMaskPredicate get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }

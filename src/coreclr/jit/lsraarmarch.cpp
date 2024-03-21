@@ -129,7 +129,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
 {
     bool                  hasMultiRegRetVal = false;
     const ReturnTypeDesc* retTypeDesc       = nullptr;
-    regMaskTP             dstCandidates     = RBM_NONE;
 
     int srcCount = 0;
     int dstCount = 0;
@@ -148,8 +147,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
     }
 
-    GenTree*  ctrlExpr           = call->gtControlExpr;
-    regMaskTP ctrlExprCandidates = RBM_NONE;
+    GenTree*   ctrlExpr           = call->gtControlExpr;
+    regMaskGpr ctrlExprCandidates = RBM_NONE;
     if (call->gtCallType == CT_INDIRECT)
     {
         // either gtControlExpr != null or gtCallAddr != null.
@@ -183,7 +182,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     {
         // For R2R and VSD we have stub address in REG_R2R_INDIRECT_PARAM
         // and will load call address into the temp register from this register.
-        regMaskTP candidates = RBM_NONE;
+        regMaskGpr candidates = RBM_NONE;
         if (call->IsFastTailCall())
         {
             candidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
@@ -205,14 +204,15 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // the target. We do not handle these constraints on the same
         // refposition too well so we help ourselves a bit here by forcing the
         // null check with LR.
-        regMaskTP candidates = call->IsFastTailCall() ? RBM_LR : RBM_NONE;
+        regMaskGpr candidates = call->IsFastTailCall() ? RBM_LR : RBM_NONE;
         buildInternalIntRegisterDefForNode(call, candidates);
     }
 #endif // TARGET_ARM
 
-    RegisterType registerType = call->TypeGet();
-
-// Set destination candidates for return value of the call.
+    // Set destination candidates for return value of the call.
+    AllRegsMask    dstReturnCandidates;
+    regMaskOnlyOne dstCandidates = RBM_NONE;
+    RegisterType   registerType  = call->TypeGet();
 
 #ifdef TARGET_ARM
     if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
@@ -226,7 +226,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
         if (hasMultiRegRetVal)
     {
         assert(retTypeDesc != nullptr);
-        dstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
+        dstReturnCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
+        assert((int)dstReturnCandidates.Count() == dstCount);
     }
     else if (varTypeUsesFloatArgReg(registerType))
     {
@@ -390,14 +391,30 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
-    regMaskTP killMask = getKillSetForCall(call);
-    BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
+    AllRegsMask killMask = getKillSetForCall(call);
+    if (dstCount > 0)
+    {
+        if (hasMultiRegRetVal)
+        {
+            assert(dstReturnCandidates.Count() > 0);
+            BuildCallDefsWithKills(call, dstCount, dstReturnCandidates, killMask);
+        }
+        else
+        {
+            assert(dstCount == 1);
+            BuildDefWithKills(call, dstCandidates, killMask);
+        }
+    }
+    else
+    {
+        BuildKills(call, killMask);
+    }
 
 #ifdef SWIFT_SUPPORT
     if (call->HasSwiftErrorHandling())
     {
         // Tree is a Swift call with error handling; error register should have been killed
-        assert((killMask & RBM_SWIFT_ERROR) != 0);
+        assert((killMask.gprRegs() & RBM_SWIFT_ERROR) != 0);
 
         // After a Swift call that might throw returns, we expect the error register to be consumed
         // by a GT_SWIFT_ERROR node. However, we want to ensure the error register won't be trashed
@@ -417,9 +434,34 @@ int LinearScan::BuildCall(GenTreeCall* call)
 #endif // SWIFT_SUPPORT
 
     // No args are placed in registers anymore.
-    placedArgRegs      = RBM_NONE;
+    placedArgRegs      = AllRegsMask();
     numPlacedArgLocals = 0;
     return srcCount;
+}
+
+//------------------------------------------------------------------------
+// BuildDefWithKills: Build one RefTypeDef RefPositions for the given node,
+//           as well as kills as specified by the given mask.
+//
+// Arguments:
+//    tree          - The call node that defines a register
+//    dstCandidates - The candidate registers for the definition
+//    killMask      - The mask of registers killed by this node
+//
+// Notes:
+//    Adds the RefInfo for the definitions to the defList.
+//    The def and kill functionality is folded into a single method so that the
+//    save and restores of upper vector registers can be bracketed around the def.
+//
+void LinearScan::BuildDefWithKills(GenTree* tree, regMaskOnlyOne dstCandidates, AllRegsMask killMask)
+{
+    assert(!tree->AsCall()->HasMultiRegRetVal());
+    assert((int)genCountBits(dstCandidates) == 1);
+    assert(compiler->IsOnlyOneRegMask(dstCandidates));
+
+    // Build the kill RefPositions
+    BuildKills(tree, killMask);
+    BuildDef(tree, dstCandidates);
 }
 
 //------------------------------------------------------------------------
@@ -528,14 +570,15 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     // Registers for split argument corresponds to source
     int dstCount = argNode->gtNumRegs;
 
-    regNumber argReg  = argNode->GetRegNum();
-    regMaskTP argMask = RBM_NONE;
+    regNumber  argReg  = argNode->GetRegNum();
+    regMaskGpr argMask = RBM_NONE;
     for (unsigned i = 0; i < argNode->gtNumRegs; i++)
     {
         regNumber thisArgReg = (regNumber)((unsigned)argReg + i);
         argMask |= genRegMask(thisArgReg);
         argNode->SetRegNumByIdx(thisArgReg, i);
     }
+    assert(compiler->IsGprRegMask(argMask));
 
     if (src->OperGet() == GT_FIELD_LIST)
     {
@@ -569,7 +612,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
             // go into registers.
             for (unsigned regIndex = 0; regIndex < currentRegCount; regIndex++)
             {
-                regMaskTP sourceMask = RBM_NONE;
+                regMaskOnlyOne sourceMask = RBM_NONE;
                 if (sourceRegCount < argNode->gtNumRegs)
                 {
                     sourceMask = genRegMask((regNumber)((unsigned)argReg + sourceRegCount));
@@ -606,7 +649,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
         }
     }
     buildInternalRegisterUses();
-    BuildDefs(argNode, dstCount, argMask);
+    BuildDefs(argNode, dstCount, argMask); // this should only be regMaskGpr
     return srcCount;
 }
 
@@ -627,9 +670,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     GenTree* srcAddrOrFill = nullptr;
 
-    regMaskTP dstAddrRegMask = RBM_NONE;
-    regMaskTP srcRegMask     = RBM_NONE;
-    regMaskTP sizeRegMask    = RBM_NONE;
+    regMaskGpr dstAddrRegMask = RBM_NONE;
+    regMaskGpr srcRegMask     = RBM_NONE;
+    regMaskGpr sizeRegMask    = RBM_NONE;
 
     if (blkNode->OperIsInitBlkOp())
     {
@@ -686,7 +729,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 // We don't need to materialize the struct size but we still need
                 // a temporary register to perform the sequence of loads and stores.
                 // We can't use the special Write Barrier registers, so exclude them from the mask
-                regMaskTP internalIntCandidates =
+                regMaskGpr internalIntCandidates =
                     allRegs(TYP_INT) & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
                 buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
 
@@ -821,6 +864,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     if (!dstAddr->isContained())
     {
+        assert(compiler->IsGprRegMask(dstAddrRegMask));
+
         useCount++;
         BuildUse(dstAddr, dstAddrRegMask);
     }
@@ -833,6 +878,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     {
         if (!srcAddrOrFill->isContained())
         {
+            assert(compiler->IsGprRegMask(srcRegMask));
+
             useCount++;
             BuildUse(srcAddrOrFill, srcRegMask);
         }
@@ -842,9 +889,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         }
     }
 
+    assert(compiler->IsGprRegMask(sizeRegMask));
+
     buildInternalRegisterUses();
-    regMaskTP killMask = getKillSetForBlockStore(blkNode);
-    BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
+    AllRegsMask killMask = getKillSetForBlockStore(blkNode);
+    BuildKills(blkNode, killMask);
     return useCount;
 }
 

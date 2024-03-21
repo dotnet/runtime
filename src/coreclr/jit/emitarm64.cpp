@@ -3300,13 +3300,13 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
 // clang-format off
 static const char * const  xRegNames[] =
 {
-    #define REGDEF(name, rnum, mask, xname, wname) xname,
+    #define REGDEF(name, rnum, mask, xname, wname, regTypeTag) xname,
     #include "register.h"
 };
 
 static const char * const  wRegNames[] =
 {
-    #define REGDEF(name, rnum, mask, xname, wname) wname,
+    #define REGDEF(name, rnum, mask, xname, wname, regTypeTag) wname,
     #include "register.h"
 };
 
@@ -10833,8 +10833,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            emitAttr         retSize,
                            emitAttr         secondRetSize,
                            VARSET_VALARG_TP ptrVars,
-                           regMaskTP        gcrefRegs,
-                           regMaskTP        byrefRegs,
+                           regMaskGpr       gcrefRegs,
+                           regMaskGpr       byrefRegs,
                            const DebugInfo& di /* = DebugInfo() */,
                            regNumber        ireg /* = REG_NA */,
                            regNumber        xreg /* = REG_NA */,
@@ -10843,7 +10843,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            bool             isJump /* = false */)
 {
     /* Sanity check the arguments depending on callType */
-
+    assert(emitComp->IsGprRegMask(gcrefRegs));
+    assert(emitComp->IsGprRegMask(byrefRegs));
     assert(callType < EC_COUNT);
     assert((callType != EC_FUNC_TOKEN) || (addr != nullptr && ireg == REG_NA));
     assert(callType != EC_INDIR_R || (addr == nullptr && ireg < REG_COUNT));
@@ -10856,9 +10857,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert((unsigned)abs(argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
-    regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
-    gcrefRegs &= savedSet;
-    byrefRegs &= savedSet;
+    AllRegsMask savedSet = emitGetGCRegsSavedOrModified(methHnd);
+    gcrefRegs &= savedSet.gprRegs();
+    byrefRegs &= savedSet.gprRegs();
 
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)
@@ -10867,10 +10868,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
         dumpConvertedVarSet(emitComp, ptrVars);
         printf(", gcrefRegs=");
         printRegMaskInt(gcrefRegs);
-        emitDispRegSet(gcrefRegs);
+        emitDispGprRegSet(gcrefRegs);
         printf(", byrefRegs=");
         printRegMaskInt(byrefRegs);
-        emitDispRegSet(byrefRegs);
+        emitDispGprRegSet(byrefRegs);
         printf("\n");
     }
 #endif
@@ -12943,8 +12944,8 @@ BYTE* emitter::emitOutputVectorConstant(
 unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t code)
 {
     const unsigned char callInstrSize = sizeof(code_t); // 4 bytes
-    regMaskTP           gcrefRegs;
-    regMaskTP           byrefRegs;
+    regMaskGpr          gcrefRegs;
+    regMaskGpr          byrefRegs;
 
     VARSET_TP GCvars(VarSetOps::UninitVal());
 

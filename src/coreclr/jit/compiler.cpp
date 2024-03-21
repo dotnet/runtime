@@ -3432,12 +3432,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // Make sure we copy the register info and initialize the
     // trash regs after the underlying fields are initialized
 
-    const regMaskTP vtCalleeTrashRegs[TYP_COUNT]{
+    const regMaskOnlyOne vtCalleeTrashRegs[TYP_COUNT]{
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
 #include "typelist.h"
 #undef DEF_TP
     };
-    memcpy(varTypeCalleeTrashRegs, vtCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);
+    memcpy(varTypeCalleeTrashRegs, vtCalleeTrashRegs, sizeof(regMaskOnlyOne) * TYP_COUNT);
 
     codeGen->CopyRegisterInfo();
 #endif // TARGET_XARCH
@@ -3674,6 +3674,11 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
     return rejectThisPromo;
 }
 
+void Compiler::dumpRegMask(regMaskOnlyOne mask) const
+{
+
+    dumpRegMask(AllRegsMask(mask, mask, mask));
+}
 //------------------------------------------------------------------------
 // dumpRegMask: display a register mask. For well-known sets of registers, display a well-known token instead of
 // a potentially large number of registers.
@@ -3681,33 +3686,33 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
 // Arguments:
 //   regs - The set of registers to display
 //
-void Compiler::dumpRegMask(regMaskTP regs) const
+void Compiler::dumpRegMask(AllRegsMask mask) const
 {
-    if (regs == RBM_ALLINT)
+    if (mask.gprRegs() == RBM_ALLINT)
     {
         printf("[allInt]");
     }
-    else if (regs == (RBM_ALLINT & ~RBM_FPBASE))
+    else if (mask.gprRegs() == (RBM_ALLINT & ~RBM_FPBASE))
     {
         printf("[allIntButFP]");
     }
-    else if (regs == RBM_ALLFLOAT)
+    else if (mask.floatRegs() == RBM_ALLFLOAT)
     {
         printf("[allFloat]");
     }
-    else if (regs == RBM_ALLDOUBLE)
+    else if (mask.floatRegs() == RBM_ALLDOUBLE)
     {
         printf("[allDouble]");
     }
 #ifdef TARGET_XARCH
-    else if (regs == RBM_ALLMASK)
+    else if (mask.predicateRegs() == RBM_ALLMASK)
     {
         printf("[allMask]");
     }
 #endif // TARGET_XARCH
     else
     {
-        dspRegMask(regs);
+        dspRegMask(mask);
     }
 }
 
@@ -5830,11 +5835,11 @@ void Compiler::generatePatchpointInfo()
     // Record callee save registers.
     // Currently only needed for x64.
     //
-    regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
-    rsPushRegs |= RBM_FPBASE;
-    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
+    regMaskGpr rsPushGprRegs = codeGen->regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
+    rsPushGprRegs |= RBM_FPBASE;
+    patchpointInfo->SetCalleeSaveGprRegisters(rsPushGprRegs);
     JITDUMP("--OSR-- Tier0 callee saves: ");
-    JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
+    JITDUMPEXEC(dspRegMask(patchpointInfo->CalleeSaveGprRegisters(), RBM_NONE));
     JITDUMP("\n");
 #endif
 
@@ -9407,7 +9412,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cVN,         dVN            : Display a ValueNum (call vnPrint()).
  *
  * The following don't require a Compiler* to work:
- *      dRegMask                    : Display a regMaskTP (call dspRegMask(mask)).
+ *      dRegMask                    : Display a regMaskOnlyOne (call dspRegMask(mask)).
  *      dBlockList                  : Display a BasicBlockList*.
  *
  * The following find an object in the IR and return it, as well as setting a global variable with the value that can
@@ -10366,7 +10371,7 @@ JITDBGAPI void __cdecl dVN(ValueNum vn)
     cVN(JitTls::GetCompiler(), vn);
 }
 
-JITDBGAPI void __cdecl dRegMask(regMaskTP mask)
+JITDBGAPI void __cdecl dRegMask(regMaskOnlyOne mask)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== dRegMask %u\n", sequenceNumber++);

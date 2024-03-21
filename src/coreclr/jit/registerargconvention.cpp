@@ -28,7 +28,7 @@ unsigned InitVarDscInfo::allocRegArg(var_types type, unsigned numRegs /* = 1 */)
         // can't create a > 1 register alignment hole to back-fill.
 
         // Back-fill the register
-        regMaskTP backFillBitMask = genFindLowestBit(fltArgSkippedRegMask);
+        regMaskFloat backFillBitMask = genFindLowestBit(fltArgSkippedRegMask);
         fltArgSkippedRegMask &= ~backFillBitMask; // Remove the back-filled register(s) from the skipped mask
         resultArgNum = genMapFloatRegNumToRegArgNum(genRegNumFromMask(backFillBitMask));
         assert(resultArgNum < MAX_FLOAT_REG_ARG);

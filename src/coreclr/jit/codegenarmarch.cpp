@@ -1753,7 +1753,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     GetEmitter()->emitIns_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), node->GetRegNum(),
                                 node->gtElemOffset);
 
-    gcInfo.gcMarkRegSetNpt(base->gtGetRegMask());
+    gcInfo.gcMarkRegSetNpt(base->gtGetGprRegMask());
 
     genProduceReg(node);
 }
@@ -3254,7 +3254,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 #endif
         inst_JMP(EJ_ne, loop);
 
-        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
+        gcInfo.gcMarkGprRegNpt(dstReg);
     }
 }
 
@@ -3382,15 +3382,16 @@ void CodeGen::genCall(GenTreeCall* call)
     // We should not have GC pointers in killed registers live around the call.
     // GC info for arg registers were cleared when consuming arg nodes above
     // and LSRA should ensure it for other trashed registers.
-    regMaskTP killMask = RBM_CALLEE_TRASH;
+    AllRegsMask killMask = AllRegsMask_CALLEE_TRASH;
+
     if (call->IsHelperCall())
     {
         CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
         killMask                 = compiler->compHelperCallKillSet(helpFunc);
     }
 
-    assert((gcInfo.gcRegGCrefSetCur & killMask) == 0);
-    assert((gcInfo.gcRegByrefSetCur & killMask) == 0);
+    assert(!killMask.IsGprMaskPresent(gcInfo.gcRegGCrefSetCur));
+    assert(!killMask.IsGprMaskPresent(gcInfo.gcRegByrefSetCur));
 #endif
 
     var_types returnType = call->TypeGet();
@@ -3465,7 +3466,7 @@ void CodeGen::genCall(GenTreeCall* call)
     // However, for minopts or debuggable code, we keep it live to support managed return value debugging.
     if ((call->gtNext == nullptr) && !compiler->opts.MinOpts() && !compiler->opts.compDbgCode)
     {
-        gcInfo.gcMarkRegSetNpt(RBM_INTRET);
+        gcInfo.gcMarkGprRegNpt(REG_INTRET);
     }
 }
 
@@ -3525,14 +3526,18 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     if (call->IsFastTailCall())
     {
-        regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
+        regMaskGpr   trashedGprByEpilog   = RBM_INT_CALLEE_SAVED;
+        regMaskFloat trashedFloatByEpilog = RBM_FLT_CALLEE_SAVED;
+#ifdef HAS_PREDICATE_REGS
+        regMaskPredicate trashedPredicateByEpilog = RBM_MSK_CALLEE_SAVED;
+#endif // HAS_PREDICATE_REGS
 
         // The epilog may use and trash REG_GSCOOKIE_TMP_0/1. Make sure we have no
         // non-standard args that may be trash if this is a tailcall.
         if (compiler->getNeedsGSSecurityCookie())
         {
-            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_0);
-            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_1);
+            trashedGprByEpilog |= genRegMask(REG_GSCOOKIE_TMP_0);
+            trashedGprByEpilog |= genRegMask(REG_GSCOOKIE_TMP_1);
         }
 
         for (CallArg& arg : call->gtArgs.Args())
@@ -3540,13 +3545,29 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             for (unsigned j = 0; j < arg.AbiInfo.NumRegs; j++)
             {
                 regNumber reg = arg.AbiInfo.GetRegNum(j);
-                if ((trashedByEpilog & genRegMask(reg)) != 0)
+                if ((trashedGprByEpilog & genRegMask(reg)) != 0)
                 {
                     JITDUMP("Tail call node:\n");
                     DISPTREE(call);
-                    JITDUMP("Register used: %s\n", getRegName(reg));
+                    JITDUMP("Gpr Register used: %s\n", getRegName(reg));
                     assert(!"Argument to tailcall may be trashed by epilog");
                 }
+                else if ((trashedFloatByEpilog & genRegMask(reg)) != 0)
+                {
+                    JITDUMP("Tail call node:\n");
+                    DISPTREE(call);
+                    JITDUMP("Float Register used: %s\n", getRegName(reg));
+                    assert(!"Argument to tailcall may be trashed by epilog");
+                }
+#ifdef HAS_PREDICATE_REGS
+                else if ((trashedPredicateByEpilog & genRegMask(reg)) != 0)
+                {
+                    JITDUMP("Tail call node:\n");
+                    DISPTREE(call);
+                    JITDUMP("Mask Register used: %s\n", getRegName(reg));
+                    assert(!"Argument to tailcall may be trashed by epilog");
+                }
+#endif // HAS_PREDICATE_REGS
             }
         }
     }
@@ -3774,7 +3795,8 @@ void CodeGen::genJmpMethod(GenTree* jmp)
     // are not frequent.
     for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
-        varDsc = compiler->lvaGetDesc(varNum);
+        varDsc           = compiler->lvaGetDesc(varNum);
+        regNumber varReg = varDsc->GetRegNum();
 
         if (varDsc->lvPromoted)
         {
@@ -3785,17 +3807,17 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         }
         noway_assert(varDsc->lvIsParam);
 
-        if (varDsc->lvIsRegArg && (varDsc->GetRegNum() != REG_STK))
+        if (varDsc->lvIsRegArg && (varReg != REG_STK))
         {
             // Skip reg args which are already in its right register for jmp call.
             // If not, we will spill such args to their stack locations.
             //
             // If we need to generate a tail call profiler hook, then spill all
             // arg regs to free them up for the callback.
-            if (!compiler->compIsProfilerHookNeeded() && (varDsc->GetRegNum() == varDsc->GetArgReg()))
+            if (!compiler->compIsProfilerHookNeeded() && (varReg == varDsc->GetArgReg()))
                 continue;
         }
-        else if (varDsc->GetRegNum() == REG_STK)
+        else if (varReg == REG_STK)
         {
             // Skip args which are currently living in stack.
             continue;
@@ -3804,7 +3826,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // If we came here it means either a reg argument not in the right register or
         // a stack argument currently living in a register.  In either case the following
         // assert should hold.
-        assert(varDsc->GetRegNum() != REG_STK);
+        assert(varReg != REG_STK);
         assert(varDsc->IsEnregisterableLcl());
         var_types storeType = varDsc->GetStackSlotHomeType();
         emitAttr  storeSize = emitActualTypeSize(storeType);
@@ -3829,9 +3851,8 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
         // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be expecting it.
         // Therefore manually update life of varDsc->GetRegNum().
-        regMaskTP tempMask = genRegMask(varDsc->GetRegNum());
-        regSet.RemoveMaskVars(tempMask);
-        gcInfo.gcMarkRegSetNpt(tempMask);
+        regSet.RemoveMaskVars(varDsc->TypeGet(), genRegMask(varReg));
+        gcInfo.gcMarkRegNpt(varReg);
         if (compiler->lvaIsGCTracked(varDsc))
         {
             VarSetOps::AddElemD(compiler, gcInfo.gcVarPtrSetCur, varNum);
@@ -3845,8 +3866,8 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #endif
 
     // Next move any un-enregistered register arguments back to their register.
-    regMaskTP fixedIntArgMask = RBM_NONE;    // tracks the int arg regs occupying fixed args in case of a vararg method.
-    unsigned  firstArgVarNum  = BAD_VAR_NUM; // varNum of the first argument in case of a vararg method.
+    regMaskGpr fixedIntArgMask = RBM_NONE; // tracks the int arg regs occupying fixed args in case of a vararg method.
+    unsigned   firstArgVarNum  = BAD_VAR_NUM; // varNum of the first argument in case of a vararg method.
     for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
         varDsc = compiler->lvaGetDesc(varNum);
@@ -3918,7 +3939,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                 // expecting it. Therefore manually update life of argReg.  Note that GT_JMP marks the end of
                 // the basic block and after which reg life and gc info will be recomputed for the new block
                 // in genCodeForBBList().
-                regSet.AddMaskVars(genRegMask(argReg));
+                regSet.AddMaskVars(varDsc->TypeGet(), genRegMask(argReg));
                 gcInfo.gcMarkRegPtrVal(argReg, loadType);
 
                 if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
@@ -3930,7 +3951,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                     loadSize = emitActualTypeSize(loadType);
                     GetEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argRegNext, varNum, TARGET_POINTER_SIZE);
 
-                    regSet.AddMaskVars(genRegMask(argRegNext));
+                    regSet.AddMaskVars(varDsc->TypeGet(), genRegMask(argRegNext));
                     gcInfo.gcMarkRegPtrVal(argRegNext, loadType);
                 }
 
@@ -4028,7 +4049,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                     GetEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, slotReg, varNum, ofs);
                 }
 
-                regSet.AddMaskVars(genRegMask(slotReg));
+                regSet.AddMaskVars(varDsc->TypeGet(), genRegMask(slotReg));
                 gcInfo.gcMarkRegPtrVal(slotReg, loadType);
                 if (genIsValidIntReg(slotReg) && compiler->info.compIsVarArgs)
                 {
@@ -4047,7 +4068,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                 GetEmitter()->emitIns_R_S(ins_Load(loadType), emitTypeSize(loadType), argReg, varNum, 0);
             }
 
-            regSet.AddMaskVars(genRegMask(argReg));
+            regSet.AddMaskVars(varDsc->TypeGet(), genRegMask(argReg));
             gcInfo.gcMarkRegPtrVal(argReg, loadType);
 
             if (genIsValidIntReg(argReg) && compiler->info.compIsVarArgs)
@@ -4077,14 +4098,14 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         assert(compiler->info.compIsVarArgs);
         assert(firstArgVarNum != BAD_VAR_NUM);
 
-        regMaskTP remainingIntArgMask = RBM_ARG_REGS & ~fixedIntArgMask;
+        regMaskGpr remainingIntArgMask = RBM_ARG_REGS & ~fixedIntArgMask;
         if (remainingIntArgMask != RBM_NONE)
         {
             GetEmitter()->emitDisableGC();
             for (int argNum = 0, argOffset = 0; argNum < MAX_REG_ARG; ++argNum)
             {
-                regNumber argReg     = intArgRegs[argNum];
-                regMaskTP argRegMask = genRegMask(argReg);
+                regNumber  argReg     = intArgRegs[argNum];
+                regMaskGpr argRegMask = genRegMask(argReg);
 
                 if ((remainingIntArgMask & argRegMask) != 0)
                 {
@@ -4881,7 +4902,8 @@ void CodeGen::genPushCalleeSavedRegisters()
                      intRegState.rsCalleeRegArgMaskLiveIn);
 #endif
 
-    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskGpr   rsPushGprRegs   = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskFloat rsPushFloatRegs = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -4892,7 +4914,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     // On ARM we push the FP (frame-pointer) here along with all other callee saved registers
     if (isFramePointerUsed())
-        rsPushRegs |= RBM_FPBASE;
+        rsPushGprRegs |= RBM_FPBASE;
 
     //
     // It may be possible to skip pushing/popping lr for leaf methods. However, such optimization would require
@@ -4913,24 +4935,31 @@ void CodeGen::genPushCalleeSavedRegisters()
     // Given the limited benefit from this optimization (<10k for CoreLib NGen image), the extra complexity
     // is not worth it.
     //
-    rsPushRegs |= RBM_LR; // We must save the return address (in the LR register)
+    rsPushGprRegs |= RBM_LR; // We must save the return address (in the LR register)
 
-    regSet.rsMaskCalleeSaved = rsPushRegs;
+    regSet.rsGprMaskCalleeSaved   = rsPushGprRegs;
+    regSet.rsFloatMaskCalleeSaved = rsPushFloatRegs;
 
 #ifdef DEBUG
-    if (compiler->compCalleeRegsPushed != genCountBits(rsPushRegs))
+    unsigned pushRegsCnt = genCountBits(rsPushGprRegs) + genCountBits(rsPushFloatRegs);
+    if (compiler->compCalleeRegsPushed != pushRegsCnt)
     {
         printf("Error: unexpected number of callee-saved registers to push. Expected: %d. Got: %d ",
-               compiler->compCalleeRegsPushed, genCountBits(rsPushRegs));
-        dspRegMask(rsPushRegs);
+               compiler->compCalleeRegsPushed, pushRegsCnt);
+        dspRegMask(AllRegsMask(rsPushGprRegs, rsPushFloatRegs
+#ifdef HAS_PREDICATE_REGS
+                               ,
+                               RBM_NONE
+#endif
+                               ));
         printf("\n");
-        assert(compiler->compCalleeRegsPushed == genCountBits(rsPushRegs));
+        assert(compiler->compCalleeRegsPushed == pushRegsCnt);
     }
 #endif // DEBUG
 
 #if defined(TARGET_ARM)
-    regMaskTP maskPushRegsFloat = rsPushRegs & RBM_ALLFLOAT;
-    regMaskTP maskPushRegsInt   = rsPushRegs & ~maskPushRegsFloat;
+    regMaskFloat maskPushRegsFloat = rsPushFloatRegs;
+    regMaskGpr   maskPushRegsInt   = rsPushGprRegs;
 
     maskPushRegsInt |= genStackAllocRegisterMask(compiler->compLclFrameSize, maskPushRegsFloat);
 
@@ -5036,17 +5065,13 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     int offset; // This will be the starting place for saving the callee-saved registers, in increasing order.
 
-    regMaskTP maskSaveRegsFloat = rsPushRegs & RBM_ALLFLOAT;
-    regMaskTP maskSaveRegsInt   = rsPushRegs & ~maskSaveRegsFloat;
+    regMaskFloat maskSaveRegsFloat = rsPushFloatRegs;
+    regMaskGpr   maskSaveRegsInt   = rsPushGprRegs;
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Save float regs: ");
-        dspRegMask(maskSaveRegsFloat);
-        printf("\n");
-        printf("Save int   regs: ");
-        dspRegMask(maskSaveRegsInt);
+        dspRegMask(maskSaveRegsInt, maskSaveRegsFloat);
         printf("\n");
     }
 #endif // DEBUG
@@ -5291,7 +5316,8 @@ void CodeGen::genPushCalleeSavedRegisters()
     const int calleeSaveSpOffset = offset;
 
     JITDUMP("    offset=%d, calleeSaveSpDelta=%d\n", offset, calleeSaveSpDelta);
-    genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, -calleeSaveSpDelta);
+
+    genSaveCalleeSavedRegistersHelp(AllRegsMask(maskSaveRegsInt, maskSaveRegsFloat), offset, -calleeSaveSpDelta);
 
     offset += genCountBits(maskSaveRegsInt | maskSaveRegsFloat) * REGSIZE_BYTES;
 
@@ -5474,10 +5500,10 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         dumpConvertedVarSet(compiler, gcInfo.gcVarPtrSetCur);
         printf(", gcRegGCrefSetCur=");
         printRegMaskInt(gcInfo.gcRegGCrefSetCur);
-        GetEmitter()->emitDispRegSet(gcInfo.gcRegGCrefSetCur);
+        GetEmitter()->emitDispGprRegSet(gcInfo.gcRegGCrefSetCur);
         printf(", gcRegByrefSetCur=");
         printRegMaskInt(gcInfo.gcRegByrefSetCur);
-        GetEmitter()->emitDispRegSet(gcInfo.gcRegByrefSetCur);
+        GetEmitter()->emitDispGprRegSet(gcInfo.gcRegByrefSetCur);
         printf("\n");
     }
 #endif // DEBUG
@@ -5529,8 +5555,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 
     if (jmpEpilog ||
-        genStackAllocRegisterMask(compiler->compLclFrameSize, regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED) ==
-            RBM_NONE)
+        genStackAllocRegisterMask(compiler->compLclFrameSize,
+                                  regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED) == RBM_NONE)
     {
         genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted);
     }
@@ -5650,7 +5676,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                     if (addrInfo.accessType == IAT_PVALUE)
                     {
                         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indCallReg, indCallReg, 0);
-                        regSet.verifyRegUsed(indCallReg);
+                        regSet.verifyGprRegUsed(indCallReg);
                     }
                     break;
 
@@ -5664,7 +5690,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                     indCallReg = REG_R12;
                     addr       = NULL;
 
-                    regSet.verifyRegUsed(indCallReg);
+                    regSet.verifyGprRegUsed(indCallReg);
                     break;
                 }
 

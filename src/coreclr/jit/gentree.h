@@ -954,8 +954,9 @@ public:
 
     int GetRegisterDstCount(Compiler* compiler) const;
 
-    regMaskTP gtGetRegMask() const;
-    regMaskTP gtGetContainedRegMask();
+    AllRegsMask gtGetRegMask() const;
+    regMaskGpr  gtGetGprRegMask() const;
+    AllRegsMask gtGetContainedRegMask();
 
     GenTreeFlags gtFlags;
 
@@ -965,11 +966,11 @@ public:
 
     ValueNumPair gtVNPair;
 
-    regMaskSmall gtRsvdRegs; // set of fixed trashed  registers
+    regMaskOnlyOne gtRsvdRegs; // set of fixed trashed  registers
 
-    unsigned AvailableTempRegCount(regMaskTP mask = (regMaskTP)-1) const;
-    regNumber GetSingleTempReg(regMaskTP mask = (regMaskTP)-1);
-    regNumber ExtractTempReg(regMaskTP mask = (regMaskTP)-1);
+    unsigned AvailableTempRegCount(regMaskOnlyOne mask = (regMaskOnlyOne)-1) const;
+    regNumber GetSingleTempReg(regMaskOnlyOne mask = (regMaskOnlyOne)-1);
+    regNumber ExtractTempReg(regMaskOnlyOne mask = (regMaskOnlyOne)-1);
 
     void SetVNsFromNode(GenTree* tree)
     {
@@ -4331,7 +4332,7 @@ public:
     regNumber GetABIReturnReg(unsigned idx, CorInfoCallConvExtension callConv) const;
 
     // Get reg mask of ABI return registers
-    regMaskTP GetABIReturnRegs(CorInfoCallConvExtension callConv) const;
+    AllRegsMask GetABIReturnRegs(CorInfoCallConvExtension callConv) const;
 };
 
 class TailCallSiteInfo
@@ -5136,7 +5137,7 @@ struct GenTreeCall final : public GenTree
 #endif // TARGET_XARCH
 
     // Get reg mask of all the valid registers of gtOtherRegs array
-    regMaskTP GetOtherRegMask() const;
+    AllRegsMask GetOtherRegMask() const;
 
     GenTreeFlags GetRegSpillFlagByIdx(unsigned idx) const
     {

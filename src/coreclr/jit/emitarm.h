@@ -65,10 +65,10 @@ void emitDispInsHelp(instrDesc* id,
 
 private:
 instrDesc* emitNewInstrCallDir(
-    int argCnt, VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize);
+    int argCnt, VARSET_VALARG_TP GCvars, regMaskGpr gcrefRegs, regMaskGpr byrefRegs, emitAttr retSize);
 
 instrDesc* emitNewInstrCallInd(
-    int argCnt, ssize_t disp, VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize);
+    int argCnt, ssize_t disp, VARSET_VALARG_TP GCvars, regMaskGpr gcrefRegs, regMaskGpr byrefRegs, emitAttr retSize);
 
 /************************************************************************/
 /*               Private helpers for instruction output                 */
@@ -328,8 +328,8 @@ void emitIns_Call(EmitCallType          callType,
                   int              argSize,
                   emitAttr         retSize,
                   VARSET_VALARG_TP ptrVars,
-                  regMaskTP        gcrefRegs,
-                  regMaskTP        byrefRegs,
+                  regMaskGpr       gcrefRegs,
+                  regMaskGpr       byrefRegs,
                   const DebugInfo& di     = DebugInfo(),
                   regNumber        ireg   = REG_NA,
                   regNumber        xreg   = REG_NA,

@@ -51,17 +51,29 @@ RegisterType regType(T type)
     {
         return IntRegisterType;
     }
-#if (defined(TARGET_XARCH) || defined(TARGET_ARM64)) && defined(FEATURE_SIMD)
+#ifdef HAS_PREDICATE_REGS
     else if (varTypeUsesMaskReg(type))
     {
         return MaskRegisterType;
     }
-#endif // (TARGET_XARCH || TARGET_ARM64) && FEATURE_SIMD
+#endif // HAS_PREDICATE_REGS
     else
     {
         assert(varTypeUsesFloatReg(type));
         return FloatRegisterType;
     }
+}
+
+// TODO: If there are lot of callers of RegisterType, simplify it.
+template <class T>
+FORCEINLINE int regIndexForType(T vt)
+{
+    int type = varTypeRegister[TypeGet(vt)];
+    assert(type <= REGISTER_TYPE_COUNT);
+#ifndef HAS_PREDICATE_REGS
+    assert(type != VTR_MASK);
+#endif
+    return (type - 1);
 }
 
 //------------------------------------------------------------------------
@@ -498,13 +510,13 @@ public:
         {
             registerType = FloatRegisterType;
         }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#ifdef HAS_PREDICATE_REGS
         else
         {
             assert(emitter::isMaskReg(reg));
             registerType = MaskRegisterType;
         }
-#endif
+#endif // HAS_PREDICATE_REGS
         regNum       = reg;
         isCalleeSave = ((RBM_CALLEE_SAVED & genRegMask(reg)) != 0);
     }
@@ -615,7 +627,7 @@ public:
     // This is the main driver
     virtual PhaseStatus doLinearScan();
 
-    static bool isSingleRegister(regMaskTP regMask)
+    static bool isSingleRegister(regMaskOnlyOne regMask)
     {
         return (genExactlyOneBit(regMask));
     }
@@ -716,7 +728,7 @@ public:
                      BasicBlock*      toBlock,
                      ResolveType      resolveType,
                      VARSET_VALARG_TP liveSet,
-                     regMaskTP        terminatorConsumedRegs);
+                     regMaskGpr       terminatorConsumedRegs);
 
     void resolveEdges();
 
@@ -771,34 +783,34 @@ private:
 #if defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
     // On System V the RDI and RSI are not callee saved. Use R12 ans R13 as callee saved registers.
-    static const regMaskTP LsraLimitSmallIntSet =
+    static const regMaskGpr LsraLimitSmallIntSet =
         (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_R12 | RBM_R13);
 #else  // !UNIX_AMD64_ABI
     // On Windows Amd64 use the RDI and RSI as callee saved registers.
-    static const regMaskTP LsraLimitSmallIntSet =
+    static const regMaskGpr LsraLimitSmallIntSet =
         (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_ESI | RBM_EDI);
 #endif // !UNIX_AMD64_ABI
-    static const regMaskTP LsraLimitSmallFPSet = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
-    static const regMaskTP LsraLimitUpperSimdSet =
+    static const regMaskFloat LsraLimitSmallFPSet = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
+    static const regMaskFloat LsraLimitUpperSimdSet =
         (RBM_XMM16 | RBM_XMM17 | RBM_XMM18 | RBM_XMM19 | RBM_XMM20 | RBM_XMM21 | RBM_XMM22 | RBM_XMM23 | RBM_XMM24 |
          RBM_XMM25 | RBM_XMM26 | RBM_XMM27 | RBM_XMM28 | RBM_XMM29 | RBM_XMM30 | RBM_XMM31);
 #elif defined(TARGET_ARM)
     // On ARM, we may need two registers to set up the target register for a virtual call, so we need
     // to have at least the maximum number of arg registers, plus 2.
-    static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5);
-    static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F16 | RBM_F17);
+    static const regMaskGpr   LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5);
+    static const regMaskFloat LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F16 | RBM_F17);
 #elif defined(TARGET_ARM64)
-    static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
-    static const regMaskTP LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
+    static const regMaskGpr   LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
+    static const regMaskFloat LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
 #elif defined(TARGET_X86)
-    static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
-    static const regMaskTP LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
+    static const regMaskGpr   LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
+    static const regMaskFloat LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
 #elif defined(TARGET_LOONGARCH64)
-    static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
-    static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
+    static const regMaskGpr   LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
+    static const regMaskFloat LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
 #elif defined(TARGET_RISCV64)
-    static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
-    static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
+    static const regMaskGpr   LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
+    static const regMaskFloat LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
 #else
 #error Unsupported or unset target architecture
 #endif // target
@@ -808,11 +820,13 @@ private:
         return (LsraStressLimitRegs)(lsraStressMask & LSRA_LIMIT_MASK);
     }
 
-    regMaskTP getConstrainedRegMask(RefPosition* refPosition,
-                                    regMaskTP    regMaskActual,
-                                    regMaskTP    regMaskConstrain,
-                                    unsigned     minRegCount);
-    regMaskTP stressLimitRegs(RefPosition* refPosition, regMaskTP mask);
+    // TODO: Can have separate methods for each type
+    regMaskOnlyOne getConstrainedRegMask(RefPosition*   refPosition,
+                                         RegisterType   regType,
+                                         regMaskOnlyOne regMaskActual,
+                                         regMaskOnlyOne regMaskConstrain,
+                                         unsigned       minRegCount);
+    regMaskOnlyOne stressLimitRegs(RefPosition* refPosition, regMaskOnlyOne mask, RegisterType regType);
 
     // This controls the heuristics used to select registers
     // These can be combined.
@@ -877,7 +891,7 @@ private:
     {
         return (LsraBlockBoundaryLocations)(lsraStressMask & LSRA_BLOCK_BOUNDARY_MASK);
     }
-    regNumber rotateBlockStartLocation(Interval* interval, regNumber targetReg, regMaskTP availableRegs);
+    regNumber rotateBlockStartLocation(Interval* interval, regNumber targetReg, AllRegsMask availableRegs);
 
     // This controls whether we always insert a GT_RELOAD instruction after a spill
     // Note that this can be combined with LSRA_SPILL_ALWAYS (or not)
@@ -940,7 +954,7 @@ private:
     static bool IsResolutionMove(GenTree* node);
     static bool IsResolutionNode(LIR::Range& containingRange, GenTree* node);
 
-    void verifyFreeRegisters(regMaskTP regsToFree);
+    void verifyFreeRegisters(AllRegsMask regsToFree);
     void verifyFinalAllocation();
     void verifyResolutionMove(GenTree* resolutionNode, LsraLocation currentLocation);
 #else  // !DEBUG
@@ -1011,7 +1025,8 @@ private:
     // Record variable locations at start/end of block
     void processBlockStartLocations(BasicBlock* current);
     void processBlockEndLocations(BasicBlock* current);
-    void resetAllRegistersState();
+    void             resetAllRegistersState();
+    FORCEINLINE void updateDeadCandidatesAtBlockStart(regMaskTP deadRegMask, VarToRegMap inVarToRegMap);
 
 #ifdef TARGET_ARM
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
@@ -1034,14 +1049,15 @@ private:
     void insertZeroInitRefPositions();
 
     // add physreg refpositions for a tree node, based on calling convention and instruction selection predictions
-    void addRefsForPhysRegMask(regMaskTP mask, LsraLocation currentLoc, RefType refType, bool isLastUse);
+    void addRefsForPhysRegMask(AllRegsMask& mask, LsraLocation currentLoc, RefType refType, bool isLastUse);
 
     void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 
     void buildRefPositionsForNode(GenTree* tree, LsraLocation loc);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet);
+    void buildUpperVectorSaveRefPositions(GenTree*     tree,
+                                          LsraLocation currentLoc DEBUG_ARG(regMaskFloat fpCalleeKillSet));
     void buildUpperVectorRestoreRefPosition(
         Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node, bool isUse, unsigned multiRegIdx);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -1071,37 +1087,39 @@ private:
     }
 
     // Helpers for getKillSetForNode().
-    regMaskTP getKillSetForStoreInd(GenTreeStoreInd* tree);
-    regMaskTP getKillSetForShiftRotate(GenTreeOp* tree);
-    regMaskTP getKillSetForMul(GenTreeOp* tree);
-    regMaskTP getKillSetForCall(GenTreeCall* call);
-    regMaskTP getKillSetForModDiv(GenTreeOp* tree);
-    regMaskTP getKillSetForBlockStore(GenTreeBlk* blkNode);
-    regMaskTP getKillSetForReturn();
-    regMaskTP getKillSetForProfilerHook();
+    AllRegsMask getKillSetForStoreInd(GenTreeStoreInd* tree);
+    regMaskGpr getKillSetForShiftRotate(GenTreeOp* tree);
+    regMaskGpr getKillSetForMul(GenTreeOp* tree);
+    AllRegsMask getKillSetForCall(GenTreeCall* call);
+    regMaskGpr getKillSetForModDiv(GenTreeOp* tree);
+    AllRegsMask getKillSetForBlockStore(GenTreeBlk* blkNode);
+    AllRegsMask getKillSetForReturn();
+    AllRegsMask getKillSetForProfilerHook();
 #ifdef FEATURE_HW_INTRINSICS
-    regMaskTP getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node);
+    regMaskGpr getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
 
 // Return the registers killed by the given tree node.
 // This is used only for an assert, and for stress, so it is only defined under DEBUG.
 // Otherwise, the Build methods should obtain the killMask from the appropriate method above.
 #ifdef DEBUG
-    regMaskTP getKillSetForNode(GenTree* tree);
+    AllRegsMask getKillSetForNode(GenTree* tree);
 #endif
 
     // Given some tree node add refpositions for all the registers this node kills
-    bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, regMaskTP killMask);
+    bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, AllRegsMask killMask);
 
-    regMaskTP allRegs(RegisterType rt);
-    regMaskTP allByteRegs();
-    regMaskTP allSIMDRegs();
-    regMaskTP lowSIMDRegs();
-    regMaskTP internalFloatRegCandidates();
+    regMaskOnlyOne allRegs(RegisterType rt);
+    regMaskGpr   allByteRegs();
+    regMaskFloat allSIMDRegs();
+    regMaskFloat lowSIMDRegs();
+    regMaskFloat internalFloatRegCandidates();
 
     void makeRegisterInactive(RegRecord* physRegRecord);
+    FORCEINLINE void inActivateRegisters(regMaskTP inactiveMask);
     void freeRegister(RegRecord* physRegRecord);
-    void freeRegisters(regMaskTP regsToFree);
+    void freeRegisters(AllRegsMask regsToFree);
+    FORCEINLINE void freeRegisterMask(regMaskTP freeMask);
 
     // Get the type that this tree defines.
     var_types getDefType(GenTree* tree)
@@ -1119,11 +1137,11 @@ private:
     }
 
     // Managing internal registers during the BuildNode process.
-    RefPosition* defineNewInternalTemp(GenTree* tree, RegisterType regType, regMaskTP candidates);
-    RefPosition* buildInternalIntRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
-    RefPosition* buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
+    RefPosition* defineNewInternalTemp(GenTree* tree, RegisterType regType, regMaskOnlyOne candidates);
+    RefPosition* buildInternalIntRegisterDefForNode(GenTree* tree, regMaskGpr internalCands = RBM_NONE);
+    RefPosition* buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskFloat internalCands = RBM_NONE);
 #if defined(FEATURE_SIMD)
-    RefPosition* buildInternalMaskRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
+    RefPosition* buildInternalMaskRegisterDefForNode(GenTree* tree, regMaskPredicate internalCands = RBM_NONE);
 #endif
     void buildInternalRegisterUses();
 
@@ -1156,15 +1174,15 @@ private:
 
     RefPosition* newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType);
 
-    RefPosition* newRefPosition(Interval*    theInterval,
-                                LsraLocation theLocation,
-                                RefType      theRefType,
-                                GenTree*     theTreeNode,
-                                regMaskTP    mask,
-                                unsigned     multiRegIdx = 0);
+    RefPosition* newRefPosition(Interval*      theInterval,
+                                LsraLocation   theLocation,
+                                RefType        theRefType,
+                                GenTree*       theTreeNode,
+                                regMaskOnlyOne mask,
+                                unsigned       multiRegIdx = 0);
 
     RefPosition* newRefPosition(
-        regNumber reg, LsraLocation theLocation, RefType theRefType, GenTree* theTreeNode, regMaskTP mask);
+        regNumber reg, LsraLocation theLocation, RefType theRefType, GenTree* theTreeNode, regMaskOnlyOne mask);
 
     void applyCalleeSaveHeuristics(RefPosition* rp);
 
@@ -1221,22 +1239,24 @@ private:
 #if defined(TARGET_ARM64)
     bool canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
     void assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
-    regMaskTP getConsecutiveCandidates(regMaskTP candidates, RefPosition* refPosition, regMaskTP* busyCandidates);
-    regMaskTP filterConsecutiveCandidates(regMaskTP    candidates,
-                                          unsigned int registersNeeded,
-                                          regMaskTP*   allConsecutiveCandidates);
-    regMaskTP filterConsecutiveCandidatesForSpill(regMaskTP consecutiveCandidates, unsigned int registersNeeded);
+    regMaskFloat getConsecutiveCandidates(regMaskFloat  candidates,
+                                          RefPosition*  refPosition,
+                                          regMaskFloat* busyCandidates);
+    regMaskFloat filterConsecutiveCandidates(regMaskFloat  candidates,
+                                             unsigned int  registersNeeded,
+                                             regMaskFloat* allConsecutiveCandidates);
+    regMaskFloat filterConsecutiveCandidatesForSpill(regMaskFloat consecutiveCandidates, unsigned int registersNeeded);
 #endif // TARGET_ARM64
 
-    regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
+    regMaskOnlyOne getFreeCandidates(regMaskOnlyOne candidates, var_types regType)
     {
-        regMaskTP result = candidates & m_AvailableRegs;
+        regMaskOnlyOne result = candidates & m_AvailableRegs.GetRegMaskForType(regType);
 #ifdef TARGET_ARM
         // For TYP_DOUBLE on ARM, we can only use register for which the odd half is
         // also available.
         if (regType == TYP_DOUBLE)
         {
-            result &= (m_AvailableRegs >> 1);
+            result &= (m_AvailableRegs.floatRegs() >> 1);
         }
 #endif // TARGET_ARM
         return result;
@@ -1258,11 +1278,11 @@ private:
 
         // Perform register selection and update currentInterval or refPosition
         template <bool hasConsecutiveRegister = false>
-        FORCEINLINE regMaskTP select(Interval*    currentInterval,
-                                     RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+        FORCEINLINE singleRegMask select(Interval*    currentInterval,
+                                         RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
-        FORCEINLINE regMaskTP selectMinimal(Interval*    currentInterval,
-                                            RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+        FORCEINLINE singleRegMask selectMinimal(Interval*    currentInterval,
+                                                RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
         // If the register is from unassigned set such that it was not already
         // assigned to the current interval
@@ -1303,39 +1323,39 @@ private:
 
         RegisterType regType = RegisterType::TYP_UNKNOWN;
 
-        regMaskTP candidates;
-        regMaskTP preferences     = RBM_NONE;
-        Interval* relatedInterval = nullptr;
+        regMaskOnlyOne candidates;
+        regMaskOnlyOne preferences     = RBM_NONE;
+        Interval*      relatedInterval = nullptr;
 
-        regMaskTP    relatedPreferences = RBM_NONE;
-        LsraLocation rangeEndLocation;
-        LsraLocation relatedLastLocation;
-        bool         preferCalleeSave = false;
-        RefPosition* rangeEndRefPosition;
-        RefPosition* lastRefPosition;
-        regMaskTP    callerCalleePrefs = RBM_NONE;
-        LsraLocation lastLocation;
+        regMaskOnlyOne relatedPreferences = RBM_NONE;
+        LsraLocation   rangeEndLocation;
+        LsraLocation   relatedLastLocation;
+        bool           preferCalleeSave = false;
+        RefPosition*   rangeEndRefPosition;
+        RefPosition*   lastRefPosition;
+        regMaskOnlyOne callerCalleePrefs = RBM_NONE;
+        LsraLocation   lastLocation;
 
-        regMaskTP foundRegBit;
+        singleRegMask foundRegBit;
 
-        regMaskTP prevRegBit = RBM_NONE;
+        singleRegMask prevRegBit = RBM_NONE;
 
         // These are used in the post-selection updates, and must be set for any selection.
-        regMaskTP freeCandidates;
-        regMaskTP matchingConstants;
-        regMaskTP unassignedSet;
+        regMaskOnlyOne freeCandidates;
+        regMaskOnlyOne matchingConstants;
+        regMaskOnlyOne unassignedSet;
 
         // Compute the sets for COVERS, OWN_PREFERENCE, COVERS_RELATED, COVERS_FULL and UNASSIGNED together,
         // as they all require similar computation.
-        regMaskTP coversSet;
-        regMaskTP preferenceSet;
-        regMaskTP coversRelatedSet;
-        regMaskTP coversFullSet;
-        bool      coversSetsCalculated  = false;
-        bool      found                 = false;
-        bool      skipAllocation        = false;
-        bool      coversFullApplied     = false;
-        bool      constAvailableApplied = false;
+        regMaskOnlyOne coversSet;
+        regMaskOnlyOne preferenceSet;
+        regMaskOnlyOne coversRelatedSet;
+        regMaskOnlyOne coversFullSet;
+        bool           coversSetsCalculated  = false;
+        bool           found                 = false;
+        bool           skipAllocation        = false;
+        bool           coversFullApplied     = false;
+        bool           constAvailableApplied = false;
 
         // If the selected register is already assigned to the current internal
         FORCEINLINE bool isAlreadyAssigned()
@@ -1344,8 +1364,8 @@ private:
             return (prevRegBit & preferences) == foundRegBit;
         }
 
-        bool applySelection(int selectionScore, regMaskTP selectionCandidates);
-        bool applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate);
+        bool applySelection(int selectionScore, regMaskOnlyOne selectionCandidates);
+        bool applySingleRegSelection(int selectionScore, regMaskOnlyOne selectionCandidate);
         FORCEINLINE void calculateCoversSets();
         FORCEINLINE void calculateUnassignedSets();
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
@@ -1406,7 +1426,7 @@ private:
                                       BasicBlock*      toBlock,
                                       var_types        type,
                                       VARSET_VALARG_TP sharedCriticalLiveSet,
-                                      regMaskTP        terminatorConsumedRegs);
+                                      regMaskOnlyOne   terminatorConsumedRegs);
 
 #ifdef TARGET_ARM64
     typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, RefPosition*> NextConsecutiveRefPositionsMap;
@@ -1474,12 +1494,12 @@ private:
     static const int MAX_ROWS_BETWEEN_TITLES = 50;
     int              rowCountSinceLastTitle;
     // Current mask of registers being printed in the dump.
-    regMaskTP lastDumpedRegisters;
-    regMaskTP registersToDump;
-    int       lastUsedRegNumIndex;
+    AllRegsMask lastDumpedRegisters;
+    AllRegsMask registersToDump;
+    int         lastUsedRegNumIndex;
     bool shouldDumpReg(regNumber regNum)
     {
-        return (registersToDump & genRegMask(regNum)) != 0;
+        return registersToDump.IsRegNumInMask(regNum);
     }
 
     void dumpRegRecordHeader();
@@ -1657,15 +1677,16 @@ private:
     VarToRegMap* outVarToRegMaps;
 
     // A temporary VarToRegMap used during the resolution of critical edges.
-    VarToRegMap          sharedCriticalVarToRegMap;
-    PhasedVar<regMaskTP> actualRegistersMask;
-    PhasedVar<regMaskTP> availableIntRegs;
-    PhasedVar<regMaskTP> availableFloatRegs;
-    PhasedVar<regMaskTP> availableDoubleRegs;
+    VarToRegMap             sharedCriticalVarToRegMap;
+    PhasedVar<AllRegsMask>  actualRegistersMask;
+    PhasedVar<regMaskGpr>   availableIntRegs;
+    PhasedVar<regMaskFloat> availableFloatRegs;
+    PhasedVar<regMaskFloat> availableDoubleRegs;
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-    PhasedVar<regMaskTP> availableMaskRegs;
+    PhasedVar<regMaskPredicate> availableMaskRegs;
 #endif
-    PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
+    PhasedVar<regMaskOnlyOne>* availableRegs[TYP_COUNT]; // TODO: probably separate this out based on gpr, vector,
+                                                         // predicate
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 #define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
@@ -1677,7 +1698,7 @@ private:
     // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding
     // CALL node and is used to avoid preferring these registers for locals
     // which would otherwise force a spill.
-    regMaskTP placedArgRegs;
+    AllRegsMask placedArgRegs;
 
     struct PlacedLocal
     {
@@ -1714,7 +1735,7 @@ private:
 #if defined(TARGET_AMD64)
     static const var_types LargeVectorSaveType = TYP_SIMD16;
 #elif defined(TARGET_ARM64)
-    static const var_types LargeVectorSaveType  = TYP_DOUBLE;
+    static const var_types    LargeVectorSaveType  = TYP_DOUBLE;
 #endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
     // Set of large vector (TYP_SIMD32 on AVX) variables.
     VARSET_TP largeVectorVars;
@@ -1726,7 +1747,12 @@ private:
     // Register status
     //-----------------------------------------------------------------------
 
-    regMaskTP m_AvailableRegs;
+    // TODO: One option is to also just have another current_AvailableREgs that
+    // gets reset for every refposition we are processing depending on the
+    // register type. That wawy we do not have to query and fetch the appropriate
+    // entry again and agin.
+    AllRegsMask m_AvailableRegs;
+
     regNumber getRegForType(regNumber reg, var_types regType)
     {
 #ifdef TARGET_ARM
@@ -1738,10 +1764,10 @@ private:
         return reg;
     }
 
-    regMaskTP getRegMask(regNumber reg, var_types regType)
+    regMaskOnlyOne getRegMask(regNumber reg, var_types regType)
     {
-        reg               = getRegForType(reg, regType);
-        regMaskTP regMask = genRegMask(reg);
+        reg                   = getRegForType(reg, regType);
+        singleRegMask regMask = genRegMask(reg);
 #ifdef TARGET_ARM
         if (regType == TYP_DOUBLE)
         {
@@ -1754,32 +1780,42 @@ private:
 
     void resetAvailableRegs()
     {
-        m_AvailableRegs          = allAvailableRegs;
-        m_RegistersWithConstants = RBM_NONE;
+        m_AvailableRegs = AllRegsMask(availableIntRegs, availableFloatRegs
+#ifdef HAS_PREDICATE_REGS
+                                      ,
+                                      availableMaskRegs
+#endif
+                                      );
+        m_RegistersWithConstants.Clear();
     }
 
-    bool isRegAvailable(regNumber reg, var_types regType)
+    bool isRegAvailable(regNumber reg, var_types regType) // only used in asserts
     {
-        regMaskTP regMask = getRegMask(reg, regType);
-        return (m_AvailableRegs & regMask) == regMask;
+        return m_AvailableRegs.IsRegNumInMask(reg ARM_ARG(regType));
     }
-    void setRegsInUse(regMaskTP regMask)
+
+    void setRegsInUse(AllRegsMask regMask)
     {
         m_AvailableRegs &= ~regMask;
     }
+
     void setRegInUse(regNumber reg, var_types regType)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
-        setRegsInUse(regMask);
+        m_AvailableRegs.RemoveRegNumFromMask(reg ARM_ARG(regType));
     }
-    void makeRegsAvailable(regMaskTP regMask)
+
+    void makeRegsAvailable(AllRegsMask regMask)
     {
         m_AvailableRegs |= regMask;
+        assert(compiler->IsGprRegMask(m_AvailableRegs.gprRegs()));
+        assert(compiler->IsFloatRegMask(m_AvailableRegs.floatRegs()));
+#ifdef HAS_PREDICATE_REGS
+        assert(compiler->IsPredicateRegMask(m_AvailableRegs.predicateRegs()));
+#endif
     }
     void makeRegAvailable(regNumber reg, var_types regType)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
-        makeRegsAvailable(regMask);
+        m_AvailableRegs.AddRegNumInMask(reg ARM_ARG(regType));
     }
 
     void clearAllNextIntervalRef();
@@ -1790,30 +1826,35 @@ private:
     void clearSpillCost(regNumber reg, var_types regType);
     void updateSpillCost(regNumber reg, Interval* interval);
 
-    FORCEINLINE void updateRegsFreeBusyState(RefPosition& refPosition,
-                                             regMaskTP    regsBusy,
-                                             regMaskTP*   regsToFree,
-                                             regMaskTP* delayRegsToFree DEBUG_ARG(Interval* interval)
+    FORCEINLINE void updateRegsFreeBusyState(RefPosition&   refPosition,
+                                             regMaskOnlyOne regsBusy,
+                                             AllRegsMask*   regsToFree,
+                                             AllRegsMask*   delayRegsToFree,
+                                             RegisterType regType DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
 
-    regMaskTP m_RegistersWithConstants;
+    AllRegsMask m_RegistersWithConstants;
+    AllRegsMask fixedRegs;
+
     void clearConstantReg(regNumber reg, var_types regType)
     {
-        m_RegistersWithConstants &= ~getRegMask(reg, regType);
+        // TODO: If we decide to have curr_RegistersWithConstants, then here we will
+        // just operate on curr_RegistersWithConstants and assert
+        // assert(m_RegistersWithConstants[regIndexForType(regType)] == curr_RegistersWithConstants);
+        // but we will have to make sure that we save it back too??
+        m_RegistersWithConstants.RemoveRegNumFromMask(reg ARM_ARG(regType));
     }
     void setConstantReg(regNumber reg, var_types regType)
     {
-        m_RegistersWithConstants |= getRegMask(reg, regType);
+        m_RegistersWithConstants.AddRegNumInMask(reg ARM_ARG(regType));
     }
     bool isRegConstant(regNumber reg, var_types regType)
     {
-        reg               = getRegForType(reg, regType);
-        regMaskTP regMask = getRegMask(reg, regType);
-        return (m_RegistersWithConstants & regMask) == regMask;
+        reg = getRegForType(reg, regType);
+        return m_RegistersWithConstants.IsRegNumInMask(reg ARM_ARG(regType));
     }
-    regMaskTP getMatchingConstants(regMaskTP mask, Interval* currentInterval, RefPosition* refPosition);
+    regMaskOnlyOne getMatchingConstants(regMaskOnlyOne mask, Interval* currentInterval, RefPosition* refPosition);
 
-    regMaskTP    fixedRegs;
     LsraLocation nextFixedRef[REG_COUNT];
     void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
     LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
@@ -1842,36 +1883,37 @@ private:
     }
     weight_t spillCost[REG_COUNT];
 
-    regMaskTP regsBusyUntilKill;
-    regMaskTP regsInUseThisLocation;
-    regMaskTP regsInUseNextLocation;
+    AllRegsMask regsBusyUntilKill; // TODO: Likewise, probably have this global 32-bit and set it point to the specific
+                                   // version like gpr, vector, etc.
+    AllRegsMask regsInUseThisLocation;
+    AllRegsMask regsInUseNextLocation;
 #ifdef TARGET_ARM64
-    regMaskTP consecutiveRegsInUseThisLocation;
+    regMaskFloat consecutiveRegsInUseThisLocation;
 #endif
     bool isRegBusy(regNumber reg, var_types regType)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
-        return (regsBusyUntilKill & regMask) != RBM_NONE;
+        return regsBusyUntilKill.IsRegNumInMask(reg ARM_ARG(regType));
     }
     void setRegBusyUntilKill(regNumber reg, var_types regType)
     {
-        regsBusyUntilKill |= getRegMask(reg, regType);
+        regsBusyUntilKill.AddRegNumInMask(reg ARM_ARG(regType));
     }
     void clearRegBusyUntilKill(regNumber reg)
     {
-        regsBusyUntilKill &= ~genRegMask(reg);
+        regsBusyUntilKill.RemoveRegNumFromMask(reg);
     }
 
     bool isRegInUse(regNumber reg, var_types regType)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
-        return (regsInUseThisLocation & regMask) != RBM_NONE;
+        regMaskOnlyOne regMask = getRegMask(reg, regType);
+        return regsInUseThisLocation.IsRegNumInMask(reg ARM_ARG(regType));
     }
 
     void resetRegState()
     {
         resetAvailableRegs();
-        regsBusyUntilKill = RBM_NONE;
+        regsBusyUntilKill = AllRegsMask();
+        ;
     }
 
     bool conflictingFixedRegReference(regNumber regNum, RefPosition* refPosition);
@@ -1931,13 +1973,13 @@ private:
     bool isCandidateMultiRegLclVar(GenTreeLclVar* lclNode);
     bool checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode);
 
-    RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0);
+    RefPosition* BuildUse(GenTree* operand, regMaskOnlyOne candidates = RBM_NONE, int multiRegIdx = 0);
     void setDelayFree(RefPosition* use);
-    int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
-    int BuildCastUses(GenTreeCast* cast, regMaskTP candidates);
+    int BuildBinaryUses(GenTreeOp* node, regMaskOnlyOne candidates = RBM_NONE);
+    int BuildCastUses(GenTreeCast* cast, regMaskOnlyOne candidates);
 #ifdef TARGET_XARCH
-    int BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskTP candidates = RBM_NONE);
-    inline regMaskTP BuildEvexIncompatibleMask(GenTree* tree);
+    int BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskOnlyOne candidates = RBM_NONE);
+    inline regMaskFloat BuildEvexIncompatibleMask(GenTree* tree);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
     // This is the main entry point for building the RefPositions for a node.
@@ -1949,18 +1991,25 @@ private:
     bool supportsSpecialPutArg();
 
     int BuildSimple(GenTree* tree);
-    int BuildOperandUses(GenTree* node, regMaskTP candidates = RBM_NONE);
+    int BuildOperandUses(GenTree* node, regMaskOnlyOne candidates = RBM_NONE);
     void AddDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
-    int BuildDelayFreeUses(GenTree*      node,
-                           GenTree*      rmwNode        = nullptr,
-                           regMaskTP     candidates     = RBM_NONE,
-                           RefPosition** useRefPosition = nullptr);
-    int BuildIndirUses(GenTreeIndir* indirTree, regMaskTP candidates = RBM_NONE);
-    int BuildAddrUses(GenTree* addr, regMaskTP candidates = RBM_NONE);
+    int BuildDelayFreeUses(GenTree*       node,
+                           GenTree*       rmwNode        = nullptr,
+                           regMaskOnlyOne candidates     = RBM_NONE,
+                           RefPosition**  useRefPosition = nullptr);
+    int BuildIndirUses(GenTreeIndir* indirTree, regMaskOnlyOne candidates = RBM_NONE);
+    int BuildAddrUses(GenTree* addr, regMaskOnlyOne candidates = RBM_NONE);
     void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
-    RefPosition* BuildDef(GenTree* tree, regMaskTP dstCandidates = RBM_NONE, int multiRegIdx = 0);
-    void BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates = RBM_NONE);
-    void BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask);
+    RefPosition* BuildDef(GenTree* tree, regMaskOnlyOne dstCandidates = RBM_NONE, int multiRegIdx = 0);
+    void BuildDefs(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates = RBM_NONE);
+    void BuildCallDefs(GenTree* tree, int dstCount, AllRegsMask dstCandidates);
+    void BuildKills(GenTree* tree, AllRegsMask killMask);
+#ifdef TARGET_ARMARCH
+    void BuildDefWithKills(GenTree* tree, regMaskOnlyOne dstCandidates, AllRegsMask killMask);
+#else
+    void BuildDefWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, AllRegsMask killMask);
+#endif
+    void BuildCallDefsWithKills(GenTree* tree, int dstCount, AllRegsMask dstCandidates, AllRegsMask killMask);
 
     int BuildReturn(GenTree* tree);
 #ifdef TARGET_XARCH
@@ -2032,29 +2081,29 @@ private:
 #endif // FEATURE_ARG_SPLIT
     int BuildLclHeap(GenTree* tree);
 
-#if defined(TARGET_AMD64)
-    regMaskTP rbmAllFloat;
-    regMaskTP rbmFltCalleeTrash;
+    //#if defined(TARGET_AMD64)
+    regMaskFloat rbmAllFloat;
+    regMaskFloat rbmFltCalleeTrash;
 
-    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskFloat get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskFloat get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
-#endif // TARGET_AMD64
+//#endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
-    regMaskTP rbmAllMask;
-    regMaskTP rbmMskCalleeTrash;
+    regMaskPredicate rbmAllMask;
+    regMaskPredicate rbmMskCalleeTrash;
 
-    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
+    FORCEINLINE regMaskPredicate get_RBM_ALLMASK() const
     {
         return this->rbmAllMask;
     }
-    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    FORCEINLINE regMaskPredicate get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }
@@ -2073,9 +2122,9 @@ private:
     // NOTE: we currently don't need a LinearScan `this` pointer for this definition, and some callers
     // don't have one available, so make is static.
     //
-    static FORCEINLINE regMaskTP calleeSaveRegs(RegisterType rt)
+    static FORCEINLINE regMaskOnlyOne calleeSaveRegs(RegisterType rt)
     {
-        static const regMaskTP varTypeCalleeSaveRegs[] = {
+        static const regMaskOnlyOne varTypeCalleeSaveRegs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) csr,
 #include "typelist.h"
 #undef DEF_TP
@@ -2089,16 +2138,16 @@ private:
     // Not all of the callee trash values are constant, so don't declare this as a method local static
     // doing so results in significantly more complex codegen and we'd rather just initialize this once
     // as part of initializing LSRA instead
-    regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
+    regMaskOnlyOne varTypeCalleeTrashRegs[TYP_COUNT];
 #endif // TARGET_XARCH
 
     //------------------------------------------------------------------------
     // callerSaveRegs: Get the set of caller-save registers of the given RegisterType
     //
-    FORCEINLINE regMaskTP callerSaveRegs(RegisterType rt) const
+    FORCEINLINE regMaskOnlyOne callerSaveRegs(RegisterType rt) const
     {
 #if !defined(TARGET_XARCH)
-        static const regMaskTP varTypeCalleeTrashRegs[] = {
+        static const regMaskOnlyOne varTypeCalleeTrashRegs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
 #include "typelist.h"
 #undef DEF_TP
@@ -2125,7 +2174,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 class Interval : public Referenceable
 {
 public:
-    Interval(RegisterType registerType, regMaskTP registerPreferences)
+    Interval(RegisterType registerType, regMaskOnlyOne registerPreferences)
         : registerPreferences(registerPreferences)
         , registerAversion(RBM_NONE)
         , relatedInterval(nullptr)
@@ -2169,10 +2218,10 @@ public:
     void setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l);
 
     // Fixed registers for which this Interval has a preference
-    regMaskTP registerPreferences;
+    regMaskOnlyOne registerPreferences;
 
     // Registers that should be avoided for this interval
-    regMaskTP registerAversion;
+    regMaskOnlyOne registerAversion;
 
     // The relatedInterval is:
     //  - for any other interval, it is the interval to which this interval
@@ -2321,12 +2370,12 @@ public:
     // definitions. This method will return the current assigned register if any, or
     // the 'registerPreferences' otherwise.
     //
-    regMaskTP getCurrentPreferences()
+    regMaskOnlyOne getCurrentPreferences()
     {
         return (assignedReg == nullptr) ? registerPreferences : genRegMask(assignedReg->regNum);
     }
 
-    void mergeRegisterPreferences(regMaskTP preferences)
+    void mergeRegisterPreferences(regMaskOnlyOne preferences)
     {
         // We require registerPreferences to have been initialized.
         assert(registerPreferences != RBM_NONE);
@@ -2341,7 +2390,7 @@ public:
             return;
         }
 
-        regMaskTP commonPreferences = (registerPreferences & preferences);
+        regMaskOnlyOne commonPreferences = (registerPreferences & preferences);
         if (commonPreferences != RBM_NONE)
         {
             registerPreferences = commonPreferences;
@@ -2376,11 +2425,11 @@ public:
         // Keep only the callee-save preferences, if not empty.
         // Otherwise, take the union of the preferences.
 
-        regMaskTP newPreferences = registerPreferences | preferences;
+        regMaskOnlyOne newPreferences = registerPreferences | preferences;
 
         if (preferCalleeSave)
         {
-            regMaskTP calleeSaveMask = (LinearScan::calleeSaveRegs(this->registerType) & newPreferences);
+            regMaskOnlyOne calleeSaveMask = (LinearScan::calleeSaveRegs(this->registerType) & newPreferences);
             if (calleeSaveMask != RBM_NONE)
             {
                 newPreferences = calleeSaveMask;
@@ -2395,7 +2444,7 @@ public:
     // An exception is made in the case where one of the existing or new
     // preferences are all callee-save, in which case we "prefer" the callee-save
 
-    void updateRegisterPreferences(regMaskTP preferences)
+    void updateRegisterPreferences(regMaskOnlyOne preferences)
     {
         // If this interval is preferenced, that interval may have already been assigned a
         // register, and we want to include that in the preferences.
@@ -2433,7 +2482,7 @@ public:
     // Prior to the allocation pass, registerAssignment captures the valid registers
     // for this RefPosition.
     // After the allocation pass, this contains the actual assignment
-    regMaskTP registerAssignment;
+    regMaskOnlyOne registerAssignment;
 
     RefType refType;
 
@@ -2695,7 +2744,7 @@ public:
 
     // isFixedRefOfRegMask indicates that the RefPosition has a fixed assignment to the register
     // specified by the given mask
-    bool isFixedRefOfRegMask(regMaskTP regMask)
+    bool isFixedRefOfRegMask(regMaskOnlyOne regMask)
     {
         assert(genMaxOneBit(regMask));
         return (registerAssignment == regMask);

@@ -9488,8 +9488,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            emitAttr              retSize
                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                            VARSET_VALARG_TP      ptrVars,
-                           regMaskTP             gcrefRegs,
-                           regMaskTP             byrefRegs,
+                           regMaskGpr            gcrefRegs,
+                           regMaskGpr            byrefRegs,
                            const DebugInfo&      di,
                            regNumber             ireg,
                            regNumber             xreg,
@@ -9499,6 +9499,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
 // clang-format on
 {
     /* Sanity check the arguments depending on callType */
+    assert(emitComp->IsGprRegMask(gcrefRegs));
+    assert(emitComp->IsGprRegMask(byrefRegs));
+    assert(emitComp->IsGprRegMask(gcrefRegs));
+    assert(emitComp->IsGprRegMask(byrefRegs));
 
     assert(callType < EC_COUNT);
     if (!emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
@@ -9514,9 +9518,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert((unsigned)abs((signed)argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
-    regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
-    gcrefRegs &= savedSet;
-    byrefRegs &= savedSet;
+    AllRegsMask savedSet = emitGetGCRegsSavedOrModified(methHnd);
+    gcrefRegs &= savedSet.gprRegs();
+    byrefRegs &= savedSet.gprRegs();
 
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)
@@ -9525,10 +9529,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
         dumpConvertedVarSet(emitComp, ptrVars);
         printf(", gcrefRegs=");
         printRegMaskInt(gcrefRegs);
-        emitDispRegSet(gcrefRegs);
+        emitDispGprRegSet(gcrefRegs);
         printf(", byrefRegs=");
         printRegMaskInt(byrefRegs);
-        emitDispRegSet(byrefRegs);
+        emitDispGprRegSet(byrefRegs);
         printf("\n");
     }
 #endif
@@ -10218,7 +10222,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
 const char* emitter::emitXMMregName(unsigned reg) const
 {
     static const char* const regNames[] = {
-#define REGDEF(name, rnum, mask, sname) "x" sname,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) "x" sname,
 #include "register.h"
     };
 
@@ -10236,7 +10240,7 @@ const char* emitter::emitXMMregName(unsigned reg) const
 const char* emitter::emitYMMregName(unsigned reg) const
 {
     static const char* const regNames[] = {
-#define REGDEF(name, rnum, mask, sname) "y" sname,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) "y" sname,
 #include "register.h"
     };
 
@@ -10254,7 +10258,7 @@ const char* emitter::emitYMMregName(unsigned reg) const
 const char* emitter::emitZMMregName(unsigned reg) const
 {
     static const char* const regNames[] = {
-#define REGDEF(name, rnum, mask, sname) "z" sname,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) "z" sname,
 #include "register.h"
     };
 
@@ -14679,7 +14683,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
         case IF_RRW:
         {
 #ifdef DEBUG
-            regMaskTP regMask = genRegMask(reg);
+            singleRegMask regMask = genRegMask(reg);
 #endif
             if (id->idGCref())
             {
@@ -15022,8 +15026,9 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                         // instruction, if writing a GC ref even through reading a long, will go live here.
                         // These situations typically occur due to unsafe casting, such as with Span<T>.
 
-                        regMaskTP regMask;
+                        regMaskGpr regMask;
                         regMask = genRegMask(reg1) | genRegMask(reg2);
+                        assert(emitComp->IsGprRegMask(regMask));
 
                         // r1/r2 could have been a GCREF as GCREF + int=BYREF
                         //                               or BYREF+/-int=BYREF
@@ -15522,7 +15527,7 @@ DONE:
                 assert(id->idGCref() == GCT_BYREF);
 
 #ifdef DEBUG
-                regMaskTP regMask;
+                regMaskGpr regMask;
                 regMask = genRegMask(reg);
                 // FIXNOW review the other places and relax the assert there too
 
@@ -16346,8 +16351,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         BYTE* addr;
         bool  recCall;
 
-        regMaskTP gcrefRegs;
-        regMaskTP byrefRegs;
+        regMaskGpr gcrefRegs;
+        regMaskGpr byrefRegs;
 
         /********************************************************************/
         /*                        No operands                               */
@@ -17916,11 +17921,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             printf("Before emitOutputInstr for id->idDebugOnlyInfo()->idNum=0x%02x\n", id->idDebugOnlyInfo()->idNum);
             printf("  emitThisGCrefRegs(0x%p)=", emitComp->dspPtr(&emitThisGCrefRegs));
             printRegMaskInt(emitThisGCrefRegs);
-            emitDispRegSet(emitThisGCrefRegs);
+            emitDispGprRegSet(emitThisGCrefRegs);
             printf("\n");
             printf("  emitThisByrefRegs(0x%p)=", emitComp->dspPtr(&emitThisByrefRegs));
             printRegMaskInt(emitThisByrefRegs);
-            emitDispRegSet(emitThisByrefRegs);
+            emitDispGprRegSet(emitThisByrefRegs);
             printf("\n");
         }
 
@@ -17949,7 +17954,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         // The target of the 3-operand imul is implicitly encoded. Make sure
         // that we detected the implicit register and cleared its GC-status.
 
-        regMaskTP regMask = genRegMask(inst3opImulReg(ins));
+        singleRegMask regMask = genRegMask(inst3opImulReg(ins));
         assert((regMask & (emitThisGCrefRegs | emitThisByrefRegs)) == 0);
     }
 

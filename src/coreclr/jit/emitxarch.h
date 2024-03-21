@@ -10,21 +10,25 @@
 public:
 inline static bool isGeneralRegister(regNumber reg)
 {
+    // TODO: This assert will no longer be true
     return (reg <= REG_INT_LAST);
 }
 
 inline static bool isFloatReg(regNumber reg)
 {
+    // TODO: This assert will no longer be true
     return (reg >= REG_FP_FIRST && reg <= REG_FP_LAST);
 }
 
 inline static bool isDoubleReg(regNumber reg)
 {
+    // TODO: This assert will no longer be true
     return isFloatReg(reg);
 }
 
 inline static bool isMaskReg(regNumber reg)
 {
+    // TODO: This assert will no longer be true
     return (reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST);
 }
 
@@ -534,15 +538,15 @@ instrDesc* emitNewInstrAmdCns(emitAttr attr, ssize_t dsp, int cns);
 
 instrDesc* emitNewInstrCallDir(int              argCnt,
                                VARSET_VALARG_TP GCvars,
-                               regMaskTP        gcrefRegs,
-                               regMaskTP        byrefRegs,
+                               regMaskGpr       gcrefRegs,
+                               regMaskGpr       byrefRegs,
                                emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
                                VARSET_VALARG_TP GCvars,
-                               regMaskTP        gcrefRegs,
-                               regMaskTP        byrefRegs,
+                               regMaskGpr       gcrefRegs,
+                               regMaskGpr       byrefRegs,
                                emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
 
 void emitGetInsCns(const instrDesc* id, CnsVal* cv) const;
@@ -912,8 +916,8 @@ void emitIns_Call(EmitCallType          callType,
                   emitAttr              retSize
                   MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                   VARSET_VALARG_TP      ptrVars,
-                  regMaskTP             gcrefRegs,
-                  regMaskTP             byrefRegs,
+                  regMaskGpr            gcrefRegs,
+                  regMaskGpr            byrefRegs,
                   const DebugInfo& di = DebugInfo(),
                   regNumber             ireg     = REG_NA,
                   regNumber             xreg     = REG_NA,

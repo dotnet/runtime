@@ -25,12 +25,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #if defined(TARGET_ARM64)
 const regMaskSmall regMasks[] = {
-#define REGDEF(name, rnum, mask, xname, wname) mask,
+#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) mask,
 #include "register.h"
 };
 #else // !TARGET_ARM64
 const regMaskSmall regMasks[] = {
-#define REGDEF(name, rnum, mask, sname) mask,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) mask,
 #include "register.h"
 };
 #endif
@@ -45,7 +45,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 //------------------------------------------------------------------------
-// verifyRegUsed: verify that the register is marked as used.
+// verifyGprRegUsed: verify that the GPR register is marked as used.
 //
 // Arguments:
 //    reg - The register to verify.
@@ -61,12 +61,33 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //     This method is intended to be called during code generation, and
 //     should simply validate that the register (or registers) have
 //     already been added to the modified set.
+//
+void RegSet::verifyGprRegUsed(regNumber reg)
+{
+    assert(emitter::isGeneralRegister(reg));
+    rsSetGprRegsModified(genRegMask(reg));
+}
 
+//------------------------------------------------------------------------
+// verifyRegUsed: verify that the mask register is marked as used.
+//
+// Arguments:
+//    reg - The register to verify.
+//
+// Return Value:
+//   None.
+//
+// Assumptions:
+//    The caller must have ensured that the register is already marked
+//    as used.
+//
+// Notes:
+//     This method is intended to be called during code generation, and
+//     should simply validate that the register (or registers) have
+//     already been added to the modified set.
 void RegSet::verifyRegUsed(regNumber reg)
 {
-    // TODO-Cleanup: we need to identify the places where the register
-    //               is not marked as used when this is called.
-    rsSetRegsModified(genRegMask(reg));
+    rsSetRegModified(reg);
 }
 
 //------------------------------------------------------------------------
@@ -87,21 +108,27 @@ void RegSet::verifyRegUsed(regNumber reg)
 //     should simply validate that the register (or registers) have
 //     already been added to the modified set.
 
-void RegSet::verifyRegistersUsed(regMaskTP regMask)
+void RegSet::verifyRegistersUsed(AllRegsMask regs)
 {
     if (m_rsCompiler->opts.OptimizationDisabled())
     {
         return;
     }
 
-    if (regMask == RBM_NONE)
+    if (regs.IsEmpty())
     {
         return;
     }
 
-    // TODO-Cleanup: we need to identify the places where the registers
-    //               are not marked as used when this is called.
-    rsSetRegsModified(regMask);
+    // TODO-Cleanup:
+    // We need to identify the places where the register
+    // is not marked as used when this is called.
+    //
+    // See https://github.com/dotnet/runtime/issues/10411 and
+    // https://github.com/dotnet/coreclr/pull/18230 on why we call
+    // rsSetGprRegsModified() instead of assert(rsRegsModified())
+
+    rsSetRegsModified(regs);
 }
 
 void RegSet::rsClearRegsModified()
@@ -116,13 +143,18 @@ void RegSet::rsClearRegsModified()
     rsModifiedRegsMaskInitialized = true;
 #endif // DEBUG
 
-    rsModifiedRegsMask = RBM_NONE;
+    rsModifiedRegsMask.Clear();
+    // rsModifiedGprRegsMask       = RBM_NONE;
+    // rsModifiedFloatRegsMask     = RBM_NONE;
+    // rsModifiedPredicateRegsMask = RBM_NONE;
 }
 
-void RegSet::rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppressDump))
+#ifdef DEBUG
+void RegSet::printModifiedRegsMask(regMaskOnlyOne currentMask,
+                                   regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump)
+                                       DEBUGARG(regMaskOnlyOne calleeSaveMask)) const
 {
-    assert(mask != RBM_NONE);
-    assert(rsModifiedRegsMaskInitialized);
+    regMaskOnlyOne newMask = (currentMask | modifiedMask);
 
     // We can't update the modified registers set after final frame layout (that is, during code
     // generation and after). Ignore prolog and epilog generation: they call register tracking to
@@ -131,90 +163,168 @@ void RegSet::rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppressDump))
     // Frame layout is only affected by callee-saved registers, so only ensure that callee-saved
     // registers aren't modified after final frame layout.
     assert((m_rsCompiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) || m_rsCompiler->compGeneratingProlog ||
-           m_rsCompiler->compGeneratingEpilog ||
-           (((rsModifiedRegsMask | mask) & RBM_CALLEE_SAVED) == (rsModifiedRegsMask & RBM_CALLEE_SAVED)));
+           m_rsCompiler->compGeneratingEpilog || ((newMask & calleeSaveMask) == (currentMask & calleeSaveMask)));
 
-#ifdef DEBUG
     if (m_rsCompiler->verbose && !suppressDump)
     {
-        if (rsModifiedRegsMask != (rsModifiedRegsMask | mask))
+        if (currentMask != newMask)
         {
             printf("Marking regs modified: ");
-            dspRegMask(mask);
+            dspRegMask(modifiedMask);
             printf(" (");
-            dspRegMask(rsModifiedRegsMask);
+            dspRegMask(currentMask);
             printf(" => ");
-            dspRegMask(rsModifiedRegsMask | mask);
+            dspRegMask(newMask);
             printf(")\n");
         }
     }
-#endif // DEBUG
+}
+#endif
 
-    rsModifiedRegsMask |= mask;
+void RegSet::rsSetGprRegsModified(regMaskGpr mask DEBUGARG(bool suppressDump))
+{
+    assert(m_rsCompiler->IsGprRegMask(mask));
+    // TODO: Commented this, so that caller don't have to check if modifiedMask is not RBM_NONE
+    // It doesn't harm if this was RBM_NONE, as it will not modify the trackingMask
+    // assert(modifiedMask != RBM_NONE);
+    assert(rsModifiedRegsMaskInitialized);
+#ifdef DEBUG
+    printModifiedRegsMask(rsModifiedRegsMask.gprRegs(), mask DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_INT_CALLEE_SAVED));
+#endif
+
+    rsModifiedRegsMask.AddGprRegMask(mask);
 }
 
-void RegSet::rsRemoveRegsModified(regMaskTP mask)
+void RegSet::rsSetFloatRegsModified(regMaskFloat mask DEBUGARG(bool suppressDump))
+{
+    assert(m_rsCompiler->IsFloatRegMask(mask));
+    // TODO: Commented this, so that caller don't have to check if modifiedMask is not RBM_NONE
+    // It doesn't harm if this was RBM_NONE, as it will not modify the trackingMask
+    // assert(modifiedMask != RBM_NONE);
+    assert(rsModifiedRegsMaskInitialized);
+#ifdef DEBUG
+    printModifiedRegsMask(rsModifiedRegsMask.floatRegs(), mask DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_FLT_CALLEE_SAVED));
+#endif
+
+    rsModifiedRegsMask.AddFloatRegMask(mask);
+}
+
+void RegSet::rsSetRegModified(regNumber reg DEBUGARG(bool suppressDump))
+{
+    // TODO: Commented this, so that caller don't have to check if modifiedMask is not RBM_NONE
+    // It doesn't harm if this was RBM_NONE, as it will not modify the trackingMask
+    // assert(modifiedMask != RBM_NONE);
+    assert(rsModifiedRegsMaskInitialized);
+
+#ifdef DEBUG
+    if (genIsValidIntReg(reg))
+    {
+        printModifiedRegsMask(rsModifiedRegsMask.gprRegs(),
+                              genRegMask(reg) DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_INT_CALLEE_SAVED));
+    }
+    else if (genIsValidFloatReg(reg))
+    {
+        printModifiedRegsMask(rsModifiedRegsMask.floatRegs(),
+                              genRegMask(reg) DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_FLT_CALLEE_SAVED));
+    }
+#ifdef HAS_PREDICATE_REGS
+    else
+    {
+        assert(genIsValidMaskReg(reg));
+        printModifiedRegsMask(rsModifiedRegsMask.predicateRegs(),
+                              genRegMask(reg) DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_MSK_CALLEE_SAVED));
+    }
+#endif // HAS_PREDICATE_REGS
+#endif // DEBUG
+
+    rsModifiedRegsMask.AddRegNumInMask(reg);
+}
+
+void RegSet::rsSetRegsModified(AllRegsMask& modifiedMask DEBUGARG(bool suppressDump))
+{
+    // TODO: Commented this, so that caller don't have to check if modifiedMask is not RBM_NONE
+    // It doesn't harm if this was RBM_NONE, as it will not modify the trackingMask
+    // assert(modifiedMask != RBM_NONE);
+    assert(rsModifiedRegsMaskInitialized);
+
+#ifdef DEBUG
+    printModifiedRegsMask(rsModifiedRegsMask.gprRegs(),
+                          modifiedMask.gprRegs() DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_INT_CALLEE_SAVED));
+    printModifiedRegsMask(rsModifiedRegsMask.floatRegs(),
+                          modifiedMask.floatRegs() DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_FLT_CALLEE_SAVED));
+#ifdef HAS_PREDICATE_REGS
+    printModifiedRegsMask(rsModifiedRegsMask.predicateRegs(),
+                          modifiedMask.predicateRegs() DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_MSK_CALLEE_SAVED));
+#endif // HAS_PREDICATE_REGS
+#endif // DEBUG
+
+    rsModifiedRegsMask |= modifiedMask;
+}
+
+void RegSet::rsRemoveRegsModified(regMaskGpr mask)
 {
     assert(mask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
+    assert(m_rsCompiler->IsGprRegMask(mask));
 
+#ifdef DEBUG
+    regMaskGpr rsModifiedGprRegsMask = rsGetModifiedGprRegsMask();
     // See comment in rsSetRegsModified().
     assert((m_rsCompiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) || m_rsCompiler->compGeneratingProlog ||
            m_rsCompiler->compGeneratingEpilog ||
-           (((rsModifiedRegsMask & ~mask) & RBM_CALLEE_SAVED) == (rsModifiedRegsMask & RBM_CALLEE_SAVED)));
+           (((rsModifiedGprRegsMask & ~mask) & RBM_CALLEE_SAVED) == (rsModifiedGprRegsMask & RBM_CALLEE_SAVED)));
 
-#ifdef DEBUG
     if (m_rsCompiler->verbose)
     {
         printf("Removing modified regs: ");
-        dspRegMask(mask);
-        if (rsModifiedRegsMask == (rsModifiedRegsMask & ~mask))
+        dspRegMask(mask, RBM_NONE);
+        if (rsModifiedGprRegsMask == (rsModifiedGprRegsMask & ~mask))
         {
             printf(" (unchanged)");
         }
         else
         {
             printf(" (");
-            dspRegMask(rsModifiedRegsMask);
+            dspRegMask(rsModifiedGprRegsMask, RBM_NONE);
             printf(" => ");
-            dspRegMask(rsModifiedRegsMask & ~mask);
+            dspRegMask(rsModifiedGprRegsMask & ~mask, RBM_NONE);
             printf(")");
         }
         printf("\n");
     }
 #endif // DEBUG
 
-    rsModifiedRegsMask &= ~mask;
+    rsModifiedRegsMask.RemoveRegTypeFromMask(mask, TYP_INT);
 }
 
-void RegSet::SetMaskVars(regMaskTP newMaskVars)
+void RegSet::SetMaskVars(AllRegsMask newMaskVars)
 {
 #ifdef DEBUG
     if (m_rsCompiler->verbose)
     {
         printf("\t\t\t\t\t\t\tLive regs: ");
-        if (_rsMaskVars == newMaskVars)
+        if (_rsAllMaskVars == newMaskVars)
         {
             printf("(unchanged) ");
         }
         else
         {
-            printRegMask(_rsMaskVars);
-            m_rsCompiler->GetEmitter()->emitDispRegSet(_rsMaskVars);
+            printRegMask(_rsAllMaskVars);
+            m_rsCompiler->GetEmitter()->emitDispRegSet(_rsAllMaskVars);
 
             // deadSet = old - new
-            regMaskTP deadSet = _rsMaskVars & ~newMaskVars;
+            AllRegsMask deadSet = _rsAllMaskVars & ~newMaskVars;
 
             // bornSet = new - old
-            regMaskTP bornSet = newMaskVars & ~_rsMaskVars;
+            AllRegsMask bornSet = newMaskVars & ~_rsAllMaskVars;
 
-            if (deadSet != RBM_NONE)
+            if (!deadSet.IsEmpty())
             {
                 printf(" -");
                 m_rsCompiler->GetEmitter()->emitDispRegSet(deadSet);
             }
 
-            if (bornSet != RBM_NONE)
+            if (!bornSet.IsEmpty())
             {
                 printf(" +");
                 m_rsCompiler->GetEmitter()->emitDispRegSet(bornSet);
@@ -228,7 +338,7 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
     }
 #endif // DEBUG
 
-    _rsMaskVars = newMaskVars;
+    _rsAllMaskVars = newMaskVars;
 }
 
 /*****************************************************************************/
@@ -247,9 +357,16 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_r
 
     rsMaskResvd = RBM_NONE;
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH)
+    rsGprMaskCalleeSaved   = RBM_NONE;
+    rsFloatMaskCalleeSaved = RBM_NONE;
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     rsMaskCalleeSaved = RBM_NONE;
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+
+#ifdef HAS_PREDICATE_REGS
+    rsPredicateMaskCalleeSaved = RBM_NONE;
+#endif // HAS_PREDICATE_REGS
 
 #ifdef TARGET_ARM
     rsMaskPreSpillRegArg = RBM_NONE;
@@ -330,18 +447,12 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         treeType = tree->TypeGet();
     }
 
-    var_types tempType = RegSet::tmpNormalizeType(treeType);
-    regMaskTP mask;
+    var_types tempType   = RegSet::tmpNormalizeType(treeType);
     bool      floatSpill = false;
 
     if (isFloatRegType(treeType))
     {
         floatSpill = true;
-        mask       = genRegMaskFloat(reg ARM_ARG(treeType));
-    }
-    else
-    {
-        mask = genRegMask(reg);
     }
 
     rsNeededSpillReg = true;
@@ -935,15 +1046,15 @@ regNumber genRegArgNext(regNumber argReg)
  *  register numbers and corresponding bitmaps.
  */
 
-const regNumber raRegCalleeSaveOrder[] = {REG_CALLEE_SAVED_ORDER};
-const regMaskTP raRbmCalleeSaveOrder[] = {RBM_CALLEE_SAVED_ORDER};
+const regNumber  raRegCalleeSaveOrder[] = {REG_CALLEE_SAVED_ORDER};
+const regMaskGpr raRbmCalleeSaveOrder[] = {RBM_CALLEE_SAVED_ORDER};
 
 regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)
 {
     regMaskSmall res = 0;
     for (int i = 0; i < CNT_CALLEE_SAVED; i++)
     {
-        if ((calleeSaveMask & ((regMaskTP)1 << i)) != 0)
+        if ((calleeSaveMask & ((regMaskOnlyOne)1 << i)) != 0)
         {
             res |= raRbmCalleeSaveOrder[i];
         }

@@ -43,7 +43,7 @@ public:
     RegSet(Compiler* compiler, GCInfo& gcInfo);
 
 #ifdef TARGET_ARM
-    regMaskTP rsMaskPreSpillRegs(bool includeAlignment) const
+    regMaskGpr rsMaskPreSpillRegs(bool includeAlignment) const
     {
         return includeAlignment ? (rsMaskPreSpillRegArg | rsMaskPreSpillAlign) : rsMaskPreSpillRegArg;
     }
@@ -67,77 +67,137 @@ private:
     //
 
 private:
-    bool      rsNeededSpillReg;   // true if this method needed to spill any registers
-    regMaskTP rsModifiedRegsMask; // mask of the registers modified by the current function.
+    bool             rsNeededSpillReg;   // true if this method needed to spill any registers
+    AllRegsMask      rsModifiedRegsMask; // mask of the registers modified by the current function.
 
 #ifdef DEBUG
     bool rsModifiedRegsMaskInitialized; // Has rsModifiedRegsMask been initialized? Guards against illegal use.
-#endif                                  // DEBUG
+    void printModifiedRegsMask(regMaskOnlyOne currentMask,
+                               regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump = false)
+                                   DEBUGARG(regMaskOnlyOne calleeSaveMask = RBM_NONE)) const;
+#endif // DEBUG
 
 public:
-    regMaskTP rsGetModifiedRegsMask() const
+    void rsSetRegsModified(AllRegsMask& modifiedMask DEBUGARG(bool suppressDump = false));
+    void rsSetRegModified(regNumber reg DEBUGARG(bool suppressDump = false));
+
+#ifdef DEBUG
+    AllRegsMask rsGetModifiedRegsMask() const
     {
         assert(rsModifiedRegsMaskInitialized);
         return rsModifiedRegsMask;
     }
+#endif
 
-    void rsClearRegsModified();
-
-    void rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppressDump = false));
-
-    void rsRemoveRegsModified(regMaskTP mask);
-
-    bool rsRegsModified(regMaskTP mask) const
+    regMaskGpr rsGetModifiedGprRegsMask() const
     {
         assert(rsModifiedRegsMaskInitialized);
-        return (rsModifiedRegsMask & mask) != 0;
+        return rsModifiedRegsMask.gprRegs();
+    }
+
+    regMaskFloat rsGetModifiedFloatRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return rsModifiedRegsMask.floatRegs();
+    }
+
+#ifdef HAS_PREDICATE_REGS
+    regMaskPredicate rsGetModifiedPredicateRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return rsModifiedRegsMask.predicateRegs();
+    }
+#endif // HAS_PREDICATE_REGS
+
+    regMaskGpr rsGetModifiedRegsMask(var_types type) const
+    {
+        return rsModifiedRegsMask.GetRegMaskForType(type);
+    }
+
+    void rsClearRegsModified();
+    void rsSetGprRegsModified(regMaskGpr mask DEBUGARG(bool suppressDump = false));
+    void rsSetFloatRegsModified(regMaskFloat mask DEBUGARG(bool suppressDump = false));
+
+    void rsRemoveRegsModified(regMaskGpr mask);
+
+    bool rsRegsModified(regMaskGpr mask) const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return (rsModifiedRegsMask.gprRegs() & mask) != 0;
+        // return (rsModifiedGprRegsMask & mask) != 0;
+    }
+
+    bool rsRegsModified(const AllRegsMask& mask) const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return !((rsModifiedRegsMask & mask).IsEmpty());
     }
 
     void verifyRegUsed(regNumber reg);
+    void verifyGprRegUsed(regNumber reg);
 
-    void verifyRegistersUsed(regMaskTP regMask);
+    void verifyRegistersUsed(AllRegsMask mask);
 
 public:
-    regMaskTP GetMaskVars() const // 'get' property function for rsMaskVars property
+    regMaskOnlyOne GetMaskVars(var_types type) const // 'get' property function for rsMaskVars property
     {
-        return _rsMaskVars;
+        return _rsAllMaskVars.GetRegMaskForType(type);
     }
 
-    void SetMaskVars(regMaskTP newMaskVars); // 'put' property function for rsMaskVars property
-
-    void AddMaskVars(regMaskTP addMaskVars) // union 'addMaskVars' with the rsMaskVars set
+    regMaskGpr GetGprMaskVars() const // 'get' property function for rsMaskVars property
     {
-        SetMaskVars(_rsMaskVars | addMaskVars);
+        return _rsAllMaskVars.gprRegs();
     }
 
-    void RemoveMaskVars(regMaskTP removeMaskVars) // remove 'removeMaskVars' from the rsMaskVars set (like bitset DiffD)
+    void SetMaskVars(AllRegsMask newMaskVars); // 'put' property function for rsMaskVars property
+
+    void AddMaskVars(var_types type, regMaskOnlyOne addMaskVars) // union 'addMaskVars' with the rsMaskVars set
     {
-        SetMaskVars(_rsMaskVars & ~removeMaskVars);
+        AllRegsMask newMask = _rsAllMaskVars;
+        newMask.AddRegMaskForType(addMaskVars, type);
+        SetMaskVars(newMask);
+    }
+
+    // remove 'removeMaskVars' from the rsMaskVars set (like bitset DiffD)
+    void RemoveMaskVars(var_types type, regMaskOnlyOne removeMaskVars)
+    {
+        // TODO: Skip assigning to newMask, just update _rsAllMaskVars directly. The only thing remaining
+        // would be to print the change if (newMask != _rsAllMaskVars).
+        AllRegsMask newMask = _rsAllMaskVars;
+        newMask.RemoveRegTypeFromMask(removeMaskVars, type);
+        SetMaskVars(newMask);
     }
 
     void ClearMaskVars() // Like SetMaskVars(RBM_NONE), but without any debug output.
     {
-        _rsMaskVars = RBM_NONE;
+        _rsAllMaskVars = AllRegsMask();
     }
 
 private:
-    regMaskTP _rsMaskVars; // backing store for rsMaskVars property
+    AllRegsMask _rsAllMaskVars; // backing store for rsGprMaskVars property
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    regMaskTP rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
-#endif                           // TARGET_ARMARCH || TARGET_LOONGARCH64
+#if defined(TARGET_ARMARCH)
+    regMaskGpr   rsGprMaskCalleeSaved; // TODO: Can use AllRegsMask here as well
+    regMaskFloat rsFloatMaskCalleeSaved;
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    regMaskMixed rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_LOONGARCH64
 
-public:                    // TODO-Cleanup: Should be private, but Compiler uses it
-    regMaskTP rsMaskResvd; // mask of the registers that are reserved for special purposes (typically empty)
+#ifdef HAS_PREDICATE_REGS
+    regMaskPredicate rsPredicateMaskCalleeSaved;
+#endif
+
+public:                     // TODO-Cleanup: Should be private, but Compiler uses it
+    regMaskGpr rsMaskResvd; // mask of the registers that are reserved for special purposes (typically empty)
 
 public: // The PreSpill masks are used in LclVars.cpp
 #ifdef TARGET_ARM
-    regMaskTP rsMaskPreSpillAlign;  // Mask of alignment padding added to prespill to keep double aligned args
-                                    // at aligned stack addresses.
-    regMaskTP rsMaskPreSpillRegArg; // mask of incoming registers that are spilled at the start of the prolog
-                                    // This includes registers used to pass a struct (or part of a struct)
-                                    // and all enregistered user arguments in a varargs call
-#endif                              // TARGET_ARM
+    regMaskGpr rsMaskPreSpillAlign;  // Mask of alignment padding added to prespill to keep double aligned args
+                                     // at aligned stack addresses.
+    regMaskGpr rsMaskPreSpillRegArg; // mask of incoming registers that are spilled at the start of the prolog
+                                     // This includes registers used to pass a struct (or part of a struct)
+                                     // and all enregistered user arguments in a varargs call
+#endif                               // TARGET_ARM
 
 private:
     //-------------------------------------------------------------------------

@@ -273,10 +273,8 @@ void emitterStaticStats()
     fprintf(fout, "Offset / size of igLoopBackEdge     = %3zu / %2zu\n", offsetof(insGroup, igLoopBackEdge),
             sizeof(igDummy->igLoopBackEdge));
 #endif // FEATURE_LOOP_ALIGN
-#if !(REGMASK_BITS <= 32)
     fprintf(fout, "Offset / size of igGCregs           = %3zu / %2zu\n", offsetof(insGroup, igGCregs),
             sizeof(igDummy->igGCregs));
-#endif // !(REGMASK_BITS <= 32)
     fprintf(fout, "Offset / size of igData             = %3zu / %2zu\n", offsetof(insGroup, igData),
             sizeof(igDummy->igData));
     fprintf(fout, "Offset / size of igPhData           = %3zu / %2zu\n", offsetof(insGroup, igPhData),
@@ -289,10 +287,8 @@ void emitterStaticStats()
     fprintf(fout, "Offset / size of igStkLvl           = %3zu / %2zu\n", offsetof(insGroup, igStkLvl),
             sizeof(igDummy->igStkLvl));
 #endif // EMIT_TRACK_STACK_DEPTH
-#if REGMASK_BITS <= 32
     fprintf(fout, "Offset / size of igGCregs           = %3zu / %2zu\n", offsetof(insGroup, igGCregs),
             sizeof(igDummy->igGCregs));
-#endif // REGMASK_BITS <= 32
     fprintf(fout, "Offset / size of igInsCnt           = %3zu / %2zu\n", offsetof(insGroup, igInsCnt),
             sizeof(igDummy->igInsCnt));
     fprintf(fout, "\n");
@@ -751,6 +747,7 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
 #endif
 
 #if defined(TARGET_AMD64)
+    rbmAllFloat       = emitComp->rbmAllFloat;
     rbmFltCalleeTrash = emitComp->rbmFltCalleeTrash;
 #endif // TARGET_AMD64
 
@@ -2062,8 +2059,8 @@ void emitter::emitEndProlog()
 void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
                                       BasicBlock*             igBB,
                                       VARSET_VALARG_TP        GCvars,
-                                      regMaskTP               gcrefRegs,
-                                      regMaskTP               byrefRegs,
+                                      regMaskGpr              gcrefRegs,
+                                      regMaskGpr              byrefRegs,
                                       bool                    last)
 {
     assert(igBB != nullptr);
@@ -2891,8 +2888,8 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
  */
 
 void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
-                            regMaskTP        gcrefRegs,
-                            regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block))
+                            regMaskGpr       gcrefRegs,
+                            regMaskGpr byrefRegs DEBUG_ARG(BasicBlock* block))
 {
     /* Create a new IG if the current one is non-empty */
 
@@ -2923,10 +2920,10 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
         dumpConvertedVarSet(emitComp, GCvars);
         printf(", gcrefRegs=");
         printRegMaskInt(gcrefRegs);
-        emitDispRegSet(gcrefRegs);
+        emitDispGprRegSet(gcrefRegs);
         printf(", byrefRegs=");
         printRegMaskInt(byrefRegs);
-        emitDispRegSet(byrefRegs);
+        emitDispGprRegSet(byrefRegs);
         printf("\n");
     }
 #endif
@@ -3476,21 +3473,21 @@ const char* emitter::emitGetFrameReg()
  *  Display a register set in a readable form.
  */
 
-void emitter::emitDispRegSet(regMaskTP regs)
+void emitter::emitDispRegSet(regNumber firstReg, regNumber lastReg, regMaskOnlyOne regs)
 {
+    printf(" {");
+
     regNumber reg;
     bool      sp = false;
 
-    printf(" {");
-
-    for (reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+    for (reg = firstReg; reg <= lastReg; reg = REG_NEXT(reg))
     {
         if (regs == RBM_NONE)
         {
             break;
         }
 
-        regMaskTP curReg = genRegMask(reg);
+        singleRegMask curReg = genRegMask(reg);
         if ((regs & curReg) == 0)
         {
             continue;
@@ -3509,8 +3506,21 @@ void emitter::emitDispRegSet(regMaskTP regs)
 
         printf("%s", emitRegName(reg));
     }
-
     printf("}");
+}
+
+void emitter::emitDispGprRegSet(regMaskGpr regs)
+{
+    emitDispRegSet(REG_INT_FIRST, REG_INT_LAST, regs);
+}
+
+void emitter::emitDispRegSet(AllRegsMask regs)
+{
+    emitDispGprRegSet(regs.gprRegs());
+    emitDispGprRegSet(regs.floatRegs());
+#ifdef HAS_PREDICATE_REGS
+    emitDispGprRegSet(regs.predicateRegs());
+#endif
 }
 
 /*****************************************************************************
@@ -3603,11 +3613,13 @@ void emitter::emitSetSecondRetRegGCType(instrDescCGCA* id, emitAttr secondRetSiz
 emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
                                                  ssize_t          disp,
                                                  VARSET_VALARG_TP GCvars,
-                                                 regMaskTP        gcrefRegs,
-                                                 regMaskTP        byrefRegs,
+                                                 regMaskGpr       gcrefRegs,
+                                                 regMaskGpr       byrefRegs,
                                                  emitAttr         retSizeIn
                                                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
 {
+    assert(emitComp->IsGprRegMask(gcrefRegs));
+    assert(emitComp->IsGprRegMask(byrefRegs));
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
     bool gcRefRegsInScratch = ((gcrefRegs & RBM_CALLEE_TRASH) != 0);
@@ -3686,11 +3698,14 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
 
 emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
                                                  VARSET_VALARG_TP GCvars,
-                                                 regMaskTP        gcrefRegs,
-                                                 regMaskTP        byrefRegs,
+                                                 regMaskGpr       gcrefRegs,
+                                                 regMaskGpr       byrefRegs,
                                                  emitAttr         retSizeIn
                                                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
 {
+    assert(emitComp->IsGprRegMask(gcrefRegs));
+    assert(emitComp->IsGprRegMask(byrefRegs));
+
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
     // Allocate a larger descriptor if new GC values need to be saved
@@ -3848,23 +3863,26 @@ void emitter::emitDispGCDeltaTitle(const char* title)
 //    prevRegs - The live GC registers before the recent instruction.
 //    curRegs  - The live GC registers after the recent instruction.
 //
-void emitter::emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskTP curRegs)
+void emitter::emitDispGCRegDelta(const char* title, regMaskGpr prevRegs, regMaskGpr curRegs)
 {
+    assert(emitComp->IsGprRegMask(prevRegs));
+    assert(emitComp->IsGprRegMask(curRegs));
+
     if (prevRegs != curRegs)
     {
         emitDispGCDeltaTitle(title);
-        regMaskTP sameRegs    = prevRegs & curRegs;
-        regMaskTP removedRegs = prevRegs - sameRegs;
-        regMaskTP addedRegs   = curRegs - sameRegs;
+        regMaskGpr sameRegs    = prevRegs & curRegs;
+        regMaskGpr removedRegs = prevRegs - sameRegs;
+        regMaskGpr addedRegs   = curRegs - sameRegs;
         if (removedRegs != RBM_NONE)
         {
             printf(" -");
-            dspRegMask(removedRegs);
+            dspRegMask(removedRegs, RBM_NONE);
         }
         if (addedRegs != RBM_NONE)
         {
             printf(" +");
-            dspRegMask(addedRegs);
+            dspRegMask(addedRegs, RBM_NONE);
         }
         printf("\n");
     }
@@ -4094,10 +4112,10 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
         dumpConvertedVarSet(emitComp, igPh->igPhData->igPhPrevGCrefVars);
         printf(", PrevGCrefRegs=");
         printRegMaskInt(igPh->igPhData->igPhPrevGCrefRegs);
-        emitDispRegSet(igPh->igPhData->igPhPrevGCrefRegs);
+        emitDispGprRegSet(igPh->igPhData->igPhPrevGCrefRegs);
         printf(", PrevByrefRegs=");
         printRegMaskInt(igPh->igPhData->igPhPrevByrefRegs);
-        emitDispRegSet(igPh->igPhData->igPhPrevByrefRegs);
+        emitDispGprRegSet(igPh->igPhData->igPhPrevByrefRegs);
         printf("\n");
 
         printf("%*s;   InitGCVars=%s ", strlen(buff), "",
@@ -4105,10 +4123,10 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
         dumpConvertedVarSet(emitComp, igPh->igPhData->igPhInitGCrefVars);
         printf(", InitGCrefRegs=");
         printRegMaskInt(igPh->igPhData->igPhInitGCrefRegs);
-        emitDispRegSet(igPh->igPhData->igPhInitGCrefRegs);
+        emitDispGprRegSet(igPh->igPhData->igPhInitGCrefRegs);
         printf(", InitByrefRegs=");
         printRegMaskInt(igPh->igPhData->igPhInitByrefRegs);
-        emitDispRegSet(igPh->igPhData->igPhInitByrefRegs);
+        emitDispGprRegSet(igPh->igPhData->igPhInitByrefRegs);
         printf("\n");
 
         assert(!(ig->igFlags & IGF_GC_VARS));
@@ -4144,7 +4162,7 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
         {
             printf("%sgcrefRegs=", separator);
             printRegMaskInt(ig->igGCregs);
-            emitDispRegSet(ig->igGCregs);
+            emitDispGprRegSet(ig->igGCregs);
             separator = ", ";
         }
 
@@ -4152,7 +4170,7 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
         {
             printf("%sbyrefRegs=", separator);
             printRegMaskInt(ig->igByrefRegs());
-            emitDispRegSet(ig->igByrefRegs());
+            emitDispGprRegSet(ig->igByrefRegs());
             separator = ", ";
         }
 
@@ -4248,26 +4266,26 @@ void emitter::emitDispGCinfo()
     dumpConvertedVarSet(emitComp, emitPrevGCrefVars);
     printf("\n  emitPrevGCrefRegs(0x%p)=", dspPtr(&emitPrevGCrefRegs));
     printRegMaskInt(emitPrevGCrefRegs);
-    emitDispRegSet(emitPrevGCrefRegs);
+    emitDispGprRegSet(emitPrevGCrefRegs);
     printf("\n  emitPrevByrefRegs(0x%p)=", dspPtr(&emitPrevByrefRegs));
     printRegMaskInt(emitPrevByrefRegs);
-    emitDispRegSet(emitPrevByrefRegs);
+    emitDispGprRegSet(emitPrevByrefRegs);
     printf("\n  emitInitGCrefVars ");
     dumpConvertedVarSet(emitComp, emitInitGCrefVars);
     printf("\n  emitInitGCrefRegs(0x%p)=", dspPtr(&emitInitGCrefRegs));
     printRegMaskInt(emitInitGCrefRegs);
-    emitDispRegSet(emitInitGCrefRegs);
+    emitDispGprRegSet(emitInitGCrefRegs);
     printf("\n  emitInitByrefRegs(0x%p)=", dspPtr(&emitInitByrefRegs));
     printRegMaskInt(emitInitByrefRegs);
-    emitDispRegSet(emitInitByrefRegs);
+    emitDispGprRegSet(emitInitByrefRegs);
     printf("\n  emitThisGCrefVars ");
     dumpConvertedVarSet(emitComp, emitThisGCrefVars);
     printf("\n  emitThisGCrefRegs(0x%p)=", dspPtr(&emitThisGCrefRegs));
     printRegMaskInt(emitThisGCrefRegs);
-    emitDispRegSet(emitThisGCrefRegs);
+    emitDispGprRegSet(emitThisGCrefRegs);
     printf("\n  emitThisByrefRegs(0x%p)=", dspPtr(&emitThisByrefRegs));
     printRegMaskInt(emitThisByrefRegs);
-    emitDispRegSet(emitThisByrefRegs);
+    emitDispGprRegSet(emitThisByrefRegs);
     printf("\n\n");
 }
 
@@ -7296,7 +7314,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             /* Update the set of live GC ref registers */
 
             {
-                regMaskTP GCregs = ig->igGCregs;
+                regMaskGpr GCregs = ig->igGCregs;
 
                 if (GCregs != emitThisGCrefRegs)
                 {
@@ -8808,12 +8826,12 @@ void emitter::emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize)
         emitDispVarSet();
         printf(", gcrefRegs=");
         printRegMaskInt(emitThisGCrefRegs);
-        emitDispRegSet(emitThisGCrefRegs);
+        emitDispGprRegSet(emitThisGCrefRegs);
         // printRegMaskInt(emitThisGCrefRegs & ~RBM_INTRET & RBM_CALLEE_SAVED);    // only display callee-saved
         // emitDispRegSet (emitThisGCrefRegs & ~RBM_INTRET & RBM_CALLEE_SAVED);    // only display callee-saved
         printf(", byrefRegs=");
         printRegMaskInt(emitThisByrefRegs);
-        emitDispRegSet(emitThisByrefRegs);
+        emitDispGprRegSet(emitThisByrefRegs);
         // printRegMaskInt(emitThisByrefRegs & ~RBM_INTRET & RBM_CALLEE_SAVED);    // only display callee-saved
         // emitDispRegSet (emitThisByrefRegs & ~RBM_INTRET & RBM_CALLEE_SAVED);    // only display callee-saved
         printf("\n");
@@ -8908,8 +8926,9 @@ void emitter::emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize)
  *  Record a new set of live GC ref registers.
  */
 
-void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
+void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskGpr regs, BYTE* addr)
 {
+    assert(emitComp->IsGprRegMask(regs));
     assert(emitIssuing);
 
     // Don't track GC changes in epilogs
@@ -8918,14 +8937,14 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
         return;
     }
 
-    regMaskTP life;
-    regMaskTP dead;
-    regMaskTP chg;
+    regMaskGpr life;
+    regMaskGpr dead;
+    regMaskGpr chg;
 
     assert(needsGC(gcType));
 
-    regMaskTP& emitThisXXrefRegs = (gcType == GCT_GCREF) ? emitThisGCrefRegs : emitThisByrefRegs;
-    regMaskTP& emitThisYYrefRegs = (gcType == GCT_GCREF) ? emitThisByrefRegs : emitThisGCrefRegs;
+    regMaskGpr& emitThisXXrefRegs = (gcType == GCT_GCREF) ? emitThisGCrefRegs : emitThisByrefRegs;
+    regMaskGpr& emitThisYYrefRegs = (gcType == GCT_GCREF) ? emitThisByrefRegs : emitThisGCrefRegs;
     assert(emitThisXXrefRegs != regs);
 
     if (emitFullGCinfo)
@@ -8946,8 +8965,8 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
 
         do
         {
-            regMaskTP bit = genFindLowestBit(chg);
-            regNumber reg = genRegNumFromMask(bit);
+            regMaskGpr bit = genFindLowestBit(chg);
+            regNumber  reg = genRegNumFromMask(bit);
 
             if (life & bit)
             {
@@ -8979,8 +8998,9 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
  *  Record the fact that the given register now contains a live GC ref.
  */
 
-void emitter::emitGCregLiveSet(GCtype gcType, regMaskTP regMask, BYTE* addr, bool isThis)
+void emitter::emitGCregLiveSet(GCtype gcType, regMaskGpr regMask, BYTE* addr, bool isThis)
 {
+    assert(emitComp->IsGprRegMask(regMask));
     assert(emitIssuing);
     assert(needsGC(gcType));
 
@@ -9010,7 +9030,7 @@ void emitter::emitGCregLiveSet(GCtype gcType, regMaskTP regMask, BYTE* addr, boo
  *  Record the fact that the given register no longer contains a live GC ref.
  */
 
-void emitter::emitGCregDeadSet(GCtype gcType, regMaskTP regMask, BYTE* addr)
+void emitter::emitGCregDeadSet(GCtype gcType, regMaskGpr regMask, BYTE* addr)
 {
     assert(emitIssuing);
     assert(needsGC(gcType));
@@ -9247,10 +9267,10 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
 
     assert(needsGC(gcType));
 
-    regMaskTP regMask = genRegMask(reg);
+    singleRegMask regMask = genRegMask(reg);
 
-    regMaskTP& emitThisXXrefRegs = (gcType == GCT_GCREF) ? emitThisGCrefRegs : emitThisByrefRegs;
-    regMaskTP& emitThisYYrefRegs = (gcType == GCT_GCREF) ? emitThisByrefRegs : emitThisGCrefRegs;
+    regMaskGpr& emitThisXXrefRegs = (gcType == GCT_GCREF) ? emitThisGCrefRegs : emitThisByrefRegs;
+    regMaskGpr& emitThisYYrefRegs = (gcType == GCT_GCREF) ? emitThisByrefRegs : emitThisGCrefRegs;
 
     if ((emitThisXXrefRegs & regMask) == 0)
     {
@@ -9287,7 +9307,7 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
  *  Record the fact that the given set of registers no longer contain live GC refs.
  */
 
-void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
+void emitter::emitGCregDeadUpdMask(regMaskGpr regs, BYTE* addr)
 {
     assert(emitIssuing);
 
@@ -9299,7 +9319,7 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
 
     // First, handle the gcref regs going dead
 
-    regMaskTP gcrefRegs = emitThisGCrefRegs & regs;
+    regMaskGpr gcrefRegs = emitThisGCrefRegs & regs;
 
     // "this" can never go dead in synchronized methods, except in the epilog
     // after the call to CORINFO_HELP_MON_EXIT.
@@ -9319,7 +9339,7 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
 
     // Second, handle the byref regs going dead
 
-    regMaskTP byrefRegs = emitThisByrefRegs & regs;
+    regMaskGpr byrefRegs = emitThisByrefRegs & regs;
 
     if (byrefRegs)
     {
@@ -9349,7 +9369,7 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
         return;
     }
 
-    regMaskTP regMask = genRegMask(reg);
+    singleRegMask regMask = genRegMask(reg);
 
     if ((emitThisGCrefRegs & regMask) != 0)
     {
@@ -10048,7 +10068,7 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
     // of callee-saved registers only).
     for (unsigned calleeSavedRegIdx = 0; calleeSavedRegIdx < CNT_CALLEE_SAVED; calleeSavedRegIdx++)
     {
-        regMaskTP calleeSavedRbm = raRbmCalleeSaveOrder[calleeSavedRegIdx];
+        regMaskGpr calleeSavedRbm = raRbmCalleeSaveOrder[calleeSavedRegIdx];
         if (emitThisGCrefRegs & calleeSavedRbm)
         {
             gcrefRegs |= (1 << calleeSavedRegIdx);
@@ -10366,7 +10386,7 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
 // Return value:
 //   the saved set of registers.
 //
-regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
+AllRegsMask emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 {
     // Is it a helper with a special saved set?
     bool isNoGCHelper = emitNoGChelper(methHnd);
@@ -10375,23 +10395,23 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
         CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(methHnd);
 
         // Get the set of registers that this call kills and remove it from the saved set.
-        regMaskTP savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helpFunc);
+        regMaskGpr savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helpFunc).gprRegs();
 
 #ifdef DEBUG
         if (emitComp->verbose)
         {
             printf("NoGC Call: savedSet=");
             printRegMaskInt(savedSet);
-            emitDispRegSet(savedSet);
+            emitDispGprRegSet(savedSet);
             printf("\n");
         }
 #endif
-        return savedSet;
+        return GprRegsMask(savedSet);
     }
     else
     {
         // This is the saved set of registers after a normal call.
-        return RBM_CALLEE_SAVED;
+        return AllRegsMask_CALLEE_SAVED; // TODO: We should have this as a constant.
     }
 }
 
@@ -10404,7 +10424,7 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 // address registers as killed for liveness purposes, since their values change. However, they still are
 // valid byref pointers after the call, so the dst/src address registers are NOT reported as killed here.
 //
-// Note: This list may not be complete and defaults to the default RBM_CALLEE_TRASH_NOGC registers.
+// Note: This list may not be complete and defaults to the default AllRegsMask_CALLEE_TRASH_NOGC registers.
 //
 // Arguments:
 //   helper - The helper being inquired about
@@ -10412,52 +10432,52 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 // Return Value:
 //   Mask of GC register kills
 //
-regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
+AllRegsMask emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 {
     assert(emitNoGChelper(helper));
-    regMaskTP result;
+    AllRegsMask result;
     switch (helper)
     {
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            result = RBM_CALLEE_GCTRASH_WRITEBARRIER;
+            result = AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER;
             break;
 
         case CORINFO_HELP_ASSIGN_BYREF:
-            result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
+            result = AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
 
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
         case CORINFO_HELP_PROF_FCN_ENTER:
-            result = RBM_PROFILER_ENTER_TRASH;
+            result = AllRegsMask_PROFILER_ENTER_TRASH;
             break;
 
         case CORINFO_HELP_PROF_FCN_LEAVE:
 #if defined(TARGET_ARM)
             // profiler scratch remains gc live
-            result = RBM_PROFILER_LEAVE_TRASH & ~RBM_PROFILER_RET_SCRATCH;
+            result = AllRegsMask_PROFILER_LEAVE_TRASH & ~AllRegsMask_PROFILER_RET_SCRATCH;
 #else
-            result = RBM_PROFILER_LEAVE_TRASH;
+            result = AllRegsMask_PROFILER_LEAVE_TRASH;
 #endif
             break;
 
         case CORINFO_HELP_PROF_FCN_TAILCALL:
-            result = RBM_PROFILER_TAILCALL_TRASH;
+            result = AllRegsMask_PROFILER_TAILCALL_TRASH;
             break;
 #endif // !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
 #if defined(TARGET_X86)
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
-            result = RBM_INIT_PINVOKE_FRAME_TRASH;
+            result = AllRegsMask_INIT_PINVOKE_FRAME_TRASH;
             break;
 #endif // defined(TARGET_X86)
 
         case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
-            result = RBM_VALIDATE_INDIRECT_CALL_TRASH;
+            result = AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH;
             break;
 
         default:
-            result = RBM_CALLEE_TRASH_NOGC;
+            result = AllRegsMask_CALLEE_TRASH_NOGC;
             break;
     }
 

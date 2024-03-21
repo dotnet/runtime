@@ -53,8 +53,8 @@ void     emitEndProlog();
 void emitCreatePlaceholderIG(insGroupPlaceholderType igType,
                              BasicBlock*             igBB,
                              VARSET_VALARG_TP        GCvars,
-                             regMaskTP               gcrefRegs,
-                             regMaskTP               byrefRegs,
+                             regMaskGpr              gcrefRegs,
+                             regMaskGpr              byrefRegs,
                              bool                    last);
 
 void emitGeneratePrologEpilog();

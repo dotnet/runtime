@@ -192,11 +192,9 @@ int LinearScan::BuildShiftLongCarry(GenTree* tree)
 int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
-    int       srcCount;
-    int       dstCount      = 0;
-    regMaskTP dstCandidates = RBM_NONE;
-    regMaskTP killMask      = RBM_NONE;
-    bool      isLocalDefUse = false;
+    int  srcCount;
+    int  dstCount      = 0;
+    bool isLocalDefUse = false;
 
     // Reset the build-related members of LinearScan.
     clearBuildState();
@@ -367,14 +365,16 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_RETURNTRAP:
+        {
             // this just turns into a compare of its child with an int
             // + a conditional call
             srcCount = 1;
             assert(dstCount == 0);
             BuildUse(tree->gtGetOp1());
-            killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            AllRegsMask killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
+            BuildKills(tree, killMask);
             break;
+        }
 
         case GT_MUL:
             if (tree->gtOverflow())
@@ -422,7 +422,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // This kills GC refs in callee save regs
             srcCount = 0;
             assert(dstCount == 0);
-            BuildDefsWithKills(tree, 0, RBM_NONE, RBM_NONE);
+            BuildKills(tree, AllRegsMask());
             break;
 
         case GT_LONG:
@@ -467,10 +467,12 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
         case GT_RETURN:
-            srcCount = BuildReturn(tree);
-            killMask = getKillSetForReturn();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+        {
+            srcCount             = BuildReturn(tree);
+            AllRegsMask killMask = getKillSetForReturn();
+            BuildKills(tree, killMask);
             break;
+        }
 
         case GT_RETFILT:
             assert(dstCount == 0);
@@ -666,8 +668,8 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_BITCAST:
         {
             assert(dstCount == 1);
-            regNumber argReg  = tree->GetRegNum();
-            regMaskTP argMask = RBM_NONE;
+            regNumber      argReg  = tree->GetRegNum();
+            regMaskOnlyOne argMask = RBM_NONE;
             if (argReg != REG_COUNT)
             {
                 argMask = genRegMask(argReg);
@@ -691,7 +693,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 srcCount = 0;
             }
-            BuildDefs(tree, dstCount, argMask);
+            BuildDefs(tree, dstCount, argMask); // This is regMaskGpr
         }
         break;
 

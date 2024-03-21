@@ -931,7 +931,7 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 // Assumptions:
 //    The mask contains one and only one register.
 
-inline regNumber genRegNumFromMask(regMaskTP mask)
+inline regNumber genRegNumFromMask(regMaskOnlyOne mask)
 {
     assert(mask != 0); // Must have one bit set, so can't have a mask of zero
 
@@ -957,7 +957,7 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
 //    the bit.
 //
 
-inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
+inline regNumber genFirstRegNumFromMaskAndToggle(regMaskOnlyOne& mask)
 {
     assert(mask != 0); // Must have one bit set, so can't have a mask of zero
 
@@ -979,7 +979,45 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 //    The number of the first register contained in the mask.
 //
 
-inline regNumber genFirstRegNumFromMask(regMaskTP mask)
+inline regNumber genFirstRegNumFromMask(AllRegsMask& mask)
+{
+    assert(!mask.IsEmpty()); // Must have one bit set, so can't have a mask of zero
+
+    /* Convert the mask to a register number */
+    regNumber regNum;
+
+    regMaskTP gprOrFloatMask = mask.GetGprFloatCombinedMask();
+
+#ifdef HAS_PREDICATE_REGS
+    // Only check this condition if there are predicate register support
+    // is present.
+    // If not, then gprOrFloatMask should be non-empty, and we will hit the
+    // above assert of IsEmpty() anyway.
+    if (gprOrFloatMask != RBM_NONE)
+    {
+        regNum = (regNumber)BitOperations::BitScanForward(gprOrFloatMask);
+    }
+    else
+    {
+        regNum = (regNumber)BitOperations::BitScanForward(mask.predicateRegs());
+    }
+#else
+    regNum = (regNumber)BitOperations::BitScanForward(gprOrFloatMask);
+#endif
+    return regNum;
+}
+
+//------------------------------------------------------------------------------
+// genFirstRegNumFromMask : Maps first bit set in the register mask to a register number.
+//
+// Arguments:
+//    mask               - the register mask
+//
+// Return Value:
+//    The number of the first register contained in the mask.
+//
+
+inline regNumber genFirstRegNumFromMask(regMaskOnlyOne mask)
 {
     assert(mask != 0); // Must have one bit set, so can't have a mask of zero
 
@@ -987,6 +1025,24 @@ inline regNumber genFirstRegNumFromMask(regMaskTP mask)
 
     regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
 
+    return regNum;
+}
+
+//------------------------------------------------------------------------------
+// genFirstRegNumFromMaskAndToggle : Maps first bit set in the register mask to a
+//          register number and also toggle the bit in the `mask`.
+// Arguments:
+//    mask               - the register mask
+//
+// Return Value:
+//    The number of the first register contained in the mask and updates the `mask` to toggle
+//    the bit.
+//
+
+inline regNumber genFirstRegNumFromMaskAndToggle(AllRegsMask& mask)
+{
+    regNumber regNum = genFirstRegNumFromMask(mask);
+    mask ^= regNum;
     return regNum;
 }
 
@@ -1141,6 +1197,7 @@ inline const char* varTypeGCstring(var_types type)
 /*****************************************************************************/
 
 const char* varTypeName(var_types);
+const int regIndexForRegister(regNumber reg);
 
 /*****************************************************************************/
 //  Helpers to pull little-endian values out of a byte stream.
@@ -3334,14 +3391,14 @@ __forceinline regNumber genMapRegArgNumToRegNum(unsigned argNum, var_types type)
  * (for a double on ARM) is returned.
  */
 
-inline regMaskTP genMapIntRegArgNumToRegMask(unsigned argNum)
+inline regMaskGpr genMapIntRegArgNumToRegMask(unsigned argNum)
 {
     assert(argNum < ArrLen(intArgMasks));
 
     return intArgMasks[argNum];
 }
 
-inline regMaskTP genMapFloatRegArgNumToRegMask(unsigned argNum)
+inline regMaskFloat genMapFloatRegArgNumToRegMask(unsigned argNum)
 {
 #ifndef TARGET_X86
     assert(argNum < ArrLen(fltArgMasks));
@@ -3353,9 +3410,9 @@ inline regMaskTP genMapFloatRegArgNumToRegMask(unsigned argNum)
 #endif
 }
 
-__forceinline regMaskTP genMapArgNumToRegMask(unsigned argNum, var_types type)
+__forceinline regMaskOnlyOne genMapArgNumToRegMask(unsigned argNum, var_types type)
 {
-    regMaskTP result;
+    regMaskOnlyOne result;
     if (varTypeUsesFloatArgReg(type))
     {
         result = genMapFloatRegArgNumToRegMask(argNum);
@@ -3487,39 +3544,6 @@ inline unsigned genMapRegNumToRegArgNum(regNumber regNum, var_types type)
     {
         return genMapIntRegNumToRegArgNum(regNum);
     }
-}
-
-/*****************************************************************************/
-/* Return a register mask with the first 'numRegs' argument registers set.
- */
-
-inline regMaskTP genIntAllRegArgMask(unsigned numRegs)
-{
-    assert(numRegs <= MAX_REG_ARG);
-
-    regMaskTP result = RBM_NONE;
-    for (unsigned i = 0; i < numRegs; i++)
-    {
-        result |= intArgMasks[i];
-    }
-    return result;
-}
-
-inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
-{
-#ifndef TARGET_X86
-    assert(numRegs <= MAX_FLOAT_REG_ARG);
-
-    regMaskTP result = RBM_NONE;
-    for (unsigned i = 0; i < numRegs; i++)
-    {
-        result |= fltArgMasks[i];
-    }
-    return result;
-#else
-    assert(!"no x86 float arg regs\n");
-    return RBM_NONE;
-#endif
 }
 
 /*
@@ -4482,27 +4506,24 @@ inline void* operator new[](size_t sz, Compiler* compiler, CompMemKind cmk)
 
 #ifdef DEBUG
 
-inline void printRegMask(regMaskTP mask)
+inline void printRegMask(AllRegsMask mask)
 {
-    printf(REG_MASK_ALL_FMT, mask);
+    printf(REG_MASK_ALL_FMT, mask.gprRegs());
+    printf(" ");
+    printf(REG_MASK_ALL_FMT, mask.floatRegs());
+
+#ifdef HAS_PREDICATE_REGS
+    printf(" ");
+    printf(REG_MASK_ALL_FMT, mask.predicateRegs());
+#endif // HAS_PREDICATE_REGS
 }
 
-inline char* regMaskToString(regMaskTP mask, Compiler* context)
-{
-    const size_t cchRegMask = 24;
-    char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
-
-    sprintf_s(regmask, cchRegMask, REG_MASK_ALL_FMT, mask);
-
-    return regmask;
-}
-
-inline void printRegMaskInt(regMaskTP mask)
+inline void printRegMaskInt(regMaskGpr mask)
 {
     printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT));
 }
 
-inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
+inline char* regMaskIntToString(regMaskGpr mask, Compiler* context)
 {
     const size_t cchRegMask = 24;
     char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];

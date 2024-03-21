@@ -234,13 +234,13 @@ weight_t LinearScan::getWeight(RefPosition* refPos)
 // allRegs represents a set of registers that can
 // be used to allocate the specified type in any point
 // in time (more of a 'bank' of registers).
-regMaskTP LinearScan::allRegs(RegisterType rt)
+regMaskOnlyOne LinearScan::allRegs(RegisterType rt)
 {
     assert((rt != TYP_UNDEF) && (rt != TYP_STRUCT));
     return *availableRegs[rt];
 }
 
-regMaskTP LinearScan::allByteRegs()
+regMaskGpr LinearScan::allByteRegs()
 {
 #ifdef TARGET_X86
     return availableIntRegs & RBM_BYTE_REGS;
@@ -249,7 +249,7 @@ regMaskTP LinearScan::allByteRegs()
 #endif
 }
 
-regMaskTP LinearScan::allSIMDRegs()
+regMaskFloat LinearScan::allSIMDRegs()
 {
     return availableFloatRegs;
 }
@@ -262,7 +262,7 @@ regMaskTP LinearScan::allSIMDRegs()
 // Return Value:
 // Register mask of the SSE/VEX-only SIMD registers
 //
-regMaskTP LinearScan::lowSIMDRegs()
+regMaskFloat LinearScan::lowSIMDRegs()
 {
 #if defined(TARGET_AMD64)
     return (availableFloatRegs & RBM_LOWFLOAT);
@@ -278,25 +278,27 @@ void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPo
     if (nextRefPosition == nullptr)
     {
         nextLocation = MaxLocation;
-        fixedRegs &= ~genRegMask(regRecord->regNum);
+        fixedRegs.RemoveRegNumFromMask(regRecord->regNum);
     }
     else
     {
         nextLocation = nextRefPosition->nodeLocation;
-        fixedRegs |= genRegMask(regRecord->regNum);
+        fixedRegs.AddRegNumInMask(regRecord->regNum);
     }
     nextFixedRef[regRecord->regNum] = nextLocation;
 }
 
-regMaskTP LinearScan::getMatchingConstants(regMaskTP mask, Interval* currentInterval, RefPosition* refPosition)
+regMaskOnlyOne LinearScan::getMatchingConstants(regMaskOnlyOne mask,
+                                                Interval*      currentInterval,
+                                                RefPosition*   refPosition)
 {
     assert(currentInterval->isConstant && RefTypeIsDef(refPosition->refType));
-    regMaskTP candidates = (mask & m_RegistersWithConstants);
-    regMaskTP result     = RBM_NONE;
+    regMaskOnlyOne candidates = (mask & m_RegistersWithConstants.GetRegMaskForType(currentInterval->registerType));
+    regMaskOnlyOne result     = RBM_NONE;
     while (candidates != RBM_NONE)
     {
-        regNumber regNum       = genFirstRegNumFromMask(candidates);
-        regMaskTP candidateBit = genRegMask(regNum);
+        regNumber     regNum       = genFirstRegNumFromMask(candidates);
+        singleRegMask candidateBit = genRegMask(regNum);
         candidates ^= candidateBit;
 
         RegRecord* physRegRecord = getRegisterRecord(regNum);
@@ -384,30 +386,33 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
 //    interval - Interval of Refposition.
 //    assignedReg - Assigned register for this refposition.
 //
-void LinearScan::updateRegsFreeBusyState(RefPosition& refPosition,
-                                         regMaskTP    regsBusy,
-                                         regMaskTP*   regsToFree,
-                                         regMaskTP* delayRegsToFree DEBUG_ARG(Interval* interval)
+void LinearScan::updateRegsFreeBusyState(RefPosition&   refPosition,
+                                         regMaskOnlyOne regsBusy,
+                                         AllRegsMask*   regsToFree,
+                                         AllRegsMask*   delayRegsToFree,
+                                         RegisterType regType DEBUG_ARG(Interval* interval)
                                              DEBUG_ARG(regNumber assignedReg))
 {
-    regsInUseThisLocation |= regsBusy;
+    assert(compiler->IsOnlyOneRegMask(regsBusy));
+
+    regsInUseThisLocation.AddRegMaskForType(regsBusy, regType);
     if (refPosition.lastUse)
     {
         if (refPosition.delayRegFree)
         {
             INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED, interval, assignedReg));
-            *delayRegsToFree |= regsBusy;
-            regsInUseNextLocation |= regsBusy;
+            delayRegsToFree->AddRegMaskForType(regsBusy, regType);
+            regsInUseNextLocation.AddRegMaskForType(regsBusy, regType);
         }
         else
         {
             INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE, interval, assignedReg));
-            *regsToFree |= regsBusy;
+            regsToFree->AddRegMaskForType(regsBusy, regType);
         }
     }
     else if (refPosition.delayRegFree)
     {
-        regsInUseNextLocation |= regsBusy;
+        regsInUseNextLocation.AddRegMaskForType(regsBusy, regType);
     }
 }
 
@@ -416,7 +421,7 @@ void LinearScan::updateRegsFreeBusyState(RefPosition& refPosition,
 //                             for use as internal float registers.
 //
 // Return Value:
-//    The set of registers (as a regMaskTP).
+//    The set of registers (as a regMaskFloat).
 //
 // Notes:
 //    compFloatingPointUsed is only required to be set if it is possible that we
@@ -425,7 +430,7 @@ void LinearScan::updateRegsFreeBusyState(RefPosition& refPosition,
 //    that it will select a callee-save register.  But to be safe, we restrict
 //    the set of candidates if compFloatingPointUsed is not already set.
 //
-regMaskTP LinearScan::internalFloatRegCandidates()
+regMaskFloat LinearScan::internalFloatRegCandidates()
 {
     needNonIntegerRegisters = true;
 
@@ -470,12 +475,16 @@ RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
 //     New regMask that has minRegCount registers after intersection.
 //     Otherwise returns regMaskActual.
 //
-regMaskTP LinearScan::getConstrainedRegMask(RefPosition* refPosition,
-                                            regMaskTP    regMaskActual,
-                                            regMaskTP    regMaskConstraint,
-                                            unsigned     minRegCount)
+regMaskOnlyOne LinearScan::getConstrainedRegMask(RefPosition*   refPosition,
+                                                 RegisterType   regType,
+                                                 regMaskOnlyOne regMaskActual,
+                                                 regMaskOnlyOne regMaskConstraint,
+                                                 unsigned       minRegCount)
 {
-    regMaskTP newMask = regMaskActual & regMaskConstraint;
+    assert(compiler->IsOnlyOneRegMask(regMaskActual));
+    assert(compiler->IsOnlyOneRegMask(regMaskConstraint));
+
+    regMaskOnlyOne newMask = regMaskActual & regMaskConstraint;
     if (genCountBits(newMask) < minRegCount)
     {
         // Constrained mask does not have minimum required registers needed.
@@ -484,7 +493,8 @@ regMaskTP LinearScan::getConstrainedRegMask(RefPosition* refPosition,
 
     if ((refPosition != nullptr) && !refPosition->RegOptional())
     {
-        regMaskTP busyRegs = regsBusyUntilKill | regsInUseThisLocation;
+        regMaskOnlyOne busyRegs = RBM_NONE;
+        busyRegs                = (regsBusyUntilKill | regsInUseThisLocation).GetRegMaskForType(regType);
         if ((newMask & ~busyRegs) == RBM_NONE)
         {
             // Constrained mask does not have at least one free register to allocate.
@@ -501,7 +511,9 @@ regMaskTP LinearScan::getConstrainedRegMask(RefPosition* refPosition,
 //            them based on the current stress options.
 //
 // Arguments:
-//    mask      - The current mask of register candidates for a node
+//    refPosition - The refPosition for which we want to stress the register
+//    mask        - The current mask of register candidates for a node
+//    regtype     - The registerType
 //
 // Return Value:
 //    A possibly-modified mask, based on the value of DOTNET_JitStressRegs.
@@ -510,8 +522,10 @@ regMaskTP LinearScan::getConstrainedRegMask(RefPosition* refPosition,
 //    This is the method used to implement the stress options that limit
 //    the set of registers considered for allocation.
 //
-regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
+regMaskOnlyOne LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskOnlyOne mask, RegisterType regtype)
 {
+    assert(compiler->IsOnlyOneRegMask(mask));
+
 #ifdef TARGET_ARM64
     if ((refPosition != nullptr) && refPosition->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
     {
@@ -527,31 +541,61 @@ regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
     {
         // The refPosition could be null, for example when called
         // by getTempRegForResolution().
-        int minRegCount = (refPosition != nullptr) ? refPosition->minRegCandidateCount : 1;
+        int minRegCount = 1;
+        if (refPosition != nullptr)
+        {
+            minRegCount              = refPosition->minRegCandidateCount;
+            RegisterType currRegType = refPosition->isIntervalRef() ? refPosition->getInterval()->registerType
+                                                                    : refPosition->getReg()->registerType;
+            assert(regtype == currRegType);
+        }
+
+        regMaskOnlyOne calleeSaved = RBM_NONE;
+        regMaskOnlyOne calleeTrash = RBM_NONE;
+        if (varTypeUsesIntReg(regtype))
+        {
+            calleeSaved = RBM_INT_CALLEE_SAVED;
+            calleeTrash = RBM_INT_CALLEE_TRASH;
+        }
+        else if (varTypeUsesFloatReg(regtype))
+        {
+            calleeSaved = RBM_FLT_CALLEE_SAVED;
+            calleeTrash = RBM_FLT_CALLEE_TRASH;
+        }
+        else
+        {
+#ifdef HAS_PREDICATE_REGS
+            assert(varTypeUsesMaskReg(regtype));
+            calleeSaved = RBM_MSK_CALLEE_SAVED;
+            calleeTrash = RBM_MSK_CALLEE_TRASH;
+#else
+            unreached();
+#endif
+        }
 
         switch (getStressLimitRegs())
         {
             case LSRA_LIMIT_CALLEE:
                 if (!compiler->opts.compDbgEnC)
                 {
-                    mask = getConstrainedRegMask(refPosition, mask, RBM_CALLEE_SAVED, minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regtype, mask, calleeSaved, minRegCount);
                 }
                 break;
 
             case LSRA_LIMIT_CALLER:
             {
-                mask = getConstrainedRegMask(refPosition, mask, RBM_CALLEE_TRASH, minRegCount);
+                mask = getConstrainedRegMask(refPosition, regtype, mask, calleeTrash, minRegCount);
             }
             break;
 
             case LSRA_LIMIT_SMALL_SET:
                 if ((mask & LsraLimitSmallIntSet) != RBM_NONE)
                 {
-                    mask = getConstrainedRegMask(refPosition, mask, LsraLimitSmallIntSet, minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regtype, mask, LsraLimitSmallIntSet, minRegCount);
                 }
                 else if ((mask & LsraLimitSmallFPSet) != RBM_NONE)
                 {
-                    mask = getConstrainedRegMask(refPosition, mask, LsraLimitSmallFPSet, minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regtype, mask, LsraLimitSmallFPSet, minRegCount);
                 }
                 break;
 
@@ -559,7 +603,7 @@ regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
             case LSRA_LIMIT_UPPER_SIMD_SET:
                 if ((mask & LsraLimitUpperSimdSet) != RBM_NONE)
                 {
-                    mask = getConstrainedRegMask(refPosition, mask, LsraLimitUpperSimdSet, minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regtype, mask, LsraLimitUpperSimdSet, minRegCount);
                 }
                 break;
 #endif
@@ -720,12 +764,14 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
+    assert(compiler->IsFloatRegMask(rbmAllFloat));
+    assert(compiler->IsFloatRegMask(rbmFltCalleeTrash));
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
     rbmAllMask        = compiler->rbmAllMask;
     rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
-    memcpy(varTypeCalleeTrashRegs, compiler->varTypeCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);
+    memcpy(varTypeCalleeTrashRegs, compiler->varTypeCalleeTrashRegs, sizeof(regMaskOnlyOne) * TYP_COUNT);
 
     if (!compiler->canUseEvexEncoding())
     {
@@ -2746,7 +2792,7 @@ void LinearScan::setFrameType()
 
     // If we are using FPBASE as the frame register, we cannot also use it for
     // a local var.
-    regMaskTP removeMask = RBM_NONE;
+    regMaskGpr removeMask = RBM_NONE;
     if (frameType == FT_EBP_FRAME)
     {
         removeMask |= RBM_FPBASE;
@@ -2828,8 +2874,8 @@ bool copyOrMoveRegInUse(RefPosition* ref, LsraLocation loc)
 RegisterType LinearScan::getRegisterType(Interval* currentInterval, RefPosition* refPosition)
 {
     assert(refPosition->getInterval() == currentInterval);
-    RegisterType regType    = currentInterval->registerType;
-    regMaskTP    candidates = refPosition->registerAssignment;
+    RegisterType   regType    = currentInterval->registerType;
+    regMaskOnlyOne candidates = refPosition->registerAssignment;
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // The LoongArch64's ABI which the float args maybe passed by integer register
     // when no float register left but free integer register.
@@ -2945,9 +2991,9 @@ regNumber LinearScan::allocateRegMinimal(Interval*    currentInterval,
                                          RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
     assert(!enregisterLocalVars);
-    regNumber  foundReg;
-    regMaskTP  foundRegBit;
-    RegRecord* availablePhysRegRecord;
+    regNumber     foundReg;
+    singleRegMask foundRegBit;
+    RegRecord*    availablePhysRegRecord;
     foundRegBit = regSelector->selectMinimal(currentInterval, refPosition DEBUG_ARG(registerScore));
     if (foundRegBit == RBM_NONE)
     {
@@ -3007,7 +3053,7 @@ template <bool needsConsecutiveRegisters>
 regNumber LinearScan::allocateReg(Interval*    currentInterval,
                                   RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
-    regMaskTP foundRegBit =
+    singleRegMask foundRegBit =
         regSelector->select<needsConsecutiveRegisters>(currentInterval, refPosition DEBUG_ARG(registerScore));
     if (foundRegBit == RBM_NONE)
     {
@@ -3244,8 +3290,8 @@ bool LinearScan::isRefPositionActive(RefPosition* refPosition, LsraLocation refL
 //
 bool LinearScan::isSpillCandidate(Interval* current, RefPosition* refPosition, RegRecord* physRegRecord)
 {
-    regMaskTP    candidateBit = genRegMask(physRegRecord->regNum);
-    LsraLocation refLocation  = refPosition->nodeLocation;
+    singleRegMask candidateBit = genRegMask(physRegRecord->regNum);
+    LsraLocation  refLocation  = refPosition->nodeLocation;
     // We shouldn't be calling this if we haven't already determined that the register is not
     // busy until the next kill.
     assert(!isRegBusy(physRegRecord->regNum, current->registerType));
@@ -3462,8 +3508,12 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
 // Assign the given physical register interval to the given interval
 void LinearScan::assignPhysReg(RegRecord* regRec, Interval* interval)
 {
-    regMaskTP assignedRegMask = genRegMask(regRec->regNum);
-    compiler->codeGen->regSet.rsSetRegsModified(assignedRegMask DEBUGARG(true));
+    regNumber reg = regRec->regNum;
+
+    // TODO: genIsValid* is heavy operation because it does 2 comparisons, but unfortunately
+    // we cannot use `varTypeRegister[interval->registerType] == VTR_INT` because sometimes
+    // we do `vmovd xmm1, rcx` where we assign gpr for interval of type TYP_SIMD8
+    compiler->codeGen->regSet.rsSetRegModified(reg DEBUGARG(true));
 
     interval->assignedReg = regRec;
     checkAndAssignInterval(regRec, interval);
@@ -3473,7 +3523,7 @@ void LinearScan::assignPhysReg(RegRecord* regRec, Interval* interval)
     if (interval->isLocalVar)
     {
         // Prefer this register for future references
-        interval->updateRegisterPreferences(assignedRegMask);
+        interval->updateRegisterPreferences(genRegMask(reg));
     }
 }
 
@@ -3984,7 +4034,9 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
 {
     // For each physical register that can hold a GC type,
     // if it is occupied by an interval of a GC type, spill that interval.
-    regMaskTP candidateRegs = killRefPosition->registerAssignment;
+    regMaskGpr candidateRegs = killRefPosition->registerAssignment;
+    assert(compiler->IsGprRegMask(candidateRegs));
+
     INDEBUG(bool killedRegs = false);
     while (candidateRegs != RBM_NONE)
     {
@@ -4037,6 +4089,7 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
 template <bool localVarsEnregistered>
 void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
 {
+    // TODO: Save current_ConstantRegs and current_AvailableRegs
     assert(currentBlock != nullptr);
     markBlockVisited(currentBlock);
 
@@ -4058,6 +4111,7 @@ void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
     {
         resetAllRegistersState();
     }
+    // TODO: Restore current_ConstantRegs and current_AvailableRegs
 }
 
 //------------------------------------------------------------------------
@@ -4074,15 +4128,19 @@ void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
 //    The new register to use.
 //
 #ifdef DEBUG
-regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber targetReg, regMaskTP availableRegs)
+regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber targetReg, AllRegsMask availableRegs)
 {
     if (targetReg != REG_STK && getLsraBlockBoundaryLocations() == LSRA_BLOCK_BOUNDARY_ROTATE)
     {
         // If we're rotating the register locations at block boundaries, try to use
         // the next higher register number of the appropriate register type.
-        regMaskTP candidateRegs = allRegs(interval->registerType) & availableRegs;
-        regNumber firstReg      = REG_NA;
-        regNumber newReg        = REG_NA;
+
+        regMaskOnlyOne allRegsMask   = allRegs(interval->registerType);
+        RegisterType   regType       = interval->registerType;
+        regMaskOnlyOne candidateRegs = allRegsMask & availableRegs.GetRegMaskForType(regType);
+
+        regNumber firstReg = REG_NA;
+        regNumber newReg   = REG_NA;
         while (candidateRegs != RBM_NONE)
         {
             regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
@@ -4325,6 +4383,42 @@ void LinearScan::resetAllRegistersState()
     }
 }
 
+void LinearScan::updateDeadCandidatesAtBlockStart(regMaskTP deadRegMask, VarToRegMap inVarToRegMap)
+{
+    while (deadRegMask != RBM_NONE)
+    {
+        regNumber  reg           = genFirstRegNumFromMaskAndToggle(deadRegMask);
+        RegRecord* physRegRecord = getRegisterRecord(reg);
+
+        makeRegAvailable(reg, physRegRecord->registerType);
+        Interval* assignedInterval = physRegRecord->assignedInterval;
+
+        if (assignedInterval != nullptr)
+        {
+            assert(assignedInterval->isLocalVar || assignedInterval->isConstant || assignedInterval->IsUpperVector());
+
+            if (!assignedInterval->isConstant && assignedInterval->assignedReg == physRegRecord)
+            {
+                assignedInterval->isActive = false;
+                if (assignedInterval->getNextRefPosition() == nullptr)
+                {
+                    unassignPhysReg(physRegRecord, nullptr);
+                }
+                if (!assignedInterval->IsUpperVector())
+                {
+                    inVarToRegMap[assignedInterval->getVarIndex(compiler)] = REG_STK;
+                }
+            }
+            else
+            {
+                // This interval may still be active, but was in another register in an
+                // intervening block.
+                clearAssignedInterval(physRegRecord ARM_ARG(assignedInterval->registerType));
+            }
+        }
+    }
+}
+
 //------------------------------------------------------------------------
 // processBlockStartLocations: Update var locations on entry to 'currentBlock' and clear constant
 //                             registers.
@@ -4384,9 +4478,9 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     }
     // If we are rotating register assignments at block boundaries, we want to make the
     // inactive registers available for the rotation.
-    regMaskTP inactiveRegs = RBM_NONE;
+    AllRegsMask inactiveRegs;
 #endif // DEBUG
-    regMaskTP       liveRegs = RBM_NONE;
+    AllRegsMask     liveRegs;
     VarSetOps::Iter iter(compiler, currentLiveVars);
     unsigned        varIndex = 0;
     while (iter.NextElem(&varIndex))
@@ -4462,7 +4556,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                     // Case #1 above.
                     assert(getVarReg(predVarToRegMap, varIndex) == targetReg ||
                            getLsraBlockBoundaryLocations() == LSRA_BLOCK_BOUNDARY_ROTATE);
-                }
+                } // Keep the register assignment - if another var has it, it will get unassigned.
                 else if (!nextRefPosition->copyReg)
                 {
                     // case #2 above.
@@ -4481,7 +4575,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 assert(targetReg != REG_STK);
                 assert(interval->assignedReg != nullptr && interval->assignedReg->regNum == targetReg &&
                        interval->assignedReg->assignedInterval == interval);
-                liveRegs |= getRegMask(targetReg, interval->registerType);
+                liveRegs.AddRegNumInMask(targetReg ARM_ARG(interval->registerType));
                 continue;
             }
         }
@@ -4511,8 +4605,8 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 // likely to match other assignments this way.
                 targetReg          = interval->physReg;
                 interval->isActive = true;
-                liveRegs |= getRegMask(targetReg, interval->registerType);
-                INDEBUG(inactiveRegs |= genRegMask(targetReg));
+                liveRegs.AddRegNumInMask(targetReg ARM_ARG(interval->registerType));
+                INDEBUG(inactiveRegs |= targetReg);
                 setVarReg(inVarToRegMap, varIndex, targetReg);
             }
             else
@@ -4523,7 +4617,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         if (targetReg != REG_STK)
         {
             RegRecord* targetRegRecord = getRegisterRecord(targetReg);
-            liveRegs |= getRegMask(targetReg, interval->registerType);
+            liveRegs.AddRegNumInMask(targetReg ARM_ARG(interval->registerType));
             if (!allocationPassComplete)
             {
                 updateNextIntervalRef(targetReg, interval);
@@ -4560,7 +4654,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                     RegRecord* anotherHalfRegRec = findAnotherHalfRegRec(targetRegRecord);
 
                     // Use TYP_FLOAT to get the regmask of just the half reg.
-                    liveRegs &= ~getRegMask(anotherHalfRegRec->regNum, TYP_FLOAT);
+                    liveRegs.RemoveRegNumFromMask(anotherHalfRegRec->regNum, TYP_FLOAT);
                 }
 
 #endif // TARGET_ARM
@@ -4587,7 +4681,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord = getRegisterRecord(reg);
-        if ((liveRegs & genRegMask(reg)) == 0)
+        if (!liveRegs.IsRegNumInMask(reg))
         {
             makeRegAvailable(reg, physRegRecord->registerType);
             Interval* assignedInterval = physRegRecord->assignedInterval;
@@ -4644,43 +4738,17 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         }
     }
 #else
-    regMaskTP deadCandidates = ~liveRegs;
+    AllRegsMask deadCandidates = ~liveRegs;
 
     // Only focus on actual registers present
     deadCandidates &= actualRegistersMask;
 
-    while (deadCandidates != RBM_NONE)
-    {
-        regNumber  reg           = genFirstRegNumFromMaskAndToggle(deadCandidates);
-        RegRecord* physRegRecord = getRegisterRecord(reg);
+    regMaskTP deadGprFloatCandidates = deadCandidates.GetGprFloatCombinedMask();
 
-        makeRegAvailable(reg, physRegRecord->registerType);
-        Interval* assignedInterval = physRegRecord->assignedInterval;
-
-        if (assignedInterval != nullptr)
-        {
-            assert(assignedInterval->isLocalVar || assignedInterval->isConstant || assignedInterval->IsUpperVector());
-
-            if (!assignedInterval->isConstant && assignedInterval->assignedReg == physRegRecord)
-            {
-                assignedInterval->isActive = false;
-                if (assignedInterval->getNextRefPosition() == nullptr)
-                {
-                    unassignPhysReg(physRegRecord, nullptr);
-                }
-                if (!assignedInterval->IsUpperVector())
-                {
-                    inVarToRegMap[assignedInterval->getVarIndex(compiler)] = REG_STK;
-                }
-            }
-            else
-            {
-                // This interval may still be active, but was in another register in an
-                // intervening block.
-                clearAssignedInterval(physRegRecord ARM_ARG(assignedInterval->registerType));
-            }
-        }
-    }
+    updateDeadCandidatesAtBlockStart(deadGprFloatCandidates, inVarToRegMap);
+#ifdef HAS_PREDICATE_REGS
+    updateDeadCandidatesAtBlockStart(deadCandidates.predicateRegs(), inVarToRegMap);
+#endif // HAS_PREDICATE_REGS
 #endif // TARGET_ARM
 }
 
@@ -4776,6 +4844,17 @@ void LinearScan::makeRegisterInactive(RegRecord* physRegRecord)
     }
 }
 
+void LinearScan::inActivateRegisters(regMaskTP inactiveMask)
+{
+    while (inactiveMask != RBM_NONE)
+    {
+        regNumber  nextReg   = genFirstRegNumFromMaskAndToggle(inactiveMask);
+        RegRecord* regRecord = getRegisterRecord(nextReg);
+        clearSpillCost(regRecord->regNum, regRecord->registerType);
+        makeRegisterInactive(regRecord);
+    }
+}
+
 //------------------------------------------------------------------------
 // LinearScan::freeRegister: Make a register available for use
 //
@@ -4836,25 +4915,33 @@ void LinearScan::freeRegister(RegRecord* physRegRecord)
 // Arguments:
 //    regsToFree         - the mask of registers to free
 //
-void LinearScan::freeRegisters(regMaskTP regsToFree)
+void LinearScan::freeRegisters(AllRegsMask regsToFree)
 {
-    if (regsToFree == RBM_NONE)
+    if (regsToFree.IsEmpty())
     {
         return;
     }
 
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FREE_REGS));
     makeRegsAvailable(regsToFree);
-    while (regsToFree != RBM_NONE)
+    freeRegisterMask(regsToFree.GetGprFloatCombinedMask());
+#ifdef HAS_PREDICATE_REGS
+    freeRegisterMask(regsToFree.predicateRegs());
+#endif // HAS_PREDICATE_REGS
+}
+
+void LinearScan::freeRegisterMask(regMaskTP freeMask)
+{
+    while (freeMask != RBM_NONE)
     {
-        regNumber nextReg = genFirstRegNumFromMaskAndToggle(regsToFree);
+        regNumber nextReg = genFirstRegNumFromMaskAndToggle(freeMask);
 
         RegRecord* regRecord = getRegisterRecord(nextReg);
 #ifdef TARGET_ARM
         if (regRecord->assignedInterval != nullptr && (regRecord->assignedInterval->registerType == TYP_DOUBLE))
         {
             assert(genIsValidDoubleReg(nextReg));
-            regsToFree ^= genRegMask(regNumber(nextReg + 1));
+            freeMask ^= genRegMask(regNumber(nextReg + 1));
         }
 #endif
         freeRegister(regRecord);
@@ -4901,7 +4988,7 @@ void LinearScan::allocateRegistersMinimal()
                "--------------------\n");
         // Start with a small set of commonly used registers, so that we don't keep having to print a new title.
         // Include all the arg regs, as they may already have values assigned to them.
-        registersToDump = LsraLimitSmallIntSet | LsraLimitSmallFPSet | RBM_ARG_REGS;
+        registersToDump = AllRegsMask(LsraLimitSmallIntSet | RBM_ARG_REGS, LsraLimitSmallFPSet, RBM_NONE);
         dumpRegRecordHeader();
         // Now print an empty "RefPosition", since we complete the dump of the regs at the beginning of the loop.
         printf(indentFormat, "");
@@ -4910,14 +4997,14 @@ void LinearScan::allocateRegistersMinimal()
 
     BasicBlock* currentBlock = nullptr;
 
-    LsraLocation prevLocation            = MinLocation;
-    regMaskTP    regsToFree              = RBM_NONE;
-    regMaskTP    delayRegsToFree         = RBM_NONE;
-    regMaskTP    regsToMakeInactive      = RBM_NONE;
-    regMaskTP    delayRegsToMakeInactive = RBM_NONE;
-    regMaskTP    copyRegsToFree          = RBM_NONE;
-    regsInUseThisLocation                = RBM_NONE;
-    regsInUseNextLocation                = RBM_NONE;
+    LsraLocation prevLocation = MinLocation;
+    AllRegsMask  regsToFree;
+    AllRegsMask  delayRegsToFree;
+    AllRegsMask  regsToMakeInactive;
+    AllRegsMask  delayRegsToMakeInactive;
+    AllRegsMask  copyRegsToFree;
+    regsInUseThisLocation = AllRegsMask();
+    regsInUseNextLocation = AllRegsMask();
 
     // This is the most recent RefPosition for which a register was allocated
     // - currently only used for DEBUG but maintained in non-debug, for clarity of code
@@ -4933,22 +5020,19 @@ void LinearScan::allocateRegistersMinimal()
         // TODO: Can we combine this with the freeing of registers below? It might
         // mess with the dump, since this was previously being done before the call below
         // to dumpRegRecords.
-        regMaskTP tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
-        while (tempRegsToMakeInactive != RBM_NONE)
-        {
-            regNumber  nextReg   = genFirstRegNumFromMaskAndToggle(tempRegsToMakeInactive);
-            RegRecord* regRecord = getRegisterRecord(nextReg);
-            clearSpillCost(regRecord->regNum, regRecord->registerType);
-            makeRegisterInactive(regRecord);
-        }
+        AllRegsMask tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
+        inActivateRegisters(tempRegsToMakeInactive.GetGprFloatCombinedMask());
+#ifdef HAS_PREDICATE_REGS
+        inActivateRegisters(tempRegsToMakeInactive.predicateRegs());
+#endif
+
         if (currentRefPosition.nodeLocation > prevLocation)
         {
             makeRegsAvailable(regsToMakeInactive);
             // TODO: Clean this up. We need to make the delayRegs inactive as well, but don't want
             // to mark them as free yet.
-            regsToMakeInactive |= delayRegsToMakeInactive;
             regsToMakeInactive      = delayRegsToMakeInactive;
-            delayRegsToMakeInactive = RBM_NONE;
+            delayRegsToMakeInactive = AllRegsMask();
         }
 
 #ifdef DEBUG
@@ -5005,24 +5089,24 @@ void LinearScan::allocateRegistersMinimal()
         {
             // CopyRegs are simply made available - we don't want to make the associated interval inactive.
             makeRegsAvailable(copyRegsToFree);
-            copyRegsToFree        = RBM_NONE;
+            copyRegsToFree        = AllRegsMask();
             regsInUseThisLocation = regsInUseNextLocation;
-            regsInUseNextLocation = RBM_NONE;
-            if ((regsToFree | delayRegsToFree) != RBM_NONE)
+            regsInUseNextLocation = AllRegsMask();
+            if (!((regsToFree | delayRegsToFree).IsEmpty()))
             {
                 freeRegisters(regsToFree);
-                if ((currentLocation > (prevLocation + 1)) && (delayRegsToFree != RBM_NONE))
+                if ((currentLocation > (prevLocation + 1)) && (!delayRegsToFree.IsEmpty()))
                 {
                     // We should never see a delayReg that is delayed until a Location that has no RefPosition
                     // (that would be the RefPosition that it was supposed to interfere with).
                     assert(!"Found a delayRegFree associated with Location with no reference");
                     // However, to be cautious for the Release build case, we will free them.
                     freeRegisters(delayRegsToFree);
-                    delayRegsToFree       = RBM_NONE;
-                    regsInUseThisLocation = RBM_NONE;
+                    delayRegsToFree       = AllRegsMask();
+                    regsInUseThisLocation = AllRegsMask();
                 }
                 regsToFree      = delayRegsToFree;
-                delayRegsToFree = RBM_NONE;
+                delayRegsToFree = AllRegsMask();
 
 #ifdef DEBUG
                 verifyFreeRegisters(regsToFree);
@@ -5064,9 +5148,9 @@ void LinearScan::allocateRegistersMinimal()
         {
             // Free any delayed regs (now in regsToFree) before processing the block boundary
             freeRegisters(regsToFree);
-            regsToFree            = RBM_NONE;
-            regsInUseThisLocation = RBM_NONE;
-            regsInUseNextLocation = RBM_NONE;
+            regsToFree            = AllRegsMask();
+            regsInUseThisLocation = AllRegsMask();
+            regsInUseNextLocation = AllRegsMask();
             handledBlockEnd       = true;
             curBBStartLocation    = currentRefPosition.nodeLocation;
             if (currentBlock == nullptr)
@@ -5122,13 +5206,14 @@ void LinearScan::allocateRegistersMinimal()
                     }
 #endif // TARGET_ARM
                 }
-                regsInUseThisLocation |= currentRefPosition.registerAssignment;
+                regsInUseThisLocation.AddRegMaskForType(currentRefPosition.registerAssignment, regRecord->registerType);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FIXED_REG, nullptr, currentRefPosition.assignedReg()));
 
 #ifdef SWIFT_SUPPORT
                 if (currentRefPosition.delayRegFree)
                 {
-                    regsInUseNextLocation |= currentRefPosition.registerAssignment;
+                    regsInUseNextLocation.AddRegMaskForType(currentRefPosition.registerAssignment,
+                                                            regRecord->registerType);
                 }
 #endif // SWIFT_SUPPORT
             }
@@ -5190,8 +5275,8 @@ void LinearScan::allocateRegistersMinimal()
             INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_RELOAD, currentInterval, assignedRegister));
         }
 
-        regMaskTP assignedRegBit = RBM_NONE;
-        bool      isInRegister   = false;
+        singleRegMask assignedRegBit = RBM_NONE;
+        bool          isInRegister   = false;
         if (assignedRegister != REG_NA)
         {
             isInRegister   = true;
@@ -5255,9 +5340,9 @@ void LinearScan::allocateRegistersMinimal()
                 {
                     regNumber copyReg = assignCopyRegMinimal(&currentRefPosition);
 
-                    lastAllocatedRefPosition  = &currentRefPosition;
-                    regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
-                    regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
+                    lastAllocatedRefPosition       = &currentRefPosition;
+                    regMaskOnlyOne copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
+                    regMaskOnlyOne assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
 
                     // For consecutive register, although it shouldn't matter what the assigned register was,
                     // because we have just assigned it `copyReg` and that's the one in-use, and not the
@@ -5265,10 +5350,11 @@ void LinearScan::allocateRegistersMinimal()
                     // happened to be restored in assignedReg, we would need assignedReg to stay alive because
                     // we will copy the entire vector value from it to the `copyReg`.
                     updateRegsFreeBusyState(currentRefPosition, assignedRegMask | copyRegMask, &regsToFree,
-                                            &delayRegsToFree DEBUG_ARG(currentInterval) DEBUG_ARG(assignedRegister));
+                                            &delayRegsToFree, currentInterval->registerType DEBUG_ARG(currentInterval)
+                                                                  DEBUG_ARG(assignedRegister));
                     if (!currentRefPosition.lastUse)
                     {
-                        copyRegsToFree |= copyRegMask;
+                        copyRegsToFree.AddRegNumInMask(copyReg ARM_ARG(currentInterval->registerType));
                     }
 
                     // For tree temp (non-localVar) interval, we will need an explicit move.
@@ -5283,7 +5369,7 @@ void LinearScan::allocateRegistersMinimal()
                 else
                 {
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NEEDS_NEW_REG, nullptr, assignedRegister));
-                    regsToFree |= getRegMask(assignedRegister, currentInterval->registerType);
+                    regsToFree.AddRegNumInMask(assignedRegister ARM_ARG(currentInterval->registerType));
                     // We want a new register, but we don't want this to be considered a spill.
                     assignedRegister = REG_NA;
                     if (physRegRecord->assignedInterval == currentInterval)
@@ -5380,17 +5466,18 @@ void LinearScan::allocateRegistersMinimal()
         // If we allocated a register, record it
         if (assignedRegister != REG_NA)
         {
-            assignedRegBit    = genRegMask(assignedRegister);
-            regMaskTP regMask = getRegMask(assignedRegister, currentInterval->registerType);
-            regsInUseThisLocation |= regMask;
+            assignedRegBit              = genRegMask(assignedRegister);
+            AllRegsMask assignedRegMask = AllRegsMask(assignedRegister ARM_ARG(currentInterval->registerType));
+
+            regsInUseThisLocation |= assignedRegMask;
             if (currentRefPosition.delayRegFree)
             {
-                regsInUseNextLocation |= regMask;
+                regsInUseNextLocation |= assignedRegMask;
             }
             currentRefPosition.registerAssignment = assignedRegBit;
 
             currentInterval->physReg = assignedRegister;
-            regsToFree &= ~regMask; // we'll set it again later if it's dead
+            regsToFree &= ~assignedRegMask; // we'll set it again later if it's dead
 
             // If this interval is dead, free the register.
             // The interval could be dead if this is a user variable, or if the
@@ -5411,11 +5498,11 @@ void LinearScan::allocateRegistersMinimal()
                 {
                     if (currentRefPosition.delayRegFree)
                     {
-                        delayRegsToMakeInactive |= regMask;
+                        delayRegsToMakeInactive |= assignedRegMask;
                     }
                     else
                     {
-                        regsToMakeInactive |= regMask;
+                        regsToMakeInactive |= assignedRegMask;
                     }
                     // TODO-Cleanup: this makes things consistent with previous, and will enable preferences
                     // to be propagated, but it seems less than ideal.
@@ -5434,13 +5521,13 @@ void LinearScan::allocateRegistersMinimal()
             {
                 if (currentRefPosition.delayRegFree)
                 {
-                    delayRegsToFree |= regMask;
+                    delayRegsToFree |= assignedRegMask;
 
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED));
                 }
                 else
                 {
-                    regsToFree |= regMask;
+                    regsToFree |= assignedRegMask;
 
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE));
                 }
@@ -5569,7 +5656,7 @@ void LinearScan::allocateRegisters()
                 updateNextIntervalRef(reg, interval);
                 updateSpillCost(reg, interval);
                 setRegInUse(reg, interval->registerType);
-                INDEBUG(registersToDump |= getRegMask(reg, interval->registerType));
+                INDEBUG(registersToDump.AddRegNumInMask(reg ARM_ARG(interval->registerType)));
             }
         }
         else
@@ -5589,7 +5676,7 @@ void LinearScan::allocateRegisters()
                "--------------------\n");
         // Start with a small set of commonly used registers, so that we don't keep having to print a new title.
         // Include all the arg regs, as they may already have values assigned to them.
-        registersToDump = LsraLimitSmallIntSet | LsraLimitSmallFPSet | RBM_ARG_REGS;
+        registersToDump = AllRegsMask(LsraLimitSmallIntSet | RBM_ARG_REGS, LsraLimitSmallFPSet, RBM_NONE);
         dumpRegRecordHeader();
         // Now print an empty "RefPosition", since we complete the dump of the regs at the beginning of the loop.
         printf(indentFormat, "");
@@ -5598,14 +5685,14 @@ void LinearScan::allocateRegisters()
 
     BasicBlock* currentBlock = nullptr;
 
-    LsraLocation prevLocation            = MinLocation;
-    regMaskTP    regsToFree              = RBM_NONE;
-    regMaskTP    delayRegsToFree         = RBM_NONE;
-    regMaskTP    regsToMakeInactive      = RBM_NONE;
-    regMaskTP    delayRegsToMakeInactive = RBM_NONE;
-    regMaskTP    copyRegsToFree          = RBM_NONE;
-    regsInUseThisLocation                = RBM_NONE;
-    regsInUseNextLocation                = RBM_NONE;
+    LsraLocation prevLocation = MinLocation;
+    AllRegsMask  regsToFree;
+    AllRegsMask  delayRegsToFree;
+    AllRegsMask  regsToMakeInactive;
+    AllRegsMask  delayRegsToMakeInactive;
+    AllRegsMask  copyRegsToFree;
+    regsInUseThisLocation = AllRegsMask();
+    regsInUseNextLocation = AllRegsMask();
 
     // This is the most recent RefPosition for which a register was allocated
     // - currently only used for DEBUG but maintained in non-debug, for clarity of code
@@ -5621,22 +5708,19 @@ void LinearScan::allocateRegisters()
         // TODO: Can we combine this with the freeing of registers below? It might
         // mess with the dump, since this was previously being done before the call below
         // to dumpRegRecords.
-        regMaskTP tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
-        while (tempRegsToMakeInactive != RBM_NONE)
-        {
-            regNumber  nextReg   = genFirstRegNumFromMaskAndToggle(tempRegsToMakeInactive);
-            RegRecord* regRecord = getRegisterRecord(nextReg);
-            clearSpillCost(regRecord->regNum, regRecord->registerType);
-            makeRegisterInactive(regRecord);
-        }
+        AllRegsMask tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
+        inActivateRegisters(tempRegsToMakeInactive.GetGprFloatCombinedMask());
+#ifdef HAS_PREDICATE_REGS
+        inActivateRegisters(tempRegsToMakeInactive.predicateRegs());
+#endif
+
         if (currentRefPosition.nodeLocation > prevLocation)
         {
             makeRegsAvailable(regsToMakeInactive);
             // TODO: Clean this up. We need to make the delayRegs inactive as well, but don't want
             // to mark them as free yet.
-            regsToMakeInactive |= delayRegsToMakeInactive;
             regsToMakeInactive      = delayRegsToMakeInactive;
-            delayRegsToMakeInactive = RBM_NONE;
+            delayRegsToMakeInactive = AllRegsMask();
         }
 
 #ifdef DEBUG
@@ -5691,30 +5775,30 @@ void LinearScan::allocateRegisters()
         {
             // CopyRegs are simply made available - we don't want to make the associated interval inactive.
             makeRegsAvailable(copyRegsToFree);
-            copyRegsToFree        = RBM_NONE;
+            copyRegsToFree        = AllRegsMask();
             regsInUseThisLocation = regsInUseNextLocation;
-            regsInUseNextLocation = RBM_NONE;
+            regsInUseNextLocation = AllRegsMask();
 #ifdef TARGET_ARM64
             if (hasConsecutiveRegister)
             {
                 consecutiveRegsInUseThisLocation = RBM_NONE;
             }
 #endif
-            if ((regsToFree | delayRegsToFree) != RBM_NONE)
+            if (!((regsToFree | delayRegsToFree).IsEmpty()))
             {
                 freeRegisters(regsToFree);
-                if ((currentLocation > (prevLocation + 1)) && (delayRegsToFree != RBM_NONE))
+                if ((currentLocation > (prevLocation + 1)) && !delayRegsToFree.IsEmpty())
                 {
                     // We should never see a delayReg that is delayed until a Location that has no RefPosition
                     // (that would be the RefPosition that it was supposed to interfere with).
                     assert(!"Found a delayRegFree associated with Location with no reference");
                     // However, to be cautious for the Release build case, we will free them.
                     freeRegisters(delayRegsToFree);
-                    delayRegsToFree       = RBM_NONE;
-                    regsInUseThisLocation = RBM_NONE;
+                    delayRegsToFree       = AllRegsMask();
+                    regsInUseThisLocation = AllRegsMask();
                 }
                 regsToFree      = delayRegsToFree;
-                delayRegsToFree = RBM_NONE;
+                delayRegsToFree = AllRegsMask();
 #ifdef DEBUG
                 verifyFreeRegisters(regsToFree);
 #endif
@@ -5773,9 +5857,9 @@ void LinearScan::allocateRegisters()
         {
             // Free any delayed regs (now in regsToFree) before processing the block boundary
             freeRegisters(regsToFree);
-            regsToFree            = RBM_NONE;
-            regsInUseThisLocation = RBM_NONE;
-            regsInUseNextLocation = RBM_NONE;
+            regsToFree            = AllRegsMask();
+            regsInUseThisLocation = AllRegsMask();
+            regsInUseNextLocation = AllRegsMask();
             handledBlockEnd       = true;
             curBBStartLocation    = currentRefPosition.nodeLocation;
             if (currentBlock == nullptr)
@@ -5838,13 +5922,14 @@ void LinearScan::allocateRegisters()
                     }
 #endif // TARGET_ARM
                 }
-                regsInUseThisLocation |= currentRefPosition.registerAssignment;
+                regsInUseThisLocation.AddRegMaskForType(currentRefPosition.registerAssignment, regRecord->registerType);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FIXED_REG, nullptr, currentRefPosition.assignedReg()));
 
 #ifdef SWIFT_SUPPORT
                 if (currentRefPosition.delayRegFree)
                 {
-                    regsInUseNextLocation |= currentRefPosition.registerAssignment;
+                    regsInUseNextLocation.AddRegMaskForType(currentRefPosition.registerAssignment,
+                                                            regRecord->registerType);
                 }
 #endif // SWIFT_SUPPORT
             }
@@ -5992,7 +6077,7 @@ void LinearScan::allocateRegisters()
                                 updateSpillCost(assignedRegister, currentInterval);
                             }
 
-                            regsToFree |= getRegMask(assignedRegister, currentInterval->registerType);
+                            regsToFree.AddRegNumInMask(assignedRegister ARM_ARG(currentInterval->registerType));
                         }
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, nullptr, assignedRegister));
                         currentRefPosition.registerAssignment = RBM_NONE;
@@ -6128,8 +6213,8 @@ void LinearScan::allocateRegisters()
             INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_RELOAD, currentInterval, assignedRegister));
         }
 
-        regMaskTP assignedRegBit = RBM_NONE;
-        bool      isInRegister   = false;
+        singleRegMask assignedRegBit = RBM_NONE;
+        bool          isInRegister   = false;
         if (assignedRegister != REG_NA)
         {
             isInRegister   = true;
@@ -6175,9 +6260,9 @@ void LinearScan::allocateRegisters()
             // it might be beneficial to keep it in this reg for PART of the lifetime
             if (currentInterval->isLocalVar)
             {
-                regMaskTP preferences        = currentInterval->registerPreferences;
-                bool      keepAssignment     = true;
-                bool      matchesPreferences = (preferences & genRegMask(assignedRegister)) != RBM_NONE;
+                regMaskOnlyOne preferences        = currentInterval->registerPreferences;
+                bool           keepAssignment     = true;
+                bool           matchesPreferences = (preferences & genRegMask(assignedRegister)) != RBM_NONE;
 
                 // Will the assigned register cover the lifetime?  If not, does it at least
                 // meet the preferences for the next RefPosition?
@@ -6283,9 +6368,10 @@ void LinearScan::allocateRegisters()
 
                         if (copyReg != assignedRegister)
                         {
-                            lastAllocatedRefPosition  = &currentRefPosition;
-                            regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
-                            regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
+                            lastAllocatedRefPosition   = &currentRefPosition;
+                            regMaskOnlyOne copyRegMask = getRegMask(copyReg, currentInterval->registerType);
+                            regMaskOnlyOne assignedRegMask =
+                                getRegMask(assignedRegister, currentInterval->registerType);
 
                             if ((consecutiveRegsInUseThisLocation & assignedRegMask) != RBM_NONE)
                             {
@@ -6304,11 +6390,11 @@ void LinearScan::allocateRegisters()
                             // we will copy the entire vector value from it to the `copyReg`.
 
                             updateRegsFreeBusyState(currentRefPosition, assignedRegMask | copyRegMask, &regsToFree,
-                                                    &delayRegsToFree DEBUG_ARG(currentInterval)
-                                                        DEBUG_ARG(assignedRegister));
+                                                    &delayRegsToFree, currentInterval->registerType DEBUG_ARG(
+                                                                          currentInterval) DEBUG_ARG(assignedRegister));
                             if (!currentRefPosition.lastUse)
                             {
-                                copyRegsToFree |= copyRegMask;
+                                copyRegsToFree.AddRegNumInMask(copyReg ARM_ARG(currentInterval->registerType));
                             }
 
                             // If this is a tree temp (non-localVar) interval, we will need an explicit move.
@@ -6381,9 +6467,9 @@ void LinearScan::allocateRegisters()
                         copyReg = assignCopyReg<false>(&currentRefPosition);
                     }
 
-                    lastAllocatedRefPosition  = &currentRefPosition;
-                    regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
-                    regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
+                    lastAllocatedRefPosition       = &currentRefPosition;
+                    regMaskOnlyOne copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
+                    regMaskOnlyOne assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
 
 #ifdef TARGET_ARM64
                     if (hasConsecutiveRegister && currentRefPosition.needsConsecutive)
@@ -6413,10 +6499,11 @@ void LinearScan::allocateRegisters()
                     // happened to be restored in assignedReg, we would need assignedReg to stay alive because
                     // we will copy the entire vector value from it to the `copyReg`.
                     updateRegsFreeBusyState(currentRefPosition, assignedRegMask | copyRegMask, &regsToFree,
-                                            &delayRegsToFree DEBUG_ARG(currentInterval) DEBUG_ARG(assignedRegister));
+                                            &delayRegsToFree, currentInterval->registerType DEBUG_ARG(currentInterval)
+                                                                  DEBUG_ARG(assignedRegister));
                     if (!currentRefPosition.lastUse)
                     {
-                        copyRegsToFree |= copyRegMask;
+                        copyRegsToFree.AddRegNumInMask(copyReg ARM_ARG(currentInterval->registerType));
                     }
 
                     // If this is a tree temp (non-localVar) interval, we will need an explicit move.
@@ -6437,7 +6524,7 @@ void LinearScan::allocateRegisters()
                 else
                 {
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NEEDS_NEW_REG, nullptr, assignedRegister));
-                    regsToFree |= getRegMask(assignedRegister, currentInterval->registerType);
+                    regsToFree.AddRegNumInMask(assignedRegister ARM_ARG(currentInterval->registerType));
                     // We want a new register, but we don't want this to be considered a spill.
                     assignedRegister = REG_NA;
                     if (physRegRecord->assignedInterval == currentInterval)
@@ -6604,17 +6691,18 @@ void LinearScan::allocateRegisters()
         // If we allocated a register, record it
         if (assignedRegister != REG_NA)
         {
-            assignedRegBit    = genRegMask(assignedRegister);
-            regMaskTP regMask = getRegMask(assignedRegister, currentInterval->registerType);
-            regsInUseThisLocation |= regMask;
+            assignedRegBit              = genRegMask(assignedRegister);
+            AllRegsMask assignedRegMask = AllRegsMask(assignedRegister ARM_ARG(currentInterval->registerType));
+
+            regsInUseThisLocation |= assignedRegMask;
             if (currentRefPosition.delayRegFree)
             {
-                regsInUseNextLocation |= regMask;
+                regsInUseNextLocation |= assignedRegMask;
             }
             currentRefPosition.registerAssignment = assignedRegBit;
 
             currentInterval->physReg = assignedRegister;
-            regsToFree &= ~regMask; // we'll set it again later if it's dead
+            regsToFree &= ~assignedRegMask; // we'll set it again later if it's dead
 
             // If this interval is dead, free the register.
             // The interval could be dead if this is a user variable, or if the
@@ -6651,11 +6739,11 @@ void LinearScan::allocateRegisters()
                     {
                         if (currentRefPosition.delayRegFree)
                         {
-                            delayRegsToMakeInactive |= regMask;
+                            delayRegsToMakeInactive |= assignedRegMask;
                         }
                         else
                         {
-                            regsToMakeInactive |= regMask;
+                            regsToMakeInactive |= assignedRegMask;
                         }
                         // TODO-Cleanup: this makes things consistent with previous, and will enable preferences
                         // to be propagated, but it seems less than ideal.
@@ -6674,13 +6762,13 @@ void LinearScan::allocateRegisters()
                 {
                     if (currentRefPosition.delayRegFree)
                     {
-                        delayRegsToFree |= regMask;
+                        delayRegsToFree |= assignedRegMask;
 
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED));
                     }
                     else
                     {
-                        regsToFree |= regMask;
+                        regsToFree |= assignedRegMask;
 
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE));
                     }
@@ -8044,7 +8132,8 @@ void           LinearScan::resolveRegisters()
                         {
                             // If the localVar is in a register, it must be in a register that is not trashed by
                             // the current node (otherwise it would have already been spilled).
-                            assert((genRegMask(localVarInterval->physReg) & getKillSetForNode(treeNode)) == RBM_NONE);
+                            assert((genRegMask(localVarInterval->physReg) &
+                                    getKillSetForNode(treeNode).GetRegMaskForType(interval->registerType)) == RBM_NONE);
                             // If we have allocated a register to spill it to, we will use that; otherwise, we will
                             // spill it to the stack.  We can use as a temp register any non-arg caller-save register.
                             currentRefPosition->referent->recentRefPosition = currentRefPosition;
@@ -8300,8 +8389,8 @@ void           LinearScan::resolveRegisters()
 
                 if (varDsc->lvIsParam)
                 {
-                    regMaskTP initialRegMask = interval->firstRefPosition->registerAssignment;
-                    regNumber initialReg     = (initialRegMask == RBM_NONE || interval->firstRefPosition->spillAfter)
+                    regMaskOnlyOne initialRegMask = interval->firstRefPosition->registerAssignment;
+                    regNumber      initialReg = (initialRegMask == RBM_NONE || interval->firstRefPosition->spillAfter)
                                                ? REG_STK
                                                : genRegNumFromMask(initialRegMask);
 
@@ -8389,7 +8478,7 @@ void           LinearScan::resolveRegisters()
                         varDsc->lvOnFrame  = false;
                     }
 #ifdef DEBUG
-                    regMaskTP registerAssignment = genRegMask(varDsc->GetRegNum());
+                    singleRegMask registerAssignment = genRegMask(varDsc->GetRegNum());
                     assert(!interval->isSpilled && !interval->isSplit);
                     RefPosition* refPosition = interval->firstRefPosition;
                     assert(refPosition != nullptr);
@@ -8628,7 +8717,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
                                               BasicBlock*      toBlock,
                                               var_types        type,
                                               VARSET_VALARG_TP sharedCriticalLiveSet,
-                                              regMaskTP        terminatorConsumedRegs)
+                                              regMaskOnlyOne   terminatorConsumedRegs)
 {
     // TODO-Throughput: This would be much more efficient if we add RegToVarMaps instead of VarToRegMaps
     // and they would be more space-efficient as well.
@@ -8636,7 +8725,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
     VarToRegMap toVarToRegMap   = toBlock == nullptr ? nullptr : getInVarToRegMap(toBlock->bbNum);
 
 #ifdef TARGET_ARM
-    regMaskTP freeRegs;
+    regMaskOnlyOne freeRegs;
     if (type == TYP_DOUBLE)
     {
         // We have to consider all float registers for TYP_DOUBLE
@@ -8647,7 +8736,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
         freeRegs = allRegs(type);
     }
 #else  // !TARGET_ARM
-    regMaskTP freeRegs = allRegs(type);
+    regMaskOnlyOne freeRegs = allRegs(type);
 #endif // !TARGET_ARM
 
 #ifdef DEBUG
@@ -8656,7 +8745,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
         return REG_NA;
     }
 #endif // DEBUG
-    INDEBUG(freeRegs = stressLimitRegs(nullptr, freeRegs));
+    INDEBUG(freeRegs = stressLimitRegs(nullptr, freeRegs, type));
 
     freeRegs &= ~terminatorConsumedRegs;
 
@@ -8717,10 +8806,23 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
     }
     else
     {
-        // Prefer a callee-trashed register if possible to prevent new prolog/epilog saves/restores.
-        if ((freeRegs & RBM_CALLEE_TRASH) != 0)
+        regMaskOnlyOne calleeTrashMask = RBM_NONE;
+
+        if (varTypeUsesIntReg(type))
         {
-            freeRegs &= RBM_CALLEE_TRASH;
+            calleeTrashMask = RBM_INT_CALLEE_TRASH;
+            assert(compiler->IsGprRegMask(terminatorConsumedRegs));
+        }
+        else
+        {
+            assert(varTypeUsesFloatReg(type));
+            calleeTrashMask = RBM_FLT_CALLEE_TRASH;
+            assert(compiler->IsFloatRegMask(terminatorConsumedRegs));
+        }
+        // Prefer a callee-trashed register if possible to prevent new prolog/epilog saves/restores.
+        if ((freeRegs & calleeTrashMask) != 0)
+        {
+            freeRegs &= calleeTrashMask;
         }
 
         regNumber tempReg = genRegNumFromMask(genFindLowestBit(freeRegs));
@@ -8914,7 +9016,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     // available to copy into.
     // Note that for this purpose we use the full live-out set, because we must ensure that
     // even the registers that remain the same across the edge are preserved correctly.
-    regMaskTP       liveOutRegs = RBM_NONE;
+    AllRegsMask     liveOutRegs;
     VarSetOps::Iter liveOutIter(compiler, block->bbLiveOut);
     unsigned        liveOutVarIndex = 0;
     while (liveOutIter.NextElem(&liveOutVarIndex))
@@ -8922,8 +9024,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         regNumber fromReg = getVarReg(outVarToRegMap, liveOutVarIndex);
         if (fromReg != REG_STK)
         {
-            regMaskTP fromRegMask = genRegMask(fromReg, getIntervalForLocalVar(liveOutVarIndex)->registerType);
-            liveOutRegs |= fromRegMask;
+            var_types varType = getIntervalForLocalVar(liveOutVarIndex)->registerType;
+            liveOutRegs.AddRegNumInMask(fromReg ARM_ARG(varType));
         }
     }
 
@@ -8934,7 +9036,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     //
     // Note: Only switches and JCMP/JTEST (for Arm4) have input regs (and so can be fed by copies), so those
     // are the only block-ending branches that need special handling.
-    regMaskTP consumedRegs = RBM_NONE;
+    regMaskGpr consumedRegs = RBM_NONE;
     if (block->KindIs(BBJ_SWITCH))
     {
         // At this point, Lowering has transformed any non-switch-table blocks into
@@ -9028,9 +9130,11 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         }
     }
 
+    assert(compiler->IsGprRegMask(consumedRegs)); // If this fails, then we will have to use AllRegsMask for
+                                                  // consumedRegs
     VarToRegMap sameVarToRegMap = sharedCriticalVarToRegMap;
-    regMaskTP   sameWriteRegs   = RBM_NONE;
-    regMaskTP   diffReadRegs    = RBM_NONE;
+    AllRegsMask sameWriteRegs;
+    AllRegsMask diffReadRegs;
 
     // For each var that may require resolution, classify them as:
     // - in the same register at the end of this block and at each target (no resolution needed)
@@ -9082,17 +9186,20 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         // We only need to check for these cases if sameToReg is an actual register (not REG_STK).
         if (sameToReg != REG_NA && sameToReg != REG_STK)
         {
+            var_types outVarRegType = getIntervalForLocalVar(outResolutionSetVarIndex)->registerType;
+
             // If there's a path on which this var isn't live, it may use the original value in sameToReg.
             // In this case, sameToReg will be in the liveOutRegs of this block.
             // Similarly, if sameToReg is in sameWriteRegs, it has already been used (i.e. for a lclVar that's
             // live only at another target), and we can't copy another lclVar into that reg in this block.
-            regMaskTP sameToRegMask =
-                genRegMask(sameToReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
-            if (maybeSameLivePaths &&
-                (((sameToRegMask & liveOutRegs) != RBM_NONE) || ((sameToRegMask & sameWriteRegs) != RBM_NONE)))
+            regMaskOnlyOne sameToRegMask = genRegMask(sameToReg, outVarRegType);
+
+            if (maybeSameLivePaths && (liveOutRegs.IsRegNumInMask(sameToReg ARM_ARG(outVarRegType)) ||
+                                       sameWriteRegs.IsRegNumInMask(sameToReg ARM_ARG(outVarRegType)) != RBM_NONE))
             {
                 sameToReg = REG_NA;
             }
+
             // If this register is busy because it is used by a switch table at the end of the block
             // (or for Arm64, it is consumed by JCMP), we can't do the copy in this block since we can't
             // insert it after the switch (or for Arm64, can't insert and overwrite the operand/source
@@ -9131,7 +9238,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             VarSetOps::AddElemD(compiler, diffResolutionSet, outResolutionSetVarIndex);
             if (fromReg != REG_STK)
             {
-                diffReadRegs |= genRegMask(fromReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
+                diffReadRegs.AddRegNumInMask(
+                    fromReg ARM_ARG(getIntervalForLocalVar(outResolutionSetVarIndex)->registerType));
             }
         }
         else if (sameToReg != fromReg)
@@ -9140,14 +9248,15 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             setVarReg(sameVarToRegMap, outResolutionSetVarIndex, sameToReg);
             if (sameToReg != REG_STK)
             {
-                sameWriteRegs |= genRegMask(sameToReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
+                sameWriteRegs.AddRegNumInMask(
+                    sameToReg ARM_ARG(getIntervalForLocalVar(outResolutionSetVarIndex)->registerType));
             }
         }
     }
 
     if (!VarSetOps::IsEmpty(compiler, sameResolutionSet))
     {
-        if ((sameWriteRegs & diffReadRegs) != RBM_NONE)
+        if (!((sameWriteRegs & diffReadRegs).IsEmpty()))
         {
             // We cannot split the "same" and "diff" regs if the "same" set writes registers
             // that must be read by the "diff" set.  (Note that when these are done as a "batch"
@@ -9462,8 +9571,10 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                              BasicBlock*      toBlock,
                              ResolveType      resolveType,
                              VARSET_VALARG_TP liveSet,
-                             regMaskTP        terminatorConsumedRegs)
+                             regMaskGpr       terminatorConsumedRegs)
 {
+    assert(compiler->IsGprRegMask(terminatorConsumedRegs));
+
     VarToRegMap fromVarToRegMap = getOutVarToRegMap(fromBlock->bbNum);
     VarToRegMap toVarToRegMap;
     if (resolveType == ResolveSharedCritical)
@@ -9518,7 +9629,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     {
 #ifdef TARGET_ARM
         // Try to reserve a double register for TYP_DOUBLE and use it for TYP_FLOAT too if available.
-        tempRegDbl = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE, liveSet, terminatorConsumedRegs);
+        tempRegDbl = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE, liveSet, RBM_NONE);
         if (tempRegDbl != REG_NA)
         {
             tempRegFlt = tempRegDbl;
@@ -9526,13 +9637,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         else
 #endif // TARGET_ARM
         {
-            tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT, liveSet, terminatorConsumedRegs);
+            tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT, liveSet, RBM_NONE);
         }
     }
 
-    regMaskTP targetRegsToDo      = RBM_NONE;
-    regMaskTP targetRegsReady     = RBM_NONE;
-    regMaskTP targetRegsFromStack = RBM_NONE;
+    AllRegsMask targetRegsToDo;
+    AllRegsMask targetRegsReady;
+    AllRegsMask targetRegsFromStack;
 
     // The following arrays capture the location of the registers as they are moved:
     // - location[reg] gives the current location of the var that was originally in 'reg'.
@@ -9639,7 +9750,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         if (fromReg == REG_STK)
         {
             stackToRegIntervals[toReg] = interval;
-            targetRegsFromStack |= genRegMask(toReg);
+            targetRegsFromStack |= toReg;
         }
         else if (toReg == REG_STK)
         {
@@ -9653,19 +9764,17 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             location[fromReg]        = (regNumberSmall)fromReg;
             source[toReg]            = (regNumberSmall)fromReg;
             sourceIntervals[fromReg] = interval;
-            targetRegsToDo |= genRegMask(toReg);
+            targetRegsToDo |= toReg;
         }
     }
 
     // REGISTER to REGISTER MOVES
 
     // First, find all the ones that are ready to move now
-    regMaskTP targetCandidates = targetRegsToDo;
-    while (targetCandidates != RBM_NONE)
+    AllRegsMask targetCandidates = targetRegsToDo;
+    while (!targetCandidates.IsEmpty())
     {
-        regNumber targetReg     = genFirstRegNumFromMask(targetCandidates);
-        regMaskTP targetRegMask = genRegMask(targetReg);
-        targetCandidates ^= targetRegMask;
+        regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetCandidates);
         if (location[targetReg] == REG_NA)
         {
 #ifdef TARGET_ARM
@@ -9678,26 +9787,24 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 regNumber anotherHalfRegNum = REG_NEXT(targetReg);
                 if (location[anotherHalfRegNum] == REG_NA)
                 {
-                    targetRegsReady |= targetRegMask;
+                    targetRegsReady |= targetReg;
                 }
             }
             else
 #endif // TARGET_ARM
             {
-                targetRegsReady |= targetRegMask;
+                targetRegsReady |= targetReg;
             }
         }
     }
 
     // Perform reg to reg moves
-    while (targetRegsToDo != RBM_NONE)
+    while (!targetRegsToDo.IsEmpty())
     {
-        while (targetRegsReady != RBM_NONE)
+        while (!targetRegsReady.IsEmpty())
         {
-            regNumber targetReg     = genFirstRegNumFromMask(targetRegsReady);
-            regMaskTP targetRegMask = genRegMask(targetReg);
-            targetRegsToDo ^= targetRegMask;
-            targetRegsReady ^= targetRegMask;
+            regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetRegsReady);
+            targetRegsToDo ^= targetReg;
             assert(location[targetReg] != targetReg);
             assert(targetReg < REG_COUNT);
             regNumber sourceReg = (regNumber)source[targetReg];
@@ -9711,14 +9818,14 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                           fromReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock) DEBUG_ARG(resolveTypeName[resolveType]));
             sourceIntervals[sourceReg] = nullptr;
             location[sourceReg]        = REG_NA;
-            regMaskTP fromRegMask      = genRegMask(fromReg);
+            singleRegMask fromRegMask  = genRegMask(fromReg);
 
             // Do we have a free targetReg?
             if (fromReg == sourceReg)
             {
-                if (source[fromReg] != REG_NA && ((targetRegsFromStack & fromRegMask) != fromRegMask))
+                if (source[fromReg] != REG_NA && !targetRegsFromStack.IsRegNumInMask(fromReg))
                 {
-                    targetRegsReady |= fromRegMask;
+                    targetRegsReady |= fromReg;
 #ifdef TARGET_ARM
                     if (genIsValidDoubleReg(fromReg))
                     {
@@ -9729,7 +9836,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         regNumber upperHalfReg  = REG_NEXT(fromReg);
                         if ((otherInterval->registerType == TYP_DOUBLE) && (location[upperHalfReg] != REG_NA))
                         {
-                            targetRegsReady &= ~fromRegMask;
+                            targetRegsReady.RemoveRegNumFromMask(fromReg);
                         }
                     }
                 }
@@ -9737,10 +9844,10 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 {
                     // We may have freed up the other half of a double where the lower half
                     // was already free.
-                    regNumber lowerHalfReg     = REG_PREV(fromReg);
-                    regNumber lowerHalfSrcReg  = (regNumber)source[lowerHalfReg];
-                    regNumber lowerHalfSrcLoc  = (regNumber)location[lowerHalfReg];
-                    regMaskTP lowerHalfRegMask = genRegMask(lowerHalfReg);
+                    regNumber     lowerHalfReg     = REG_PREV(fromReg);
+                    regNumber     lowerHalfSrcReg  = (regNumber)source[lowerHalfReg];
+                    regNumber     lowerHalfSrcLoc  = (regNumber)location[lowerHalfReg];
+                    singleRegMask lowerHalfRegMask = genRegMask(lowerHalfReg);
                     // Necessary conditions:
                     // - There is a source register for this reg (lowerHalfSrcReg != REG_NA)
                     // - It is currently free                    (lowerHalfSrcLoc == REG_NA)
@@ -9751,22 +9858,21 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     //                                            lowerHalfRegMask)
                     if ((lowerHalfSrcReg != REG_NA) && (lowerHalfSrcLoc == REG_NA) &&
                         (sourceIntervals[lowerHalfSrcReg] != nullptr) &&
-                        ((targetRegsReady & lowerHalfRegMask) == RBM_NONE) &&
-                        ((targetRegsFromStack & lowerHalfRegMask) != lowerHalfRegMask))
+                        !targetRegsReady.IsRegNumInMask(lowerHalfReg) &&
+                        !targetRegsFromStack.IsRegNumInMask(lowerHalfReg))
                     {
                         // This must be a double interval, otherwise it would be in targetRegsReady, or already
                         // completed.
                         assert(sourceIntervals[lowerHalfSrcReg]->registerType == TYP_DOUBLE);
-                        targetRegsReady |= lowerHalfRegMask;
+                        targetRegsReady |= lowerHalfReg;
                     }
 #endif // TARGET_ARM
                 }
             }
         }
-        if (targetRegsToDo != RBM_NONE)
+        if (!targetRegsToDo.IsEmpty())
         {
-            regNumber targetReg     = genFirstRegNumFromMask(targetRegsToDo);
-            regMaskTP targetRegMask = genRegMask(targetReg);
+            regNumber targetReg = genFirstRegNumFromMask(targetRegsToDo);
 
             // Is it already there due to other moves?
             // If not, move it to the temp reg, OR swap it with another register
@@ -9774,7 +9880,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             regNumber fromReg   = (regNumber)location[sourceReg];
             if (targetReg == fromReg)
             {
-                targetRegsToDo &= ~targetRegMask;
+                targetRegsToDo.RemoveRegNumFromMask(targetReg);
             }
             else
             {
@@ -9817,16 +9923,15 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         // Otherwise, we'll spill it to the stack and reload it later.
                         if (useSwap)
                         {
-                            regMaskTP fromRegMask = genRegMask(fromReg);
-                            targetRegsToDo &= ~fromRegMask;
+                            targetRegsToDo.RemoveRegNumFromMask(fromReg);
                         }
                     }
                     else
                     {
                         // Look at the remaining registers from targetRegsToDo (which we expect to be relatively
                         // small at this point) to find out what's currently in targetReg.
-                        regMaskTP mask = targetRegsToDo;
-                        while (mask != RBM_NONE && otherTargetReg == REG_NA)
+                        AllRegsMask mask = targetRegsToDo;
+                        while (!mask.IsEmpty() && otherTargetReg == REG_NA)
                         {
                             regNumber nextReg = genFirstRegNumFromMaskAndToggle(mask);
                             if (location[source[nextReg]] == targetReg)
@@ -9862,10 +9967,9 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                                           DEBUG_ARG(resolveTypeName[resolveType]));
                         location[source[otherTargetReg]] = REG_STK;
 
-                        regMaskTP otherTargetRegMask = genRegMask(otherTargetReg);
-                        targetRegsFromStack |= otherTargetRegMask;
+                        targetRegsFromStack |= otherTargetReg;
                         stackToRegIntervals[otherTargetReg] = otherInterval;
-                        targetRegsToDo &= ~otherTargetRegMask;
+                        targetRegsToDo.RemoveRegNumFromMask(otherTargetReg);
 
                         // Now, move the interval that is going to targetReg.
                         addResolution(block, insertionPoint, sourceIntervals[sourceReg], targetReg,
@@ -9879,8 +9983,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         //   value will be retrieved from STK.
                         if (source[fromReg] != REG_NA && fromReg != otherTargetReg)
                         {
-                            regMaskTP fromRegMask = genRegMask(fromReg);
-                            targetRegsReady |= fromRegMask;
+                            targetRegsReady |= fromReg;
 #ifdef TARGET_ARM
                             if (genIsValidDoubleReg(fromReg))
                             {
@@ -9891,17 +9994,17 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                                 regNumber upperHalfReg  = REG_NEXT(fromReg);
                                 if ((otherInterval->registerType == TYP_DOUBLE) && (location[upperHalfReg] != REG_NA))
                                 {
-                                    targetRegsReady &= ~fromRegMask;
+                                    targetRegsReady.RemoveRegNumFromMask(fromReg);
                                 }
                             }
 #endif // TARGET_ARM
                         }
                     }
-                    targetRegsToDo &= ~targetRegMask;
+                    targetRegsToDo.RemoveRegNumFromMask(targetReg);
                 }
                 else
                 {
-                    compiler->codeGen->regSet.rsSetRegsModified(genRegMask(tempReg) DEBUGARG(true));
+                    compiler->codeGen->regSet.rsSetRegModified(tempReg DEBUGARG(true));
 #ifdef TARGET_ARM
                     if (sourceIntervals[fromReg]->registerType == TYP_DOUBLE)
                     {
@@ -9921,7 +10024,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                                           DEBUG_ARG(resolveTypeName[resolveType]));
                         location[targetReg] = (regNumberSmall)tempReg;
                     }
-                    targetRegsReady |= targetRegMask;
+                    targetRegsReady |= targetReg;
                 }
             }
         }
@@ -9929,7 +10032,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
     // Finally, perform stack to reg moves
     // All the target regs will be empty at this point
-    while (targetRegsFromStack != RBM_NONE)
+    while (!targetRegsFromStack.IsEmpty())
     {
         regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetRegsFromStack);
 
@@ -10998,7 +11101,7 @@ void LinearScan::dumpLsraAllocationEvent(
     }
     if ((interval != nullptr) && (reg != REG_NA) && (reg != REG_STK))
     {
-        registersToDump |= getRegMask(reg, interval->registerType);
+        registersToDump.AddRegNumInMask(reg ARM_ARG(interval->registerType));
         dumpRegRecordTitleIfNeeded();
     }
 
@@ -11337,7 +11440,7 @@ void LinearScan::dumpRegRecordHeader()
               regColumnWidth + 1);
 
     // Print a "title row" including the legend and the reg names.
-    lastDumpedRegisters = RBM_NONE;
+    lastDumpedRegisters = AllRegsMask();
     dumpRegRecordTitleIfNeeded();
 }
 
@@ -11349,7 +11452,7 @@ void LinearScan::dumpRegRecordTitleIfNeeded()
         int lastRegNumIndex = compiler->compFloatingPointUsed ? REG_FP_LAST : REG_INT_LAST;
         for (int regNumIndex = 0; regNumIndex <= lastRegNumIndex; regNumIndex++)
         {
-            if ((registersToDump & genRegMask((regNumber)regNumIndex)) != 0)
+            if (registersToDump.IsRegNumInMask((regNumber)regNumIndex))
             {
                 lastUsedRegNumIndex = regNumIndex;
             }
@@ -11429,7 +11532,7 @@ void LinearScan::dumpRegRecords()
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                 printf("%c", activeChar);
             }
-            else if ((genRegMask(regNum) & regsBusyUntilKill) != RBM_NONE)
+            else if (regsBusyUntilKill.IsRegNumInMask(regNum))
             {
                 printf(columnFormatArray, "Busy");
             }
@@ -11659,14 +11762,28 @@ bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
 // Arguments:
 //   regsToFree - Registers that were just freed.
 //
-void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
+void LinearScan::verifyFreeRegisters(AllRegsMask regsToFree)
 {
+    regMaskOnlyOne regsMaskToFree    = regsToFree.gprRegs();
+    regMaskOnlyOne availableRegsMask = availableIntRegs;
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
-        regMaskTP regMask = genRegMask(reg);
+        if (reg >= REG_FP_FIRST && reg <= REG_FP_LAST)
+        {
+            regsMaskToFree    = regsToFree.floatRegs();
+            availableRegsMask = availableFloatRegs;
+        }
+#ifdef HAS_PREDICATE_REGS
+        else if (reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST)
+        {
+            regsMaskToFree    = regsToFree.predicateRegs();
+            availableRegsMask = availableMaskRegs;
+        }
+#endif
+        singleRegMask regMask = genRegMask(reg);
         // If this isn't available or if it's still waiting to be freed (i.e. it was in
         // delayRegsToFree and so now it's in regsToFree), then skip it.
-        if ((regMask & allAvailableRegs & ~regsToFree) == RBM_NONE)
+        if ((regMask & availableRegsMask & ~regsMaskToFree) == RBM_NONE)
         {
             continue;
         }
@@ -12110,7 +12227,7 @@ void LinearScan::verifyFinalAllocation()
                 // However, we will assert that, at resolution time, no registers contain GC refs.
                 {
                     DBEXEC(VERBOSE, printf("           "));
-                    regMaskTP candidateRegs = currentRefPosition.registerAssignment;
+                    regMaskOnlyOne candidateRegs = currentRefPosition.registerAssignment;
                     while (candidateRegs != RBM_NONE)
                     {
                         regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
@@ -12494,9 +12611,11 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
 //  Return Values:
 //      'true' if there was a single register candidate available after the heuristic is applied.
 //
-bool LinearScan::RegisterSelection::applySelection(int selectionScore, regMaskTP selectionCandidates)
+bool LinearScan::RegisterSelection::applySelection(int selectionScore, regMaskOnlyOne selectionCandidates)
 {
-    regMaskTP newCandidates = candidates & selectionCandidates;
+    assert(linearScan->compiler->IsOnlyOneRegMask(selectionCandidates));
+
+    regMaskOnlyOne newCandidates = candidates & selectionCandidates;
     if (newCandidates != RBM_NONE)
     {
         candidates = newCandidates;
@@ -12515,10 +12634,12 @@ bool LinearScan::RegisterSelection::applySelection(int selectionScore, regMaskTP
 //  Return Values:
 //      'true' if there was a single register candidate available after the heuristic is applied.
 //
-bool LinearScan::RegisterSelection::applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate)
+bool LinearScan::RegisterSelection::applySingleRegSelection(int selectionScore, regMaskOnlyOne selectionCandidate)
 {
+    assert(linearScan->compiler->IsOnlyOneRegMask(selectionCandidate));
     assert(LinearScan::isSingleRegister(selectionCandidate));
-    regMaskTP newCandidates = candidates & selectionCandidate;
+
+    regMaskOnlyOne newCandidates = candidates & selectionCandidate;
     if (newCandidates != RBM_NONE)
     {
         candidates = newCandidates;
@@ -12565,7 +12686,7 @@ void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
 
     if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
     {
-        regMaskTP newCandidates = candidates & matchingConstants;
+        regMaskOnlyOne newCandidates = candidates & matchingConstants;
         if (newCandidates != RBM_NONE)
         {
             candidates            = newCandidates;
@@ -12726,7 +12847,7 @@ void LinearScan::RegisterSelection::try_COVERS_FULL()
     calculateCoversSets();
 #endif
 
-    regMaskTP newCandidates = candidates & coversFullSet & freeCandidates;
+    regMaskOnlyOne newCandidates = candidates & coversFullSet & freeCandidates;
     if (newCandidates != RBM_NONE)
     {
         candidates        = newCandidates;
@@ -12750,15 +12871,15 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
     }
 #endif
 
-    regMaskTP bestFitSet = RBM_NONE;
+    regMaskOnlyOne bestFitSet = RBM_NONE;
     // If the best score includes COVERS_FULL, pick the one that's killed soonest.
     // If none cover the full range, the BEST_FIT is the one that's killed later.
     bool         earliestIsBest  = coversFullApplied;
     LsraLocation bestFitLocation = earliestIsBest ? MaxLocation : MinLocation;
-    for (regMaskTP bestFitCandidates = candidates; bestFitCandidates != RBM_NONE;)
+    for (regMaskOnlyOne bestFitCandidates = candidates; bestFitCandidates != RBM_NONE;)
     {
-        regNumber bestFitCandidateRegNum = genFirstRegNumFromMask(bestFitCandidates);
-        regMaskTP bestFitCandidateBit    = genRegMask(bestFitCandidateRegNum);
+        regNumber     bestFitCandidateRegNum = genFirstRegNumFromMask(bestFitCandidates);
+        singleRegMask bestFitCandidateBit    = genRegMask(bestFitCandidateRegNum);
         bestFitCandidates ^= bestFitCandidateBit;
 
         // Find the next RefPosition of the register.
@@ -12852,12 +12973,12 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
     // This will always result in a single candidate. That is, it is the tie-breaker
     // for free candidates, and doesn't make sense as anything other than the last
     // heuristic for free registers.
-    unsigned  lowestRegOrder    = UINT_MAX;
-    regMaskTP lowestRegOrderBit = RBM_NONE;
-    for (regMaskTP regOrderCandidates = candidates; regOrderCandidates != RBM_NONE;)
+    unsigned       lowestRegOrder    = UINT_MAX;
+    regMaskOnlyOne lowestRegOrderBit = RBM_NONE;
+    for (regMaskOnlyOne regOrderCandidates = candidates; regOrderCandidates != RBM_NONE;)
     {
-        regNumber regOrderCandidateRegNum = genFirstRegNumFromMask(regOrderCandidates);
-        regMaskTP regOrderCandidateBit    = genRegMask(regOrderCandidateRegNum);
+        regNumber     regOrderCandidateRegNum = genFirstRegNumFromMask(regOrderCandidates);
+        singleRegMask regOrderCandidateBit    = genRegMask(regOrderCandidateRegNum);
         regOrderCandidates ^= regOrderCandidateBit;
 
         unsigned thisRegOrder = linearScan->getRegisterRecord(regOrderCandidateRegNum)->regOrder;
@@ -12879,7 +13000,7 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
     assert(!found);
 
     // The set of registers with the lowest spill weight.
-    regMaskTP lowestCostSpillSet = RBM_NONE;
+    regMaskOnlyOne lowestCostSpillSet = RBM_NONE;
     // Apply the SPILL_COST heuristic and eliminate regs that can't be spilled.
 
     // The spill weight for 'refPosition' (the one we're allocating now).
@@ -12890,10 +13011,10 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
     bool         foundLowerSpillWeight = false;
     LsraLocation thisLocation          = refPosition->nodeLocation;
 
-    for (regMaskTP spillCandidates = candidates; spillCandidates != RBM_NONE;)
+    for (regMaskOnlyOne spillCandidates = candidates; spillCandidates != RBM_NONE;)
     {
-        regNumber spillCandidateRegNum = genFirstRegNumFromMask(spillCandidates);
-        regMaskTP spillCandidateBit    = genRegMask(spillCandidateRegNum);
+        regNumber     spillCandidateRegNum = genFirstRegNumFromMask(spillCandidates);
+        singleRegMask spillCandidateBit    = genRegMask(spillCandidateRegNum);
         spillCandidates ^= spillCandidateBit;
 
         RegRecord*   spillCandidateRegRecord = &linearScan->physRegs[spillCandidateRegNum];
@@ -13013,12 +13134,12 @@ void LinearScan::RegisterSelection::try_FAR_NEXT_REF()
 {
     assert(!found);
 
-    LsraLocation farthestLocation = MinLocation;
-    regMaskTP    farthestSet      = RBM_NONE;
-    for (regMaskTP farthestCandidates = candidates; farthestCandidates != RBM_NONE;)
+    LsraLocation   farthestLocation = MinLocation;
+    regMaskOnlyOne farthestSet      = RBM_NONE;
+    for (regMaskOnlyOne farthestCandidates = candidates; farthestCandidates != RBM_NONE;)
     {
-        regNumber farthestCandidateRegNum = genFirstRegNumFromMask(farthestCandidates);
-        regMaskTP farthestCandidateBit    = genRegMask(farthestCandidateRegNum);
+        regNumber     farthestCandidateRegNum = genFirstRegNumFromMask(farthestCandidates);
+        singleRegMask farthestCandidateBit    = genRegMask(farthestCandidateRegNum);
         farthestCandidates ^= farthestCandidateBit;
 
         // Find the next RefPosition of the register.
@@ -13047,11 +13168,11 @@ void LinearScan::RegisterSelection::try_PREV_REG_OPT()
 {
     assert(!found);
 
-    regMaskTP prevRegOptSet = RBM_NONE;
-    for (regMaskTP prevRegOptCandidates = candidates; prevRegOptCandidates != RBM_NONE;)
+    regMaskOnlyOne prevRegOptSet = RBM_NONE;
+    for (regMaskOnlyOne prevRegOptCandidates = candidates; prevRegOptCandidates != RBM_NONE;)
     {
-        regNumber prevRegOptCandidateRegNum = genFirstRegNumFromMask(prevRegOptCandidates);
-        regMaskTP prevRegOptCandidateBit    = genRegMask(prevRegOptCandidateRegNum);
+        regNumber     prevRegOptCandidateRegNum = genFirstRegNumFromMask(prevRegOptCandidates);
+        singleRegMask prevRegOptCandidateBit    = genRegMask(prevRegOptCandidateRegNum);
         prevRegOptCandidates ^= prevRegOptCandidateBit;
         Interval* assignedInterval   = linearScan->physRegs[prevRegOptCandidateRegNum].assignedInterval;
         bool      foundPrevRegOptReg = true;
@@ -13150,11 +13271,11 @@ void LinearScan::RegisterSelection::calculateUnassignedSets() // TODO: Seperate 
         return;
     }
 
-    regMaskTP coversCandidates = candidates;
+    regMaskOnlyOne coversCandidates = candidates;
     for (; coversCandidates != RBM_NONE;)
     {
-        regNumber coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates);
-        regMaskTP coversCandidateBit    = genRegMask(coversCandidateRegNum);
+        regNumber     coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates);
+        singleRegMask coversCandidateBit    = genRegMask(coversCandidateRegNum);
         coversCandidates ^= coversCandidateBit;
 
         // The register is considered unassigned if it has no assignedInterval, OR
@@ -13177,12 +13298,12 @@ void LinearScan::RegisterSelection::calculateCoversSets()
         return;
     }
 
-    preferenceSet              = (candidates & preferences);
-    regMaskTP coversCandidates = (preferenceSet == RBM_NONE) ? candidates : preferenceSet;
+    preferenceSet                   = (candidates & preferences);
+    regMaskOnlyOne coversCandidates = (preferenceSet == RBM_NONE) ? candidates : preferenceSet;
     for (; coversCandidates != RBM_NONE;)
     {
-        regNumber coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates);
-        regMaskTP coversCandidateBit    = genRegMask(coversCandidateRegNum);
+        regNumber     coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates);
+        singleRegMask coversCandidateBit    = genRegMask(coversCandidateRegNum);
         coversCandidates ^= coversCandidateBit;
 
         // If we have a single candidate we don't need to compute the preference-related sets, but we
@@ -13253,8 +13374,8 @@ void LinearScan::RegisterSelection::calculateCoversSets()
 //      Register bit selected (a single register) and REG_NA if no register was selected.
 //
 template <bool needsConsecutiveRegisters>
-regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
-                                                RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
+singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval,
+                                                    RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
 #ifdef DEBUG
     *registerScore = NONE;
@@ -13312,7 +13433,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     }
 
 #ifdef DEBUG
-    candidates = linearScan->stressLimitRegs(refPosition, candidates);
+    candidates = linearScan->stressLimitRegs(refPosition, candidates, regType);
 #endif
     assert(candidates != RBM_NONE);
 
@@ -13347,9 +13468,9 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
             nextRelatedInterval  = nullptr;
 
             // First, get the preferences for this interval
-            regMaskTP thisRelatedPreferences = finalRelatedInterval->getCurrentPreferences();
+            regMaskOnlyOne thisRelatedPreferences = finalRelatedInterval->getCurrentPreferences();
             // Now, determine if they are compatible and update the relatedPreferences that we'll consider.
-            regMaskTP newRelatedPreferences = thisRelatedPreferences & relatedPreferences;
+            regMaskOnlyOne newRelatedPreferences = thisRelatedPreferences & relatedPreferences;
             if (newRelatedPreferences != RBM_NONE && (!avoidByteRegs || thisRelatedPreferences != RBM_BYTE_REGS))
             {
                 // TODO-CQ: The following isFree() check doesn't account for the possibility that there's an
@@ -13417,12 +13538,12 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 
     if (preferCalleeSave)
     {
-        regMaskTP calleeSaveCandidates = linearScan->calleeSaveRegs(currentInterval->registerType);
+        regMaskOnlyOne calleeSaveCandidates = linearScan->calleeSaveRegs(regType);
         if (currentInterval->isWriteThru)
         {
             // We'll only prefer a callee-save register if it's already been used.
-            regMaskTP unusedCalleeSaves =
-                calleeSaveCandidates & ~(linearScan->compiler->codeGen->regSet.rsGetModifiedRegsMask());
+            regMaskOnlyOne unusedCalleeSaves =
+                calleeSaveCandidates & ~linearScan->compiler->codeGen->regSet.rsGetModifiedRegsMask(regType);
             callerCalleePrefs = calleeSaveCandidates & ~unusedCalleeSaves;
             preferences &= ~unusedCalleeSaves;
         }
@@ -13446,7 +13567,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     found = false;
 
     // Is this a fixedReg?
-    regMaskTP fixedRegMask = RBM_NONE;
+    regMaskOnlyOne fixedRegMask = RBM_NONE;
     if (refPosition->isFixedRegRef)
     {
         assert(genMaxOneBit(refPosition->registerAssignment));
@@ -13462,7 +13583,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     }
 
 #ifdef DEBUG
-    regMaskTP inUseOrBusyRegsMask = RBM_NONE;
+    AllRegsMask inUseOrBusyRegsMask;
 #endif
 
     // Eliminate candidates that are in-use or busy.
@@ -13471,8 +13592,8 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         // TODO-CQ: We assign same registerAssignment to UPPER_RESTORE and the next USE.
         // When we allocate for USE, we see that the register is busy at current location
         // and we end up with that candidate is no longer available.
-        regMaskTP busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
-        candidates &= ~busyRegs;
+        AllRegsMask busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
+        candidates &= ~busyRegs.GetRegMaskForType(regType);
 
 #ifdef TARGET_ARM
         // For TYP_DOUBLE on ARM, we can only use an even floating-point register for which the odd half
@@ -13482,7 +13603,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         // clause below creates a mask to do this.
         if (currentInterval->registerType == TYP_DOUBLE)
         {
-            candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH) >> 1);
+            candidates &= ~((busyRegs.floatRegs() & RBM_ALLDOUBLE_HIGH) >> 1);
         }
 #endif // TARGET_ARM
 
@@ -13493,11 +13614,11 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         // Also eliminate as busy any register with a conflicting fixed reference at this or
         // the next location.
         // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
-        regMaskTP checkConflictMask = candidates & linearScan->fixedRegs;
+        regMaskOnlyOne checkConflictMask = candidates & linearScan->fixedRegs.GetRegMaskForType(regType);
         while (checkConflictMask != RBM_NONE)
         {
-            regNumber checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
-            regMaskTP checkConflictBit = genRegMask(checkConflictReg);
+            regNumber     checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
+            singleRegMask checkConflictBit = genRegMask(checkConflictReg);
             checkConflictMask ^= checkConflictBit;
 
             LsraLocation checkConflictLocation = linearScan->nextFixedRef[checkConflictReg];
@@ -13507,7 +13628,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
             {
                 candidates &= ~checkConflictBit;
 #ifdef DEBUG
-                inUseOrBusyRegsMask |= checkConflictBit;
+                inUseOrBusyRegsMask |= checkConflictReg;
 #endif
             }
         }
@@ -13553,7 +13674,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     if (needsConsecutiveRegisters)
     {
 #ifdef TARGET_ARM64
-        regMaskTP busyConsecutiveCandidates = RBM_NONE;
+        regMaskFloat busyConsecutiveCandidates = RBM_NONE;
         if (refPosition->isFirstRefPositionOfConsecutiveRegisters())
         {
             freeCandidates = linearScan->getConsecutiveCandidates(candidates, refPosition, &busyConsecutiveCandidates);
@@ -13572,7 +13693,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
             // refpositions.
             assert((refPosition->refType == RefTypeUpperVectorRestore) || (genCountBits(candidates) == 1));
 
-            freeCandidates = candidates & linearScan->m_AvailableRegs;
+            freeCandidates = candidates & linearScan->m_AvailableRegs.GetRegMaskForType(currentInterval->registerType);
         }
 
         if ((freeCandidates == RBM_NONE) && (candidates == RBM_NONE))
@@ -13587,16 +13708,17 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
                 // Remove the `inUseOrBusyRegsMask` from the original candidates list and find one
                 // such range that is consecutive. Next, append that range to the `candidates`.
                 //
-                regMaskTP limitCandidatesForConsecutive = refPosition->registerAssignment & ~inUseOrBusyRegsMask;
-                regMaskTP overallLimitCandidates;
-                regMaskTP limitConsecutiveResult =
+                regMaskFloat limitCandidatesForConsecutive =
+                    refPosition->registerAssignment & ~inUseOrBusyRegsMask.floatRegs();
+                regMaskFloat overallLimitCandidates;
+                regMaskFloat limitConsecutiveResult =
                     linearScan->filterConsecutiveCandidates(limitCandidatesForConsecutive, refPosition->regCount,
                                                             &overallLimitCandidates);
                 assert(limitConsecutiveResult != RBM_NONE);
 
                 unsigned startRegister = BitOperations::BitScanForward(limitConsecutiveResult);
 
-                regMaskTP registersNeededMask = (1ULL << refPosition->regCount) - 1;
+                regMaskFloat registersNeededMask = (1ULL << refPosition->regCount) - 1;
                 candidates |= (registersNeededMask << startRegister);
             }
 
@@ -13617,7 +13739,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
             return RBM_NONE;
         }
 
-        freeCandidates = linearScan->getFreeCandidates(candidates ARM_ARG(regType));
+        freeCandidates = linearScan->getFreeCandidates(candidates, regType);
     }
 
     // If no free candidates, then double check if refPosition is an actual ref.
@@ -13718,8 +13840,8 @@ Selection_Done:
 //  select the REG_ORDER heuristics (if there are any free candidates) or REG_NUM (if all registers
 //  are busy).
 //
-regMaskTP LinearScan::RegisterSelection::selectMinimal(Interval*    currentInterval,
-                                                       RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
+singleRegMask LinearScan::RegisterSelection::selectMinimal(
+    Interval* currentInterval, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
     assert(!linearScan->enregisterLocalVars);
 #ifdef DEBUG
@@ -13768,7 +13890,7 @@ regMaskTP LinearScan::RegisterSelection::selectMinimal(Interval*    currentInter
     }
 
 #ifdef DEBUG
-    candidates = linearScan->stressLimitRegs(refPosition, candidates);
+    candidates = linearScan->stressLimitRegs(refPosition, candidates, regType);
 #endif
     assert(candidates != RBM_NONE);
 
@@ -13781,7 +13903,7 @@ regMaskTP LinearScan::RegisterSelection::selectMinimal(Interval*    currentInter
 #endif
 
     // Is this a fixedReg?
-    regMaskTP fixedRegMask = RBM_NONE;
+    regMaskOnlyOne fixedRegMask = RBM_NONE;
     if (refPosition->isFixedRegRef)
     {
         assert(genMaxOneBit(refPosition->registerAssignment));
@@ -13798,8 +13920,8 @@ regMaskTP LinearScan::RegisterSelection::selectMinimal(Interval*    currentInter
     // TODO-CQ: We assign same registerAssignment to UPPER_RESTORE and the next USE.
     // When we allocate for USE, we see that the register is busy at current location
     // and we end up with that candidate is no longer available.
-    regMaskTP busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
-    candidates &= ~busyRegs;
+    AllRegsMask busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
+    candidates &= ~busyRegs.GetRegMaskForType(regType);
 
 #ifdef TARGET_ARM
     // For TYP_DOUBLE on ARM, we can only use an even floating-point register for which the odd half
@@ -13809,18 +13931,18 @@ regMaskTP LinearScan::RegisterSelection::selectMinimal(Interval*    currentInter
     // clause below creates a mask to do this.
     if (currentInterval->registerType == TYP_DOUBLE)
     {
-        candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH) >> 1);
+        candidates &= ~((busyRegs.floatRegs() & RBM_ALLDOUBLE_HIGH) >> 1);
     }
 #endif // TARGET_ARM
 
     // Also eliminate as busy any register with a conflicting fixed reference at this or
     // the next location.
     // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
-    regMaskTP checkConflictMask = candidates & linearScan->fixedRegs;
+    regMaskOnlyOne checkConflictMask = candidates & linearScan->fixedRegs.GetRegMaskForType(regType);
     while (checkConflictMask != RBM_NONE)
     {
-        regNumber checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
-        regMaskTP checkConflictBit = genRegMask(checkConflictReg);
+        regNumber     checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
+        singleRegMask checkConflictBit = genRegMask(checkConflictReg);
         checkConflictMask ^= checkConflictBit;
 
         LsraLocation checkConflictLocation = linearScan->nextFixedRef[checkConflictReg];
@@ -13851,7 +13973,7 @@ regMaskTP LinearScan::RegisterSelection::selectMinimal(Interval*    currentInter
             return RBM_NONE;
         }
 
-        freeCandidates = linearScan->getFreeCandidates(candidates ARM_ARG(regType));
+        freeCandidates = linearScan->getFreeCandidates(candidates, regType);
 
         if (freeCandidates != RBM_NONE)
         {
@@ -13894,4 +14016,236 @@ regMaskTP LinearScan::RegisterSelection::selectMinimal(Interval*    currentInter
 
     assert(found && isSingleRegister(candidates));
     return candidates;
+}
+
+void AllRegsMask::Clear()
+{
+    registers[0] = RBM_NONE;
+    registers[1] = RBM_NONE;
+#ifdef HAS_PREDICATE_REGS
+    registers[2] = RBM_NONE;
+#endif
+}
+
+bool AllRegsMask::IsEmpty()
+{
+    return (gprRegs() | floatRegs()
+#ifdef HAS_PREDICATE_REGS
+            | predicateRegs()
+#endif // HAS_PREDICATE_REGS
+                ) == RBM_NONE;
+}
+
+unsigned AllRegsMask::Count()
+{
+    return genCountBits(gprRegs()) + genCountBits(floatRegs())
+#ifdef HAS_PREDICATE_REGS
+           + genCountBits(predicateRegs())
+#endif // HAS_PREDICATE_REGS
+        ;
+}
+
+regMaskOnlyOne AllRegsMask::operator[](int index) const
+{
+    assert(index <= REGISTER_TYPE_COUNT);
+    return registers[index];
+}
+
+regMaskOnlyOne& AllRegsMask::operator[](int index)
+{
+    assert(index <= REGISTER_TYPE_COUNT);
+    return registers[index];
+}
+
+void AllRegsMask::operator|=(const _regMaskAll& other)
+{
+    // TODO: Can we optimize to reintrepret_cast<unsigned long long>
+    //  Something like https://godbolt.org/z/1KevT8Edh
+    registers[0] |= other.gprRegs();
+    registers[1] |= other.floatRegs();
+#ifdef HAS_PREDICATE_REGS
+    registers[2] |= other.predicateRegs();
+#endif
+}
+
+void AllRegsMask::operator&=(const _regMaskAll& other)
+{
+    // TODO: Can we optimize to reintrepret_cast<unsigned long long>
+    //  Something like https://godbolt.org/z/1KevT8Edh
+    registers[0] &= other.gprRegs();
+    registers[1] &= other.floatRegs();
+#ifdef HAS_PREDICATE_REGS
+    registers[2] &= other.predicateRegs();
+#endif
+}
+
+void AllRegsMask::operator|=(const regNumber reg)
+{
+    registers[regIndexForRegister(reg)] |= genRegMask(reg);
+}
+
+void AllRegsMask::operator^=(const regNumber reg)
+{
+    registers[regIndexForRegister(reg)] ^= genRegMask(reg);
+}
+
+_regMaskAll AllRegsMask::operator~()
+{
+    return _regMaskAll(~gprRegs(), ~floatRegs()
+#ifdef HAS_PREDICATE_REGS
+                                       ,
+                       ~predicateRegs()
+#endif
+                           );
+}
+
+bool AllRegsMask::operator==(const AllRegsMask& other)
+{
+    return ((gprRegs() == other.gprRegs()) && (floatRegs() == other.floatRegs())
+#ifdef HAS_PREDICATE_REGS
+            && (predicateRegs() == other.predicateRegs())
+#endif
+                );
+}
+
+bool AllRegsMask::operator!=(const AllRegsMask& other)
+{
+    return !(*this == other);
+}
+
+_regMaskAll AllRegsMask::operator&(const AllRegsMask& other) const
+{
+    return _regMaskAll(gprRegs() & other.gprRegs(), floatRegs() & other.floatRegs()
+#ifdef HAS_PREDICATE_REGS
+                                                        ,
+                       predicateRegs() & other.predicateRegs()
+#endif
+                           );
+}
+
+_regMaskAll AllRegsMask::operator|(const _regMaskAll& other) const
+{
+    return _regMaskAll(gprRegs() | other.gprRegs(), floatRegs() | other.floatRegs()
+#ifdef HAS_PREDICATE_REGS
+                                                        ,
+                       predicateRegs() | other.predicateRegs()
+#endif
+                           );
+}
+
+_regMaskAll AllRegsMask::operator&(const regNumber reg) const
+{
+    _regMaskAll result = *this;
+    result[regIndexForRegister(reg)] &= genRegMask(reg);
+    return result;
+}
+
+void AllRegsMask::AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type)
+{
+    registers[regIndexForType(type)] |= maskToAdd;
+}
+
+void AllRegsMask::AddGprRegMask(regMaskOnlyOne maskToAdd)
+{
+    registers[0] |= maskToAdd;
+}
+
+void AllRegsMask::AddFloatRegMask(regMaskOnlyOne maskToAdd)
+{
+    registers[1] |= maskToAdd;
+}
+
+// Adds reg only if it is gpr register
+void AllRegsMask::AddGprRegInMask(regNumber reg)
+{
+    int regIndex = regIndexForRegister(reg);
+    registers[0] |= -static_cast<int>(!regIndex) & genRegMask(reg);
+}
+
+#ifdef TARGET_ARM
+void AllRegsMask::AddRegNumInMask(regNumber reg)
+{
+    regMaskOnlyOne regMask = genRegMask(reg);
+    registers[regIndexForRegister(reg)] |= regMask;
+}
+
+void AllRegsMask::RemoveRegNumFromMask(regNumber reg)
+{
+    regMaskOnlyOne regMaskToRemove = genRegMask(reg);
+    registers[regIndexForRegister(reg)] &= ~regMaskToRemove;
+}
+
+bool AllRegsMask::IsRegNumInMask(regNumber reg)
+{
+    regMaskOnlyOne regMaskToCheck = genRegMask(reg);
+    return (registers[regIndexForRegister(reg)] & regMaskToCheck) != RBM_NONE;
+}
+#endif
+
+// ----------------------------------------------------------
+//  AddRegNumForType: Adds `reg` to the mask. It is same as AddRegNumInMask(reg) except
+//  that it takes `type` as an argument and adds `reg` to the mask for that type.
+//
+void AllRegsMask::AddRegNumInMask(regNumber reg ARM_ARG(var_types type))
+{
+    regMaskOnlyOne regMask = genRegMask(reg ARM_ARG(type));
+    registers[regIndexForRegister(reg)] |= regMask;
+}
+
+void AllRegsMask::RemoveRegNumFromMask(regNumber reg ARM_ARG(var_types type))
+{
+    regMaskOnlyOne regMaskToRemove = genRegMask(reg ARM_ARG(type));
+    registers[regIndexForRegister(reg)] &= ~regMaskToRemove;
+}
+
+void AllRegsMask::RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type)
+{
+    registers[regIndexForType(type)] &= ~regMaskToRemove;
+}
+
+bool AllRegsMask::IsRegNumInMask(regNumber reg ARM_ARG(var_types type))
+{
+    regMaskOnlyOne regMaskToCheck = genRegMask(reg ARM_ARG(type));
+    return (registers[regIndexForRegister(reg)] & regMaskToCheck) != RBM_NONE;
+}
+
+bool AllRegsMask::IsGprMaskPresent(regMaskGpr maskToCheck) const
+{
+    return (gprRegs() & maskToCheck) != RBM_NONE;
+}
+
+bool AllRegsMask::IsFloatMaskPresent(regMaskFloat maskToCheck) const
+{
+    return (floatRegs() & maskToCheck) != RBM_NONE;
+}
+
+regMaskOnlyOne AllRegsMask::GetRegMaskForType(var_types type) const
+{
+    return registers[regIndexForType(type)];
+}
+
+regMaskOnlyOne AllRegsMask::GetMaskForRegNum(regNumber reg) const
+{
+    return registers[regIndexForRegister(reg)];
+}
+
+regMaskTP AllRegsMask::GetGprFloatCombinedMask() const
+{
+    // TODO: NEed to revert this once we change floatRegs to 32-bits
+    //#ifdef TARGET_64BIT
+    //    return ((regMaskTP)floatRegs() << 32) | gprRegs();
+    //#else
+    //    return ((regMaskTP)floatRegs() << REG_INT_COUNT) | gprRegs();
+    //#endif
+    // TODO: Cannot get RBM_ALLFLOAT because it is not defined for AllRegsMask
+    // Moving this definition to lsra might work, but this is temporary so
+    // just create gprMAsk. Eventually, we will use the `<< 32` mentioned in
+    // the comment above.
+    regMaskTP gprMask = (1ULL << REG_INT_COUNT) - 1;
+    return (floatRegs() & ~gprMask) | (gprRegs() & gprMask);
+}
+
+bool AllRegsMask::IsGprOrFloatPresent() const
+{
+    return GetGprFloatCombinedMask() != RBM_NONE;
 }

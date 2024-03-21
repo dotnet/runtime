@@ -109,7 +109,7 @@ inline bool compUnixX86Abi()
 #if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 enum _regNumber_enum : unsigned
 {
-#define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
 #include "register.h"
 
@@ -121,7 +121,7 @@ enum _regNumber_enum : unsigned
 enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
 };
@@ -130,7 +130,7 @@ enum _regMask_enum : unsigned __int64
 
 enum _regNumber_enum : unsigned
 {
-#define REGDEF(name, rnum, mask, xname, wname) REG_##name = rnum,
+#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
 #include "register.h"
 
@@ -142,7 +142,7 @@ enum _regNumber_enum : unsigned
 enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
-#define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
+#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
 };
@@ -151,7 +151,7 @@ enum _regMask_enum : unsigned __int64
 
 enum _regNumber_enum : unsigned
 {
-#define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
 #include "register.h"
 
@@ -164,7 +164,7 @@ enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
 
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
 
@@ -174,7 +174,7 @@ enum _regMask_enum : uint64_t
 
 enum _regNumber_enum : unsigned
 {
-#define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
 #include "register.h"
 
@@ -187,7 +187,7 @@ enum _regMask_enum : unsigned
 {
     RBM_NONE = 0,
 
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
 };
@@ -197,6 +197,13 @@ enum _regMask_enum : unsigned
 #endif
 
 #define AVAILABLE_REG_COUNT get_AVAILABLE_REG_COUNT()
+
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#define HAS_PREDICATE_REGS
+#define REGISTER_TYPE_COUNT 3
+#else
+#define REGISTER_TYPE_COUNT 2
+#endif
 
 /*****************************************************************************/
 
@@ -211,19 +218,168 @@ enum _regMask_enum : unsigned
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
+typedef unsigned __int64 regMaskGpr;
+typedef unsigned __int64 regMaskFloat;
+typedef unsigned __int64 regMaskPredicate;
+
+// Design:
+// 1. Reduce regMaskGpr to 32-bit
+// 2. singleRegMask > regMaskOnlyOne > (regMaskGpr, regMaskFloat, regMaskPredicate) > regMaskMixed
+// 3. Revisit `regMaskMixed` and see how we can separate them into `regMaskGpr`, `regMaskFloat`, `regMaskPredicate`.
+// 4. Once #3 is solved, `regMaskOnlyOne` should be reduced to 32-bit and so can `regMaskFloat` and `regMaskPredicate`
+//
+
+//
+// We will add a "//TODO: regMaskOnlyOne" through out the code
+// that we know that the existing `regMaskTP` contains data that
+// can be represented by `regMaskOnlyOne`. In other words, at
+// those places, we never pass both gpr and vector registers
+// together as part of `regMaskTP`. This will be eventually
+// converted to "unsigned"
+typedef unsigned __int64 regMaskOnlyOne;
+
+// `regMaskMixed` tells that the mask can contain any of the gpr/vector
+// registers. Once we identify all the places with `regMaskOnlyOne`,
+// `regMaskFloat`, `regMaskGpr`, we will revisit `regMaskMixed` and try
+// to either:
+// 0. Revisit regMaskMixed and see if they should be "regMaskMixed"
+// 1. Send separate parameter for `regMaskGpr` and `regMaskFloat`, etc.
+// 2. Have a data structure like struct to pass all these together
+typedef unsigned __int64 regMaskMixed; // TODO: Rename this to regMaskMixed
+
+// TODO: For LSRA, the select() method should be regMaskOnlyOne because we will be
+// allocating either GPR or Vector or Mask but not all
+typedef unsigned __int64 singleRegMask;
+
 #else
-typedef unsigned       regMaskTP;
+// x86 and arm
+typedef unsigned         regMaskTP;
+#define regMaskGpr regMaskTP
+#define regMaskFloat regMaskTP
+#define regMaskPredicate regMaskTP
+#define regMaskOnlyOne regMaskTP
+#define regMaskMixed regMaskTP
+#define singleRegMask regMaskTP
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+
+unsigned genCountBits(uint64_t bits);
+
+typedef _regNumber_enum regNumber;
+typedef unsigned char   regNumberSmall;
+
+typedef struct _regMaskAll
+{
+private:
+    regMaskTP registers[REGISTER_TYPE_COUNT];
+    regMaskOnlyOne operator[](int index) const;
+    regMaskOnlyOne& operator[](int index);
+
+public:
+    inline regMaskGpr gprRegs() const
+    {
+        return registers[0];
+    }
+    inline regMaskFloat floatRegs() const
+    {
+        return registers[1];
+    }
+#ifdef HAS_PREDICATE_REGS
+    inline regMaskPredicate predicateRegs() const
+    {
+        static_assert((REGISTER_TYPE_COUNT == 3), "There should be 3 types of registers");
+        return registers[2];
+    }
 #endif
 
-#if REGMASK_BITS == 8
-typedef unsigned char regMaskSmall;
-#define REG_MASK_INT_FMT "%02X"
-#define REG_MASK_ALL_FMT "%02X"
-#elif REGMASK_BITS == 16
-typedef unsigned short regMaskSmall;
-#define REG_MASK_INT_FMT "%04X"
-#define REG_MASK_ALL_FMT "%04X"
-#elif REGMASK_BITS == 32
+    _regMaskAll(regMaskGpr _gprRegMask, regMaskFloat _floatRegMask, regMaskPredicate _predicateRegMask = RBM_NONE)
+        : registers{_gprRegMask, _floatRegMask
+#ifdef HAS_PREDICATE_REGS
+                    ,
+                    _predicateRegMask
+#endif
+          }
+    {
+    }
+
+    _regMaskAll()
+        : registers{RBM_NONE, RBM_NONE
+#ifdef HAS_PREDICATE_REGS
+                    ,
+                    RBM_NONE
+#endif
+          }
+    {
+    }
+
+    _regMaskAll(int (&_registers)[REGISTER_TYPE_COUNT])
+    {
+        registers[0] = _registers[0];
+        registers[1] = _registers[1];
+#ifdef HAS_PREDICATE_REGS
+        registers[2] = _registers[2];
+#endif
+    }
+
+#ifdef TARGET_ARM
+    _regMaskAll(regNumber reg) : _regMaskAll()
+    {
+        AddRegNumInMask(reg);
+    }
+#endif
+
+    _regMaskAll(regNumber reg ARM_ARG(var_types type)) : _regMaskAll()
+    {
+        AddRegNumInMask(reg ARM_ARG(type));
+    }
+
+    void     Clear();
+    bool     IsEmpty();
+    unsigned Count();
+    void Create(regNumber reg);
+    // Rename this to AddRegNum
+    void AddGprRegInMask(regNumber reg);
+    void AddRegNumInMask(regNumber reg ARM_ARG(var_types type));
+    void AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type);
+    void AddGprRegMask(regMaskGpr maskToAdd);
+    void AddFloatRegMask(regMaskFloat maskToAdd);
+
+#ifdef TARGET_ARM
+    void AddRegNumInMask(regNumber reg);
+    void RemoveRegNumFromMask(regNumber reg);
+    bool IsRegNumInMask(regNumber reg);
+#endif
+    void RemoveRegNumFromMask(regNumber reg ARM_ARG(var_types type));
+    void RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type);
+    bool IsRegNumInMask(regNumber reg ARM_ARG(var_types type));
+    bool IsGprMaskPresent(regMaskGpr maskToCheck) const;
+    bool IsFloatMaskPresent(regMaskFloat maskToCheck) const;
+    // bool IsOnlyRegNumInMask(regNumber reg);
+    regMaskOnlyOne GetRegMaskForType(var_types type) const;
+    regMaskOnlyOne GetMaskForRegNum(regNumber reg) const;
+
+    // TODO: this might go away once we have just `regMaskTP` gpr_float field
+    bool      IsGprOrFloatPresent() const;
+    regMaskTP GetGprFloatCombinedMask() const;
+
+    void operator|=(const _regMaskAll& other);
+    void operator&=(const _regMaskAll& other);
+    void operator|=(const regNumber reg);
+    void operator^=(const regNumber reg);
+    _regMaskAll operator~();
+    bool operator==(const _regMaskAll& other);
+    bool operator!=(const _regMaskAll& other);
+    _regMaskAll operator&(const _regMaskAll& other) const;
+    _regMaskAll operator|(const _regMaskAll& other) const;
+    _regMaskAll operator&(const regNumber reg) const;
+
+} AllRegsMask;
+
+#define GprRegsMask(gprRegs) AllRegsMask(gprRegs, RBM_NONE)
+#define FloatRegsMask(floatRegs) AllRegsMask(RBM_NONE, floatRegs) 3
+
+#define Create_AllRegsMask(gprRegs, floatRegs) AllRegsMask((gprRegs & ~RBM_ALLFLOAT), (floatRegs & RBM_ALLFLOAT))
+
+#if REGMASK_BITS == 32
 typedef unsigned regMaskSmall;
 #define REG_MASK_INT_FMT "%08X"
 #define REG_MASK_ALL_FMT "%08X"
@@ -232,9 +388,6 @@ typedef unsigned __int64 regMaskSmall;
 #define REG_MASK_INT_FMT "%04llX"
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
-
-typedef _regNumber_enum regNumber;
-typedef unsigned char   regNumberSmall;
 
 /*****************************************************************************/
 
@@ -267,6 +420,14 @@ typedef unsigned char   regNumberSmall;
 #include "targetriscv64.h"
 #else
   #error Unsupported or unset target architecture
+#endif
+
+#ifdef HAS_PREDICATE_REGS
+  #define AllRegsMask_CALLEE_SAVED AllRegsMask(RBM_INT_CALLEE_SAVED, RBM_FLT_CALLEE_SAVED, RBM_MSK_CALLEE_SAVED)
+  #define AllRegsMask_CALLEE_TRASH AllRegsMask(RBM_INT_CALLEE_TRASH, RBM_FLT_CALLEE_TRASH, RBM_MSK_CALLEE_TRASH)
+#else
+    #define AllRegsMask_CALLEE_SAVED AllRegsMask(RBM_INT_CALLEE_SAVED, RBM_FLT_CALLEE_SAVED)
+    #define AllRegsMask_CALLEE_TRASH AllRegsMask(RBM_INT_CALLEE_TRASH, RBM_FLT_CALLEE_TRASH)
 #endif
 
 #ifdef TARGET_XARCH
@@ -338,7 +499,8 @@ const char* getRegName(regNumber reg);
 
 #ifdef DEBUG
 const char* getRegNameFloat(regNumber reg, var_types type);
-extern void dspRegMask(regMaskTP regMask, size_t minSiz = 0);
+extern void dspRegMask(regMaskOnlyOne mask, size_t minSiz = 0);
+extern void dspRegMask(AllRegsMask mask, size_t minSiz = 0);
 #endif
 
 #if CPU_HAS_BYTE_REGS
@@ -353,8 +515,8 @@ inline bool isByteReg(regNumber reg)
 }
 #endif
 
-inline regMaskTP genRegMask(regNumber reg);
-inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
+inline singleRegMask genRegMask(regNumber reg);
+inline regMaskFloat genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
 
 /*****************************************************************************
  * Return true if the register number is valid
@@ -446,7 +608,7 @@ inline regNumber theFixedRetBuffReg()
 // theFixedRetBuffMask:
 //     Returns the regNumber to use for the fixed return buffer
 //
-inline regMaskTP theFixedRetBuffMask()
+inline regMaskGpr theFixedRetBuffMask()
 {
     assert(hasFixedRetBuffReg()); // This predicate should be checked before calling this method
 #ifdef TARGET_ARM64
@@ -475,7 +637,7 @@ inline unsigned theFixedRetBuffArgNum()
 //     Returns the full mask of all possible integer registers
 //     Note this includes the fixed return buffer register on Arm64
 //
-inline regMaskTP fullIntArgRegMask()
+inline regMaskGpr fullIntArgRegMask()
 {
     if (hasFixedRetBuffReg())
     {
@@ -560,7 +722,7 @@ inline bool floatRegCanHoldType(regNumber reg, var_types type)
 
 extern const regMaskSmall regMasks[REG_COUNT];
 
-inline regMaskTP genRegMask(regNumber reg)
+inline singleRegMask genRegMask(regNumber reg)
 {
     assert((unsigned)reg < ArrLen(regMasks));
 #ifdef TARGET_AMD64
@@ -568,7 +730,7 @@ inline regMaskTP genRegMask(regNumber reg)
     // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
     // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
     // and the result needs to be zero.
-    regMaskTP result = 1ULL << reg;
+    singleRegMask result = 1ULL << reg;
     assert(result == regMasks[reg]);
     return result;
 #else
@@ -581,7 +743,7 @@ inline regMaskTP genRegMask(regNumber reg)
  *  Map a register number to a floating-point register mask.
  */
 
-inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
+inline regMaskFloat genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
 {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64) ||            \
     defined(TARGET_RISCV64)
@@ -624,22 +786,20 @@ inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_D
 //    For registers that are used in pairs, the caller will be handling
 //    each member of the pair separately.
 //
-inline regMaskTP genRegMask(regNumber regNum, var_types type)
+inline regMaskOnlyOne genRegMask(regNumber regNum, var_types type)
 {
 #if defined(TARGET_ARM)
-    regMaskTP regMask = RBM_NONE;
-
     if (varTypeUsesIntReg(type))
     {
-        regMask = genRegMask(regNum);
+        return genRegMask(regNum);
     }
     else
     {
         assert(varTypeUsesFloatReg(type));
-        regMask = genRegMaskFloat(regNum, type);
+        return genRegMaskFloat(regNum, type);
     }
 
-    return regMask;
+    return RBM_NONE;
 #else
     return genRegMask(regNum);
 #endif
@@ -650,8 +810,8 @@ inline regMaskTP genRegMask(regNumber regNum, var_types type)
  *  These arrays list the callee-saved register numbers (and bitmaps, respectively) for
  *  the current architecture.
  */
-extern const regNumber raRegCalleeSaveOrder[CNT_CALLEE_SAVED];
-extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALLEE_SAVED];
+extern const regNumber  raRegCalleeSaveOrder[CNT_CALLEE_SAVED];
+extern const regMaskGpr raRbmCalleeSaveOrder[CNT_CALLEE_SAVED];
 
 // This method takes a "compact" bitset of the callee-saved registers, and "expands" it to a full register mask.
 regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short);

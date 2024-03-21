@@ -3415,7 +3415,7 @@ void emitter::emitDispIllegalInstruction(code_t instructionCode)
 // clang-format off
 static const char* const RegNames[] =
 {
-    #define REGDEF(name, rnum, mask, sname) sname,
+    #define REGDEF(name, rnum, mask, sname, regTypeTag) sname,
     #include "register.h"
 };
 // clang-format on

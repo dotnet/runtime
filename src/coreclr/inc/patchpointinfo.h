@@ -37,7 +37,7 @@ struct PatchpointInfo
     // Initialize
     void Initialize(unsigned localCount, int totalFrameSize)
     {
-        m_calleeSaveRegisters     = 0;
+        m_calleeSaveGprRegisters     = 0;
         m_totalFrameSize          = totalFrameSize;
         m_numberOfLocals          = localCount;
         m_genericContextArgOffset = -1;
@@ -49,7 +49,7 @@ struct PatchpointInfo
     // Copy
     void Copy(const PatchpointInfo* original)
     {
-        m_calleeSaveRegisters = original->m_calleeSaveRegisters;
+        m_calleeSaveGprRegisters = original->m_calleeSaveGprRegisters;
         m_genericContextArgOffset = original->m_genericContextArgOffset;
         m_keptAliveThisOffset = original->m_keptAliveThisOffset;
         m_securityCookieOffset = original->m_securityCookieOffset;
@@ -163,14 +163,14 @@ struct PatchpointInfo
     // Callee save registers saved by the original method.
     // Includes all saves that must be restored (eg includes pushed RBP on x64).
     //
-    uint64_t CalleeSaveRegisters() const
+    uint64_t CalleeSaveGprRegisters() const
     {
-        return m_calleeSaveRegisters;
+        return m_calleeSaveGprRegisters;
     }
 
-    void SetCalleeSaveRegisters(uint64_t registerMask)
+    void SetCalleeSaveGprRegisters(uint64_t gprRegs)
     {
-        m_calleeSaveRegisters = registerMask;
+        m_calleeSaveGprRegisters = gprRegs;
     }
 
 private:
@@ -180,7 +180,7 @@ private:
         EXPOSURE_MASK = 0x1
     };
 
-    uint64_t m_calleeSaveRegisters;
+    uint64_t m_calleeSaveGprRegisters;
     unsigned m_numberOfLocals;
     int      m_totalFrameSize;
     int      m_genericContextArgOffset;

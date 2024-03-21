@@ -196,10 +196,10 @@ void Compiler::unwindEndEpilog()
 
 #if defined(TARGET_ARM)
 
-void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
+void Compiler::unwindPushPopMaskInt(regMaskGpr maskInt, bool useOpsize16)
 {
     // floating point registers cannot be specified in 'maskInt'
-    assert((maskInt & RBM_ALLFLOAT) == 0);
+    assert(IsGprRegMask(maskInt));
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -213,8 +213,8 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
 
         if ((maskInt & (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3)) == 0)
         {
-            regMaskTP matchMask = maskInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7);
-            regMaskTP valMask   = RBM_R4;
+            regMaskGpr matchMask = maskInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7);
+            regMaskGpr valMask   = RBM_R4;
             while (val < 4)
             {
                 if (matchMask == valMask)
@@ -253,8 +253,8 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
         if (((maskInt & (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3)) == 0) &&
             ((maskInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8)) == (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8)))
         {
-            regMaskTP matchMask = maskInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 | RBM_R11);
-            regMaskTP valMask   = RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8;
+            regMaskGpr matchMask = maskInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 | RBM_R11);
+            regMaskGpr valMask   = RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8;
             while (val < 4)
             {
                 if (matchMask == valMask)
@@ -283,10 +283,10 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
     }
 }
 
-void Compiler::unwindPushPopMaskFloat(regMaskTP maskFloat)
+void Compiler::unwindPushPopMaskFloat(regMaskFloat maskFloat)
 {
     // Only floating pointer registers can be specified in 'maskFloat'
-    assert((maskFloat & ~RBM_ALLFLOAT) == 0);
+    assert(IsFloatRegMask(maskFloat));
 
     // If the maskFloat is zero there is no unwind code to emit
     //
@@ -297,8 +297,8 @@ void Compiler::unwindPushPopMaskFloat(regMaskTP maskFloat)
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
-    BYTE      val     = 0;
-    regMaskTP valMask = (RBM_F16 | RBM_F17);
+    BYTE         val     = 0;
+    regMaskFloat valMask = (RBM_F16 | RBM_F17);
 
     while (maskFloat != valMask)
     {
@@ -318,8 +318,10 @@ void Compiler::unwindPushPopMaskFloat(regMaskTP maskFloat)
     pu->AddCode(0xE0 | val);
 }
 
-void Compiler::unwindPushMaskInt(regMaskTP maskInt)
+void Compiler::unwindPushMaskInt(regMaskGpr maskInt)
 {
+    assert(IsGprRegMask(maskInt));
+
     // Only r0-r12 and lr are supported
     assert((maskInt &
             ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 |
@@ -338,8 +340,10 @@ void Compiler::unwindPushMaskInt(regMaskTP maskInt)
     unwindPushPopMaskInt(maskInt, useOpsize16);
 }
 
-void Compiler::unwindPushMaskFloat(regMaskTP maskFloat)
+void Compiler::unwindPushMaskFloat(regMaskFloat maskFloat)
 {
+    assert(IsFloatRegMask(maskFloat));
+
     // Only floating point registers should be in maskFloat
     assert((maskFloat & RBM_ALLFLOAT) == maskFloat);
 
@@ -354,8 +358,10 @@ void Compiler::unwindPushMaskFloat(regMaskTP maskFloat)
     unwindPushPopMaskFloat(maskFloat);
 }
 
-void Compiler::unwindPopMaskInt(regMaskTP maskInt)
+void Compiler::unwindPopMaskInt(regMaskGpr maskInt)
 {
+    assert(IsGprRegMask(maskInt));
+
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
@@ -382,8 +388,10 @@ void Compiler::unwindPopMaskInt(regMaskTP maskInt)
     unwindPushPopMaskInt(maskInt, useOpsize16);
 }
 
-void Compiler::unwindPopMaskFloat(regMaskTP maskFloat)
+void Compiler::unwindPopMaskFloat(regMaskFloat maskFloat)
 {
+    assert(IsFloatRegMask(maskFloat));
+
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {

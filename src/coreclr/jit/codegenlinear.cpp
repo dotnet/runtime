@@ -60,7 +60,7 @@ void CodeGen::genInitializeRegisterState()
         regNumber reg = varDsc->GetRegNum();
         if (genIsValidIntReg(reg))
         {
-            regSet.verifyRegUsed(reg);
+            regSet.verifyGprRegUsed(reg);
         }
     }
 }
@@ -201,9 +201,9 @@ void CodeGen::genCodeForBBlist()
         // change? We cleared them out above. Maybe we should just not clear them out, but update the ones that change
         // here. That would require handling the changes in recordVarLocationsAtStartOfBB().
 
-        regMaskTP newLiveRegSet  = RBM_NONE;
-        regMaskTP newRegGCrefSet = RBM_NONE;
-        regMaskTP newRegByrefSet = RBM_NONE;
+        AllRegsMask newLiveRegSet;
+        regMaskGpr  newRegGCrefSet = RBM_NONE;
+        regMaskGpr  newRegByrefSet = RBM_NONE;
 #ifdef DEBUG
         VARSET_TP removedGCVars(VarSetOps::MakeEmpty(compiler));
         VARSET_TP addedGCVars(VarSetOps::MakeEmpty(compiler));
@@ -216,14 +216,18 @@ void CodeGen::genCodeForBBlist()
 
             if (varDsc->lvIsInReg())
             {
-                newLiveRegSet |= varDsc->lvRegMask();
+                regMaskOnlyOne varRegMask = varDsc->lvRegMask();
+                assert(compiler->IsOnlyOneRegMask(varRegMask));
+
+                newLiveRegSet.AddRegMaskForType(varRegMask, varDsc->TypeGet());
+
                 if (varDsc->lvType == TYP_REF)
                 {
-                    newRegGCrefSet |= varDsc->lvRegMask();
+                    newRegGCrefSet |= varRegMask;
                 }
                 else if (varDsc->lvType == TYP_BYREF)
                 {
-                    newRegByrefSet |= varDsc->lvRegMask();
+                    newRegByrefSet |= varRegMask;
                 }
                 if (!varDsc->IsAlwaysAliveInMemory())
                 {
@@ -390,7 +394,7 @@ void CodeGen::genCodeForBBlist()
         // We cannot emit this code in the prolog as it might make the prolog too large.
         if (compiler->compShouldPoisonFrame() && compiler->fgBBisScratch(block))
         {
-            genPoisonFrame(newLiveRegSet);
+            genPoisonFrame(newLiveRegSet.gprRegs());
         }
 
         // Traverse the block in linear order, generating code for each node as we
@@ -480,8 +484,8 @@ void CodeGen::genCodeForBBlist()
 
         /* Make sure we didn't bungle pointer register tracking */
 
-        regMaskTP ptrRegs       = gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur;
-        regMaskTP nonVarPtrRegs = ptrRegs & ~regSet.GetMaskVars();
+        regMaskGpr ptrRegs       = gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur;
+        regMaskGpr nonVarPtrRegs = ptrRegs & ~regSet.GetGprMaskVars();
 
         // If return is a GC-type, clear it.  Note that if a common
         // epilog is generated (genReturnBB) it has a void return
@@ -499,14 +503,14 @@ void CodeGen::genCodeForBBlist()
         if (nonVarPtrRegs)
         {
             printf("Regset after " FMT_BB " gcr=", block->bbNum);
-            printRegMaskInt(gcInfo.gcRegGCrefSetCur & ~regSet.GetMaskVars());
-            compiler->GetEmitter()->emitDispRegSet(gcInfo.gcRegGCrefSetCur & ~regSet.GetMaskVars());
+            printRegMaskInt(gcInfo.gcRegGCrefSetCur & ~regSet.GetGprMaskVars());
+            compiler->GetEmitter()->emitDispGprRegSet(gcInfo.gcRegGCrefSetCur & ~regSet.GetGprMaskVars());
             printf(", byr=");
-            printRegMaskInt(gcInfo.gcRegByrefSetCur & ~regSet.GetMaskVars());
-            compiler->GetEmitter()->emitDispRegSet(gcInfo.gcRegByrefSetCur & ~regSet.GetMaskVars());
+            printRegMaskInt(gcInfo.gcRegByrefSetCur & ~regSet.GetGprMaskVars());
+            compiler->GetEmitter()->emitDispGprRegSet(gcInfo.gcRegByrefSetCur & ~regSet.GetGprMaskVars());
             printf(", regVars=");
-            printRegMaskInt(regSet.GetMaskVars());
-            compiler->GetEmitter()->emitDispRegSet(regSet.GetMaskVars());
+            printRegMaskInt(regSet.GetGprMaskVars());
+            compiler->GetEmitter()->emitDispGprRegSet(regSet.GetGprMaskVars());
             printf("\n");
         }
 
@@ -937,7 +941,14 @@ void CodeGen::genSpillVar(GenTree* tree)
 
         // Remove the live var from the register.
         genUpdateRegLife(varDsc, /*isBorn*/ false, /*isDying*/ true DEBUGARG(tree));
-        gcInfo.gcMarkRegSetNpt(varDsc->lvRegMask());
+        if (varTypeUsesIntReg(varDsc))
+        {
+            // TYP_STRUCT are also VTR_INT and can return vector registers.
+            // Make sure that we pass the register, so Npt will be called
+            // only if the `reg` is Gpr.
+            regNumber reg = varDsc->GetRegNum();
+            gcInfo.gcMarkRegNpt(reg);
+        }
 
         if (VarSetOps::IsMember(compiler, gcInfo.gcTrkStkPtrLcls, varDsc->lvVarIndex))
         {
@@ -1123,7 +1134,7 @@ void CodeGen::genUnspillLocal(
         }
 #endif // DEBUG
 
-        regSet.AddMaskVars(genGetRegMask(varDsc));
+        regSet.AddMaskVars(varDsc->TypeGet(), genGetRegMask(varDsc));
     }
 
     gcInfo.gcMarkRegPtrVal(regNum, type);
@@ -1454,11 +1465,11 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
         if (fldVarDsc->GetRegNum() == REG_STK)
         {
             // We have loaded this into a register only temporarily
-            gcInfo.gcMarkRegSetNpt(genRegMask(reg));
+            gcInfo.gcMarkRegNpt(reg);
         }
         else if (lcl->IsLastUse(multiRegIndex))
         {
-            gcInfo.gcMarkRegSetNpt(genRegMask(fldVarDsc->GetRegNum()));
+            gcInfo.gcMarkRegNpt(fldVarDsc->GetRegNum());
         }
     }
     else
@@ -1466,7 +1477,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
         regNumber regAtIndex = tree->GetRegByIndex(multiRegIndex);
         if (regAtIndex != REG_NA)
         {
-            gcInfo.gcMarkRegSetNpt(genRegMask(regAtIndex));
+            gcInfo.gcMarkRegNpt(regAtIndex);
         }
     }
     return reg;
@@ -1533,11 +1544,11 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
         if (varDsc->GetRegNum() == REG_STK)
         {
             // We have loaded this into a register only temporarily
-            gcInfo.gcMarkRegSetNpt(genRegMask(tree->GetRegNum()));
+            gcInfo.gcMarkRegNpt(tree->GetRegNum());
         }
         else if ((tree->gtFlags & GTF_VAR_DEATH) != 0)
         {
-            gcInfo.gcMarkRegSetNpt(genRegMask(varDsc->GetRegNum()));
+            gcInfo.gcMarkRegNpt(varDsc->GetRegNum());
         }
     }
     else if (tree->gtSkipReloadOrCopy()->IsMultiRegLclVar())
@@ -1563,17 +1574,17 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
             if (fldVarDsc->GetRegNum() == REG_STK)
             {
                 // We have loaded this into a register only temporarily
-                gcInfo.gcMarkRegSetNpt(genRegMask(reg));
+                gcInfo.gcMarkRegNpt(reg);
             }
             else if (lcl->IsLastUse(i))
             {
-                gcInfo.gcMarkRegSetNpt(genRegMask(fldVarDsc->GetRegNum()));
+                gcInfo.gcMarkRegNpt(fldVarDsc->GetRegNum());
             }
         }
     }
     else
     {
-        gcInfo.gcMarkRegSetNpt(tree->gtGetRegMask());
+        gcInfo.gcMarkRegSetNpt(tree->gtGetGprRegMask());
     }
 
     genCheckConsumeNode(tree);
@@ -1857,7 +1868,7 @@ void CodeGen::genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode)
 
     genUnspillRegIfNeeded(putArgNode);
 
-    gcInfo.gcMarkRegSetNpt(putArgNode->gtGetRegMask());
+    gcInfo.gcMarkRegSetNpt(putArgNode->gtGetGprRegMask());
 
     genCheckConsumeNode(putArgNode);
 }
@@ -2155,14 +2166,14 @@ void CodeGen::genProduceReg(GenTree* tree)
                     {
                         regNumber reg = tree->GetRegByIndex(i);
                         regSet.rsSpillTree(reg, tree, i);
-                        gcInfo.gcMarkRegSetNpt(genRegMask(reg));
+                        gcInfo.gcMarkRegNpt(reg);
                     }
                 }
             }
             else
             {
                 regSet.rsSpillTree(tree->GetRegNum(), tree);
-                gcInfo.gcMarkRegSetNpt(genRegMask(tree->GetRegNum()));
+                gcInfo.gcMarkRegNpt(tree->GetRegNum());
             }
 
             tree->gtFlags |= GTF_SPILLED;
@@ -2256,8 +2267,8 @@ void CodeGen::genProduceReg(GenTree* tree)
 // transfer gc/byref status of src reg to dst reg
 void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
 {
-    regMaskTP srcMask = genRegMask(src);
-    regMaskTP dstMask = genRegMask(dst);
+    regMaskOnlyOne srcMask = genRegMask(src);
+    regMaskOnlyOne dstMask = genRegMask(dst);
 
     if (gcInfo.gcRegGCrefSetCur & srcMask)
     {
@@ -2269,7 +2280,7 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
     }
     else
     {
-        gcInfo.gcMarkRegSetNpt(dstMask);
+        gcInfo.gcMarkRegNpt(dst);
     }
 }
 

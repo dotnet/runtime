@@ -48,10 +48,12 @@
 
   #define REG_FP_FIRST             REG_V0
   #define REG_FP_LAST              REG_V31
+  #define REG_FP_COUNT             (REG_FP_LAST - REG_FP_FIRST + 1)  
   #define FIRST_FP_ARGREG          REG_V0
   #define LAST_FP_ARGREG           REG_V15
   #define REG_PREDICATE_FIRST      REG_P0
   #define REG_PREDICATE_LAST       REG_P15
+  #define REG_MASK_COUNT           (REG_PREDICATE_LAST - REG_PREDICATE_FIRST + 1)
   #define REG_PREDICATE_LOW_LAST   REG_P7  // Some instructions can only use the first half of the predicate registers.
   #define REG_PREDICATE_HIGH_FIRST REG_P8  // Similarly, some instructions can only use the second half of the predicate registers.
   #define REG_PREDICATE_HIGH_LAST  REG_P15
@@ -184,20 +186,21 @@
   #define REG_WRITE_BARRIER_SRC_BYREF    REG_R13
   #define RBM_WRITE_BARRIER_SRC_BYREF    RBM_R13
 
-  #define RBM_CALLEE_TRASH_NOGC          (RBM_R12|RBM_R15|RBM_IP0|RBM_IP1|RBM_DEFAULT_HELPER_CALL_TARGET)
+  #define _RBM_CALLEE_TRASH_NOGC        (RBM_R12|RBM_R15|RBM_IP0|RBM_IP1|RBM_DEFAULT_HELPER_CALL_TARGET)
+  #define AllRegsMask_CALLEE_TRASH_NOGC        GprRegsMask(_RBM_CALLEE_TRASH_NOGC)
 
   // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-  #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_R14|RBM_CALLEE_TRASH_NOGC)
+  #define AllRegsMask_CALLEE_TRASH_WRITEBARRIER         GprRegsMask(RBM_R14 | _RBM_CALLEE_TRASH_NOGC)
 
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-  #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
+  #define AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER       AllRegsMask_CALLEE_TRASH_NOGC
 
   // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | RBM_CALLEE_TRASH_NOGC)
+  #define AllRegsMask_CALLEE_TRASH_WRITEBARRIER_BYREF   GprRegsMask(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | _RBM_CALLEE_TRASH_NOGC)
 
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
   // Note that x13 and x14 are still valid byref pointers after this helper call, despite their value being changed.
-  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
+  #define AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF AllRegsMask_CALLEE_TRASH_NOGC
 
   // GenericPInvokeCalliHelper VASigCookie Parameter
   #define REG_PINVOKE_COOKIE_PARAM          REG_R15
@@ -245,9 +248,9 @@
   #define RBM_PROFILER_LEAVE_ARG_CALLER_SP  RBM_R11
 
   // The registers trashed by profiler enter/leave/tailcall hook
-  #define RBM_PROFILER_ENTER_TRASH     (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS|RBM_ARG_RET_BUFF|RBM_FLTARG_REGS|RBM_FP))
-  #define RBM_PROFILER_LEAVE_TRASH     (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS|RBM_ARG_RET_BUFF|RBM_FLTARG_REGS|RBM_FP))
-  #define RBM_PROFILER_TAILCALL_TRASH  RBM_PROFILER_LEAVE_TRASH
+  #define AllRegsMask_PROFILER_ENTER_TRASH     (AllRegsMask_CALLEE_TRASH & Create_AllRegsMask(~(RBM_ARG_REGS|RBM_ARG_RET_BUFF|RBM_FP), ~RBM_FLTARG_REGS))
+  #define AllRegsMask_PROFILER_LEAVE_TRASH  AllRegsMask_PROFILER_ENTER_TRASH
+  #define AllRegsMask_PROFILER_TAILCALL_TRASH  AllRegsMask_PROFILER_ENTER_TRASH
 
   // Which register are int and long values returned in ?
   #define REG_INTRET               REG_R0
@@ -262,12 +265,13 @@
   #define RBM_DOUBLERET            RBM_V0
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
-  #define RBM_STOP_FOR_GC_TRASH    RBM_CALLEE_TRASH
+  #define AllRegsMask_STOP_FOR_GC_TRASH    AllRegsMask_CALLEE_TRASH
 
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
-  #define RBM_INIT_PINVOKE_FRAME_TRASH  RBM_CALLEE_TRASH
+  #define AllRegsMask_INIT_PINVOKE_FRAME_TRASH  AllRegsMask_CALLEE_TRASH
 
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R15))
+  #define AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH GprRegsMask(RBM_VALIDATE_INDIRECT_CALL_TRASH)
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_R15
   #define REG_DISPATCH_INDIRECT_CALL_ADDR REG_R9
 
@@ -308,7 +312,7 @@
   #define REG_ARG_7                REG_R7
 
   extern const regNumber intArgRegs [MAX_REG_ARG];
-  extern const regMaskTP intArgMasks[MAX_REG_ARG];
+  extern const regMaskGpr intArgMasks[MAX_REG_ARG];
 
   #define RBM_ARG_0                RBM_R0
   #define RBM_ARG_1                RBM_R1
@@ -341,7 +345,7 @@
   #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3|RBM_FLTARG_4|RBM_FLTARG_5|RBM_FLTARG_6|RBM_FLTARG_7)
 
   extern const regNumber fltArgRegs [MAX_FLOAT_REG_ARG];
-  extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];
+  extern const regMaskFloat fltArgMasks[MAX_FLOAT_REG_ARG];
 
   #define LBL_DIST_SMALL_MAX_NEG  (-1048576)
   #define LBL_DIST_SMALL_MAX_POS  (+1048575)

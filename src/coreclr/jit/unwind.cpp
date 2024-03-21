@@ -152,18 +152,7 @@ void Compiler::unwindPushPopCFI(regNumber reg)
     FuncInfoDsc*   func     = funCurrentFunc();
     UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
 
-    regMaskTP relOffsetMask = RBM_CALLEE_SAVED
-#if defined(UNIX_AMD64_ABI) && ETW_EBP_FRAMED
-                              // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
-                              // is excluded from the callee-save register list.
-                              // Make sure the register gets PUSH unwind info in this case,
-                              // since it is pushed as a frame register.
-                              | RBM_FPBASE
-#endif
-#if defined(TARGET_ARM)
-                              | RBM_R11 | RBM_LR | RBM_PC
-#endif
-        ;
+    regMaskOnlyOne mask = genRegMask(reg);
 
 #if defined(TARGET_ARM)
     createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL,
@@ -172,7 +161,35 @@ void Compiler::unwindPushPopCFI(regNumber reg)
     assert(reg < REG_FP_FIRST);
     createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, REGSIZE_BYTES);
 #endif
-    if (relOffsetMask & genRegMask(reg))
+
+    bool shouldCreateCfiCode = false;
+    if (emitter::isGeneralRegister(reg))
+    {
+
+#if defined(UNIX_AMD64_ABI) && ETW_EBP_FRAMED
+        // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
+        // is excluded from the callee-save register list.
+        // Make sure the register gets PUSH unwind info in this case,
+        // since it is pushed as a frame register.
+        mask |= RBM_FPBASE;
+#endif
+#if defined(TARGET_ARM)
+        mask |= RBM_R11 | RBM_LR | RBM_PC;
+#endif
+        shouldCreateCfiCode = (RBM_INT_CALLEE_SAVED & mask);
+    }
+    else if (emitter::isFloatReg(reg))
+    {
+        shouldCreateCfiCode = (RBM_FLT_CALLEE_SAVED & mask);
+    }
+#ifdef HAS_PREDICATE_REGS
+    else if (emitter::isMaskReg(reg) && (RBM_MSK_CALLEE_SAVED & mask))
+    {
+        shouldCreateCfiCode = (RBM_MSK_CALLEE_SAVED & mask);
+    }
+#endif // HAS_PREDICATE_REGS
+
+    if (shouldCreateCfiCode)
     {
         createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg));
     }
@@ -201,14 +218,16 @@ void Compiler::unwindBegPrologCFI()
 #endif // FEATURE_EH_FUNCLETS
 }
 
-void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
+void Compiler::unwindPushPopMaskCFI(regMaskOnlyOne regMask, bool isFloat)
 {
+    assert(IsOnlyOneRegMask(regMask));
+
 #if TARGET_ARM
-    regNumber regNum = isFloat ? REG_PREV(REG_FP_LAST) : REG_INT_LAST;
-    regMaskTP regBit = isFloat ? genRegMask(regNum) | genRegMask(REG_NEXT(regNum)) : genRegMask(regNum);
+    regNumber      regNum = isFloat ? REG_PREV(REG_FP_LAST) : REG_INT_LAST;
+    regMaskOnlyOne regBit = isFloat ? genRegMask(regNum) | genRegMask(REG_NEXT(regNum)) : genRegMask(regNum);
 #else
-    regNumber regNum = isFloat ? REG_FP_LAST : REG_INT_LAST;
-    regMaskTP regBit = genRegMask(regNum);
+    regNumber      regNum = isFloat ? REG_FP_LAST : REG_INT_LAST;
+    regMaskOnlyOne regBit = genRegMask(regNum);
 #endif
 
     for (; regMask != 0 && regBit != RBM_NONE;)

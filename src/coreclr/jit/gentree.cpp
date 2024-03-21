@@ -1057,14 +1057,14 @@ bool GenTree::NeedsConsecutiveRegisters() const
 // Return Value:
 //    Reg Mask of GenTree node.
 //
-regMaskTP GenTree::gtGetContainedRegMask()
+AllRegsMask GenTree::gtGetContainedRegMask()
 {
     if (!isContained())
     {
-        return isUsedFromReg() ? gtGetRegMask() : RBM_NONE;
+        return isUsedFromReg() ? gtGetRegMask() : AllRegsMask();
     }
 
-    regMaskTP mask = 0;
+    AllRegsMask mask;
     for (GenTree* operand : Operands())
     {
         mask |= operand->gtGetContainedRegMask();
@@ -1081,13 +1081,15 @@ regMaskTP GenTree::gtGetContainedRegMask()
 // Return Value:
 //    Reg Mask of GenTree node.
 //
-regMaskTP GenTree::gtGetRegMask() const
+// TODO: All the callers of gtGetRegMask() are just interested in gpr
+// so, this can just return gpr mask and if none exist, just return RBM_NONE
+AllRegsMask GenTree::gtGetRegMask() const
 {
-    regMaskTP resultMask;
+    AllRegsMask resultMask;
 
     if (IsMultiRegCall())
     {
-        resultMask = genRegMask(GetRegNum());
+        resultMask = AllRegsMask(GetRegNum());
         resultMask |= AsCall()->GetOtherRegMask();
     }
     else if (IsCopyOrReloadOfMultiRegCall())
@@ -1100,13 +1102,12 @@ regMaskTP GenTree::gtGetRegMask() const
         const GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
         const unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
 
-        resultMask = RBM_NONE;
         for (unsigned i = 0; i < regCount; ++i)
         {
             regNumber reg = copyOrReload->GetRegNumByIdx(i);
             if (reg != REG_NA)
             {
-                resultMask |= genRegMask(reg);
+                resultMask |= reg;
             }
         }
     }
@@ -1116,18 +1117,92 @@ regMaskTP GenTree::gtGetRegMask() const
         const GenTreePutArgSplit* splitArg = AsPutArgSplit();
         const unsigned            regCount = splitArg->gtNumRegs;
 
-        resultMask = RBM_NONE;
         for (unsigned i = 0; i < regCount; ++i)
         {
             regNumber reg = splitArg->GetRegNumByIdx(i);
             assert(reg != REG_NA);
-            resultMask |= genRegMask(reg);
+            resultMask |= reg;
         }
     }
 #endif // FEATURE_ARG_SPLIT
     else
     {
-        resultMask = genRegMask(GetRegNum());
+        resultMask = AllRegsMask(GetRegNum());
+    }
+
+    return resultMask;
+}
+
+//---------------------------------------------------------------
+// gtGetRegMask: Get the gpr reg mask of the node.
+//
+// Arguments:
+//    None
+//
+// Return Value:
+//    Reg Mask of GenTree node.
+//
+// Note: This method would populate the reg mask with only the GPR registers.
+regMaskGpr GenTree::gtGetGprRegMask() const
+{
+    regMaskGpr resultMask = RBM_NONE;
+
+    if (IsMultiRegCall())
+    {
+        regNumber reg = GetRegNum();
+        resultMask |= -static_cast<int>(!regIndexForRegister(reg)) & genRegMask(reg);
+
+#if FEATURE_MULTIREG_RET
+        const GenTreeCall* call = AsCall();
+        for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
+        {
+            regNumber otherReg = (regNumber)call->gtOtherRegs[i];
+            if (otherReg != REG_NA)
+            {
+                resultMask |= -static_cast<int>(!regIndexForRegister(otherReg)) & genRegMask(otherReg);
+                continue;
+            }
+            break;
+        }
+#endif
+    }
+    else if (IsCopyOrReloadOfMultiRegCall())
+    {
+        // A multi-reg copy or reload, will have valid regs for only those
+        // positions that need to be copied or reloaded.  Hence we need
+        // to consider only those registers for computing reg mask.
+
+        const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
+        const GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
+        const unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
+
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            regNumber reg = copyOrReload->GetRegNumByIdx(i);
+            if (reg != REG_NA)
+            {
+                resultMask |= -static_cast<int>(!regIndexForRegister(reg)) & genRegMask(reg);
+            }
+        }
+    }
+#if FEATURE_ARG_SPLIT
+    else if (compFeatureArgSplit() && OperIsPutArgSplit())
+    {
+        const GenTreePutArgSplit* splitArg = AsPutArgSplit();
+        const unsigned            regCount = splitArg->gtNumRegs;
+
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            regNumber reg = splitArg->GetRegNumByIdx(i);
+            assert(reg != REG_NA);
+            resultMask |= -static_cast<int>(!regIndexForRegister(reg)) & genRegMask(reg);
+        }
+    }
+#endif // FEATURE_ARG_SPLIT
+    else
+    {
+        regNumber reg = GetRegNum();
+        resultMask |= -static_cast<int>(!regIndexForRegister(reg)) & genRegMask(reg);
     }
 
     return resultMask;
@@ -2172,16 +2247,17 @@ bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
 // Return Value:
 //    Reg mask of gtOtherRegs of call node.
 //
-regMaskTP GenTreeCall::GetOtherRegMask() const
+AllRegsMask GenTreeCall::GetOtherRegMask() const
 {
-    regMaskTP resultMask = RBM_NONE;
+    AllRegsMask resultMask;
 
 #if FEATURE_MULTIREG_RET
     for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
     {
-        if (gtOtherRegs[i] != REG_NA)
+        regNumber otherReg = (regNumber)gtOtherRegs[i];
+        if (otherReg != REG_NA)
         {
-            resultMask |= genRegMask((regNumber)gtOtherRegs[i]);
+            resultMask |= otherReg;
             continue;
         }
         break;
@@ -27301,14 +27377,15 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
 //    of return registers and wants to know the set of return registers.
 //
 // static
-regMaskTP ReturnTypeDesc::GetABIReturnRegs(CorInfoCallConvExtension callConv) const
+AllRegsMask ReturnTypeDesc::GetABIReturnRegs(CorInfoCallConvExtension callConv) const
 {
-    regMaskTP resultMask = RBM_NONE;
+    AllRegsMask resultMask;
 
     unsigned count = GetReturnRegCount();
     for (unsigned i = 0; i < count; ++i)
     {
-        resultMask |= genRegMask(GetABIReturnReg(i, callConv));
+        regNumber reg = GetABIReturnReg(i, callConv);
+        resultMask.AddRegNumInMask(reg);
     }
 
     return resultMask;
@@ -27328,7 +27405,7 @@ regMaskTP ReturnTypeDesc::GetABIReturnRegs(CorInfoCallConvExtension callConv) co
 // Return Value:
 //    Count of available temporary registers in given set.
 //
-unsigned GenTree::AvailableTempRegCount(regMaskTP mask /* = (regMaskTP)-1 */) const
+unsigned GenTree::AvailableTempRegCount(regMaskOnlyOne mask /* = (regMaskOnlyOne)-1 */) const
 {
     return genCountBits(gtRsvdRegs & mask);
 }
@@ -27345,9 +27422,9 @@ unsigned GenTree::AvailableTempRegCount(regMaskTP mask /* = (regMaskTP)-1 */) co
 // Return Value:
 //    Available temporary register in given mask.
 //
-regNumber GenTree::GetSingleTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
+regNumber GenTree::GetSingleTempReg(regMaskOnlyOne mask /* = (regMaskOnlyOne)-1 */)
 {
-    regMaskTP availableSet = gtRsvdRegs & mask;
+    regMaskOnlyOne availableSet = gtRsvdRegs & mask;
     assert(genCountBits(availableSet) == 1);
     regNumber tempReg = genRegNumFromMask(availableSet);
     INDEBUG(gtRsvdRegs &= ~availableSet;) // Remove the register from the set, so it can't be used again.
@@ -27366,9 +27443,9 @@ regNumber GenTree::GetSingleTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
 // Return Value:
 //    Available temporary register in given mask.
 //
-regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
+regNumber GenTree::ExtractTempReg(regMaskOnlyOne mask /* = (regMaskOnlyOne)-1 */)
 {
-    regMaskTP availableSet = gtRsvdRegs & mask;
+    regMaskOnlyOne availableSet = gtRsvdRegs & mask;
     assert(genCountBits(availableSet) >= 1);
     regNumber tempReg = genFirstRegNumFromMask(availableSet);
     gtRsvdRegs ^= genRegMask(tempReg);
