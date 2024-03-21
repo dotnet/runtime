@@ -1378,7 +1378,7 @@ extends:
           jobParameters:
             buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release -test
             dependsOn:
-              - build_$(osGroup)$(osSubgroup)_$(archType)_release_CoreCLR_Libraries
+              - build_${{ variables.osGroup }}${{ variables.osSubgroup }}_${{ variables.archType }}_release_CoreCLR_Libraries
             preBuildSteps:
               - template: /eng/pipelines/common/download-artifact-step.yml
                 parameters:
@@ -1407,7 +1407,7 @@ extends:
           jobParameters:
             buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release -test
             dependsOn:
-              - build_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)_CoreCLR_Libraries
+              - build_${{ variables.osGroup }}${{ variables.osSubgroup }}_${{ variables.archType }}_${{ variables.debugOnPrReleaseOnRolling }}_CoreCLR_Libraries
             preBuildSteps:
               - template: /eng/pipelines/common/download-artifact-step.yml
                 parameters:
@@ -1435,7 +1435,7 @@ extends:
           jobParameters:
             buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release -test
             dependsOn:
-              - build_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)_CoreCLR_Libraries
+              - build_${{ variables.osGroup }}${{ variables.osSubgroup }}_${{ variables.archType }}_${{ variables.debugOnPrReleaseOnRolling }}_CoreCLR_Libraries
             preBuildSteps:
               - template: /eng/pipelines/common/download-artifact-step.yml
                 parameters:
