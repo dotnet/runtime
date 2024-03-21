@@ -957,9 +957,6 @@ Debugger::Debugger()
 
     m_processId = GetCurrentProcessId();
 
-    // Initialize these in ctor because we free them in dtor.
-    // And we can't set them to some safe uninited value (like NULL).
-
     m_pForceCatchHandlerFoundEventsTable = new ForceCatchHandlerFoundTable();
 
 
@@ -7283,6 +7280,7 @@ HRESULT Debugger::SendExceptionHelperAndBlock(
         PRECONDITION(CheckPointer(pThread));
     }
     CONTRACTL_END;
+
     HRESULT     hr = S_OK;
 
     // This is a normal event to send from LS to RS
@@ -7979,6 +7977,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
         GCX_COOP_EEINTERFACE();
         forceSendCatchHandlerFound = ShouldSendCatchHandlerFound(pThread);
     }
+
     // Here we check if debugger opted-out of receiving exception related events from outside of JMC methods
     // or this exception ever crossed JMC frame (in this case we have already sent user first chance event)
     if (forceSendCatchHandlerFound)
@@ -8008,7 +8007,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-BOOL Debugger::ShouldSendCatchHandlerFound(Thread* pThread) //ThreadExceptionState* pExState
+BOOL Debugger::ShouldSendCatchHandlerFound(Thread* pThread)
 {
     CONTRACTL
     {
@@ -8098,6 +8097,7 @@ void Debugger::SendCatchHandlerFound(
                 ipce->ExceptionCallback2.vmExceptionHandle.SetRawPtr(g_pEEInterface->GetThreadException(pThread));
 
                 LOG((LF_CORDB, LL_INFO10000, "D::FCMECF: sending ExceptionCallback2"));
+
                 hr = m_pRCThread->SendIPCEvent();
 
                 _ASSERTE(SUCCEEDED(hr) && "D::FCMECF: Send ExceptionCallback2 event failed.");
@@ -8111,6 +8111,7 @@ void Debugger::SendCatchHandlerFound(
             else
             {
                 LOG((LF_CORDB,LL_INFO1000, "D:FCMECF: Skipping SendIPCEvent because RS detached.\n"));
+
             }
 
             //
@@ -10451,9 +10452,8 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     case DB_IPCE_FORCE_CATCH_HANDLER_FOUND:
         {
             BOOL enableEvents = pEvent->ForceCatchHandlerFoundData.enableEvents;
-            Object *obj = pEvent->ForceCatchHandlerFoundData.vmObj.GetRawPtr();
             AppDomain *pAppDomain = pEvent->vmAppDomain.GetRawPtr();
-            OBJECTREF exObj = ObjectToOBJECTREF(obj);
+            OBJECTREF exObj = ObjectToOBJECTREF(pEvent->ForceCatchHandlerFoundData.vmObj.GetRawPtr());
             HRESULT hr = E_INVALIDARG;
 
             hr = UpdateForceCatchHandlerFoundTable(enableEvents, exObj, pAppDomain);

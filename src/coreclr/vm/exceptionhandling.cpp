@@ -2078,7 +2078,6 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
                                            dwExceptionFlags,
                                            dwTACatchHandlerClauseIndex,
                                            sfEstablisherOfActualHandlerFrame);
-
             if (pGSCookie)
             {
                 cfThisFrame.CheckGSCookies();
@@ -3187,9 +3186,11 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                         "  clause type = %s\n",
                                         (!typeHnd.IsNull() ? typeHnd.GetMethodTable()->GetDebugClassName()
                                                            : "<couldn't resolve>")));
+
                                 EH_LOG((LL_INFO100,
                                         "  thrown type = %s\n",
                                         thrownType.GetMethodTable()->GetDebugClassName()));
+
 
                                 fFoundHandler = !typeHnd.IsNull() && ExceptionIsOfRightType(typeHnd, thrownType);
                             }
@@ -3208,6 +3209,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                             _ASSERTE(IsFilterHandler(&EHClause) || IsTypedHandler(&EHClause));
 
                             EH_LOG((LL_INFO100, "  found catch at 0x%p, sp = 0x%p\n", dwHandlerStartPC, sf.SP));
+
                             m_uCatchToCallPC = dwHandlerStartPC;
                             m_pClauseForCatchToken = pEHClauseToken;
                             m_ClauseForCatch = EHClause;
@@ -3234,6 +3236,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                 //      In this case the normal EH proceeds and we need to reset m_sfResumeStackFrame to the sf catch handler.
                                 //  TODO: remove this call and try to report the IL catch handler in the IL stub itself.
                                 m_sfResumeStackFrame.Clear();
+
                                 EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter((EXCEPTION_POINTERS*)&m_ptrs, pILStubFrame);
                                 m_sfResumeStackFrame    = sf;
                             }
@@ -8141,6 +8144,7 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
                 //          We NULL it out because we get the interception event after this point.
                 //  * Notifify debugger and return.
                 //      In this case the normal EH proceeds and we need to reset m_sfResumeStackFrame to the sf catch handler.
+
                 EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter((EXCEPTION_POINTERS *)&pExInfo->m_ptrs, pILStubFrame);
             }
             else
