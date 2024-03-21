@@ -19,9 +19,15 @@ public static unsafe class CopyCtor
         if (refStruct._instanceField != 2)
             return 2;
 
-        if (StructWithCtor.CopyCtorCallCount != 2)
+        int expectedCallCount = 2;
+        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
+        {
+            expectedCallCount = 3;
+        }
+
+        if (StructWithCtor.CopyCtorCallCount != expectedCallCount)
             return 3;
-        if (StructWithCtor.DtorCallCount != 2)
+        if (StructWithCtor.DtorCallCount != expectedCallCount)
             return 4;
 
 
