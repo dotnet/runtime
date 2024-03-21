@@ -3517,10 +3517,8 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
             goto _End_arg;
 
         assert(nFields == 1 || nFields == 2);
-    #ifdef DEBUG
         assert(CorTypeInfo::IsPrimitiveType_NoThrow(types[0]));
-        assert(CorTypeInfo::IsPrimitiveType_NoThrow(types[1]));
-    #endif
+        assert(CorTypeInfo::IsPrimitiveType_NoThrow(types[1]) || nFields == 1);
 
         size =
             (CorTypeInfo::IsFloat_NoThrow(types[0]) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
