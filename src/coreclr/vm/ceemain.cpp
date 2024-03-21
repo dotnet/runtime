@@ -779,6 +779,10 @@ void EEStartupHelper()
         StubPrecode::StaticInitialize();
         FixupPrecode::StaticInitialize();
 
+        // Perform some measurements before garbage collector is initialized
+        // so GC initialization and the first few GCs can use the normalized yield
+        YieldProcessorNormalization::PerformMeasurement();
+
         InitializeGarbageCollector();
 
         if (!GCHandleUtilities::GetGCHandleManager()->Initialize())
