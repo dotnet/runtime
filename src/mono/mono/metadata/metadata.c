@@ -1502,8 +1502,8 @@ mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
 	return 0;
 }
 
-MONO_ALWAYS_INLINE guint32
-mono_metadata_decode_value_scalar (const guint8 *ptr, const guint8 **new_ptr)
+static MONO_ALWAYS_INLINE guint32
+decode_value_scalar (const guint8 *ptr, const guint8 **new_ptr)
 {
 	guint32 result;
 	guint8 b = *ptr;
@@ -1605,7 +1605,7 @@ mono_metadata_decode_value_simd (const guint8 *ptr, const guint8 **new_ptr)
 
 	return result;
 #else
-	return mono_metadata_decode_value_scalar (ptr, rptr);
+	return decode_value_scalar (ptr, rptr);
 #endif
 }
 
