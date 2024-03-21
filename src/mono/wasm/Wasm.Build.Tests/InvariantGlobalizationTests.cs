@@ -70,7 +70,9 @@ namespace Wasm.Build.Tests
             else
             {
                 string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id);
-                Assert.Contains("es-ES: Is Invariant LCID: False, NativeName: es (ES)", output);
+                Assert.Contains(IsWorkloadWithMultiThreadingForDefaultFramework ?
+                    "es-ES: Is Invariant LCID: False, NativeName: es (ES)" : // MT does not use JS to get the full name
+                    "es-ES: Is Invariant LCID: False, NativeName: espa\u00F1ol (Espa\u00F1a)", output);
 
                 // ignoring the last line of the output which prints the current culture
             }
