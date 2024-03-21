@@ -814,24 +814,19 @@ typedef FileLoadLock::Holder FileLoadLockHolder;
     typedef ListLockBase<NativeCodeVersion> JitListLock;
     typedef ListLockEntryBase<NativeCodeVersion> JitListLockEntry;
 
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning (disable: 4324) //sometimes 64bit compilers complain about alignment
-#endif
-class LoadLevelLimiter
+class LoadLevelLimiter final
 {
     static thread_local LoadLevelLimiter* t_currentLoadLevelLimiter;
-    FileLoadLevel                   m_currentLevel;
+    FileLoadLevel m_currentLevel;
     LoadLevelLimiter* m_previousLimit;
-    BOOL m_bActive;
+    bool m_bActive;
 
 public:
 
     LoadLevelLimiter()
       : m_currentLevel(FILE_ACTIVE),
-      m_previousLimit(NULL),
-      m_bActive(FALSE)
+      m_previousLimit(nullptr),
+      m_bActive(false)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -839,11 +834,11 @@ public:
     void Activate()
     {
         WRAPPER_NO_CONTRACT;
-        m_previousLimit= t_currentLoadLevelLimiter;
-        if(m_previousLimit)
-            m_currentLevel=m_previousLimit->GetLoadLevel();
+        m_previousLimit = t_currentLoadLevelLimiter;
+        if (m_previousLimit)
+            m_currentLevel = m_previousLimit->GetLoadLevel();
         t_currentLoadLevelLimiter = this;
-        m_bActive=TRUE;
+        m_bActive = true;
     }
 
     void Deactivate()
@@ -852,7 +847,7 @@ public:
         if (m_bActive)
         {
             t_currentLoadLevelLimiter = m_previousLimit;
-            m_bActive=FALSE;
+            m_bActive = false;
         }
     }
 
@@ -889,9 +884,6 @@ public:
         return t_currentLoadLevelLimiter;
     }
 };
-#ifdef _MSC_VER
-#pragma warning (pop) //4324
-#endif
 
 #define OVERRIDE_LOAD_LEVEL_LIMIT(newLimit)                    \
     LoadLevelLimiter __newLimit;                                                    \
