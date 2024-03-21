@@ -56,7 +56,7 @@ export class PromiseHolder extends ManagedObject {
     public isPosted = false;
     public isPostponed = false;
     public data: any = null;
-    public reason: any = null;
+    public reason: any = undefined;
     public constructor(public promise: Promise<any>,
         private gc_handle: GCHandle,
         private promiseHolderPtr: number, // could be null for GCV_handle 
