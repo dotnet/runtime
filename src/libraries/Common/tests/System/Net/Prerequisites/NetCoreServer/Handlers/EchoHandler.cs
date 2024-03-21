@@ -32,7 +32,7 @@ namespace NetCoreServer
             byte[] bytes = Encoding.UTF8.GetBytes(echoJson);
 
             var delay = 0;
-            if (context.Request.QueryString.HasValue && context.Request.QueryString.Value.Contains("delay10sec"))
+            if (context.Request.QueryString.HasValue)
             {
                 if (context.Request.QueryString.Value.Contains("delay1sec"))
                 {
