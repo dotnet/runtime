@@ -203,7 +203,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.IcuGetLocaleInfo] Expected _sWindowsName to be populated already");
-#if TARGET_BROWSER
+#if TARGET_BROWSER && !FEATURE_WASM_MANAGED_THREADS
             if (type == LocaleStringData.NativeDisplayName)
             {
                 return JSGetNativeDisplayName(_sWindowsName, uiCultureName ?? _sWindowsName);
@@ -310,7 +310,7 @@ namespace System.Globalization
 
         private string IcuGetLanguageDisplayName(string cultureName)
         {
-#if TARGET_BROWSER
+#if TARGET_BROWSER && !FEATURE_WASM_MANAGED_THREADS
             return JSGetNativeDisplayName(CultureInfo.CurrentUICulture.Name, cultureName);
 #else
             return IcuGetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name);
