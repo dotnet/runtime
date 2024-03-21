@@ -2930,10 +2930,9 @@ static inline bool isImmed(GenTree* treeNode)
 
 instruction CodeGen::genGetInsForOper(GenTree* treeNode)
 {
-    var_types  type = treeNode->TypeGet();
-    genTreeOps oper = treeNode->OperGet();
-    GenTree*   op1  = treeNode->gtGetOp1();
-    GenTree*   op2;
+    var_types  type  = treeNode->TypeGet();
+    genTreeOps oper  = treeNode->OperGet();
+    GenTree*   op1   = treeNode->gtGetOp1();
     emitAttr   attr  = emitActualTypeSize(treeNode);
     bool       isImm = false;
 
@@ -8346,7 +8345,6 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
     if (regArgNum > 0)
     {
-        instruction ins;
         for (int i = MAX_REG_ARG - 1; i >= 0; i--)
         {
             if (regArg[i] > 0)

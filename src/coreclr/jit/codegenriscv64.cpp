@@ -2013,7 +2013,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     noway_assert(isFramePointerUsed()); // localloc requires Frame Pointer to be established since SP changes
     noway_assert(genStackLevel == 0);   // Can't have anything on the stack
 
-    const target_ssize_t pageSize = compiler->eeGetPageSize();
+    const size_t pageSize = (size_t)compiler->eeGetPageSize();
 
     // According to RISC-V Privileged ISA page size is 4KiB
     noway_assert(pageSize == 0x1000);
@@ -7049,8 +7049,6 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 
     if ((desc.ExtendKind() != GenIntCastDesc::COPY) || (srcReg != dstReg))
     {
-        instruction ins;
-
         switch (desc.ExtendKind())
         {
             case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
@@ -8431,9 +8429,9 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 int      count = 0;     // Number of nodes in list
                 bool     loop  = false; // List has a loop
 
-                for (unsigned cur = i; regArg[cur] != REG_NA; count++)
+                for (unsigned cur = (unsigned)i; regArg[cur] != REG_NA; count++)
                 {
-                    if (cur == i && count > 0)
+                    if (cur == (unsigned)i && count > 0)
                     {
                         loop = true;
                         break;

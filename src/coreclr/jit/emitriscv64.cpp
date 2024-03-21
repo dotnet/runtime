@@ -13,6 +13,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
+#pragma warning(disable : 4244 4267)
 #endif
 
 #if defined(TARGET_RISCV64)
@@ -4398,7 +4399,7 @@ void emitter::emitDispIns(
     emitDispInsInstrNum(id);
 
     const BYTE* instr = pCode + writeableOffset;
-    size_t      instrSize;
+    unsigned    instrSize;
     for (size_t i = 0; i < sz; instr += instrSize, i += instrSize, offset += instrSize)
     {
         // TODO-RISCV64: support different size instructions

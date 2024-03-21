@@ -3426,6 +3426,11 @@ public:
 //
 #define IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL   0x14
 
+#define IMAGE_REL_LOONGARCH64_JIR 0x0004
+#define IMAGE_REL_LOONGARCH64_PC 0x0008
+
+#define IMAGE_REL_RISCV64_PC 0x0003
+
 /**********************************************************************************/
 #ifdef TARGET_64BIT
 #define USE_PER_FRAME_PINVOKE_INIT
