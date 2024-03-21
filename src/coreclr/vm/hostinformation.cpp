@@ -40,3 +40,11 @@ bool HostInformation::GetProperty(_In_z_ const char* name, SString& value)
 
     return lenActual > 0 && lenActual <= len;
 }
+
+bool HostInformation::GetProbingProperties(probing_path_properties* props)
+{
+    if (s_hostContract == nullptr || s_hostContract->get_runtime_property == nullptr)
+        return false;
+
+    return s_hostContract->get_probing_path_properties(props, s_hostContract->context);
+}

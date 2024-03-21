@@ -25,6 +25,7 @@ public:
     mutable std::unordered_set<pal::string_t> breadcrumbs;
 
     coreclr_property_bag_t coreclr_properties;
+    probing_path_properties probing_path_properties;
 
     std::unique_ptr<coreclr_t> coreclr;
 

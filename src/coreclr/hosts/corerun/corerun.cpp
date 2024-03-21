@@ -374,6 +374,7 @@ static int run(const configuration& config)
         (void*)&config,
         &get_runtime_property,
         nullptr,
+        nullptr,
         nullptr };
     propertyKeys.push_back(HOST_PROPERTY_RUNTIME_CONTRACT);
     std::stringstream ss;

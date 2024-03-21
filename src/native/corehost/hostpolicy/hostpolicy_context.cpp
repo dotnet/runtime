@@ -133,6 +133,17 @@ namespace
 
         return -1;
     }
+
+    bool HOST_CONTRACT_CALLTYPE get_probing_path_properties(
+        probing_path_properties* props,
+        void* contract_context)
+    {
+        hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
+
+        // do we need to copy this instead of referring?
+        props = &context->probing_path_properties;
+        return true;
+    }
 }
 
 bool hostpolicy_context_t::should_read_rid_fallback_graph(const hostpolicy_init_t &init)
@@ -273,6 +284,8 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     // Build properties for CoreCLR instantiation
     pal::string_t app_base;
     resolver.get_app_dir(&app_base);
+
+    // populate probing path properties struct here....
     coreclr_properties.add(common_property::TrustedPlatformAssemblies, probe_paths.tpa.c_str());
     coreclr_properties.add(common_property::NativeDllSearchDirectories, probe_paths.native.c_str());
     coreclr_properties.add(common_property::PlatformResourceRoots, probe_paths.resources.c_str());
@@ -340,6 +353,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         }
 
         host_contract.get_runtime_property = &get_runtime_property;
+        host_contract.get_probing_path_properties = &get_probing_path_properties;
         pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff")];
         pal::snwprintf(buffer, ARRAY_SIZE(buffer), _X("0x%zx"), (size_t)(&host_contract));
         if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), buffer))

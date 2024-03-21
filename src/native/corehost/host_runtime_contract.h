@@ -23,6 +23,29 @@
 #define HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS "PLATFORM_RESOURCE_ROOTS"
 #define HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES "TRUSTED_PLATFORM_ASSEMBLIES"
 
+struct trusted_platform_assemblies
+{
+	uint32_t assembly_count;
+	char** basenames; /* Foo.dll */
+	uint32_t* basename_length;
+	char** assembly_filepaths; /* /blah/blah/blah/Foo.dll */
+};
+
+struct probing_lookup_paths 
+{
+	uint32_t dir_count;
+	char** dirs;
+};
+
+struct probing_path_properties
+{
+    size_t size;
+
+    trusted_platform_assemblies trusted_platform_assemblies;
+    probing_lookup_paths native_dll_search_directories;
+    probing_lookup_paths platform_resource_roots;
+};
+
 struct host_runtime_contract
 {
     size_t size;
@@ -51,6 +74,12 @@ struct host_runtime_contract
     const void* (HOST_CONTRACT_CALLTYPE* pinvoke_override)(
         const char* library_name,
         const char* entry_point_name);
+
+    // Populates the structure containing the list of values for each probing path property 
+    // Returns true if found, false otherwise
+    bool(HOST_CONTRACT_CALLTYPE* get_probing_path_properties)(
+        /*out*/ probing_path_properties* props,
+        void* contract_context);
 };
 
 #endif // __HOST_RUNTIME_CONTRACT_H__
