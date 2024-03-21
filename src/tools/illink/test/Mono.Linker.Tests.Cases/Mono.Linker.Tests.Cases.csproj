@@ -8,6 +8,7 @@
     <Compile Remove="LinkXml\Dependencies\UsedNonRequiredExportedTypeIsKept_fwd.cs" />
     <Compile Remove="LinkXml\Dependencies\UsedNonRequiredExportedTypeIsKeptWhenRooted_fwd.cs" />
     <Compile Remove="References\Dependencies\CustomMarkHandlerSaveAssembly.cs" />
+    <Compile Remove="Substitutions\Dependencies\TestFeatures.cs" />
     <Compile Remove="TypeForwarding\Dependencies\AnotherLibraryForwarder.cs" />
     <Compile Remove="TypeForwarding\Dependencies\AssemblyReferenceIsRemovedWhenUnused_Library.cs" />
     <Compile Remove="TypeForwarding\Dependencies\ForwarderLibrary.cs" />

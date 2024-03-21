@@ -8211,18 +8211,6 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
 
     NotifyExceptionPassStarted(pThis, pThread, pExInfo);
 
-    if (pFrame == FRAME_TOP)
-    {
-        // There are no managed frames on the stack, fail fast and report unhandled exception
-        LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pExInfo->m_ptrs);
-#ifdef HOST_WINDOWS
-        CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
-        RaiseFailFastException(pExInfo->m_ptrs.ExceptionRecord, NULL, 0);
-#else
-        CrashDumpAndTerminateProcess(pExInfo->m_ExceptionCode);
-#endif
-    }
-
     REGDISPLAY* pRD = &pExInfo->m_regDisplay;
     pThread->FillRegDisplay(pRD, pStackwalkCtx);
 
@@ -8266,6 +8254,22 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
                 }
             }
         }
+        else // pass number 2
+        {
+            if (pThis->GetFrameState() == StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION)
+            {
+                // Update context pointers using the skipped frame. This is needed when exception handling continues
+                // from ProcessCLRExceptionNew, since the RtlUnwind doesn't maintain context pointers.
+                // We explicitly don't do that for inlined frames as it would modify the PC/SP to point to
+                // a slightly different location in the managed code calling the pinvoke and the inlined
+                // call frame doesn't update the context pointers anyways.
+                Frame *pSkippedFrame = pThis->m_crawl.GetFrame();
+                if (pSkippedFrame->NeedsUpdateRegDisplay() && (pSkippedFrame->GetVTablePtr() != InlinedCallFrame::GetMethodFrameVPtr()))
+                {
+                    pSkippedFrame->UpdateRegDisplay(pThis->m_crawl.GetRegisterSet());
+                }
+            }
+        }
         StackWalkAction retVal = pThis->Next();
         result = (retVal != SWA_FAILED);
     }
@@ -8291,6 +8295,18 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
         pThis->UpdateIsRuntimeWrappedExceptions();
 
         *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pExInfo);
+    }
+    else
+    {
+        // There are no managed frames on the stack, fail fast and report unhandled exception
+        LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pExInfo->m_ptrs);
+#ifdef HOST_WINDOWS
+        CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
+        GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+        RaiseException(pExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE_EXCEPTION, pExInfo->m_ptrs.ExceptionRecord->NumberParameters, pExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
+#else
+        CrashDumpAndTerminateProcess(pExInfo->m_ExceptionCode);
+#endif
     }
 
     return result;

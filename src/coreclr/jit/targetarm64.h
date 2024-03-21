@@ -56,6 +56,9 @@
   #define REG_PREDICATE_HIGH_FIRST REG_P8  // Similarly, some instructions can only use the second half of the predicate registers.
   #define REG_PREDICATE_HIGH_LAST  REG_P15
 
+  #define REG_MASK_FIRST           REG_PREDICATE_FIRST
+  #define REG_MASK_LAST            REG_PREDICATE_LAST
+
   static_assert_no_msg(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
@@ -139,6 +142,14 @@
 
   #define REG_JUMP_THUNK_PARAM     REG_R12
   #define RBM_JUMP_THUNK_PARAM     RBM_R12
+
+  #define RBM_LOWMASK              (RBM_P0 | RBM_P1 | RBM_P2 | RBM_P3 | RBM_P4 | RBM_P5 | RBM_P6 | RBM_P7)
+  #define RBM_HIGHMASK             (RBM_P8 | RBM_P9 | RBM_P10 | RBM_P11 | RBM_P12 | RBM_P13 | RBM_P14 | RBM_P15)
+  #define RBM_ALLMASK              (RBM_LOWMASK | RBM_HIGHMASK)
+
+  // TODO-SVE: Fix when adding predicate register allocation
+  #define RBM_MSK_CALLEE_SAVED    (0)
+  #define RBM_MSK_CALLEE_TRASH    (0)
 
   // ARM64 write barrier ABI (see vm\arm64\asmhelpers.asm, vm\arm64\asmhelpers.S):
   // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
@@ -373,6 +384,8 @@
   #define SWIFT_SUPPORT
   #define REG_SWIFT_ERROR REG_R21
   #define RBM_SWIFT_ERROR RBM_R21
-  #define SWIFT_SELF_REG  REG_R20
+  #define REG_SWIFT_SELF  REG_R20
+  #define REG_SWIFT_INTRET_ORDER REG_R0,REG_R1,REG_R2,REG_R3
+  #define REG_SWIFT_FLOATRET_ORDER REG_V0,REG_V1,REG_V2,REG_V3
 
 // clang-format on

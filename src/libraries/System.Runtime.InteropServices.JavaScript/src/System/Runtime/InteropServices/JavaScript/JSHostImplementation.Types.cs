@@ -10,28 +10,44 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal unsafe delegate void ToManagedCallback(JSMarshalerArgument* arguments_buffer);
 
-        public sealed class PromiseHolder
+        public sealed unsafe class PromiseHolder
         {
+            public bool IsDisposed;
             public readonly nint GCHandle; // could be also virtual GCVHandle
             public ToManagedCallback? Callback;
             public JSProxyContext ProxyContext;
-            public bool IsDisposed;
-            public bool IsCanceling;
 #if FEATURE_WASM_MANAGED_THREADS
             public ManualResetEventSlim? CallbackReady;
+            public PromiseHolderState* State;
 #endif
 
             public PromiseHolder(JSProxyContext targetContext)
             {
                 GCHandle = (IntPtr)InteropServices.GCHandle.Alloc(this, GCHandleType.Normal);
                 ProxyContext = targetContext;
+#if FEATURE_WASM_MANAGED_THREADS
+                State = (PromiseHolderState*)Marshal.AllocHGlobal(sizeof(PromiseHolderState));
+                Interlocked.Exchange(ref (*State).IsResolving, 0);
+#endif
             }
 
             public PromiseHolder(JSProxyContext targetContext, nint gcvHandle)
             {
                 GCHandle = gcvHandle;
                 ProxyContext = targetContext;
+#if FEATURE_WASM_MANAGED_THREADS
+                State = (PromiseHolderState*)Marshal.AllocHGlobal(sizeof(PromiseHolderState));
+                Interlocked.Exchange(ref (*State).IsResolving, 0);
+#endif
             }
+        }
+
+        // NOTE: layout has to match PromiseHolderState in marshal-to-cs.ts
+        [StructLayout(LayoutKind.Explicit)]
+        public struct PromiseHolderState
+        {
+            [FieldOffset(0)]
+            public volatile int IsResolving;
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -56,6 +72,8 @@ namespace System.Runtime.InteropServices.JavaScript
             UIThread = 0,
             // Running the managed main thread on dedicated WebWorker. Marshaling all JavaScript calls to and from the main thread.
             DeputyThread = 1,
+            // TODO comments
+            DeputyAndIOThreads = 2,
         }
 
         // keep in sync with types\internal.ts
@@ -64,6 +82,8 @@ namespace System.Runtime.InteropServices.JavaScript
             // throw PlatformNotSupportedException if blocking .Wait is called on threads with JS interop, like JSWebWorker and Main thread.
             // Avoids deadlocks (typically with pending JS promises on the same thread) by throwing exceptions.
             NoBlockingWait = 0,
+            // TODO comments
+            AllowBlockingWaitInAsyncCode = 1,
             // allow .Wait on all threads.
             // Could cause deadlocks with blocking .Wait on a pending JS Task/Promise on the same thread or similar Task/Promise chain.
             AllowBlockingWait = 100,

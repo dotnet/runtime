@@ -570,16 +570,6 @@ NOHANDLES(ICALL(ILOCK_21, "Increment(long&)", ves_icall_System_Threading_Interlo
 NOHANDLES(ICALL(ILOCK_22, "MemoryBarrierProcessWide", ves_icall_System_Threading_Interlocked_MemoryBarrierProcessWide))
 NOHANDLES(ICALL(ILOCK_23, "Read(long&)", ves_icall_System_Threading_Interlocked_Read_Long))
 
-/* include these icalls if we're in the threaded wasm runtime, or if we're building a wasm-targeting cross compiler and we need to support --print-icall-table */
-#if (defined(HOST_BROWSER) && !defined(DISABLE_THREADS)) || (defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP))
-ICALL_TYPE(LIFOASYNCSEM, "System.Threading.LowLevelLifoAsyncWaitSemaphore", LIFOASYNCSEM_1)
-NOHANDLES(ICALL(LIFOASYNCSEM_1, "DeleteInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal))
-NOHANDLES(ICALL(LIFOASYNCSEM_2, "InitInternal", ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal))
-NOHANDLES(ICALL(LIFOASYNCSEM_3, "PrepareAsyncWaitInternal", ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal))
-NOHANDLES(ICALL(LIFOASYNCSEM_4, "ReleaseInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal))
-#endif
-
-
 ICALL_TYPE(LIFOSEM, "System.Threading.LowLevelLifoSemaphore", LIFOSEM_1)
 NOHANDLES(ICALL(LIFOSEM_1, "DeleteInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal))
 NOHANDLES(ICALL(LIFOSEM_2, "InitInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal))
@@ -610,14 +600,6 @@ HANDLES(THREAD_9, "SetPriority", ves_icall_System_Threading_Thread_SetPriority, 
 HANDLES(THREAD_10, "SetState", ves_icall_System_Threading_Thread_SetState, void, 2, (MonoInternalThread, guint32))
 HANDLES(THREAD_13, "StartInternal", ves_icall_System_Threading_Thread_StartInternal, void, 2, (MonoThreadObject, gint32))
 NOHANDLES(ICALL(THREAD_14, "YieldInternal", ves_icall_System_Threading_Thread_YieldInternal))
-
-/* include these icalls if we're in the threaded wasm runtime, or if we're building a wasm-targeting cross compiler and we need to support --print-icall-table */
-#if (defined(HOST_BROWSER) && !defined(DISABLE_THREADS)) || (defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP))
-ICALL_TYPE(WEBWORKERLOOP, "System.Threading.WebWorkerEventLoop", WEBWORKERLOOP_1)
-NOHANDLES(ICALL(WEBWORKERLOOP_1, "HasUnsettledInteropPromisesNative", ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative))
-NOHANDLES(ICALL(WEBWORKERLOOP_2, "KeepalivePopInternal", ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal))
-NOHANDLES(ICALL(WEBWORKERLOOP_3, "KeepalivePushInternal", ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal))
-#endif
 
 ICALL_TYPE(TYPE, "System.Type", TYPE_1)
 HANDLES(TYPE_1, "internal_from_handle", ves_icall_System_Type_internal_from_handle, MonoReflectionType, 1, (MonoType_ref))

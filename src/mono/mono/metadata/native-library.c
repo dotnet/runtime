@@ -47,10 +47,6 @@ static GHashTable *native_library_module_map;
  */
 static GHashTable *native_library_module_blocklist;
 
-#ifndef NO_GLOBALIZATION_SHIM
-extern const void *GlobalizationResolveDllImport (const char *name);
-#endif
-
 static GHashTable *global_module_map; // should only be accessed with the global loader data lock
 
 static MonoDl *internal_module; // used when pinvoking `__Internal`
@@ -786,26 +782,6 @@ get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo)
 	return flags;
 }
 
-#ifndef NO_GLOBALIZATION_SHIM
-#ifdef HOST_WIN32
-#define GLOBALIZATION_DLL_NAME "System.Globalization.Native"
-#else
-#define GLOBALIZATION_DLL_NAME "libSystem.Globalization.Native"
-#endif
-
-static gpointer
-default_resolve_dllimport (const char *dll, const char *func)
-{
-	if (strcmp (dll, GLOBALIZATION_DLL_NAME) == 0) {
-		const void *method_impl = GlobalizationResolveDllImport (func);
-		if (method_impl)
-			return (gpointer)method_impl;
-	}
-
-	return NULL;
-}
-#endif // NO_GLOBALIZATION_SHIM
-
 gpointer
 lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_out)
 {
@@ -879,12 +855,6 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 		}
 		return piinfo->addr;
 	}
-#endif
-
-#ifndef NO_GLOBALIZATION_SHIM
-	addr = default_resolve_dllimport (new_scope, new_import);
-	if (addr)
-		goto exit;
 #endif
 
 	if (pinvoke_override) {

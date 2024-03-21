@@ -437,6 +437,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
 #if defined(TARGET_XARCH)
     , m_simd32CnsMap(nullptr)
     , m_simd64CnsMap(nullptr)
+    , m_simdMaskCnsMap(nullptr)
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
     , m_VNFunc0Map(nullptr)
@@ -1706,6 +1707,12 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
                     m_defs = new (alloc) Alloc<TYP_SIMD64>::Type[ChunkSize];
                     break;
                 }
+
+                case TYP_MASK:
+                {
+                    m_defs = new (alloc) Alloc<TYP_MASK>::Type[ChunkSize];
+                    break;
+                }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -1870,6 +1877,11 @@ ValueNum ValueNumStore::VNForSimd64Con(simd64_t cnsVal)
 {
     return VnForConst(cnsVal, GetSimd64CnsMap(), TYP_SIMD64);
 }
+
+ValueNum ValueNumStore::VNForSimdMaskCon(simdmask_t cnsVal)
+{
+    return VnForConst(cnsVal, GetSimdMaskCnsMap(), TYP_MASK);
+}
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -1970,6 +1982,11 @@ ValueNum ValueNumStore::VNForGenericCon(var_types typ, uint8_t* cnsVal)
         {
             READ_VALUE(simd64_t);
             return VNForSimd64Con(val);
+        }
+        case TYP_MASK:
+        {
+            READ_VALUE(simdmask_t);
+            return VNForSimdMaskCon(val);
         }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -2085,6 +2102,11 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         {
             return VNForSimd64Con(simd64_t::Zero());
         }
+
+        case TYP_MASK:
+        {
+            return VNForSimdMaskCon(simdmask_t::Zero());
+        }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -2174,6 +2196,11 @@ ValueNum ValueNumStore::VNAllBitsForType(var_types typ)
         case TYP_SIMD64:
         {
             return VNForSimd64Con(simd64_t::AllBitsSet());
+        }
+
+        case TYP_MASK:
+        {
+            return VNForSimdMaskCon(simdmask_t::AllBitsSet());
         }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -2295,6 +2322,13 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
             simd64_t simd64Val;
             memcpy(&simd64Val, &simdVal, sizeof(simd64_t));
             return VNForSimd64Con(simd64Val);
+        }
+
+        case TYP_MASK:
+        {
+            // '1' doesn't make sense for TYP_MASK?
+            // Or should it be AllBitsSet?
+            unreached();
         }
 #endif // TARGET_XARCH
 
@@ -3559,16 +3593,12 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
         case TYP_INT:
         {
             int resVal = EvalOp<int>(func, ConstantValue<int>(arg0VN));
-            // Unary op on a handle results in a handle.
-            return IsVNHandle(arg0VN) ? VNForHandle(ssize_t(resVal), GetFoldedArithOpResultHandleFlags(arg0VN))
-                                      : VNForIntCon(resVal);
+            return VNForIntCon(resVal);
         }
         case TYP_LONG:
         {
             INT64 resVal = EvalOp<INT64>(func, ConstantValue<INT64>(arg0VN));
-            // Unary op on a handle results in a handle.
-            return IsVNHandle(arg0VN) ? VNForHandle(ssize_t(resVal), GetFoldedArithOpResultHandleFlags(arg0VN))
-                                      : VNForLongCon(resVal);
+            return VNForLongCon(resVal);
         }
         case TYP_FLOAT:
         {
@@ -3741,7 +3771,7 @@ simd32_t ValueNumStore::GetConstantSimd32(ValueNum argVN)
     return ConstantValue<simd32_t>(argVN);
 }
 
-// Given a simd64 constant value number return its value as a simd32.
+// Given a simd64 constant value number return its value as a simd64.
 //
 simd64_t ValueNumStore::GetConstantSimd64(ValueNum argVN)
 {
@@ -3749,6 +3779,16 @@ simd64_t ValueNumStore::GetConstantSimd64(ValueNum argVN)
     assert(TypeOfVN(argVN) == TYP_SIMD64);
 
     return ConstantValue<simd64_t>(argVN);
+}
+
+// Given a simdmask constant value number return its value as a simdmask.
+//
+simdmask_t ValueNumStore::GetConstantSimdMask(ValueNum argVN)
+{
+    assert(IsVNConstant(argVN));
+    assert(TypeOfVN(argVN) == TYP_MASK);
+
+    return ConstantValue<simdmask_t>(argVN);
 }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -3810,16 +3850,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             {
                 assert(typ == TYP_INT);
                 int resultVal = EvalOp<int>(func, arg0Val, arg1Val);
-                // Bin op on a handle results in a handle.
-                ValueNum handleVN = IsVNHandle(arg0VN) ? arg0VN : IsVNHandle(arg1VN) ? arg1VN : NoVN;
-                if (handleVN != NoVN)
-                {
-                    result = VNForHandle(ssize_t(resultVal), GetFoldedArithOpResultHandleFlags(handleVN));
-                }
-                else
-                {
-                    result = VNForIntCon(resultVal);
-                }
+                result        = VNForIntCon(resultVal);
             }
         }
         else if (arg0VNtyp == TYP_LONG)
@@ -3835,17 +3866,8 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             else
             {
                 assert(typ == TYP_LONG);
-                INT64    resultVal = EvalOp<INT64>(func, arg0Val, arg1Val);
-                ValueNum handleVN  = IsVNHandle(arg0VN) ? arg0VN : IsVNHandle(arg1VN) ? arg1VN : NoVN;
-
-                if (handleVN != NoVN)
-                {
-                    result = VNForHandle(ssize_t(resultVal), GetFoldedArithOpResultHandleFlags(handleVN));
-                }
-                else
-                {
-                    result = VNForLongCon(resultVal);
-                }
+                INT64 resultVal = EvalOp<INT64>(func, arg0Val, arg1Val);
+                result          = VNForLongCon(resultVal);
             }
         }
         else // both args are TYP_REF or both args are TYP_BYREF
@@ -6145,39 +6167,6 @@ GenTreeFlags ValueNumStore::GetHandleFlags(ValueNum vn)
     const GenTreeFlags handleFlags = handle->m_flags;
     assert((handleFlags & ~GTF_ICON_HDL_MASK) == 0);
     return handleFlags;
-}
-
-GenTreeFlags ValueNumStore::GetFoldedArithOpResultHandleFlags(ValueNum vn)
-{
-    GenTreeFlags flags = GetHandleFlags(vn);
-    assert((flags & GTF_ICON_HDL_MASK) == flags);
-
-    switch (flags)
-    {
-        case GTF_ICON_SCOPE_HDL:
-        case GTF_ICON_CLASS_HDL:
-        case GTF_ICON_METHOD_HDL:
-        case GTF_ICON_FIELD_HDL:
-        case GTF_ICON_TOKEN_HDL:
-        case GTF_ICON_STR_HDL:
-        case GTF_ICON_OBJ_HDL:
-        case GTF_ICON_CONST_PTR:
-        case GTF_ICON_VARG_HDL:
-        case GTF_ICON_PINVKI_HDL:
-        case GTF_ICON_FTN_ADDR:
-        case GTF_ICON_CIDMID_HDL:
-        case GTF_ICON_TLS_HDL:
-        case GTF_ICON_STATIC_BOX_PTR:
-        case GTF_ICON_STATIC_ADDR_PTR:
-            return GTF_ICON_CONST_PTR;
-        case GTF_ICON_STATIC_HDL:
-        case GTF_ICON_GLOBAL_PTR:
-        case GTF_ICON_BBC_PTR:
-            return GTF_ICON_GLOBAL_PTR;
-        default:
-            assert(!"Unexpected handle type");
-            return flags;
-    }
 }
 
 bool ValueNumStore::IsVNHandle(ValueNum vn)
@@ -9221,6 +9210,13 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                     cnsVal.u64[6], cnsVal.u64[7]);
                 break;
             }
+
+            case TYP_MASK:
+            {
+                simdmask_t cnsVal = GetConstantSimdMask(vn);
+                printf("SimdMaskCns[0x%08x, 0x%08x]", cnsVal.u32[0], cnsVal.u32[1]);
+                break;
+            }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -10661,6 +10657,15 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             tree->gtVNPair.SetBoth(vnStore->VNForSimd64Con(simd64Val));
             break;
         }
+
+        case TYP_MASK:
+        {
+            simdmask_t simdmaskVal;
+            memcpy(&simdmaskVal, &tree->AsVecCon()->gtSimdVal, sizeof(simdmask_t));
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimdMaskCon(simdmaskVal));
+            break;
+        }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -12032,9 +12037,6 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
         // There are some HWINTRINSICS operations that have zero args, i.e.  NI_Vector128_Zero
         if (opCount == 0)
         {
-            // Currently we don't have intrinsics with variable number of args with a parameter-less option.
-            assert(!isVariableNumArgs);
-
             if (encodeResultType)
             {
                 // There are zero arg HWINTRINSICS operations that encode the result type, i.e.  Vector128_AllBitSet

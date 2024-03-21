@@ -6,7 +6,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { MainThreadingMode, type DotnetModuleInternal, type MonoConfigInternal, JSThreadBlockingMode, JSThreadInteropMode } from "../types/internal";
 import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
-import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
+import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
@@ -178,8 +178,6 @@ export function normalizeConfig() {
         }
     }
 
-    loaderHelpers.assertAfterExit = config.assertAfterExit = config.assertAfterExit || !ENVIRONMENT_IS_WEB;
-
     if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
         config.debugLevel = -1;
     }
@@ -201,10 +199,10 @@ export function normalizeConfig() {
             config.finalizerThreadStartDelayMs = 200;
         }
         if (config.mainThreadingMode == undefined) {
-            config.mainThreadingMode = MainThreadingMode.DeputyThread;
+            config.mainThreadingMode = MainThreadingMode.DeputyAndIOThreads;
         }
         if (config.jsThreadBlockingMode == undefined) {
-            config.jsThreadBlockingMode = JSThreadBlockingMode.NoBlockingWait;
+            config.jsThreadBlockingMode = JSThreadBlockingMode.AllowBlockingWaitInAsyncCode;
         }
         if (config.jsThreadInteropMode == undefined) {
             config.jsThreadInteropMode = JSThreadInteropMode.SimpleSynchronousJSInterop;
@@ -212,6 +210,12 @@ export function normalizeConfig() {
         let validModes = false;
         if (config.mainThreadingMode == MainThreadingMode.DeputyThread
             && config.jsThreadBlockingMode == JSThreadBlockingMode.NoBlockingWait
+            && config.jsThreadInteropMode == JSThreadInteropMode.SimpleSynchronousJSInterop
+        ) {
+            validModes = true;
+        }
+        else if (config.mainThreadingMode == MainThreadingMode.DeputyAndIOThreads
+            && config.jsThreadBlockingMode == JSThreadBlockingMode.AllowBlockingWaitInAsyncCode
             && config.jsThreadInteropMode == JSThreadInteropMode.SimpleSynchronousJSInterop
         ) {
             validModes = true;
