@@ -494,7 +494,8 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
         varDsc->lvIsRegArg = 1;
         noway_assert(varDscInfo->intRegArgNum == 0);
 
-        varDsc->SetArgReg(genMapRegArgNumToRegNum(varDscInfo->allocRegArg(TYP_INT), varDsc->TypeGet(), info.compCallConv));
+        varDsc->SetArgReg(
+            genMapRegArgNumToRegNum(varDscInfo->allocRegArg(TYP_INT), varDsc->TypeGet(), info.compCallConv));
 #if FEATURE_MULTIREG_ARGS
         varDsc->SetOtherArgReg(REG_NA);
 #endif
@@ -1010,14 +1011,16 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, TYP_I_IMPL, info.compCallConv));
                 if (cSlots == 2)
                 {
-                    varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL, info.compCallConv));
+                    varDsc->SetOtherArgReg(
+                        genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL, info.compCallConv));
                     varDsc->lvIsMultiRegArg = true;
                 }
             }
 #elif defined(UNIX_AMD64_ABI)
             if (varTypeIsStruct(argType))
             {
-                varDsc->SetArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType, info.compCallConv));
+                varDsc->SetArgReg(
+                    genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType, info.compCallConv));
 
                 // If there is a second eightbyte, get a register for it too and map the arg to the reg number.
                 if (structDesc.eightByteCount >= 2)
@@ -1029,7 +1032,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
                 if (secondEightByteType != TYP_UNDEF)
                 {
-                    varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType, info.compCallConv));
+                    varDsc->SetOtherArgReg(
+                        genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType, info.compCallConv));
                 }
             }
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -1084,7 +1088,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #ifdef TARGET_ARM
             if (varDsc->TypeGet() == TYP_LONG)
             {
-                varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_INT, info.compCallConv));
+                varDsc->SetOtherArgReg(
+                    genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_INT, info.compCallConv));
             }
 
 #if FEATURE_FASTTAILCALL
@@ -1122,7 +1127,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     else
                     {
                         printf("firstEightByte: %s",
-                               getRegName(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType, info.compCallConv)));
+                               getRegName(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType,
+                                                                  info.compCallConv)));
                     }
 
                     if (secondEightByteType == TYP_UNDEF)
@@ -1132,7 +1138,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     else
                     {
                         printf(", secondEightByte: %s",
-                               getRegName(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType, info.compCallConv)));
+                               getRegName(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType,
+                                                                  info.compCallConv)));
                     }
                 }
                 else
@@ -1187,7 +1194,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                             if (argType == TYP_DOUBLE)
                             {
                                 // Print both registers, just to be clear
-                                printf("%s/%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType, info.compCallConv)),
+                                printf("%s/%s",
+                                       getRegName(genMapRegArgNumToRegNum(regArgNum, argType, info.compCallConv)),
                                        getRegName(genMapRegArgNumToRegNum(regArgNum + 1, argType, info.compCallConv)));
 
                                 // doubles take 2 slots
@@ -1197,7 +1205,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                             }
                             else
                             {
-                                printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType, info.compCallConv)));
+                                printf("%s",
+                                       getRegName(genMapRegArgNumToRegNum(regArgNum, argType, info.compCallConv)));
                             }
                         }
                         else
@@ -1372,7 +1381,8 @@ void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
             /* Another register argument */
 
             varDsc->lvIsRegArg = 1;
-            varDsc->SetArgReg(genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet(), info.compCallConv));
+            varDsc->SetArgReg(
+                genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet(), info.compCallConv));
 #if FEATURE_MULTIREG_ARGS
             varDsc->SetOtherArgReg(REG_NA);
 #endif
