@@ -208,7 +208,7 @@ extends:
                   PublishLocation: Container
                   artifactName: CoreCLRCrossDacArtifacts
               # Create RPMs and DEBs
-              - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
+              - template: /eng/pipelines/installer/steps/build-linux-package.yml
                 parameters:
                   packageType: deb
                   target: debpkg
@@ -216,7 +216,7 @@ extends:
                   subsetArg: -s packs.installers
                   packagingArgs: -c $(_BuildConfig) --arch $(archType) --os $(osGroup) --ci /p:OfficialBuildId=$(Build.BuildNumber) /p:BuildDebPackage=true
                   condition: and(succeeded(), eq(variables.osSubgroup, ''), eq(variables.archType, 'x64'))
-              - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
+              - template: /eng/pipelines/installer/steps/build-linux-package.yml
                 parameters:
                   packageType: rpm
                   target: rpmpkg

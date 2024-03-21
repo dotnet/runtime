@@ -16,9 +16,6 @@ steps:
       --ci \
       ${{ parameters.subsetArg }} \
       ${{ parameters.packagingArgs }} \
-      $(CommonMSBuildArgs) \
-      $(librariesBuildConfigArg) \
-      $(runtimeBuildConfigArg) \
       /bl:artifacts/log/$(_BuildConfig)/msbuild.${{ parameters.packageType }}.installers.binlog
   displayName: Package ${{ parameters.packageStepDescription }} - ${{ parameters.packageType }}
   target: ${{ parameters.target }}
