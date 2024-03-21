@@ -90,21 +90,35 @@
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
     <NodePkgVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'x64'">$(runtimelinuxx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
     <NodePkgVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'arm64'">$(runtimelinuxarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
-    <NodePkgVersion Condition="'$(HostOS)' == 'win' and '$(BuildArchitecture)' == 'x64'">$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
-    <NodePkgVersion Condition="'$(HostOS)' == 'win' and '$(BuildArchitecture)' == 'arm64'">$(runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+    <NodePkgVersion Condition="'$(HostOS)' == 'windows' and '$(BuildArchitecture)' == 'x64'">$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+    <NodePkgVersion Condition="'$(HostOS)' == 'windows' and '$(BuildArchitecture)' == 'arm64'">$(runtimewinarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
     <NodePkgVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'x64'">$(runtimeosxx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
     <NodePkgVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'arm64'">$(runtimeosxarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion)</NodePkgVersion>
+    <EmsdkCacheVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'x64'">$(MicrosoftNETRuntimeEmscripten3134Cachelinuxx64Version)</EmsdkCacheVersion>
+    <EmsdkCacheVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'arm64'">$(MicrosoftNETRuntimeEmscripten3134Cachelinuxarm64Version)</EmsdkCacheVersion>
+    <EmsdkCacheVersion Condition="'$(HostOS)' == 'windows' and '$(BuildArchitecture)' == 'x64'">$(MicrosoftNETRuntimeEmscripten3134Cachewinx64Version)</EmsdkCacheVersion>
+    <EmsdkCacheVersion Condition="'$(HostOS)' == 'windows' and '$(BuildArchitecture)' == 'arm64'">$(MicrosoftNETRuntimeEmscripten3134Cachewinarm64Version)</EmsdkCacheVersion>
+    <EmsdkCacheVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'x64'">$(MicrosoftNETRuntimeEmscripten3134Cacheosxx64Version)</EmsdkCacheVersion>
+    <EmsdkCacheVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'arm64'">$(MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version)</EmsdkCacheVersion>
+    <EmsdkSdkVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'x64'">$(MicrosoftNETRuntimeEmscripten3134Sdklinuxx64Version)</EmsdkSdkVersion>
+    <EmsdkSdkVersion Condition="'$(HostOS)' == 'linux' and '$(BuildArchitecture)' == 'arm64'">$(MicrosoftNETRuntimeEmscripten3134Sdklinuxarm64Version)</EmsdkSdkVersion>
+    <EmsdkSdkVersion Condition="'$(HostOS)' == 'windows' and '$(BuildArchitecture)' == 'x64'">$(MicrosoftNETRuntimeEmscripten3134Sdkwinx64Version)</EmsdkSdkVersion>
+    <EmsdkSdkVersion Condition="'$(HostOS)' == 'windows' and '$(BuildArchitecture)' == 'arm64'">$(MicrosoftNETRuntimeEmscripten3134Sdkwinarm64Version)</EmsdkSdkVersion>
+    <EmsdkSdkVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'x64'">$(MicrosoftNETRuntimeEmscripten3134Sdkosxx64Version)</EmsdkSdkVersion>
+    <EmsdkSdkVersion Condition="'$(HostOS)' == 'osx' and '$(BuildArchitecture)' == 'arm64'">$(MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version)</EmsdkSdkVersion>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
-    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.osx-arm64"
+    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.$(_portableHostOS)-$(BuildArchitecture)"
                       PrivateAssets="all"
-                      Version="$(MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version)" />
-    <PackageReference Include="runtime.$(HostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport"
+                      Version="$(EmsdkCacheVersion)"
+                      PackageArch="$(BuildArchitecture)" />
+    <PackageReference Include="runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport"
                       Version="$(NodePkgVersion)"
                       PackageArch="$(BuildArchitecture)" />
-    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Sdk.osx-arm64"
+    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Sdk.$(_portableHostOS)-$(BuildArchitecture)"
                       PrivateAssets="all"
-                      Version="$(MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version)" />
+                      Version="$(EmsdkSdkVersion)"
+                      PackageArch="$(BuildArchitecture)" />
   </ItemGroup>
 
   <!--
@@ -185,10 +199,11 @@ export DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EMSDK_PATH)
 
       </_EmsdkPaths>
       <_EmsdkPaths Condition="'$(HostOS)' == 'windows'">
-set EMSDK_PATH=&quot;$(EMSDK_PATH)&quot;
-set DOTNET_EMSCRIPTEN_LLVM_ROOT=&quot;$(EMSDK_PATH)bin/&quot;
-set DOTNET_EMSCRIPTEN_NODE_JS=&quot;$(EMSDK_PATH)node/bin/node&quot;
-set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=&quot;$(EMSDK_PATH)&quot;
+set EMSDK_PATH=$(EMSDK_PATH)
+set EMSDK_PYTHON=$(EMSDK_PATH)python/python.exe
+set DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EMSDK_PATH)bin/
+set DOTNET_EMSCRIPTEN_NODE_JS=$(EMSDK_PATH)node/bin/node
+set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EMSDK_PATH)
 
       </_EmsdkPaths>
       <_EmscriptenPaths>
@@ -209,10 +224,12 @@ JS_ENGINES = [NODE_JS]
     <RemoveDir Directories="$(EMSDK_PATH)" />
     
     <ItemGroup>
-      <EmsdkFiles Condition="'%(PackageReference.Identity)' != 'runtime.$(HostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport'"
-                  Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
-      <NodeFiles  Condition="'%(PackageReference.Identity)' == 'runtime.$(HostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport'"
-                  Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(HostOS)-$(BuildArchitecture)\**" />
+      <EmsdkFiles   Condition="'%(PackageReference.Identity)' != 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport' and '%(PackageReference.Identity)' != 'Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-$(BuildArchitecture)'"
+                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
+      <NodeFiles    Condition="'%(PackageReference.Identity)' == 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport'"
+                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(_portableHostOS)-$(BuildArchitecture)\**" />
+      <PythonFiles  Condition="'$(HostOS)' == 'windows' and '%(PackageReference.Identity)' == 'Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-$(BuildArchitecture)'"
+                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
     </ItemGroup>
 
 
@@ -220,6 +237,9 @@ JS_ENGINES = [NODE_JS]
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
     <Copy SourceFiles="@(NodeFiles)" DestinationFolder="$(EMSDK_PATH)\node\%(RecursiveDir)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
+    <Copy Condition="'$(HostOS)' == 'windows'" SourceFiles="@(PythonFiles)" DestinationFolder="$(EMSDK_PATH)\python\%(RecursiveDir)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
     <ReadLinesFromFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)">
