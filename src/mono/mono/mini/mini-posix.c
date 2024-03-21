@@ -390,6 +390,8 @@ mono_runtime_posix_install_handlers (void)
 	sigaddset (&signal_set, SIGFPE);
 	add_signal_handler (SIGQUIT, sigquit_signal_handler, SA_RESTART);
 	sigaddset (&signal_set, SIGQUIT);
+	add_signal_handler (SIGTERM, mono_sigterm_signal_handler, SA_RESTART);
+	sigaddset (&signal_set, SIGTERM);
 	add_signal_handler (SIGILL, mono_crashing_signal_handler, 0);
 	sigaddset (&signal_set, SIGILL);
 	add_signal_handler (SIGBUS, mono_sigsegv_signal_handler, 0);
