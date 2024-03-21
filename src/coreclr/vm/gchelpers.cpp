@@ -248,8 +248,6 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     // only SOH allocations require sampling threshold to be recomputed
     if ((flags & GC_ALLOC_USER_OLD_HEAP) == 0)
     {
-        // the sampling threshold was crossed, so compute a new one (even if some
-        // free space is left in the allocation context)
         pEEAllocContext->ComputeSamplingLimit(pCurrentThread->GetRandom());
     }
 

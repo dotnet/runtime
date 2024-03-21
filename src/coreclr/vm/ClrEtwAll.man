@@ -467,8 +467,6 @@
                           value="40" eventGUID="{CC82530E-A21C-4EB0-A68A-FA4F7E66498F}"
                           message="$(string.RuntimePublisher.AllocationSamplingTaskMessage)">
                         <opcodes>
-                            <!-- TODO: I don't know which value should be picked for this opcode-->
-                            <opcode name="AllocationSampled" message="$(string.RuntimePublisher.AllocationSampledOpcodeMessage)" symbol="CLR_ALLOCATIONSAMPLED_OPCODE" value="11"> </opcode>
                         </opcodes>
                     </task>
                 <!--Next available ID is 41-->
@@ -3175,7 +3173,6 @@
                     </template>
 
                     <template tid="AllocationSampled">
-                        <!--TODO: is it a problem to reuse the GC allocation kind?-->
                         <data name="AllocationKind" inType="win:UInt32" map="GCAllocationKindMap" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="TypeID" inType="win:Pointer" />
@@ -4292,7 +4289,7 @@
 
                     <!-- Allocation sampling events -->
                     <event value="303" version="0" level="win:Informational" template="AllocationSampled"
-                           keywords="AllocationSamplingKeyword" opcode="AllocationSampled"
+                           keywords="AllocationSamplingKeyword"
                            task="AllocationSampling"
                            symbol="AllocationSampled" message="$(string.RuntimePublisher.AllocationSampledEventMessage)"/>
 
@@ -9331,7 +9328,6 @@
                 <string id="RuntimePublisher.ExecutionCheckpointOpcodeMessage" value="ExecutionCheckpoint" />
 
                 <string id="RuntimePublisher.ProfilerOpcodeMessage" value="ProfilerMessage" />
-                <string id="RuntimePublisher.AllocationSampledOpcodeMessage" value="AllocationSampled" />
 
                 <string id="RundownPublisher.GCSettingsOpcodeMessage" value="GCSettingsRundown" />
 

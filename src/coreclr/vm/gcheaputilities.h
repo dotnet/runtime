@@ -45,8 +45,8 @@ typedef struct _ee_alloc_context
         // If sampling is on then we'd do some pseudo-random number generation to decide what is
         // the next sampled byte in the gc_alloc_context, if any.
 
-        // compute the next sampling limit based on an exponential distribution
-        size_t threshold = ComputeExponetialRandom(pRandomizer);
+        // compute the next sampling limit based on a geometric distribution
+        size_t threshold = ComputeExponentialRandom(pRandomizer);
 
         // if the threshold is larger than the allocation context, no sampling will occur
         alloc_sampling = Min(gc_alloc_context.alloc_ptr + threshold, gc_alloc_context.alloc_limit);
@@ -54,11 +54,11 @@ typedef struct _ee_alloc_context
 
     static inline bool IsSampled(CLRRandom* pRandomizer, size_t range)
     {
-        size_t threshold = ComputeExponetialRandom(pRandomizer);
+        size_t threshold = ComputeExponentialRandom(pRandomizer);
         return (threshold < range);
     }
 private:
-    static inline size_t ComputeExponetialRandom(CLRRandom* pRandomizer)
+    static inline size_t ComputeExponentialRandom(CLRRandom* pRandomizer)
     {
         // compute a thres based on an exponential distribution
         double probability = pRandomizer->NextDouble();

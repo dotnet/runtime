@@ -451,23 +451,21 @@ void InvokeGCAllocCallback(ee_alloc_context* pEEAllocContext, enum_alloc_context
 
     // The allocation context might be modified by the callback, so we need to save
     // the remaining sampling budget and restore it after the callback if needed.
-    size_t currentSamplingBudget = (pEEAllocContext->alloc_sampling == nullptr) ? -1 : (size_t)(pEEAllocContext->alloc_sampling - pAllocContext->alloc_ptr);
-    size_t currentSize = pAllocContext->alloc_limit - pAllocContext->alloc_ptr;
+    size_t currentSamplingBudget = (size_t)(pEEAllocContext->alloc_sampling - pAllocContext->alloc_ptr);
+    size_t currentSize = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
 
     fn(pAllocContext, param);
 
-    if (currentSamplingBudget != -1)
+    // If the GC changed the size of the allocation context, we need to recompute the sampling limit
+    // This includes the case where the AC was initially zero-sized/uninitialized.
+    if (currentSize != (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr))
     {
-        // if the GC changed the size of the allocation context, we need to recompute the sampling limit
-        if (currentSize != (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr))
-        {
-            pEEAllocContext->ComputeSamplingLimit(GetThread()->GetRandom());
-        }
-        else
-        {
-            // restore the remaining sampling budget when the GC simply moved the allocation context in memory
-            pEEAllocContext->alloc_sampling = pAllocContext->alloc_ptr + currentSamplingBudget;
-        }
+        pEEAllocContext->ComputeSamplingLimit(GetThread()->GetRandom());
+    }
+    else
+    {
+        // Restore the remaining sampling budget as the size is the same.
+        pEEAllocContext->alloc_sampling = pAllocContext->alloc_ptr + currentSamplingBudget;
     }
 }
 
