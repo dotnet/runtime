@@ -120,6 +120,7 @@ extends:
                   packageType: rpm
                   target: rpmpkg
                   packagingArgs: -c $(_BuildConfig) /p:BuildRpmPackage=true
+                  condition: and(succeeded(), eq(variables.osSubgroup, ''))
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),

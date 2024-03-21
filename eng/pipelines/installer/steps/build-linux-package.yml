@@ -16,6 +16,8 @@ steps:
     buildArgs: -s packs.installers ${{ parameters.packagingArgs }} /bl:artifacts/log/$(_BuildConfig)/msbuild.${{ parameters.packageType }}.installers.binlog
     container: ${{ parameters.target }}
     displayName: Package Runtime Deps, Runtime, Framework Packs - ${{ parameters.packageType }} packages
+    # Even for cross-build targets, our installer build steps are not cross-builds
+    crossArg: ''
     condition: ${{ parameters.condition }}
 
 # Broken symbolic links break the SBOM processing
