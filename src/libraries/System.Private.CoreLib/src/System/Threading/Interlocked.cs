@@ -98,7 +98,7 @@ namespace System.Threading
             do
             {
                 // make sure the ref is still aligned
-                Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref alignedRef, sizeof(uint));
+                Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref alignedRef, sizeof(uint)));
                 newValue = originalValue & mask | shiftedValue;
             } while (originalValue !=
                      (originalValue = CompareExchange(ref alignedRef, newValue, originalValue)));
@@ -137,7 +137,7 @@ namespace System.Threading
             do
             {
                 // make sure the ref is still aligned
-                Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref alignedRef, sizeof(uint));
+                Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref alignedRef, sizeof(uint)));
                 newValue = originalValue & mask | shiftedValue;
             } while (originalValue !=
                      (originalValue = CompareExchange(ref alignedRef, newValue, originalValue)));
@@ -277,7 +277,7 @@ namespace System.Threading
             do
             {
                 // make sure the ref is still aligned
-                Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref alignedRef, sizeof(uint));
+                Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref alignedRef, sizeof(uint)));
                 uint otherMemory = originalValue & mask;
                 fullComparand = otherMemory | shiftedComparand;
                 newValue = otherMemory | shiftedValue;
@@ -320,7 +320,7 @@ namespace System.Threading
             do
             {
                 // make sure the ref is still aligned
-                Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref alignedRef, sizeof(uint));
+                Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref alignedRef, sizeof(uint)));
                 uint otherMemory = originalValue & mask;
                 fullComparand = otherMemory | shiftedComparand;
                 newValue = otherMemory | shiftedValue;
