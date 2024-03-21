@@ -326,9 +326,14 @@ internal sealed class Xcode
 
             if (forceAOT || !(preferDylibs && dylibExists))
             {
-                // these libraries are pinvoked
-                // -force_load will be removed once we enable direct-pinvokes for AOT
-                toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
+                // do not export symbols from ICU libraries
+                if (libName == "libicui18n" || libName == "libicudata" || libName == "libicuuc") {
+                    toLink += $"    \"-load_hidden {lib}\"{Environment.NewLine}";
+                } else {
+                    // these libraries are pinvoked
+                    // -force_load will be removed once we enable direct-pinvokes for AOT
+                    toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
+                }
             }
         }
 
