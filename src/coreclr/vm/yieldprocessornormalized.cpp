@@ -16,8 +16,8 @@ enum class NormalizationState : UINT8
 };
 
 static const int NsPerYieldMeasurementCount = 8;
+static const int PartialInitializationMeasurementCount = 2; // number of measurements to be done during partial initialization
 static const unsigned int MeasurementPeriodMs = 4000;
-static const int s_partialInitializationMeasurementCount = 2; // number of measurements to be done during partial initialization
 
 static const unsigned int NsPerS = 1000 * 1000 * 1000;
 
@@ -122,7 +122,7 @@ void YieldProcessorNormalization::PerformMeasurement()
 
     _ASSERTE(s_isMeasurementScheduled ^ (s_normalizationState == NormalizationState::Uninitialized));
 
-    double latestNsPerYield = 0; // initialize to supress error C4701
+    double latestNsPerYield;
     if (s_normalizationState == NormalizationState::Initialized)
     {
         if (GetTickCount() - s_previousNormalizationTimeMs < MeasurementPeriodMs)
@@ -154,15 +154,16 @@ void YieldProcessorNormalization::PerformMeasurement()
             s_performanceCounterTicksPerS = li.QuadPart;
 
             startIndex = 0;
-            endIndex = s_partialInitializationMeasurementCount;
+            endIndex = PartialInitializationMeasurementCount;
         }
         else
         {
-            startIndex = s_partialInitializationMeasurementCount;
+            startIndex = PartialInitializationMeasurementCount;
             endIndex = NsPerYieldMeasurementCount;
         }
 
         unsigned int measureDurationUs = DetermineMeasureDurationUs();
+        latestNsPerYield = 0;
         for (int i = startIndex; i < endIndex; ++i)
         {
             latestNsPerYield = MeasureNsPerYield(measureDurationUs);
@@ -172,16 +173,11 @@ void YieldProcessorNormalization::PerformMeasurement()
                 AtomicStore(&s_establishedNsPerYield, latestNsPerYield);
             }
 
-            if (i < NsPerYieldMeasurementCount - 1)
+            if (i < endIndex - 1)
             {
                 FireEtwYieldProcessorMeasurement(GetClrInstanceId(), latestNsPerYield, s_establishedNsPerYield);
             }
         }
-
-        s_normalizationState =
-            (s_normalizationState == NormalizationState::Uninitialized) ?
-            NormalizationState::PartiallyInitialized :
-            NormalizationState::Initialized;
     }
     else
     {
@@ -191,8 +187,8 @@ void YieldProcessorNormalization::PerformMeasurement()
 
     double establishedNsPerYield = s_nsPerYieldMeasurements[0];
     int endIndex =
-        (s_normalizationState == NormalizationState::PartiallyInitialized) ?
-        s_partialInitializationMeasurementCount :
+        (s_normalizationState == NormalizationState::Uninitialized) ?
+        PartialInitializationMeasurementCount :
         NsPerYieldMeasurementCount;
     for (int i = 1; i < endIndex; ++i)
     {
@@ -223,7 +219,15 @@ void YieldProcessorNormalization::PerformMeasurement()
 
     GCHeapUtilities::GetGCHeap()->SetYieldProcessorScalingFactor((float)yieldsPerNormalizedYield);
 
-    s_previousNormalizationTimeMs = GetTickCount();
+    if (s_normalizationState != NormalizationState::Uninitialized)
+    {
+        s_previousNormalizationTimeMs = GetTickCount();
+    }
+
+    s_normalizationState =
+        (s_normalizationState == NormalizationState::Uninitialized) ?
+        NormalizationState::PartiallyInitialized :
+        NormalizationState::Initialized;
     s_isMeasurementScheduled = false;
 }
 
@@ -239,14 +243,14 @@ void YieldProcessorNormalization::ScheduleMeasurementIfNecessary()
     CONTRACTL_END;
 
     NormalizationState normalizationState = VolatileLoadWithoutBarrier(&s_normalizationState);
-    if (normalizationState == NormalizationState::Initialized || normalizationState == NormalizationState::PartiallyInitialized)
+    if (normalizationState == NormalizationState::Initialized)
     {
         if (GetTickCount() - s_previousNormalizationTimeMs < MeasurementPeriodMs)
         {
             return;
         }
     }
-    else if (normalizationState == NormalizationState::Uninitialized)
+    else if (normalizationState == NormalizationState::Uninitialized || normalizationState == NormalizationState::PartiallyInitialized)
     {
     }
     else
