@@ -67,6 +67,9 @@ mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void 
 void
 mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer args);
 
+void 
+mono_threads_wasm_sync_run_in_target_thread_done (MonoCoopSem *sem);
+
 static inline
 int32_t
 mono_wasm_atomic_wait_i32 (volatile int32_t *addr, int32_t expected, int32_t timeout_ns)

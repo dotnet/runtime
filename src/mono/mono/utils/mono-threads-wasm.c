@@ -661,7 +661,7 @@ mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void 
 	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VII, func, NULL, user_data1, user_data2);
 }
 
-static void mono_threads_wasm_sync_run_in_target_thread_vii_cb (MonoCoopSem *done, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer args)
+static void mono_threads_wasm_sync_run_in_target_thread_vii_cb (MonoCoopSem *done, void (*func) (gpointer, gpointer), gpointer user_data1, void* args)
 {
 	// in UI thread we postpone the execution via safeSetTimeout so that emscripten_proxy_execute_queue is not blocked by this call
 	// see invoke_later_on_ui_thread
@@ -675,7 +675,6 @@ static void mono_threads_wasm_sync_run_in_target_thread_vii_cb (MonoCoopSem *don
 		mono_coop_sem_post (done);
 	}
 }
-
 
 EMSCRIPTEN_KEEPALIVE void 
 mono_threads_wasm_sync_run_in_target_thread_done (MonoCoopSem *sem)
