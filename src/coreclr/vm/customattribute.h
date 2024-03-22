@@ -8,12 +8,11 @@
 #include "fcall.h"
 #include "../md/compiler/custattr.h"
 
-typedef Factory< SArray<CaValue> > CaValueArrayFactory;
+using CaValueArrayFactory = Factory<SArray<CaValue>>;
 
-class Attribute
+namespace Attribute
 {
-public:
-    static HRESULT ParseAttributeArgumentValues(
+    HRESULT ParseArgumentValues(
         void* pCa,
         INT32 cCa,
         CaValueArrayFactory* pCaValueArrayFactory,
@@ -22,10 +21,10 @@ public:
         CaNamedArg* pCaNamedArgs,
         COUNT_T cNamedArgs,
         DomainAssembly* pDomainAssembly);
-};
+}
 
 extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
-    QCall::ObjectHandleOnStack pAttributedModule,
+    QCall::ModuleHandle pModule,
     QCall::ObjectHandleOnStack pCaType,
     QCall::ObjectHandleOnStack pMethod,
     BYTE** ppBlob,
@@ -34,12 +33,12 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     QCall::ObjectHandleOnStack result);
 
 extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
-    QCall::ObjectHandleOnStack pModule,
+    QCall::ModuleHandle pModule,
     BYTE** ppBlobStart,
     BYTE* pBlobEnd,
-    QCall::ObjectHandleOnStack pName,
+    QCall::StringHandleOnStack pName,
     bool* pbIsProperty,
     QCall::ObjectHandleOnStack pType,
     QCall::ObjectHandleOnStack value);
-#endif
 
+#endif // _CUSTOMATTRIBUTE_H_

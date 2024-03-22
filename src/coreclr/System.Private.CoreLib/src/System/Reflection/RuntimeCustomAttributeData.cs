@@ -1894,7 +1894,7 @@ namespace System.Reflection
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreateCustomAttributeInstance")]
         private static partial void CreateCustomAttributeInstance(
-            ObjectHandleOnStack pModule,
+            QCallModule pModule,
             ObjectHandleOnStack type,
             ObjectHandleOnStack pCtor,
             ref IntPtr ppBlob,
@@ -1911,7 +1911,7 @@ namespace System.Reflection
 
             object? result = null;
             CreateCustomAttributeInstance(
-                ObjectHandleOnStack.Create(ref module),
+                new QCallModule(ref module),
                 ObjectHandleOnStack.Create(ref type),
                 ObjectHandleOnStack.Create(ref ctor),
                 ref blob,
@@ -1921,12 +1921,12 @@ namespace System.Reflection
             return result!;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreateCustomAttributeInstance", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreatePropertyOrFieldData", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void CreatePropertyOrFieldData(
-            ObjectHandleOnStack pModule,
+            QCallModule pModule,
             ref IntPtr ppBlobStart,
             IntPtr pBlobEnd,
-            ObjectHandleOnStack name,
+            StringHandleOnStack name,
             [MarshalAs(UnmanagedType.U1)] out bool bIsProperty,
             ObjectHandleOnStack type,
             ObjectHandleOnStack value);
@@ -1943,10 +1943,10 @@ namespace System.Reflection
             RuntimeType? typeLocal = null;
             object? valueLocal = null;
             CreatePropertyOrFieldData(
-                ObjectHandleOnStack.Create(ref module),
+                new QCallModule(ref module),
                 ref blobStart,
                 blobEnd,
-                ObjectHandleOnStack.Create(ref nameLocal),
+                new StringHandleOnStack(ref nameLocal),
                 out isProperty,
                 ObjectHandleOnStack.Create(ref typeLocal),
                 ObjectHandleOnStack.Create(ref valueLocal));
