@@ -79,15 +79,15 @@
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.24155.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.24162.2">
       <Uri>https://github.com/dotnet/source-build-reference-packages</Uri>
-      <Sha>768378e775fc5ddc99d41f2c4d1c78182f326ea7</Sha>
+      <Sha>c0b5d69a1a1513528c77fffff708c7502d57c35c</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.24161.3">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.24168.3">
       <Uri>https://github.com/dotnet/source-build-externals</Uri>
-      <Sha>472629e451a5a87410ea3670606f7235a4dd5a02</Sha>
+      <Sha>b46b7e6859f4094cd7f3e00dc0471d62f5d8d051</Sha>
       <SourceBuild RepoName="source-build-externals" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
@@ -372,13 +372,13 @@
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>77372c66fd54927312b5b0a2e399e192f74445c9</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.24158.2">
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.24170.2">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>94749ce487be31b74bae5629b5af5d2392377f6d</Sha>
+      <Sha>29bdbf5df540dc13d4fe440a1ca7076c6ed65864</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.24158.2">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.24170.2">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>94749ce487be31b74bae5629b5af5d2392377f6d</Sha>
+      <Sha>29bdbf5df540dc13d4fe440a1ca7076c6ed65864</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
     <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="4.10.0-2.24114.13">

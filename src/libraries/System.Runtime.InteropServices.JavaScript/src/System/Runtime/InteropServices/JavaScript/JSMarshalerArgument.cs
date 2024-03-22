@@ -68,6 +68,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
             [FieldOffset(24)]
             internal IntPtr CallerNativeTID;
+
+            [FieldOffset(28)]
+            internal IntPtr SyncDoneSemaphorePtr;
 #endif
         }
 

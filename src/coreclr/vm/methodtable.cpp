@@ -472,6 +472,17 @@ WORD MethodTable::GetNumMethods()
     return GetClass()->GetNumMethods();
 }
 
+PTR_MethodTable MethodTable::GetTypicalMethodTable()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    if (IsArray())
+        return (PTR_MethodTable)this;
+
+    PTR_MethodTable methodTableMaybe = GetModule()->LookupTypeDef(GetCl()).AsMethodTable();
+    _ASSERTE(methodTableMaybe->IsTypicalTypeDefinition());
+    return methodTableMaybe;
+}
+
 //==========================================================================================
 BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
 {

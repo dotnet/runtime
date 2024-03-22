@@ -11,7 +11,6 @@ parameters:
   container: ''
   buildSteps: []
   dependsOn: []
-  dependOnEvaluatePaths: false
   globalBuildSuffix: ''
   variables: []
   name: ''
@@ -51,8 +50,6 @@ jobs:
     helixType: 'build/product/'
     enableMicrobuild: true
     pool: ${{ parameters.pool }}
-
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Compute job name from template parameters
     name: ${{ format('installer_{0}_{1}', coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
@@ -164,8 +161,6 @@ jobs:
         value: --subset packs.installers
 
     dependsOn:
-    - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
-      - evaluate_paths
     - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
     - ${{ parameters.dependsOn }}
     steps:

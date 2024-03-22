@@ -119,14 +119,44 @@ function is_backward_branch_target(
     return false;
 }
 
-type KnownConstantValue = number | Uint8Array;
-const knownConstantValues = new Map<number, KnownConstantValue>();
+interface KnownConstantI32 {
+    type: "i32";
+    value: number;
+}
 
-function get_known_constant_value(builder: WasmBuilder, localOffset: number): KnownConstantValue | undefined {
+interface KnownConstantV128 {
+    type: "v128";
+    value: Uint8Array;
+}
+
+interface KnownConstantLdloca {
+    type: "ldloca";
+    offset: number;
+}
+
+type KnownConstant = KnownConstantI32 | KnownConstantV128 | KnownConstantLdloca;
+type KnownConstantValue = number | Uint8Array;
+const knownConstants = new Map<number, KnownConstant>();
+
+function get_known_constant(builder: WasmBuilder, localOffset: number): KnownConstant | undefined {
     if (isAddressTaken(builder, localOffset))
         return undefined;
 
-    return knownConstantValues.get(localOffset);
+    return knownConstants.get(localOffset);
+}
+
+function get_known_constant_value(builder: WasmBuilder, localOffset: number): KnownConstantValue | undefined {
+    const kc = get_known_constant(builder, localOffset);
+    if (kc === undefined)
+        return undefined;
+
+    switch (kc.type) {
+        case "i32":
+        case "v128":
+            return kc.value;
+    }
+
+    return undefined;
 }
 
 // Perform a quick scan through the opcodes potentially in this trace to build a table of
@@ -553,11 +583,20 @@ export function generateWasmBody(
                 builder.local("pLocals");
                 // locals[ip[1]] = &locals[ip[2]]
                 const offset = getArgU16(ip, 2),
-                    flag = isAddressTaken(builder, offset);
+                    flag = isAddressTaken(builder, offset),
+                    destOffset = getArgU16(ip, 1);
                 if (!flag)
                     mono_log_error(`${traceName}: Expected local ${offset} to have address taken flag`);
                 append_ldloca(builder, offset);
-                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+                append_stloc_tail(builder, destOffset, WasmOpcode.i32_store);
+                // Record this ldloca as a known constant so that later uses of it turn into a lea,
+                //  and the wasm runtime can constant fold them with other constants. It's not uncommon
+                //  to have code that does '&x + c', which (if this optimization works) should
+                //  turn into '&locals + offsetof(x) + c' and get constant folded to have the same cost
+                //  as a regular ldloc
+                knownConstants.set(destOffset, { type: "ldloca", offset: offset });
+                // dreg invalidation would blow the known constant away, so disable it
+                skipDregInvalidation = true;
                 break;
             }
 
@@ -1712,14 +1751,14 @@ let cknullOffset = -1;
 function eraseInferredState() {
     cknullOffset = -1;
     notNullSince.clear();
-    knownConstantValues.clear();
+    knownConstants.clear();
 }
 
 function invalidate_local(offset: number) {
     if (cknullOffset === offset)
         cknullOffset = -1;
     notNullSince.delete(offset);
-    knownConstantValues.delete(offset);
+    knownConstants.delete(offset);
 }
 
 function invalidate_local_range(start: number, bytes: number) {
@@ -1792,7 +1831,47 @@ function computeMemoryAlignment(offset: number, opcodeOrPrefix: WasmOpcode, simd
     return alignment;
 }
 
+function try_append_ldloc_cprop(
+    builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode,
+    dryRun: boolean, requireNonzero?: boolean
+) {
+    if (builder.options.cprop && (opcodeOrPrefix === WasmOpcode.i32_load)) {
+        // It's common to ldc.i4 or ldloca immediately before using the value
+        // in these cases the known constant analysis will work consistently, and we can skip the extra
+        //  memory load to read the constant we just wrote to a local. the resulting traces should be
+        //  both smaller and faster, while still correct since the ldc still writes to memory
+        // of course, if known constant analysis is broken, this will break too, but it's better to
+        //  learn immediately whether known constant analysis has been broken this whole time
+        // at least on x86 this will enable much better native code generation for the trace, since
+        //  operations like memory stores have forms that accept an immediate as rhs
+        const knownConstant = get_known_constant(builder, offset);
+        if (knownConstant) {
+            switch (knownConstant.type) {
+                case "i32":
+                    if (requireNonzero && (knownConstant.value === 0))
+                        return false;
+                    if (!dryRun)
+                        builder.i32_const(knownConstant.value);
+                    return true;
+                case "ldloca":
+                    // FIXME: Do we need to invalidate the local again? I don't think we do, we invalidated it
+                    //  when the ldloca operation originally happened, and we're just propagating that address
+                    //  constant forward to its point of use
+                    // requireNonzero is a no-op since ldloca always produces a nonzero result
+                    if (!dryRun)
+                        append_ldloca(builder, knownConstant.offset, 0);
+                    return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 function append_ldloc(builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
+    if (try_append_ldloc_cprop(builder, offset, opcodeOrPrefix, false))
+        return;
+
     builder.local("pLocals");
     mono_assert(opcodeOrPrefix >= WasmOpcode.i32_load, () => `Expected load opcode but got ${opcodeOrPrefix}`);
     builder.appendU8(opcodeOrPrefix);
@@ -1828,8 +1907,6 @@ function append_stloc_tail(builder: WasmBuilder, offset: number, opcodeOrPrefix:
 
 // Pass bytesInvalidated=0 if you are reading from the local and the address will never be
 //  used for writes
-// Pass transient=true if the address will not persist after use (so it can't be used to later
-//  modify the contents of this local)
 function append_ldloca(builder: WasmBuilder, localOffset: number, bytesInvalidated?: number) {
     if (typeof (bytesInvalidated) !== "number")
         bytesInvalidated = 512;
@@ -1985,9 +2062,9 @@ function emit_ldc(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): 
     invalidate_local(localOffset);
 
     if (typeof (value) === "number")
-        knownConstantValues.set(localOffset, value);
+        knownConstants.set(localOffset, { type: "i32", value: value });
     else
-        knownConstantValues.delete(localOffset);
+        knownConstants.delete(localOffset);
 
     return true;
 }
@@ -2092,6 +2169,8 @@ function emit_fieldop(
         notNullSince.has(objectOffset) &&
         !isAddressTaken(builder, objectOffset);
 
+    // TODO: Figure out whether this is commonly used to access fields of structs that
+    //  live on the stack, and if so, whether we want to do cprop of the ldloca
     if (
         (opcode !== MintOpcode.MINT_LDFLDA_UNSAFE) &&
         (opcode !== MintOpcode.MINT_STFLD_O)
@@ -3088,13 +3167,21 @@ function emit_indirectop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOp
             return false;
     }
 
-    append_ldloc_cknull(builder, addressVarIndex, ip, false);
+    // Check whether ldloc cprop is possible for the address var, if it is, skip doing the ldloc_cknull.
+    // We'll also skip loading cknull_ptr later.
+    const addressCprop = try_append_ldloc_cprop(builder, addressVarIndex, WasmOpcode.i32_load, true, true);
+    if (!addressCprop)
+        append_ldloc_cknull(builder, addressVarIndex, ip, false);
 
     if (isLoad) {
         // pre-load pLocals for the store operation
         builder.local("pLocals");
         // Load address
-        builder.local("cknull_ptr");
+        if (addressCprop)
+            mono_assert(try_append_ldloc_cprop(builder, addressVarIndex, WasmOpcode.i32_load, false, true), "Unknown jiterpreter cprop failure");
+        else
+            builder.local("cknull_ptr");
+
         // For ldind_offset we need to load an offset from another local
         //  and then add it to the null checked address
         if (isAddMul) {
@@ -3126,13 +3213,21 @@ function emit_indirectop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOp
         append_stloc_tail(builder, valueVarIndex, setter);
     } else if (opcode === MintOpcode.MINT_STIND_REF) {
         // Load destination address
-        builder.local("cknull_ptr");
+        if (addressCprop)
+            mono_assert(try_append_ldloc_cprop(builder, addressVarIndex, WasmOpcode.i32_load, false, true), "Unknown jiterpreter cprop failure");
+        else
+            builder.local("cknull_ptr");
+
         // Load address of value so that copy_managed_pointer can grab it
         append_ldloca(builder, valueVarIndex, 0);
         builder.callImport("copy_ptr");
     } else {
         // Pre-load address for the store operation
-        builder.local("cknull_ptr");
+        if (addressCprop)
+            mono_assert(try_append_ldloc_cprop(builder, addressVarIndex, WasmOpcode.i32_load, false, true), "Unknown jiterpreter cprop failure");
+        else
+            builder.local("cknull_ptr");
+
         // For ldind_offset we need to load an offset from another local
         //  and then add it to the null checked address
         if (isOffset && offsetVarIndex >= 0) {
@@ -3429,7 +3524,7 @@ function emit_simd(
                 const view = localHeapViewU8().slice(<any>ip + 4, <any>ip + 4 + sizeOfV128);
                 builder.v128_const(view);
                 append_simd_store(builder, ip);
-                knownConstantValues.set(getArgU16(ip, 1), view);
+                knownConstants.set(getArgU16(ip, 1), { type: "v128", value: view });
             } else {
                 // dest
                 append_ldloca(builder, getArgU16(ip, 1), sizeOfV128);

@@ -3,13 +3,18 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using Xunit;
 
-class Program
+public class Program
 {
     internal static int s_return;
 
     [DynamicDependency(nameof(StartupHook.Initialize), typeof(StartupHook))]
-    static int Main() => s_return;
+    [Fact]
+    public static int TestEntryPoint()
+    {
+        return s_return;
+    }
 }
 
 class StartupHook

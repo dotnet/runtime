@@ -18,7 +18,6 @@ public class ValidateNegative
         Console.WriteLine($"{nameof(AllowByRefLike_Substituted_For_NonByRefLike_Invalid)}...");
 
         Assert.Throws<TypeLoadException>(() => { Exec.TypeSubstitutionInterfaceImplementationAllowByRefLikeIntoNonByRefLike(); });
-        Assert.Throws<TypeLoadException>(() => { Exec.TypeSubstitutionFieldAllowByRefLikeIntoNonByRefLike(); });
         Assert.Throws<TypeLoadException>(() => { Exec.OverrideMethodNotByRefLike(); });
     }
 
@@ -28,5 +27,6 @@ public class ValidateNegative
         Console.WriteLine($"{nameof(AllowByRefLike_Substituted_For_NonByRefLike_Invalid_Class)}...");
 
         Assert.Throws<TypeLoadException>(() => { Exec.TypeSubstitutionInheritanceAllowByRefLikeIntoNonByRefLike(); });
+        Assert.Throws<TypeLoadException>(() => { Exec.TypeSubstitutionFieldAllowByRefLikeIntoNonByRefLike(); });
     }
 }

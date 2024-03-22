@@ -8,7 +8,6 @@ parameters:
   timeoutInMinutes: 240           # build timeout
   variables: {}
   helixQueues: ''
-  dependOnEvaluatePaths: false
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-diffs-job.yml'
   diffType: 'asmdiffs'            # required -- 'asmdiffs', 'tpdiff', or 'all'
   baseJitOptions: ''              # e.g. JitStressModeNames=STRESS_PHYSICAL_PROMOTION;JitFullyInt=1
@@ -25,7 +24,6 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     condition: ${{ parameters.condition }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     helixQueues: ${{ parameters.helixQueues }}
     diffType: ${{ parameters.diffType }}
@@ -59,7 +57,7 @@ jobs:
           artifactFileName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
           artifactName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)'
           displayName: 'JIT checked build'
-          cleanupUnpackFolder: false
+          cleanUnpackFolder: false
 
     - ${{ if in(parameters.diffType, 'tpdiff', 'all') }}:
       # Download jit release builds
@@ -69,4 +67,4 @@ jobs:
           artifactFileName: 'ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
           artifactName: 'ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)'
           displayName: 'JIT release build'
-          cleanupUnpackFolder: false
+          cleanUnpackFolder: false

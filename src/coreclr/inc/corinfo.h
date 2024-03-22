@@ -2983,7 +2983,7 @@ public:
             CORINFO_CLASS_HANDLE*       vcTypeRet       /* OUT */
             ) = 0;
 
-    // Obtains a list of exact classes for a given base type. Returns 0 if the number of
+    // Obtains a list of exact classes for a given base type. Returns -1 if the number of
     // the exact classes is greater than maxExactClasses or if more types might be loaded
     // in future.
     virtual int getExactClasses(

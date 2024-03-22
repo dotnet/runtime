@@ -33,6 +33,7 @@ const threading_cwraps: SigLine[] = WasmEnableThreads ? [
     [true, "mono_wasm_register_ui_thread", "void", []],
     [true, "mono_wasm_register_io_thread", "void", []],
     [true, "mono_wasm_print_thread_dump", "void", []],
+    [true, "mono_threads_wasm_sync_run_in_target_thread_done", "void", ["number"]],
 ] : [];
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
@@ -156,6 +157,7 @@ export interface t_ThreadingCwraps {
     mono_wasm_register_ui_thread(): void;
     mono_wasm_register_io_thread(): void;
     mono_wasm_print_thread_dump(): void;
+    mono_threads_wasm_sync_run_in_target_thread_done(sem: VoidPtr): void;
 }
 
 export interface t_ProfilerCwraps {

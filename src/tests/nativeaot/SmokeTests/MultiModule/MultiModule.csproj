@@ -3,14 +3,17 @@
     <OutputType>Exe</OutputType>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
 
     <!-- This test always runs as multimodule. It's not supported if we don't have framework object files. -->
     <CLRTestTargetUnsupported Condition="'$(BuildNativeAotFrameworkObjects)' != 'true'">true</CLRTestTargetUnsupported>
     <IlcMultiModule>true</IlcMultiModule>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="MultiModule.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="Library.csproj" />
   </ItemGroup>

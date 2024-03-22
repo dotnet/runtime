@@ -121,6 +121,10 @@ DEFINE_BOOL(jiterpreter_backward_branches_enabled, "jiterpreter-backward-branche
 DEFINE_BOOL(jiterpreter_enable_simd, "jiterpreter-simd-enabled", TRUE, "Attempt to use WebAssembly SIMD support")
 // Since the zero page is unallocated, loading array/string/span lengths from null ptrs will yield zero
 DEFINE_BOOL(jiterpreter_zero_page_optimization, "jiterpreter-zero-page-optimization", TRUE, "Exploit the zero page being unallocated to optimize out null checks")
+// We can produce higher quality code by embedding known constants directly into traces instead of loading
+//  the constant from its storage location in the interpreter's locals in memory, even if we can't skip
+//  the write of the constant into memory.
+DEFINE_BOOL(jiterpreter_constant_propagation, "jiterpreter-constant-propagation", TRUE, "Propagate ldc.i4 and ldloca expressions forward to locations where those constants are used")
 // When compiling a jit_call wrapper, bypass sharedvt wrappers if possible by inlining their
 //  logic into the compiled wrapper and calling the target AOTed function with native call convention
 DEFINE_BOOL(jiterpreter_direct_jit_call, "jiterpreter-direct-jit-calls", TRUE, "Bypass gsharedvt wrappers when compiling JIT call wrappers")

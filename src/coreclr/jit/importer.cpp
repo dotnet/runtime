@@ -1019,8 +1019,8 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // Instead, we're going to sink the store below the COMMA.
             store->Data()      = src->AsOp()->gtOp2;
             src->AsOp()->gtOp2 = impStoreStruct(store, curLevel, pAfterStmt, usedDI, block);
-            src->SetAllEffectsFlags(src->AsOp()->gtOp1, src->AsOp()->gtOp2);
             gtUpdateNodeSideEffects(store);
+            src->SetAllEffectsFlags(src->AsOp()->gtOp1, src->AsOp()->gtOp2);
 
             return src;
         }
@@ -5380,6 +5380,32 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
         return nullptr;
     }
 
+    CORINFO_CLASS_HANDLE toClass = pResolvedToken->hClass;
+    if (info.compCompHnd->getExactClasses(toClass, 0, nullptr) == 0)
+    {
+        JITDUMP("\nClass %p (%s) can never be allocated\n", dspPtr(toClass), eeGetClassName(toClass));
+
+        if (!isCastClass)
+        {
+            JITDUMP("Cast will fail, optimizing to return null\n");
+
+            // If the cast was fed by a box, we can remove that too.
+            if (op1->IsBoxedValue())
+            {
+                JITDUMP("Also removing upstream box\n");
+                gtTryRemoveBoxUpstreamEffects(op1);
+            }
+
+            if (gtTreeHasSideEffects(op1, GTF_SIDE_EFFECT))
+            {
+                impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+            }
+            return gtNewNull();
+        }
+
+        JITDUMP("Cast will always throw, but not optimizing yet\n");
+    }
+
     // See what we know about the type of the object being cast.
     bool                 isExact   = false;
     bool                 isNonNull = false;
@@ -5387,7 +5413,6 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
 
     if (fromClass != nullptr)
     {
-        CORINFO_CLASS_HANDLE toClass = pResolvedToken->hClass;
         JITDUMP("\nConsidering optimization of %s from %s%p (%s) to %p (%s)\n", isCastClass ? "castclass" : "isinst",
                 isExact ? "exact " : "", dspPtr(fromClass), eeGetClassName(fromClass), dspPtr(toClass),
                 eeGetClassName(toClass));

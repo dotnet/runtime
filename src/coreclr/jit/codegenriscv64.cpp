@@ -80,6 +80,9 @@ bool CodeGen::genInstrWithConstant(instruction ins,
         case INS_flw:
         case INS_ld:
         case INS_fld:
+        case INS_lbu:
+        case INS_lhu:
+        case INS_lwu:
             break;
 
         default:

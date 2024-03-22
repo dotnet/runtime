@@ -135,11 +135,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 {
                     throw;
                 }
-                Console.WriteLine("ActionsInDifferentThreads failed with: \n" + ex);
                 if (!e1Done || !e2Done)
                 {
-                    Console.WriteLine("ActionsInDifferentThreads canceling!");
+                    Console.WriteLine("ActionsInDifferentThreads canceling because of unexpected fail: \n" + ex);
                     cts.Cancel();
+                }
+                else
+                {
+                    Console.WriteLine("ActionsInDifferentThreads failed with: \n" + ex);
                 }
                 throw;
             }

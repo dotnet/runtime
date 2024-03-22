@@ -2844,8 +2844,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             arg.AbiInfo.NumRegs = size;
             arg.AbiInfo.SetByteSize(byteSize, argAlignBytes, isStructArg, isFloatHfa);
 #ifdef UNIX_AMD64_ABI
-            arg.AbiInfo.StructIntRegs   = structIntRegs;
-            arg.AbiInfo.StructFloatRegs = structFloatRegs;
 
             if (isStructArg)
             {

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
 
     <!-- Correctness of interop for abstract delegates cannot be guaranteed after native compilation -->
     <NoWarn>$(NoWarn);IL3055</NoWarn>
@@ -11,9 +11,11 @@
     <!-- Test infra issue on apple devices: https://github.com/dotnet/runtime/issues/89917 -->
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="PInvoke.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>

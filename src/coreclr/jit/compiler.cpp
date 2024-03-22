@@ -2082,9 +2082,9 @@ void Compiler::compDoComponentUnitTestsOnce()
 // compGetJitDefaultFill:
 //
 // Return Value:
-//    An unsigned char value used to initizalize memory allocated by the JIT.
-//    The default value is taken from DOTNET_JitDefaultFill,  if is not set
-//    the value will be 0xdd.  When JitStress is active a random value based
+//    An unsigned char value used to initialize memory allocated by the JIT.
+//    The default value is taken from DOTNET_JitDefaultFill. If it is not set
+//    the value will be 0xdd. When JitStress is active a random value based
 //    on the method hash is used.
 //
 // Notes:
@@ -2782,6 +2782,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoFailReason  = nullptr;
     fgPgoSource      = ICorJitInfo::PgoSource::Unknown;
     fgPgoHaveWeights = false;
+    fgPgoSynthesized = false;
+
+#ifdef DEBUG
+    fgPgoConsistent = false;
+#endif
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
@@ -3588,6 +3593,14 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     const WCHAR* strStressModeNamesNot = JitConfig.JitStressModeNamesNot();
     if ((strStressModeNamesNot != nullptr) &&
         (u16_strstr(strStressModeNamesNot, s_compStressModeNamesW[stressArea]) != nullptr))
+    {
+        return false;
+    }
+
+    // Does user allow using this STRESS_MODE through the command line?
+    const WCHAR* strStressModeNamesAllow = JitConfig.JitStressModeNamesAllow();
+    if ((strStressModeNamesAllow != nullptr) &&
+        (u16_strstr(strStressModeNamesAllow, s_compStressModeNamesW[stressArea]) == nullptr))
     {
         return false;
     }
@@ -10524,6 +10537,7 @@ HelperCallProperties Compiler::s_helperCallProperties;
 // Return Value:
 //    true       - tree kills GC refs on callee save registers
 //    false      - tree doesn't affect GC refs on callee save registers
+//
 bool Compiler::killGCRefs(GenTree* tree)
 {
     if (tree->IsCall())
@@ -10820,6 +10834,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_simdUserForcesDep++;
                 break;
 
+            case DoNotEnregisterReason::NonStandardParameter:
+                m_nonStandardParameter++;
+                break;
+
             default:
                 unreached();
                 break;
@@ -10947,6 +10965,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_returnSpCheck, notEnreg);
     PRINT_STATS(m_callSpCheck, notEnreg);
     PRINT_STATS(m_simdUserForcesDep, notEnreg);
+    PRINT_STATS(m_nonStandardParameter, notEnreg);
 
     fprintf(fout, "\nAddr exposed details:\n");
     if (m_addrExposed == 0)

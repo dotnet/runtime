@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.Quic;
 
 namespace System.Net.Quic;
@@ -52,7 +53,8 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
                 SafeHandleType.Stream => MsQuicApi.Api.ApiTable->StreamClose,
                 _ => throw new ArgumentException($"Unexpected value: {safeHandleType}", nameof(safeHandleType))
             },
-            safeHandleType) { }
+            safeHandleType)
+    { }
 
     protected override bool ReleaseHandle()
     {
@@ -140,5 +142,48 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
         }
         _disposable?.Dispose();
         return true;
+    }
+}
+
+internal sealed class MsQuicConfigurationSafeHandle : MsQuicSafeHandle
+{
+    // MsQuicConfiguration handles are cached, so we need to keep track of the
+    // number of times a handle is rented. Once we decide to dispose the handle,
+    // we set the _rentCount to -1.
+    private volatile int _rentCount;
+
+    public unsafe MsQuicConfigurationSafeHandle(QUIC_HANDLE* handle)
+        : base(handle, SafeHandleType.Configuration) { }
+
+    public bool TryAddRentCount()
+    {
+        int oldCount;
+
+        do
+        {
+            oldCount = _rentCount;
+            if (oldCount < 0)
+            {
+                // The handle is already disposed.
+                return false;
+            }
+        } while (Interlocked.CompareExchange(ref _rentCount, oldCount + 1, oldCount) != oldCount);
+
+        return true;
+    }
+
+    public bool TryMarkForDispose()
+    {
+        return Interlocked.CompareExchange(ref _rentCount, -1, 0) == 0;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (Interlocked.Decrement(ref _rentCount) < 0)
+        {
+            // _rentCount is 0 if the handle was never rented (e.g. failure during creation),
+            // and is -1 when evicted from cache.
+            base.Dispose(disposing);
+        }
     }
 }

@@ -40,14 +40,14 @@ extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
     stages:
+    - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+      - stage: EvaluatePaths
+        displayName: Evaluate Paths
+        jobs:
+          - template: /eng/pipelines/common/evaluate-default-paths.yml
+
     - stage: Build
       jobs:
-
-      #
-      # Evaluate paths
-      #
-      - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-        - template: /eng/pipelines/common/evaluate-default-paths.yml
 
       # Add wasm jobs only for rolling builds
       - ${{ if eq(variables.isRollingBuild, true) }}:

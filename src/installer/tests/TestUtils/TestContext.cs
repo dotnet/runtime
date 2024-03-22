@@ -51,21 +51,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static string GetTestContextVariable(string name)
         {
-            return GetTestContextVariableOrNull(name) ?? throw new ArgumentException(
-                $"Unable to find variable '{name}' in test context variable file '{_testContextVariableFilePath}'");
-        }
-
-        public static string GetTestContextVariableOrNull(string name)
-        {
             // Allow env var override, although normally the test context variables file is used.
-            // Don't accept NUGET_PACKAGES env override specifically: Arcade sets this and it leaks
-            // in during build.cmd/sh runs, replacing the test-specific dir.
-            if (!name.Equals("NUGET_PACKAGES", StringComparison.OrdinalIgnoreCase))
+            if (Environment.GetEnvironmentVariable(name) is string envValue)
             {
-                if (Environment.GetEnvironmentVariable(name) is string envValue)
-                {
-                    return envValue;
-                }
+                return envValue;
             }
 
             if (_testContextVariables.TryGetValue(name, out string value))
@@ -73,7 +62,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 return value;
             }
 
-            return null;
+            throw new ArgumentException($"Unable to find variable '{name}' in test context variable file '{_testContextVariableFilePath}'");
         }
     }
 }

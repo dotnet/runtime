@@ -80,6 +80,7 @@ void FlowEdge::setLikelihood(weight_t likelihood)
     assert(likelihood >= 0.0);
     assert(likelihood <= 1.0);
 
+#ifdef DEBUG
     if (m_likelihoodSet)
     {
         JITDUMP("setting likelihood of " FMT_BB " -> " FMT_BB " from " FMT_WT " to " FMT_WT "\n", m_sourceBlock->bbNum,
@@ -92,7 +93,9 @@ void FlowEdge::setLikelihood(weight_t likelihood)
     }
 
     m_likelihoodSet = true;
-    m_likelihood    = likelihood;
+#endif // DEBUG
+
+    m_likelihood = likelihood;
 }
 
 //------------------------------------------------------------------------

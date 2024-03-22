@@ -2406,6 +2406,15 @@ namespace System.Net.Tests
             }, IsAsync.ToString()).Dispose();
         }
 
+        [Fact]
+        public void HttpWebRequest_HttpsAddressWithProxySetProtocolVersion_ShouldNotThrow()
+        {
+            HttpWebRequest request = (HttpWebRequest) WebRequest.Create("https://microsoft.com");
+            request.Proxy = new WebProxy();
+            request.ProtocolVersion = HttpVersion.Version11;
+            Assert.Same(HttpVersion.Version11, request.ServicePoint.ProtocolVersion);
+        }
+
         private void RequestStreamCallback(IAsyncResult asynchronousResult)
         {
             RequestState state = (RequestState)asynchronousResult.AsyncState;

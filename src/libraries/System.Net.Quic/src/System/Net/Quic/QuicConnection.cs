@@ -676,7 +676,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
         Debug.Assert(_connectedTcs.IsCompleted);
         _handle.Dispose();
         _shutdownTokenSource.Dispose();
-
         _configuration?.Dispose();
 
         // Dispose remote certificate only if it hasn't been accessed via getter, in which case the accessing code becomes the owner of the certificate lifetime.

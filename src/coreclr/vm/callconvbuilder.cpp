@@ -298,15 +298,12 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        TypeHandle type;
-        MethodDesc* pMD;
-        FieldDesc* pFD;
+        ResolvedToken resolved{};
+        pResolver->ResolveToken(token, &resolved);
 
-        pResolver->ResolveToken(token, &type, &pMD, &pFD);
+        _ASSERTE(!resolved.TypeHandle.IsNull());
 
-        _ASSERTE(!type.IsNull());
-
-        *nameOut = type.GetMethodTable()->GetFullyQualifiedNameInfo(namespaceOut);
+        *nameOut = resolved.TypeHandle.GetMethodTable()->GetFullyQualifiedNameInfo(namespaceOut);
 
         return S_OK;
     }
