@@ -2897,6 +2897,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disAlignment = false;
     opts.disCodeBytes = false;
 
+#ifdef OPT_CONFIG
+    opts.optRepeat      = false;
+    opts.optRepeatCount = 1;
+#endif // OPT_CONFIG
+
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -2911,7 +2916,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disAsm2         = false;
     opts.dspUnwind       = false;
     opts.compLongAddress = false;
-    opts.optRepeat       = false;
 
 #ifdef LATE_DISASM
     opts.doLateDisasm = false;
@@ -2993,9 +2997,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             opts.compLongAddress = true;
         }
 
-        if (JitConfig.JitOptRepeat().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+        if ((JitConfig.JitEnableOptRepeat() != 0) &&
+            (JitConfig.JitOptRepeat().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args)))
         {
-            opts.optRepeat = true;
+            opts.optRepeat      = true;
+            opts.optRepeatCount = JitConfig.JitOptRepeatCount();
         }
 
         opts.dspMetrics = (JitConfig.JitMetrics() != 0);
@@ -3095,7 +3101,46 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
     }
 
-//-------------------------------------------------------------------------
+#ifdef OPT_CONFIG
+
+    if (opts.optRepeat)
+    {
+        // Defer printing this until now, after the "START" line printed above.
+        JITDUMP("\n*************** JitOptRepeat enabled; repetition count: %d\n\n", opts.optRepeatCount);
+    }
+    else if (JitConfig.JitEnableOptRepeat() != 0)
+    {
+#ifdef DEBUG
+        // Opt-in to JitOptRepeat based on method hash ranges.
+        // The default is no JitOptRepeat.
+        static ConfigMethodRange fJitOptRepeatRange;
+        fJitOptRepeatRange.EnsureInit(JitConfig.JitOptRepeatRange());
+        assert(!fJitOptRepeatRange.Error());
+        if (!fJitOptRepeatRange.IsEmpty() && fJitOptRepeatRange.Contains(info.compMethodHash()))
+        {
+            opts.optRepeat      = true;
+            opts.optRepeatCount = JitConfig.JitOptRepeatCount();
+
+            JITDUMP("\n*************** JitOptRepeat enabled by JitOptRepeatRange; repetition count: %d\n\n",
+                    opts.optRepeatCount);
+        }
+#endif // DEBUG
+
+        if (!opts.optRepeat && compStressCompile(STRESS_OPT_REPEAT, 10))
+        {
+            // Turn on optRepeat as part of JitStress. In this case, decide how many iterations to do, from 2 to 5,
+            // based on a random number seeded by the method hash.
+            opts.optRepeat = true;
+
+            CLRRandom rng;
+            rng.Init(info.compMethodHash());
+            opts.optRepeatCount = rng.Next(4) + 2; // generates [2..5]
+
+            JITDUMP("\n*************** JitOptRepeat for stress; repetition count: %d\n\n", opts.optRepeatCount);
+        }
+    }
+
+#endif // OPT_CONFIG
 
 #ifdef DEBUG
     assert(!codeGen->isGCTypeFixed());
@@ -4953,7 +4998,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         if (opts.optRepeat)
         {
-            iterations = JitConfig.JitOptRepeatCount();
+            iterations = opts.optRepeatCount;
         }
 #endif // defined(OPT_CONFIG)
 
@@ -5070,6 +5115,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_COMPUTE_EDGE_WEIGHTS2, &Compiler::fgComputeEdgeWeights);
             }
 
+#ifdef DEBUG
+            if (verbose && opts.optRepeat)
+            {
+                printf("\n*************** JitOptRepeat: iterations remaining: %d\n\n", iterations - 1);
+            }
+#endif // DEBUG
+
             // Iterate if requested, resetting annotations first.
             if (--iterations == 0)
             {
@@ -5084,6 +5136,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             ResetOptAnnotations();
             RecomputeFlowGraphAnnotations();
+
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("Trees before next JitOptRepeat iteration:\n");
+                fgDispBasicBlocks(true);
+            }
+#endif // DEBUG
         }
     }
 
