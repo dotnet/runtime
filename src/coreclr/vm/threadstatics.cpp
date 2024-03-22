@@ -380,14 +380,14 @@ void* GetThreadLocalStaticBase(TLSIndex index)
     {
         // Grow the underlying TLS array
         SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
-        int32_t newcTLSData = index.GetIndexOffset() +  8; // Leave a bit of margin
+        int32_t newcTLSData = index.GetIndexOffset() + 8; // Leave a bit of margin
         uintptr_t* pNewTLSArrayData = new uintptr_t[newcTLSData];
-        memset(pNewTLSArrayData, 0, newcTLSData);
+        memset(pNewTLSArrayData, 0, newcTLSData * sizeof(uintptr_t));
         if (cTLSData > 0)
-            memcpy(pNewTLSArrayData, (void*)t_ThreadStatics.pTLSArrayData, cTLSData + 1);
+            memcpy(pNewTLSArrayData, (void*)t_ThreadStatics.pTLSArrayData, cTLSData * sizeof(uintptr_t));
         uintptr_t* pOldArray = (uintptr_t*)t_ThreadStatics.pTLSArrayData;
         t_ThreadStatics.pTLSArrayData = (TADDR)pNewTLSArrayData;
-        cTLSData = newcTLSData - 1;
+        cTLSData = newcTLSData;
         t_ThreadStatics.cTLSData = cTLSData;
         delete[] pOldArray;
         t_ThreadStatics.pThread->m_ThreadLocalDataThreadObjectCopy = t_ThreadStatics;
