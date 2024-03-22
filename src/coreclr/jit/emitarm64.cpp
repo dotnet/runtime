@@ -1787,6 +1787,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
             assert(isVectorRegister(id->idReg1())); // nnnn
             assert(isVectorRegister(id->idReg2())); // ddddd
+            assert(isEvenRegister(id->idReg2()));
             assert(isScalableVectorSize(id->idOpSize()));
             break;
 
@@ -1828,14 +1829,16 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_SVE_FZ_2A: // ................ ......nnnn.ddddd -- SME2 multi-vec extract narrow
             assert(insOptsNone(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));    // ddddd
-            assert(isLowVectorRegister(id->idReg2())); // nnnn
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnn
+            assert(isEvenRegister(id->idReg2()));
             break;
 
         case IF_SVE_HG_2A: // ................ ......nnnn.ddddd -- SVE2 FP8 downconverts
             assert(insOptsNone(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));    // ddddd
-            assert(isLowVectorRegister(id->idReg2())); // nnnn
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnn
+            assert(isEvenRegister(id->idReg2()));
             break;
 
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
@@ -9829,7 +9832,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_sve_ldr:
         {
-            assert(isPredicateRegister(reg1));
+            assert(isVectorRegister(reg1));
             isSimple = false;
             size     = EA_SCALABLE;
             attr     = size;
@@ -12248,138 +12251,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns the encoding for the immediate value that is a multiple of 2 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf2_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 2>(imm)));
-    return insEncodeSimm<19, 16>(imm / 2);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 3 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf3_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 3>(imm)));
-    return insEncodeSimm<19, 16>(imm / 3);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 4 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf4_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 4>(imm)));
-    return insEncodeSimm<19, 16>(imm / 4);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 16 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 16>(imm)));
-    return insEncodeSimm<19, 16>(imm / 16);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 32 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 32>(imm)));
-    return insEncodeSimm<19, 16>(imm / 32);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<5, 2>(imm)));
-    return insEncodeUimm<20, 16>(imm / 2);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 4 as 5-bits at bit locations '20-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<5, 4>(imm)));
-    return insEncodeUimm<20, 16>(imm / 4);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<5, 8>(imm)));
-    return insEncodeUimm<20, 16>(imm / 8);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<6, 2>(imm)));
-    return insEncodeUimm<21, 16>(imm / 2);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 4 as 6-bits at bit locations '21-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<6, 4>(imm)));
-    return insEncodeUimm<21, 16>(imm / 4);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<6, 8>(imm)));
-    return insEncodeUimm<21, 16>(imm / 8);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 1-bit at bit locations '23'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm1_23(ssize_t imm)
-{
-    assert(isValidUimm<1>(imm));
-    return (code_t)imm << 23;
-}
-
-/*****************************************************************************
- *
  *  Returns the encoding for the immediate value as 3-bits at bit locations '23-22' for high and '12' for low.
  */
 
@@ -12391,17 +12262,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
     code_t l = (code_t)(imm & 0x1) << 12; // encode low 1-bit at locations '12'
 
     return (h | l);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm4From1_19_to_16(ssize_t imm)
-{
-    assert(isValidUimmFrom1<4>(imm));
-    return (code_t)(imm - 1) << 16;
 }
 
 /*****************************************************************************
@@ -17376,9 +17236,7 @@ void emitter::emitDispInsHelp(
         case IF_SVE_FZ_2A: // ................ ......nnnn.ddddd -- SME2 multi-vec extract narrow
         {
             emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_H, true);
-            const unsigned  baseRegNum = id->idReg2() - REG_FP_FIRST;
-            const regNumber regNum     = (regNumber)((baseRegNum * 2) + REG_FP_FIRST);
-            emitDispSveConsecutiveRegList(regNum, 2, INS_OPTS_SCALABLE_S, false);
+            emitDispSveConsecutiveRegList(id->idReg2(), 2, INS_OPTS_SCALABLE_S, false);
             break;
         }
 
@@ -17386,9 +17244,7 @@ void emitter::emitDispInsHelp(
         case IF_SVE_HG_2A: // ................ ......nnnn.ddddd -- SVE2 FP8 downconverts
         {
             emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_B, true);
-            const unsigned  baseRegNum = id->idReg2() - REG_FP_FIRST;
-            const regNumber regNum     = (regNumber)((baseRegNum * 2) + REG_FP_FIRST);
-            emitDispSveConsecutiveRegList(regNum, 2, INS_OPTS_SCALABLE_H, false);
+            emitDispSveConsecutiveRegList(id->idReg2(), 2, INS_OPTS_SCALABLE_H, false);
             break;
         }
 
