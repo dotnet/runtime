@@ -6353,7 +6353,7 @@ mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, 
 
 	guint32 idx = index + 1;
 	if (meta->uncompressed_metadata)
-		idx = search_ptr_table (meta, MONO_TABLE_FIELD_POINTER, loc.idx);
+		idx = search_ptr_table (meta, MONO_TABLE_FIELD_POINTER, idx);
 
 	if (offset) {
 		tdef = &meta->tables [MONO_TABLE_FIELDLAYOUT];
