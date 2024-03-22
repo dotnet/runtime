@@ -7,7 +7,7 @@
 
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
         PROLOG_WITH_TRANSITION_BLOCK 8, 0, 0, 0, 0
-        mov             [rsp + __PWTB_FloatArgumentRegisters - 8], rax
+        mov             [rsp], rax // Return buffer in Swift calling convention
 
         //
         // call PreStubWorker
