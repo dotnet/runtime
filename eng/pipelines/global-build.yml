@@ -161,18 +161,12 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
-    - stage: SourceBuild
-      displayName: Source Build Validation
-      dependsOn:
-      - EvaluatePaths
-      variables:
-        runSourceBuild: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'] ]
-      condition: eq(variables['runSourceBuild'], true)
-      jobs:
+      #
+      # Build Portable SourceBuild
+      #
       - template: /eng/common/templates/jobs/source-build.yml
         parameters:
           platforms:
           - name: Linux_x64
             targetRid: linux-x64
             container: SourceBuild_linux_x64
-
