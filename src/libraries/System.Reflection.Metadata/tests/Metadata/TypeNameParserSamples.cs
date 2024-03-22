@@ -56,7 +56,7 @@ namespace System.Reflection.Metadata.Tests
                     return type;
                 }
 
-                _options ??= new() // there is no need for lazy initialization, I just wanted to have everything important in one method
+                _options ??= new TypeNameParseOptions() // there is no need for lazy initialization, I just wanted to have everything important in one method
                 {
                     // To prevent from unbounded recursion, we set the max depth for parser options.
                     // By ensuring that the max depth limit is enforced, we can safely use recursion in

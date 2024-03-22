@@ -270,7 +270,7 @@ namespace System.Reflection.Metadata
                     return false;
                 }
 
-                assemblyName = new();
+                assemblyName = new AssemblyName();
 #if SYSTEM_PRIVATE_CORELIB
                 assemblyName.Init(parts);
 #else
