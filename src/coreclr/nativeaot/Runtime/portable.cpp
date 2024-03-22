@@ -389,12 +389,6 @@ FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
 }
 FCIMPLEND
 
-FCIMPL3(int32_t, RhpLockCmpXchg32, int32_t * location, int32_t value, int32_t comparand)
-{
-    return PalInterlockedCompareExchange(location, value, comparand);
-}
-FCIMPLEND
-
 FCIMPL0(void*, RhAllocateThunksMapping)
 {
     return NULL;
