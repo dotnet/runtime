@@ -4596,6 +4596,15 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                 // hence this check is not present in optIsCSEcandidate().
                 return true;
             }
+            else if ((node->gtFlags & GTF_ORDER_SIDEEFF) != 0)
+            {
+                // If a node has an order side effect, we can't hoist it at all: we don't know what the order
+                // dependence actually is. For example, assertion prop might have determined a node can't throw
+                // an exception, and eliminated the GTF_EXCEPT flag, replacing it with GTF_ORDER_SIDEEFF. We
+                // can't hoist because we might then hoist above the expression that led assertion prop to make
+                // that decision. This can happen in JitOptRepeat, where hoisting can follow assertion prop.
+                return false;
+            }
 
             // Tree must be a suitable CSE candidate for us to be able to hoist it.
             return m_compiler->optIsCSEcandidate(node);
@@ -4786,7 +4795,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                 }
                 else if (!top.m_hoistable)
                 {
-                    top.m_failReason = "not handled by cse";
+                    top.m_failReason = "not handled by hoisting or CSE";
                 }
 #endif
 
@@ -4869,7 +4878,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                     treeIsHoistable = IsNodeHoistable(tree);
                     if (!treeIsHoistable)
                     {
-                        INDEBUG(failReason = "not handled by cse";)
+                        INDEBUG(failReason = "not handled by hoisting or CSE";)
                     }
                 }
 
