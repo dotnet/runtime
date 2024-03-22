@@ -17,7 +17,7 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
         call            C_FUNC(PreStubWorker)
         mov             r10, rax
 
-        mov             rax, [rsp + __PWTB_FloatArgumentRegisters - 8]
+        mov             rax, [rsp]
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         jmp             r10
 
