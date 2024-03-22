@@ -111,6 +111,18 @@ public class Program
             }
         });
 
+        var keepNativeSymbols = new Option<bool>("--keep-native-symbols")
+        {
+            DefaultValueFactory = (_) => !RunningOnYamato(),
+            Description = "Do not strip binaries and keep native symbols",
+        };
+        keepNativeSymbols.Validators.Add(result =>
+        {
+            bool val = result.GetValue(keepNativeSymbols);
+            if (val && RunningOnYamato())
+                result.AddError($"Yamato builds must strip binaries and {keepNativeSymbols.Name} must not be used");
+        });
+
         RootCommand rootCommand = new RootCommand("Unity CoreCLR Builder")
         {
             buildOption,
@@ -119,7 +131,8 @@ public class Program
             configurationOption,
             verbosityOption,
             zipOption,
-            deployToPlayer
+            deployToPlayer,
+            keepNativeSymbols
         };
         rootCommand.SetAction(Run);
 
@@ -133,6 +146,7 @@ public class Program
             string? architecture = context.ParseResult.GetValue(architectureOption);
             string? configuration = context.ParseResult.GetValue(configurationOption);
             string? deployToProjectPath = context.ParseResult.GetValue(deployToPlayer);
+            bool keepSymbols = context.ParseResult.GetValue(keepNativeSymbols);
 
             if (bTargets == BuildTargets.None && tTargets == TestTargets.None && string.IsNullOrEmpty(deployToProjectPath))
                 bTargets = BuildTargets.All;
@@ -159,7 +173,7 @@ public class Program
             if (bTargets != BuildTargets.None)
             {
                 if (bTargets.HasFlag(BuildTargets.Runtime) || bTargets.HasFlag(BuildTargets.ClassLibs))
-                    CoreCLR.Build(gConfig, bTargets);
+                    CoreCLR.Build(gConfig, bTargets, keepSymbols);
 
                 // TODO: Switch to using Embedding Host build to perform the copy instead of this once that lands.
                 NPath artifacts = Artifacts.ConsolidateArtifacts(gConfig);

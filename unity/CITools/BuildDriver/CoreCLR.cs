@@ -22,7 +22,7 @@ public static class CoreCLR
         return subsets.AggregateWith("+");
     }
 
-    public static void Build(GlobalConfig gConfig, BuildTargets buildTargets)
+    public static void Build(GlobalConfig gConfig, BuildTargets buildTargets, bool keepNativeSymbols)
     {
         Console.WriteLine("******************************");
         Console.WriteLine("Unity: Building CoreCLR runtime");
@@ -49,7 +49,7 @@ public static class CoreCLR
             args.Add($"-ninja{crossbuild}");
         }
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        if (keepNativeSymbols && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
             // The default build uses `dsymutil --flat`, which generates .dwarf files that are
             // not automatically picked up by anything. Standard .dSYM are a pain to deal with.
