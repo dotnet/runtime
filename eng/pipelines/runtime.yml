@@ -1836,11 +1836,11 @@ extends:
         - template: /eng/common/templates/jobs/source-build.yml
           parameters:
             platforms:
-              - name: CentOS.8
+              - name: CentOS8
                 targetRid: centos.8-x64
                 nonPortable: true
                 container: SourceBuild_centos_x64
-              - name: Nonexistent RID
+              - name: NonexistentRID
                 baseOS: linux
                 targetRid: banana.24-x64
                 nonPortable: true
