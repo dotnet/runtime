@@ -553,6 +553,12 @@ namespace System.Runtime.Intrinsics
         // New Surface Area
         //
 
+        /// <summary>Checks if the MSB of any of the vector lanes is non zero.</summary>
+        /// <param name="vector">The vector to check MSB.</param>
+        /// <returns><c>true</c> if <paramref name="vector" /> has any lanes with a non-zero MSB otherwise, <c>false</c> if MSB is zero for all lanes />.</returns>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract bool AnyMatches(TSelf vector);
+
         static abstract int IndexOfLastMatch(TSelf vector);
     }
 }
