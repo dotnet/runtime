@@ -282,25 +282,27 @@ namespace ILCompiler
             {
                 // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
                 // https://github.com/dotnet/corert/issues/3873
-                if (type.GetTypeDefinition() is Internal.TypeSystem.Ecma.EcmaType)
+                if (type.GetTypeDefinition() is not Internal.TypeSystem.Ecma.EcmaType)
                 {
-                    if (!_vtableSlices.TryGetValue(type, out IReadOnlyList<MethodDesc> slots))
-                    {
-                        // If we couldn't find the vtable slice information for this type, it's because the scanner
-                        // didn't correctly predict what will be needed.
-                        // To troubleshoot, compare the dependency graph of the scanner and the compiler.
-                        // Follow the path from the node that requested this node to the root.
-                        // On the path, you'll find a node that exists in both graphs, but it's predecessor
-                        // only exists in the compiler's graph. That's the place to focus the investigation on.
-                        // Use the ILCompiler-DependencyGraph-Viewer tool to investigate.
-                        Debug.Assert(false);
-                        string typeName = ExceptionTypeNameFormatter.Instance.FormatName(type);
-                        throw new ScannerFailedException($"VTable of type '{typeName}' not computed by the IL scanner.");
-                    }
+                    return new LazilyBuiltVTableSliceNode(type);
+                }
+
+                if (_vtableSlices.TryGetValue(type, out IReadOnlyList<MethodDesc> slots))
+                {
                     return new PrecomputedVTableSliceNode(type, slots);
                 }
-                else
-                    return new LazilyBuiltVTableSliceNode(type);
+
+                // If we couldn't find the vtable slice information for this type, it's because the scanner
+                // didn't correctly predict what will be needed.
+                // To troubleshoot, compare the dependency graph of the scanner and the compiler.
+                // Follow the path from the node that requested this node to the root.
+                // On the path, you'll find a node that exists in both graphs, but it's predecessor
+                // only exists in the compiler's graph. That's the place to focus the investigation on.
+                // Use the ILCompiler-DependencyGraph-Viewer tool to investigate.
+                string typeName = ExceptionTypeNameFormatter.Instance.FormatName(type);
+                string message = $"VTable of type '{typeName}' not computed by the IL scanner.";
+                Debug.Fail(message);
+                throw new ScannerFailedException(message);
             }
         }
 

@@ -1384,20 +1384,20 @@ DONE_CALL:
             }
             else
             {
-                // If the call is virtual, and has a generics context, and is not going to have a class probe,
-                // record the context for possible use during late devirt.
+                // If the call has a generic context, and is not going to have a class probe,
+                // record the context for possible future use in devirtualization.
                 //
                 // If we ever want to devirt at Tier0, and/or see issues where OSR methods under PGO lose
                 // important devirtualizations, we'll want to allow both a class probe and a captured context.
                 //
-                if (origCall->IsVirtual() && (origCall->gtCallType != CT_INDIRECT) && (exactContextHnd != nullptr) &&
+                if ((origCall->gtCallType != CT_INDIRECT) && (exactContextHnd != nullptr) &&
                     (origCall->gtHandleHistogramProfileCandidateInfo == nullptr))
                 {
                     JITDUMP("\nSaving context %p for call [%06u]\n", exactContextHnd, dspTreeID(origCall));
-                    origCall->gtCallMoreFlags |= GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
-                    LateDevirtualizationInfo* const info = new (this, CMK_Inlining) LateDevirtualizationInfo;
-                    info->exactContextHnd                = exactContextHnd;
-                    origCall->gtLateDevirtualizationInfo = info;
+                    origCall->gtCallMoreFlags |= GTF_CALL_M_HAS_EXACT_CONTEXT_INFO;
+                    ExactContextInfo* const info = new (this, CMK_Inlining) ExactContextInfo;
+                    info->exactContextHnd        = exactContextHnd;
+                    origCall->gtExactContextInfo = info;
                 }
 
                 if (isFatPointerCandidate)
@@ -7764,7 +7764,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // it's a union field used for other things by virtual
     // stubs)
     call->ClearInlineInfo();
-    call->gtCallMoreFlags &= ~GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
+    call->gtCallMoreFlags &= ~GTF_CALL_M_HAS_EXACT_CONTEXT_INFO;
 
 #if defined(DEBUG)
     if (verbose)
