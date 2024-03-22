@@ -383,7 +383,7 @@ namespace System.IO.Packaging
                     break;
                 case CompressionOption.Maximum:
                     {
-#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
+#if NET
                         compressionLevel = CompressionLevel.SmallestSize;
 #else
                         compressionLevel = CompressionLevel.Optimal;
