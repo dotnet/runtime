@@ -1787,6 +1787,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
             assert(isVectorRegister(id->idReg1())); // nnnn
             assert(isVectorRegister(id->idReg2())); // ddddd
+            assert(isEvenRegister(id->idReg2()));
             assert(isScalableVectorSize(id->idOpSize()));
             break;
 
@@ -1828,14 +1829,16 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_SVE_FZ_2A: // ................ ......nnnn.ddddd -- SME2 multi-vec extract narrow
             assert(insOptsNone(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));    // ddddd
-            assert(isLowVectorRegister(id->idReg2())); // nnnn
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnn
+            assert(isEvenRegister(id->idReg2()));
             break;
 
         case IF_SVE_HG_2A: // ................ ......nnnn.ddddd -- SVE2 FP8 downconverts
             assert(insOptsNone(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));    // ddddd
-            assert(isLowVectorRegister(id->idReg2())); // nnnn
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnn
+            assert(isEvenRegister(id->idReg2()));
             break;
 
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
@@ -17376,9 +17379,7 @@ void emitter::emitDispInsHelp(
         case IF_SVE_FZ_2A: // ................ ......nnnn.ddddd -- SME2 multi-vec extract narrow
         {
             emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_H, true);
-            const unsigned  baseRegNum = id->idReg2() - REG_FP_FIRST;
-            const regNumber regNum     = (regNumber)((baseRegNum * 2) + REG_FP_FIRST);
-            emitDispSveConsecutiveRegList(regNum, 2, INS_OPTS_SCALABLE_S, false);
+            emitDispSveConsecutiveRegList(id->idReg2(), 2, INS_OPTS_SCALABLE_S, false);
             break;
         }
 
@@ -17386,9 +17387,7 @@ void emitter::emitDispInsHelp(
         case IF_SVE_HG_2A: // ................ ......nnnn.ddddd -- SVE2 FP8 downconverts
         {
             emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_B, true);
-            const unsigned  baseRegNum = id->idReg2() - REG_FP_FIRST;
-            const regNumber regNum     = (regNumber)((baseRegNum * 2) + REG_FP_FIRST);
-            emitDispSveConsecutiveRegList(regNum, 2, INS_OPTS_SCALABLE_H, false);
+            emitDispSveConsecutiveRegList(id->idReg2(), 2, INS_OPTS_SCALABLE_H, false);
             break;
         }
 
