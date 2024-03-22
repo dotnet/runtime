@@ -72,6 +72,7 @@ namespace System.Threading
         private short _maxThreads;
         private short _legacy_minIOCompletionThreads;
         private short _legacy_maxIOCompletionThreads;
+        private int _numThreadsBeingKeptAlive;
 
         [StructLayout(LayoutKind.Explicit, Size = Internal.PaddingHelpers.CACHE_LINE_SIZE * 6)]
         private struct CacheLineSeparated

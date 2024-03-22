@@ -40,6 +40,9 @@ enum XArchIntrinsicConstants
     XArchIntrinsicConstants_VectorT128 = 0x4000000,
     XArchIntrinsicConstants_VectorT256 = 0x8000000,
     XArchIntrinsicConstants_VectorT512 = 0x10000000,
+    XArchIntrinsicConstants_Avx10v1 = 0x20000000,
+    XArchIntrinsicConstants_Avx10v1_V256 = 0x40000000,
+    XArchIntrinsicConstants_Avx10v1_V512 = 0x80000000,
 };
 #endif // HOST_X86 || HOST_AMD64
 

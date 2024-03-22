@@ -250,9 +250,6 @@ LEAF_END RhpCheckedAssignRef\EXPORT_REG_NAME, _TEXT
 // just one write barrier that assumes the input register is RSI.
 DEFINE_CHECKED_WRITE_BARRIER r1, r1
 
-// WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpCheckedLockCmpXchgAVLocation
-// - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
 // r0 = destination address
 // r1 = value
 // r2 = comparand
@@ -261,7 +258,6 @@ LEAF_ENTRY RhpCheckedLockCmpXchg, _TEXT
           // barrier must occur before the object reference update, so we have to do it unconditionally even
           // though the update may fail below.
           dmb
-GLOBAL_LABEL RhpCheckedLockCmpXchgAVLocation
 LOCAL_LABEL(RhpCheckedLockCmpXchgRetry):
           ldrex        r3, [r0]
           cmp          r2, r3
@@ -277,16 +273,12 @@ LOCAL_LABEL(RhpCheckedLockCmpXchgRetry):
           bx           lr
 LEAF_END RhpCheckedLockCmpXchg, _TEXT
 
-// WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpCheckedXchgAVLocation
-// - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
 // r0 = destination address
 // r1 = value
 LEAF_ENTRY RhpCheckedXchg, _TEXT
           // To implement our chosen memory model for ARM we insert a memory barrier at GC write barriers. This
           // barrier must occur before the object reference update.
           dmb
-GLOBAL_LABEL RhpCheckedXchgAVLocation
 LOCAL_LABEL(RhpCheckedXchgRetry):
           ldrex        r2, [r0]
           strex        r3, r1, [r0]

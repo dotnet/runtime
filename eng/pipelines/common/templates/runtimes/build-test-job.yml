@@ -12,7 +12,6 @@ parameters:
   runtimeFlavor: 'coreclr'
   runtimeVariant: ''
   dependsOn: []
-  dependOnEvaluatePaths: false
   crossBuild: false
 
 ### Build managed test components (native components are getting built as part
@@ -30,7 +29,6 @@ jobs:
     runtimeVariant: ${{ parameters.runtimeVariant }}
     testGroup: ${{ parameters.testGroup }}
     pool: ${{ parameters.pool }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:

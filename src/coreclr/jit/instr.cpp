@@ -1687,12 +1687,17 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
         return ins;
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(srcType))
     {
+#if defined(TARGET_XARCH)
         return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        unreached(); // TODO-SVE: This needs testing
+        return INS_sve_mov;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(srcType));
 
@@ -1837,12 +1842,16 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         return ins;
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(srcType))
     {
+#if defined(TARGET_XARCH)
         return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        return INS_sve_ldr_mask;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(srcType));
 
@@ -1921,12 +1930,17 @@ instruction CodeGen::ins_Copy(var_types dstType)
 #endif
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(dstType))
     {
+#if defined(TARGET_XARCH)
         return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        unreached(); // TODO-SVE: This needs testing
+        return INS_sve_mov;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));
 
@@ -2030,7 +2044,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 #endif
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(dstType))
     {
         if (genIsValidMaskReg(srcReg))
@@ -2041,9 +2055,14 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 
         // mask to int
         assert(genIsValidIntOrFakeReg(srcReg));
+#if defined(TARGET_XARCH)
         return INS_kmovq_gpr;
+#elif defined(TARGET_ARM64)
+        unreached(); // TODO-SVE: This needs testing
+        return INS_sve_mov;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));
 
@@ -2145,12 +2164,16 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         return ins;
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(dstType))
     {
+#if defined(TARGET_XARCH)
         return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        return INS_sve_str_mask;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));
 
@@ -2262,7 +2285,7 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
         return ins_Store(dstType, aligned);
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(dstType))
     {
         if (genIsValidMaskReg(srcReg))
@@ -2275,7 +2298,7 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
         assert(genIsValidIntOrFakeReg(srcReg));
         return ins_Store(dstType, aligned);
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));
 

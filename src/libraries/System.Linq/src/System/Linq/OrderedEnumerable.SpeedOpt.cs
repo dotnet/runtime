@@ -479,7 +479,7 @@ namespace System.Linq
                 }
                 else if (state == 1)
                 {
-                    TElement[] buffer = _source.ToArray();
+                    TElement[] buffer = _source._source.ToArray();
                     int count = buffer.Length;
                     if (count > _minIndexInclusive)
                     {

@@ -69,6 +69,10 @@ void Compiler::lvaInit()
     lvaMonAcquired      = BAD_VAR_NUM;
     lvaRetAddrVar       = BAD_VAR_NUM;
 
+#ifdef SWIFT_SUPPORT
+    lvaSwiftSelfArg = BAD_VAR_NUM;
+#endif
+
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
 
     gsShadowVarInfo = nullptr;
@@ -622,6 +626,17 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             lvaSetClass(varDscInfo->varNum, clsHnd);
         }
 
+        // The final home for this incoming parameter might be our local stack frame.
+        varDsc->lvOnFrame = true;
+
+#ifdef SWIFT_SUPPORT
+        if ((info.compCallConv == CorInfoCallConvExtension::Swift) &&
+            lvaInitSpecialSwiftParam(varDscInfo, strip(corInfoType), typeHnd))
+        {
+            continue;
+        }
+#endif
+
         // For ARM, ARM64, LOONGARCH64, RISCV64 and AMD64 varargs, all arguments go in integer registers
         var_types argType = mangleVarArgsType(varDsc->TypeGet());
 
@@ -820,10 +835,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             }
         }
 #endif // UNIX_AMD64_ABI
-
-        // The final home for this incoming register might be our local stack frame.
-        // For System V platforms the final home will always be on the local stack frame.
-        varDsc->lvOnFrame = true;
 
         bool canPassArgInRegisters = false;
 
@@ -1300,6 +1311,48 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
     }
 #endif // TARGET_ARM
 }
+
+#ifdef SWIFT_SUPPORT
+//-----------------------------------------------------------------------------
+// lvaInitSpecialSwiftParam:
+//  If the parameter is a special Swift parameter then initialize it and return true.
+//
+// Parameters:
+//   varDsc  - LclVarDsc* for the parameter
+//   type    - Type of the parameter
+//   typeHnd - Class handle for the type of the parameter
+//
+// Remarks:
+//   Handles SwiftSelf.
+//
+bool Compiler::lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd)
+{
+    if (type != CORINFO_TYPE_VALUECLASS)
+    {
+        return false;
+    }
+
+    if (!info.compCompHnd->isIntrinsicType(typeHnd))
+    {
+        return false;
+    }
+
+    const char* namespaceName;
+    const char* className = info.compCompHnd->getClassNameFromMetadata(typeHnd, &namespaceName);
+    if ((strcmp(className, "SwiftSelf") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+    {
+        LclVarDsc* varDsc = varDscInfo->varDsc;
+        varDsc->SetArgReg(REG_SWIFT_SELF);
+        varDsc->SetOtherArgReg(REG_NA);
+        varDsc->lvIsRegArg = true;
+        lvaSwiftSelfArg    = varDscInfo->varNum;
+        lvaSetVarDoNotEnregister(lvaSwiftSelfArg DEBUGARG(DoNotEnregisterReason::NonStandardParameter));
+        return true;
+    }
+
+    return false;
+}
+#endif
 
 /*****************************************************************************/
 void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
@@ -2750,6 +2803,10 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
 
         case DoNotEnregisterReason::SimdUserForcesDep:
             JITDUMP("Promoted struct used by a SIMD/HWI node\n");
+            break;
+
+        case DoNotEnregisterReason::NonStandardParameter:
+            JITDUMP("Non-standard parameter\n");
             break;
 
         default:

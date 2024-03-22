@@ -35,7 +35,7 @@ public:
     OBJECTHANDLE ConstructStringLiteral(mdToken metaTok);
     BOOL IsValidStringRef(mdToken metaTok);
     STRINGREF GetStringLiteral(mdToken metaTok);
-    void ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD);
+    void ResolveToken(mdToken token, ResolvedToken* resolvedToken);
     SigPointer ResolveSignature(mdToken token);
     SigPointer ResolveSignatureForVarArg(mdToken token);
     void GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause);

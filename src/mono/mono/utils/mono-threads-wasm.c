@@ -315,21 +315,6 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 #endif
 }
 
-gboolean
-mono_thread_platform_external_eventloop_keepalive_check (void)
-{
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	MONO_REQ_GC_SAFE_MODE;
-	/* if someone called emscripten_runtime_keepalive_push (), the
-	 * thread will stay alive in the JS event loop after returning
-	 * from the thread's main function.
-	 */
-	return emscripten_runtime_keepalive_check ();
-#else
-	return FALSE;
-#endif
-}
-
 void mono_threads_platform_init (void)
 {
 }
@@ -629,7 +614,6 @@ mono_wasm_register_ui_thread (void)
 	MONO_ENTER_GC_SAFE_UNBALANCED;
 }
 
-// TODO ideally we should not need to have UI thread registered as managed
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_register_io_thread (void)
 {
@@ -661,18 +645,33 @@ mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void 
 	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VII, func, NULL, user_data1, user_data2);
 }
 
-static void mono_threads_wasm_sync_run_in_target_thread_vii_cb (MonoCoopSem *done, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+static void mono_threads_wasm_sync_run_in_target_thread_vii_cb (MonoCoopSem *done, void (*func) (gpointer, gpointer), gpointer user_data1, void* args)
 {
-	func (user_data1, user_data2);
-	mono_coop_sem_post (done);
+	// in UI thread we postpone the execution via safeSetTimeout so that emscripten_proxy_execute_queue is not blocked by this call
+	// see invoke_later_on_ui_thread
+	if (mono_threads_wasm_is_ui_thread()) {
+		MonoCoopSem **semPtrPtr = (MonoCoopSem **)(((char *) args) + 28/*JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr*/);
+		*semPtrPtr = done;
+		func (user_data1, args);
+	}
+	else {
+		func (user_data1, args);
+		mono_coop_sem_post (done);
+	}
+}
+
+EMSCRIPTEN_KEEPALIVE void 
+mono_threads_wasm_sync_run_in_target_thread_done (MonoCoopSem *sem)
+{
+	mono_coop_sem_post (sem);
 }
 
 void
-mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer args)
 {
 	MonoCoopSem sem;
 	mono_coop_sem_init (&sem, 0);
-	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VIIII, mono_threads_wasm_sync_run_in_target_thread_vii_cb, NULL, &sem, func, user_data1, user_data2);
+	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VIIII, mono_threads_wasm_sync_run_in_target_thread_vii_cb, NULL, &sem, func, user_data1, args);
 
 	MONO_ENTER_GC_UNSAFE;
 	mono_coop_sem_wait (&sem, MONO_SEM_FLAGS_NONE);

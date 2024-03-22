@@ -13,10 +13,7 @@
 // 2) It can have multiple instantiations with different seeds
 // 3) It behaves the same regardless of whether we build with VC++ or GCC
 //
-// If you are working in the VM, we have a convenience method: code:GetRandomInt.  This usess a thread-local
-// Random instance if a Thread object is available, and otherwise falls back to a global instance
-// with a spin-lock.
-//
+// If you are working in the VM, we have a convenience method: code:GetRandomInt.
 
 #ifndef _CLRRANDOM_H_
 #define _CLRRANDOM_H_
