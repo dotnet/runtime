@@ -2601,6 +2601,11 @@ namespace System.ComponentModel
                     return null;
                 }
 
+                if (!SupportsInstanceBasedDescriptors)
+                {
+                    throw new NotSupportedException(SR.InstanceBasedTypeDescriptorsNotSupported);
+                }
+
                 if (!objectType.IsInstanceOfType(instance))
                 {
                     throw new ArgumentException(SR.Format(SR.ConvertToException, nameof(objectType), instance.GetType()), nameof(instance));
@@ -2704,6 +2709,14 @@ namespace System.ComponentModel
             /// </summary>
             public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
             {
+                if (!SupportsInstanceBasedDescriptors)
+                {
+                    if (instance != null)
+                    {
+                        throw new NotSupportedException(SR.InstanceBasedTypeDescriptorsNotSupported);
+                    }
+                }
+
                 return new AttributeTypeDescriptor(_attrs, base.GetTypeDescriptor(objectType, instance));
             }
 
@@ -2871,6 +2884,14 @@ namespace System.ComponentModel
             [return: NotNullIfNotNull(nameof(instance))]
             public override ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
             {
+                if (!SupportsInstanceBasedDescriptors)
+                {
+                    if (instance != null)
+                    {
+                        throw new NotSupportedException(SR.InstanceBasedTypeDescriptorsNotSupported);
+                    }
+                }
+
                 return _comNativeDescriptor.GetTypeDescriptor(objectType, instance);
             }
         }
@@ -3146,6 +3167,14 @@ namespace System.ComponentModel
             /// </summary>
             public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
             {
+                if (!SupportsInstanceBasedDescriptors)
+                {
+                    if (instance != null)
+                    {
+                        throw new NotSupportedException(SR.InstanceBasedTypeDescriptorsNotSupported);
+                    }
+                }
+
                 ArgumentNullException.ThrowIfNull(objectType);
 
                 if (instance != null && !objectType.IsInstanceOfType(instance))
@@ -3487,15 +3516,6 @@ namespace System.ComponentModel
                 _node = node;
                 _objectType = objectType;
                 _instance = instance;
-            }
-
-            internal DefaultTypeDescriptor(
-                TypeDescriptionNode node,
-                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType)
-            {
-                _node = node;
-                _objectType = objectType;
-                _instance = null;
             }
 
             /// <summary>
