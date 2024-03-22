@@ -71,7 +71,8 @@ namespace Wasm.Build.Tests
             {
                 string nativeName = IsWorkloadWithMultiThreadingForDefaultFramework ? "de-DE" : "Deutsch (Deutschland)"; // MT does not use JS to get the full name
                 string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id);
-                Assert.Contains($"de-DE: Is Invariant LCID: False, NativeName: {nativeName}", output);
+                Assert.Contains("de-DE: Is Invariant LCID: False", output);
+                Assert.Contains($"NativeName: {nativeName}", output);
 
                 // ignoring the last line of the output which prints the current culture
             }
