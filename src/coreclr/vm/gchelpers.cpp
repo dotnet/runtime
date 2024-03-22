@@ -212,25 +212,21 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     }
     else
     {
-        // as explained below, the GC might have returned an allocation context that is already full
-        // so, in that case, we should check if the next threshold is inside the object or not like for LOH
-        if ((pAllocContext->alloc_ptr != nullptr) && (pAllocContext->alloc_ptr == pAllocContext->alloc_limit))
+        // there are 4 scenarios to deal with here:
+        // 1. the allocation context is empty (alloc_ptr, alloc_limit == nullptr) at the beginning
+        // 2. the previous allocated object was too big for the allocation context
+        //    - alloc_sampling, alloc_ptr, alloc_limit have the same value (could be null - the first POH allocation for example)
+        // 3. the previous allocation context returned by the GC was not sampled (alloc_sampling == alloc_limit)
+        // 4. the previous allocation context returned by the GC was sampled (alloc_sampling < alloc_limit)
+        isSampled =
+            (pEEAllocContext->alloc_sampling != pAllocContext->alloc_limit) &&
+            (size > samplingBudget);
+
+        // if the object overflows the AC so we need to sample the remaining bytes
+        // the sampling budget only included at most the bytes inside the AC
+        if (size > availableSpace && !isSampled)
         {
-            isSampled = ee_alloc_context::IsSampled(pCurrentThread->GetRandom(), size);
-        }
-        else
-        {
-            // check if this allocation overlaps the SOH sampling point:
-            //    if the sampling threshold was outside of the allocation context,
-            //    then
-            //      alloc_sampling was set to alloc_limit
-            //      or the allocation context was just initialized to nullptr for the first allocation
-            //    else
-            //      use the alloc_sampling to decide if this allocation should be sampled
-            // see the comment at the beginning of the function for the simplified check
-            isSampled =
-                (pEEAllocContext->alloc_sampling != pAllocContext->alloc_limit) &&
-                (size > samplingBudget);
+            isSampled = ee_alloc_context::IsSampled(pCurrentThread->GetRandom(), size - availableSpace);
         }
     }
 
@@ -241,7 +237,7 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     // otherwise a new allocation context will be provided
     retVal = GCHeapUtilities::GetGCHeap()->Alloc(pAllocContext, size, flags);
     // Note: it might happen that the object to allocate is larger than an allocation context
-    // in this case, both alloc_ptr and alloc_limit will share the same value and retVal = alloc_ptr + size
+    // in this case, both alloc_ptr and alloc_limit will share the same value
     // --> this already full allocation context will trigger the slow path in the next allocation
     // so we should handle this case like for LOH: check that the next threshold is inside the object or not
 
