@@ -1819,36 +1819,28 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
-      #
-      # Sourcebuild legs
-      # We have 3 important legs for source-build:
-      # - Centos.8 (ensures that known non-portable RID is working)
-      # - Linux-x64 portable (used for dependency flow and downstream PR verification)
-      # - Banana.24 - Non-existent RID to ensure we don't break RIDs we don't know about.
-      #
-      # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.8 in rolling CI,
-      # Run Linux-x64 in PR.
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Release
-          helixQueueGroup: pr
-          platforms:
-          - SourceBuild_centos8_x64
-          jobParameters:
-            nameSuffix: centos8SourceBuild
-            timeoutInMinutes: 95
-            condition: eq(variables['isRollingBuild'], true)
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Release
-          helixQueueGroup: pr
-          platforms:
-          - SourceBuild_banana24_x64
-          jobParameters:
-            nameSuffix: banana24SourceBuild
-            timeoutInMinutes: 95
-            condition: eq(variables['isRollingBuild'], true)
+    - stage: Source Build Validation
+      dependsOn: []
+      condition: eq(variables['isRollingBuild'], true)
+      jobs:
+        #
+        # Sourcebuild legs
+        # We have 3 important legs for source-build:
+        # - Centos.8 (ensures that known non-portable RID is working)
+        # - Linux-x64 portable (used for dependency flow and downstream PR verification)
+        # - Banana.24 - Non-existent RID to ensure we don't break RIDs we don't know about.
+        #
+        # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.8 in rolling CI,
+        # Run Linux-x64 in PR.
+        - template: /eng/common/templates/jobs/source-build.yml
+          parameters:
+            platforms:
+              - name: CentOS.8
+                targetRid: centos.8-x64
+                nonPortable: true
+                container: SourceBuild_centos_x64
+              - name: Nonexistent RID
+                baseOS: linux
+                targetRid: banana.24-x64
+                nonPortable: true
+                container: SourceBuild_centos_x64
