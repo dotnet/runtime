@@ -3446,6 +3446,9 @@ static bool GetFlattenedFieldTypes(MethodTable* pMT, CorElementType types[2], in
     if (*typeIndex + nFields > 2)
         return false;
 
+    if (nFields == 0)
+        return true;
+
     assert(nFields == 1 || nFields == 2);
 
     FieldDesc* fields = pMT->GetApproxFieldDescListRaw();
