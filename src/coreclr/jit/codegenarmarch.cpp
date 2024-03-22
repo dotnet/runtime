@@ -3374,17 +3374,6 @@ void CodeGen::genCall(GenTreeCall* call)
         genDefineTempLabel(genCreateTempLabel());
     }
 
-#ifdef SWIFT_SUPPORT
-    // Clear the Swift error register before calling a Swift method,
-    // so we can check if it set the error register after returning.
-    // (Flag is only set if we know we need to check the error register)
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
-    {
-        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
-        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_SWIFT_ERROR);
-    }
-#endif // SWIFT_SUPPORT
-
     genCallInstruction(call);
 
     genDefinePendingCallLabel(call);
@@ -3421,7 +3410,7 @@ void CodeGen::genCall(GenTreeCall* call)
             for (unsigned i = 0; i < regCount; ++i)
             {
                 var_types regType      = pRetTypeDesc->GetReturnRegType(i);
-                returnReg              = pRetTypeDesc->GetABIReturnReg(i);
+                returnReg              = pRetTypeDesc->GetABIReturnReg(i, call->GetUnmanagedCallConv());
                 regNumber allocatedReg = call->GetRegNumByIdx(i);
                 inst_Mov(regType, allocatedReg, returnReg, /* canSkip */ true);
             }
@@ -4839,7 +4828,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
     for (unsigned i = 0; i < regCount; ++i)
     {
         var_types type = retTypeDesc->GetReturnRegType(i);
-        regNumber reg  = retTypeDesc->GetABIReturnReg(i);
+        regNumber reg  = retTypeDesc->GetABIReturnReg(i, compiler->info.compCallConv);
         if (varTypeIsFloating(type))
         {
             // If the register piece is to be passed in a floating point register

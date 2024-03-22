@@ -69,6 +69,10 @@ void Compiler::lvaInit()
     lvaMonAcquired      = BAD_VAR_NUM;
     lvaRetAddrVar       = BAD_VAR_NUM;
 
+#ifdef SWIFT_SUPPORT
+    lvaSwiftSelfArg = BAD_VAR_NUM;
+#endif
+
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
 
     gsShadowVarInfo = nullptr;
@@ -622,6 +626,17 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             lvaSetClass(varDscInfo->varNum, clsHnd);
         }
 
+        // The final home for this incoming parameter might be our local stack frame.
+        varDsc->lvOnFrame = true;
+
+#ifdef SWIFT_SUPPORT
+        if ((info.compCallConv == CorInfoCallConvExtension::Swift) &&
+            lvaInitSpecialSwiftParam(varDscInfo, strip(corInfoType), typeHnd))
+        {
+            continue;
+        }
+#endif
+
         // For ARM, ARM64, LOONGARCH64, RISCV64 and AMD64 varargs, all arguments go in integer registers
         var_types argType = mangleVarArgsType(varDsc->TypeGet());
 
@@ -820,10 +835,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             }
         }
 #endif // UNIX_AMD64_ABI
-
-        // The final home for this incoming register might be our local stack frame.
-        // For System V platforms the final home will always be on the local stack frame.
-        varDsc->lvOnFrame = true;
 
         bool canPassArgInRegisters = false;
 
@@ -1301,6 +1312,48 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #endif // TARGET_ARM
 }
 
+#ifdef SWIFT_SUPPORT
+//-----------------------------------------------------------------------------
+// lvaInitSpecialSwiftParam:
+//  If the parameter is a special Swift parameter then initialize it and return true.
+//
+// Parameters:
+//   varDsc  - LclVarDsc* for the parameter
+//   type    - Type of the parameter
+//   typeHnd - Class handle for the type of the parameter
+//
+// Remarks:
+//   Handles SwiftSelf.
+//
+bool Compiler::lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd)
+{
+    if (type != CORINFO_TYPE_VALUECLASS)
+    {
+        return false;
+    }
+
+    if (!info.compCompHnd->isIntrinsicType(typeHnd))
+    {
+        return false;
+    }
+
+    const char* namespaceName;
+    const char* className = info.compCompHnd->getClassNameFromMetadata(typeHnd, &namespaceName);
+    if ((strcmp(className, "SwiftSelf") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+    {
+        LclVarDsc* varDsc = varDscInfo->varDsc;
+        varDsc->SetArgReg(REG_SWIFT_SELF);
+        varDsc->SetOtherArgReg(REG_NA);
+        varDsc->lvIsRegArg = true;
+        lvaSwiftSelfArg    = varDscInfo->varNum;
+        lvaSetVarDoNotEnregister(lvaSwiftSelfArg DEBUGARG(DoNotEnregisterReason::NonStandardParameter));
+        return true;
+    }
+
+    return false;
+}
+#endif
+
 /*****************************************************************************/
 void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
 {
@@ -1540,7 +1593,7 @@ unsigned Compiler::compMapILvarNum(unsigned ILvarNum)
     else if (ILvarNum == (unsigned)ICorDebugInfo::TYPECTXT_ILNUM)
     {
         noway_assert(info.compTypeCtxtArg >= 0);
-        varNum = unsigned(info.compTypeCtxtArg);
+        varNum = info.compTypeCtxtArg;
     }
     else if (ILvarNum < info.compILargsCount)
     {
@@ -1593,7 +1646,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
 
     // We create an extra argument for the type context parameter
     // needed for shared generic code.
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum == (unsigned)info.compTypeCtxtArg)
+    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum == info.compTypeCtxtArg)
     {
         return (unsigned)ICorDebugInfo::TYPECTXT_ILNUM;
     }
@@ -1606,7 +1659,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
 #endif // FEATURE_FIXED_OUT_ARGS
 
     // Now mutate varNum to remove extra parameters from the count.
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum > (unsigned)info.compTypeCtxtArg)
+    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum > info.compTypeCtxtArg)
     {
         varNum--;
     }
@@ -2750,6 +2803,10 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
 
         case DoNotEnregisterReason::SimdUserForcesDep:
             JITDUMP("Promoted struct used by a SIMD/HWI node\n");
+            break;
+
+        case DoNotEnregisterReason::NonStandardParameter:
+            JITDUMP("Non-standard parameter\n");
             break;
 
         default:
@@ -4291,7 +4348,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
 
 #endif // !FEATURE_EH_FUNCLETS
 
-    // PSPSym and LocAllocSPvar are not used by the NativeAOT ABI
+    // PSPSym is not used by the NativeAOT ABI
     if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
 #if defined(FEATURE_EH_FUNCLETS)
@@ -4303,29 +4360,29 @@ PhaseStatus Compiler::lvaMarkLocalVars()
             lvaSetVarDoNotEnregister(lvaPSPSym DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
         }
 #endif // FEATURE_EH_FUNCLETS
+    }
 
 #ifdef JIT32_GCENCODER
-        // LocAllocSPvar is only required by the implicit frame layout expected by the VM on x86. Whether
-        // a function contains a Localloc is conveyed in the GC information, in the InfoHdrSmall.localloc
-        // field. The function must have an EBP frame. Then, the VM finds the LocAllocSP slot by assuming
-        // the following stack layout:
-        //
-        //      -- higher addresses --
-        //      saved EBP                       <-- EBP points here
-        //      other callee-saved registers    // InfoHdrSmall.savedRegsCountExclFP specifies this size
-        //      optional GS cookie              // InfoHdrSmall.security is 1 if this exists
-        //      LocAllocSP slot
-        //      -- lower addresses --
-        //
-        // See also eetwain.cpp::GetLocallocSPOffset() and its callers.
-        if (compLocallocUsed)
-        {
-            lvaLocAllocSPvar         = lvaGrabTempWithImplicitUse(false DEBUGARG("LocAllocSPvar"));
-            LclVarDsc* locAllocSPvar = lvaGetDesc(lvaLocAllocSPvar);
-            locAllocSPvar->lvType    = TYP_I_IMPL;
-        }
-#endif // JIT32_GCENCODER
+    // LocAllocSPvar is only required by the implicit frame layout expected by the VM on x86. Whether
+    // a function contains a Localloc is conveyed in the GC information, in the InfoHdrSmall.localloc
+    // field. The function must have an EBP frame. Then, the VM finds the LocAllocSP slot by assuming
+    // the following stack layout:
+    //
+    //      -- higher addresses --
+    //      saved EBP                       <-- EBP points here
+    //      other callee-saved registers    // InfoHdrSmall.savedRegsCountExclFP specifies this size
+    //      optional GS cookie              // InfoHdrSmall.security is 1 if this exists
+    //      LocAllocSP slot
+    //      -- lower addresses --
+    //
+    // See also eetwain.cpp::GetLocallocSPOffset() and its callers.
+    if (compLocallocUsed)
+    {
+        lvaLocAllocSPvar         = lvaGrabTempWithImplicitUse(false DEBUGARG("LocAllocSPvar"));
+        LclVarDsc* locAllocSPvar = lvaGetDesc(lvaLocAllocSPvar);
+        locAllocSPvar->lvType    = TYP_I_IMPL;
     }
+#endif // JIT32_GCENCODER
 
     // Ref counting is now enabled normally.
     lvaRefCountState = RCS_NORMAL;
@@ -4357,7 +4414,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     else if (lvaReportParamTypeArg())
     {
         // We should have a context arg.
-        assert(info.compTypeCtxtArg != (int)BAD_VAR_NUM);
+        assert(info.compTypeCtxtArg != BAD_VAR_NUM);
         lvaGetDesc(info.compTypeCtxtArg)->lvImplicitlyReferenced = reportParamTypeArg;
     }
 
@@ -5498,7 +5555,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     //@GENERICS: extra argument for instantiation info
     if (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE)
     {
-        noway_assert(lclNum == (unsigned)info.compTypeCtxtArg);
+        noway_assert(lclNum == info.compTypeCtxtArg);
         argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
                                                    argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }
@@ -5607,7 +5664,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     //@GENERICS: extra argument for instantiation info
     if (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE)
     {
-        noway_assert(lclNum == (unsigned)info.compTypeCtxtArg);
+        noway_assert(lclNum == info.compTypeCtxtArg);
         argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
                                                    argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }

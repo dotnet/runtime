@@ -56,7 +56,7 @@ export const
     traceNullCheckOptimizations = false,
     // Print diagnostic information when generating backward branches
     // 1 = failures only, 2 = full detail
-    traceBackBranches = 0,
+    defaultTraceBackBranches = 0,
     // Enable generating conditional backward branches for ENDFINALLY opcodes if we saw some CALL_HANDLER
     //  opcodes previously, up to this many potential return addresses. If a trace contains more potential
     //  return addresses than this we will not emit code for the ENDFINALLY opcode
@@ -779,7 +779,6 @@ function generate_wasm(
             "math_rhs64": WasmValtype.i64,
             "temp_f32": WasmValtype.f32,
             "temp_f64": WasmValtype.f64,
-            "backbranched": WasmValtype.i32,
         };
         if (builder.options.enableSimd) {
             traceLocals["v128_zero"] = WasmValtype.v128;
@@ -1032,7 +1031,7 @@ export function mono_interp_tier_prepare_jiterpreter(
         const threshold = (<any>ip - <any>startOfBody) / 2;
         let foundReachableBranchTarget = false;
         for (let i = 0; i < backwardBranchTable.length; i++) {
-            if (backwardBranchTable[i] > threshold) {
+            if (backwardBranchTable[i] >= threshold) {
                 foundReachableBranchTarget = true;
                 break;
             }

@@ -394,7 +394,7 @@ public:
 
     Substitution(
         ModuleBase *         pModuleArg,
-        const SigPointer &   sigInst,
+        SigPointer           sigInst,
         const Substitution * pNextSubstitution)
     {
         LIMITED_METHOD_CONTRACT;

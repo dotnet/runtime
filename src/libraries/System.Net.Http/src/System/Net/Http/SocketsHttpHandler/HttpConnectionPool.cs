@@ -406,7 +406,7 @@ namespace System.Net.Http
             }
         }
 
-        private bool HasSyncObjLock => Monitor.IsEntered(_availableHttp11Connections);
+        public bool HasSyncObjLock => Monitor.IsEntered(_availableHttp11Connections);
 
         // Overview of connection management (mostly HTTP version independent):
         //
@@ -459,6 +459,8 @@ namespace System.Net.Http
 
         private bool CheckExpirationOnGet(HttpConnectionBase connection)
         {
+            Debug.Assert(!HasSyncObjLock);
+
             TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
             if (pooledConnectionLifetime != Timeout.InfiniteTimeSpan)
             {
@@ -655,6 +657,7 @@ namespace System.Net.Http
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Discarding downgraded HTTP/1.1 connection because HTTP/1.1 connection limit is exceeded");
                 stream.Dispose();
+                return;
             }
 
             HttpConnection http11Connection;
@@ -1998,6 +2001,7 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) connection.Trace($"{nameof(isNewConnection)}={isNewConnection}");
 
+            Debug.Assert(!HasSyncObjLock);
             Debug.Assert(isNewConnection || initialRequestWaiter is null, "Shouldn't have a request unless the connection is new");
 
             if (!isNewConnection && CheckExpirationOnReturn(connection))
@@ -2401,6 +2405,7 @@ namespace System.Net.Http
                 localHttp2Connections = _availableHttp2Connections?.ToArray();
             }
 
+            // Avoid calling HeartBeat under the lock, as it may call back into HttpConnectionPool.InvalidateHttp2Connection.
             if (localHttp2Connections is not null)
             {
                 foreach (Http2Connection http2Connection in localHttp2Connections)

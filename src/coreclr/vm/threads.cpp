@@ -1513,7 +1513,6 @@ Thread::Thread()
     m_TraceCallCount = 0;
     m_ThrewControlForThread = 0;
     m_ThreadTasks = (ThreadTasks)0;
-    m_pLoadLimiter= NULL;
 
     // The state and the tasks must be 32-bit aligned for atomicity to be guaranteed.
     _ASSERTE((((size_t) &m_State) & 3) == 0);
@@ -1548,16 +1547,10 @@ Thread::Thread()
     m_RedirectContextInUse = false;
 #endif
 
-#ifdef FEATURE_COMINTEROP
-    m_pRCWStack = new RCWStackHeader();
-#endif
-
 #ifdef _DEBUG
     m_bGCStressing = FALSE;
     m_bUniqueStacking = FALSE;
 #endif
-
-    m_pPendingTypeLoad = NULL;
 
     m_dwAVInRuntimeImplOkayCount = 0;
 
@@ -1744,8 +1737,6 @@ void Thread::InitThread()
     }
 
     _ASSERTE(HasValidThreadHandle());
-
-    m_random.Init();
 
     // Set floating point mode to round to nearest
 #ifndef TARGET_UNIX
@@ -2647,11 +2638,6 @@ Thread::~Thread()
 
     MarkRedirectContextInUse(m_pSavedRedirectContext);
     m_pSavedRedirectContext = NULL;
-
-#ifdef FEATURE_COMINTEROP
-    if (m_pRCWStack)
-        delete m_pRCWStack;
-#endif
 
     if (m_pExceptionDuringStartup)
     {
@@ -7050,12 +7036,12 @@ bool Thread::InitRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool validCo
 }
 
 
-void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx)
+void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool fLightUnwind)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    ::FillRegDisplay(pRD, pctx);
+    ::FillRegDisplay(pRD, pctx, NULL, fLightUnwind);
 
 #if defined(DEBUG_REGDISPLAY) && !defined(TARGET_X86)
     CONSISTENCY_CHECK(!pRD->_pThread || pRD->_pThread == this);

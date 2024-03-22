@@ -103,9 +103,14 @@ namespace ILCompiler
             return _inliningPolicy.CanInline(caller, callee);
         }
 
-        public bool CanConstructType(TypeDesc type)
+        public bool CanReferenceConstructedMethodTable(TypeDesc type)
         {
-            return NodeFactory.DevirtualizationManager.CanConstructType(type);
+            return NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
+        }
+
+        public bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type)
+        {
+            return NodeFactory.DevirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(type);
         }
 
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, TypeDesc constrainedType, bool followVirtualDispatch)
@@ -133,7 +138,7 @@ namespace ILCompiler
             }
             else if (field is ExternSymbolMappedField externField)
             {
-                return NodeFactory.ExternSymbol(externField.SymbolName);
+                return NodeFactory.ExternVariable(externField.SymbolName);
             }
             else
             {
@@ -261,7 +266,7 @@ namespace ILCompiler
 
         public ReadyToRunHelperId GetLdTokenHelperForType(TypeDesc type)
         {
-            bool canConstructPerWholeProgramAnalysis = NodeFactory.DevirtualizationManager.CanConstructType(type);
+            bool canConstructPerWholeProgramAnalysis = NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
             bool creationAllowed = ConstructedEETypeNode.CreationAllowed(type);
             return (canConstructPerWholeProgramAnalysis && creationAllowed)
                 ? ReadyToRunHelperId.TypeHandle

@@ -16,6 +16,39 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
+        private const string DisableTlsResumeCtxSwitch = "System.Net.Security.DisableTlsResume";
+        private const string DisableTlsResumeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME";
+
+        private static volatile int s_disableTlsResume = -1;
+
+        internal static bool DisableTlsResume
+        {
+            get
+            {
+                int disableTlsResume = s_disableTlsResume;
+                if (disableTlsResume != -1)
+                {
+                    return disableTlsResume != 0;
+                }
+
+                // First check for the AppContext switch, giving it priority over the environment variable.
+                if (AppContext.TryGetSwitch(DisableTlsResumeCtxSwitch, out bool value))
+                {
+                    s_disableTlsResume = value ? 1 : 0;
+                }
+                else
+                {
+                    // AppContext switch wasn't used. Check the environment variable.
+                    s_disableTlsResume =
+                        Environment.GetEnvironmentVariable(DisableTlsResumeEnvironmentVariable) is string envVar &&
+                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
+                }
+
+                return s_disableTlsResume != 0;
+            }
+        }
+
+
         private SafeFreeCredentials? _credentialsHandle;
         private SafeDeleteSslContext? _securityContext;
 

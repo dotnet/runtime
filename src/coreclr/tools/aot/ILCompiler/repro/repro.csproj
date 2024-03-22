@@ -20,6 +20,7 @@
 
     <ItemGroup>
       <ReproResponseLines Include="$(OutputPath)$(AssemblyName)$(TargetExt)" />
+      <ReproResponseLines Include="--targetarch:$(Platform)" />
       <ReproResponseLines Include="-o:$(OutputPath)$(AssemblyName).obj" />
       <ReproResponseLines Include="-r:$(RuntimeBinDir)aotsdk\*.dll" />
       <ReproResponseLines Include="-r:$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />

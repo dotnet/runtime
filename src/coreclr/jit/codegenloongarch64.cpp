@@ -2418,7 +2418,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         // Floating point divide never raises an exception
         assert(varTypeIsFloating(tree->gtOp1));
         assert(varTypeIsFloating(tree->gtOp2));
-        assert(tree->gtOper == GT_DIV);
+        assert(tree->OperIs(GT_DIV));
 
         instruction ins = genGetInsForOper(tree);
         emit->emitIns_R_R_R(ins, emitActualTypeSize(targetType), tree->GetRegNum(), tree->gtOp1->GetRegNum(),
@@ -2480,7 +2480,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         }
 
         // check (MinInt / -1) => ArithmeticException
-        if (tree->gtOper == GT_DIV || tree->gtOper == GT_MOD)
+        if (tree->OperIs(GT_DIV, GT_MOD))
         {
             if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
             {
@@ -2514,55 +2514,20 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             // Generate the sdiv instruction
             if (size == EA_4BYTE)
             {
-                if (tree->OperGet() == GT_DIV)
-                {
-                    ins = INS_div_w;
-                }
-                else
-                {
-                    ins = INS_mod_w;
-                }
+                ins = tree->OperIs(GT_DIV) ? INS_div_w : INS_mod_w;
             }
             else
             {
-                if (tree->OperGet() == GT_DIV)
-                {
-                    ins = INS_div_d;
-                }
-                else
-                {
-                    ins = INS_mod_d;
-                }
+                ins = tree->OperIs(GT_DIV) ? INS_div_d : INS_mod_d;
             }
 
             emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
         }
-        else // if (tree->gtOper == GT_UDIV) GT_UMOD
+        else // tree->OperIs(GT_UDIV, GT_UMOD)
         {
-            // Only one possible exception
-            //     (AnyVal /  0) => DivideByZeroException
-            //
-            // Note that division by the constant 0 was already checked for above by the
-            // op2->IsIntegralConst(0) check
-            //
-
-            if (!divisorOp->IsCnsIntOrI())
-            {
-                // divisorOp is not a constant, so it could be zero
-                //
-                genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
-            }
-
             if (size == EA_4BYTE)
             {
-                if (tree->OperGet() == GT_UDIV)
-                {
-                    ins = INS_div_wu;
-                }
-                else
-                {
-                    ins = INS_mod_wu;
-                }
+                ins = tree->OperIs(GT_UDIV) ? INS_div_wu : INS_mod_wu;
 
                 // TODO-LOONGARCH64: here is just for signed-extension ?
                 emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, Reg1, Reg1, 0);
@@ -2570,14 +2535,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             }
             else
             {
-                if (tree->OperGet() == GT_UDIV)
-                {
-                    ins = INS_div_du;
-                }
-                else
-                {
-                    ins = INS_mod_du;
-                }
+                ins = tree->OperIs(GT_UDIV) ? INS_div_du : INS_mod_du;
             }
 
             emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
@@ -5290,7 +5248,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                 // addrNode can either be a GT_LCL_ADDR<0> or an address expression
                 //
-                if (addrNode->IsLclVarAddr())
+                if (addrNode->isContained() && addrNode->IsLclVarAddr())
                 {
                     // We have a GT_BLK(GT_LCL_ADDR<0>)
                     //
@@ -5563,7 +5521,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
         // addrNode can either be a GT_LCL_ADDR<0> or an address expression
         //
-        if (addrNode->IsLclVarAddr())
+        if (addrNode->isContained() && addrNode->IsLclVarAddr())
         {
             // We have a GT_BLK(GT_LCL_ADDR<0>)
             //
@@ -6334,27 +6292,6 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
     }
 }
 
-// Generate code for a load from some address + offset
-//   base: tree node which can be either a local address or arbitrary node
-//   offset: distance from the base from which to load
-void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset)
-{
-    emitter* emit = GetEmitter();
-
-    if (base->OperIs(GT_LCL_ADDR))
-    {
-        if (base->gtOper == GT_LCL_ADDR)
-        {
-            offset += base->AsLclFld()->GetLclOffs();
-        }
-        emit->emitIns_R_S(ins, size, dst, base->AsLclVarCommon()->GetLclNum(), offset);
-    }
-    else
-    {
-        emit->emitIns_R_R_I(ins, size, dst, base->GetRegNum(), offset);
-    }
-}
-
 //------------------------------------------------------------------------
 // genCall: Produce code for a GT_CALL node
 //
@@ -6499,7 +6436,7 @@ void CodeGen::genCall(GenTreeCall* call)
             for (unsigned i = 0; i < regCount; ++i)
             {
                 var_types regType      = pRetTypeDesc->GetReturnRegType(i);
-                returnReg              = pRetTypeDesc->GetABIReturnReg(i);
+                returnReg              = pRetTypeDesc->GetABIReturnReg(i, call->GetUnmanagedCallConv());
                 regNumber allocatedReg = call->GetRegNumByIdx(i);
                 inst_Mov(regType, allocatedReg, returnReg, /* canSkip */ true);
             }
