@@ -137,6 +137,8 @@ CONFIG_INTEGER(JitReportFastTailCallDecisions, W("JitReportFastTailCallDecisions
 CONFIG_INTEGER(JitPInvokeCheckEnabled, W("JITPInvokeCheckEnabled"), 0)
 CONFIG_INTEGER(JitPInvokeEnabled, W("JITPInvokeEnabled"), 1)
 
+CONFIG_INTEGER(JitHoistLimit, W("JitHoistLimit"), -1) // Specifies the maximum number of hoist candidates to hoist
+
 // Controls verbosity for JitPrintInlinedMethods. Ignored for JitDump where
 // it's always set.
 CONFIG_INTEGER(JitPrintInlinedMethodsVerbose, W("JitPrintInlinedMethodsVerboseLevel"), 0)
@@ -162,9 +164,7 @@ CONFIG_INTEGER(JitSsaStress, W("JitSsaStress"), 0) // Perturb order of processin
 CONFIG_INTEGER(JitStackChecks, W("JitStackChecks"), 0)
 CONFIG_INTEGER(JitStress, W("JitStress"), 0) // Internal Jit stress mode: 0 = no stress, 2 = all stress, other = vary
                                              // stress based on a hash of the method and this value
-CONFIG_INTEGER(JitStressBBProf, W("JitStressBBProf"), 0)               // Internal Jit stress mode
-CONFIG_INTEGER(JitStressModeNamesOnly, W("JitStressModeNamesOnly"), 0) // Internal Jit stress: if nonzero, only enable
-                                                                       // stress modes listed in JitStressModeNames
+CONFIG_INTEGER(JitStressBBProf, W("JitStressBBProf"), 0)                         // Internal Jit stress mode
 CONFIG_INTEGER(JitStressProcedureSplitting, W("JitStressProcedureSplitting"), 0) // Always split after the first basic
                                                                                  // block.
 CONFIG_INTEGER(JitStressRegs, W("JitStressRegs"), 0)
@@ -242,12 +242,24 @@ CONFIG_INTEGER(JitDumpFgBlockOrder, W("JitDumpFgBlockOrder"), 0) // 0 == bbNext 
 CONFIG_INTEGER(JitDumpFgMemorySsa, W("JitDumpFgMemorySsa"), 0)   // non-zero: show memory phis + SSA/VNs
 
 CONFIG_STRING(JitRange, W("JitRange"))
-CONFIG_STRING(JitStressModeNames, W("JitStressModeNames")) // Internal Jit stress mode: stress using the given set of
-                                                           // stress mode names, e.g. STRESS_REGS, STRESS_TAILCALL
-CONFIG_STRING(JitStressModeNamesNot, W("JitStressModeNamesNot")) // Internal Jit stress mode: do NOT stress using the
-                                                                 // given set of stress mode names, e.g. STRESS_REGS,
-                                                                 // STRESS_TAILCALL
-CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit stress mode
+
+// Internal Jit stress mode: stress using the given set of stress mode names, e.g. STRESS_REGS, STRESS_TAILCALL.
+// Unless JitStressModeNamesOnly is non-zero, other stress modes from a JitStress setting may also be invoked.
+CONFIG_STRING(JitStressModeNames, W("JitStressModeNames"))
+
+// Internal Jit stress: if nonzero, only enable stress modes listed in JitStressModeNames.
+CONFIG_INTEGER(JitStressModeNamesOnly, W("JitStressModeNamesOnly"), 0)
+
+// Internal Jit stress mode: only allow stress using the given set of stress mode names, e.g. STRESS_REGS,
+// STRESS_TAILCALL. Note that JitStress must be enabled first, and then only the mentioned stress modes are allowed
+// to be used, at the same percentage weighting as with JitStress -- the stress modes mentioned are NOT
+// unconditionally true for a call to `compStressCompile`. This is basically the opposite of JitStressModeNamesNot.
+CONFIG_STRING(JitStressModeNamesAllow, W("JitStressModeNamesAllow"))
+
+// Internal Jit stress mode: do NOT stress using the given set of stress mode names, e.g. STRESS_REGS, STRESS_TAILCALL
+CONFIG_STRING(JitStressModeNamesNot, W("JitStressModeNamesNot"))
+
+CONFIG_STRING(JitStressRange, W("JitStressRange"))        // Internal Jit stress mode
 CONFIG_METHODSET(JitEmitUnitTests, W("JitEmitUnitTests")) // Generate emitter unit tests in the specified functions
 CONFIG_STRING(JitEmitUnitTestsSections, W("JitEmitUnitTestsSections")) // Generate this set of unit tests
 
@@ -255,7 +267,8 @@ CONFIG_STRING(JitEmitUnitTestsSections, W("JitEmitUnitTestsSections")) // Genera
 /// JIT Hardware Intrinsics
 ///
 CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
-#endif                                                                     // defined(DEBUG)
+
+#endif // defined(DEBUG)
 
 CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                // Print codegen for given methods
 CONFIG_INTEGER(JitDisasmTesting, W("JitDisasmTesting"), 0) // Display BEGIN METHOD/END METHOD anchors for disasm testing
@@ -389,6 +402,7 @@ CONFIG_INTEGER(JitRLCSEGreedy, W("JitRLCSEGreedy"), 0)
 CONFIG_INTEGER(JitRLCSEVerbose, W("JitRLCSEVerbose"), 0)
 
 #if defined(DEBUG)
+
 // Allow fine-grained controls of CSEs done in a particular method
 //
 // Specify method that will respond to the CSEMask.
@@ -440,7 +454,7 @@ CONFIG_STRING(JitRLCSEAlpha, W("JitRLCSEAlpha"))
 // If nonzero, dump candidate feature values
 CONFIG_INTEGER(JitRLCSECandidateFeatures, W("JitRLCSECandidateFeatures"), 0)
 
-#endif
+#endif // DEBUG
 
 ///
 /// JIT
@@ -483,6 +497,7 @@ CONFIG_INTEGER(JitNoRngChks, W("JitNoRngChks"), 0) // If 1, don't generate range
 #endif                                             // defined(FEATURE_ENABLE_NO_RANGE_CHECKS)
 
 #if defined(OPT_CONFIG)
+
 CONFIG_INTEGER(JitDoAssertionProp, W("JitDoAssertionProp"), 1) // Perform assertion propagation optimization
 CONFIG_INTEGER(JitDoCopyProp, W("JitDoCopyProp"), 1) // Perform copy propagation on variables that appear redundant
 CONFIG_INTEGER(JitDoOptimizeIVs, W("JitDoOptimizeIVs"), 1)     // Perform optimization of induction variables
@@ -509,7 +524,8 @@ CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numb
 CONFIG_METHODSET(JitOptRepeat, W("JitOptRepeat"))            // Runs optimizer multiple times on the method
 CONFIG_INTEGER(JitOptRepeatCount, W("JitOptRepeatCount"), 2) // Number of times to repeat opts when repeating
 CONFIG_INTEGER(JitDoIfConversion, W("JitDoIfConversion"), 1) // Perform If conversion
-#endif                                                       // defined(OPT_CONFIG)
+
+#endif // defined(OPT_CONFIG)
 
 // Max # of MapSelect's considered for a particular top-level invocation.
 CONFIG_INTEGER(JitVNMapSelBudget, W("JitVNMapSelBudget"), DEFAULT_MAP_SELECT_BUDGET)
