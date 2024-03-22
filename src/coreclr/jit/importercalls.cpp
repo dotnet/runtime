@@ -1393,7 +1393,7 @@ DONE_CALL:
                 if (origCall->IsVirtual() && (origCall->gtCallType != CT_INDIRECT) && (exactContextHnd != nullptr) &&
                     (origCall->gtHandleHistogramProfileCandidateInfo == nullptr))
                 {
-                    JITDUMP("\nSaving context %p for call [%06u]\n", exactContextHnd, dspTreeID(origCall));
+                    JITDUMP("\nSaving context %p for call [%06u]\n", dspPtr(exactContextHnd), dspTreeID(origCall));
                     origCall->gtCallMoreFlags |= GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
                     LateDevirtualizationInfo* const info = new (this, CMK_Inlining) LateDevirtualizationInfo;
                     info->exactContextHnd                = exactContextHnd;
@@ -1406,11 +1406,19 @@ DONE_CALL:
                     // Such form allows to find statements with fat calls without walking through whole trees
                     // and removes problems with cutting trees.
                     assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
-                    if (call->OperGet() != GT_LCL_VAR) // can be already converted by impFixupCallStructReturn.
+                    if (!call->OperIs(GT_LCL_VAR)) // can be already converted by impFixupCallStructReturn.
                     {
                         unsigned   calliSlot = lvaGrabTemp(true DEBUGARG("calli"));
                         LclVarDsc* varDsc    = lvaGetDesc(calliSlot);
+                        // Keep the information about small typedness to avoid
+                        // inserting unnecessary casts around normalization.
+                        if (call->IsCall() && varTypeIsSmall(call->AsCall()->gtReturnType))
+                        {
+                            assert(call->AsCall()->NormalizesSmallTypesOnReturn());
+                            varDsc->lvType = call->AsCall()->gtReturnType;
+                        }
 
+                        // TODO-Bug: CHECK_SPILL_NONE here looks wrong.
                         impStoreTemp(calliSlot, call, CHECK_SPILL_NONE);
                         // impStoreTemp can change src arg list and return type for call that returns struct.
                         var_types type = genActualType(lvaTable[calliSlot].TypeGet());
@@ -6588,7 +6596,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         {
             JITDUMP("No exact classes implementing %s\n", eeGetClassName(baseClass))
         }
-        else if (numExactClasses > maxTypeChecks)
+        else if (numExactClasses < 0 || numExactClasses > maxTypeChecks)
         {
             JITDUMP("Too many exact classes implementing %s (%d > %d)\n", eeGetClassName(baseClass), numExactClasses,
                     maxTypeChecks)
@@ -8441,8 +8449,9 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 return;
             }
 #endif
+
             JITDUMP("\nCheckCanInline: fetching method info for inline candidate %s -- context %p\n",
-                    compiler->eeGetMethodName(ftn), pParam->exactContextHnd);
+                    compiler->eeGetMethodName(ftn), compiler->dspPtr(pParam->exactContextHnd));
 
             if (pParam->exactContextHnd == METHOD_BEING_COMPILED_CONTEXT())
             {
