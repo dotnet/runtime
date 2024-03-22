@@ -165,8 +165,9 @@ extends:
       displayName: Source Build Validation
       dependsOn:
       - EvaluatePaths
-      condition:
-        eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true)
+      variables:
+        runSourceBuild: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'] ]
+      condition: eq(variables['runSourceBuild'], true)
       jobs:
       - template: /eng/common/templates/jobs/source-build.yml
         parameters:
