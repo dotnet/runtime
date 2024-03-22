@@ -702,50 +702,32 @@ static code_t insEncodeSimm(ssize_t imm)
     return result << lo;
 }
 
+// Returns the encoding for unsigned immediate `imm` that is a multiple of `mul` with `bits` number of bits,
+// for bit locations `hi-lo`.
+template <const size_t hi, const size_t lo, const ssize_t mul>
+static code_t insEncodeUimm_MultipleOf(ssize_t imm)
+{
+
+    constexpr size_t bits = hi - lo + 1;
+    assert((isValidUimm_MultipleOf<bits, mul>(imm)));
+    return insEncodeUimm<hi, lo>(imm / mul);
+}
+
+// Returns the encoding for signed immediate `imm` that is a multiple of `mul` with `bits` number of bits,
+// for bit locations `hi-lo`.
+template <const size_t hi, const size_t lo, const ssize_t mul>
+static code_t insEncodeSimm_MultipleOf(ssize_t imm)
+{
+    constexpr size_t bits = hi - lo + 1;
+    assert((isValidSimm_MultipleOf<bits, mul>(imm)));
+    return insEncodeSimm<hi, lo>(imm / mul);
+}
+
 // Returns the encoding for the immediate value as 9-bits at bit locations '21-16' for high and '12-10' for low.
 static code_t insEncodeSimm9h9l_21_to_16_and_12_to_10(ssize_t imm);
 
-// Returns the encoding for the immediate value that is a multiple of 2 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf2_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 3 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf3_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 4 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf4_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 16 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 32 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
-static code_t insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 4 as 5-bits at bit locations '20-16'.
-static code_t insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
-static code_t insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
-static code_t insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 4 as 6-bits at bit locations '21-16'.
-static code_t insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
-static code_t insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value as 1-bit at bit locations '23'.
-static code_t insEncodeUimm1_23(ssize_t imm);
-
 // Returns the encoding for the immediate value as 3-bits at bit locations '23-22' for high and '12' for low.
 static code_t insEncodeUimm3h3l_23_to_22_and_12(ssize_t imm);
-
-// Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
-static code_t insEncodeUimm4From1_19_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
 static code_t insEncodeImm8_12_to_5(ssize_t imm);
@@ -1211,6 +1193,23 @@ inline static bool isLowPredicateRegister(regNumber reg)
 inline static bool isHighPredicateRegister(regNumber reg)
 {
     return (reg >= REG_PREDICATE_HIGH_FIRST) && (reg <= REG_PREDICATE_HIGH_LAST);
+}
+
+inline static bool isEvenRegister(regNumber reg)
+{
+    if (isGeneralRegister(reg))
+    {
+        return ((reg - REG_INT_FIRST) % 2 == 0);
+    }
+    else if (isVectorRegister(reg))
+    {
+        return ((reg - REG_FP_FIRST) % 2) == 0;
+    }
+    else
+    {
+        assert(isPredicateRegister(reg));
+        return ((reg - REG_PREDICATE_FIRST) % 2) == 0;
+    }
 }
 
 inline static bool insOptsNone(insOpts opt)
