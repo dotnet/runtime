@@ -57,10 +57,9 @@ namespace System.Reflection
         }
 
         private readonly ReadOnlySpan<char> _input;
-        private readonly bool _strict;
         private int _index;
 
-        private AssemblyNameParser(ReadOnlySpan<char> input, bool strict = false)
+        private AssemblyNameParser(ReadOnlySpan<char> input)
         {
 #if SYSTEM_PRIVATE_CORELIB
             if (input.Length == 0)
@@ -70,7 +69,6 @@ namespace System.Reflection
 #endif
 
             _input = input;
-            _strict = strict;
             _index = 0;
         }
 
@@ -89,9 +87,9 @@ namespace System.Reflection
         }
 #endif
 
-        internal static bool TryParse(ReadOnlySpan<char> name, bool strict, ref AssemblyNameParts parts)
+        internal static bool TryParse(ReadOnlySpan<char> name, ref AssemblyNameParts parts)
         {
-            AssemblyNameParser parser = new(name, strict);
+            AssemblyNameParser parser = new(name);
             return parser.TryParse(ref parts);
         }
 
@@ -170,11 +168,6 @@ namespace System.Reflection
                         return false;
                     }
                 }
-                else if (_strict)
-                {
-                    // it's either unrecognized or not on the allow list (Version, Culture and PublicKeyToken)
-                    return false;
-                }
                 else if (IsAttribute(attributeName, "PublicKey"))
                 {
                     if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.PublicKeyOrToken))
@@ -250,8 +243,8 @@ namespace System.Reflection
             return true;
         }
 
-        private bool IsAttribute(string candidate, string attributeKind)
-            => candidate.Equals(attributeKind, _strict ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
+        private static bool IsAttribute(string candidate, string attributeKind)
+            => candidate.Equals(attributeKind, StringComparison.OrdinalIgnoreCase);
 
         private static bool TryParseVersion(string attributeValue, ref Version? version)
         {
@@ -302,17 +295,12 @@ namespace System.Reflection
             return true;
         }
 
-        private bool TryParseCulture(string attributeValue, out string? result)
+        private static bool TryParseCulture(string attributeValue, out string? result)
         {
             if (attributeValue.Equals("Neutral", StringComparison.OrdinalIgnoreCase))
             {
                 result = "";
                 return true;
-            }
-            else if (_strict && !IsPredefinedCulture(attributeValue))
-            {
-                result = null;
-                return false;
             }
 
             result = attributeValue;
@@ -537,19 +525,5 @@ namespace System.Reflection
             token = Token.String;
             return true;
         }
-
-#if NET8_0_OR_GREATER
-        private static bool IsPredefinedCulture(string cultureName)
-        {
-            try
-            {
-                return CultureInfo.GetCultureInfo(cultureName, predefinedOnly: true) is not null;
-            }
-            catch (CultureNotFoundException)
-            {
-                return false;
-            }
-        }
-#endif
     }
 }

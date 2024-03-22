@@ -106,7 +106,6 @@ namespace System.Reflection.Metadata.Tests
             AssemblyName expectedAssemblyName = new(type.Assembly.FullName);
 
             Verify(type, expectedAssemblyName, TypeName.Parse(type.AssemblyQualifiedName.AsSpan()));
-            Verify(type, expectedAssemblyName, TypeName.Parse(type.AssemblyQualifiedName.AsSpan(), new TypeNameParseOptions() { StrictValidation = true }));
 
             static void Verify(Type type, AssemblyName expectedAssemblyName, TypeName parsed)
             {
@@ -128,39 +127,6 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(default, parsedAssemblyName.Flags);
                 Assert.Equal(default, parsedAssemblyName.ProcessorArchitecture);
             }
-        }
-
-        [Theory]
-        [InlineData("Hello,")] // trailing comma
-        [InlineData("Hello, ")] // trailing comma
-        [InlineData("Hello, ./../PathToA.dll")] // path to a file!
-        [InlineData("Hello, .\\..\\PathToA.dll")] // path to a file!
-        [InlineData("Hello, AssemblyName, Version=1.2\0.3.4")] // embedded null in Version (the Version class normally allows this)
-        [InlineData("Hello, AssemblyName, Version=1.2 .3.4")] // extra space in Version (the Version class normally allows this)
-        [InlineData("Hello, AssemblyName, Version=1.2.3.4, Version=1.2.3.4")] // duplicate Versions specified
-        [InlineData("Hello, AssemblyName, Culture=neutral, Culture=neutral")] // duplicate Culture specified
-        [InlineData("Hello, AssemblyName, PublicKeyToken=b77a5c561934e089, PublicKeyToken=b77a5c561934e089")] // duplicate PublicKeyToken specified
-        [InlineData("Hello, AssemblyName, PublicKeyToken=bad")] // invalid PKT
-        [InlineData("Hello, AssemblyName, Culture=en-US_XYZ")] // invalid culture
-        [InlineData("Hello, AssemblyName, \r\nCulture=en-US")] // disallowed whitespace
-        [InlineData("Hello, AssemblyName, Version=1.2.3.4,")] // another trailing comma
-        [InlineData("Hello, AssemblyName, Version=1.2.3.4, =")] // malformed key=token pair
-        [InlineData("Hello, AssemblyName, Version=1.2.3.4, Architecture=x86")] // Architecture disallowed
-        [InlineData("Hello, AssemblyName, CodeBase=file://blah")] // CodeBase disallowed (and illegal path chars)
-        [InlineData("Hello, AssemblyName, CodeBase=legalChars")] // CodeBase disallowed
-        [InlineData("Hello, AssemblyName, Unrecognized=some")] // not on the allow list? disallowed
-        [InlineData("Hello, AssemblyName, version=1.2.3.4")] // wrong case (Version)
-        [InlineData("Hello, AssemblyName, culture=neutral")] // wrong case (Culture)
-        [InlineData("Hello, AssemblyName, publicKeyToken=b77a5c561934e089")] // wrong case (PKT)
-        public void CanNotParseTypeWithInvalidAssemblyName(string fullName)
-        {
-            TypeNameParseOptions options = new()
-            {
-                StrictValidation = true,
-            };
-
-            Assert.False(TypeName.TryParse(fullName.AsSpan(), out _, options));
-            Assert.Throws<ArgumentException>(() => TypeName.Parse(fullName.AsSpan(), options));
         }
 
         [Theory]

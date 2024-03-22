@@ -72,11 +72,6 @@ namespace System.Reflection.Metadata
             }
 
             ReadOnlySpan<char> fullTypeName = _inputString.Slice(0, fullTypeNameLength);
-            int invalidCharIndex = GetIndexOfFirstInvalidTypeNameCharacter(fullTypeName, _parseOptions.StrictValidation);
-            if (invalidCharIndex >= 0)
-            {
-                return null;
-            }
             _inputString = _inputString.Slice(fullTypeNameLength);
 
             int genericArgIndex = 0;
@@ -264,8 +259,7 @@ namespace System.Reflection.Metadata
                 ReadOnlySpan<char> candidate = _inputString.Slice(0, assemblyNameLength);
                 AssemblyNameParser.AssemblyNameParts parts = default;
 
-                if (GetIndexOfFirstInvalidAssemblyNameCharacter(candidate, _parseOptions.StrictValidation) >= 0
-                    || !AssemblyNameParser.TryParse(candidate, _parseOptions.StrictValidation, ref parts))
+                if (!AssemblyNameParser.TryParse(candidate, ref parts))
                 {
                     return false;
                 }
