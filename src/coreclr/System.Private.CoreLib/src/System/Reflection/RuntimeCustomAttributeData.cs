@@ -1133,7 +1133,7 @@ namespace System.Reflection
         public Type? EnumType { get; }
     }
 
-    internal static unsafe class CustomAttribute
+    internal static unsafe partial class CustomAttribute
     {
         #region Internal Static Members
         internal static bool IsDefined(RuntimeType type, RuntimeType? caType, bool inherit)
@@ -1545,7 +1545,7 @@ namespace System.Reflection
                 object attribute;
                 if (ctorWithParameters is not null)
                 {
-                    attribute = CreateCaObject(decoratedModule, attributeType, ctorWithParameters, ref blobStart, blobEnd, out cNamedArgs);
+                    attribute = CreateCustomAttributeInstance(decoratedModule, attributeType, ctorWithParameters, ref blobStart, blobEnd, out cNamedArgs);
                 }
                 else
                 {
@@ -1892,32 +1892,68 @@ namespace System.Reflection
         }
         #endregion
 
-        #region Private Static FCalls
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object _CreateCaObject(RuntimeModule pModule, RuntimeType type, IRuntimeMethodInfo pCtor, byte** ppBlob, byte* pEndBlob, int* pcNamedArgs);
-        private static object CreateCaObject(RuntimeModule module, RuntimeType type, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreateCustomAttributeInstance")]
+        private static partial void CreateCustomAttributeInstance(
+            ObjectHandleOnStack pModule,
+            ObjectHandleOnStack type,
+            ObjectHandleOnStack pCtor,
+            ref IntPtr ppBlob,
+            IntPtr pEndBlob,
+            out int pcNamedArgs,
+            ObjectHandleOnStack instance);
+
+        private static object CreateCustomAttributeInstance(RuntimeModule module, RuntimeType type, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
         {
-            byte* pBlob = (byte*)blob;
-            byte* pBlobEnd = (byte*)blobEnd;
-            int cNamedArgs;
-            object ca = _CreateCaObject(module, type, ctor, &pBlob, pBlobEnd, &cNamedArgs);
-            blob = (IntPtr)pBlob;
-            namedArgs = cNamedArgs;
-            return ca;
+            if (module is null)
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            object? result = null;
+            CreateCustomAttributeInstance(
+                ObjectHandleOnStack.Create(ref module),
+                ObjectHandleOnStack.Create(ref type),
+                ObjectHandleOnStack.Create(ref ctor),
+                ref blob,
+                blobEnd,
+                out namedArgs,
+                ObjectHandleOnStack.Create(ref result));
+            return result!;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetPropertyOrFieldData(
-            RuntimeModule pModule, byte** ppBlobStart, byte* pBlobEnd, out string name, out bool bIsProperty, out RuntimeType type, out object value);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreateCustomAttributeInstance", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void CreatePropertyOrFieldData(
+            ObjectHandleOnStack pModule,
+            ref IntPtr ppBlobStart,
+            IntPtr pBlobEnd,
+            ObjectHandleOnStack name,
+            [MarshalAs(UnmanagedType.U1)] out bool bIsProperty,
+            ObjectHandleOnStack type,
+            ObjectHandleOnStack value);
+
         private static void GetPropertyOrFieldData(
             RuntimeModule module, ref IntPtr blobStart, IntPtr blobEnd, out string name, out bool isProperty, out RuntimeType? type, out object? value)
         {
-            byte* pBlobStart = (byte*)blobStart;
-            _GetPropertyOrFieldData(
-                module, &pBlobStart, (byte*)blobEnd, out name, out isProperty, out type, out value);
-            blobStart = (IntPtr)pBlobStart;
+            if (module is null)
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            string? nameLocal = null;
+            RuntimeType? typeLocal = null;
+            object? valueLocal = null;
+            CreatePropertyOrFieldData(
+                ObjectHandleOnStack.Create(ref module),
+                ref blobStart,
+                blobEnd,
+                ObjectHandleOnStack.Create(ref nameLocal),
+                out isProperty,
+                ObjectHandleOnStack.Create(ref typeLocal),
+                ObjectHandleOnStack.Create(ref valueLocal));
+            name = nameLocal!;
+            type = typeLocal;
+            value = valueLocal;
         }
-        #endregion
     }
 
     internal static class PseudoCustomAttribute

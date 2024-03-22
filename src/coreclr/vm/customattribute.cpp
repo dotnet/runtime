@@ -349,9 +349,20 @@ ErrExit:
     return hr;
 }
 
-FCIMPL6(LPVOID, COMCustomAttribute::CreateCaObject, ReflectModuleBaseObject* pAttributedModuleUNSAFE, ReflectClassBaseObject* pCaTypeUNSAFE, ReflectMethodObject *pMethodUNSAFE, BYTE** ppBlob, BYTE* pEndBlob, INT32* pcNamedArgs)
+extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
+    QCall::ObjectHandleOnStack pAttributedModule,
+    QCall::ObjectHandleOnStack pCaType,
+    QCall::ObjectHandleOnStack pMethod,
+    BYTE** ppBlob,
+    BYTE* pEndBlob,
+    INT32* pcNamedArgs,
+    QCall::ObjectHandleOnStack result)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     struct
     {
@@ -360,20 +371,19 @@ FCIMPL6(LPVOID, COMCustomAttribute::CreateCaObject, ReflectModuleBaseObject* pAt
         REFLECTMETHODREF refCtor;
         REFLECTMODULEBASEREF refAttributedModule;
     } gc;
-    gc.refCaType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pCaTypeUNSAFE);
-    TypeHandle th = gc.refCaType->GetType();
-
+    gc.refCaType = NULL;
     gc.ca = NULL;
-    gc.refCtor = (REFLECTMETHODREF)ObjectToOBJECTREF(pMethodUNSAFE);
-    gc.refAttributedModule = (REFLECTMODULEBASEREF)ObjectToOBJECTREF(pAttributedModuleUNSAFE);
-
-    if(gc.refAttributedModule == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    MethodDesc* pCtorMD = gc.refCtor->GetMethod();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    gc.refCtor = NULL;
+    gc.refAttributedModule = NULL;
+    GCPROTECT_BEGIN(gc);
     {
+        gc.refCaType = (REFLECTCLASSBASEREF)pCaType.Get();
+        gc.refCtor = (REFLECTMETHODREF)pMethod.Get();
+        gc.refAttributedModule = (REFLECTMODULEBASEREF)pAttributedModule.Get();
+
+        MethodDesc* pCtorMD = gc.refCtor->GetMethod();
+        TypeHandle th = gc.refCaType->GetType();
+
         MethodDescCallSite ctorCallSite(pCtorMD, th);
         MetaSig* pSig = ctorCallSite.GetMetaSig();
         BYTE* pBlob = *ppBlob;
@@ -420,7 +430,7 @@ FCIMPL6(LPVOID, COMCustomAttribute::CreateCaObject, ReflectModuleBaseObject* pAt
                         if (th.IsArray())
                             // get the array element
                             th = th.GetArrayElementTypeHandle();
-                        ARG_SLOT data = GetDataFromBlob(pCtorMD->GetAssembly(), (CorSerializationType)type, th, &pBlob, pEndBlob, gc.refAttributedModule->GetModule(), &bObjectCreated);
+                        ARG_SLOT data = COMCustomAttribute::GetDataFromBlob(pCtorMD->GetAssembly(), (CorSerializationType)type, th, &pBlob, pEndBlob, gc.refAttributedModule->GetModule(), &bObjectCreated);
                         if (bObjectCreated)
                             argToProtect[i] = ArgSlotToObj(data);
                         else
@@ -474,171 +484,188 @@ FCIMPL6(LPVOID, COMCustomAttribute::CreateCaObject, ReflectModuleBaseObject* pAt
             args[0] = PtrToArgSlot(OBJECTREFToObject(gc.ca)->UnBox());
 
         ctorCallSite.CallWithValueTypes(args);
+
+        result.Set(gc.ca);
     }
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.ca);
+    GCPROTECT_END();
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObject *pModuleUNSAFE, BYTE** ppBlobStart, BYTE* pBlobEnd, STRINGREF* pName, CLR_BOOL* pbIsProperty, OBJECTREF* pType, OBJECTREF* value)
+extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
+    QCall::ObjectHandleOnStack pModuleObj,
+    BYTE** ppBlobStart,
+    BYTE* pBlobEnd,
+    QCall::ObjectHandleOnStack pName,
+    bool* pbIsProperty,
+    QCall::ObjectHandleOnStack pType,
+    QCall::ObjectHandleOnStack pValue)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
 
     BYTE* pBlob = *ppBlobStart;
-    *pType = NULL;
 
-    REFLECTMODULEBASEREF refModule = (REFLECTMODULEBASEREF)ObjectToOBJECTREF(pModuleUNSAFE);
+    GCX_COOP();
 
-    if(refModule == NULL)
-        FCThrowResVoid(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    Module *pModule = refModule->GetModule();
-
-    HELPER_METHOD_FRAME_BEGIN_1(refModule);
+    struct
     {
-        Assembly *pCtorAssembly = NULL;
+        OBJECTREF Name;
+        OBJECTREF Type;
+        OBJECTREF Value;
+    } gc;
+    gc.Name = NULL;
+    gc.Type = NULL;
+    gc.Value = NULL;
+    GCPROTECT_BEGIN(gc);
 
-        MethodTable *pMTValue = NULL;
-        CorSerializationType arrayType = SERIALIZATION_TYPE_BOOLEAN;
-        BOOL bObjectCreated = FALSE;
-        TypeHandle nullTH;
+    Module *pModule = pModuleObj.Get()->GetModule();
 
-        if (pBlob + 2 > pBlobEnd)
+    Assembly *pCtorAssembly = NULL;
+
+    MethodTable *pMTValue = NULL;
+    CorSerializationType arrayType = SERIALIZATION_TYPE_BOOLEAN;
+    BOOL bObjectCreated = FALSE;
+    TypeHandle nullTH;
+
+    if (pBlob + 2 > pBlobEnd)
+        COMPlusThrow(kCustomAttributeFormatException);
+
+    // get whether it is a field or a property
+    CorSerializationType propOrField = (CorSerializationType)*pBlob;
+    pBlob++;
+    if (propOrField == SERIALIZATION_TYPE_FIELD)
+        *pbIsProperty = FALSE;
+    else if (propOrField == SERIALIZATION_TYPE_PROPERTY)
+        *pbIsProperty = TRUE;
+    else
+        COMPlusThrow(kCustomAttributeFormatException);
+
+    // get the type of the field
+    CorSerializationType fieldType = (CorSerializationType)*pBlob;
+    pBlob++;
+    if (fieldType == SERIALIZATION_TYPE_SZARRAY)
+    {
+        arrayType = (CorSerializationType)*pBlob;
+
+        if (pBlob + 1 > pBlobEnd)
             COMPlusThrow(kCustomAttributeFormatException);
 
-        // get whether it is a field or a property
-        CorSerializationType propOrField = (CorSerializationType)*pBlob;
         pBlob++;
-        if (propOrField == SERIALIZATION_TYPE_FIELD)
-            *pbIsProperty = FALSE;
-        else if (propOrField == SERIALIZATION_TYPE_PROPERTY)
-            *pbIsProperty = TRUE;
-        else
-            COMPlusThrow(kCustomAttributeFormatException);
-
-        // get the type of the field
-        CorSerializationType fieldType = (CorSerializationType)*pBlob;
-        pBlob++;
-        if (fieldType == SERIALIZATION_TYPE_SZARRAY)
-        {
-            arrayType = (CorSerializationType)*pBlob;
-
-            if (pBlob + 1 > pBlobEnd)
-                COMPlusThrow(kCustomAttributeFormatException);
-
-            pBlob++;
-        }
-        if (fieldType == SERIALIZATION_TYPE_ENUM || arrayType == SERIALIZATION_TYPE_ENUM)
-        {
-            // get the enum type
-            ReflectClassBaseObject *pEnum =
-                (ReflectClassBaseObject*)OBJECTREFToObject(ArgSlotToObj(GetDataFromBlob(
-                    pCtorAssembly, SERIALIZATION_TYPE_TYPE, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated)));
-
-            if (pEnum == NULL)
-                COMPlusThrow(kCustomAttributeFormatException);
-
-            _ASSERTE(bObjectCreated);
-
-            TypeHandle th = pEnum->GetType();
-            _ASSERTE(th.IsEnum());
-
-            pMTValue = th.AsMethodTable();
-            if (fieldType == SERIALIZATION_TYPE_ENUM)
-                // load the enum type to pass it back
-                *pType = th.GetManagedClassObject();
-            else
-                nullTH = th;
-        }
-
-        // get the string representing the field/property name
-        *pName = ArgSlotToString(GetDataFromBlob(
-            pCtorAssembly, SERIALIZATION_TYPE_STRING, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated));
-        _ASSERTE(bObjectCreated || *pName == NULL);
-
-        // create the object and return it
-        switch (fieldType)
-        {
-            case SERIALIZATION_TYPE_TAGGED_OBJECT:
-                *pType = g_pObjectClass->GetManagedClassObject();
-                FALLTHROUGH;
-            case SERIALIZATION_TYPE_TYPE:
-            case SERIALIZATION_TYPE_STRING:
-                *value = ArgSlotToObj(GetDataFromBlob(
-                    pCtorAssembly, fieldType, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated));
-                _ASSERTE(bObjectCreated || *value == NULL);
-
-                if (*value == NULL)
-                {
-                    // load the proper type so that code in managed knows which property to load
-                    if (fieldType == SERIALIZATION_TYPE_STRING)
-                        *pType = CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING)->GetManagedClassObject();
-                    else if (fieldType == SERIALIZATION_TYPE_TYPE)
-                        *pType = CoreLibBinder::GetClass(CLASS__TYPE)->GetManagedClassObject();
-                }
-                break;
-            case SERIALIZATION_TYPE_SZARRAY:
-            {
-                *value = NULL;
-                int arraySize = (int)GetDataFromBlob(pCtorAssembly, SERIALIZATION_TYPE_I4, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated);
-
-                if (arraySize != -1)
-                {
-                    _ASSERTE(!bObjectCreated);
-                    if (arrayType == SERIALIZATION_TYPE_STRING)
-                        nullTH = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING));
-                    else if (arrayType == SERIALIZATION_TYPE_TYPE)
-                        nullTH = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPE));
-                    else if (arrayType == SERIALIZATION_TYPE_TAGGED_OBJECT)
-                        nullTH = TypeHandle(g_pObjectClass);
-                    ReadArray(pCtorAssembly, arrayType, arraySize, nullTH, &pBlob, pBlobEnd, pModule, (BASEARRAYREF*)value);
-                }
-                if (*value == NULL)
-                {
-                    TypeHandle arrayTH;
-                    switch (arrayType)
-                    {
-                        case SERIALIZATION_TYPE_STRING:
-                            arrayTH = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING));
-                            break;
-                        case SERIALIZATION_TYPE_TYPE:
-                            arrayTH = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPE));
-                            break;
-                        case SERIALIZATION_TYPE_TAGGED_OBJECT:
-                            arrayTH = TypeHandle(g_pObjectClass);
-                            break;
-                        default:
-                            if (SERIALIZATION_TYPE_BOOLEAN <= arrayType && arrayType <= SERIALIZATION_TYPE_R8)
-                                arrayTH = TypeHandle(CoreLibBinder::GetElementType((CorElementType)arrayType));
-                    }
-                    if (!arrayTH.IsNull())
-                    {
-                        arrayTH = ClassLoader::LoadArrayTypeThrowing(arrayTH);
-                        *pType = arrayTH.GetManagedClassObject();
-                    }
-                }
-                break;
-            }
-            default:
-                if (SERIALIZATION_TYPE_BOOLEAN <= fieldType && fieldType <= SERIALIZATION_TYPE_R8)
-                    pMTValue = CoreLibBinder::GetElementType((CorElementType)fieldType);
-                else if(fieldType == SERIALIZATION_TYPE_ENUM)
-                    fieldType = (CorSerializationType)pMTValue->GetInternalCorElementType();
-                else
-                    COMPlusThrow(kCustomAttributeFormatException);
-
-                ARG_SLOT val = GetDataFromBlob(pCtorAssembly, fieldType, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated);
-                _ASSERTE(!bObjectCreated);
-
-                *value = pMTValue->Box((void*)ArgSlotEndiannessFixup(&val, pMTValue->GetNumInstanceFieldBytes()));
-        }
-
-        *ppBlobStart = pBlob;
     }
-    HELPER_METHOD_FRAME_END();
+    if (fieldType == SERIALIZATION_TYPE_ENUM || arrayType == SERIALIZATION_TYPE_ENUM)
+    {
+        // get the enum type
+        ReflectClassBaseObject *pEnum =
+            (ReflectClassBaseObject*)OBJECTREFToObject(ArgSlotToObj(GetDataFromBlob(
+                pCtorAssembly, SERIALIZATION_TYPE_TYPE, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated)));
+
+        if (pEnum == NULL)
+            COMPlusThrow(kCustomAttributeFormatException);
+
+        _ASSERTE(bObjectCreated);
+
+        TypeHandle th = pEnum->GetType();
+        _ASSERTE(th.IsEnum());
+
+        pMTValue = th.AsMethodTable();
+        if (fieldType == SERIALIZATION_TYPE_ENUM)
+            // load the enum type to pass it back
+            gc.Type = th.GetManagedClassObject();
+        else
+            nullTH = th;
+    }
+
+    // get the string representing the field/property name
+    gc.Name = ArgSlotToString(GetDataFromBlob(
+        pCtorAssembly, SERIALIZATION_TYPE_STRING, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated));
+    _ASSERTE(bObjectCreated || gc.Name == NULL);
+
+    // create the object and return it
+    switch (fieldType)
+    {
+        case SERIALIZATION_TYPE_TAGGED_OBJECT:
+            gc.Type = g_pObjectClass->GetManagedClassObject();
+            FALLTHROUGH;
+        case SERIALIZATION_TYPE_TYPE:
+        case SERIALIZATION_TYPE_STRING:
+            gc.Value = ArgSlotToObj(GetDataFromBlob(
+                pCtorAssembly, fieldType, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated));
+            _ASSERTE(bObjectCreated || gc.Value == NULL);
+
+            if (gc.Value == NULL)
+            {
+                // load the proper type so that code in managed knows which property to load
+                if (fieldType == SERIALIZATION_TYPE_STRING)
+                    gc.Type = CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING)->GetManagedClassObject();
+                else if (fieldType == SERIALIZATION_TYPE_TYPE)
+                    gc.Type = CoreLibBinder::GetClass(CLASS__TYPE)->GetManagedClassObject();
+            }
+            break;
+        case SERIALIZATION_TYPE_SZARRAY:
+        {
+            gc.Value = NULL;
+            int arraySize = (int)GetDataFromBlob(pCtorAssembly, SERIALIZATION_TYPE_I4, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated);
+
+            if (arraySize != -1)
+            {
+                _ASSERTE(!bObjectCreated);
+                if (arrayType == SERIALIZATION_TYPE_STRING)
+                    nullTH = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING));
+                else if (arrayType == SERIALIZATION_TYPE_TYPE)
+                    nullTH = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPE));
+                else if (arrayType == SERIALIZATION_TYPE_TAGGED_OBJECT)
+                    nullTH = TypeHandle(g_pObjectClass);
+                ReadArray(pCtorAssembly, arrayType, arraySize, nullTH, &pBlob, pBlobEnd, pModule, (BASEARRAYREF*)&gc.Value);
+            }
+            if (gc.Value == NULL)
+            {
+                TypeHandle arrayTH;
+                switch (arrayType)
+                {
+                    case SERIALIZATION_TYPE_STRING:
+                        arrayTH = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING));
+                        break;
+                    case SERIALIZATION_TYPE_TYPE:
+                        arrayTH = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPE));
+                        break;
+                    case SERIALIZATION_TYPE_TAGGED_OBJECT:
+                        arrayTH = TypeHandle(g_pObjectClass);
+                        break;
+                    default:
+                        if (SERIALIZATION_TYPE_BOOLEAN <= arrayType && arrayType <= SERIALIZATION_TYPE_R8)
+                            arrayTH = TypeHandle(CoreLibBinder::GetElementType((CorElementType)arrayType));
+                }
+                if (!arrayTH.IsNull())
+                {
+                    arrayTH = ClassLoader::LoadArrayTypeThrowing(arrayTH);
+                    gc.Type = arrayTH.GetManagedClassObject();
+                }
+            }
+            break;
+        }
+        default:
+            if (SERIALIZATION_TYPE_BOOLEAN <= fieldType && fieldType <= SERIALIZATION_TYPE_R8)
+                pMTValue = CoreLibBinder::GetElementType((CorElementType)fieldType);
+            else if(fieldType == SERIALIZATION_TYPE_ENUM)
+                fieldType = (CorSerializationType)pMTValue->GetInternalCorElementType();
+            else
+                COMPlusThrow(kCustomAttributeFormatException);
+
+            ARG_SLOT val = GetDataFromBlob(pCtorAssembly, fieldType, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated);
+            _ASSERTE(!bObjectCreated);
+
+            gc.Value = pMTValue->Box((void*)ArgSlotEndiannessFixup(&val, pMTValue->GetNumInstanceFieldBytes()));
+    }
+
+    *ppBlobStart = pBlob;
+    pName.Set(gc.Name);
+    pType.Set(gc.Type);
+    pValue.Set(gc.Value);
+
+    GCPROTECT_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 /*static*/
 TypeHandle COMCustomAttribute::GetTypeHandleFromBlob(Assembly *pCtorAssembly,

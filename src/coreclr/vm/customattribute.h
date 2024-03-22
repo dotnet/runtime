@@ -24,53 +24,22 @@ public:
         DomainAssembly* pDomainAssembly);
 };
 
-class COMCustomAttribute
-{
-public:
+extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
+    QCall::ObjectHandleOnStack pAttributedModule,
+    QCall::ObjectHandleOnStack pCaType,
+    QCall::ObjectHandleOnStack pMethod,
+    BYTE** ppBlob,
+    BYTE* pEndBlob,
+    INT32* pcNamedArgs,
+    QCall::ObjectHandleOnStack result);
 
-    // custom attributes utility functions
-    static FCDECL6(LPVOID, CreateCaObject, ReflectModuleBaseObject* pAttributedModuleUNSAFE, ReflectClassBaseObject* pCaTypeUNSAFE, ReflectMethodObject *pMethodUNSAFE, BYTE** ppBlob, BYTE* pEndBlob, INT32* pcNamedArgs);
-    static FCDECL7(void, GetPropertyOrFieldData, ReflectModuleBaseObject *pModuleUNSAFE, BYTE** ppBlobStart, BYTE* pBlobEnd, STRINGREF* pName, CLR_BOOL* pbIsProperty, OBJECTREF* pType, OBJECTREF* value);
-
-private:
-
-    static TypeHandle GetTypeHandleFromBlob(
-        Assembly *pCtorAssembly,
-        CorSerializationType objType,
-        BYTE **pBlob,
-        const BYTE *endBlob,
-        Module *pModule);
-
-    static ARG_SLOT GetDataFromBlob(
-        Assembly *pCtorAssembly,
-        CorSerializationType type,
-        TypeHandle th,
-        BYTE **pBlob,
-        const BYTE *endBlob,
-        Module *pModule,
-        BOOL *bObjectCreated);
-
-    static void ReadArray(
-        Assembly *pCtorAssembly,
-        CorSerializationType arrayType,
-        int size,
-        TypeHandle th,
-        BYTE **pBlob,
-        const BYTE *endBlob,
-        Module *pModule,
-        BASEARRAYREF *pArray);
-
-    static int GetStringSize(
-        BYTE **pBlob,
-        const BYTE *endBlob);
-
-    template < typename T >
-    static BOOL CopyArrayVAL(
-        BASEARRAYREF pArray,
-        int nElements,
-        BYTE **pBlob,
-        const BYTE *endBlob);
-};
-
+extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
+    QCall::ObjectHandleOnStack pModule,
+    BYTE** ppBlobStart,
+    BYTE* pBlobEnd,
+    QCall::ObjectHandleOnStack pName,
+    bool* pbIsProperty,
+    QCall::ObjectHandleOnStack pType,
+    QCall::ObjectHandleOnStack value);
 #endif
 
