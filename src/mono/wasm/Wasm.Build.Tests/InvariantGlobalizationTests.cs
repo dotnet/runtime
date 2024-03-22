@@ -64,14 +64,14 @@ namespace Wasm.Build.Tests
             if (invariantGlobalization == true)
             {
                 string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id);
-                Assert.Contains("Could not create es-ES culture", output);
+                Assert.Contains("Could not create de-DE culture", output);
                 Assert.Contains("CurrentCulture.NativeName: Invariant Language (Invariant Country)", output);
             }
             else
             {
-                string nativeName = IsWorkloadWithMultiThreadingForDefaultFramework ? "es-ES" : "espa\u00F1ol (Espa\u00F1a)"; // MT does not use JS to get the full name
+                string nativeName = IsWorkloadWithMultiThreadingForDefaultFramework ? "de-DE" : "Deutsch (Deutschland)"; // MT does not use JS to get the full name
                 string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id);
-                Assert.Contains($"es-ES: Is Invariant LCID: False, NativeName: {nativeName}", output);
+                Assert.Contains($"de-DE: Is Invariant LCID: False, NativeName: {nativeName}", output);
 
                 // ignoring the last line of the output which prints the current culture
             }
