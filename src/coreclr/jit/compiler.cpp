@@ -2082,9 +2082,9 @@ void Compiler::compDoComponentUnitTestsOnce()
 // compGetJitDefaultFill:
 //
 // Return Value:
-//    An unsigned char value used to initizalize memory allocated by the JIT.
-//    The default value is taken from DOTNET_JitDefaultFill,  if is not set
-//    the value will be 0xdd.  When JitStress is active a random value based
+//    An unsigned char value used to initialize memory allocated by the JIT.
+//    The default value is taken from DOTNET_JitDefaultFill. If it is not set
+//    the value will be 0xdd. When JitStress is active a random value based
 //    on the method hash is used.
 //
 // Notes:
@@ -3593,6 +3593,14 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     const WCHAR* strStressModeNamesNot = JitConfig.JitStressModeNamesNot();
     if ((strStressModeNamesNot != nullptr) &&
         (u16_strstr(strStressModeNamesNot, s_compStressModeNamesW[stressArea]) != nullptr))
+    {
+        return false;
+    }
+
+    // Does user allow using this STRESS_MODE through the command line?
+    const WCHAR* strStressModeNamesAllow = JitConfig.JitStressModeNamesAllow();
+    if ((strStressModeNamesAllow != nullptr) &&
+        (u16_strstr(strStressModeNamesAllow, s_compStressModeNamesW[stressArea]) == nullptr))
     {
         return false;
     }

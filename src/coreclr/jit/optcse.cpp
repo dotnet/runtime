@@ -2190,6 +2190,13 @@ void CSE_HeuristicRandom::ConsiderCandidates()
         JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
         JITDUMP("\n");
 
+#ifdef DEBUG
+        if (m_pCompiler->optConfigDisableCSE2())
+        {
+            continue;
+        }
+#endif
+
         if (dsc->defExcSetPromise == ValueNumStore::NoVN)
         {
             JITDUMP("Abandoned " FMT_CSE " because we had defs with different Exc sets\n", candidate.CseIndex());
@@ -5407,7 +5414,7 @@ bool Compiler::optConfigDisableCSE2()
         {
             if (verbose)
             {
-                printf(" Disabled by jitNoCSE2 > totalCSEcount\n");
+                printf(" Disabled by jitNoCSE2 %d > totalCSEcount %d\n", jitNoCSE2, totalCSEcount);
             }
             return true;
         }
