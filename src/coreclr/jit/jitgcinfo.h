@@ -181,8 +181,8 @@ public:
         unsigned short rpdIsThis : 1;                       // is it the 'this' pointer
         unsigned short rpdCall : 1;                         // is this a true call site?
         unsigned short : 1;                                 // Padding bit, so next two start on a byte boundary
-        unsigned short rpdCallGCrefRegs : CNT_CALLEE_SAVED; // Callee-saved registers containing GC pointers.
-        unsigned short rpdCallByrefRegs : CNT_CALLEE_SAVED; // Callee-saved registers containing byrefs.
+        unsigned short rpdCallGCrefRegs : CNT_CALL_GC_REGS; // Callee-saved and return registers containing GC pointers.
+        unsigned short rpdCallByrefRegs : CNT_CALL_GC_REGS; // Callee-saved and return registers containing byrefs.
 
 #ifndef JIT32_GCENCODER
         bool rpdIsCallInstr()

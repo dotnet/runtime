@@ -363,14 +363,18 @@ GcInfoDecoder::GcInfoDecoder(
     }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    if(flags & (DECODE_GC_LIFETIMES))
+    if(flags & (DECODE_GC_LIFETIMES | DECODE_INTERRUPTIBILITY))
     {
         if(m_NumSafePoints)
         {
-            m_SafePointIndex = FindSafePoint(m_InstructionOffset);
+            // Safepoints are encoded with a -1 adjustment
+            // DECODE_GC_LIFETIMES adjusts the offset accordingly, but DECODE_INTERRUPTIBILITY does not
+            // adjust here
+            UINT32 offset = flags & DECODE_INTERRUPTIBILITY ? m_InstructionOffset - 1 : m_InstructionOffset;
+            m_SafePointIndex = FindSafePoint(offset);
         }
     }
-    else if(flags & (DECODE_FOR_RANGES_CALLBACK | DECODE_INTERRUPTIBILITY))
+    else if(flags & DECODE_FOR_RANGES_CALLBACK)
     {
         // Note that normalization as a code offset can be different than
         //  normalization as code length
@@ -381,7 +385,13 @@ GcInfoDecoder::GcInfoDecoder(
     }
 #endif
 
-    if(!m_IsInterruptible && (flags & DECODE_INTERRUPTIBILITY))
+    // we do not support both DECODE_INTERRUPTIBILITY and DECODE_FOR_RANGES_CALLBACK at the same time
+    // as both will enumerate and consume interruptible ranges.
+    _ASSERTE((flags & (DECODE_INTERRUPTIBILITY | DECODE_FOR_RANGES_CALLBACK)) !=
+        (DECODE_INTERRUPTIBILITY | DECODE_FOR_RANGES_CALLBACK));
+
+    _ASSERTE(!m_IsInterruptible);
+    if(flags & DECODE_INTERRUPTIBILITY)
     {
         EnumerateInterruptibleRanges(&SetIsInterruptibleCB, this);
     }
@@ -391,6 +401,28 @@ bool GcInfoDecoder::IsInterruptible()
 {
     _ASSERTE( m_Flags & DECODE_INTERRUPTIBILITY );
     return m_IsInterruptible;
+}
+
+bool GcInfoDecoder::HasInterruptibleRanges()
+{
+    _ASSERTE(m_Flags & (DECODE_INTERRUPTIBILITY | DECODE_GC_LIFETIMES));
+    return m_NumInterruptibleRanges > 0;
+}
+
+bool GcInfoDecoder::IsSafePoint()
+{
+    _ASSERTE(m_Flags & (DECODE_INTERRUPTIBILITY | DECODE_GC_LIFETIMES));
+    return m_SafePointIndex != m_NumSafePoints;
+}
+
+bool GcInfoDecoder::AreSafePointsInterruptible()
+{
+    return m_Version >= 3;
+}
+
+bool GcInfoDecoder::IsInterruptibleSafePoint()
+{
+    return IsSafePoint() && AreSafePointsInterruptible();
 }
 
 bool GcInfoDecoder::HasMethodDescGenericsInstContext()
@@ -515,7 +547,7 @@ void GcInfoDecoder::EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, 
         offset--;
 #endif
 
-        pCallback(offset, hCallback);
+        pCallback(this, offset, hCallback);
     }
 }
 #endif

@@ -4418,9 +4418,9 @@ void GCInfo::gcMakeRegPtrTable(
             }
         }
     }
-    else if (compiler->isFramePointerUsed()) // GetInterruptible() is false, and we're using EBP as a frame pointer.
+    else if (!compiler->IsFullPtrRegMapRequired()) // GetInterruptible() is false, and we're using EBP as a frame pointer.
     {
-        assert(compiler->IsFullPtrRegMapRequired() == false);
+        // assert(compiler->IsFullPtrRegMapRequired() == false);
 
         // Walk the list of pointer register/argument entries.
 
@@ -4479,8 +4479,8 @@ void GCInfo::gcMakeRegPtrTable(
             assert(call->u1.cdArgMask == 0 && call->cdArgCnt == 0);
 
             // Other than that, we just have to deal with the regmasks.
-            regMaskSmall gcrefRegMask = call->cdGCrefRegs & RBM_CALLEE_SAVED;
-            regMaskSmall byrefRegMask = call->cdByrefRegs & RBM_CALLEE_SAVED;
+            regMaskSmall gcrefRegMask = call->cdGCrefRegs & RBM_CALL_GC_REGS;
+            regMaskSmall byrefRegMask = call->cdByrefRegs & RBM_CALL_GC_REGS;
 
             assert((gcrefRegMask & byrefRegMask) == 0);
 

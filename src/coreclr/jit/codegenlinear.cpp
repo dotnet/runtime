@@ -704,15 +704,16 @@ void CodeGen::genCodeForBBlist()
                 }
                 // Do likewise for blocks that end in DOES_NOT_RETURN calls
                 // that were not caught by the above rules. This ensures that
-                // gc register liveness doesn't change across call instructions
-                // in fully-interruptible mode.
+                // gc register liveness doesn't change to some random state after call instructions
                 else
                 {
                     GenTree* call = block->lastNode();
 
                     if ((call != nullptr) && (call->gtOper == GT_CALL))
                     {
-                        if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0)
+                        if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0 ||
+                            ((call->AsCall()->gtCallType == CT_HELPER) &&
+                             Compiler::s_helperCallProperties.AlwaysThrow(call->AsCall()->GetHelperNum())))
                         {
                             instGen(INS_BREAKPOINT); // This should never get executed
                         }
@@ -756,6 +757,20 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_ALWAYS:
             {
+                GenTree* call = block->lastNode();
+                if ((call != nullptr) && (call->gtOper == GT_CALL))
+                {
+                    if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0 ||
+                        ((call->AsCall()->gtCallType == CT_HELPER) &&
+                         Compiler::s_helperCallProperties.AlwaysThrow(call->AsCall()->GetHelperNum())))
+                    {
+                        // TODO: We should probably never see this in a BBJ_ALWAYS block in a first place.
+                        //       When/if that is fixed, this can be just an assert.
+                        //       For the reasons why we insert a BP, see similar code in "case BBJ_THROW:" above.
+                        instGen(INS_BREAKPOINT); // This should never get executed
+                    }
+                }
+
                 // If this block jumps to the next one, we might be able to skip emitting the jump
                 if (block->CanRemoveJumpToNext(compiler))
                 {
