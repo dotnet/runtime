@@ -323,7 +323,7 @@ export function prepareAssets() {
 
         if (resources.coreAssembly) {
             for (const name in resources.coreAssembly) {
-                addAssemblyAsset(name, resources.coreAssembly[name], false);
+                addAssemblyAsset(name, resources.coreAssembly[name], true);
             }
         }
 
