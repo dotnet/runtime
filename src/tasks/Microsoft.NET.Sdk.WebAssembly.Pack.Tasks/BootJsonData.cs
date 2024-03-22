@@ -153,6 +153,11 @@ public class ResourcesData
     public ResourceHashesByNameDictionary icu { get; set; }
 
     /// <summary>
+    /// "assembly" (.dll) resources needed to start MonoVM
+    /// </summary>
+    public ResourceHashesByNameDictionary coreAssembly { get; set; } = new ResourceHashesByNameDictionary();
+
+    /// <summary>
     /// "assembly" (.dll) resources
     /// </summary>
     public ResourceHashesByNameDictionary assembly { get; set; } = new ResourceHashesByNameDictionary();

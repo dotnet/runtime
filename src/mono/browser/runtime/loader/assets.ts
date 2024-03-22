@@ -307,19 +307,29 @@ export function prepareAssets() {
             convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
         }
 
+        const addAssemblyAsset = (name: string, hash: string | null, isCoreAssembly: boolean) => {
+            const asset: AssetEntryInternal = {
+                name,
+                hash,
+                behavior: "assembly"
+            };
+            if (isCoreAssembly) {
+                asset.isCoreAssembly = true;
+                coreAssemblies.push(asset);
+            } else {
+                assetsToLoad.push(asset);
+            }
+        };
+
+        if (resources.coreAssembly) {
+            for (const name in resources.coreAssembly) {
+                addAssemblyAsset(name, resources.coreAssembly[name], false);
+            }
+        }
+
         if (resources.assembly) {
             for (const name in resources.assembly) {
-                const asset: AssetEntryInternal = {
-                    name,
-                    hash: resources.assembly[name],
-                    behavior: "assembly"
-                };
-                if (isCoreAssembly(asset)) {
-                    asset.isCoreAssembly = true;
-                    coreAssemblies.push(asset);
-                } else {
-                    assetsToLoad.push(asset);
-                }
+                addAssemblyAsset(name, resources.assembly[name], false);
             }
         }
 

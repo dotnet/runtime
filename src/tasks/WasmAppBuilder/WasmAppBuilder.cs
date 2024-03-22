@@ -206,7 +206,10 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                     bytes = File.ReadAllBytes(assemblyPath);
                 }
 
-                bootConfig.resources.assembly[Path.GetFileName(assemblyPath)] = Utils.ComputeIntegrity(bytes);
+                var assemblyName = Path.GetFileName(assemblyPath);
+                var assemblyList = helper.IsCoreAssembly(assemblyName) ? bootConfig.resources.coreAssembly : bootConfig.resources.assembly;
+
+                assemblyList[assemblyName] = Utils.ComputeIntegrity(bytes);
                 if (DebugLevel != 0)
                 {
                     var pdb = Path.ChangeExtension(assembly, ".pdb");

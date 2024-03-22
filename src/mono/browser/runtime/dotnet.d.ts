@@ -245,6 +245,7 @@ type ResourceExtensions = {
 };
 interface ResourceGroups {
     hash?: string;
+    coreAssembly?: ResourceList;
     assembly?: ResourceList;
     lazyAssembly?: ResourceList;
     pdb?: ResourceList;

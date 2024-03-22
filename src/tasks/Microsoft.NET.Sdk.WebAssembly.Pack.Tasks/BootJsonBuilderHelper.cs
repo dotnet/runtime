@@ -12,6 +12,15 @@ namespace Microsoft.NET.Sdk.WebAssembly
 {
     public class BootJsonBuilderHelper(TaskLoggingHelper Log)
     {
+        private static readonly string[] coreAssemblyNames = [
+            "System.Private.CoreLib",
+            "System.Collections",
+            "System.Runtime.InteropServices.JavaScript",
+        ];
+
+        public bool IsCoreAssembly(string fileName)
+            => coreAssemblyNames.Contains(Path.GetFileNameWithoutExtension(fileName));
+
         public void ComputeResourcesHash(BootJsonData bootConfig)
         {
             var sb = new StringBuilder();
