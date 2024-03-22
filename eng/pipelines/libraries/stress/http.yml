@@ -46,6 +46,9 @@ extends:
           fetchDepth: 5
 
         - bash: |
+            # Workaround for https://github.com/microsoft/azure-pipelines-agent/issues/4554. Undo when the image bug is fixed.
+            Remove-Item -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\Microsoft.VCToolsVersion.v143.default.txt"
+
             $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION) && \
             echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
           name: buildRuntime
