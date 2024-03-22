@@ -1,0 +1,5 @@
+# ignore Makefiles; they're all automatically generated
+Makefile
+/switchlevels
+/switchlevels.dSYM/
+/switchlevels.exe

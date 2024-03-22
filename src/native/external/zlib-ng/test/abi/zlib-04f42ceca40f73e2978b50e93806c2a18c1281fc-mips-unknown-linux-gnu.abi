@@ -1,0 +1,1032 @@
+<abi-corpus version='2.0' path='btmp1/libz.so.1.2.13' architecture='elf-mips-r3000-be' soname='libz.so.1'>
+  <elf-needed>
+    <dependency name='libc.so.6'/>
+    <dependency name='ld.so.1'/>
+  </elf-needed>
+  <elf-function-symbols>
+    <elf-symbol name='adler32' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='adler32_combine64' version='ZLIB_1.2.3.3' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='adler32_combine' version='ZLIB_1.2.2' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='adler32_z' version='ZLIB_1.2.9' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='compress' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='compress2' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='compressBound' version='ZLIB_1.2.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='crc32' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='crc32_combine64' version='ZLIB_1.2.3.3' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='crc32_combine' version='ZLIB_1.2.2' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='crc32_combine_gen64' version='ZLIB_1.2.12' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='crc32_combine_gen' version='ZLIB_1.2.12' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='crc32_combine_op' version='ZLIB_1.2.12' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='crc32_z' version='ZLIB_1.2.9' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflateBound' version='ZLIB_1.2.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflateCopy' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflateEnd' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflateGetDictionary' version='ZLIB_1.2.9' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflateInit2_' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflateInit_' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflateParams' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflatePending' version='ZLIB_1.2.5.1' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflatePrime' version='ZLIB_1.2.0.8' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflateReset' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflateResetKeep' version='ZLIB_1.2.5.2' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflateSetDictionary' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflateSetHeader' version='ZLIB_1.2.2' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='deflateTune' version='ZLIB_1.2.2.3' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='get_crc_table' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzbuffer' version='ZLIB_1.2.3.5' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzclearerr' version='ZLIB_1.2.0.2' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzclose' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzclose_r' version='ZLIB_1.2.3.5' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzclose_w' version='ZLIB_1.2.3.5' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzdirect' version='ZLIB_1.2.2.3' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzdopen' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzeof' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzerror' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzflush' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzfread' version='ZLIB_1.2.9' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzfwrite' version='ZLIB_1.2.9' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzgetc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzgetc_' version='ZLIB_1.2.5.2' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzgets' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzoffset64' version='ZLIB_1.2.3.5' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzoffset' version='ZLIB_1.2.3.5' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzopen' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzopen64' version='ZLIB_1.2.3.3' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzprintf' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzputc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzputs' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzread' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzrewind' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzseek' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzseek64' version='ZLIB_1.2.3.3' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzsetparams' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gztell' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gztell64' version='ZLIB_1.2.3.3' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzungetc' version='ZLIB_1.2.0.2' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzvprintf' version='ZLIB_1.2.7.1' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='gzwrite' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateBack' version='ZLIB_1.2.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateBackEnd' version='ZLIB_1.2.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateBackInit_' version='ZLIB_1.2.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateCodesUsed' version='ZLIB_1.2.9' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateCopy' version='ZLIB_1.2.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateEnd' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateGetDictionary' version='ZLIB_1.2.7.1' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateGetHeader' version='ZLIB_1.2.2' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateInit2_' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateInit_' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateMark' version='ZLIB_1.2.3.4' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflatePrime' version='ZLIB_1.2.2.4' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateReset' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateReset2' version='ZLIB_1.2.3.4' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateResetKeep' version='ZLIB_1.2.5.2' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateSetDictionary' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateSync' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateSyncPoint' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateUndermine' version='ZLIB_1.2.3.3' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='inflateValidate' version='ZLIB_1.2.9' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='uncompress' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='uncompress2' version='ZLIB_1.2.9' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zError' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zlibCompileFlags' version='ZLIB_1.2.0.2' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zlibVersion' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+  </elf-function-symbols>
+  <abi-instr address-size='32' path='src.d/adler32.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C99'>
+    <type-decl name='long int' size-in-bits='32' id='type-id-1'/>
+    <type-decl name='long long int' size-in-bits='64' id='type-id-2'/>
+    <type-decl name='unsigned char' size-in-bits='8' id='type-id-3'/>
+    <type-decl name='unsigned int' size-in-bits='32' id='type-id-4'/>
+    <type-decl name='unsigned long int' size-in-bits='32' id='type-id-5'/>
+    <typedef-decl name='z_size_t' type-id='type-id-6' filepath='./zconf.h' line='251' column='1' id='type-id-7'/>
+    <typedef-decl name='Byte' type-id='type-id-3' filepath='./zconf.h' line='397' column='1' id='type-id-8'/>
+    <typedef-decl name='uInt' type-id='type-id-4' filepath='./zconf.h' line='399' column='1' id='type-id-9'/>
+    <typedef-decl name='uLong' type-id='type-id-5' filepath='./zconf.h' line='400' column='1' id='type-id-10'/>
+    <typedef-decl name='Bytef' type-id='type-id-8' filepath='./zconf.h' line='406' column='1' id='type-id-11'/>
+    <typedef-decl name='size_t' type-id='type-id-4' filepath='/usr/lib/gcc-cross/mips-linux-gnu/10/include/stddef.h' line='209' column='1' id='type-id-6'/>
+    <typedef-decl name='__int64_t' type-id='type-id-2' filepath='/usr/mips-linux-gnu/include/bits/types.h' line='47' column='1' id='type-id-12'/>
+    <typedef-decl name='__off_t' type-id='type-id-1' filepath='/usr/mips-linux-gnu/include/bits/types.h' line='152' column='1' id='type-id-13'/>
+    <typedef-decl name='__off64_t' type-id='type-id-12' filepath='/usr/mips-linux-gnu/include/bits/types.h' line='153' column='1' id='type-id-14'/>
+    <typedef-decl name='off_t' type-id='type-id-13' filepath='/usr/mips-linux-gnu/include/sys/types.h' line='85' column='1' id='type-id-15'/>
+    <typedef-decl name='off64_t' type-id='type-id-14' filepath='/usr/mips-linux-gnu/include/sys/types.h' line='92' column='1' id='type-id-16'/>
+    <qualified-type-def type-id='type-id-11' const='yes' id='type-id-17'/>
+    <pointer-type-def type-id='type-id-17' size-in-bits='32' id='type-id-18'/>
+    <function-decl name='adler32_z' mangled-name='adler32_z' filepath='src.d/adler32.c' line='63' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='adler32_z@@ZLIB_1.2.9'>
+      <parameter type-id='type-id-10' name='adler' filepath='src.d/adler32.c' line='64' column='1'/>
+      <parameter type-id='type-id-18' name='buf' filepath='src.d/adler32.c' line='65' column='1'/>
+      <parameter type-id='type-id-7' name='len' filepath='src.d/adler32.c' line='66' column='1'/>
+      <return type-id='type-id-10'/>
+    </function-decl>
+    <function-decl name='adler32' mangled-name='adler32' filepath='src.d/adler32.c' line='134' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='adler32'>
+      <parameter type-id='type-id-10' name='adler' filepath='src.d/adler32.c' line='135' column='1'/>
+      <parameter type-id='type-id-18' name='buf' filepath='src.d/adler32.c' line='136' column='1'/>
+      <parameter type-id='type-id-9' name='len' filepath='src.d/adler32.c' line='137' column='1'/>
+      <return type-id='type-id-10'/>
+    </function-decl>
+    <function-decl name='adler32_combine' mangled-name='adler32_combine' filepath='src.d/adler32.c' line='172' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='adler32_combine@@ZLIB_1.2.2'>
+      <parameter type-id='type-id-10' name='adler1' filepath='src.d/adler32.c' line='173' column='1'/>
+      <parameter type-id='type-id-10' name='adler2' filepath='src.d/adler32.c' line='174' column='1'/>
+      <parameter type-id='type-id-15' name='len2' filepath='src.d/adler32.c' line='175' column='1'/>
+      <return type-id='type-id-10'/>
+    </function-decl>
+    <function-decl name='adler32_combine64' mangled-name='adler32_combine64' filepath='src.d/adler32.c' line='180' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='adler32_combine64@@ZLIB_1.2.3.3'>
+      <parameter type-id='type-id-10' name='adler1' filepath='src.d/adler32.c' line='181' column='1'/>
+      <parameter type-id='type-id-10' name='adler2' filepath='src.d/adler32.c' line='182' column='1'/>
+      <parameter type-id='type-id-16' name='len2' filepath='src.d/adler32.c' line='183' column='1'/>
+      <return type-id='type-id-10'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='src.d/compress.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C99'>
+    <typedef-decl name='uLongf' type-id='type-id-10' filepath='./zconf.h' line='411' column='1' id='type-id-19'/>
+    <pointer-type-def type-id='type-id-19' size-in-bits='32' id='type-id-20'/>
+    <function-decl name='compress2' mangled-name='compress2' filepath='src.d/compress.c' line='22' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='compress2'>
+      <parameter type-id='type-id-21' name='dest' filepath='src.d/compress.c' line='23' column='1'/>
+      <parameter type-id='type-id-20' name='destLen' filepath='src.d/compress.c' line='24' column='1'/>
+      <parameter type-id='type-id-18' name='source' filepath='src.d/compress.c' line='25' column='1'/>
+      <parameter type-id='type-id-10' name='sourceLen' filepath='src.d/compress.c' line='26' column='1'/>
+      <parameter type-id='type-id-22' name='level' filepath='src.d/compress.c' line='27' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='compress' mangled-name='compress' filepath='src.d/compress.c' line='68' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='compress'>
+      <parameter type-id='type-id-21' name='dest' filepath='src.d/compress.c' line='69' column='1'/>
+      <parameter type-id='type-id-20' name='destLen' filepath='src.d/compress.c' line='70' column='1'/>
+      <parameter type-id='type-id-18' name='source' filepath='src.d/compress.c' line='71' column='1'/>
+      <parameter type-id='type-id-10' name='sourceLen' filepath='src.d/compress.c' line='72' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='compressBound' mangled-name='compressBound' filepath='src.d/compress.c' line='81' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='compressBound@@ZLIB_1.2.0'>
+      <parameter type-id='type-id-10' name='sourceLen' filepath='src.d/compress.c' line='82' column='1'/>
+      <return type-id='type-id-10'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='src.d/crc32.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C99'>
+    <typedef-decl name='z_crc_t' type-id='type-id-4' filepath='./zconf.h' line='435' column='1' id='type-id-23'/>
+    <qualified-type-def type-id='type-id-3' const='yes' id='type-id-24'/>
+    <pointer-type-def type-id='type-id-24' size-in-bits='32' id='type-id-25'/>
+    <qualified-type-def type-id='type-id-23' const='yes' id='type-id-26'/>
+    <pointer-type-def type-id='type-id-26' size-in-bits='32' id='type-id-27'/>
+    <function-decl name='get_crc_table' mangled-name='get_crc_table' filepath='src.d/crc32.c' line='595' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='get_crc_table'>
+      <return type-id='type-id-27'/>
+    </function-decl>
+    <function-decl name='crc32_z' mangled-name='crc32_z' filepath='src.d/crc32.c' line='748' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='crc32_z@@ZLIB_1.2.9'>
+      <parameter type-id='type-id-5' name='crc' filepath='src.d/crc32.c' line='749' column='1'/>
+      <parameter type-id='type-id-25' name='buf' filepath='src.d/crc32.c' line='750' column='1'/>
+      <parameter type-id='type-id-7' name='len' filepath='src.d/crc32.c' line='751' column='1'/>
+      <return type-id='type-id-10'/>
+    </function-decl>
+    <function-decl name='crc32' mangled-name='crc32' filepath='src.d/crc32.c' line='1072' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='crc32'>
+      <parameter type-id='type-id-5' name='crc' filepath='src.d/crc32.c' line='1073' column='1'/>
+      <parameter type-id='type-id-25' name='buf' filepath='src.d/crc32.c' line='1074' column='1'/>
+      <parameter type-id='type-id-9' name='len' filepath='src.d/crc32.c' line='1075' column='1'/>
+      <return type-id='type-id-10'/>
+    </function-decl>
+    <function-decl name='crc32_combine64' mangled-name='crc32_combine64' filepath='src.d/crc32.c' line='1081' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='crc32_combine64@@ZLIB_1.2.3.3'>
+      <parameter type-id='type-id-10' name='crc1' filepath='src.d/crc32.c' line='1082' column='1'/>
+      <parameter type-id='type-id-10' name='crc2' filepath='src.d/crc32.c' line='1083' column='1'/>
+      <parameter type-id='type-id-16' name='len2' filepath='src.d/crc32.c' line='1084' column='1'/>
+      <return type-id='type-id-10'/>
+    </function-decl>
+    <function-decl name='crc32_combine' mangled-name='crc32_combine' filepath='src.d/crc32.c' line='1093' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='crc32_combine@@ZLIB_1.2.2'>
+      <parameter type-id='type-id-10' name='crc1' filepath='src.d/crc32.c' line='1094' column='1'/>
+      <parameter type-id='type-id-10' name='crc2' filepath='src.d/crc32.c' line='1095' column='1'/>
+      <parameter type-id='type-id-15' name='len2' filepath='src.d/crc32.c' line='1096' column='1'/>
+      <return type-id='type-id-10'/>
+    </function-decl>
+    <function-decl name='crc32_combine_gen64' mangled-name='crc32_combine_gen64' filepath='src.d/crc32.c' line='1102' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='crc32_combine_gen64@@ZLIB_1.2.12'>
+      <parameter type-id='type-id-16' name='len2' filepath='src.d/crc32.c' line='1103' column='1'/>
+      <return type-id='type-id-10'/>
+    </function-decl>
+    <function-decl name='crc32_combine_gen' mangled-name='crc32_combine_gen' filepath='src.d/crc32.c' line='1112' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='crc32_combine_gen@@ZLIB_1.2.12'>
+      <parameter type-id='type-id-15' name='len2' filepath='src.d/crc32.c' line='1113' column='1'/>
+      <return type-id='type-id-10'/>
+    </function-decl>
+    <function-decl name='crc32_combine_op' mangled-name='crc32_combine_op' filepath='src.d/crc32.c' line='1119' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='crc32_combine_op@@ZLIB_1.2.12'>
+      <parameter type-id='type-id-10' name='crc1' filepath='src.d/crc32.c' line='1120' column='1'/>
+      <parameter type-id='type-id-10' name='crc2' filepath='src.d/crc32.c' line='1121' column='1'/>
+      <parameter type-id='type-id-10' name='op' filepath='src.d/crc32.c' line='1122' column='1'/>
+      <return type-id='type-id-10'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='src.d/deflate.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C99'>
+    <type-decl name='char' size-in-bits='8' id='type-id-28'/>
+    <class-decl name='static_tree_desc_s' is-struct='yes' visibility='default' is-declaration-only='yes' id='type-id-29'/>
+    <array-type-def dimensions='1' type-id='type-id-30' size-in-bits='1248' id='type-id-31'>
+      <subrange length='39' type-id='type-id-4' id='type-id-32'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-30' size-in-bits='18336' id='type-id-33'>
+      <subrange length='573' type-id='type-id-4' id='type-id-34'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-30' size-in-bits='1952' id='type-id-35'>
+      <subrange length='61' type-id='type-id-4' id='type-id-36'/>
+    </array-type-def>
+    <type-decl name='int' size-in-bits='32' id='type-id-22'/>
+    <array-type-def dimensions='1' type-id='type-id-22' size-in-bits='18336' id='type-id-37'>
+      <subrange length='573' type-id='type-id-4' id='type-id-34'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-38' size-in-bits='4584' id='type-id-39'>
+      <subrange length='573' type-id='type-id-4' id='type-id-34'/>
+    </array-type-def>
+    <type-decl name='unsigned short int' size-in-bits='16' id='type-id-40'/>
+    <array-type-def dimensions='1' type-id='type-id-41' size-in-bits='256' id='type-id-42'>
+      <subrange length='16' type-id='type-id-4' id='type-id-43'/>
+    </array-type-def>
+    <type-decl name='void' id='type-id-44'/>
+    <typedef-decl name='voidpf' type-id='type-id-45' filepath='./zconf.h' line='415' column='1' id='type-id-46'/>
+    <class-decl name='ct_data_s' size-in-bits='32' is-struct='yes' visibility='default' filepath='src.d/deflate.h' line='68' column='1' id='type-id-30'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='fc' type-id='type-id-47' visibility='default' filepath='src.d/deflate.h' line='72' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='16'>
+        <var-decl name='dl' type-id='type-id-48' visibility='default' filepath='src.d/deflate.h' line='76' column='1'/>
+      </data-member>
+    </class-decl>
+    <union-decl name='__anonymous_union__' size-in-bits='16' is-anonymous='yes' visibility='default' filepath='src.d/deflate.h' line='69' column='1' id='type-id-47'>
+      <data-member access='public'>
+        <var-decl name='freq' type-id='type-id-41' visibility='default' filepath='src.d/deflate.h' line='70' column='1'/>
+      </data-member>
+      <data-member access='public'>
+        <var-decl name='code' type-id='type-id-41' visibility='default' filepath='src.d/deflate.h' line='71' column='1'/>
+      </data-member>
+    </union-decl>
+    <union-decl name='__anonymous_union__1' size-in-bits='16' is-anonymous='yes' visibility='default' filepath='src.d/deflate.h' line='73' column='1' id='type-id-48'>
+      <data-member access='public'>
+        <var-decl name='dad' type-id='type-id-41' visibility='default' filepath='src.d/deflate.h' line='74' column='1'/>
+      </data-member>
+      <data-member access='public'>
+        <var-decl name='len' type-id='type-id-41' visibility='default' filepath='src.d/deflate.h' line='75' column='1'/>
+      </data-member>
+    </union-decl>
+    <typedef-decl name='ct_data' type-id='type-id-30' filepath='src.d/deflate.h' line='77' column='1' id='type-id-49'/>
+    <typedef-decl name='static_tree_desc' type-id='type-id-29' filepath='src.d/deflate.h' line='84' column='1' id='type-id-50'/>
+    <class-decl name='tree_desc_s' size-in-bits='96' is-struct='yes' visibility='default' filepath='src.d/deflate.h' line='86' column='1' id='type-id-51'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='dyn_tree' type-id='type-id-52' visibility='default' filepath='src.d/deflate.h' line='87' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='32'>
+        <var-decl name='max_code' type-id='type-id-22' visibility='default' filepath='src.d/deflate.h' line='88' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='64'>
+        <var-decl name='stat_desc' type-id='type-id-53' visibility='default' filepath='src.d/deflate.h' line='89' column='1'/>
+      </data-member>
+    </class-decl>
+    <typedef-decl name='Pos' type-id='type-id-41' filepath='src.d/deflate.h' line='92' column='1' id='type-id-54'/>
+    <typedef-decl name='Posf' type-id='type-id-54' filepath='src.d/deflate.h' line='93' column='1' id='type-id-55'/>
+    <typedef-decl name='IPos' type-id='type-id-4' filepath='src.d/deflate.h' line='94' column='1' id='type-id-56'/>
+    <class-decl name='internal_state' size-in-bits='46624' is-struct='yes' visibility='default' filepath='src.d/deflate.h' line='100' column='1' id='type-id-57'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='strm' type-id='type-id-58' visibility='default' filepath='src.d/deflate.h' line='101' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='32'>
+        <var-decl name='status' type-id='type-id-22' visibility='default' filepath='src.d/deflate.h' line='102' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='64'>
+        <var-decl name='pending_buf' type-id='type-id-21' visibility='default' filepath='src.d/deflate.h' line='103' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='96'>
+        <var-decl name='pending_buf_size' type-id='type-id-59' visibility='default' filepath='src.d/deflate.h' line='104' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='128'>
+        <var-decl name='pending_out' type-id='type-id-21' visibility='default' filepath='src.d/deflate.h' line='105' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='160'>
+        <var-decl name='pending' type-id='type-id-59' visibility='default' filepath='src.d/deflate.h' line='106' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='192'>
+        <var-decl name='wrap' type-id='type-id-22' visibility='default' filepath='src.d/deflate.h' line='107' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='224'>
+        <var-decl name='gzhead' type-id='type-id-60' visibility='default' filepath='src.d/deflate.h' line='108' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='256'>
+        <var-decl name='gzindex' type-id='type-id-59' visibility='default' filepath='src.d/deflate.h' line='109' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='288'>
+        <var-decl name='method' type-id='type-id-8' visibility='default' filepath='src.d/deflate.h' line='110' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='320'>
+        <var-decl name='last_flush' type-id='type-id-22' visibility='default' filepath='src.d/deflate.h' line='111' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='352'>
+        <var-decl name='w_size' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='115' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='384'>
+        <var-decl name='w_bits' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='116' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='416'>
+        <var-decl name='w_mask' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='117' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='448'>
+        <var-decl name='window' type-id='type-id-21' visibility='default' filepath='src.d/deflate.h' line='119' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='480'>
+        <var-decl name='window_size' type-id='type-id-59' visibility='default' filepath='src.d/deflate.h' line='129' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='512'>
+        <var-decl name='prev' type-id='type-id-61' visibility='default' filepath='src.d/deflate.h' line='134' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='544'>
+        <var-decl name='head' type-id='type-id-61' visibility='default' filepath='src.d/deflate.h' line='140' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='576'>
+        <var-decl name='ins_h' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='142' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='608'>
+        <var-decl name='hash_size' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='143' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='640'>
+        <var-decl name='hash_bits' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='144' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='672'>
+        <var-decl name='hash_mask' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='145' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='704'>
+        <var-decl name='hash_shift' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='147' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='736'>
+        <var-decl name='block_start' type-id='type-id-1' visibility='default' filepath='src.d/deflate.h' line='154' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='768'>
+        <var-decl name='match_length' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='159' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='800'>
+        <var-decl name='prev_match' type-id='type-id-56' visibility='default' filepath='src.d/deflate.h' line='160' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='832'>
+        <var-decl name='match_available' type-id='type-id-22' visibility='default' filepath='src.d/deflate.h' line='161' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='864'>
+        <var-decl name='strstart' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='162' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='896'>
+        <var-decl name='match_start' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='163' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='928'>
+        <var-decl name='lookahead' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='164' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='960'>
+        <var-decl name='prev_length' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='166' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='992'>
+        <var-decl name='max_chain_length' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='171' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1024'>
+        <var-decl name='max_lazy_match' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='177' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1056'>
+        <var-decl name='level' type-id='type-id-22' visibility='default' filepath='src.d/deflate.h' line='188' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1088'>
+        <var-decl name='strategy' type-id='type-id-22' visibility='default' filepath='src.d/deflate.h' line='189' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1120'>
+        <var-decl name='good_match' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='191' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1152'>
+        <var-decl name='nice_match' type-id='type-id-22' visibility='default' filepath='src.d/deflate.h' line='194' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1184'>
+        <var-decl name='dyn_ltree' type-id='type-id-33' visibility='default' filepath='src.d/deflate.h' line='198' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='19520'>
+        <var-decl name='dyn_dtree' type-id='type-id-35' visibility='default' filepath='src.d/deflate.h' line='199' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='21472'>
+        <var-decl name='bl_tree' type-id='type-id-31' visibility='default' filepath='src.d/deflate.h' line='200' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='22720'>
+        <var-decl name='l_desc' type-id='type-id-51' visibility='default' filepath='src.d/deflate.h' line='202' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='22816'>
+        <var-decl name='d_desc' type-id='type-id-51' visibility='default' filepath='src.d/deflate.h' line='203' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='22912'>
+        <var-decl name='bl_desc' type-id='type-id-51' visibility='default' filepath='src.d/deflate.h' line='204' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='23008'>
+        <var-decl name='bl_count' type-id='type-id-42' visibility='default' filepath='src.d/deflate.h' line='206' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='23264'>
+        <var-decl name='heap' type-id='type-id-37' visibility='default' filepath='src.d/deflate.h' line='209' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='41600'>
+        <var-decl name='heap_len' type-id='type-id-22' visibility='default' filepath='src.d/deflate.h' line='210' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='41632'>
+        <var-decl name='heap_max' type-id='type-id-22' visibility='default' filepath='src.d/deflate.h' line='211' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='41664'>
+        <var-decl name='depth' type-id='type-id-39' visibility='default' filepath='src.d/deflate.h' line='216' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='46272'>
+        <var-decl name='sym_buf' type-id='type-id-62' visibility='default' filepath='src.d/deflate.h' line='220' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='46304'>
+        <var-decl name='lit_bufsize' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='222' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='46336'>
+        <var-decl name='sym_next' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='242' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='46368'>
+        <var-decl name='sym_end' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='243' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='46400'>
+        <var-decl name='opt_len' type-id='type-id-59' visibility='default' filepath='src.d/deflate.h' line='245' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='46432'>
+        <var-decl name='static_len' type-id='type-id-59' visibility='default' filepath='src.d/deflate.h' line='246' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='46464'>
+        <var-decl name='matches' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='247' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='46496'>
+        <var-decl name='insert' type-id='type-id-9' visibility='default' filepath='src.d/deflate.h' line='248' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='46528'>
+        <var-decl name='bi_buf' type-id='type-id-41' visibility='default' filepath='src.d/deflate.h' line='255' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='46560'>
+        <var-decl name='bi_valid' type-id='type-id-22' visibility='default' filepath='src.d/deflate.h' line='259' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='46592'>
+        <var-decl name='high_water' type-id='type-id-59' visibility='default' filepath='src.d/deflate.h' line='264' column='1'/>
+      </data-member>
+    </class-decl>
+    <typedef-decl name='alloc_func' type-id='type-id-63' filepath='src.d/zlib.h' line='81' column='1' id='type-id-64'/>
+    <typedef-decl name='free_func' type-id='type-id-65' filepath='src.d/zlib.h' line='82' column='1' id='type-id-66'/>
+    <class-decl name='z_stream_s' size-in-bits='448' is-struct='yes' visibility='default' filepath='src.d/zlib.h' line='86' column='1' id='type-id-67'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='next_in' type-id='type-id-21' visibility='default' filepath='src.d/zlib.h' line='87' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='32'>
+        <var-decl name='avail_in' type-id='type-id-9' visibility='default' filepath='src.d/zlib.h' line='88' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='64'>
+        <var-decl name='total_in' type-id='type-id-10' visibility='default' filepath='src.d/zlib.h' line='89' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='96'>
+        <var-decl name='next_out' type-id='type-id-21' visibility='default' filepath='src.d/zlib.h' line='91' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='128'>
+        <var-decl name='avail_out' type-id='type-id-9' visibility='default' filepath='src.d/zlib.h' line='92' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='160'>
+        <var-decl name='total_out' type-id='type-id-10' visibility='default' filepath='src.d/zlib.h' line='93' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='192'>
+        <var-decl name='msg' type-id='type-id-68' visibility='default' filepath='src.d/zlib.h' line='95' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='224'>
+        <var-decl name='state' type-id='type-id-69' visibility='default' filepath='src.d/zlib.h' line='96' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='256'>
+        <var-decl name='zalloc' type-id='type-id-64' visibility='default' filepath='src.d/zlib.h' line='98' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='288'>
+        <var-decl name='zfree' type-id='type-id-66' visibility='default' filepath='src.d/zlib.h' line='99' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='320'>
+        <var-decl name='opaque' type-id='type-id-46' visibility='default' filepath='src.d/zlib.h' line='100' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='352'>
+        <var-decl name='data_type' type-id='type-id-22' visibility='default' filepath='src.d/zlib.h' line='102' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='384'>
+        <var-decl name='adler' type-id='type-id-10' visibility='default' filepath='src.d/zlib.h' line='104' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='416'>
+        <var-decl name='reserved' type-id='type-id-10' visibility='default' filepath='src.d/zlib.h' line='105' column='1'/>
+      </data-member>
+    </class-decl>
+    <typedef-decl name='z_stream' type-id='type-id-67' filepath='src.d/zlib.h' line='106' column='1' id='type-id-70'/>
+    <typedef-decl name='z_streamp' type-id='type-id-71' filepath='src.d/zlib.h' line='108' column='1' id='type-id-58'/>
+    <class-decl name='gz_header_s' size-in-bits='416' is-struct='yes' visibility='default' filepath='src.d/zlib.h' line='114' column='1' id='type-id-72'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='text' type-id='type-id-22' visibility='default' filepath='src.d/zlib.h' line='115' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='32'>
+        <var-decl name='time' type-id='type-id-10' visibility='default' filepath='src.d/zlib.h' line='116' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='64'>
+        <var-decl name='xflags' type-id='type-id-22' visibility='default' filepath='src.d/zlib.h' line='117' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='96'>
+        <var-decl name='os' type-id='type-id-22' visibility='default' filepath='src.d/zlib.h' line='118' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='128'>
+        <var-decl name='extra' type-id='type-id-21' visibility='default' filepath='src.d/zlib.h' line='119' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='160'>
+        <var-decl name='extra_len' type-id='type-id-9' visibility='default' filepath='src.d/zlib.h' line='120' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='192'>
+        <var-decl name='extra_max' type-id='type-id-9' visibility='default' filepath='src.d/zlib.h' line='121' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='224'>
+        <var-decl name='name' type-id='type-id-21' visibility='default' filepath='src.d/zlib.h' line='122' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='256'>
+        <var-decl name='name_max' type-id='type-id-9' visibility='default' filepath='src.d/zlib.h' line='123' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='288'>
+        <var-decl name='comment' type-id='type-id-21' visibility='default' filepath='src.d/zlib.h' line='124' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='320'>
+        <var-decl name='comm_max' type-id='type-id-9' visibility='default' filepath='src.d/zlib.h' line='125' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='352'>
+        <var-decl name='hcrc' type-id='type-id-22' visibility='default' filepath='src.d/zlib.h' line='126' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='384'>
+        <var-decl name='done' type-id='type-id-22' visibility='default' filepath='src.d/zlib.h' line='127' column='1'/>
+      </data-member>
+    </class-decl>
+    <typedef-decl name='gz_header' type-id='type-id-72' filepath='src.d/zlib.h' line='129' column='1' id='type-id-73'/>
+    <typedef-decl name='gz_headerp' type-id='type-id-74' filepath='src.d/zlib.h' line='131' column='1' id='type-id-60'/>
+    <typedef-decl name='uch' type-id='type-id-3' filepath='src.d/zutil.h' line='39' column='1' id='type-id-38'/>
+    <typedef-decl name='uchf' type-id='type-id-38' filepath='src.d/zutil.h' line='40' column='1' id='type-id-75'/>
+    <typedef-decl name='ush' type-id='type-id-40' filepath='src.d/zutil.h' line='41' column='1' id='type-id-41'/>
+    <typedef-decl name='ulg' type-id='type-id-5' filepath='src.d/zutil.h' line='43' column='1' id='type-id-59'/>
+    <pointer-type-def type-id='type-id-11' size-in-bits='32' id='type-id-21'/>
+    <pointer-type-def type-id='type-id-55' size-in-bits='32' id='type-id-61'/>
+    <pointer-type-def type-id='type-id-28' size-in-bits='32' id='type-id-68'/>
+    <qualified-type-def type-id='type-id-28' const='yes' id='type-id-76'/>
+    <pointer-type-def type-id='type-id-76' size-in-bits='32' id='type-id-77'/>
+    <qualified-type-def type-id='type-id-50' const='yes' id='type-id-78'/>
+    <pointer-type-def type-id='type-id-78' size-in-bits='32' id='type-id-53'/>
+    <pointer-type-def type-id='type-id-49' size-in-bits='32' id='type-id-52'/>
+    <pointer-type-def type-id='type-id-73' size-in-bits='32' id='type-id-74'/>
+    <pointer-type-def type-id='type-id-22' size-in-bits='32' id='type-id-79'/>
+    <pointer-type-def type-id='type-id-57' size-in-bits='32' id='type-id-69'/>
+    <pointer-type-def type-id='type-id-80' size-in-bits='32' id='type-id-63'/>
+    <pointer-type-def type-id='type-id-9' size-in-bits='32' id='type-id-81'/>
+    <pointer-type-def type-id='type-id-75' size-in-bits='32' id='type-id-62'/>
+    <pointer-type-def type-id='type-id-4' size-in-bits='32' id='type-id-82'/>
+    <pointer-type-def type-id='type-id-83' size-in-bits='32' id='type-id-65'/>
+    <pointer-type-def type-id='type-id-44' size-in-bits='32' id='type-id-45'/>
+    <pointer-type-def type-id='type-id-70' size-in-bits='32' id='type-id-71'/>
+    <class-decl name='static_tree_desc_s' is-struct='yes' visibility='default' is-declaration-only='yes' id='type-id-29'/>
+    <function-decl name='deflateInit_' mangled-name='deflateInit_' filepath='src.d/deflate.c' line='225' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflateInit_'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/deflate.c' line='226' column='1'/>
+      <parameter type-id='type-id-22' name='level' filepath='src.d/deflate.c' line='227' column='1'/>
+      <parameter type-id='type-id-77' name='version' filepath='src.d/deflate.c' line='228' column='1'/>
+      <parameter type-id='type-id-22' name='stream_size' filepath='src.d/deflate.c' line='229' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='deflateInit2_' mangled-name='deflateInit2_' filepath='src.d/deflate.c' line='237' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflateInit2_'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/deflate.c' line='239' column='1'/>
+      <parameter type-id='type-id-22' name='level' filepath='src.d/deflate.c' line='240' column='1'/>
+      <parameter type-id='type-id-22' name='method' filepath='src.d/deflate.c' line='241' column='1'/>
+      <parameter type-id='type-id-22' name='windowBits' filepath='src.d/deflate.c' line='242' column='1'/>
+      <parameter type-id='type-id-22' name='memLevel' filepath='src.d/deflate.c' line='243' column='1'/>
+      <parameter type-id='type-id-22' name='strategy' filepath='src.d/deflate.c' line='244' column='1'/>
+      <parameter type-id='type-id-77' name='version' filepath='src.d/deflate.c' line='245' column='1'/>
+      <parameter type-id='type-id-22' name='stream_size' filepath='src.d/deflate.c' line='246' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='deflateSetDictionary' mangled-name='deflateSetDictionary' filepath='src.d/deflate.c' line='412' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflateSetDictionary'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/deflate.c' line='413' column='1'/>
+      <parameter type-id='type-id-18' name='dictionary' filepath='src.d/deflate.c' line='414' column='1'/>
+      <parameter type-id='type-id-9' name='dictLength' filepath='src.d/deflate.c' line='415' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='deflateGetDictionary' mangled-name='deflateGetDictionary' filepath='src.d/deflate.c' line='481' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflateGetDictionary@@ZLIB_1.2.9'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/deflate.c' line='482' column='1'/>
+      <parameter type-id='type-id-21' name='dictionary' filepath='src.d/deflate.c' line='483' column='1'/>
+      <parameter type-id='type-id-81' name='dictLength' filepath='src.d/deflate.c' line='484' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='deflateResetKeep' mangled-name='deflateResetKeep' filepath='src.d/deflate.c' line='503' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflateResetKeep@@ZLIB_1.2.5.2'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/deflate.c' line='504' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='deflateReset' mangled-name='deflateReset' filepath='src.d/deflate.c' line='541' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflateReset'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/deflate.c' line='542' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='deflateSetHeader' mangled-name='deflateSetHeader' filepath='src.d/deflate.c' line='553' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflateSetHeader@@ZLIB_1.2.2'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/deflate.c' line='554' column='1'/>
+      <parameter type-id='type-id-60' name='head' filepath='src.d/deflate.c' line='555' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='deflatePending' mangled-name='deflatePending' filepath='src.d/deflate.c' line='564' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflatePending@@ZLIB_1.2.5.1'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/deflate.c' line='567' column='1'/>
+      <parameter type-id='type-id-82' name='pending' filepath='src.d/deflate.c' line='565' column='1'/>
+      <parameter type-id='type-id-79' name='bits' filepath='src.d/deflate.c' line='566' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='deflatePrime' mangled-name='deflatePrime' filepath='src.d/deflate.c' line='578' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflatePrime@@ZLIB_1.2.0.8'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/deflate.c' line='579' column='1'/>
+      <parameter type-id='type-id-22' name='bits' filepath='src.d/deflate.c' line='580' column='1'/>
+      <parameter type-id='type-id-22' name='value' filepath='src.d/deflate.c' line='581' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='deflateParams' mangled-name='deflateParams' filepath='src.d/deflate.c' line='605' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflateParams'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/deflate.c' line='606' column='1'/>
+      <parameter type-id='type-id-22' name='level' filepath='src.d/deflate.c' line='607' column='1'/>
+      <parameter type-id='type-id-22' name='strategy' filepath='src.d/deflate.c' line='608' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='deflateTune' mangled-name='deflateTune' filepath='src.d/deflate.c' line='654' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflateTune@@ZLIB_1.2.2.3'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/deflate.c' line='655' column='1'/>
+      <parameter type-id='type-id-22' name='good_length' filepath='src.d/deflate.c' line='656' column='1'/>
+      <parameter type-id='type-id-22' name='max_lazy' filepath='src.d/deflate.c' line='657' column='1'/>
+      <parameter type-id='type-id-22' name='nice_length' filepath='src.d/deflate.c' line='658' column='1'/>
+      <parameter type-id='type-id-22' name='max_chain' filepath='src.d/deflate.c' line='659' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='deflateBound' mangled-name='deflateBound' filepath='src.d/deflate.c' line='696' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflateBound@@ZLIB_1.2.0'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/deflate.c' line='697' column='1'/>
+      <parameter type-id='type-id-10' name='sourceLen' filepath='src.d/deflate.c' line='698' column='1'/>
+      <return type-id='type-id-10'/>
+    </function-decl>
+    <function-decl name='deflate' mangled-name='deflate' filepath='src.d/deflate.c' line='815' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflate'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/deflate.c' line='816' column='1'/>
+      <parameter type-id='type-id-22' name='flush' filepath='src.d/deflate.c' line='817' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='deflateEnd' mangled-name='deflateEnd' filepath='src.d/deflate.c' line='1130' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflateEnd'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/deflate.c' line='1131' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='deflateCopy' mangled-name='deflateCopy' filepath='src.d/deflate.c' line='1156' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='deflateCopy'>
+      <parameter type-id='type-id-58' name='dest' filepath='src.d/deflate.c' line='1157' column='1'/>
+      <parameter type-id='type-id-58' name='source' filepath='src.d/deflate.c' line='1158' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-type size-in-bits='32' id='type-id-80'>
+      <parameter type-id='type-id-46'/>
+      <parameter type-id='type-id-9'/>
+      <parameter type-id='type-id-9'/>
+      <return type-id='type-id-46'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-83'>
+      <parameter type-id='type-id-46'/>
+      <parameter type-id='type-id-46'/>
+      <return type-id='type-id-44'/>
+    </function-type>
+  </abi-instr>
+  <abi-instr address-size='32' path='src.d/gzclose.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C99'>
+    <typedef-decl name='gzFile' type-id='type-id-84' filepath='src.d/zlib.h' line='1302' column='1' id='type-id-85'/>
+    <class-decl name='gzFile_s' size-in-bits='128' is-struct='yes' visibility='default' filepath='src.d/zlib.h' line='1834' column='1' id='type-id-86'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='have' type-id='type-id-4' visibility='default' filepath='src.d/zlib.h' line='1835' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='32'>
+        <var-decl name='next' type-id='type-id-87' visibility='default' filepath='src.d/zlib.h' line='1836' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='64'>
+        <var-decl name='pos' type-id='type-id-16' visibility='default' filepath='src.d/zlib.h' line='1837' column='1'/>
+      </data-member>
+    </class-decl>
+    <pointer-type-def type-id='type-id-86' size-in-bits='32' id='type-id-84'/>
+    <function-decl name='gzclose' mangled-name='gzclose' filepath='src.d/gzclose.c' line='11' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzclose'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzclose.c' line='12' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='src.d/gzlib.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C99'>
+    <function-decl name='gzopen' mangled-name='gzopen' filepath='src.d/gzlib.c' line='272' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzopen'>
+      <parameter type-id='type-id-77' name='path' filepath='src.d/gzlib.c' line='273' column='1'/>
+      <parameter type-id='type-id-77' name='mode' filepath='src.d/gzlib.c' line='274' column='1'/>
+      <return type-id='type-id-85'/>
+    </function-decl>
+    <function-decl name='gzopen64' mangled-name='gzopen64' filepath='src.d/gzlib.c' line='280' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzopen64@@ZLIB_1.2.3.3'>
+      <parameter type-id='type-id-77' name='path' filepath='src.d/gzlib.c' line='281' column='1'/>
+      <parameter type-id='type-id-77' name='mode' filepath='src.d/gzlib.c' line='282' column='1'/>
+      <return type-id='type-id-85'/>
+    </function-decl>
+    <function-decl name='gzdopen' mangled-name='gzdopen' filepath='src.d/gzlib.c' line='288' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzdopen'>
+      <parameter type-id='type-id-22' name='fd' filepath='src.d/gzlib.c' line='289' column='1'/>
+      <parameter type-id='type-id-77' name='mode' filepath='src.d/gzlib.c' line='290' column='1'/>
+      <return type-id='type-id-85'/>
+    </function-decl>
+    <function-decl name='gzbuffer' mangled-name='gzbuffer' filepath='src.d/gzlib.c' line='318' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzbuffer@@ZLIB_1.2.3.5'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzlib.c' line='319' column='1'/>
+      <parameter type-id='type-id-4' name='size' filepath='src.d/gzlib.c' line='320' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzrewind' mangled-name='gzrewind' filepath='src.d/gzlib.c' line='345' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzrewind'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzlib.c' line='346' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzseek64' mangled-name='gzseek64' filepath='src.d/gzlib.c' line='368' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzseek64@@ZLIB_1.2.3.3'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzlib.c' line='369' column='1'/>
+      <parameter type-id='type-id-16' name='offset' filepath='src.d/gzlib.c' line='370' column='1'/>
+      <parameter type-id='type-id-22' name='whence' filepath='src.d/gzlib.c' line='371' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='gzseek' mangled-name='gzseek' filepath='src.d/gzlib.c' line='445' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzseek'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzlib.c' line='446' column='1'/>
+      <parameter type-id='type-id-15' name='offset' filepath='src.d/gzlib.c' line='447' column='1'/>
+      <parameter type-id='type-id-22' name='whence' filepath='src.d/gzlib.c' line='448' column='1'/>
+      <return type-id='type-id-15'/>
+    </function-decl>
+    <function-decl name='gztell64' mangled-name='gztell64' filepath='src.d/gzlib.c' line='457' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gztell64@@ZLIB_1.2.3.3'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzlib.c' line='458' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='gztell' mangled-name='gztell' filepath='src.d/gzlib.c' line='474' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gztell'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzlib.c' line='475' column='1'/>
+      <return type-id='type-id-15'/>
+    </function-decl>
+    <function-decl name='gzoffset64' mangled-name='gzoffset64' filepath='src.d/gzlib.c' line='484' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzoffset64@@ZLIB_1.2.3.5'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzlib.c' line='485' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='gzoffset' mangled-name='gzoffset' filepath='src.d/gzlib.c' line='507' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzoffset@@ZLIB_1.2.3.5'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzlib.c' line='508' column='1'/>
+      <return type-id='type-id-15'/>
+    </function-decl>
+    <function-decl name='gzeof' mangled-name='gzeof' filepath='src.d/gzlib.c' line='517' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzeof'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzlib.c' line='518' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzerror' mangled-name='gzerror' filepath='src.d/gzlib.c' line='534' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzerror'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzlib.c' line='535' column='1'/>
+      <parameter type-id='type-id-79' name='errnum' filepath='src.d/gzlib.c' line='536' column='1'/>
+      <return type-id='type-id-77'/>
+    </function-decl>
+    <function-decl name='gzclearerr' mangled-name='gzclearerr' filepath='src.d/gzlib.c' line='555' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzclearerr@@ZLIB_1.2.0.2'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzlib.c' line='556' column='1'/>
+      <return type-id='type-id-44'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='src.d/gzread.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C99'>
+    <typedef-decl name='voidp' type-id='type-id-45' filepath='./zconf.h' line='416' column='1' id='type-id-88'/>
+    <function-decl name='gzread' mangled-name='gzread' filepath='src.d/gzread.c' line='373' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzread'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzread.c' line='374' column='1'/>
+      <parameter type-id='type-id-88' name='buf' filepath='src.d/gzread.c' line='375' column='1'/>
+      <parameter type-id='type-id-4' name='len' filepath='src.d/gzread.c' line='376' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzfread' mangled-name='gzfread' filepath='src.d/gzread.c' line='409' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzfread@@ZLIB_1.2.9'>
+      <parameter type-id='type-id-88' name='buf' filepath='src.d/gzread.c' line='410' column='1'/>
+      <parameter type-id='type-id-7' name='size' filepath='src.d/gzread.c' line='411' column='1'/>
+      <parameter type-id='type-id-7' name='nitems' filepath='src.d/gzread.c' line='412' column='1'/>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzread.c' line='413' column='1'/>
+      <return type-id='type-id-7'/>
+    </function-decl>
+    <function-decl name='gzgetc' mangled-name='gzgetc' filepath='src.d/gzread.c' line='445' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzgetc'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzread.c' line='446' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzgetc_' mangled-name='gzgetc_' filepath='src.d/gzread.c' line='472' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzgetc_@@ZLIB_1.2.5.2'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzread.c' line='473' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzungetc' mangled-name='gzungetc' filepath='src.d/gzread.c' line='479' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzungetc@@ZLIB_1.2.0.2'>
+      <parameter type-id='type-id-22' name='c' filepath='src.d/gzread.c' line='480' column='1'/>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzread.c' line='481' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzgets' mangled-name='gzgets' filepath='src.d/gzread.c' line='539' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzgets'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzread.c' line='540' column='1'/>
+      <parameter type-id='type-id-68' name='buf' filepath='src.d/gzread.c' line='541' column='1'/>
+      <parameter type-id='type-id-22' name='len' filepath='src.d/gzread.c' line='542' column='1'/>
+      <return type-id='type-id-68'/>
+    </function-decl>
+    <function-decl name='gzdirect' mangled-name='gzdirect' filepath='src.d/gzread.c' line='603' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzdirect@@ZLIB_1.2.2.3'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzread.c' line='604' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzclose_r' mangled-name='gzclose_r' filepath='src.d/gzread.c' line='623' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzclose_r@@ZLIB_1.2.3.5'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzread.c' line='624' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='src.d/gzwrite.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C99'>
+    <type-decl name='variadic parameter type' id='type-id-89'/>
+    <typedef-decl name='voidpc' type-id='type-id-45' filepath='./zconf.h' line='414' column='1' id='type-id-90'/>
+    <typedef-decl name='__gnuc_va_list' type-id='type-id-45' filepath='/usr/lib/gcc-cross/mips-linux-gnu/10/include/stdarg.h' line='40' column='1' id='type-id-91'/>
+    <typedef-decl name='va_list' type-id='type-id-91' filepath='/usr/lib/gcc-cross/mips-linux-gnu/10/include/stdarg.h' line='99' column='1' id='type-id-92'/>
+    <function-decl name='gzwrite' mangled-name='gzwrite' filepath='src.d/gzwrite.c' line='255' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzwrite'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzwrite.c' line='256' column='1'/>
+      <parameter type-id='type-id-90' name='buf' filepath='src.d/gzwrite.c' line='257' column='1'/>
+      <parameter type-id='type-id-4' name='len' filepath='src.d/gzwrite.c' line='258' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzfwrite' mangled-name='gzfwrite' filepath='src.d/gzwrite.c' line='283' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzfwrite@@ZLIB_1.2.9'>
+      <parameter type-id='type-id-90' name='buf' filepath='src.d/gzwrite.c' line='284' column='1'/>
+      <parameter type-id='type-id-7' name='size' filepath='src.d/gzwrite.c' line='285' column='1'/>
+      <parameter type-id='type-id-7' name='nitems' filepath='src.d/gzwrite.c' line='286' column='1'/>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzwrite.c' line='287' column='1'/>
+      <return type-id='type-id-7'/>
+    </function-decl>
+    <function-decl name='gzputc' mangled-name='gzputc' filepath='src.d/gzwrite.c' line='313' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzputc'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzwrite.c' line='314' column='1'/>
+      <parameter type-id='type-id-22' name='c' filepath='src.d/gzwrite.c' line='315' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzputs' mangled-name='gzputs' filepath='src.d/gzwrite.c' line='361' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzputs'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzwrite.c' line='362' column='1'/>
+      <parameter type-id='type-id-77' name='s' filepath='src.d/gzwrite.c' line='363' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzvprintf' mangled-name='gzvprintf' filepath='src.d/gzwrite.c' line='391' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzvprintf@@ZLIB_1.2.7.1'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzwrite.c' line='391' column='1'/>
+      <parameter type-id='type-id-77' name='format' filepath='src.d/gzwrite.c' line='391' column='1'/>
+      <parameter type-id='type-id-92' name='va' filepath='src.d/gzwrite.c' line='391' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzprintf' mangled-name='gzprintf' filepath='src.d/gzwrite.c' line='463' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzprintf'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzwrite.c' line='463' column='1'/>
+      <parameter type-id='type-id-77' name='format' filepath='src.d/gzwrite.c' line='463' column='1'/>
+      <parameter is-variadic='yes'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzflush' mangled-name='gzflush' filepath='src.d/gzwrite.c' line='565' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzflush'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzwrite.c' line='566' column='1'/>
+      <parameter type-id='type-id-22' name='flush' filepath='src.d/gzwrite.c' line='567' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzsetparams' mangled-name='gzsetparams' filepath='src.d/gzwrite.c' line='597' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzsetparams'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzwrite.c' line='598' column='1'/>
+      <parameter type-id='type-id-22' name='level' filepath='src.d/gzwrite.c' line='599' column='1'/>
+      <parameter type-id='type-id-22' name='strategy' filepath='src.d/gzwrite.c' line='600' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='gzclose_w' mangled-name='gzclose_w' filepath='src.d/gzwrite.c' line='639' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='gzclose_w@@ZLIB_1.2.3.5'>
+      <parameter type-id='type-id-85' name='file' filepath='src.d/gzwrite.c' line='640' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='src.d/infback.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C99'>
+    <typedef-decl name='in_func' type-id='type-id-93' filepath='src.d/zlib.h' line='1094' column='1' id='type-id-94'/>
+    <typedef-decl name='out_func' type-id='type-id-95' filepath='src.d/zlib.h' line='1096' column='1' id='type-id-96'/>
+    <pointer-type-def type-id='type-id-97' size-in-bits='32' id='type-id-95'/>
+    <pointer-type-def type-id='type-id-3' size-in-bits='32' id='type-id-87'/>
+    <pointer-type-def type-id='type-id-87' size-in-bits='32' id='type-id-98'/>
+    <pointer-type-def type-id='type-id-99' size-in-bits='32' id='type-id-93'/>
+    <function-decl name='inflateBackInit_' mangled-name='inflateBackInit_' filepath='src.d/infback.c' line='28' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateBackInit_@@ZLIB_1.2.0'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/infback.c' line='29' column='1'/>
+      <parameter type-id='type-id-22' name='windowBits' filepath='src.d/infback.c' line='30' column='1'/>
+      <parameter type-id='type-id-87' name='window' filepath='src.d/infback.c' line='31' column='1'/>
+      <parameter type-id='type-id-77' name='version' filepath='src.d/infback.c' line='32' column='1'/>
+      <parameter type-id='type-id-22' name='stream_size' filepath='src.d/infback.c' line='33' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateBack' mangled-name='inflateBack' filepath='src.d/infback.c' line='251' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateBack@@ZLIB_1.2.0'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/infback.c' line='252' column='1'/>
+      <parameter type-id='type-id-94' name='in' filepath='src.d/infback.c' line='253' column='1'/>
+      <parameter type-id='type-id-45' name='in_desc' filepath='src.d/infback.c' line='254' column='1'/>
+      <parameter type-id='type-id-96' name='out' filepath='src.d/infback.c' line='255' column='1'/>
+      <parameter type-id='type-id-45' name='out_desc' filepath='src.d/infback.c' line='256' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateBackEnd' mangled-name='inflateBackEnd' filepath='src.d/infback.c' line='635' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateBackEnd@@ZLIB_1.2.0'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/infback.c' line='636' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-type size-in-bits='32' id='type-id-97'>
+      <parameter type-id='type-id-45'/>
+      <parameter type-id='type-id-87'/>
+      <parameter type-id='type-id-4'/>
+      <return type-id='type-id-22'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-99'>
+      <parameter type-id='type-id-45'/>
+      <parameter type-id='type-id-98'/>
+      <return type-id='type-id-4'/>
+    </function-type>
+  </abi-instr>
+  <abi-instr address-size='32' path='src.d/inflate.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C99'>
+    <function-decl name='inflateResetKeep' mangled-name='inflateResetKeep' filepath='src.d/inflate.c' line='119' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateResetKeep@@ZLIB_1.2.5.2'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='120' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateReset' mangled-name='inflateReset' filepath='src.d/inflate.c' line='145' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateReset'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='146' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateReset2' mangled-name='inflateReset2' filepath='src.d/inflate.c' line='158' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateReset2@@ZLIB_1.2.3.4'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='159' column='1'/>
+      <parameter type-id='type-id-22' name='windowBits' filepath='src.d/inflate.c' line='160' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateInit2_' mangled-name='inflateInit2_' filepath='src.d/inflate.c' line='198' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateInit2_'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='199' column='1'/>
+      <parameter type-id='type-id-22' name='windowBits' filepath='src.d/inflate.c' line='200' column='1'/>
+      <parameter type-id='type-id-77' name='version' filepath='src.d/inflate.c' line='201' column='1'/>
+      <parameter type-id='type-id-22' name='stream_size' filepath='src.d/inflate.c' line='202' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateInit_' mangled-name='inflateInit_' filepath='src.d/inflate.c' line='242' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateInit_'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='243' column='1'/>
+      <parameter type-id='type-id-77' name='version' filepath='src.d/inflate.c' line='244' column='1'/>
+      <parameter type-id='type-id-22' name='stream_size' filepath='src.d/inflate.c' line='245' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflatePrime' mangled-name='inflatePrime' filepath='src.d/inflate.c' line='250' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflatePrime@@ZLIB_1.2.2.4'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='251' column='1'/>
+      <parameter type-id='type-id-22' name='bits' filepath='src.d/inflate.c' line='252' column='1'/>
+      <parameter type-id='type-id-22' name='value' filepath='src.d/inflate.c' line='253' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflate' mangled-name='inflate' filepath='src.d/inflate.c' line='625' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflate'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='626' column='1'/>
+      <parameter type-id='type-id-22' name='flush' filepath='src.d/inflate.c' line='627' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateEnd' mangled-name='inflateEnd' filepath='src.d/inflate.c' line='1304' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateEnd'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='1305' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateGetDictionary' mangled-name='inflateGetDictionary' filepath='src.d/inflate.c' line='1318' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateGetDictionary@@ZLIB_1.2.7.1'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='1319' column='1'/>
+      <parameter type-id='type-id-21' name='dictionary' filepath='src.d/inflate.c' line='1320' column='1'/>
+      <parameter type-id='type-id-81' name='dictLength' filepath='src.d/inflate.c' line='1321' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateSetDictionary' mangled-name='inflateSetDictionary' filepath='src.d/inflate.c' line='1341' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateSetDictionary'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='1342' column='1'/>
+      <parameter type-id='type-id-18' name='dictionary' filepath='src.d/inflate.c' line='1343' column='1'/>
+      <parameter type-id='type-id-9' name='dictLength' filepath='src.d/inflate.c' line='1344' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateGetHeader' mangled-name='inflateGetHeader' filepath='src.d/inflate.c' line='1376' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateGetHeader@@ZLIB_1.2.2'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='1377' column='1'/>
+      <parameter type-id='type-id-60' name='head' filepath='src.d/inflate.c' line='1378' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateSync' mangled-name='inflateSync' filepath='src.d/inflate.c' line='1427' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateSync'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='1428' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateSyncPoint' mangled-name='inflateSyncPoint' filepath='src.d/inflate.c' line='1485' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateSyncPoint'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='1486' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateCopy' mangled-name='inflateCopy' filepath='src.d/inflate.c' line='1495' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateCopy@@ZLIB_1.2.0'>
+      <parameter type-id='type-id-58' name='dest' filepath='src.d/inflate.c' line='1496' column='1'/>
+      <parameter type-id='type-id-58' name='source' filepath='src.d/inflate.c' line='1497' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateUndermine' mangled-name='inflateUndermine' filepath='src.d/inflate.c' line='1542' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateUndermine@@ZLIB_1.2.3.3'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='1543' column='1'/>
+      <parameter type-id='type-id-22' name='subvert' filepath='src.d/inflate.c' line='1544' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateValidate' mangled-name='inflateValidate' filepath='src.d/inflate.c' line='1560' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateValidate@@ZLIB_1.2.9'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='1561' column='1'/>
+      <parameter type-id='type-id-22' name='check' filepath='src.d/inflate.c' line='1562' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='inflateMark' mangled-name='inflateMark' filepath='src.d/inflate.c' line='1575' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateMark@@ZLIB_1.2.3.4'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='1576' column='1'/>
+      <return type-id='type-id-1'/>
+    </function-decl>
+    <function-decl name='inflateCodesUsed' mangled-name='inflateCodesUsed' filepath='src.d/inflate.c' line='1588' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='inflateCodesUsed@@ZLIB_1.2.9'>
+      <parameter type-id='type-id-58' name='strm' filepath='src.d/inflate.c' line='1589' column='1'/>
+      <return type-id='type-id-5'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='src.d/trees.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C99'>
+    <array-type-def dimensions='1' type-id='type-id-100' size-in-bits='2048' id='type-id-101'>
+      <subrange length='256' type-id='type-id-4' id='type-id-102'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-100' size-in-bits='4096' id='type-id-103'>
+      <subrange length='512' type-id='type-id-4' id='type-id-104'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-100' size-in-bits='infinite' id='type-id-105'>
+      <subrange length='infinite' id='type-id-106'/>
+    </array-type-def>
+    <qualified-type-def type-id='type-id-38' const='yes' id='type-id-100'/>
+    <var-decl name='_length_code' type-id='type-id-105' visibility='default' filepath='src.d/deflate.h' line='317' column='1'/>
+    <var-decl name='_dist_code' type-id='type-id-105' visibility='default' filepath='src.d/deflate.h' line='318' column='1'/>
+  </abi-instr>
+  <abi-instr address-size='32' path='src.d/uncompr.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C99'>
+    <pointer-type-def type-id='type-id-10' size-in-bits='32' id='type-id-107'/>
+    <function-decl name='uncompress2' mangled-name='uncompress2' filepath='src.d/uncompr.c' line='27' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='uncompress2@@ZLIB_1.2.9'>
+      <parameter type-id='type-id-21' name='dest' filepath='src.d/uncompr.c' line='28' column='1'/>
+      <parameter type-id='type-id-20' name='destLen' filepath='src.d/uncompr.c' line='29' column='1'/>
+      <parameter type-id='type-id-18' name='source' filepath='src.d/uncompr.c' line='30' column='1'/>
+      <parameter type-id='type-id-107' name='sourceLen' filepath='src.d/uncompr.c' line='31' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+    <function-decl name='uncompress' mangled-name='uncompress' filepath='src.d/uncompr.c' line='86' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='uncompress'>
+      <parameter type-id='type-id-21' name='dest' filepath='src.d/uncompr.c' line='87' column='1'/>
+      <parameter type-id='type-id-20' name='destLen' filepath='src.d/uncompr.c' line='88' column='1'/>
+      <parameter type-id='type-id-18' name='source' filepath='src.d/uncompr.c' line='89' column='1'/>
+      <parameter type-id='type-id-10' name='sourceLen' filepath='src.d/uncompr.c' line='90' column='1'/>
+      <return type-id='type-id-22'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='src.d/zutil.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C99'>
+    <array-type-def dimensions='1' type-id='type-id-108' size-in-bits='320' id='type-id-109'>
+      <subrange length='10' type-id='type-id-4' id='type-id-110'/>
+    </array-type-def>
+    <qualified-type-def type-id='type-id-68' const='yes' id='type-id-108'/>
+    <function-decl name='zlibVersion' mangled-name='zlibVersion' filepath='src.d/zutil.c' line='27' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zlibVersion'>
+      <return type-id='type-id-77'/>
+    </function-decl>
+    <function-decl name='zlibCompileFlags' mangled-name='zlibCompileFlags' filepath='src.d/zutil.c' line='32' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zlibCompileFlags@@ZLIB_1.2.0.2'>
+      <return type-id='type-id-10'/>
+    </function-decl>
+    <function-decl name='zError' mangled-name='zError' filepath='src.d/zutil.c' line='135' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zError'>
+      <parameter type-id='type-id-22' name='err' filepath='src.d/zutil.c' line='136' column='1'/>
+      <return type-id='type-id-77'/>
+    </function-decl>
+    <var-decl name='z_errmsg' type-id='type-id-109' visibility='default' filepath='src.d/zutil.h' line='56' column='1'/>
+  </abi-instr>
+</abi-corpus>

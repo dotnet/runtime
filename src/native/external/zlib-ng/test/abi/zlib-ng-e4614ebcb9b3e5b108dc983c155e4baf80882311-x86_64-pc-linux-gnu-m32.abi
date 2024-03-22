@@ -1,0 +1,2032 @@
+<abi-corpus version='2.0' path='btmp1/libz-ng.so.2.1.0.devel' architecture='elf-intel-80386' soname='libz-ng.so.2'>
+  <elf-needed>
+    <dependency name='libc.so.6'/>
+    <dependency name='ld-linux.so.2'/>
+  </elf-needed>
+  <elf-function-symbols>
+    <elf-symbol name='zlibng_version' version='ZLIB_NG_2.1.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_adler32' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_adler32_combine' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_adler32_z' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_compress2' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_compress' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_compressBound' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_crc32' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_crc32_combine' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_crc32_combine_gen' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_crc32_combine_op' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_crc32_z' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflate' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateBound' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateCopy' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateEnd' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateGetDictionary' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateGetParams' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateInit2' version='ZLIB_NG_2.1.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateInit2_' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateInit' version='ZLIB_NG_2.1.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateInit_' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateParams' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflatePending' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflatePrime' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateReset' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateResetKeep' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateSetDictionary' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateSetHeader' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateSetParams' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_deflateTune' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_get_crc_table' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzbuffer' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzclearerr' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzclose' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzclose_r' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzclose_w' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzdirect' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzdopen' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzeof' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzerror' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzflush' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzfread' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzfwrite' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzgetc' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzgets' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzoffset' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzopen' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzprintf' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzputc' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzputs' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzread' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzrewind' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzseek' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzsetparams' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gztell' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzungetc' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzvprintf' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_gzwrite' version='ZLIB_NG_GZ_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflate' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateBack' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateBackEnd' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateBackInit' version='ZLIB_NG_2.1.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateBackInit_' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateCodesUsed' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateCopy' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateEnd' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateGetDictionary' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateGetHeader' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateInit2' version='ZLIB_NG_2.1.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateInit2_' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateInit' version='ZLIB_NG_2.1.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateInit_' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateMark' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflatePrime' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateReset2' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateReset' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateResetKeep' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateSetDictionary' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateSync' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateSyncPoint' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateUndermine' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_inflateValidate' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_uncompress2' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_uncompress' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_zError' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <elf-symbol name='zng_zlibCompileFlags' version='ZLIB_NG_2.0.0' is-default-version='yes' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+  </elf-function-symbols>
+  <elf-variable-symbols>
+    <elf-symbol name='zng_vstring' size='38' version='ZLIB_NG_2.0.0' is-default-version='yes' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+  </elf-variable-symbols>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/adler32.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <type-decl name='long long int' size-in-bits='64' id='type-id-1'/>
+    <type-decl name='unsigned char' size-in-bits='8' id='type-id-2'/>
+    <type-decl name='unsigned int' size-in-bits='32' id='type-id-3'/>
+    <type-decl name='void' id='type-id-4'/>
+    <typedef-decl name='uint32_t' type-id='type-id-5' filepath='/usr/include/bits/stdint-uintn.h' line='26' column='1' id='type-id-6'/>
+    <typedef-decl name='__uint32_t' type-id='type-id-3' filepath='/usr/include/bits/types.h' line='42' column='1' id='type-id-5'/>
+    <typedef-decl name='__int64_t' type-id='type-id-1' filepath='/usr/include/bits/types.h' line='47' column='1' id='type-id-7'/>
+    <typedef-decl name='__off64_t' type-id='type-id-7' filepath='/usr/include/bits/types.h' line='153' column='1' id='type-id-8'/>
+    <typedef-decl name='off64_t' type-id='type-id-8' filepath='/usr/include/sys/types.h' line='92' column='1' id='type-id-9'/>
+    <qualified-type-def type-id='type-id-2' const='yes' id='type-id-10'/>
+    <pointer-type-def type-id='type-id-10' size-in-bits='32' id='type-id-11'/>
+    <function-decl name='zng_adler32' mangled-name='zng_adler32' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/adler32.c' line='72' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_adler32@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-6' name='adler' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/adler32.c' line='72' column='1'/>
+      <parameter type-id='type-id-11' name='buf' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/adler32.c' line='72' column='1'/>
+      <parameter type-id='type-id-6' name='len' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/adler32.c' line='72' column='1'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='zng_adler32_combine' mangled-name='zng_adler32_combine' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/adler32.c' line='112' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_adler32_combine@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-6' name='adler1' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/adler32.c' line='112' column='1'/>
+      <parameter type-id='type-id-6' name='adler2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/adler32.c' line='112' column='1'/>
+      <parameter type-id='type-id-9' name='len2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/adler32.c' line='112' column='1'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/compress.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <type-decl name='char' size-in-bits='8' id='type-id-12'/>
+    <class-decl name='internal_state' size-in-bits='47744' is-struct='yes' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='113' column='1' id='type-id-13'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='strm' type-id='type-id-14' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='114' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='32'>
+        <var-decl name='pending_buf' type-id='type-id-15' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='115' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='64'>
+        <var-decl name='pending_out' type-id='type-id-15' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='116' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='96'>
+        <var-decl name='pending_buf_size' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='117' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='128'>
+        <var-decl name='pending' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='118' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='160'>
+        <var-decl name='wrap' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='119' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='192'>
+        <var-decl name='gzindex' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='120' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='224'>
+        <var-decl name='gzhead' type-id='type-id-17' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='121' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='256'>
+        <var-decl name='status' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='122' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='288'>
+        <var-decl name='last_flush' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='123' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='320'>
+        <var-decl name='reproducible' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='124' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='352'>
+        <var-decl name='block_open' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='126' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='384'>
+        <var-decl name='w_size' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='133' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='416'>
+        <var-decl name='w_bits' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='134' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='448'>
+        <var-decl name='w_mask' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='135' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='480'>
+        <var-decl name='lookahead' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='136' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='512'>
+        <var-decl name='high_water' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='138' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='544'>
+        <var-decl name='window_size' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='145' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='576'>
+        <var-decl name='window' type-id='type-id-15' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='150' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='608'>
+        <var-decl name='prev' type-id='type-id-18' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='160' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='640'>
+        <var-decl name='head' type-id='type-id-18' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='166' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='672'>
+        <var-decl name='ins_h' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='168' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='704'>
+        <var-decl name='block_start' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='170' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='736'>
+        <var-decl name='match_length' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='175' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='768'>
+        <var-decl name='prev_match' type-id='type-id-19' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='176' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='800'>
+        <var-decl name='match_available' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='177' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='832'>
+        <var-decl name='strstart' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='178' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='864'>
+        <var-decl name='match_start' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='179' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='896'>
+        <var-decl name='prev_length' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='181' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='928'>
+        <var-decl name='max_chain_length' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='186' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='960'>
+        <var-decl name='max_lazy_match' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='191' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='992'>
+        <var-decl name='update_hash' type-id='type-id-20' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='201' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1024'>
+        <var-decl name='insert_string' type-id='type-id-21' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='202' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1056'>
+        <var-decl name='quick_insert_string' type-id='type-id-22' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='203' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1088'>
+        <var-decl name='level' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='207' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1120'>
+        <var-decl name='strategy' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='208' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1152'>
+        <var-decl name='good_match' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='210' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1184'>
+        <var-decl name='nice_match' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='213' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1280'>
+        <var-decl name='crc_fold' type-id='type-id-23' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='215' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1824'>
+        <var-decl name='dyn_ltree' type-id='type-id-24' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='219' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='20160'>
+        <var-decl name='dyn_dtree' type-id='type-id-25' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='220' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='22112'>
+        <var-decl name='bl_tree' type-id='type-id-26' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='221' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='23360'>
+        <var-decl name='l_desc' type-id='type-id-27' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='223' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='23456'>
+        <var-decl name='d_desc' type-id='type-id-27' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='224' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='23552'>
+        <var-decl name='bl_desc' type-id='type-id-27' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='225' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='23648'>
+        <var-decl name='bl_count' type-id='type-id-28' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='227' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='23904'>
+        <var-decl name='heap' type-id='type-id-29' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='230' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='42240'>
+        <var-decl name='heap_len' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='231' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='42272'>
+        <var-decl name='heap_max' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='232' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='42304'>
+        <var-decl name='depth' type-id='type-id-30' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='237' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='46912'>
+        <var-decl name='lit_bufsize' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='241' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='46944'>
+        <var-decl name='sym_buf' type-id='type-id-15' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='261' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='46976'>
+        <var-decl name='sym_next' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='262' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='47008'>
+        <var-decl name='sym_end' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='263' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='47040'>
+        <var-decl name='opt_len' type-id='type-id-31' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='265' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='47072'>
+        <var-decl name='static_len' type-id='type-id-31' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='266' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='47104'>
+        <var-decl name='matches' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='267' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='47136'>
+        <var-decl name='insert' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='268' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='47168'>
+        <var-decl name='compressed_len' type-id='type-id-31' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='271' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='47200'>
+        <var-decl name='bits_sent' type-id='type-id-31' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='272' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='47232'>
+        <var-decl name='reserved_p' type-id='type-id-32' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='275' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='47264'>
+        <var-decl name='bi_buf' type-id='type-id-33' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='277' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='47328'>
+        <var-decl name='bi_valid' type-id='type-id-34' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='280' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='47360'>
+        <var-decl name='reserved' type-id='type-id-35' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='284' column='1'/>
+      </data-member>
+    </class-decl>
+    <type-decl name='int' size-in-bits='32' id='type-id-16'/>
+    <type-decl name='unsigned long int' size-in-bits='32' id='type-id-31'/>
+    <typedef-decl name='alloc_func' type-id='type-id-36' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='93' column='1' id='type-id-37'/>
+    <typedef-decl name='free_func' type-id='type-id-38' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='94' column='1' id='type-id-39'/>
+    <class-decl name='zng_stream_s' size-in-bits='448' is-struct='yes' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='98' column='1' id='type-id-40'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='next_in' type-id='type-id-41' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='99' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='32'>
+        <var-decl name='avail_in' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='100' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='64'>
+        <var-decl name='total_in' type-id='type-id-42' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='101' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='96'>
+        <var-decl name='next_out' type-id='type-id-43' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='103' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='128'>
+        <var-decl name='avail_out' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='104' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='160'>
+        <var-decl name='total_out' type-id='type-id-42' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='105' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='192'>
+        <var-decl name='msg' type-id='type-id-44' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='107' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='224'>
+        <var-decl name='state' type-id='type-id-45' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='108' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='256'>
+        <var-decl name='zalloc' type-id='type-id-37' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='110' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='288'>
+        <var-decl name='zfree' type-id='type-id-39' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='111' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='320'>
+        <var-decl name='opaque' type-id='type-id-46' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='112' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='352'>
+        <var-decl name='data_type' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='114' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='384'>
+        <var-decl name='adler' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='116' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='416'>
+        <var-decl name='reserved' type-id='type-id-31' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='117' column='1'/>
+      </data-member>
+    </class-decl>
+    <typedef-decl name='zng_stream' type-id='type-id-40' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='118' column='1' id='type-id-47'/>
+    <typedef-decl name='int32_t' type-id='type-id-48' filepath='/usr/include/bits/stdint-intn.h' line='26' column='1' id='type-id-34'/>
+    <typedef-decl name='uint8_t' type-id='type-id-49' filepath='/usr/include/bits/stdint-uintn.h' line='24' column='1' id='type-id-50'/>
+    <typedef-decl name='__uint8_t' type-id='type-id-2' filepath='/usr/include/bits/types.h' line='38' column='1' id='type-id-49'/>
+    <typedef-decl name='__int32_t' type-id='type-id-16' filepath='/usr/include/bits/types.h' line='41' column='1' id='type-id-48'/>
+    <typedef-decl name='size_t' type-id='type-id-3' filepath='/usr/lib/gcc/x86_64-linux-gnu/11/include/stddef.h' line='209' column='1' id='type-id-42'/>
+    <qualified-type-def type-id='type-id-12' const='yes' id='type-id-51'/>
+    <pointer-type-def type-id='type-id-51' size-in-bits='32' id='type-id-44'/>
+    <qualified-type-def type-id='type-id-50' const='yes' id='type-id-52'/>
+    <pointer-type-def type-id='type-id-52' size-in-bits='32' id='type-id-41'/>
+    <pointer-type-def type-id='type-id-13' size-in-bits='32' id='type-id-45'/>
+    <pointer-type-def type-id='type-id-42' size-in-bits='32' id='type-id-53'/>
+    <pointer-type-def type-id='type-id-50' size-in-bits='32' id='type-id-43'/>
+    <pointer-type-def type-id='type-id-2' size-in-bits='32' id='type-id-15'/>
+    <pointer-type-def type-id='type-id-54' size-in-bits='32' id='type-id-38'/>
+    <pointer-type-def type-id='type-id-4' size-in-bits='32' id='type-id-46'/>
+    <pointer-type-def type-id='type-id-55' size-in-bits='32' id='type-id-36'/>
+    <pointer-type-def type-id='type-id-47' size-in-bits='32' id='type-id-14'/>
+    <function-decl name='zng_compress2' mangled-name='zng_compress2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/compress.c' line='31' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_compress2@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-15' name='dest' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/compress.c' line='31' column='1'/>
+      <parameter type-id='type-id-53' name='destLen' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/compress.c' line='31' column='1'/>
+      <parameter type-id='type-id-11' name='source' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/compress.c' line='31' column='1'/>
+      <parameter type-id='type-id-42' name='sourceLen' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/compress.c' line='32' column='1'/>
+      <parameter type-id='type-id-16' name='level' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/compress.c' line='32' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_compress' mangled-name='zng_compress' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/compress.c' line='73' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_compress@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-15' name='dest' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/compress.c' line='73' column='1'/>
+      <parameter type-id='type-id-53' name='destLen' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/compress.c' line='73' column='1'/>
+      <parameter type-id='type-id-11' name='source' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/compress.c' line='73' column='1'/>
+      <parameter type-id='type-id-42' name='sourceLen' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/compress.c' line='73' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_compressBound' mangled-name='zng_compressBound' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/compress.c' line='81' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_compressBound@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-42' name='sourceLen' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/compress.c' line='81' column='1'/>
+      <return type-id='type-id-42'/>
+    </function-decl>
+    <function-decl name='zng_deflateInit' mangled-name='zng_deflateInit' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='227' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateInit@@ZLIB_NG_2.1.0'>
+      <parameter type-id='type-id-14'/>
+      <parameter type-id='type-id-34'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflate' mangled-name='zng_deflate' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='248' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflate@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14'/>
+      <parameter type-id='type-id-34'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflateEnd' mangled-name='zng_deflateEnd' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='362' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateEnd@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-type size-in-bits='32' id='type-id-54'>
+      <parameter type-id='type-id-46'/>
+      <parameter type-id='type-id-46'/>
+      <return type-id='type-id-4'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-55'>
+      <parameter type-id='type-id-46'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <return type-id='type-id-46'/>
+    </function-type>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <function-decl name='x86_check_features' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/arch/x86/x86_features.h' line='21' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <return type-id='type-id-4'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <qualified-type-def type-id='type-id-6' const='yes' id='type-id-56'/>
+    <pointer-type-def type-id='type-id-56' size-in-bits='32' id='type-id-57'/>
+    <function-decl name='zng_get_crc_table' mangled-name='zng_get_crc_table' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid.c' line='18' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_get_crc_table@@ZLIB_NG_2.0.0'>
+      <return type-id='type-id-57'/>
+    </function-decl>
+    <function-decl name='zng_crc32' mangled-name='zng_crc32' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid.c' line='41' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_crc32@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-6' name='crc' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid.c' line='41' column='1'/>
+      <parameter type-id='type-id-11' name='buf' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid.c' line='41' column='1'/>
+      <parameter type-id='type-id-6' name='len' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid.c' line='41' column='1'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid_comb.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <function-decl name='zng_crc32_combine' mangled-name='zng_crc32_combine' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid_comb.c' line='46' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_crc32_combine@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-6' name='crc1' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid_comb.c' line='46' column='1'/>
+      <parameter type-id='type-id-6' name='crc2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid_comb.c' line='46' column='1'/>
+      <parameter type-id='type-id-9' name='len2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid_comb.c' line='46' column='1'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='zng_crc32_combine_gen' mangled-name='zng_crc32_combine_gen' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid_comb.c' line='49' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_crc32_combine_gen@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-9' name='len2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid_comb.c' line='49' column='1'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='zng_crc32_combine_op' mangled-name='zng_crc32_combine_op' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid_comb.c' line='52' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_crc32_combine_op@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-6' name='crc1' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid_comb.c' line='52' column='1'/>
+      <parameter type-id='type-id-6' name='crc2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid_comb.c' line='52' column='1'/>
+      <parameter type-id='type-id-56' name='op' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_braid_comb.c' line='52' column='1'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <class-decl name='static_tree_desc_s' is-struct='yes' visibility='default' is-declaration-only='yes' id='type-id-58'/>
+    <array-type-def dimensions='1' type-id='type-id-59' size-in-bits='1248' id='type-id-26'>
+      <subrange length='39' type-id='type-id-3' id='type-id-60'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-59' size-in-bits='18336' id='type-id-24'>
+      <subrange length='573' type-id='type-id-3' id='type-id-61'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-59' size-in-bits='1952' id='type-id-25'>
+      <subrange length='61' type-id='type-id-3' id='type-id-62'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-34' size-in-bits='352' id='type-id-35'>
+      <subrange length='11' type-id='type-id-3' id='type-id-63'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-16' size-in-bits='18336' id='type-id-29'>
+      <subrange length='573' type-id='type-id-3' id='type-id-61'/>
+    </array-type-def>
+    <type-decl name='long long unsigned int' size-in-bits='64' id='type-id-64'/>
+    <array-type-def dimensions='1' type-id='type-id-65' size-in-bits='256' id='type-id-28'>
+      <subrange length='16' type-id='type-id-3' id='type-id-66'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-50' size-in-bits='512' id='type-id-67'>
+      <subrange length='64' type-id='type-id-3' id='type-id-68'/>
+    </array-type-def>
+    <type-decl name='unnamed-enum-underlying-type-32' is-anonymous='yes' size-in-bits='32' alignment-in-bits='32' id='type-id-69'/>
+    <array-type-def dimensions='1' type-id='type-id-2' size-in-bits='4584' id='type-id-30'>
+      <subrange length='573' type-id='type-id-3' id='type-id-61'/>
+    </array-type-def>
+    <type-decl name='unsigned short int' size-in-bits='16' id='type-id-70'/>
+    <class-decl name='crc32_fold_s' size-in-bits='544' is-struct='yes' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_fold.h' line='11' column='1' id='type-id-23'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='fold' type-id='type-id-67' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_fold.h' line='12' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='512'>
+        <var-decl name='value' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_fold.h' line='13' column='1'/>
+      </data-member>
+    </class-decl>
+    <class-decl name='ct_data_s' size-in-bits='32' is-struct='yes' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='77' column='1' id='type-id-59'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='fc' type-id='type-id-71' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='81' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='16'>
+        <var-decl name='dl' type-id='type-id-72' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='85' column='1'/>
+      </data-member>
+    </class-decl>
+    <union-decl name='__anonymous_union__' size-in-bits='16' is-anonymous='yes' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='78' column='1' id='type-id-71'>
+      <data-member access='public'>
+        <var-decl name='freq' type-id='type-id-65' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='79' column='1'/>
+      </data-member>
+      <data-member access='public'>
+        <var-decl name='code' type-id='type-id-65' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='80' column='1'/>
+      </data-member>
+    </union-decl>
+    <union-decl name='__anonymous_union__1' size-in-bits='16' is-anonymous='yes' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='82' column='1' id='type-id-72'>
+      <data-member access='public'>
+        <var-decl name='dad' type-id='type-id-65' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='83' column='1'/>
+      </data-member>
+      <data-member access='public'>
+        <var-decl name='len' type-id='type-id-65' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='84' column='1'/>
+      </data-member>
+    </union-decl>
+    <typedef-decl name='ct_data' type-id='type-id-59' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='86' column='1' id='type-id-73'/>
+    <typedef-decl name='static_tree_desc' type-id='type-id-58' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='93' column='1' id='type-id-74'/>
+    <class-decl name='tree_desc_s' size-in-bits='96' is-struct='yes' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='95' column='1' id='type-id-27'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='dyn_tree' type-id='type-id-75' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='96' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='32'>
+        <var-decl name='max_code' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='97' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='64'>
+        <var-decl name='stat_desc' type-id='type-id-76' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='98' column='1'/>
+      </data-member>
+    </class-decl>
+    <typedef-decl name='Pos' type-id='type-id-65' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='101' column='1' id='type-id-19'/>
+    <typedef-decl name='deflate_state' type-id='type-id-13' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='107' column='1' id='type-id-77'/>
+    <typedef-decl name='update_hash_cb' type-id='type-id-78' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='109' column='1' id='type-id-20'/>
+    <typedef-decl name='insert_string_cb' type-id='type-id-79' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='110' column='1' id='type-id-21'/>
+    <typedef-decl name='quick_insert_string_cb' type-id='type-id-80' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='111' column='1' id='type-id-22'/>
+    <enum-decl name='block_state' naming-typedef-id='type-id-81' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='287' column='1' id='type-id-82'>
+      <underlying-type type-id='type-id-69'/>
+      <enumerator name='need_more' value='0'/>
+      <enumerator name='block_done' value='1'/>
+      <enumerator name='finish_started' value='2'/>
+      <enumerator name='finish_done' value='3'/>
+    </enum-decl>
+    <typedef-decl name='block_state' type-id='type-id-82' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='292' column='1' id='type-id-81'/>
+    <typedef-decl name='zng_calloc_func' type-id='type-id-55' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/zutil.h' line='132' column='1' id='type-id-83'/>
+    <typedef-decl name='zng_cfree_func' type-id='type-id-54' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/zutil.h' line='133' column='1' id='type-id-84'/>
+    <class-decl name='zng_gz_header_s' size-in-bits='416' is-struct='yes' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='126' column='1' id='type-id-85'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='text' type-id='type-id-34' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='127' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='32'>
+        <var-decl name='time' type-id='type-id-31' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='128' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='64'>
+        <var-decl name='xflags' type-id='type-id-34' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='129' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='96'>
+        <var-decl name='os' type-id='type-id-34' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='130' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='128'>
+        <var-decl name='extra' type-id='type-id-43' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='131' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='160'>
+        <var-decl name='extra_len' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='132' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='192'>
+        <var-decl name='extra_max' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='133' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='224'>
+        <var-decl name='name' type-id='type-id-43' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='134' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='256'>
+        <var-decl name='name_max' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='135' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='288'>
+        <var-decl name='comment' type-id='type-id-43' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='136' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='320'>
+        <var-decl name='comm_max' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='137' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='352'>
+        <var-decl name='hcrc' type-id='type-id-34' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='138' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='384'>
+        <var-decl name='done' type-id='type-id-34' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='139' column='1'/>
+      </data-member>
+    </class-decl>
+    <typedef-decl name='zng_gz_header' type-id='type-id-85' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='140' column='1' id='type-id-86'/>
+    <typedef-decl name='zng_gz_headerp' type-id='type-id-87' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='142' column='1' id='type-id-17'/>
+    <enum-decl name='zng_deflate_param' naming-typedef-id='type-id-88' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1800' column='1' id='type-id-89'>
+      <underlying-type type-id='type-id-69'/>
+      <enumerator name='Z_DEFLATE_LEVEL' value='0'/>
+      <enumerator name='Z_DEFLATE_STRATEGY' value='1'/>
+      <enumerator name='Z_DEFLATE_REPRODUCIBLE' value='2'/>
+    </enum-decl>
+    <typedef-decl name='zng_deflate_param' type-id='type-id-89' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1810' column='1' id='type-id-88'/>
+    <class-decl name='zng_deflate_param_value' size-in-bits='128' is-struct='yes' naming-typedef-id='type-id-90' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1812' column='1' id='type-id-91'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='param' type-id='type-id-88' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1813' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='32'>
+        <var-decl name='buf' type-id='type-id-46' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1814' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='64'>
+        <var-decl name='size' type-id='type-id-42' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1815' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='96'>
+        <var-decl name='status' type-id='type-id-34' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1816' column='1'/>
+      </data-member>
+    </class-decl>
+    <typedef-decl name='zng_deflate_param_value' type-id='type-id-91' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1817' column='1' id='type-id-90'/>
+    <typedef-decl name='uint16_t' type-id='type-id-92' filepath='/usr/include/bits/stdint-uintn.h' line='25' column='1' id='type-id-65'/>
+    <typedef-decl name='uint64_t' type-id='type-id-93' filepath='/usr/include/bits/stdint-uintn.h' line='27' column='1' id='type-id-33'/>
+    <typedef-decl name='__uint16_t' type-id='type-id-70' filepath='/usr/include/bits/types.h' line='40' column='1' id='type-id-92'/>
+    <typedef-decl name='__uint64_t' type-id='type-id-64' filepath='/usr/include/bits/types.h' line='48' column='1' id='type-id-93'/>
+    <pointer-type-def type-id='type-id-19' size-in-bits='32' id='type-id-18'/>
+    <pointer-type-def type-id='type-id-12' size-in-bits='32' id='type-id-32'/>
+    <qualified-type-def type-id='type-id-74' const='yes' id='type-id-94'/>
+    <pointer-type-def type-id='type-id-94' size-in-bits='32' id='type-id-76'/>
+    <pointer-type-def type-id='type-id-73' size-in-bits='32' id='type-id-75'/>
+    <pointer-type-def type-id='type-id-77' size-in-bits='32' id='type-id-95'/>
+    <qualified-type-def type-id='type-id-95' const='yes' id='type-id-96'/>
+    <pointer-type-def type-id='type-id-34' size-in-bits='32' id='type-id-97'/>
+    <pointer-type-def type-id='type-id-98' size-in-bits='32' id='type-id-80'/>
+    <pointer-type-def type-id='type-id-99' size-in-bits='32' id='type-id-78'/>
+    <pointer-type-def type-id='type-id-6' size-in-bits='32' id='type-id-100'/>
+    <pointer-type-def type-id='type-id-101' size-in-bits='32' id='type-id-79'/>
+    <pointer-type-def type-id='type-id-83' size-in-bits='32' id='type-id-102'/>
+    <pointer-type-def type-id='type-id-84' size-in-bits='32' id='type-id-103'/>
+    <pointer-type-def type-id='type-id-90' size-in-bits='32' id='type-id-104'/>
+    <pointer-type-def type-id='type-id-86' size-in-bits='32' id='type-id-87'/>
+    <class-decl name='static_tree_desc_s' is-struct='yes' visibility='default' is-declaration-only='yes' id='type-id-58'/>
+    <function-decl name='cpu_check_features' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='23' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='deflate_stored' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='111' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <parameter type-id='type-id-16'/>
+      <return type-id='type-id-81'/>
+    </function-decl>
+    <function-decl name='deflate_fast' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='112' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <parameter type-id='type-id-16'/>
+      <return type-id='type-id-81'/>
+    </function-decl>
+    <function-decl name='deflate_quick' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='113' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <parameter type-id='type-id-16'/>
+      <return type-id='type-id-81'/>
+    </function-decl>
+    <function-decl name='deflate_medium' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='115' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <parameter type-id='type-id-16'/>
+      <return type-id='type-id-81'/>
+    </function-decl>
+    <function-decl name='deflate_slow' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='117' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <parameter type-id='type-id-16'/>
+      <return type-id='type-id-81'/>
+    </function-decl>
+    <function-decl name='deflate_rle' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='118' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <parameter type-id='type-id-16'/>
+      <return type-id='type-id-81'/>
+    </function-decl>
+    <function-decl name='deflate_huff' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='119' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <parameter type-id='type-id-16'/>
+      <return type-id='type-id-81'/>
+    </function-decl>
+    <function-decl name='update_hash_roll' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='124' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='insert_string_roll' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='125' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='quick_insert_string_roll' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='126' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-19'/>
+    </function-decl>
+    <function-decl name='zng_deflateInit2' mangled-name='zng_deflateInit2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='191' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateInit2@@ZLIB_NG_2.1.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='191' column='1'/>
+      <parameter type-id='type-id-34' name='level' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='191' column='1'/>
+      <parameter type-id='type-id-34' name='method' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='191' column='1'/>
+      <parameter type-id='type-id-34' name='windowBits' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='191' column='1'/>
+      <parameter type-id='type-id-34' name='memLevel' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='192' column='1'/>
+      <parameter type-id='type-id-34' name='strategy' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='192' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflateInit_' mangled-name='zng_deflateInit_' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='329' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateInit_@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='329' column='1'/>
+      <parameter type-id='type-id-34' name='level' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='329' column='1'/>
+      <parameter type-id='type-id-44' name='version' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='329' column='1'/>
+      <parameter type-id='type-id-34' name='stream_size' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='329' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflateInit2_' mangled-name='zng_deflateInit2_' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='336' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateInit2_@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='336' column='1'/>
+      <parameter type-id='type-id-34' name='level' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='336' column='1'/>
+      <parameter type-id='type-id-34' name='method' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='336' column='1'/>
+      <parameter type-id='type-id-34' name='windowBits' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='336' column='1'/>
+      <parameter type-id='type-id-34' name='memLevel' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='337' column='1'/>
+      <parameter type-id='type-id-34' name='strategy' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='337' column='1'/>
+      <parameter type-id='type-id-44' name='version' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='337' column='1'/>
+      <parameter type-id='type-id-34' name='stream_size' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='337' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflateSetDictionary' mangled-name='zng_deflateSetDictionary' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='366' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateSetDictionary@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='366' column='1'/>
+      <parameter type-id='type-id-41' name='dictionary' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='366' column='1'/>
+      <parameter type-id='type-id-6' name='dictLength' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='366' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflateGetDictionary' mangled-name='zng_deflateGetDictionary' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='425' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateGetDictionary@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='425' column='1'/>
+      <parameter type-id='type-id-43' name='dictionary' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='425' column='1'/>
+      <parameter type-id='type-id-100' name='dictLength' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='425' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflateResetKeep' mangled-name='zng_deflateResetKeep' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='444' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateResetKeep@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='444' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflateReset' mangled-name='zng_deflateReset' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='483' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateReset@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='483' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflateSetHeader' mangled-name='zng_deflateSetHeader' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='493' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateSetHeader@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='493' column='1'/>
+      <parameter type-id='type-id-17' name='head' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='493' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflatePending' mangled-name='zng_deflatePending' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='501' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflatePending@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='501' column='1'/>
+      <parameter type-id='type-id-100' name='pending' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='501' column='1'/>
+      <parameter type-id='type-id-97' name='bits' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='501' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflatePrime' mangled-name='zng_deflatePrime' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='512' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflatePrime@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='512' column='1'/>
+      <parameter type-id='type-id-34' name='bits' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='512' column='1'/>
+      <parameter type-id='type-id-34' name='value' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='512' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflateParams' mangled-name='zng_deflateParams' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='540' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateParams@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='540' column='1'/>
+      <parameter type-id='type-id-34' name='level' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='540' column='1'/>
+      <parameter type-id='type-id-34' name='strategy' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='540' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflateTune' mangled-name='zng_deflateTune' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='583' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateTune@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='583' column='1'/>
+      <parameter type-id='type-id-34' name='good_length' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='583' column='1'/>
+      <parameter type-id='type-id-34' name='max_lazy' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='583' column='1'/>
+      <parameter type-id='type-id-34' name='nice_length' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='583' column='1'/>
+      <parameter type-id='type-id-34' name='max_chain' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='583' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflateBound' mangled-name='zng_deflateBound' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='613' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateBound@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='613' column='1'/>
+      <parameter type-id='type-id-31' name='sourceLen' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='613' column='1'/>
+      <return type-id='type-id-31'/>
+    </function-decl>
+    <function-decl name='zng_deflateCopy' mangled-name='zng_deflateCopy' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='1045' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateCopy@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='dest' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='1045' column='1'/>
+      <parameter type-id='type-id-14' name='source' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='1045' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflateSetParams' mangled-name='zng_deflateSetParams' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='1309' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateSetParams@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='1309' column='1'/>
+      <parameter type-id='type-id-104' name='params' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='1309' column='1'/>
+      <parameter type-id='type-id-42' name='count' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='1309' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_deflateGetParams' mangled-name='zng_deflateGetParams' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='1385' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_deflateGetParams@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='1385' column='1'/>
+      <parameter type-id='type-id-104' name='params' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='1385' column='1'/>
+      <parameter type-id='type-id-42' name='count' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.c' line='1385' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_tr_init' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='380' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='zng_tr_flush_bits' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='382' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='zng_tr_align' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='383' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='zng_tr_stored_block' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='384' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <parameter type-id='type-id-32'/>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-16'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='zng_zcalloc' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/zutil.h' line='129' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-46'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <return type-id='type-id-46'/>
+    </function-decl>
+    <function-decl name='zng_zcfree' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/zutil.h' line='130' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-46'/>
+      <parameter type-id='type-id-46'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='zng_alloc_aligned' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/zutil.h' line='135' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-102'/>
+      <parameter type-id='type-id-46'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <return type-id='type-id-46'/>
+    </function-decl>
+    <function-decl name='zng_free_aligned' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/zutil.h' line='136' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-103'/>
+      <parameter type-id='type-id-46'/>
+      <parameter type-id='type-id-46'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-type size-in-bits='32' id='type-id-98'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-19'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-99'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-6'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-101'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-4'/>
+    </function-type>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate_fast.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <function-decl name='zng_fill_window' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='376' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='zng_tr_flush_block' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='381' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <parameter type-id='type-id-32'/>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-16'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='zng_flush_pending' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate_p.h' line='50' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-14'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate_stored.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <function-decl name='zng_read_buf' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate_p.h' line='51' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-14'/>
+      <parameter type-id='type-id-15'/>
+      <parameter type-id='type-id-3'/>
+      <return type-id='type-id-3'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <typedef-decl name='crc32_fold' type-id='type-id-23' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_fold.h' line='14' column='1' id='type-id-105'/>
+    <class-decl name='functable_s' size-in-bits='544' is-struct='yes' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='19' column='1' id='type-id-106'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='adler32' type-id='type-id-107' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='20' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='32'>
+        <var-decl name='adler32_fold_copy' type-id='type-id-108' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='21' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='64'>
+        <var-decl name='crc32' type-id='type-id-107' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='22' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='96'>
+        <var-decl name='crc32_fold_reset' type-id='type-id-109' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='23' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='128'>
+        <var-decl name='crc32_fold_copy' type-id='type-id-110' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='24' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='160'>
+        <var-decl name='crc32_fold' type-id='type-id-111' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='25' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='192'>
+        <var-decl name='crc32_fold_final' type-id='type-id-109' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='26' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='224'>
+        <var-decl name='compare256' type-id='type-id-112' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='27' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='256'>
+        <var-decl name='chunksize' type-id='type-id-113' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='28' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='288'>
+        <var-decl name='chunkmemset_safe' type-id='type-id-114' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='29' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='320'>
+        <var-decl name='inflate_fast' type-id='type-id-115' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='30' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='352'>
+        <var-decl name='insert_string' type-id='type-id-79' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='31' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='384'>
+        <var-decl name='longest_match' type-id='type-id-116' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='32' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='416'>
+        <var-decl name='longest_match_slow' type-id='type-id-116' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='33' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='448'>
+        <var-decl name='quick_insert_string' type-id='type-id-80' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='34' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='480'>
+        <var-decl name='slide_hash' type-id='type-id-117' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='35' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='512'>
+        <var-decl name='update_hash' type-id='type-id-78' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='36' column='1'/>
+      </data-member>
+    </class-decl>
+    <pointer-type-def type-id='type-id-105' size-in-bits='32' id='type-id-118'/>
+    <pointer-type-def type-id='type-id-23' size-in-bits='32' id='type-id-119'/>
+    <pointer-type-def type-id='type-id-120' size-in-bits='32' id='type-id-113'/>
+    <pointer-type-def type-id='type-id-121' size-in-bits='32' id='type-id-112'/>
+    <pointer-type-def type-id='type-id-122' size-in-bits='32' id='type-id-109'/>
+    <pointer-type-def type-id='type-id-123' size-in-bits='32' id='type-id-116'/>
+    <pointer-type-def type-id='type-id-124' size-in-bits='32' id='type-id-107'/>
+    <pointer-type-def type-id='type-id-125' size-in-bits='32' id='type-id-108'/>
+    <pointer-type-def type-id='type-id-126' size-in-bits='32' id='type-id-114'/>
+    <pointer-type-def type-id='type-id-127' size-in-bits='32' id='type-id-111'/>
+    <pointer-type-def type-id='type-id-128' size-in-bits='32' id='type-id-110'/>
+    <pointer-type-def type-id='type-id-129' size-in-bits='32' id='type-id-117'/>
+    <pointer-type-def type-id='type-id-130' size-in-bits='32' id='type-id-115'/>
+    <function-decl name='adler32_fold_copy_c' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/adler32_fold.h' line='9' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='adler32_c' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='28' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='adler32_ssse3' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='36' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='adler32_avx2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='39' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='adler32_avx512' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='42' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='adler32_avx512_vnni' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='45' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='adler32_fold_copy_sse42' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='53' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='adler32_fold_copy_avx2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='56' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='adler32_fold_copy_avx512' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='59' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='adler32_fold_copy_avx512_vnni' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='62' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='crc32_fold_pclmulqdq_reset' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='67' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-118'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='crc32_fold_pclmulqdq_copy' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='68' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-118'/>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='crc32_fold_pclmulqdq' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='69' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-118'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='crc32_fold_pclmulqdq_final' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='70' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-118'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='crc32_pclmulqdq' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='71' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='chunksize_c' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='75' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='chunkmemset_safe_c' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='76' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <return type-id='type-id-43'/>
+    </function-decl>
+    <function-decl name='chunksize_sse2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='78' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='chunkmemset_safe_sse2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='79' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <return type-id='type-id-43'/>
+    </function-decl>
+    <function-decl name='chunkmemset_safe_sse41' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='82' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <return type-id='type-id-43'/>
+    </function-decl>
+    <function-decl name='chunksize_avx' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='85' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='chunkmemset_safe_avx' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='86' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <return type-id='type-id-43'/>
+    </function-decl>
+    <function-decl name='inflate_fast_c' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='104' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-14'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='inflate_fast_sse2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='106' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-14'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='inflate_fast_sse41' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='109' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-14'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='inflate_fast_avx' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='112' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-14'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='zng_crc32_braid' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='124' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='compare256_unaligned_32' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='140' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-41'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='compare256_sse2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='147' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-41'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='compare256_avx2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='150' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-41'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='insert_string_c' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='161' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-56'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='insert_string_sse4' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='163' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-56'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='longest_match_unaligned_32' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='173' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-19'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='longest_match_sse2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='180' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-19'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='longest_match_avx2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='183' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-19'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='longest_match_slow_unaligned_32' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='196' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-19'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='longest_match_slow_sse2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='202' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-19'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='longest_match_slow_avx2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='205' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-19'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='quick_insert_string_c' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='215' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-56'/>
+      <return type-id='type-id-19'/>
+    </function-decl>
+    <function-decl name='quick_insert_string_sse4' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='217' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-56'/>
+      <return type-id='type-id-19'/>
+    </function-decl>
+    <function-decl name='slide_hash_sse2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='226' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='slide_hash_avx2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='237' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='update_hash_c' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='241' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='update_hash_sse4' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/cpu_features.h' line='243' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='crc32_fold_reset_c' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_fold.h' line='16' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-118'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='crc32_fold_copy_c' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_fold.h' line='17' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-118'/>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='crc32_fold_c' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_fold.h' line='18' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-118'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='crc32_fold_final_c' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/crc32_fold.h' line='19' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-118'/>
+      <return type-id='type-id-6'/>
+    </function-decl>
+    <function-decl name='slide_hash_c' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/deflate.h' line='377' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-95'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <var-decl name='functable' type-id='type-id-106' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/functable.h' line='39' column='1'/>
+    <function-type size-in-bits='32' id='type-id-120'>
+      <return type-id='type-id-6'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-121'>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-41'/>
+      <return type-id='type-id-6'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-122'>
+      <parameter type-id='type-id-119'/>
+      <return type-id='type-id-6'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-123'>
+      <parameter type-id='type-id-96'/>
+      <parameter type-id='type-id-19'/>
+      <return type-id='type-id-6'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-124'>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-6'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-125'>
+      <parameter type-id='type-id-6'/>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-6'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-126'>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <return type-id='type-id-43'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-127'>
+      <parameter type-id='type-id-119'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-4'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-128'>
+      <parameter type-id='type-id-119'/>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-4'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-129'>
+      <parameter type-id='type-id-95'/>
+      <return type-id='type-id-4'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-130'>
+      <parameter type-id='type-id-14'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-4'/>
+    </function-type>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <type-decl name='variadic parameter type' id='type-id-131'/>
+    <typedef-decl name='gzFile' type-id='type-id-132' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1285' column='1' id='type-id-133'/>
+    <class-decl name='gzFile_s' size-in-bits='128' is-struct='yes' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1790' column='1' id='type-id-134'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='have' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1791' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='32'>
+        <var-decl name='next' type-id='type-id-15' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1792' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='64'>
+        <var-decl name='pos' type-id='type-id-9' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1793' column='1'/>
+      </data-member>
+    </class-decl>
+    <pointer-type-def type-id='type-id-134' size-in-bits='32' id='type-id-132'/>
+    <pointer-type-def type-id='type-id-16' size-in-bits='32' id='type-id-135'/>
+    <function-decl name='zng_gzopen' mangled-name='zng_gzopen' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='215' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzopen@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-44' name='path' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='215' column='1'/>
+      <parameter type-id='type-id-44' name='mode' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='215' column='1'/>
+      <return type-id='type-id-133'/>
+    </function-decl>
+    <function-decl name='zng_gzdopen' mangled-name='zng_gzdopen' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='226' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzdopen@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-16' name='fd' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='226' column='1'/>
+      <parameter type-id='type-id-44' name='mode' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='226' column='1'/>
+      <return type-id='type-id-133'/>
+    </function-decl>
+    <function-decl name='zng_gzclose' mangled-name='zng_gzclose' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='245' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzclose@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='245' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_gzbuffer' mangled-name='zng_gzbuffer' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='260' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzbuffer@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='260' column='1'/>
+      <parameter type-id='type-id-3' name='size' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='260' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_gzrewind' mangled-name='zng_gzrewind' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='284' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzrewind@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='284' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_gzseek' mangled-name='zng_gzseek' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='304' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzseek@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='304' column='1'/>
+      <parameter type-id='type-id-9' name='offset' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='304' column='1'/>
+      <parameter type-id='type-id-16' name='whence' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='304' column='1'/>
+      <return type-id='type-id-9'/>
+    </function-decl>
+    <function-decl name='zng_gztell' mangled-name='zng_gztell' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='385' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gztell@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='385' column='1'/>
+      <return type-id='type-id-9'/>
+    </function-decl>
+    <function-decl name='zng_gzoffset' mangled-name='zng_gzoffset' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='411' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzoffset@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='411' column='1'/>
+      <return type-id='type-id-9'/>
+    </function-decl>
+    <function-decl name='zng_gzeof' mangled-name='zng_gzeof' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='442' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzeof@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='442' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_gzerror' mangled-name='zng_gzerror' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='457' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzerror@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='457' column='1'/>
+      <parameter type-id='type-id-135' name='errnum' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='457' column='1'/>
+      <return type-id='type-id-44'/>
+    </function-decl>
+    <function-decl name='zng_gzclearerr' mangled-name='zng_gzclearerr' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='474' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzclearerr@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzlib.c' line='474' column='1'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='zng_gzclose_r' mangled-name='zng_gzclose_r' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1641' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzclose_r@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_gzclose_w' mangled-name='zng_gzclose_w' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1643' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzclose_w@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='__open_2' filepath='/usr/include/bits/fcntl2.h' line='26' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-44'/>
+      <parameter type-id='type-id-16'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='__open_too_many_args' filepath='/usr/include/bits/fcntl2.h' line='35' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='__open_missing_mode' filepath='/usr/include/bits/fcntl2.h' line='37' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='malloc' filepath='/usr/include/stdlib.h' line='540' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-46'/>
+    </function-decl>
+    <function-decl name='strlen' filepath='/usr/include/string.h' line='407' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-44'/>
+      <return type-id='type-id-42'/>
+    </function-decl>
+    <function-decl name='lseek64' filepath='/usr/include/unistd.h' line='350' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-16'/>
+      <parameter type-id='type-id-8'/>
+      <parameter type-id='type-id-16'/>
+      <return type-id='type-id-8'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <typedef-decl name='__gnuc_va_list' type-id='type-id-32' filepath='/usr/lib/gcc/x86_64-linux-gnu/11/include/stdarg.h' line='40' column='1' id='type-id-136'/>
+    <typedef-decl name='va_list' type-id='type-id-136' filepath='/usr/lib/gcc/x86_64-linux-gnu/11/include/stdarg.h' line='99' column='1' id='type-id-137'/>
+    <function-decl name='zng_gzwrite' mangled-name='zng_gzwrite' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='234' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzwrite@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='234' column='1'/>
+      <parameter type-id='type-id-46' name='buf' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='234' column='1'/>
+      <parameter type-id='type-id-3' name='len' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='234' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_gzfwrite' mangled-name='zng_gzfwrite' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='258' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzfwrite@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-46' name='buf' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='258' column='1'/>
+      <parameter type-id='type-id-42' name='size' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='258' column='1'/>
+      <parameter type-id='type-id-42' name='nitems' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='258' column='1'/>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='258' column='1'/>
+      <return type-id='type-id-42'/>
+    </function-decl>
+    <function-decl name='zng_gzputc' mangled-name='zng_gzputc' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='287' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzputc@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='287' column='1'/>
+      <parameter type-id='type-id-16' name='c' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='287' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_gzputs' mangled-name='zng_gzputs' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='332' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzputs@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='332' column='1'/>
+      <parameter type-id='type-id-44' name='s' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='332' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_gzvprintf' mangled-name='zng_gzvprintf' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='356' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzvprintf@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='356' column='1'/>
+      <parameter type-id='type-id-44' name='format' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='356' column='1'/>
+      <parameter type-id='type-id-137' name='va' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='356' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_gzprintf' mangled-name='zng_gzprintf' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='412' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzprintf@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='412' column='1'/>
+      <parameter type-id='type-id-44' name='format' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='412' column='1'/>
+      <parameter is-variadic='yes'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_gzflush' mangled-name='zng_gzflush' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='423' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzflush@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='423' column='1'/>
+      <parameter type-id='type-id-16' name='flush' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='423' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_gzsetparams' mangled-name='zng_gzsetparams' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='452' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzsetparams@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='452' column='1'/>
+      <parameter type-id='type-id-16' name='level' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='452' column='1'/>
+      <parameter type-id='type-id-16' name='strategy' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzwrite.c' line='452' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='write' filepath='/usr/include/unistd.h' line='378' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-16'/>
+      <parameter type-id='type-id-46'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-138'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <array-type-def dimensions='1' type-id='type-id-139' size-in-bits='61568' id='type-id-140'>
+      <subrange length='1924' type-id='type-id-3' id='type-id-141'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-65' size-in-bits='4608' id='type-id-142'>
+      <subrange length='288' type-id='type-id-3' id='type-id-143'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-65' size-in-bits='5120' id='type-id-144'>
+      <subrange length='320' type-id='type-id-3' id='type-id-145'/>
+    </array-type-def>
+    <enum-decl name='inflate_mode' naming-typedef-id='type-id-146' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='25' column='1' id='type-id-147'>
+      <underlying-type type-id='type-id-69'/>
+      <enumerator name='HEAD' value='16180'/>
+      <enumerator name='FLAGS' value='16181'/>
+      <enumerator name='TIME' value='16182'/>
+      <enumerator name='OS' value='16183'/>
+      <enumerator name='EXLEN' value='16184'/>
+      <enumerator name='EXTRA' value='16185'/>
+      <enumerator name='NAME' value='16186'/>
+      <enumerator name='COMMENT' value='16187'/>
+      <enumerator name='HCRC' value='16188'/>
+      <enumerator name='DICTID' value='16189'/>
+      <enumerator name='DICT' value='16190'/>
+      <enumerator name='TYPE' value='16191'/>
+      <enumerator name='TYPEDO' value='16192'/>
+      <enumerator name='STORED' value='16193'/>
+      <enumerator name='COPY_' value='16194'/>
+      <enumerator name='COPY' value='16195'/>
+      <enumerator name='TABLE' value='16196'/>
+      <enumerator name='LENLENS' value='16197'/>
+      <enumerator name='CODELENS' value='16198'/>
+      <enumerator name='LEN_' value='16199'/>
+      <enumerator name='LEN' value='16200'/>
+      <enumerator name='LENEXT' value='16201'/>
+      <enumerator name='DIST' value='16202'/>
+      <enumerator name='DISTEXT' value='16203'/>
+      <enumerator name='MATCH' value='16204'/>
+      <enumerator name='LIT' value='16205'/>
+      <enumerator name='CHECK' value='16206'/>
+      <enumerator name='LENGTH' value='16207'/>
+      <enumerator name='DONE' value='16208'/>
+      <enumerator name='BAD' value='16209'/>
+      <enumerator name='MEM' value='16210'/>
+      <enumerator name='SYNC' value='16211'/>
+    </enum-decl>
+    <typedef-decl name='inflate_mode' type-id='type-id-147' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='58' column='1' id='type-id-146'/>
+    <class-decl name='inflate_state' size-in-bits='72960' is-struct='yes' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='87' column='1' id='type-id-148'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='strm' type-id='type-id-14' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='88' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='32'>
+        <var-decl name='mode' type-id='type-id-146' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='89' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='64'>
+        <var-decl name='last' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='90' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='96'>
+        <var-decl name='wrap' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='91' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='128'>
+        <var-decl name='havedict' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='93' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='160'>
+        <var-decl name='flags' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='94' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='192'>
+        <var-decl name='dmax' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='96' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='224'>
+        <var-decl name='check' type-id='type-id-31' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='97' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='256'>
+        <var-decl name='total' type-id='type-id-31' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='98' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='288'>
+        <var-decl name='head' type-id='type-id-17' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='99' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='320'>
+        <var-decl name='wbits' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='101' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='352'>
+        <var-decl name='wsize' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='102' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='384'>
+        <var-decl name='whave' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='103' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='416'>
+        <var-decl name='wnext' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='104' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='448'>
+        <var-decl name='window' type-id='type-id-15' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='105' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='512'>
+        <var-decl name='crc_fold' type-id='type-id-23' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='107' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1056'>
+        <var-decl name='hold' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='110' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1088'>
+        <var-decl name='bits' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='111' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1120'>
+        <var-decl name='length' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='113' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1152'>
+        <var-decl name='offset' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='114' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1184'>
+        <var-decl name='extra' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='116' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1216'>
+        <var-decl name='lencode' type-id='type-id-149' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='118' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1248'>
+        <var-decl name='distcode' type-id='type-id-149' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='119' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1280'>
+        <var-decl name='lenbits' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='120' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1312'>
+        <var-decl name='distbits' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='121' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1344'>
+        <var-decl name='ncode' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='123' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1376'>
+        <var-decl name='nlen' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='124' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1408'>
+        <var-decl name='ndist' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='125' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1440'>
+        <var-decl name='have' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='126' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1472'>
+        <var-decl name='next' type-id='type-id-150' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='127' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='1504'>
+        <var-decl name='lens' type-id='type-id-144' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='128' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='6624'>
+        <var-decl name='work' type-id='type-id-142' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='129' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='11232'>
+        <var-decl name='codes' type-id='type-id-140' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='130' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='72800'>
+        <var-decl name='sane' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='131' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='72832'>
+        <var-decl name='back' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='132' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='72864'>
+        <var-decl name='was' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='133' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='72896'>
+        <var-decl name='chunksize' type-id='type-id-6' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='134' column='1'/>
+      </data-member>
+    </class-decl>
+    <class-decl name='code' size-in-bits='32' is-struct='yes' naming-typedef-id='type-id-139' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inftrees.h' line='27' column='1' id='type-id-151'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='op' type-id='type-id-2' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inftrees.h' line='28' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='8'>
+        <var-decl name='bits' type-id='type-id-2' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inftrees.h' line='29' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='16'>
+        <var-decl name='val' type-id='type-id-65' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inftrees.h' line='30' column='1'/>
+      </data-member>
+    </class-decl>
+    <typedef-decl name='code' type-id='type-id-151' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inftrees.h' line='31' column='1' id='type-id-139'/>
+    <enum-decl name='codetype' naming-typedef-id='type-id-152' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inftrees.h' line='57' column='1' id='type-id-153'>
+      <underlying-type type-id='type-id-69'/>
+      <enumerator name='CODES' value='0'/>
+      <enumerator name='LENS' value='1'/>
+      <enumerator name='DISTS' value='2'/>
+    </enum-decl>
+    <typedef-decl name='codetype' type-id='type-id-153' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inftrees.h' line='61' column='1' id='type-id-152'/>
+    <typedef-decl name='in_func' type-id='type-id-154' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1075' column='1' id='type-id-155'/>
+    <typedef-decl name='out_func' type-id='type-id-156' filepath='/mnt/c/build/git/zlib-ng/btmp1/zlib-ng.h' line='1076' column='1' id='type-id-157'/>
+    <pointer-type-def type-id='type-id-139' size-in-bits='32' id='type-id-150'/>
+    <pointer-type-def type-id='type-id-150' size-in-bits='32' id='type-id-158'/>
+    <qualified-type-def type-id='type-id-139' const='yes' id='type-id-159'/>
+    <pointer-type-def type-id='type-id-159' size-in-bits='32' id='type-id-149'/>
+    <pointer-type-def type-id='type-id-41' size-in-bits='32' id='type-id-160'/>
+    <pointer-type-def type-id='type-id-148' size-in-bits='32' id='type-id-161'/>
+    <pointer-type-def type-id='type-id-162' size-in-bits='32' id='type-id-156'/>
+    <pointer-type-def type-id='type-id-163' size-in-bits='32' id='type-id-154'/>
+    <pointer-type-def type-id='type-id-65' size-in-bits='32' id='type-id-164'/>
+    <pointer-type-def type-id='type-id-3' size-in-bits='32' id='type-id-165'/>
+    <function-decl name='zng_inflateBackInit' mangled-name='zng_inflateBackInit' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='34' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateBackInit@@ZLIB_NG_2.1.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='34' column='1'/>
+      <parameter type-id='type-id-34' name='windowBits' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='34' column='1'/>
+      <parameter type-id='type-id-43' name='window' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='34' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateBackInit_' mangled-name='zng_inflateBackInit_' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='63' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateBackInit_@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='63' column='1'/>
+      <parameter type-id='type-id-34' name='windowBits' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='63' column='1'/>
+      <parameter type-id='type-id-43' name='window' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='63' column='1'/>
+      <parameter type-id='type-id-44' name='version' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='64' column='1'/>
+      <parameter type-id='type-id-34' name='stream_size' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='64' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateBack' mangled-name='zng_inflateBack' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='142' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateBack@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='142' column='1'/>
+      <parameter type-id='type-id-155' name='in' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='142' column='1'/>
+      <parameter type-id='type-id-46' name='in_desc' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='142' column='1'/>
+      <parameter type-id='type-id-157' name='out' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='142' column='1'/>
+      <parameter type-id='type-id-46' name='out_desc' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='142' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateBackEnd' mangled-name='zng_inflateBackEnd' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='504' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateBackEnd@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/infback.c' line='504' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_fixedtables' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.h' line='138' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-161'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='zng_inflate_table' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inftrees.h' line='63' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-152'/>
+      <parameter type-id='type-id-164'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-158'/>
+      <parameter type-id='type-id-165'/>
+      <parameter type-id='type-id-164'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-type size-in-bits='32' id='type-id-162'>
+      <parameter type-id='type-id-46'/>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-6'/>
+      <return type-id='type-id-34'/>
+    </function-type>
+    <function-type size-in-bits='32' id='type-id-163'>
+      <parameter type-id='type-id-46'/>
+      <parameter type-id='type-id-160'/>
+      <return type-id='type-id-6'/>
+    </function-type>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <type-decl name='long int' size-in-bits='32' id='type-id-166'/>
+    <function-decl name='zng_inflateResetKeep' mangled-name='zng_inflateResetKeep' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='62' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateResetKeep@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='62' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateReset' mangled-name='zng_inflateReset' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='89' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateReset@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='89' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateReset2' mangled-name='zng_inflateReset2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='101' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateReset2@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='101' column='1'/>
+      <parameter type-id='type-id-34' name='windowBits' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='101' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateInit2' mangled-name='zng_inflateInit2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='139' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateInit2@@ZLIB_NG_2.1.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='139' column='1'/>
+      <parameter type-id='type-id-34' name='windowBits' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='139' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateInit' mangled-name='zng_inflateInit' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='172' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateInit@@ZLIB_NG_2.1.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='172' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateInit_' mangled-name='zng_inflateInit_' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='178' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateInit_@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='178' column='1'/>
+      <parameter type-id='type-id-44' name='version' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='178' column='1'/>
+      <parameter type-id='type-id-34' name='stream_size' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='178' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateInit2_' mangled-name='zng_inflateInit2_' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='185' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateInit2_@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='185' column='1'/>
+      <parameter type-id='type-id-34' name='windowBits' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='185' column='1'/>
+      <parameter type-id='type-id-44' name='version' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='185' column='1'/>
+      <parameter type-id='type-id-34' name='stream_size' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='185' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflatePrime' mangled-name='zng_inflatePrime' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='191' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflatePrime@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='191' column='1'/>
+      <parameter type-id='type-id-34' name='bits' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='191' column='1'/>
+      <parameter type-id='type-id-34' name='value' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='191' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflate' mangled-name='zng_inflate' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='414' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflate@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='414' column='1'/>
+      <parameter type-id='type-id-34' name='flush' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='414' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateEnd' mangled-name='zng_inflateEnd' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1138' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateEnd@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1138' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateGetDictionary' mangled-name='zng_inflateGetDictionary' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1151' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateGetDictionary@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1151' column='1'/>
+      <parameter type-id='type-id-43' name='dictionary' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1151' column='1'/>
+      <parameter type-id='type-id-100' name='dictLength' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1151' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateSetDictionary' mangled-name='zng_inflateSetDictionary' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1171' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateSetDictionary@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1171' column='1'/>
+      <parameter type-id='type-id-41' name='dictionary' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1171' column='1'/>
+      <parameter type-id='type-id-6' name='dictLength' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1171' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateGetHeader' mangled-name='zng_inflateGetHeader' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1204' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateGetHeader@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1204' column='1'/>
+      <parameter type-id='type-id-17' name='head' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1204' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateSync' mangled-name='zng_inflateSync' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1249' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateSync@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1249' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateSyncPoint' mangled-name='zng_inflateSyncPoint' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1310' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateSyncPoint@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1310' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateCopy' mangled-name='zng_inflateCopy' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1320' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateCopy@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='dest' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1320' column='1'/>
+      <parameter type-id='type-id-14' name='source' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1320' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateUndermine' mangled-name='zng_inflateUndermine' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1362' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateUndermine@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1362' column='1'/>
+      <parameter type-id='type-id-34' name='subvert' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1362' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateValidate' mangled-name='zng_inflateValidate' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1378' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateValidate@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1378' column='1'/>
+      <parameter type-id='type-id-34' name='check' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1378' column='1'/>
+      <return type-id='type-id-34'/>
+    </function-decl>
+    <function-decl name='zng_inflateMark' mangled-name='zng_inflateMark' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1391' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateMark@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1391' column='1'/>
+      <return type-id='type-id-166'/>
+    </function-decl>
+    <function-decl name='zng_inflateCodesUsed' mangled-name='zng_inflateCodesUsed' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1403' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_inflateCodesUsed@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-14' name='strm' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/inflate.c' line='1403' column='1'/>
+      <return type-id='type-id-31'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/trees.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <array-type-def dimensions='1' type-id='type-id-167' size-in-bits='9216' id='type-id-168'>
+      <subrange length='288' type-id='type-id-3' id='type-id-143'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-167' size-in-bits='960' id='type-id-169'>
+      <subrange length='30' type-id='type-id-3' id='type-id-170'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-171' size-in-bits='928' id='type-id-172'>
+      <subrange length='29' type-id='type-id-3' id='type-id-173'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-171' size-in-bits='960' id='type-id-174'>
+      <subrange length='30' type-id='type-id-3' id='type-id-170'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-10' size-in-bits='2048' id='type-id-175'>
+      <subrange length='256' type-id='type-id-3' id='type-id-176'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-10' size-in-bits='4096' id='type-id-177'>
+      <subrange length='512' type-id='type-id-3' id='type-id-178'/>
+    </array-type-def>
+    <qualified-type-def type-id='type-id-73' const='yes' id='type-id-167'/>
+    <qualified-type-def type-id='type-id-16' const='yes' id='type-id-171'/>
+    <var-decl name='static_ltree' type-id='type-id-168' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/trees_emit.h' line='14' column='1'/>
+    <var-decl name='static_dtree' type-id='type-id-169' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/trees_emit.h' line='15' column='1'/>
+    <var-decl name='zng_dist_code' type-id='type-id-177' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/trees_emit.h' line='17' column='1'/>
+    <var-decl name='zng_length_code' type-id='type-id-175' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/trees_emit.h' line='18' column='1'/>
+    <var-decl name='base_length' type-id='type-id-172' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/trees_emit.h' line='20' column='1'/>
+    <var-decl name='base_dist' type-id='type-id-174' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/trees_emit.h' line='21' column='1'/>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/uncompr.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <function-decl name='zng_uncompress2' mangled-name='zng_uncompress2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/uncompr.c' line='25' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_uncompress2@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-15' name='dest' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/uncompr.c' line='25' column='1'/>
+      <parameter type-id='type-id-53' name='destLen' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/uncompr.c' line='25' column='1'/>
+      <parameter type-id='type-id-11' name='source' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/uncompr.c' line='25' column='1'/>
+      <parameter type-id='type-id-53' name='sourceLen' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/uncompr.c' line='25' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_uncompress' mangled-name='zng_uncompress' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/uncompr.c' line='78' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_uncompress@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-15' name='dest' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/uncompr.c' line='78' column='1'/>
+      <parameter type-id='type-id-53' name='destLen' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/uncompr.c' line='78' column='1'/>
+      <parameter type-id='type-id-11' name='source' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/uncompr.c' line='78' column='1'/>
+      <parameter type-id='type-id-42' name='sourceLen' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/uncompr.c' line='78' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/zutil.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <array-type-def dimensions='1' type-id='type-id-179' size-in-bits='320' id='type-id-180'>
+      <subrange length='10' type-id='type-id-3' id='type-id-181'/>
+    </array-type-def>
+    <array-type-def dimensions='1' type-id='type-id-51' size-in-bits='304' id='type-id-182'>
+      <subrange length='38' type-id='type-id-3' id='type-id-183'/>
+    </array-type-def>
+    <qualified-type-def type-id='type-id-44' const='yes' id='type-id-179'/>
+    <pointer-type-def type-id='type-id-46' size-in-bits='32' id='type-id-184'/>
+    <var-decl name='zng_vstring' type-id='type-id-182' mangled-name='zng_vstring' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/zutil.c' line='23' column='1' elf-symbol-id='zng_vstring@@ZLIB_NG_2.0.0'/>
+    <function-decl name='zlibng_version' mangled-name='zlibng_version' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/zutil.c' line='31' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zlibng_version@@ZLIB_NG_2.1.0'>
+      <return type-id='type-id-44'/>
+    </function-decl>
+    <function-decl name='zng_zlibCompileFlags' mangled-name='zng_zlibCompileFlags' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/zutil.c' line='36' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_zlibCompileFlags@@ZLIB_NG_2.0.0'>
+      <return type-id='type-id-31'/>
+    </function-decl>
+    <function-decl name='zng_zError' mangled-name='zng_zError' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/zutil.c' line='99' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_zError@@ZLIB_NG_2.0.0'>
+      <parameter type-id='type-id-16' name='err' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/zutil.c' line='99' column='1'/>
+      <return type-id='type-id-44'/>
+    </function-decl>
+    <var-decl name='zng_z_errmsg' type-id='type-id-180' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/zutil.h' line='24' column='1'/>
+    <function-decl name='free' filepath='/usr/include/stdlib.h' line='555' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-46'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='posix_memalign' filepath='/usr/include/stdlib.h' line='586' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-184'/>
+      <parameter type-id='type-id-42'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/arch/x86/chunkset_avx.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1/arch/x86' language='LANG_C11'>
+    <function-decl name='chunkmemset_sse41' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/chunkset_tpl.h' line='9' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-3'/>
+      <parameter type-id='type-id-3'/>
+      <return type-id='type-id-43'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/arch/x86/chunkset_sse41.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1/arch/x86' language='LANG_C11'>
+    <function-decl name='chunkcopy_sse2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/arch/x86/chunkset_sse41.c' line='88' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-3'/>
+      <return type-id='type-id-43'/>
+    </function-decl>
+    <function-decl name='chunkunroll_sse2' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/arch/x86/chunkset_sse41.c' line='89' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-165'/>
+      <parameter type-id='type-id-165'/>
+      <return type-id='type-id-43'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='/mnt/c/build/git/zlib-ng/btmp1/src.d/arch/x86/crc32_fold_pclmulqdq.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1/arch/x86' language='LANG_C11'>
+    <array-type-def dimensions='1' type-id='type-id-1' size-in-bits='128' id='type-id-185'>
+      <subrange length='2' id='type-id-186'/>
+    </array-type-def>
+    <typedef-decl name='__m128i' type-id='type-id-185' filepath='/usr/lib/gcc/x86_64-linux-gnu/11/include/emmintrin.h' line='53' column='1' id='type-id-187'/>
+    <pointer-type-def type-id='type-id-187' size-in-bits='32' id='type-id-188'/>
+    <function-decl name='fold_16_vpclmulqdq' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/arch/x86/crc32_fold_pclmulqdq.c' line='35' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-188'/>
+      <parameter type-id='type-id-188'/>
+      <parameter type-id='type-id-188'/>
+      <parameter type-id='type-id-188'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <parameter type-id='type-id-187'/>
+      <parameter type-id='type-id-34'/>
+      <return type-id='type-id-42'/>
+    </function-decl>
+    <function-decl name='fold_16_vpclmulqdq_copy' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/arch/x86/crc32_fold_pclmulqdq.c' line='38' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-188'/>
+      <parameter type-id='type-id-188'/>
+      <parameter type-id='type-id-188'/>
+      <parameter type-id='type-id-188'/>
+      <parameter type-id='type-id-43'/>
+      <parameter type-id='type-id-41'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-42'/>
+    </function-decl>
+  </abi-instr>
+  <abi-instr address-size='32' path='gzread.c' comp-dir-path='/mnt/c/build/git/zlib-ng/btmp1' language='LANG_C11'>
+    <class-decl name='gz_state' size-in-bits='1248' is-struct='yes' naming-typedef-id='type-id-189' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='102' column='1' id='type-id-190'>
+      <data-member access='public' layout-offset-in-bits='0'>
+        <var-decl name='x' type-id='type-id-134' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='104' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='128'>
+        <var-decl name='mode' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='109' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='160'>
+        <var-decl name='fd' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='110' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='192'>
+        <var-decl name='path' type-id='type-id-32' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='111' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='224'>
+        <var-decl name='size' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='112' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='256'>
+        <var-decl name='want' type-id='type-id-3' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='113' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='288'>
+        <var-decl name='in' type-id='type-id-15' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='114' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='320'>
+        <var-decl name='out' type-id='type-id-15' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='115' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='352'>
+        <var-decl name='direct' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='116' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='384'>
+        <var-decl name='how' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='118' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='416'>
+        <var-decl name='start' type-id='type-id-9' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='119' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='480'>
+        <var-decl name='eof' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='120' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='512'>
+        <var-decl name='past' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='121' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='544'>
+        <var-decl name='level' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='123' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='576'>
+        <var-decl name='strategy' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='124' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='608'>
+        <var-decl name='reset' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='125' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='640'>
+        <var-decl name='skip' type-id='type-id-9' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='127' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='704'>
+        <var-decl name='seek' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='128' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='736'>
+        <var-decl name='err' type-id='type-id-16' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='130' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='768'>
+        <var-decl name='msg' type-id='type-id-32' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='131' column='1'/>
+      </data-member>
+      <data-member access='public' layout-offset-in-bits='800'>
+        <var-decl name='strm' type-id='type-id-47' visibility='default' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='133' column='1'/>
+      </data-member>
+    </class-decl>
+    <typedef-decl name='gz_state' type-id='type-id-190' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='134' column='1' id='type-id-189'/>
+    <typedef-decl name='__ssize_t' type-id='type-id-16' filepath='/usr/include/bits/types.h' line='194' column='1' id='type-id-191'/>
+    <typedef-decl name='ssize_t' type-id='type-id-191' filepath='/usr/include/stdio.h' line='77' column='1' id='type-id-138'/>
+    <pointer-type-def type-id='type-id-189' size-in-bits='32' id='type-id-192'/>
+    <function-decl name='zng_gzread' mangled-name='zng_gzread' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='345' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzread@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='345' column='1'/>
+      <parameter type-id='type-id-46' name='buf' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='345' column='1'/>
+      <parameter type-id='type-id-3' name='len' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='345' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_gzfread' mangled-name='zng_gzfread' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='377' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzfread@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-46' name='buf' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='377' column='1'/>
+      <parameter type-id='type-id-42' name='size' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='377' column='1'/>
+      <parameter type-id='type-id-42' name='nitems' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='377' column='1'/>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='377' column='1'/>
+      <return type-id='type-id-42'/>
+    </function-decl>
+    <function-decl name='zng_gzgetc' mangled-name='zng_gzgetc' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='409' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzgetc@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='409' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_gzungetc' mangled-name='zng_gzungetc' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='440' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzungetc@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-16' name='c' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='440' column='1'/>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='440' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='zng_gzgets' mangled-name='zng_gzgets' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='496' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzgets@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='496' column='1'/>
+      <parameter type-id='type-id-32' name='buf' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='496' column='1'/>
+      <parameter type-id='type-id-16' name='len' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='496' column='1'/>
+      <return type-id='type-id-32'/>
+    </function-decl>
+    <function-decl name='zng_gzdirect' mangled-name='zng_gzdirect' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='557' column='1' visibility='default' binding='global' size-in-bits='32' elf-symbol-id='zng_gzdirect@@ZLIB_NG_GZ_2.0.0'>
+      <parameter type-id='type-id-133' name='file' filepath='/mnt/c/build/git/zlib-ng/btmp1/gzread.c' line='557' column='1'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+    <function-decl name='gz_error' filepath='/mnt/c/build/git/zlib-ng/btmp1/src.d/gzguts.h' line='138' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-192'/>
+      <parameter type-id='type-id-16'/>
+      <parameter type-id='type-id-44'/>
+      <return type-id='type-id-4'/>
+    </function-decl>
+    <function-decl name='__read_chk' filepath='/usr/include/bits/unistd.h' line='23' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-16'/>
+      <parameter type-id='type-id-46'/>
+      <parameter type-id='type-id-42'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-138'/>
+    </function-decl>
+    <function-decl name='memchr' filepath='/usr/include/string.h' line='107' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-46'/>
+      <parameter type-id='type-id-16'/>
+      <parameter type-id='type-id-42'/>
+      <return type-id='type-id-46'/>
+    </function-decl>
+    <function-decl name='close' filepath='/usr/include/unistd.h' line='358' column='1' visibility='default' binding='global' size-in-bits='32'>
+      <parameter type-id='type-id-16'/>
+      <return type-id='type-id-16'/>
+    </function-decl>
+  </abi-instr>
+</abi-corpus>
