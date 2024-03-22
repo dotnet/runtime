@@ -396,12 +396,12 @@ static code_t insEncodeReg_V(regNumber reg)
 
     constexpr size_t bits = hi - lo + 1;
     static_assert(bits <= 5);
-    assert((ureg >= 0) && (ureg < (1 << bits)));
-    return ureg << lo;
+    constexpr size_t mask = (1 << bits) - 1;
+    return (ureg & mask) << lo;
 }
 
 // Returns an encoding for the specified 'P' register used in 'hi' thru 'lo' position.
-template <const size_t hi, const size_t lo, const bool isHighReg = false>
+template <const size_t hi, const size_t lo>
 static code_t insEncodeReg_P(regNumber reg)
 {
     // lo <= hi < 32
@@ -409,16 +409,10 @@ static code_t insEncodeReg_P(regNumber reg)
     assert(isPredicateRegister(reg));
     code_t ureg = (code_t)reg - (code_t)REG_P0;
 
-    if (isHighReg)
-    {
-        assert(isHighPredicateRegister(reg));
-        ureg -= 8;
-    }
-
     constexpr size_t bits = hi - lo + 1;
     static_assert(bits <= 4);
-    assert((ureg >= 0) && (ureg < (1 << bits)));
-    return ureg << lo;
+    constexpr size_t mask = (1 << bits) - 1;
+    return (ureg & mask) << lo;
 }
 
 // Returns an encoding for the specified 'R' register used in 'hi' thru 'lo' position.
@@ -432,7 +426,8 @@ static code_t insEncodeReg_R(regNumber reg)
 
     constexpr size_t bits = hi - lo + 1;
     static_assert(bits <= 5);
-    return ureg << lo;
+    constexpr size_t mask = (1 << bits) - 1;
+    return (ureg & mask) << lo;
 }
 
 // Return an encoding for the specified predicate type used in '16' position.

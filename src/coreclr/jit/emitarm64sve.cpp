@@ -10738,7 +10738,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_FZ_2A: // ................ ......nnnn.ddddd -- SME2 multi-vec extract narrow
         case IF_SVE_HG_2A: // ................ ......nnnn.ddddd -- SVE2 FP8 downconverts
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V<4, 0>(id->idReg1()); // ddddd
+            code |= insEncodeReg_V<4, 0>(id->idReg1());            // ddddd
             code |= insEncodeReg_V_9_to_6_Times_Two(id->idReg2()); // nnnn
             dst += emitOutput_Instr(dst, code);
             break;
@@ -10828,7 +10828,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_DW_2B: // ........xx...... .......iNNN.DDDD -- SVE extract mask predicate from predicate-as-counter
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_P<3, 0>(id->idReg1());                   // DDDD
-            code |= insEncodeReg_P<7, 5, true>(id->idReg2());             // NNN
+            code |= insEncodeReg_P<7, 5>(id->idReg2());                   // NNN
             code |= insEncodeUimm<9, 8>(emitGetInsSC(id));                // ii (or i)
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
@@ -10848,7 +10848,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                            // (predicate-as-counter)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeVectorLengthSpecifier(id);                   // l
-            code |= insEncodeReg_P<2, 0, true>(id->idReg1());             // DDD
+            code |= insEncodeReg_P<2, 0>(id->idReg1());                   // DDD
             code |= insEncodeReg_R<9, 5>(id->idReg2());                   // nnnnn
             code |= insEncodeReg_R<20, 16>(id->idReg3());                 // mmmmm
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
@@ -10857,7 +10857,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_DZ_1A: // ........xx...... .............DDD -- sve_int_pn_ptrue
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P<2, 0, true>(id->idReg1());             // DDD
+            code |= insEncodeReg_P<2, 0>(id->idReg1());                   // DDD
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
