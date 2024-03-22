@@ -91,9 +91,6 @@
   <data name="ErrorMissingPropertyAccessors" xml:space="preserve">
     <value>Accessor methods for the {0} property are missing.</value>
   </data>
-  <data name="GetConverterNotSupported" xml:space="preserve">
-    <value>GetConverter has been disabled in the app configuration and is not supported.</value>
-  </data>
   <data name="InvalidMemberName" xml:space="preserve">
     <value>Invalid member name</value>
   </data>

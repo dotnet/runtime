@@ -22,9 +22,6 @@ namespace System.ComponentModel
         {
             // The try/catch here is because attributes should never throw exceptions. We would fail to
             // load an otherwise normal class.
-            if (!TypeDescriptor.SupportsGetConverter)
-                throw new NotSupportedException(SR.GetConverterNotSupported + " for type " + type.FullName);
-
             try
             {
                 Value = TypeDescriptor.GetConverter(type).ConvertFromInvariantString(value);

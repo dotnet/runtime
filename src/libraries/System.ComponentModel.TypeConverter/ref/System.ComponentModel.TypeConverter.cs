@@ -1030,7 +1030,6 @@ namespace System.ComponentModel
     }
     public partial class NullableConverter : System.ComponentModel.TypeConverter
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("NullableConverter")]
         public NullableConverter([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type) { }
         public System.Type NullableType { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]

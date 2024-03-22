@@ -175,9 +175,6 @@ namespace System.ComponentModel
             [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
             internal TypeConverter GetConverter(object? instance)
             {
-                if (!TypeDescriptor.SupportsGetConverter)
-                    throw new NotSupportedException(SR.GetConverterNotSupported);
-
                 TypeConverterAttribute? typeAttr = null;
 
                 // For instances, the design time object for them may want to redefine the
@@ -207,9 +204,6 @@ namespace System.ComponentModel
 
             private TypeConverter GetConverterHelper(TypeConverterAttribute? typeAttr)
             {
-                if (!TypeDescriptor.SupportsGetConverter)
-                    throw new NotSupportedException(SR.GetConverterNotSupported);
-
                 if (_converter == null)
                 {
                     typeAttr ??= (TypeConverterAttribute?)TypeDescriptor.GetAttributes(_type)[typeof(TypeConverterAttribute)];

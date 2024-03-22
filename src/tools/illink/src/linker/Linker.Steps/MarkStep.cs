@@ -2022,9 +2022,6 @@ namespace Mono.Linker.Steps
 			if (type == null)
 				return null;
 
-			if (type.ToString().Contains("AmbientValueAttribute"))
-				System.Diagnostics.Debug.WriteLine("Here");
-
 			// Track a mark reason for each call to MarkType.
 			switch (reason.Kind) {
 			case DependencyKind.AlreadyMarked:
@@ -3034,9 +3031,6 @@ namespace Mono.Linker.Steps
 			MethodDefinition? method = Context.Resolve (reference);
 			if (method == null)
 				return null;
-
-			if (method.ToString().Contains("AmbientValueAttribute"))
-				System.Console.WriteLine("Marking AmbientValueAttribute method");
 
 			if (Annotations.GetAction (method) == MethodAction.Nothing)
 				Annotations.SetAction (method, MethodAction.Parse);

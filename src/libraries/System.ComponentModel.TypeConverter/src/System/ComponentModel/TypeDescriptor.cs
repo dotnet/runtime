@@ -25,14 +25,6 @@ namespace System.ComponentModel
 #pragma warning disable IL4000
         internal static bool SupportsInstanceBasedDescriptors => AppContext.TryGetSwitch("System.ComponentModel.TypeDescriptor.SupportsInstanceBasedDescriptors", out bool result) ? result : true;
 #pragma warning restore IL4000
-
-
-        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
-        [FeatureSwitchDefinition("System.ComponentModel.TypeDescriptor.SupportsGetConverter")]
-#pragma warning disable IL4000
-        internal static bool SupportsGetConverter => AppContext.TryGetSwitch("System.ComponentModel.TypeDescriptor.SupportsGetConverter", out bool result) ? result : true;
-#pragma warning restore IL4000
-
         internal const DynamicallyAccessedMemberTypes ReflectTypesDynamicallyAccessedMembers = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields;
         internal const string DesignTimeAttributeTrimmed = "Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.";
 
@@ -798,12 +790,8 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a type converter for the specified type.
         /// </summary>
-        // [RequiresUnreferencedCode("SVEN: TypeDescriptor.GetConverter!")]
         public static TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
-            if (!SupportsGetConverter)
-                throw new NotSupportedException(SR.GetConverterNotSupported + " for type " + type.FullName);
-
             return GetDescriptor(type, nameof(type)).GetConverter();
         }
 
