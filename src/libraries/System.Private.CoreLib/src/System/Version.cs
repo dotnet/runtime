@@ -390,15 +390,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Version? v1, Version? v2)
         {
-            // Test "right" first to allow branch elimination when inlined for null checks (== null)
-            // so it can become a simple test
-            if (v2 is null)
+            if (ReferenceEquals(v1, v2))
             {
-                return v1 is null;
+                return true;
             }
 
-            // Quick reference equality test prior to calling the virtual Equality
-            return ReferenceEquals(v2, v1) ? true : v2.Equals(v1);
+            return v2 is not null && v2.Equals(v1);
         }
 
         public static bool operator !=(Version? v1, Version? v2) => !(v1 == v2);
