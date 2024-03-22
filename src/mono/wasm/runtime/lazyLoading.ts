@@ -26,7 +26,7 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
     }
 
     const pdbNameToLoad = changeExtension(dllAsset.name, ".pdb");
-    const shouldLoadPdb = loaderHelpers.hasDebuggingEnabled(loaderHelpers.config) && Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
+    const shouldLoadPdb = loaderHelpers.config.debugLevel != 0 && loaderHelpers.isDebuggingSupported() && Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
 
     const dllBytesPromise = loaderHelpers.retrieve_asset_download(dllAsset);
 

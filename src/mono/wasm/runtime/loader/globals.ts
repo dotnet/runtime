@@ -12,7 +12,7 @@ import { assertIsControllablePromise, createPromiseController, getPromiseControl
 import { mono_download_assets, resolve_single_asset_path, retrieve_asset_download } from "./assets";
 import { setup_proxy_console } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
-import { hasDebuggingEnabled } from "./config";
+import { isDebuggingSupported } from "./config";
 import { logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync } from "./assetsCache";
 
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
@@ -102,9 +102,9 @@ export function setLoaderGlobals(
         logDownloadStatsToConsole,
         purgeUnusedCacheEntriesAsync,
 
-        hasDebuggingEnabled,
         retrieve_asset_download,
         invokeLibraryInitializers,
+        isDebuggingSupported,
 
         // from wasm-feature-detect npm package
         exceptions,

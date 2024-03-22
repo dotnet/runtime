@@ -94,6 +94,10 @@ try {
         case "DownloadResourceProgressTest":
             exit(0);
             break;
+        case "DebugLevelTest":
+            testOutput("WasmDebugLevel: " + config.debugLevel);
+            exit(0);
+            break;
         default:
             console.error(`Unknown test case: ${testCase}`);
             exit(3);
