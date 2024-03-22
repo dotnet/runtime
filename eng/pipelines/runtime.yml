@@ -1819,7 +1819,8 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
-    - stage: Source Build Validation
+    - stage: SourceBuild
+      displayName: Source Build Validation
       dependsOn: []
       condition: eq(variables['isRollingBuild'], true)
       jobs:
