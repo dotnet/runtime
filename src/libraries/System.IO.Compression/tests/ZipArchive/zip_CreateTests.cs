@@ -146,7 +146,8 @@ namespace System.IO.Compression.Tests
         // bit flags correctly. It verifies that these have been set by reading from the MemoryStream manually, and by
         // reopening the generated file to confirm that the compression levels match.
         [Theory]
-        [InlineData(CompressionLevel.NoCompression, 6)]
+        // Special-case NoCompression: in this case, the CompressionMethod becomes Stored and the bits are unset.
+        [InlineData(CompressionLevel.NoCompression, 0)]
         [InlineData(CompressionLevel.Optimal, 0)]
         [InlineData(CompressionLevel.SmallestSize, 2)]
         [InlineData(CompressionLevel.Fastest, 4)]
