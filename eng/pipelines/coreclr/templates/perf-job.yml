@@ -289,5 +289,5 @@ jobs:
       inputs:
         SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
         Contents: 'corerun*'
-        TargetFolder: $(Build.SourcesDirectory)/.dotnet-mono
+        TargetFolder: $(Build.SourcesDirectory)/.dotnet-mono/shared/Microsoft.NETCore.App/$(productVersion)
       condition: and(succeeded(), eq(variables.runtimeFlavorName, 'Mono'), ne(variables.osGroup, 'windows'), notIn('${{ parameters.runtimeType }}', 'wasm', 'AndroidMono', 'iOSMono', 'iOSNativeAOT'))

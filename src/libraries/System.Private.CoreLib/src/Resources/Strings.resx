@@ -1101,6 +1101,12 @@
   <data name="Argument_GenConstraintViolation" xml:space="preserve">
     <value>GenericArguments[{0}], '{1}', on '{2}' violates the constraint of type '{3}'.</value>
   </data>
+  <data name="Argument_GenTypeConstraintsNotEqual" xml:space="preserve">
+    <value>Generic type constraints do not match.</value>
+  </data>
+  <data name="Argument_GenMethodConstraintsNotEqual" xml:space="preserve">
+    <value>Generic method constraints do not match.</value>
+  </data>
   <data name="Argument_GenericArgsCount" xml:space="preserve">
     <value>The number of generic arguments provided doesn't equal the arity of the generic type definition.</value>
   </data>
