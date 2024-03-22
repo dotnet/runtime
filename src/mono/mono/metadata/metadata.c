@@ -4706,13 +4706,16 @@ typedef struct {
 MONO_ALWAYS_INLINE static locator_t
 locator_init (MonoTableInfo *t, guint32 idx, guint32 col_idx)
 {
-	g_assert (t);
+	locator_t result = { 0, };
 
-	locator_t result;
 	result.idx = idx;
 	result.col_idx = col_idx;
 	result.t = t;
-	result.result = 0;
+
+	g_assert (t);
+	// FIXME: Callers shouldn't rely on this
+	if (!t->base)
+		return result;
 
 	// optimization data for decode_locator_row
 	result.metadata_has_updates = mono_metadata_has_updates ();
