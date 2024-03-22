@@ -248,7 +248,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             threadsReady = mono_wasm_init_threads();
         }
 
-        await wait_for_all_assets();
+        await runtimeHelpers.coreAssetsInMemory.promise;
 
         if (runtimeHelpers.config.virtualWorkingDirectory) {
             const FS = Module.FS;
@@ -304,6 +304,8 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         if (WasmEnableThreads && runtimeHelpers.config.mainThreadingMode == MainThreadingMode.DeputyAndIOThreads) {
             await runtimeHelpers.afterIOStarted.promise;
         }
+
+        await wait_for_all_assets();
 
         runtimeList.registerRuntime(exportedRuntimeAPI);
 

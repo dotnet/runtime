@@ -113,6 +113,7 @@ export interface AssetEntryInternal extends AssetEntry {
     pendingDownloadInternal?: LoadingResource
     noCache?: boolean
     useCredentials?: boolean
+    isCoreAssembly?: boolean
 }
 
 export type LoaderHelpers = {
@@ -215,6 +216,7 @@ export type RuntimeHelpers = {
     isPendingSynchronousCall: boolean, // true when we are in the middle of a synchronous call from managed code from same thread
     cspPolicy: boolean,
 
+    coreAssetsInMemory: PromiseAndController<void>,
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
     afterInstantiateWasm: PromiseAndController<void>,

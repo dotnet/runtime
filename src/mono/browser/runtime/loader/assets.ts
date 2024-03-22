@@ -17,11 +17,19 @@ import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 let throttlingPromise: PromiseAndController<void> | undefined;
 // in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
 let parallel_count = 0;
+const coreAssemblies: AssetEntryInternal[] = [];
 const assetsToLoad: AssetEntryInternal[] = [];
 const singleAssets: Map<string, AssetEntryInternal> = new Map();
 
 // A duplicate in pthreads/shared.ts
 const worker_empty_prefix = "          -    ";
+
+// assemblies necessary to start Mono VM
+const coreAssemblyNames: string[] = [
+    "System.Private.CoreLib",
+    "System.Collections",
+    "System.Runtime.InteropServices.JavaScript",
+];
 
 const jsRuntimeModulesAssetTypes: {
     [k: string]: boolean
@@ -151,21 +159,25 @@ export function resolve_single_asset_path(behavior: SingleAssetBehaviors): Asset
 export async function mono_download_assets(): Promise<void> {
     mono_log_debug("mono_download_assets");
     try {
-        const promises_of_assets: Promise<AssetEntryInternal>[] = [];
+        const promises_of_assets_core: Promise<AssetEntryInternal>[] = [];
+        const promises_of_assets_remaining: Promise<AssetEntryInternal>[] = [];
 
-        const countAndStartDownload = (asset: AssetEntryInternal) => {
+        const countAndStartDownload = (asset: AssetEntryInternal, promises_list: Promise<AssetEntryInternal>[]) => {
             if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
                 loaderHelpers.expected_instantiated_assets_count++;
             }
             if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
                 loaderHelpers.expected_downloaded_assets_count++;
-                promises_of_assets.push(start_asset_download(asset));
+                promises_list.push(start_asset_download(asset));
             }
         };
 
         // start fetching assets in parallel
+        for (const asset of coreAssemblies) {
+            countAndStartDownload(asset, promises_of_assets_core);
+        }
         for (const asset of assetsToLoad) {
-            countAndStartDownload(asset);
+            countAndStartDownload(asset, promises_of_assets_remaining);
         }
 
         loaderHelpers.allDownloadsQueued.promise_control.resolve();
@@ -173,54 +185,68 @@ export async function mono_download_assets(): Promise<void> {
         // continue after the dotnet.runtime.js was loaded
         await loaderHelpers.runtimeModuleLoaded.promise;
 
-        const promises_of_asset_instantiation: Promise<void>[] = [];
-        for (const downloadPromise of promises_of_assets) {
-            promises_of_asset_instantiation.push((async () => {
-                const asset = await downloadPromise;
-                if (asset.buffer) {
-                    if (!skipInstantiateByAssetTypes[asset.behavior]) {
-                        mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array-like or buffer-like or promise of these");
-                        mono_assert(typeof asset.resolvedUrl === "string", "resolvedUrl must be string");
-                        const url = asset.resolvedUrl!;
-                        const buffer = await asset.buffer;
-                        const data = new Uint8Array(buffer);
-                        cleanupAsset(asset);
+        const instantiate = async (downloadPromise: Promise<AssetEntryInternal>) => {
+            const asset = await downloadPromise;
+            if (asset.buffer) {
+                if (!skipInstantiateByAssetTypes[asset.behavior]) {
+                    mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array-like or buffer-like or promise of these");
+                    mono_assert(typeof asset.resolvedUrl === "string", "resolvedUrl must be string");
+                    const url = asset.resolvedUrl!;
+                    const buffer = await asset.buffer;
+                    const data = new Uint8Array(buffer);
+                    cleanupAsset(asset);
 
-                        // wait till after onRuntimeInitialized
+                    // wait till after onRuntimeInitialized
 
-                        await runtimeHelpers.beforeOnRuntimeInitialized.promise;
-                        runtimeHelpers.instantiate_asset(asset, url, data);
+                    await runtimeHelpers.beforeOnRuntimeInitialized.promise;
+                    runtimeHelpers.instantiate_asset(asset, url, data);
+                }
+            } else {
+                const headersOnly = skipBufferByAssetTypes[asset.behavior];
+                if (!headersOnly) {
+                    mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
+                    if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                        loaderHelpers.expected_downloaded_assets_count--;
+                    }
+                    if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                        loaderHelpers.expected_instantiated_assets_count--;
                     }
                 } else {
-                    const headersOnly = skipBufferByAssetTypes[asset.behavior];
-                    if (!headersOnly) {
-                        mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
-                        if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
-                            loaderHelpers.expected_downloaded_assets_count--;
-                        }
-                        if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
-                            loaderHelpers.expected_instantiated_assets_count--;
-                        }
-                    } else {
-                        if (asset.behavior === "symbols") {
-                            await runtimeHelpers.instantiate_symbols_asset(asset);
-                            cleanupAsset(asset);
-                        } else if (asset.behavior === "segmentation-rules") {
-                            await runtimeHelpers.instantiate_segmentation_rules_asset(asset);
-                            cleanupAsset(asset);
-                        }
+                    if (asset.behavior === "symbols") {
+                        await runtimeHelpers.instantiate_symbols_asset(asset);
+                        cleanupAsset(asset);
+                    } else if (asset.behavior === "segmentation-rules") {
+                        await runtimeHelpers.instantiate_segmentation_rules_asset(asset);
+                        cleanupAsset(asset);
+                    }
 
-                        if (skipBufferByAssetTypes[asset.behavior]) {
-                            ++loaderHelpers.actual_downloaded_assets_count;
-                        }
+                    if (skipBufferByAssetTypes[asset.behavior]) {
+                        ++loaderHelpers.actual_downloaded_assets_count;
                     }
                 }
-            })());
+            }
+        };
+
+        const promises_of_asset_instantiation_core: Promise<void>[] = [];
+        const promises_of_asset_instantiation_remaining: Promise<void>[] = [];
+        for (const downloadPromise of promises_of_assets_core) {
+            promises_of_asset_instantiation_core.push(instantiate(downloadPromise));
+        }
+        for (const downloadPromise of promises_of_assets_remaining) {
+            promises_of_asset_instantiation_remaining.push(instantiate(downloadPromise));
         }
 
         // this await will get past the onRuntimeInitialized because we are not blocking via addRunDependency
-        // and we are not awating it here
-        Promise.all(promises_of_asset_instantiation).then(() => {
+        // and we are not awaiting it here
+        Promise.all(promises_of_asset_instantiation_core).then(() => {
+            runtimeHelpers.coreAssetsInMemory.promise_control.resolve();
+        }).catch(err => {
+            loaderHelpers.err("Error in mono_download_assets: " + err);
+            mono_exit(1, err);
+            throw err;
+        });
+        Promise.all(promises_of_asset_instantiation_remaining).then(async () => {
+            await runtimeHelpers.coreAssetsInMemory.promise;
             runtimeHelpers.allAssetsInMemory.promise_control.resolve();
         }).catch(err => {
             loaderHelpers.err("Error in mono_download_assets: " + err);
@@ -237,6 +263,15 @@ export async function mono_download_assets(): Promise<void> {
     }
 }
 
+const noExtRx = /\.[^/.]+$/;
+function isCoreAssembly(asset: AssetEntryInternal): boolean {
+    if (asset.behavior !== "assembly" && asset.behavior !== "pdb") {
+        return false;
+    }
+    const nameWithoutExtension = asset.name.replace(noExtRx, "");
+    return coreAssemblyNames.includes(nameWithoutExtension);
+}
+
 export function prepareAssets() {
     const config = loaderHelpers.config;
     const modulesAssets: AssetEntryInternal[] = [];
@@ -250,7 +285,12 @@ export function prepareAssets() {
             mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
-            assetsToLoad.push(asset);
+            if (isCoreAssembly(asset)) {
+                asset.isCoreAssembly = true;
+                coreAssemblies.push(asset);
+            } else {
+                assetsToLoad.push(asset);
+            }
             set_single_asset(asset);
         }
     } else if (config.resources) {
@@ -269,21 +309,33 @@ export function prepareAssets() {
 
         if (resources.assembly) {
             for (const name in resources.assembly) {
-                assetsToLoad.push({
+                const asset: AssetEntryInternal = {
                     name,
                     hash: resources.assembly[name],
                     behavior: "assembly"
-                });
+                };
+                if (isCoreAssembly(asset)) {
+                    asset.isCoreAssembly = true;
+                    coreAssemblies.push(asset);
+                } else {
+                    assetsToLoad.push(asset);
+                }
             }
         }
 
         if (config.debugLevel != 0 && loaderHelpers.isDebuggingSupported() && resources.pdb) {
             for (const name in resources.pdb) {
-                assetsToLoad.push({
+                const asset: AssetEntryInternal = {
                     name,
                     hash: resources.pdb[name],
                     behavior: "pdb"
-                });
+                };
+                if (isCoreAssembly(asset)) {
+                    asset.isCoreAssembly = true;
+                    coreAssemblies.push(asset);
+                } else {
+                    assetsToLoad.push(asset);
+                }
             }
         }
 
