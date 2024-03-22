@@ -60,7 +60,7 @@ enum {
 	MONO_HAS_CUSTOM_DEBUG_MASK = 0x1f
 };
 
-gboolean 
+gboolean
 mono_get_pe_debug_info_full (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *out_timestamp, guint8 **ppdb_data,
 				   int *ppdb_uncompressed_size, int *ppdb_compressed_size, char **pdb_path, GArray *pdb_checksum_hash_type, GArray *pdb_checksum)
 {
@@ -761,16 +761,7 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 	return mono_ppdb_lookup_locals_internal (image, method_idx);
 }
 
-/*
-* We use this to pass context information to the row locator
-*/
-typedef struct {
-	guint32 idx;			/* The index that we are trying to locate */
-	guint32 col_idx;		/* The index in the row where idx may be stored */
-	MonoTableInfo *t;	/* pointer to the table */
-	guint32 result;
-} locator_t;
-
+// FIXME: This duplicates table_locator from metadata.c
 static int
 table_locator (const void *a, const void *b)
 {
@@ -813,9 +804,11 @@ lookup_custom_debug_information (MonoImage* image, guint32 token, uint8_t parent
 	if (!table->base)
 		return 0;
 
-	loc.idx = (mono_metadata_token_index (token) << MONO_HAS_CUSTOM_DEBUG_BITS) | parent_type;
-	loc.col_idx = MONO_CUSTOMDEBUGINFORMATION_PARENT;
-	loc.t = table;
+	loc = locator_init (
+		table,
+		(mono_metadata_token_index (token) << MONO_HAS_CUSTOM_DEBUG_BITS) | parent_type,
+		MONO_CUSTOMDEBUGINFORMATION_PARENT
+	);
 
 	if (!mono_binary_search (&loc, table->base, table_info_get_rows (table), table->row_size, table_locator))
 		return NULL;
