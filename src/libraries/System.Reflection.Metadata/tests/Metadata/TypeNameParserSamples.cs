@@ -131,7 +131,7 @@ namespace System.Reflection.Metadata.Tests
             public CustomUserDefinedType[] ArrayOfCustomUserDefinedTypes { get; set; }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void CanDeserializeCustomUserDefinedType()
         {
             CustomUserDefinedType parent = new()
@@ -175,7 +175,7 @@ namespace System.Reflection.Metadata.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void CanDeserializeDictionaryUsingNonPublicComparerType()
         {
             Dictionary<string, int> dictionary = new(StringComparer.CurrentCulture)
@@ -197,7 +197,7 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(dictionary, deserialized);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void CanDeserializeArraysOfArrays()
         {
             int[][] arrayOfArrays = new int[10][];
@@ -216,7 +216,7 @@ namespace System.Reflection.Metadata.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public void CanDeserializeListOfListOfInt()
         {
             List<List<int>> listOfListOfInts = new(10);

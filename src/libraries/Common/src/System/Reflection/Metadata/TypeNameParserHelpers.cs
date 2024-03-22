@@ -16,12 +16,12 @@ namespace System.Reflection.Metadata
 {
     internal static class TypeNameParserHelpers
     {
+        internal const int MaxArrayRank = 32;
         internal const int SZArray = -1;
         internal const int Pointer = -2;
         internal const int ByRef = -3;
         private const char EscapeCharacter = '\\';
 #if NET8_0_OR_GREATER
-        private static readonly SearchValues<char> _endOfTypeNameDelimitersSearchValues = SearchValues.Create(".+");
         private static readonly SearchValues<char> _endOfFullTypeNameDelimitersSearchValues = SearchValues.Create("[]&*,+\\");
 #endif
 
@@ -474,17 +474,13 @@ namespace System.Reflection.Metadata
 
         internal static ReadOnlySpan<char> GetName(ReadOnlySpan<char> fullName)
         {
-#if NET8_0_OR_GREATER
-            int offset = fullName.LastIndexOfAny(_endOfTypeNameDelimitersSearchValues);
-            Debug.Assert(offset != 0, "The provided full name must be valid");
+            int offset = fullName.LastIndexOfAny('.', '+');
 
             if (offset > 0 && fullName[offset - 1] == EscapeCharacter) // this should be very rare (IL Emit & pure IL)
             {
                 offset = GetUnescapedOffset(fullName, startIndex: offset);
             }
-#else
-            int offset = GetUnescapedOffset(fullName, startIndex: fullName.Length - 1);
-#endif
+
             return offset < 0 ? fullName : fullName.Slice(offset + 1);
 
             static int GetUnescapedOffset(ReadOnlySpan<char> fullName, int startIndex)
@@ -520,22 +516,14 @@ namespace System.Reflection.Metadata
             {
                 Debug.Assert(arrayRank >= 2 && arrayRank <= 32);
 
-#if NET8_0_OR_GREATER
-                return string.Create(2 + arrayRank - 1, arrayRank, (buffer, rank) =>
-                {
-                    buffer[0] = '[';
-                    for (int i = 1; i < rank; i++)
-                        buffer[i] = ',';
-                    buffer[^1] = ']';
-                });
-#else
-                ValueStringBuilder sb = new(stackalloc char[16]);
-                sb.Append('[');
+                Span<char> buffer = stackalloc char[2 + MaxArrayRank - 1];
+                buffer[0] = '[';
                 for (int i = 1; i < arrayRank; i++)
-                    sb.Append(',');
-                sb.Append(']');
-                return sb.ToString();
-#endif
+                {
+                    buffer[i] = ',';
+                }
+                buffer[arrayRank] = ']';
+                return buffer.Slice(0, arrayRank + 1).ToString();
             }
         }
 
@@ -549,13 +537,13 @@ namespace System.Reflection.Metadata
             if (!span.IsEmpty && span[0] == '[')
             {
                 // There are no spaces allowed before the first '[', but spaces are allowed after that.
-                ReadOnlySpan<char> trimmed = TrimStart(span.Slice(1));
+                ReadOnlySpan<char> trimmed = span.Slice(1).TrimStart();
                 if (!trimmed.IsEmpty)
                 {
                     if (trimmed[0] == '[')
                     {
                         doubleBrackets = true;
-                        span = TrimStart(trimmed.Slice(1));
+                        span = trimmed.Slice(1).TrimStart();
                         return true;
                     }
                     if (!(trimmed[0] is ',' or '*' or ']')) // [] or [*] or [,] or [,,,, ...]
@@ -568,8 +556,6 @@ namespace System.Reflection.Metadata
 
             return false;
         }
-
-        internal static ReadOnlySpan<char> TrimStart(ReadOnlySpan<char> input) => input.TrimStart();
 
         internal static bool TryGetTypeNameInfo(ref ReadOnlySpan<char> input, ref List<int>? nestedNameLengths,
             out int totalLength, out int genericArgCount)
@@ -686,7 +672,7 @@ namespace System.Reflection.Metadata
         {
             if (!span.IsEmpty && span[0] == value)
             {
-                span = TrimStart(span.Slice(1));
+                span = span.Slice(1).TrimStart();
                 return true;
             }
             return false;

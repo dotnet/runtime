@@ -146,10 +146,8 @@ namespace System.Reflection
             }
         }
 
-#if !NETSTANDARD2_0 // needed for ILVerification project
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "Used to implement resolving types from strings.")]
-#endif
         private Type? Make(Type? type, Metadata.TypeName typeName)
         {
             if (type is null || typeName.IsSimple)

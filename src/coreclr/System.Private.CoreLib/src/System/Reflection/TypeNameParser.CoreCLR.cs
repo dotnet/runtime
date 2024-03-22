@@ -55,7 +55,7 @@ namespace System.Reflection
                 return null;
             }
 
-            var parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError: throwOnError);
+            Metadata.TypeName? parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError: throwOnError);
             if (parsed is null)
             {
                 return null;
@@ -79,7 +79,7 @@ namespace System.Reflection
             bool ignoreCase,
             Assembly topLevelAssembly)
         {
-            var parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError);
+            Metadata.TypeName? parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError);
 
             if (parsed is null)
             {
@@ -110,7 +110,7 @@ namespace System.Reflection
 
             RuntimeAssembly requestingAssembly = scope.GetRuntimeAssembly();
 
-            var parsed = Metadata.TypeName.Parse(typeName);
+            Metadata.TypeName parsed = Metadata.TypeName.Parse(typeName);
             RuntimeType? type = (RuntimeType?)new TypeNameParser()
             {
                 _throwOnError = true,
@@ -140,7 +140,7 @@ namespace System.Reflection
                 return null;
             }
 
-            var parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError);
+            Metadata.TypeName? parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError);
             if (parsed is null)
             {
                 return null;

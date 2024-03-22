@@ -49,7 +49,7 @@ namespace System.Reflection.Metadata.Tests
 
         [Theory]
         [InlineData("Namespace.Containing++Nested")] // a pair of '++'
-        [InlineData("TypeNameFollowedBySome[] crap")] // unconsumed characters
+        [InlineData("TypeNameFollowedBySome[] unconsumedCharacters")]
         [InlineData("MissingAssemblyName, ")]
         [InlineData("ExtraComma, ,")]
         [InlineData("ExtraComma, , System.Runtime")]
@@ -564,7 +564,8 @@ namespace System.Reflection.Metadata.Tests
 
         public static IEnumerable<object[]> GetTypesThatRequireEscaping()
         {
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported
+                && !PlatformDetection.IsMonoRuntime) // Mono does not escape Type.Name
             {
                 AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TypesThatRequireEscaping"), AssemblyBuilderAccess.Run);
                 ModuleBuilder module = assembly.DefineDynamicModule("TypesThatRequireEscapingModule");

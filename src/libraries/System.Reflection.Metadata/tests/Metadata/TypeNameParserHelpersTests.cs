@@ -212,16 +212,6 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Theory]
-        [InlineData(" \t\r\nA.B.C", "A.B.C")]
-        [InlineData(" A.B.C\t\r\n", "A.B.C\t\r\n")] // don't trim the end
-        public void TrimStartTrimsAllWhitespaces(string input, string expectedResult)
-        {
-            ReadOnlySpan<char> inputSpan = input.AsSpan();
-
-            Assert.Equal(expectedResult, TypeNameParserHelpers.TrimStart(inputSpan).ToString());
-        }
-
-        [Theory]
         [InlineData("A.B.C", true, null, 5, 0)]
         [InlineData("A.B.C\\", false, null, 0, 0)] // invalid type name: ends with escape character
         [InlineData("A.B.C\\DoeNotNeedEscaping", false, null, 0, 0)] // invalid type name: escapes non-special character

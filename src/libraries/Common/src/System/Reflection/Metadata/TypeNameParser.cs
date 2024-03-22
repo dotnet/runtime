@@ -14,7 +14,6 @@ namespace System.Reflection.Metadata
     [DebuggerDisplay("{_inputString}")]
     internal ref struct TypeNameParser
     {
-        private const int MaxArrayRank = 32;
         private static readonly TypeNameParseOptions _defaults = new();
         private readonly bool _throwOnError;
         private readonly TypeNameParseOptions _parseOptions;
@@ -29,7 +28,7 @@ namespace System.Reflection.Metadata
 
         internal static TypeName? Parse(ReadOnlySpan<char> typeName, bool throwOnError, TypeNameParseOptions? options = default)
         {
-            ReadOnlySpan<char> trimmedName = TrimStart(typeName); // whitespaces at beginning are always OK
+            ReadOnlySpan<char> trimmedName = typeName.TrimStart(); // whitespaces at beginning are always OK
             if (trimmedName.IsEmpty)
             {
                 // whitespace input needs to report the error index as 0

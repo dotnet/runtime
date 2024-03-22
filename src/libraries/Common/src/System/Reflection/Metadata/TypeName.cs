@@ -23,7 +23,7 @@ namespace System.Reflection.Metadata
         private readonly int _rankOrModifier;
         private readonly TypeName[]? _genericArguments;
         private readonly AssemblyName? _assemblyName;
-        private readonly TypeName? _underlyingType;
+        private readonly TypeName? _elementOrGenericType;
         private readonly TypeName? _declaringType;
         private string? _assemblyQualifiedName;
 
@@ -38,12 +38,12 @@ namespace System.Reflection.Metadata
             FullName = fullName;
             _assemblyName = assemblyName;
             _rankOrModifier = rankOrModifier;
-            _underlyingType = underlyingType;
+            _elementOrGenericType = underlyingType;
             _declaringType = containingType;
             _genericArguments = genericTypeArguments;
 
-            Debug.Assert(!(IsArray || IsPointer || IsByRef) || _underlyingType is not null);
-            Debug.Assert(_genericArguments is null || _underlyingType is not null);
+            Debug.Assert(!(IsArray || IsPointer || IsByRef) || _elementOrGenericType is not null);
+            Debug.Assert(_genericArguments is null || _elementOrGenericType is not null);
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace System.Reflection.Metadata
         /// This is because determining whether a type truly is a generic type requires loading the type
         /// and performing a runtime check.</para>
         /// </remarks>
-        public bool IsSimple => _underlyingType is null;
+        public bool IsSimple => _elementOrGenericType is null;
 
         /// <summary>
         /// Returns true if this is a managed pointer type (e.g., "ref int").
@@ -231,7 +231,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">The current type is not an array, pointer or reference.</exception>
         public TypeName GetElementType()
             => IsArray || IsPointer || IsByRef
-                ? _underlyingType!
+                ? _elementOrGenericType!
                 : throw TypeNameParserHelpers.InvalidOperation_NoElement();
 
         /// <summary>
@@ -243,7 +243,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">The current type is not a generic type.</exception>
         public TypeName GetGenericTypeDefinition()
             => IsConstructedGenericType
-                ? _underlyingType!
+                ? _elementOrGenericType!
                 : throw TypeNameParserHelpers.InvalidOperation_NotGenericType();
 
         /// <summary>
@@ -300,7 +300,7 @@ namespace System.Reflection.Metadata
             }
 
 #if SYSTEM_PRIVATE_CORELIB
-            return _assemblyName; // no need for a copy in CoreLib
+            return _assemblyName; // no need for a copy in CoreLib (it's internal)
 #else
             return (AssemblyName)_assemblyName.Clone();
 #endif

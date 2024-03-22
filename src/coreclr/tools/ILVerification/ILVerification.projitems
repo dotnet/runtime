@@ -87,6 +87,9 @@
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameParserHelpers.cs">
       <Link>Utilities\TypeNameParserHelpers.cs</Link>
     </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+      <Link>System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs</Link>
+    </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.Helpers.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.Helpers</Link>
     </Compile>

@@ -12,9 +12,9 @@ using System.Text;
 
 namespace System.Reflection
 {
-    //
-    // Parses an assembly name.
-    //
+    /// <summary>
+    /// Parses an assembly name.
+    /// </summary>
     internal ref partial struct AssemblyNameParser
     {
         public readonly struct AssemblyNameParts
@@ -35,7 +35,9 @@ namespace System.Reflection
             public readonly byte[]? _publicKeyOrToken;
         }
 
-        // Token categories for the lexer.
+        /// <summary>
+        /// Token categories for the lexer.
+        /// </summary>
         private enum Token
         {
             Equals = 1,
@@ -376,18 +378,7 @@ namespace System.Reflection
         }
 
         private static bool IsWhiteSpace(char ch)
-        {
-            switch (ch)
-            {
-                case '\n':
-                case '\r':
-                case ' ':
-                case '\t':
-                    return true;
-                default:
-                    return false;
-            }
-        }
+            => ch is '\n' or '\r' or ' ' or '\t';
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryGetNextChar(out char ch)
@@ -450,11 +441,7 @@ namespace System.Reflection
                 }
             }
 
-#if SYSTEM_PRIVATE_CORELIB
             ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[64]);
-#else
-            StringBuilder sb = new(64);
-#endif
 
             char quoteChar = '\0';
             if (c == '\'' || c == '\"')
