@@ -41,7 +41,7 @@ namespace System.IO.Compression
         private List<ZipGenericExtraField>? _cdUnknownExtraFields;
         private List<ZipGenericExtraField>? _lhUnknownExtraFields;
         private readonly byte[]? _fileComment;
-        private readonly CompressionLevel? _compressionLevel;
+        private readonly CompressionLevel _compressionLevel;
 
         // Initializes, attaches it to archive
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
@@ -79,7 +79,7 @@ namespace System.IO.Compression
             _cdUnknownExtraFields = cd.ExtraFields;
             _fileComment = cd.FileComment;
 
-            _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag);
+            _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, CompressionMethod);
         }
 
         // Initializes new entry
@@ -91,7 +91,7 @@ namespace System.IO.Compression
             {
                 CompressionMethod = CompressionMethodValues.Stored;
             }
-            _generalPurposeBitFlag = MapDeflateCompressionOption(_generalPurposeBitFlag, _compressionLevel);
+            _generalPurposeBitFlag = MapDeflateCompressionOption(_generalPurposeBitFlag, _compressionLevel, CompressionMethod);
         }
 
         // Initializes new entry
@@ -105,9 +105,9 @@ namespace System.IO.Compression
             _versionMadeByPlatform = CurrentZipPlatform;
             _versionMadeBySpecification = ZipVersionNeededValues.Default;
             _versionToExtract = ZipVersionNeededValues.Default; // this must happen before following two assignment
-            _compressionLevel = null;
-            _generalPurposeBitFlag = MapDeflateCompressionOption(0, _compressionLevel);
+            _compressionLevel = CompressionLevel.Optimal;
             CompressionMethod = CompressionMethodValues.Deflate;
+            _generalPurposeBitFlag = MapDeflateCompressionOption(0, _compressionLevel, CompressionMethod);
             _lastModified = DateTimeOffset.Now;
 
             _compressedSize = 0; // we don't know these yet
@@ -617,7 +617,7 @@ namespace System.IO.Compression
                 case CompressionMethodValues.Deflate:
                 case CompressionMethodValues.Deflate64:
                 default:
-                    compressorStream = new DeflateStream(backingStream, _compressionLevel ?? CompressionLevel.Optimal, leaveBackingStreamOpen);
+                    compressorStream = new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen);
                     break;
 
             }
@@ -784,31 +784,39 @@ namespace System.IO.Compression
 
         private bool SizesTooLarge() => _compressedSize > uint.MaxValue || _uncompressedSize > uint.MaxValue;
 
-        private static CompressionLevel? MapCompressionLevel(BitFlagValues generalPurposeBitFlag)
+        private static CompressionLevel MapCompressionLevel(BitFlagValues generalPurposeBitFlag, CompressionMethodValues compressionMethod)
         {
             // Information about the Deflate compression option is stored in bits 1 and 2 of the general purpose bit flags.
-            int deflateCompressionOption = (int)generalPurposeBitFlag & 0x6;
+            // If the compression method is not Deflate, the Deflate compression option is invalid - default to NoCompression.
+            int deflateCompressionOption = compressionMethod == CompressionMethodValues.Deflate || compressionMethod == CompressionMethodValues.Deflate64
+                ? (int)generalPurposeBitFlag & 0x6
+                : 6;
 
-            return deflateCompressionOption switch
+            return  deflateCompressionOption switch
             {
                 0 => CompressionLevel.Optimal,
                 2 => CompressionLevel.SmallestSize,
                 4 => CompressionLevel.Fastest,
                 6 => CompressionLevel.NoCompression,
-                _ => null
+                _ => CompressionLevel.Optimal
             };
         }
 
-        private static BitFlagValues MapDeflateCompressionOption(BitFlagValues generalPurposeBitFlag, CompressionLevel? compressionLevel)
+        private static BitFlagValues MapDeflateCompressionOption(BitFlagValues generalPurposeBitFlag, CompressionLevel compressionLevel, CompressionMethodValues compressionMethod)
         {
-            ushort deflateCompressionOptions = compressionLevel switch
-            {
-                CompressionLevel.Optimal => 0,
-                CompressionLevel.SmallestSize => 2,
-                CompressionLevel.Fastest => 4,
-                CompressionLevel.NoCompression => 6,
-                _ => 0
-            };
+            ushort deflateCompressionOptions = (ushort)(
+                // The Deflate compression level is only valid if the compression method is actually Deflate (or Deflate64). If it's not, the
+                // value of the two bits is undefined and they should be zeroed out.
+                compressionMethod == CompressionMethodValues.Deflate || compressionMethod == CompressionMethodValues.Deflate64
+                    ? compressionLevel switch
+                    {
+                        CompressionLevel.Optimal => 0,
+                        CompressionLevel.SmallestSize => 2,
+                        CompressionLevel.Fastest => 4,
+                        CompressionLevel.NoCompression => 6,
+                        _ => 0
+                    }
+                    : 0);
 
             return (BitFlagValues)(((int)generalPurposeBitFlag & ~0x6) | deflateCompressionOptions);
         }
