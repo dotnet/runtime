@@ -51,7 +51,7 @@ public class Test_CastThenBinop
         return (ushort)(_xorLeft ^ (long)_xorRight);
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         const int Pass = 100;

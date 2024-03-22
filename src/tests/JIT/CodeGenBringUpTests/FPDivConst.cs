@@ -14,7 +14,7 @@ public class BringUpTest_FPDivConst
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPDivConst(float x) { return 1/x; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float y = FPDivConst(5f);

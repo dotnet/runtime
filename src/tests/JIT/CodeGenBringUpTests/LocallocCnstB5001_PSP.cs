@@ -44,7 +44,7 @@ public class BringUpTest_LocallocCnstB5001_PSP
         return -1;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int ret;

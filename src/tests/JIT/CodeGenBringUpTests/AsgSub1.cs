@@ -14,7 +14,7 @@ public class BringUpTest_AsgSub1
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int AsgSub1(int x) { x -= 1; return x; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         if (AsgSub1(1) == 0) return Pass;

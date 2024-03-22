@@ -23,7 +23,7 @@ public class BringUpTest_JTrueEqFP
         return returnValue;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int returnValue = Pass;

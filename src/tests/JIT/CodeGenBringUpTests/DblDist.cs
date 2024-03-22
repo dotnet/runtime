@@ -19,13 +19,13 @@ public class BringUpTest_DblDist
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static double DblDist(double x1, double y1, double x2, double y2) 
-    { 
+    public static double DblDist(double x1, double y1, double x2, double y2)
+    {
        double z = sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
-       return z; 
+       return z;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double y = DblDist(5f, 7f, 2f, 3f);

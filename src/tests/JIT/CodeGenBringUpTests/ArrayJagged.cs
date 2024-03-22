@@ -20,7 +20,7 @@ public class BringUpTest_ArrayJagged
         return a[1][i];
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         if (ArrayJagged(1) != 3) return Fail;

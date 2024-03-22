@@ -27,7 +27,7 @@ public class StaticValueField
     sField = v;
   }
 
-  [Fact]
+  [Fact, OuterLoop]
   public static int TestEntryPoint()
   {
     Init();

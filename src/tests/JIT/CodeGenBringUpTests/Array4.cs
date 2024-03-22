@@ -17,7 +17,7 @@ public class BringUpTest_Array4
         return a[i];
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         if (Array4(1) != 2) return Fail;

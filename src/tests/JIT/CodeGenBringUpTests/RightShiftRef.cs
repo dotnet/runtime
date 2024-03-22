@@ -14,7 +14,7 @@ public class BringUpTest_RightShiftRef
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     internal static void RightShiftRef(ref int x, int y) { x >>= y; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int x = 36;

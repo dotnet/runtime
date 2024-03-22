@@ -65,9 +65,9 @@ public class MiscMethods
     {
         Console.WriteLine(s);
     }
- 
+
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public bool InstanceCalls(MiscMethods m)    
+    public bool InstanceCalls(MiscMethods m)
     {
        return x == m.x && y == m.y;
     }
@@ -79,13 +79,13 @@ public class BringUpTest_InstanceCalls
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static bool floatEqual(float x, float y)     
+    public static bool floatEqual(float x, float y)
     {
         return System.Math.Abs(x-y) <= Single.Epsilon;
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static bool doubleEqual(double x, double y)     
+    public static bool doubleEqual(double x, double y)
     {
         return System.Math.Abs(x-y) <= Double.Epsilon;
     }
@@ -131,7 +131,7 @@ public class BringUpTest_InstanceCalls
     }
 
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         MiscMethods m = new MiscMethods(10,20);
@@ -148,6 +148,6 @@ public class BringUpTest_InstanceCalls
 
         if (x == Pass && y == Pass && z == Pass)
            return Pass;
-        return Fail;        
+        return Fail;
     }
 }

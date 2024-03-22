@@ -18,7 +18,7 @@ public class BringUpTest_BinaryRMW
         x |= 2;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int x = 12;

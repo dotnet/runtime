@@ -22,9 +22,9 @@ public class BringUpTest_Gcd
     {
         print(a, b);
         int result;
-        if (b == 0) 
+        if (b == 0)
           result = a;
-        else if (a < b) 
+        else if (a < b)
           result = Gcd(b, a);
         else
           result = Gcd(b, a%b);
@@ -33,12 +33,12 @@ public class BringUpTest_Gcd
     }
 
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int s = Gcd(36, 81);
         Console.WriteLine("GCD is " + s);
         if (s != 9) return Fail;
-        return Pass;        
+        return Pass;
     }
 }

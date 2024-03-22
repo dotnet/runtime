@@ -25,7 +25,7 @@ public class BringUpTest_FactorialRec
         return result;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int s = FactorialRec(5);

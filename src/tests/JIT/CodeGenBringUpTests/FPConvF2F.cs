@@ -17,7 +17,7 @@ public class BringUpTest_FPConvF2F
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPConvF2F(double x) { return (float) x; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int result = Fail;
@@ -26,7 +26,7 @@ public class BringUpTest_FPConvF2F
 
         if (Math.Abs(x-3d) <= Double.Epsilon)
             result = Pass;
-        
+
         int result2 = Fail;
         float z = FPConvF2F(3.2d);
         Console.WriteLine(z);

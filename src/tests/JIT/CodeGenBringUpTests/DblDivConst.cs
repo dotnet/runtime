@@ -14,7 +14,7 @@ public class BringUpTest_DblDivConst
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static double DblDivConst(double x) { return x/2; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double y = DblDivConst(5d);

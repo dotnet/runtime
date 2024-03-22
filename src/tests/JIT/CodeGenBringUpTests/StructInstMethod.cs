@@ -87,7 +87,7 @@ public class BringUpTest_StructInstMethod
     }
 
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         Point p = new Point(10, 20, 30);

@@ -14,7 +14,7 @@ public class BringUpTest_FPAdd
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPAdd(float x, float y) { return x+y; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float y = FPAdd(1f, 1f);

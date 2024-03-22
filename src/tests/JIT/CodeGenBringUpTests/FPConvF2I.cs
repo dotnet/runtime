@@ -18,14 +18,14 @@ public class BringUpTest_FPConvF2I
     public static byte FPConvF2I(double x) { return (byte) x; }
 
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int result = Fail;
         int x = FPConvF2I(3.14f);
         Console.WriteLine(x);
         if (x == 3) result = Pass;
-        
+
         int result2 = Fail;
         byte y = FPConvF2I(3.14d);
         Console.WriteLine(y);

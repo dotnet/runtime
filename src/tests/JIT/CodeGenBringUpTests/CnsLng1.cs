@@ -14,7 +14,7 @@ public class BringUpTest_CnsLng1
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static long CnsLng1() { return 1; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         long y = CnsLng1();

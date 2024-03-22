@@ -21,7 +21,7 @@ public class child
     const int Pass = 100;
     const int Fail = -1;
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int result = mul1(3, 7);
@@ -31,11 +31,11 @@ public class child
             return Fail;
     }
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining)] 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int mul1(int a, int b)
     {
         return a*b;
     }
-    
+
 }
 

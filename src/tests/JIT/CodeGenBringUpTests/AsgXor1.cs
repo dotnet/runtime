@@ -14,7 +14,7 @@ public class BringUpTest_AsgXor1
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int AsgXor1(int x) { x ^= 0xf; return x; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         if (AsgXor1(13) == 2) return Pass;

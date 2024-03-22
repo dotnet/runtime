@@ -19,14 +19,14 @@ public class BringUpTest_FPArea
 
     // Computes area of a triangle given its three sides
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static float FPArea(float a, float b, float c) 
+    public static float FPArea(float a, float b, float c)
     {
         float s = (a+b+c)/2f;
         return FPSqrt(s*(s-a)*(s-b)*(s-c));
     }
 
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float y = FPArea(3f, 4f, 5f);

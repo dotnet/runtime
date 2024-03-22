@@ -13,16 +13,16 @@ public class BringUpTest_DblArray
 
     // JBTodo - remove 2nd param after implementing conv from double to int
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static double DblArray(double []x, double len) 
-    { 
+    public static double DblArray(double []x, double len)
+    {
        double sum = 0;
        for (int i=0; i < x.Length; ++i)
            sum += x[i];
 
-       return sum / len; 
+       return sum / len;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double []arr = new double[] {1f,2f,3f,4f,5f};

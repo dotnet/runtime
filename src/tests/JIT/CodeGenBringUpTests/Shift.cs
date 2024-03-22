@@ -52,7 +52,7 @@ public class Test_Shift
         return x;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         const int Pass = 100;

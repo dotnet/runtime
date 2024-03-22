@@ -14,7 +14,7 @@ public class BringUpTest_NegRMW
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     internal static void NegRMW(ref int x) { x = -x; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int x = 12;

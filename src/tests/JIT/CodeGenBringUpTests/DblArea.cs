@@ -20,14 +20,14 @@ public class BringUpTest_DblArea
 
     // Computes area of a triangle given its three sides
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static double DblArea(double a, double b, double c) 
+    public static double DblArea(double a, double b, double c)
     {
         double s = (a+b+c)/2f;
         return DblSqrt(s*(s-a)*(s-b)*(s-c));
     }
 
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double y = DblArea(3d, 4d, 5d);

@@ -20,7 +20,7 @@ public class BringUpTest_Swap
     }
 
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int a = 10, b= 20;
@@ -28,6 +28,6 @@ public class BringUpTest_Swap
         Swap(ref a, ref b);
         Console.WriteLine("After swap: " + a + "," + b);
         if (a==20 && b== 10) return Pass;
-        return Fail;        
+        return Fail;
     }
 }

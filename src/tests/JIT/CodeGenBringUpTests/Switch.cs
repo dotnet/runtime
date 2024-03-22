@@ -9,14 +9,14 @@ public class SwitchTest
  const int Pass = 100;
  const int Fail = -1;
 
- [Fact]
+ [Fact, OuterLoop]
  public static int TestEntryPoint()
  {
   int sum =0;
   for(int i=2; i < 5; i++) {
    switch(i) {
    case 2:
-        sum += i; 
+        sum += i;
         break;
    case 3:
         sum += i;

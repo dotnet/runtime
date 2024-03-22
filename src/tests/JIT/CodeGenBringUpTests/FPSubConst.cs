@@ -14,7 +14,7 @@ public class BringUpTest_FPSubConst
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPSubConst(float x) { return x-1; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float y = FPSubConst(1f);

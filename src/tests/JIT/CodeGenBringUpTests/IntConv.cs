@@ -32,13 +32,13 @@ public class BringUpTest_IntConv
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static UInt32 IntConv(long x) { return (UInt32)x; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         long x = IntConv((int)3);
         Console.WriteLine(x);
         if (x != 3) return Fail;
-        
+
         x = IntConv((UInt32)3294168832);
         Console.WriteLine(x);
         if (x != 3294168832L) return Fail;
@@ -50,7 +50,7 @@ public class BringUpTest_IntConv
         z = IntConv((byte)3);
         Console.WriteLine(z);
         if (z != 3) return Fail;
-               
+
         byte w = IntConv((Int16)3);
         Console.WriteLine(w);
         if (w != 3) return Fail;

@@ -18,7 +18,7 @@ public class BringUpTest_ArrayMD1
         return a[0, 1];
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         if (ArrayMD1() != 2) return Fail;

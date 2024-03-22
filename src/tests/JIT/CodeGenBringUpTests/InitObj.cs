@@ -29,7 +29,7 @@ public class BringUpTest_InitObj
     }
 
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         if (InitObj())

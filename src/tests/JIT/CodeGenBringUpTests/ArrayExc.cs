@@ -18,7 +18,7 @@ public class BringUpTest_ArrayExc
         return a[5];
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         try

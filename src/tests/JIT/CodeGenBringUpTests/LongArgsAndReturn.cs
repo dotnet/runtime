@@ -21,7 +21,7 @@ public class BringUpTest_LongArgsAndReturn
     }
 
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         long m = LongArgsAndReturn(10L, 20L);

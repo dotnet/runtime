@@ -14,7 +14,7 @@ public class BringUpTest_DblMul
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static double DblMul(double x, double y) { return x*y; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double y = DblMul(17d, 9d);

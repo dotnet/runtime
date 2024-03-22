@@ -14,7 +14,7 @@ public class BringUpTest_Ind1
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     internal static void Ind1(ref int x) { x = 1; return; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int y = 0;

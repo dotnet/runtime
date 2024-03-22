@@ -18,14 +18,14 @@ public class BringUpTest_FPConvF2Lng
     public static UInt64 FPConvF2Lng(double x) { return (UInt64) x; }
 
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int result = Fail;
         long x = FPConvF2Lng(3294168832f);
         Console.WriteLine(x);
         if (x == 3294168832L) result = Pass;
-        
+
         int result2 = Fail;
         UInt64 y = FPConvF2Lng(3294168832d);
         Console.WriteLine(y);

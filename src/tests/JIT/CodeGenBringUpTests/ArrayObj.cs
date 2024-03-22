@@ -28,7 +28,7 @@ public class BringUpTest_ArrayObj
         return a[i].field;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         if (ArrayObj(1) != 1) return Fail;

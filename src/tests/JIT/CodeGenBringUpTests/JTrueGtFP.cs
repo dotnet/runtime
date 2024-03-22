@@ -24,7 +24,7 @@ public class BringUpTest_JTrueGtFP
         return returnValue;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int returnValue = Pass;

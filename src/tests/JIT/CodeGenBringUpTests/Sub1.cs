@@ -14,7 +14,7 @@ public class BringUpTest_Sub1
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int Sub1(int x) { return x - 1; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int y = Sub1(1);

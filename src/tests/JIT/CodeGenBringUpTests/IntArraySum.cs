@@ -9,7 +9,7 @@ using Xunit;
 public class BringUpTest_IntArraySum
 {
     const int Pass = 100;
-    const int Fail = -1;    
+    const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int IntArraySum(int []a, int n)
@@ -21,12 +21,12 @@ public class BringUpTest_IntArraySum
     }
 
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int [] a = new int[5] {1, 2, 3, 4, 5};
         int result = IntArraySum(a, a.Length);
         if (result == 15) return Pass;
-        return Fail;        
+        return Fail;
     }
 }

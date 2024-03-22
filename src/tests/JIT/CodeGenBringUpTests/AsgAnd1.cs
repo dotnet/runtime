@@ -14,7 +14,7 @@ public class BringUpTest_AsgAnd1
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int AsgAnd1(int x) { x &= 3; return x; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         if (AsgAnd1(0xf) == 3) return Pass;

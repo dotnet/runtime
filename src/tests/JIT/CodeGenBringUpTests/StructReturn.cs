@@ -336,7 +336,7 @@ public class BringUpTest_StructReturn
     }
 
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         // int

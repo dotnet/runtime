@@ -13,16 +13,16 @@ public class BringUpTest_FPArray
 
     // JBTodo - remove 2nd param after implementing conv from float to int
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static float FPArray(float []x, float len) 
-    { 
+    public static float FPArray(float []x, float len)
+    {
        float sum = 0;
        for (int i=0; i < x.Length; ++i)
            sum += x[i];
 
-       return sum / len; 
+       return sum / len;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float []arr = new float[] {1f,2f,3f,4f,5f};

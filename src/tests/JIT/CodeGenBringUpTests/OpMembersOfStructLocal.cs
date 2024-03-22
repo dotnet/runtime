@@ -173,15 +173,15 @@ public class BringUpTest_OpMembersOfStructLocal
        int b = p1.y * p2.y;
        int c = p1.z;
 
- 
+
        f = (a==p1.x) && (b==p2.y);
        if (!f) return Fail;
 
        a += p1.x;
        if (20 != a) return Fail;
-       b *= p1.y;      
-       if (0 != b) return Fail;       
-       c /= p1.x;       
+       b *= p1.y;
+       if (0 != b) return Fail;
+       c /= p1.x;
 
        p1.x += 10;
        p1.y *= 3;
@@ -262,15 +262,15 @@ public class BringUpTest_OpMembersOfStructLocal
        p1d.z /= 5d;
        if (!equals(20d, p1d.x)) return Fail;
        if (!equals(60d, p1d.y)) return Fail;
-       if (!equals(6d, p1d.z)) return Fail; 
+       if (!equals(6d, p1d.z)) return Fail;
 
        return Pass;
     }
-    
 
-    [Fact]
+
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
-    {       
+    {
        return OpMembersOfStructLocal();
     }
 }

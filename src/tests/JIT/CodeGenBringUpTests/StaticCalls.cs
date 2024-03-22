@@ -21,25 +21,25 @@ public class BringUpTest_StaticCalls
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool IsLessThan(int a, int b)
-    {        
+    {
         return a<b;
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool IsEqual(int a, int b)
-    {        
+    {
         return !IsLessThan(a, b) && !IsLessThan(b, a);
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool IsEqual(float a, float b)
-    {        
+    {
         return System.Math.Abs(a-b) <= Single.Epsilon;
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool IsEqual(double a, double b)
-    {        
+    {
         return System.Math.Abs(a-b) <= Double.Epsilon;
     }
 
@@ -105,7 +105,7 @@ public class BringUpTest_StaticCalls
 
         int s = Sum(1,2,3,4);
         if (s != 10) result = Fail;
-        
+
         s = Sum(1,2,3,4,5);
         if (s != 15) result = Fail;
 
@@ -139,7 +139,7 @@ public class BringUpTest_StaticCalls
         if (!IsEqual(fsum, 10f)) result = Fail;
 
         fsum = Sum(1f, 2f, 3f, 4f, 5f, 6f);
-        if (!IsEqual(fsum, 21f)) result = Fail;                 
+        if (!IsEqual(fsum, 21f)) result = Fail;
 
         fsum = Sum(f1,f2,f3,f4);
         if (!IsEqual(fsum, 10f)) result = Fail;
@@ -158,7 +158,7 @@ public class BringUpTest_StaticCalls
         if (!IsEqual(dsum, 10d)) result = Fail;
 
         dsum = Sum(1d, 2d, 3d, 4d, 5d, 6d);
-        if (!IsEqual(dsum, 21d)) result = Fail;                 
+        if (!IsEqual(dsum, 21d)) result = Fail;
 
         dsum = Sum(d1,d2,d3,d4);
         if (!IsEqual(dsum, 10d)) result = Fail;
@@ -170,10 +170,10 @@ public class BringUpTest_StaticCalls
         return result;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
-        int y = StaticCalls();      
-        return y;        
+        int y = StaticCalls();
+        return y;
     }
 }

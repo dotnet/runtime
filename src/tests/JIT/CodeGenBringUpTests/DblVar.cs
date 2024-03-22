@@ -12,13 +12,13 @@ public class BringUpTest_DblVar
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static double DblVar(double x, double y) 
-    { 
+    public static double DblVar(double x, double y)
+    {
        double z = x+y;
-       return z; 
+       return z;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double y = DblVar(1d, 1d);

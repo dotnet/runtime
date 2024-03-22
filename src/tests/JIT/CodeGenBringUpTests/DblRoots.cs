@@ -12,14 +12,14 @@ public class BringUpTest_DblRoots
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    internal static void DblRoots(double a, double b, double c, ref double r1, ref double r2) 
-    { 
+    internal static void DblRoots(double a, double b, double c, ref double r1, ref double r2)
+    {
        r1 = (-b + Math.Sqrt(b*b - 4*a*c))/(2*a);
        r2 = (-b - Math.Sqrt(b*b - 4*a*c))/(2*a);
-       return ; 
+       return ;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double x1 = 0;

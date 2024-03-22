@@ -14,7 +14,7 @@ public class BringUpTest_FPMulConst
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPMulConst(float r) { return 3.14f *r*r; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         float y = FPMulConst(10f);

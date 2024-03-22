@@ -12,13 +12,13 @@ public class BringUpTest_DblAvg6
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static double DblAvg6(double a, double b, double c, double d, double e, double f) 
-    { 
+    public static double DblAvg6(double a, double b, double c, double d, double e, double f)
+    {
        double z = (a+b+c+d+e+f)/6.0f;
-       return z; 
+       return z;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double y = DblAvg6(1d, 2d, 3d, 4d, 5d, 6d);

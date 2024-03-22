@@ -30,7 +30,7 @@ public class BringUpTest_StructFldAddr
         return rp.a.num + rp.b.num;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         Rational a = new Rational();

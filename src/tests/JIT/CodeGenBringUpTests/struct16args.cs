@@ -68,7 +68,7 @@ public class BringUpTest_struct16args
     public static int method_4S(Point p0, Point p1, Point p2, Point p3)
     {
         Console.Write("method_4S");
-    
+
         if (p0.W != 0)
             return Fail;
 
@@ -670,9 +670,9 @@ public class BringUpTest_struct16args
         return Pass;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
-    {       
+    {
        int i0 = 2;
        int i1 = 3;
        int i2 = 5;

@@ -24,7 +24,7 @@ public class BringUpTest_Localloc
         for (i=1; i < 5; ++i)
         {
            Console.WriteLine(a[i]);
-        }        
+        }
     }
 
 
@@ -47,7 +47,7 @@ public class BringUpTest_Localloc
     }
 
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int ret = Pass;
@@ -56,6 +56,6 @@ public class BringUpTest_Localloc
 
         bool flag = false;
         try { Localloc(0); } catch (Exception) { flag = true; } finally { if(!flag) ret = Fail; }
-        return ret;        
+        return ret;
     }
 }

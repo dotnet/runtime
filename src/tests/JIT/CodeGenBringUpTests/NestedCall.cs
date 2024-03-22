@@ -24,7 +24,7 @@ public class BringUpTest_NestedCall
         return c;
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         int y = NestedCall(2, 3);

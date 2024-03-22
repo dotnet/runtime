@@ -14,7 +14,7 @@ public class BringUpTest_DblNeg
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static double DblNeg(double x) { return -x; }
 
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         double y = DblNeg(-1f);

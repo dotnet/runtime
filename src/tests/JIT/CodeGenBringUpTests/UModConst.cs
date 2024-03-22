@@ -104,7 +104,7 @@ static class UModConst
 
 public static class UModProgram
 {
-    [Fact]
+    [Fact, OuterLoop]
     public static int TestEntryPoint()
     {
         const int Pass = 100;
