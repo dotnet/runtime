@@ -187,7 +187,7 @@ namespace Mono.Linker
 		// 0 => successfully set up context with all arguments
 		// 1 => argument processing stopped early without errors
 		// -1 => error setting up context
-		int SetupContext (ILogger? customLogger = null)
+		protected int SetupContext (ILogger? customLogger = null)
 		{
 			Pipeline p = GetStandardPipeline ();
 			context = GetDefaultContext (p, customLogger);
