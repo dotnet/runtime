@@ -766,7 +766,7 @@ namespace System.Reflection
                     }
 
                     // Match name
-                    if (!namedParam.Name.Equals(argName))
+                    if (!namedParam.MemberInfo.Name.Equals(argName))
                     {
                         continue;
                     }
@@ -1058,29 +1058,12 @@ namespace System.Reflection
         public CustomAttributeEncodedArgument? EncodedArgument { get; set; }
     }
 
-    internal sealed class CustomAttributeNamedParameter
+    internal sealed class CustomAttributeNamedParameter(MemberInfo memberInfo, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
     {
-        public CustomAttributeNamedParameter(MemberInfo memberInfo, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
-        {
-            MemberInfo = memberInfo;
-            Name = MemberInfo.Name;
-            FieldOrProperty = fieldOrProperty;
-            CustomAttributeType = type;
-        }
-
-        public CustomAttributeNamedParameter(string memberName, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
-        {
-            MemberInfo = null;
-            Name = memberName;
-            FieldOrProperty = fieldOrProperty;
-            CustomAttributeType = type;
-        }
-
-        public string Name { get; }
-        public CustomAttributeType CustomAttributeType { get; }
-        public CustomAttributeEncoding FieldOrProperty { get; }
+        public MemberInfo MemberInfo => memberInfo;
+        public CustomAttributeType CustomAttributeType => type;
+        public CustomAttributeEncoding FieldOrProperty => fieldOrProperty;
         public CustomAttributeEncodedArgument? EncodedArgument { get; set; }
-        public MemberInfo? MemberInfo { get; }
     }
 
     internal sealed class CustomAttributeType
