@@ -113,7 +113,7 @@ public class Program
 
         var keepNativeSymbols = new Option<bool>("--keep-native-symbols")
         {
-            DefaultValueFactory = (_) => false,
+            DefaultValueFactory = (_) => !RunningOnYamato(),
             Description = "Do not strip binaries and keep native symbols",
         };
         keepNativeSymbols.Validators.Add(result =>
