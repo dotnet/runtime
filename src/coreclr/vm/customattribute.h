@@ -23,6 +23,13 @@ namespace Attribute
         DomainAssembly* pDomainAssembly);
 }
 
+extern "C" BOOL QCALLTYPE CustomAttribute_ParseAttributeUsageAttribute(
+    PVOID pData,
+    ULONG cData,
+    ULONG* pTargets,
+    BOOL* pAllowMultiple,
+    BOOL* pInherited);
+
 extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     QCall::ModuleHandle pModule,
     QCall::ObjectHandleOnStack pCaType,

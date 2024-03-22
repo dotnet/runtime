@@ -863,6 +863,40 @@ static ARG_SLOT GetDataFromBlob(Assembly *pCtorAssembly,
     return retValue;
 }
 
+extern "C" BOOL QCALLTYPE CustomAttribute_ParseAttributeUsageAttribute(
+    PVOID pData,
+    ULONG cData,
+    ULONG* pTargets,
+    BOOL* pAllowMultiple,
+    BOOL* pInherited)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    CustomAttributeParser ca(pData, cData);
+    CaArg args[1];
+    args[0].InitEnum(SERIALIZATION_TYPE_I4, 0);
+    if (FAILED(::ParseKnownCaArgs(ca, args, ARRAY_SIZE(args))))
+        return FALSE;
+    *pTargets = args[0].val.u4;
+
+    // Define index values.
+    const int allowMultiple = 0;
+    const int inherited = 1;
+
+    CaNamedArg namedArgs[2];
+    CaType namedArgTypes[2];
+    namedArgTypes[allowMultiple].Init(SERIALIZATION_TYPE_BOOLEAN);
+    namedArgTypes[inherited].Init(SERIALIZATION_TYPE_BOOLEAN);
+    namedArgs[allowMultiple].Init("AllowMultiple", SERIALIZATION_TYPE_PROPERTY, namedArgTypes[allowMultiple], FALSE);
+    namedArgs[inherited].Init("Inherited", SERIALIZATION_TYPE_PROPERTY, namedArgTypes[inherited], TRUE);
+    if (FAILED(::ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs))))
+        return FALSE;
+
+    *pAllowMultiple = namedArgs[allowMultiple].val.boolean ? TRUE : FALSE;
+    *pInherited = namedArgs[inherited].val.boolean ? TRUE : FALSE;
+    return TRUE;
+}
+
 extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     QCall::ModuleHandle pModule,
     QCall::ObjectHandleOnStack pCaType,

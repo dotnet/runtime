@@ -1801,23 +1801,6 @@ namespace System.Reflection
 
             AttributeUsageAttribute? attributeUsageAttribute = null;
 
-            CustomAttributeCtorParameter[] ctorParams =
-            {
-                new CustomAttributeCtorParameter(new CustomAttributeType((RuntimeType)typeof(int)))
-            };
-
-            CustomAttributeNamedParameter[] namedParams =
-            {
-                new CustomAttributeNamedParameter(
-                    "Inherited",
-                    CustomAttributeEncoding.Property,
-                    new CustomAttributeType((RuntimeType)typeof(bool))),
-                new CustomAttributeNamedParameter(
-                    "AllowMultiple",
-                    CustomAttributeEncoding.Property,
-                    new CustomAttributeType((RuntimeType)typeof(bool))),
-            };
-
             for (int i = 0; i < car.Length; i++)
             {
                 ref CustomAttributeRecord caRecord = ref car[i];
@@ -1829,24 +1812,14 @@ namespace System.Reflection
                 if (attributeUsageAttribute is not null)
                     throw new FormatException(SR.Format(SR.Format_AttributeUsage, attributeType));
 
-                CustomAttributeEncodedArgument.ParseAttributeArguments(
+                if (!ParseAttributeUsageAttribute(
                     caRecord.blob,
-                    ctorParams,
-                    namedParams,
-                    (RuntimeModule)typeof(AttributeUsageAttribute).Module);
-
-                // Convert parsed attribute arguments
-                AttributeTargets attrTargets = (AttributeTargets)(ctorParams[0].EncodedArgument?.PrimitiveValue.Byte4 ?? 0);
-
-                CustomAttributeEncodedArgument? encodedArg = namedParams[0].EncodedArgument;
-                bool inherited = encodedArg is not null
-                    ? encodedArg.PrimitiveValue.Byte4 != 0
-                    : true; // default
-
-                encodedArg = namedParams[1].EncodedArgument;
-                bool allowMultiple = encodedArg is not null
-                    ? encodedArg.PrimitiveValue.Byte4 != 0
-                    : false; // default
+                    out AttributeTargets attrTargets,
+                    out bool allowMultiple,
+                    out bool inherited))
+                {
+                    throw new CustomAttributeFormatException();
+                }
 
                 attributeUsageAttribute = new AttributeUsageAttribute(attrTargets, allowMultiple: allowMultiple, inherited: inherited);
             }
@@ -1890,6 +1863,31 @@ namespace System.Reflection
             return elementCount == 0 ? caType.GetEmptyArray() : (object[])Array.CreateInstance(caType, elementCount);
         }
         #endregion
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_ParseAttributeUsageAttribute")]
+        [SuppressGCTransition]
+        private static partial int ParseAttributeUsageAttribute(
+            IntPtr pData,
+            int cData,
+            int* pTargets,
+            int* pAllowMultiple,
+            int* pInherited);
+
+        private static bool ParseAttributeUsageAttribute(
+            ConstArray blob,
+            out AttributeTargets attrTargets,
+            out bool allowMultiple,
+            out bool inherited)
+        {
+            int attrTargetsLocal = 0;
+            int allowMultipleLocal = 0;
+            int inheritedLocal = 0;
+            int result = ParseAttributeUsageAttribute(blob.Signature, blob.Length, &attrTargetsLocal, &allowMultipleLocal, &inheritedLocal);
+            attrTargets = (AttributeTargets)attrTargetsLocal;
+            allowMultiple = allowMultipleLocal != 0;
+            inherited = inheritedLocal != 0;
+            return result != 0;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreateCustomAttributeInstance")]
         private static partial void CreateCustomAttributeInstance(
