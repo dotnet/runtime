@@ -302,19 +302,19 @@ namespace ILLink.RoslynAnalyzer
 		// - custom feature checks defined in library code
 		private protected virtual bool IsRequiresCheck (IPropertySymbol propertySymbol, Compilation compilation) => false;
 
-		internal static bool IsAnnotatedFeatureCheck (IPropertySymbol propertySymbol, string featureName)
+		internal static bool IsAnnotatedFeatureGuard (IPropertySymbol propertySymbol, string featureName)
 		{
-			// Only respect FeatureCheckAttribute on static boolean properties.
-			if (!propertySymbol.IsStatic || propertySymbol.Type.SpecialType != SpecialType.System_Boolean)
+			// Only respect FeatureGuardAttribute on static boolean properties.
+			if (!propertySymbol.IsStatic || propertySymbol.Type.SpecialType != SpecialType.System_Boolean || propertySymbol.SetMethod != null)
 				return false;
 
-			ValueSet<string> featureCheckAnnotations = propertySymbol.GetFeatureCheckAnnotations ();
+			ValueSet<string> featureCheckAnnotations = propertySymbol.GetFeatureGuardAnnotations ();
 			return featureCheckAnnotations.Contains (featureName);
 		}
 
-		internal bool IsFeatureCheck (IPropertySymbol propertySymbol, Compilation compilation)
+		internal bool IsFeatureGuard (IPropertySymbol propertySymbol, Compilation compilation)
 		{
-			return IsAnnotatedFeatureCheck (propertySymbol, RequiresAttributeFullyQualifiedName)
+			return IsAnnotatedFeatureGuard (propertySymbol, RequiresAttributeFullyQualifiedName)
 				|| IsRequiresCheck (propertySymbol, compilation);
 		}
 

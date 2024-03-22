@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
 
     <!-- Shouldn't need this: https://github.com/dotnet/linker/issues/2618 -->
     <NoWarn>$(NoWarn);IL2050</NoWarn>
 
+    <!-- Registers a global 'ComWrappers' instance for marshalling. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="ComWrappers.cs" />
   </ItemGroup>

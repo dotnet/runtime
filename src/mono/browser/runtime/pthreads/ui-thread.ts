@@ -100,6 +100,9 @@ function monoWorkerMessageHandler(worker: PThreadWorker, ev: MessageEvent<any>):
         case WorkerToMainMessageType.deputyStarted:
             runtimeHelpers.afterMonoStarted.promise_control.resolve(message.deputyProxyGCHandle);
             break;
+        case WorkerToMainMessageType.ioStarted:
+            runtimeHelpers.afterIOStarted.promise_control.resolve();
+            break;
         case WorkerToMainMessageType.deputyFailed:
             runtimeHelpers.afterMonoStarted.promise_control.reject(new Error(message.error));
             break;

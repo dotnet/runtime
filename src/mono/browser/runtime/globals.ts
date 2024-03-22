@@ -65,6 +65,7 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
         afterPreRun: createPromiseController<void>(),
         beforeOnRuntimeInitialized: createPromiseController<void>(),
         afterMonoStarted: createPromiseController<GCHandle | undefined>(),
+        afterIOStarted: createPromiseController<void>(),
         afterOnRuntimeInitialized: createPromiseController<void>(),
         afterPostRun: createPromiseController<void>(),
         nativeAbort: (reason: any) => { throw reason || new Error("abort"); },

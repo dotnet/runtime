@@ -1003,6 +1003,18 @@ mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int to
         return mono_metadata_update_table_bounds_check (image, table_index, token_index);
 }
 
+void
+mono_metadata_compute_column_offsets (MonoTableInfo *table)
+{
+	int offset = 0, c = mono_metadata_table_count (table->size_bitfield);
+	memset(table->column_offsets, 0, MONO_TABLE_INFO_MAX_COLUMNS);
+	for (int i = 0; i < c; i++) {
+		int size = mono_metadata_table_size (table->size_bitfield, i);
+		table->column_offsets[i] = (guint8)offset;
+		offset += size;
+	}
+}
+
 /**
  * mono_metadata_compute_table_bases:
  * \param meta metadata context to compute table values
@@ -1022,6 +1034,7 @@ mono_metadata_compute_table_bases (MonoImage *meta)
 			continue;
 
 		table->row_size = mono_metadata_compute_size (meta, i, &table->size_bitfield);
+		mono_metadata_compute_column_offsets (table);
 		table->base = base;
 		base += table_info_get_rows (table) * table->row_size;
 	}
@@ -1470,18 +1483,12 @@ mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
 {
 	const char *data;
 	int n;
-
 	guint32 bitfield = t->size_bitfield;
 
 	g_assert (GINT_TO_UINT32(idx) < table_info_get_rows (t));
 	g_assert (col < mono_metadata_table_count (bitfield));
-	data = t->base + idx * t->row_size;
-
-	n = mono_metadata_table_size (bitfield, 0);
-	for (guint i = 0; i < col; ++i) {
-		data += n;
-		n = mono_metadata_table_size (bitfield, i + 1);
-	}
+	data = t->base + idx * t->row_size + t->column_offsets [col];
+	n = mono_metadata_table_size (bitfield, col);
 	switch (n) {
 	case 1:
 		return *data;
@@ -3942,7 +3949,7 @@ compare_type_literals (MonoImage *image, int class_type, int type_type, MonoErro
 		if (class_type == MONO_TYPE_STRING || class_type == MONO_TYPE_OBJECT)
 			return TRUE;
 		//XXX stringify this argument
-		mono_error_set_bad_image (error, image, "Expected reference type but got type kind %d", class_type);
+		mono_error_set_type_load_name (error, NULL, NULL, "Expected reference type but got type kind %d", class_type);
 		return FALSE;
 	}
 
@@ -3966,7 +3973,7 @@ compare_type_literals (MonoImage *image, int class_type, int type_type, MonoErro
 		return TRUE;
 	default:
 		//XXX stringify this argument
-		mono_error_set_bad_image (error, image, "Expected value type but got type kind %d", class_type);
+		mono_error_set_type_load_name (error, NULL, NULL, "Expected value type but got type kind %d", class_type);
 		return FALSE;
 	}
 }
@@ -6009,7 +6016,7 @@ signature_equiv_vararg (MonoMethodSignature *sig1, MonoMethodSignature *sig2, in
 	if (sig1->hasthis != sig2->hasthis ||
 	    sig1->sentinelpos != sig2->sentinelpos)
 		return FALSE;
-	
+
 	int flag = MONO_TYPE_EQ_FLAGS_SIG_ONLY | (((equiv_flags & SIG_EQUIV_FLAG_IGNORE_CMODS) != 0) ? MONO_TYPE_EQ_FLAG_IGNORE_CMODS : 0);
 
 	for (i = 0; i < sig1->sentinelpos; i++) {
