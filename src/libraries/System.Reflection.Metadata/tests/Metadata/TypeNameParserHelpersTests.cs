@@ -11,18 +11,9 @@ namespace System.Reflection.Metadata.Tests
     {
         public static IEnumerable<object[]> GetGenericArgumentCountReturnsExpectedValue_Args()
         {
-            int maxArrayLength =
-#if NETCOREAPP
-                Array.MaxLength;
-#else
-                2147483591;
-#endif
-
             yield return new object[] { $"TooLargeForInt`{long.MaxValue}", -1 };
             yield return new object[] { $"TooLargeForInt`{(long)int.MaxValue + 1}", -1 };
             yield return new object[] { $"TooLargeForInt`{(long)uint.MaxValue + 1}", -1 };
-            yield return new object[] { $"MaxArrayLength`{maxArrayLength}", maxArrayLength };
-            yield return new object[] { $"TooLargeForAnArray`{maxArrayLength + 1}", -1 };
         }
 
         [Theory]

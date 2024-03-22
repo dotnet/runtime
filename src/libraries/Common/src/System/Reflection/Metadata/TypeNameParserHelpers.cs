@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
-using static System.Array;
 using static System.Char;
 using static System.Int32;
 
@@ -54,14 +53,9 @@ namespace System.Reflection.Metadata
                     else if (TryParse(fullTypeName.Slice(backtickIndex + 1), out int value))
                     {
                         // From C# 2.0 language spec: 8.16.3 Multiple type parameters Generic type declarations can have any number of type parameters.
-                        if (value > MaxLength)
-                        {
-                            // But.. it's impossible to create a type with more than Array.MaxLength.
-                            // OOM is also not welcomed in the parser!
-                            return -1;
-                        }
-
-                        // the value can still be negative, but it's fine as the caller should treat that as an error
+                        // There is no special treatment for values larger than Array.MaxLength,
+                        // as the parser should simply prevent from parsing that many nodes.
+                        // The value can still be negative, but it's fine as the caller should treat that as an error.
                         return value;
                     }
 
@@ -412,8 +406,6 @@ namespace System.Reflection.Metadata
 #endif
 
 #if !NETCOREAPP
-        private const int MaxLength = 2147483591;
-
         private static bool TryParse(ReadOnlySpan<char> input, out int value) => int.TryParse(input.ToString(), out value);
 
         private static bool IsAsciiDigit(char ch) => ch >= '0' && ch <= '9';
