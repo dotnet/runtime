@@ -42,7 +42,6 @@ namespace System.Threading
         #endregion
 
         #region Exchange
-
         /// <summary>Sets a 32-bit signed integer to a specified value and returns the original value, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
