@@ -561,32 +561,6 @@ HCIMPL1_V(float, JIT_FloatRound, float val)
 }
 HCIMPLEND
 
-#ifndef TARGET_WINDOWS
-namespace
-{
-    bool isnan(float val)
-    {
-        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
-        return (bits & 0x7FFFFFFFU) > 0x7F800000U;
-    }
-    bool isnan(double val)
-    {
-        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
-        return (bits & 0x7FFFFFFFFFFFFFFFULL) > 0x7FF0000000000000ULL;
-    }
-    bool isfinite(float val)
-    {
-        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
-        return (~bits & 0x7F800000U) != 0;
-    }
-    bool isfinite(double val)
-    {
-        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
-        return (~bits & 0x7FF0000000000000ULL) != 0;
-    }
-}
-#endif
-
 /*********************************************************************/
 HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
 {
@@ -602,28 +576,23 @@ HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
 HCIMPLEND
 
 /*********************************************************************/
-// Call fast Dbl2Lng conversion - used by functions below
-FORCEINLINE INT64 FastDbl2Lng(double val)
-{
-#ifdef TARGET_X86
-    FCALL_CONTRACT;
-    return HCCALL1_V(JIT_Dbl2Lng, val);
-#else
-    FCALL_CONTRACT;
-    return((__int64) val);
-#endif
-}
-
-/*********************************************************************/
 HCIMPL1_V(UINT32, JIT_Dbl2UIntOvf, double val)
 {
     FCALL_CONTRACT;
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const double uint_max = 4294967295.0;
+    if (val != val || val < 0 || val > uint_max)
+        FCThrow(kOverflowException);
+    return (UINT32)val;
+
+#else
         // Note that this expression also works properly for val = NaN case
     if (val > -1.0 && val < 4294967296.0)
-        return((UINT32)FastDbl2Lng(val));
+        return((UINT32)val);
 
     FCThrow(kOverflowException);
+#endif //TARGET_X86 || TARGET_AMD64
 }
 HCIMPLEND
 
@@ -631,7 +600,14 @@ HCIMPLEND
 HCIMPL1_V(int, JIT_Dbl2IntOvf, double val)
 {
     FCALL_CONTRACT;
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const double int32_min = -2147483648.0;
+    const double int32_max_plus_1 = 2147483648.0;
+    if (val != val || val < int32_min || val >= int32_max_plus_1)
+        FCThrow(kOverflowException);
+    return (INT32)val;
 
+#else
     const double two31 = 2147483648.0;
 
         // Note that this expression also works properly for val = NaN case
@@ -639,6 +615,7 @@ HCIMPL1_V(int, JIT_Dbl2IntOvf, double val)
         return((INT32)val);
 
     FCThrow(kOverflowException);
+#endif //TARGET_X86 || TARGET_AMD64
 }
 HCIMPLEND
 
@@ -646,7 +623,13 @@ HCIMPLEND
 HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
 {
     FCALL_CONTRACT;
-
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const double int64_min = -2147483648.0 * 4294967296.0;
+    const double int64_max = 2147483648.0 * 4294967296.0;
+    if (val != val || val <= int64_min || val >= int64_max)
+        FCThrow(kOverflowException);
+    return (INT64)val;
+#else
     const double two63  = 2147483648.0 * 4294967296.0;
 
     // Note that this expression also works properly for val = NaN case
@@ -655,6 +638,7 @@ HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
         return((INT64)val);
 
     FCThrow(kOverflowException);
+#endif //TARGET_X86 || TARGET_AMD64
 }
 HCIMPLEND
 
@@ -662,18 +646,24 @@ HCIMPLEND
 HCIMPL1_V(UINT64, JIT_Dbl2ULngOvf, double val)
 {
     FCALL_CONTRACT;
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
+    if ((val != val || val < 0) || (val >= uint64_max_plus_1))
+        FCThrow(kOverflowException);
+    return (UINT64)val;
 
+#else
     const double two64  = 4294967296.0 * 4294967296.0;
         // Note that this expression also works properly for val = NaN case
     if (val > -1.0 && val < two64) {
         const double two63  = 2147483648.0 * 4294967296.0;
         UINT64 ret;
         if (val < two63) {
-            ret = FastDbl2Lng(val);
+            ret = (INT64)val;
         }
         else {
             // subtract 0x8000000000000000, do the convert then add it back again
-            ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
+            ret = (INT64)(val - two63) + I64(0x8000000000000000);
         }
 #ifdef _DEBUG
         // since no overflow can occur, the value always has to be within 1
@@ -682,8 +672,8 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULngOvf, double val)
 #endif // _DEBUG
         return ret;
     }
-
     FCThrow(kOverflowException);
+#endif //TARGET_X86 || TARGET_AMD64
 }
 HCIMPLEND
 
@@ -691,6 +681,10 @@ HCIMPL1_V(UINT32, JIT_Dbl2UInt, double val)
 {
     FCALL_CONTRACT;
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
+    // The code below works to saturate the input value
+    //      val = NaN or val <= 0; output = 0
+    //      0 < val < UINT32_MAX;  output = (uint32_t)val
+    //      UINT32_MAX <= val;     output = UINT32_MAX
     const double uint_max = 4294967295.0;
     return (val > 0) ? ((val >= uint_max) ? UINT32_MAX : (UINT32)val) : 0;
 
@@ -721,6 +715,10 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
     FCALL_CONTRACT;
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
+    // The code below works to saturate the input value
+    //      val = NaN or val <= 0; output = 0
+    //      0 < val < UINT64_MAX;  output = (uint64_t)val
+    //      UINT64_MAX <= val;     output = UINT64_MAX
     const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
     return (val > 0) ? ((val >= uint64_max_plus_1) ? UINT64_MAX : (UINT64)val) : 0;
 
@@ -728,16 +726,42 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
     const double two63  = 2147483648.0 * 4294967296.0;
     UINT64 ret;
     if (val < two63) {
-        ret = FastDbl2Lng(val);
+        ret = (INT64)(val);
     }
     else {
         // subtract 0x8000000000000000, do the convert then add it back again
-        ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
+        ret = (INT64)(val - two63) + I64(0x8000000000000000);
     }
     return ret;
 #endif // TARGET_X86 || TARGET_AMD64
 }
 HCIMPLEND
+
+#ifndef TARGET_WINDOWS
+namespace
+{
+    bool isnan(float val)
+    {
+        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+        return (bits & 0x7FFFFFFFU) > 0x7F800000U;
+    }
+    bool isnan(double val)
+    {
+        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+        return (bits & 0x7FFFFFFFFFFFFFFFULL) > 0x7FF0000000000000ULL;
+    }
+    bool isfinite(float val)
+    {
+        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+        return (~bits & 0x7F800000U) != 0;
+    }
+    bool isfinite(double val)
+    {
+        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+        return (~bits & 0x7FF0000000000000ULL) != 0;
+    }
+}
+#endif
 
 /*********************************************************************/
 HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
