@@ -2544,48 +2544,6 @@ namespace Mono.Linker.Steps
 				}
 			}
 		}
-		//          Dictionary<TypeReference, List<InterfaceImplementationNode>> waysToImplementIface = new (InflatedInterfaceComparer);
-
-		//// Get all explicit interfaces of this type
-		//foreach (var directIface in type.Interfaces) {
-		//InterfaceImplementationNode directlyImplementedNode = new InterfaceImplementationNode (directIface, type, []);
-		//  TypeReference inflatedDirectIface = directIface.InterfaceType.TryInflateFrom (type, context)!;
-		//  waysToImplementIface.AddToList (inflatedDirectIface, directlyImplementedNode);
-		//}
-
-		//// Add interfaces on base type
-		//if (type.BaseType is { } baseType && context.Resolve (baseType) is { } baseDef) {
-		//  MapInterfacesOnType (baseDef);
-		//  var baseInterfaces = _interfaces[baseDef];
-		//  foreach (var item in baseInterfaces) {
-		//      var inflatedInterface = item.InflatedInterface.TryInflateFrom (type.BaseType, context);
-		//      Debug.Assert (inflatedInterface is not null);
-		//      foreach (var node in item.InterfaceImplementationNodes) {
-		//          waysToImplementIface.AddToList (inflatedInterface, node);
-		//      }
-		//  }
-		//}
-
-		//// Recursive interfaces next to preserve Inherit/Implement tree order
-		//foreach (var directIface in type.Interfaces) {
-		//  // If we can't resolve the interface type we can't find recursive interfaces
-		//  var ifaceDirectlyOnType = context.Resolve (directIface.InterfaceType);
-		//  if (ifaceDirectlyOnType is null) {
-		//      continue;
-		//  }
-		//  MapInterfacesOnType (ifaceDirectlyOnType);
-		//  TypeReference inflatedDirectIface = directIface.InterfaceType.TryInflateFrom (type, context)!;
-		//  var recursiveInterfaces = _interfaces[ifaceDirectlyOnType];
-		//  foreach (var recursiveInterface in recursiveInterfaces) {
-		//      var implToRecursiveIfaceChain = new InterfaceImplementationNode (directIface, type, recursiveInterface.InterfaceImplementationNodes);
-		//      // Inflate the generic arguments up to the terminal interfaceImpl to get the inflated interface type implemented by this type
-		//      TypeReference inflatedRecursiveInterface = inflatedDirectIface;
-		//      foreach (var interfaceImpl in recursiveInterface.MostDirectInterfaceImplementationPath) {
-		//          inflatedRecursiveInterface = interfaceImpl.InterfaceType.TryInflateFrom (inflatedRecursiveInterface, context)!;
-		//      }
-		//      waysToImplementIface.AddToList (inflatedRecursiveInterface, implToRecursiveIfaceChain);
-		//  }
-		//}
 
 		protected virtual bool ShouldMarkInterfaceImplementationList (TypeDefinition type, List<InterfaceImplementation> ifaces, TypeReference ifaceType)
 		{
