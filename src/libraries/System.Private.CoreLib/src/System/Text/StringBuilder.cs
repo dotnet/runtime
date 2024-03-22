@@ -1052,12 +1052,19 @@ namespace System.Text
         [CLSCompliant(false)]
         public StringBuilder Append(ulong value) => AppendSpanFormattable(value);
 
-        private StringBuilder AppendSpanFormattable<T>(T value) where T : ISpanFormattable
+        private StringBuilder AppendSpanFormattable<T>(T value, bool untrusted = false) where T : ISpanFormattable
         {
-            Debug.Assert(typeof(T).Assembly.Equals(typeof(object).Assembly), "Implementation trusts the results of TryFormat because T is expected to be something known");
+            Debug.Assert(untrusted || typeof(T).Assembly.Equals(typeof(object).Assembly), "Implementation trusts the results of TryFormat because T is expected to be something known");
 
             if (value.TryFormat(RemainingCurrentChunk, out int charsWritten, format: default, provider: null))
             {
+                if (untrusted && ((uint)charsWritten > (uint)RemainingCurrentChunkLength))
+                {
+                    // Protect against faulty ISpanFormattable implementations returning invalid charsWritten values.
+                    // Other code in _stringBuilder uses Unsafe manipulation, and we want to ensure m_ChunkLength remains safe.
+                    ThrowHelper.ThrowFormatInvalidString();
+                }
+
                 m_ChunkLength += charsWritten;
                 return this;
             }
@@ -1078,7 +1085,12 @@ namespace System.Text
             return Append(value.ToString(format, provider));
         }
 
-        public StringBuilder Append(object? value) => (value == null) ? this : Append(value.ToString());
+        public StringBuilder Append(object? value) => value switch
+        {
+            null => this,
+            ISpanFormattable sf => AppendSpanFormattable(sf, untrusted: true),
+            object o => Append(o.ToString())
+        };
 
         public StringBuilder Append(char[]? value)
         {
@@ -1620,7 +1632,7 @@ namespace System.Text
                         arg is ISpanFormattable spanFormattableArg &&
                         spanFormattableArg.TryFormat(RemainingCurrentChunk, out int charsWritten, itemFormatSpan, provider))
                     {
-                        if ((uint)charsWritten > (uint)RemainingCurrentChunk.Length)
+                        if ((uint)charsWritten > (uint)RemainingCurrentChunkLength)
                         {
                             // Untrusted ISpanFormattable implementations might return an erroneous charsWritten value,
                             // and m_ChunkLength might end up being used in Unsafe code, so fail if we get back an
@@ -2422,6 +2434,8 @@ namespace System.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => new Span<char>(m_ChunkChars, m_ChunkLength, m_ChunkChars.Length - m_ChunkLength);
         }
+
+        private int RemainingCurrentChunkLength => m_ChunkChars.Length - m_ChunkLength;
 
         /// <summary>
         /// Finds the chunk that logically succeeds the specified chunk.
