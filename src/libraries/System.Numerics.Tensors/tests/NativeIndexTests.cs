@@ -126,7 +126,7 @@ namespace System.Tests
 
             for (int i = 0; i < list.Count; i++)
             {
-                Assert.Equal(i, list[NativeIndex.FromStart(i)]);
+                Assert.Equal(i, list[(int)NativeIndex.FromStart(i)]);
                 Assert.Equal(list.Count - i - 1, list[^(i + 1)]);
 
                 Assert.Equal(i, array[NativeIndex.FromStart(i)]);

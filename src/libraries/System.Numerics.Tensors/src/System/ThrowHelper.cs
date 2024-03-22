@@ -58,6 +58,16 @@ namespace System
             throw GetArgumentException(SR.DestinationTooShort);
         }
 
+        [DoesNotReturn]
+        public static void ThrowArgument_LengthsMustEqualArrayLength()
+        {
+            throw new ArgumentOutOfRangeException();
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_IndicesLengthMustEqualRank() =>
+            throw new ArgumentException(SR.ThrowArgument_IndicesLengthMustEqualRank);
+
         private static ArgumentException GetArgumentException(string message)
         {
             return new ArgumentException(message);

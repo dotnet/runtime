@@ -4,10 +4,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Numerics.Tensors;
+using Xunit;
 
 namespace System.Numerics.Tensors.Tests
 {
-    internal static class Helpers
+    public static class Helpers
     {
         public static IEnumerable<int> TensorLengthsIncluding0 => Enumerable.Range(0, 257);
 
@@ -87,5 +89,23 @@ namespace System.Numerics.Tensors.Tests
 #endif
             return null;
         }
+
+#if NETCOREAPP
+        public delegate void AssertThrowsAction<T>(SpanND<T> span);
+
+        // Cannot use standard Assert.Throws() when testing Span - Span and closures don't get along.
+        public static void AssertThrows<E, T>(SpanND<T> span, AssertThrowsAction<T> action) where E : Exception
+        {
+            try
+            {
+                action(span);
+                Assert.Fail($"Expected exception: {typeof(E)}");
+            }
+            catch (Exception ex)
+            {
+                Assert.True(ex is E, $"Wrong exception thrown. Expected: {typeof(E)} Actual: {ex.GetType()}");
+            }
+        }
+#endif
     }
 }

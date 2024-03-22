@@ -183,6 +183,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="NotSupportedException">
         /// Always thrown by this method.
         /// </exception>
+#pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
         [Obsolete("Equals() on ReadOnlySpanND will always throw an exception. Use the equality operator instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool Equals(object? obj) =>
@@ -198,6 +199,7 @@ namespace System.Numerics.Tensors
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() =>
             throw new NotSupportedException(SR.NotSupported_CannotCallGetHashCodeOnSpan);
+#pragma warning restore CS0809
 
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="ReadOnlySpan{T}"/>
@@ -298,7 +300,7 @@ namespace System.Numerics.Tensors
             // check, and one for the result of TryCopyTo. Since these checks are equivalent,
             // we can optimize by performing the check once ourselves then calling Memmove directly.
 
-            if ((uint)_length <= (uint)destination.Length)
+            if ((uint)_length <= (uint)destination.LinearLength)
             {
                 // Replacing Buffer.Memmove
                 SpanHelpers.Memmove(ref destination._reference, ref _reference, _length);
@@ -320,7 +322,7 @@ namespace System.Numerics.Tensors
         public bool TryCopyTo(SpanND<T> destination)
         {
             bool retVal = false;
-            if ((uint)_length <= (uint)destination.Length)
+            if ((uint)_length <= (uint)destination.LinearLength)
             {
                 // Replacing Buffer.Memmove
                 SpanHelpers.Memmove(ref destination._reference, ref _reference, _length);

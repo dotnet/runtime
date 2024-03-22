@@ -123,7 +123,7 @@ namespace System.Tests
             CustomNativeRangeTester crt = new CustomNativeRangeTester(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
             for (int i = 0; i < crt.Length; i++)
             {
-                Assert.Equal(crt[i], crt[NativeIndex.FromStart(i)]);
+                Assert.Equal(crt[i], crt[(int)NativeIndex.FromStart(i)]);
                 Assert.Equal(crt[crt.Length - i - 1], crt[^(i + 1)]);
 
                 Assert.True(crt.Slice(i, crt.Length - i).Equals(crt[i..^0]), $"NativeIndex = {i} and {crt.Slice(i, crt.Length - i)} != {crt[i..^0]}");

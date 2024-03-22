@@ -166,15 +166,6 @@ namespace System
             return new NativeIndex(index.Value, index.IsFromEnd);
         }
 
-        public static implicit operator int(NativeIndex index)
-        {
-            if (index.Value > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), "can't implicitly convert NativeIndex to int when NativeIndex.Value is larger than int.MaxValue");
-            }
-            return (int)index.Value;
-        }
-
         public static implicit operator nint(NativeIndex index)
         {
             return index.Value;

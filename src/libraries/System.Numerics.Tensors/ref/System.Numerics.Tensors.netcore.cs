@@ -44,7 +44,6 @@ namespace System
         public override string ToString() { throw null; }
     }
 }
-
 namespace System.Numerics.Tensors
 {
     public readonly ref partial struct ReadOnlySpanND<T>
@@ -92,19 +91,28 @@ namespace System.Numerics.Tensors
             public bool MoveNext() { throw null; }
         }
     }
+    public static partial class SpanNDExtensions
+    {
+        public static System.Numerics.Tensors.SpanND<T> AsSpanND<T>(this T[]? array, params nint[] lengths) { throw null; }
+        public static System.Numerics.Tensors.SpanND<T> AsSpanND<T>(this T[]? array, System.ReadOnlySpan<nint> lengths = default(System.ReadOnlySpan<nint>)) { throw null; }
+        public static bool SequenceEqual<T>(this System.Numerics.Tensors.SpanND<T> span, System.Numerics.Tensors.SpanND<T> other) where T : System.IEquatable<T>? { throw null; }
+    }
     public readonly ref partial struct SpanND<T>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         [System.CLSCompliantAttribute(false)]
-        public unsafe SpanND(void* pointer, nint length) { throw null; }
-        public SpanND(ref T reference) { throw null; }
-        public SpanND(T[]? array) { throw null; }
-        public SpanND(T[]? array, nint start, nint length) { throw null; }
+        public unsafe SpanND(void* pointer, nint length, System.ReadOnlySpan<nint> lengths = default(System.ReadOnlySpan<nint>)) { throw null; }
+        public SpanND(ref T reference, System.ReadOnlySpan<nint> lengths = default(System.ReadOnlySpan<nint>)) { throw null; }
+        public SpanND(T[]? array, nint start, nint length, System.ReadOnlySpan<nint> lengths = default(System.ReadOnlySpan<nint>)) { throw null; }
+        public SpanND(T[]? array, System.ReadOnlySpan<nint> lengths = default(System.ReadOnlySpan<nint>)) { throw null; }
         public static System.Numerics.Tensors.SpanND<T> Empty { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
-        public ref T this[nint index] { get { throw null; } }
+        public ref T this[params nint[] indices] { get { throw null; } }
         public nint Length { get { throw null; } }
+        public System.ReadOnlySpan<nint> Lengths { get { throw null; } }
+        public int Rank { get { throw null; } }
+        public System.ReadOnlySpan<nint> Strides { get { throw null; } }
         public void Clear() { }
         public void CopyTo(System.Numerics.Tensors.SpanND<T> destination) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]

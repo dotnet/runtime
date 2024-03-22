@@ -6,6 +6,7 @@
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for operating over tensors.</PackageDescription>
     <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
+    <ApiCompatValidateAssemblies>false</ApiCompatValidateAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +16,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System\Numerics\Tensors\netcore\SpanNDDebugView.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\SpanNDExtensions.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ReadOnlySpanND.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\SpanHelpers.ByteMemOps.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\SpanHelpers.cs" />
