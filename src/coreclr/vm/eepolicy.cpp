@@ -750,6 +750,9 @@ int NOINLINE WrapperClrCaptureContext(CONTEXT* context)
 #pragma optimize("", on)
 #endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
+
+void (__cdecl *g_unityOnFatalError)(PEXCEPTION_POINTERS pExceptionPointers);
+
 // This method must return a value to avoid getting non-actionable dumps on x86.
 // If this method were a DECLSPEC_NORETURN then dumps would not provide the necessary
 // context at the point of the failure
@@ -792,6 +795,8 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         // This is fatal error.  We do not care about SO mode any more.
         // All of the code from here on out is robust to any failures in any API's that are called.
         CONTRACT_VIOLATION(GCViolation | ModeViolation | FaultNotFatal | TakesLockViolation);
+        if (g_unityOnFatalError)
+            g_unityOnFatalError(&exceptionPointers);
 
 
         // Setting g_fFatalErrorOccurredOnGCThread allows code to avoid attempting to make GC mode transitions which could

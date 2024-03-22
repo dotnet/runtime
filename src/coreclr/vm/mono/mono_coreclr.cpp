@@ -16,6 +16,7 @@
 #include "typeparse.h"
 #include "typestring.h"
 #include "profilepriv.h"
+#include "formattype.h"
 
 #ifdef FEATURE_PAL
 #include "pal.h"
@@ -967,3 +968,55 @@ extern "C" EXPORT_API gboolean EXPORT_CC coreclr_unity_gc_set_chain_fatal_error(
     g_chainFatalError = (bool)state;
     return prev;
 }
+
+typedef void (__cdecl *OnFatalErrorFunc)(EXCEPTION_POINTERS* pExceptionPointers);
+extern OnFatalErrorFunc g_unityOnFatalError;
+
+extern "C" EXPORT_API void EXPORT_CC coreclr_unity_set_on_fatal_error(OnFatalErrorFunc on_fatal_func)
+{
+    g_unityOnFatalError = on_fatal_func;
+}
+
+typedef void (__cdecl *StackFrameInfoFunc)(const char* moduleName, const char* methodSignature, void* userData);
+
+extern "C" EXPORT_API bool EXPORT_CC coreclr_unity_get_stackframe_info_from_ip(void* ip, StackFrameInfoFunc func, void* userData)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    EECodeInfo codeInfo((PCODE)ip);
+    if (codeInfo.IsValid())
+    {
+        MethodDesc* pResult = codeInfo.GetMethodDesc();
+        if (pResult)
+        {
+            SString namespaceOrClassName, methodName;
+            pResult->GetMethodInfoNoSig(namespaceOrClassName, methodName);
+
+            // signature
+            CQuickBytes qbOut;
+            ULONG cSig = 0;
+            PCCOR_SIGNATURE pSig;
+
+            SString methodFullName;
+            methodFullName.AppendPrintf(
+                (LPCUTF8)"%s::%s",
+                namespaceOrClassName.GetUTF8(),
+                methodName.GetUTF8());
+
+            pResult->GetSig(&pSig, &cSig);
+
+            PrettyPrintSig(pSig, (DWORD)cSig, methodFullName.GetUTF8(), &qbOut, pResult->GetMDImport(), NULL);
+            func(pResult->GetModule()->GetAssembly()->GetSimpleName(), (char *)qbOut.Ptr(), userData);
+
+            return true;
+        }
+    }
+
+    return false;
+} 
