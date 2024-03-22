@@ -8551,8 +8551,6 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_P1, REG_R5, -25);
     theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_P1, REG_R5, -256);
     theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_P1, REG_R5, 255);
-    theEmitter->emitIns_R_S(INS_sve_ldr_mask, EA_8BYTE, REG_P0, 1, 0);
-    theEmitter->emitIns_R_S(INS_sve_ldr_mask, EA_8BYTE, REG_P15, 1, 6);
 
     // IF_SVE_JG_2A
     // STR <Pt>, [<Xn|SP>{, #<imm>, MUL VL}]
@@ -8561,8 +8559,6 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_P3, REG_R1, -117);
     theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_P3, REG_R1, -256);
     theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_P3, REG_R1, 255);
-    theEmitter->emitIns_S_R(INS_sve_str_mask, EA_8BYTE, REG_P5, 1, 0);
-    theEmitter->emitIns_S_R(INS_sve_str_mask, EA_8BYTE, REG_P7, 1, 4);
 
     // IF_SVE_IE_2A
     // LDR <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]

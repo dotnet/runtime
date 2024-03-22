@@ -9832,7 +9832,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_sve_ldr:
         {
-            assert(isPredicateRegister(reg1));
+            assert(isVectorRegister(reg1));
             isSimple = false;
             size     = EA_SCALABLE;
             attr     = size;
