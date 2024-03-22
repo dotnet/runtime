@@ -9,7 +9,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Internal;
 
 namespace System.Reflection
 {
@@ -1837,16 +1836,16 @@ namespace System.Reflection
                     (RuntimeModule)typeof(AttributeUsageAttribute).Module);
 
                 // Convert parsed attribute arguments
-                AttributeTargets attrTargets = ctorParams[0].EncodedArgument is not null
-                    ? (AttributeTargets)ctorParams[0].EncodedArgument!.PrimitiveValue.Byte4
-                    : 0;
+                AttributeTargets attrTargets = (AttributeTargets)(ctorParams[0].EncodedArgument?.PrimitiveValue.Byte4 ?? 0);
 
-                bool inherited = namedParams[0].EncodedArgument is not null
-                    ? namedParams[0].EncodedArgument!.PrimitiveValue.Byte4 != 0
+                CustomAttributeEncodedArgument? encodedArg = namedParams[0].EncodedArgument;
+                bool inherited = encodedArg is not null
+                    ? encodedArg.PrimitiveValue.Byte4 != 0
                     : true; // default
 
-                bool allowMultiple = namedParams[1].EncodedArgument is not null
-                    ? namedParams[1].EncodedArgument!.PrimitiveValue.Byte4 != 0
+                encodedArg = namedParams[1].EncodedArgument;
+                bool allowMultiple = encodedArg is not null
+                    ? encodedArg.PrimitiveValue.Byte4 != 0
                     : false; // default
 
                 attributeUsageAttribute = new AttributeUsageAttribute(attrTargets, allowMultiple: allowMultiple, inherited: inherited);
@@ -1927,7 +1926,7 @@ namespace System.Reflection
             ref IntPtr ppBlobStart,
             IntPtr pBlobEnd,
             StringHandleOnStack name,
-            [MarshalAs(UnmanagedType.U1)] out bool bIsProperty,
+            [MarshalAs(UnmanagedType.Bool)] out bool bIsProperty,
             ObjectHandleOnStack type,
             ObjectHandleOnStack value);
 

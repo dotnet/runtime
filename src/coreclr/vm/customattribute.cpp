@@ -352,7 +352,12 @@ ErrExit:
 // the beginning of the string immediately following the size
 static int GetStringSize(BYTE **pBlob, const BYTE *endBlob)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        THROWS;
+    }
+    CONTRACTL_END;
 
     if (*pBlob >= endBlob )
     {   // No buffer at all, or buffer overrun
@@ -389,7 +394,12 @@ static TypeHandle GetTypeHandleFromBlob(Assembly *pCtorAssembly,
                                     const BYTE *endBlob,
                                     Module *pModule)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        THROWS;
+    }
+    CONTRACTL_END;
 
     // we must box which means we must get the method table, switch again on the element type
     MethodTable *pMTType = NULL;
@@ -478,13 +488,20 @@ static TypeHandle GetTypeHandleFromBlob(Assembly *pCtorAssembly,
 // Returns TRUE on success, FALSE if the blob was not big enough.
 // Advances *pBlob by the amount copied.
 template<typename T>
-static BOOL CopyArrayVAL(BASEARRAYREF pArray, int nElements, BYTE **pBlob, const BYTE *endBlob)
+static bool CopyArrayVAL(BASEARRAYREF pArray, int nElements, BYTE **pBlob, const BYTE *endBlob)
 {
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        NOTHROW;
+    }
+    CONTRACTL_END;
+
     int sizeData;   // = size * 2; with integer overflow check
     if (!ClrSafeInt<int>::multiply(nElements, sizeof(T), sizeData))
-        return FALSE;
+        return false;
     if (sizeData > endBlob - *pBlob)     // integer overflow check
-        return FALSE;
+        return false;
 #if BIGENDIAN
     T *ptDest = reinterpret_cast<T *>(pArray->GetDataPtr());
     for (int iElement = 0; iElement < nElements; iElement++)
@@ -502,29 +519,36 @@ static BOOL CopyArrayVAL(BASEARRAYREF pArray, int nElements, BYTE **pBlob, const
     memcpyNoGCRefs(pArray->GetDataPtr(), *pBlob, sizeData);
 #endif // BIGENDIAN
     *pBlob += sizeData;
-    return TRUE;
+    return true;
 }
 
 // read the whole array as a chunk
-static void ReadArray(Assembly *pCtorAssembly,
+static BASEARRAYREF ReadArray(Assembly *pCtorAssembly,
                CorSerializationType arrayType,
                int size,
                TypeHandle th,
                BYTE **pBlob,
                const BYTE *endBlob,
-               Module *pModule,
-               BASEARRAYREF *pArray)
+               Module *pModule)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        THROWS;
+    }
+    CONTRACTL_END;
 
     ARG_SLOT element = 0;
+
+    BASEARRAYREF array = NULL;
+    GCPROTECT_BEGIN(array);
 
     switch ((DWORD)arrayType) {
     case SERIALIZATION_TYPE_BOOLEAN:
     case SERIALIZATION_TYPE_I1:
     case SERIALIZATION_TYPE_U1:
-        *pArray = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
-        if (!CopyArrayVAL<BYTE>(*pArray, size, pBlob, endBlob))
+        array = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
+        if (!CopyArrayVAL<BYTE>(array, size, pBlob, endBlob))
             goto badBlob;
         break;
 
@@ -532,8 +556,8 @@ static void ReadArray(Assembly *pCtorAssembly,
     case SERIALIZATION_TYPE_I2:
     case SERIALIZATION_TYPE_U2:
     {
-        *pArray = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
-        if (!CopyArrayVAL<UINT16>(*pArray, size, pBlob, endBlob))
+        array = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
+        if (!CopyArrayVAL<UINT16>(array, size, pBlob, endBlob))
             goto badBlob;
         break;
     }
@@ -541,8 +565,8 @@ static void ReadArray(Assembly *pCtorAssembly,
     case SERIALIZATION_TYPE_U4:
     case SERIALIZATION_TYPE_R4:
     {
-        *pArray = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
-        if (!CopyArrayVAL<UINT32>(*pArray, size, pBlob, endBlob))
+        array = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
+        if (!CopyArrayVAL<UINT32>(array, size, pBlob, endBlob))
             goto badBlob;
         break;
     }
@@ -550,8 +574,8 @@ static void ReadArray(Assembly *pCtorAssembly,
     case SERIALIZATION_TYPE_U8:
     case SERIALIZATION_TYPE_R8:
     {
-        *pArray = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
-        if (!CopyArrayVAL<UINT64>(*pArray, size, pBlob, endBlob))
+        array = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
+        if (!CopyArrayVAL<UINT64>(array, size, pBlob, endBlob))
             goto badBlob;
         break;
     }
@@ -567,14 +591,14 @@ static void ReadArray(Assembly *pCtorAssembly,
         if (th.IsNull())
             goto badBlob;
 
-        *pArray = (BASEARRAYREF)AllocateObjectArray(size, th);
+        array = (BASEARRAYREF)AllocateObjectArray(size, th);
         if (arrayType == SERIALIZATION_TYPE_SZARRAY)
             // switch the th to be the proper one
             th = th.GetArrayElementTypeHandle();
         for (int i = 0; i < size; i++) {
             element = GetDataFromBlob(pCtorAssembly, arrayType, th, pBlob, endBlob, pModule, &isObject);
             _ASSERTE(isObject || element == NULL);
-            ((PTRARRAYREF)(*pArray))->SetAt(i, ArgSlotToObj(element));
+            ((PTRARRAYREF)(array))->SetAt(i, ArgSlotToObj(element));
         }
         break;
     }
@@ -591,21 +615,21 @@ static void ReadArray(Assembly *pCtorAssembly,
         TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(th);
         if (arrayHandle.IsNull())
             goto badBlob;
-        *pArray = (BASEARRAYREF)AllocateSzArray(arrayHandle, bounds);
+        array = (BASEARRAYREF)AllocateSzArray(arrayHandle, bounds);
         BOOL fSuccess;
         switch (elementSize)
         {
         case 1:
-            fSuccess = CopyArrayVAL<BYTE>(*pArray, size, pBlob, endBlob);
+            fSuccess = CopyArrayVAL<BYTE>(array, size, pBlob, endBlob);
             break;
         case 2:
-            fSuccess = CopyArrayVAL<UINT16>(*pArray, size, pBlob, endBlob);
+            fSuccess = CopyArrayVAL<UINT16>(array, size, pBlob, endBlob);
             break;
         case 4:
-            fSuccess = CopyArrayVAL<UINT32>(*pArray, size, pBlob, endBlob);
+            fSuccess = CopyArrayVAL<UINT32>(array, size, pBlob, endBlob);
             break;
         case 8:
-            fSuccess = CopyArrayVAL<UINT64>(*pArray, size, pBlob, endBlob);
+            fSuccess = CopyArrayVAL<UINT64>(array, size, pBlob, endBlob);
             break;
         default:
             fSuccess = FALSE;
@@ -620,6 +644,8 @@ static void ReadArray(Assembly *pCtorAssembly,
         COMPlusThrow(kCustomAttributeFormatException);
     }
 
+    GCPROTECT_END();
+    return array;
 }
 
 // get data out of the blob according to a CorElementType
@@ -631,7 +657,12 @@ static ARG_SLOT GetDataFromBlob(Assembly *pCtorAssembly,
                       Module *pModule,
                       BOOL *bObjectCreated)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        THROWS;
+    }
+    CONTRACTL_END;
 
     ARG_SLOT retValue = 0;
     *bObjectCreated = FALSE;
@@ -817,11 +848,7 @@ static ARG_SLOT GetDataFromBlob(Assembly *pCtorAssembly,
             else
                 arrayType = (CorSerializationType)th.GetInternalCorElementType();
 
-            BASEARRAYREF array = NULL;
-            GCPROTECT_BEGIN(array);
-            ReadArray(pCtorAssembly, arrayType, size, th, pBlob, endBlob, pModule, &array);
-            retValue = ObjToArgSlot(array);
-            GCPROTECT_END();
+            retValue = ObjToArgSlot(ReadArray(pCtorAssembly, arrayType, size, th, pBlob, endBlob, pModule));
         }
         *bObjectCreated = TRUE;
         break;
@@ -980,7 +1007,7 @@ extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
     BYTE** ppBlobStart,
     BYTE* pBlobEnd,
     QCall::StringHandleOnStack pName,
-    bool* pbIsProperty,
+    BOOL* pbIsProperty,
     QCall::ObjectHandleOnStack pType,
     QCall::ObjectHandleOnStack pValue)
 {
@@ -991,17 +1018,6 @@ extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
     BYTE* pBlob = *ppBlobStart;
 
     GCX_COOP();
-
-    struct
-    {
-        STRINGREF Name;
-        OBJECTREF Type;
-        OBJECTREF Value;
-    } gc;
-    gc.Name = NULL;
-    gc.Type = NULL;
-    gc.Value = NULL;
-    GCPROTECT_BEGIN(gc);
 
     Assembly *pCtorAssembly = NULL;
 
@@ -1053,40 +1069,40 @@ extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
         pMTValue = th.AsMethodTable();
         if (fieldType == SERIALIZATION_TYPE_ENUM)
             // load the enum type to pass it back
-            gc.Type = th.GetManagedClassObject();
+            pType.Set(th.GetManagedClassObject());
         else
             nullTH = th;
     }
 
     // get the string representing the field/property name
-    gc.Name = ArgSlotToString(GetDataFromBlob(
-        pCtorAssembly, SERIALIZATION_TYPE_STRING, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated));
-    _ASSERTE(bObjectCreated || gc.Name == NULL);
+    pName.Set(ArgSlotToString(GetDataFromBlob(
+        pCtorAssembly, SERIALIZATION_TYPE_STRING, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated)));
+    _ASSERTE(bObjectCreated || pName.Get() == NULL);
 
     // create the object and return it
     switch (fieldType)
     {
         case SERIALIZATION_TYPE_TAGGED_OBJECT:
-            gc.Type = g_pObjectClass->GetManagedClassObject();
+            pType.Set(g_pObjectClass->GetManagedClassObject());
             FALLTHROUGH;
         case SERIALIZATION_TYPE_TYPE:
         case SERIALIZATION_TYPE_STRING:
-            gc.Value = ArgSlotToObj(GetDataFromBlob(
-                pCtorAssembly, fieldType, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated));
-            _ASSERTE(bObjectCreated || gc.Value == NULL);
+            pValue.Set(ArgSlotToObj(GetDataFromBlob(
+                pCtorAssembly, fieldType, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated)));
+            _ASSERTE(bObjectCreated || pValue.Get() == NULL);
 
-            if (gc.Value == NULL)
+            if (pValue.Get() == NULL)
             {
                 // load the proper type so that code in managed knows which property to load
                 if (fieldType == SERIALIZATION_TYPE_STRING)
-                    gc.Type = CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING)->GetManagedClassObject();
+                    pType.Set(CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING)->GetManagedClassObject());
                 else if (fieldType == SERIALIZATION_TYPE_TYPE)
-                    gc.Type = CoreLibBinder::GetClass(CLASS__TYPE)->GetManagedClassObject();
+                    pType.Set(CoreLibBinder::GetClass(CLASS__TYPE)->GetManagedClassObject());
             }
             break;
         case SERIALIZATION_TYPE_SZARRAY:
         {
-            gc.Value = NULL;
+            pValue.Set(NULL);
             int arraySize = (int)GetDataFromBlob(pCtorAssembly, SERIALIZATION_TYPE_I4, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated);
 
             if (arraySize != -1)
@@ -1098,9 +1114,9 @@ extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
                     nullTH = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPE));
                 else if (arrayType == SERIALIZATION_TYPE_TAGGED_OBJECT)
                     nullTH = TypeHandle(g_pObjectClass);
-                ReadArray(pCtorAssembly, arrayType, arraySize, nullTH, &pBlob, pBlobEnd, pModule, (BASEARRAYREF*)&gc.Value);
+                pValue.Set(ReadArray(pCtorAssembly, arrayType, arraySize, nullTH, &pBlob, pBlobEnd, pModule));
             }
-            if (gc.Value == NULL)
+            if (pValue.Get() == NULL)
             {
                 TypeHandle arrayTH;
                 switch (arrayType)
@@ -1121,7 +1137,7 @@ extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
                 if (!arrayTH.IsNull())
                 {
                     arrayTH = ClassLoader::LoadArrayTypeThrowing(arrayTH);
-                    gc.Type = arrayTH.GetManagedClassObject();
+                    pType.Set(arrayTH.GetManagedClassObject());
                 }
             }
             break;
@@ -1137,14 +1153,9 @@ extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
             ARG_SLOT val = GetDataFromBlob(pCtorAssembly, fieldType, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated);
             _ASSERTE(!bObjectCreated);
 
-            gc.Value = pMTValue->Box((void*)ArgSlotEndiannessFixup(&val, pMTValue->GetNumInstanceFieldBytes()));
+            pValue.Set(pMTValue->Box((void*)ArgSlotEndiannessFixup(&val, pMTValue->GetNumInstanceFieldBytes())));
     }
 
     *ppBlobStart = pBlob;
-    pName.Set(gc.Name);
-    pType.Set(gc.Type);
-    pValue.Set(gc.Value);
-
-    GCPROTECT_END();
     END_QCALL;
 }

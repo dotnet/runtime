@@ -37,7 +37,7 @@ extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
     BYTE** ppBlobStart,
     BYTE* pBlobEnd,
     QCall::StringHandleOnStack pName,
-    bool* pbIsProperty,
+    BOOL* pbIsProperty,
     QCall::ObjectHandleOnStack pType,
     QCall::ObjectHandleOnStack value);
 
