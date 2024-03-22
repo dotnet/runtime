@@ -54,7 +54,10 @@ namespace System.IO.Pipes
         {
             // Validate the desiredAccessRights parameter here to ensure an invalid value does not result
             // in an argument exception being thrown for the direction argument
-            if (desiredAccessRights == 0 || (desiredAccessRights & ~(PipeAccessRights.FullControl | PipeAccessRights.AccessSystemSecurity)) != 0)
+            // Throw if there are any unrecognized bits
+            // Throw if neither ReadData nor WriteData are specified, as this will result in an invalid PipeDirection
+            if ((desiredAccessRights & ~(PipeAccessRights.FullControl | PipeAccessRights.AccessSystemSecurity)) != 0 ||
+                ((desiredAccessRights & (PipeAccessRights.ReadData | PipeAccessRights.WriteData)) == 0))
             {
                 throw new ArgumentOutOfRangeException(argumentName, SR.ArgumentOutOfRange_NeedValidPipeAccessRights);
             }
