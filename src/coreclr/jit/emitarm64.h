@@ -1187,6 +1187,23 @@ inline static bool isHighPredicateRegister(regNumber reg)
     return (reg >= REG_PREDICATE_HIGH_FIRST) && (reg <= REG_PREDICATE_HIGH_LAST);
 }
 
+inline static bool isEvenRegister(regNumber reg)
+{
+    if (isGeneralRegister(reg))
+    {
+        return ((reg - REG_INT_FIRST) % 2 == 0);
+    }
+    else if (isVectorRegister(reg))
+    {
+        return ((reg - REG_FP_FIRST) % 2) == 0;
+    }
+    else
+    {
+        assert(isPredicateRegister(reg));
+        return ((reg - REG_PREDICATE_FIRST) % 2) == 0;
+    }
+}
+
 inline static bool insOptsNone(insOpts opt)
 {
     return (opt == INS_OPTS_NONE);

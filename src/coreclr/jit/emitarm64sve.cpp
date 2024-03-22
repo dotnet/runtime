@@ -2118,8 +2118,9 @@ void emitter::emitInsSve_R_R(instruction     ins,
         case INS_sve_uqcvtn:
         case INS_sve_sqcvtun:
             assert(insOptsNone(opt));
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isLowVectorRegister(reg2)); // nnnn
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnn
+            assert(isEvenRegister(reg2));
             fmt = IF_SVE_FZ_2A;
             break;
 
@@ -2129,8 +2130,9 @@ void emitter::emitInsSve_R_R(instruction     ins,
         case INS_sve_fcvtnb:
             unreached(); // TODO-SVE: Not yet supported.
             assert(insOptsNone(opt));
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isLowVectorRegister(reg2)); // nnnn
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnn
+            assert(isEvenRegister(reg2));
             fmt = IF_SVE_HG_2A;
             break;
 
@@ -2542,6 +2544,7 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             isRightShift = emitInsIsVectorRightShift(ins);
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
+            assert(isEvenRegister(reg2));
             assert(opt == INS_OPTS_SCALABLE_H);
             assert(isRightShift); // These are always right-shift.
             assert(isValidVectorShiftAmount(imm, EA_4BYTE, isRightShift));
@@ -10735,8 +10738,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_FZ_2A: // ................ ......nnnn.ddddd -- SME2 multi-vec extract narrow
         case IF_SVE_HG_2A: // ................ ......nnnn.ddddd -- SVE2 FP8 downconverts
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
-            code |= insEncodeReg_V_9_to_6(id->idReg2()); // nnnn
+            code |= insEncodeReg_V_4_to_0(id->idReg1());           // ddddd
+            code |= insEncodeReg_V_9_to_6_Times_Two(id->idReg2()); // nnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
