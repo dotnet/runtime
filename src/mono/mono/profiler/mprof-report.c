@@ -23,8 +23,8 @@
 #endif
 #include <stdlib.h>
 #ifndef DISABLE_LOG_PROFILER_GZ
-#ifdef INTERNAL_ZLIB
-#include <external/zlib/zlib.h>
+#ifdef INTERNAL_ZLIB_NG
+#include <external/zlib-ng/zlib-ng.h>
 #else
 #include <zlib.h>
 #endif

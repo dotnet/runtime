@@ -5,15 +5,11 @@
 #include <stdlib.h>
 #include "pal_zlib.h"
 
-#ifdef INTERNAL_ZLIB
+#ifdef INTERNAL_ZLIB_NG
     #ifdef  _WIN32
         #define c_static_assert(e) static_assert((e),"")
     #endif
-    #ifdef INTERNAL_ZLIB_INTEL
-        #include <external/zlib-intel/zlib.h>
-    #else
-        #include <external/zlib/zlib.h>
-    #endif
+    #include <external/zlib-ng/zlib-ng.h>
 #else
     #include "pal_utilities.h"
     #include <zlib.h>

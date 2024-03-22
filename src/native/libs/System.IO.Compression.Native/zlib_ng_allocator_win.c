@@ -7,11 +7,7 @@
 #include <winnt.h>
 #include <crtdbg.h> /* _ASSERTE */
 
-#ifdef INTERNAL_ZLIB_INTEL
-#include <external/zlib-intel/zutil.h>
-#else
-#include <external/zlib/zutil.h>
-#endif
+#include <external/zlib-ng/zutil.h>
 
 /* A custom allocator for zlib that provides some defense-in-depth over standard malloc / free.
  * (Windows-specific version)
@@ -38,7 +34,7 @@
  */
 
 // Gets the special heap we'll allocate from.
-HANDLE GetZlibHeap()
+HANDLE GetZlibNgHeap()
 {
 #ifdef _WIN64
     static HANDLE s_hPublishedHeap = NULL;
@@ -92,7 +88,7 @@ typedef struct _DOTNET_ALLOC_COOKIE
 const SIZE_T DOTNET_ALLOC_HEADER_COOKIE_SIZE_WITH_PADDING = (sizeof(DOTNET_ALLOC_COOKIE) + MEMORY_ALLOCATION_ALIGNMENT - 1) & ~((SIZE_T)MEMORY_ALLOCATION_ALIGNMENT  - 1);
 const SIZE_T DOTNET_ALLOC_TRAILER_COOKIE_SIZE = sizeof(DOTNET_ALLOC_COOKIE);
 
-voidpf ZLIB_INTERNAL zcalloc(opaque, items, size)
+voidpf ZLIB_NG_INTERNAL zcalloc(opaque, items, size)
     voidpf opaque;
     unsigned items;
     unsigned size;
@@ -118,7 +114,7 @@ voidpf ZLIB_INTERNAL zcalloc(opaque, items, size)
     SIZE_T cbActualAllocationSize;
     if (FAILED(SIZETAdd(cbRequested, DOTNET_ALLOC_HEADER_COOKIE_SIZE_WITH_PADDING + DOTNET_ALLOC_TRAILER_COOKIE_SIZE, &cbActualAllocationSize))) { return NULL; }
 
-    LPVOID pAlloced = HeapAlloc(GetZlibHeap(), dwFlags, cbActualAllocationSize);
+    LPVOID pAlloced = HeapAlloc(GetZlibNgHeap(), dwFlags, cbActualAllocationSize);
     if (pAlloced == NULL) { return NULL; } // OOM
 
     // Now set the header & trailer cookies
@@ -150,7 +146,7 @@ void zcfree_cookie_check_failed()
     __fastfail(FAST_FAIL_HEAP_METADATA_CORRUPTION);
 }
 
-void ZLIB_INTERNAL zcfree(opaque, ptr)
+void ZLIB_NG_INTERNAL zcfree(opaque, ptr)
     voidpf opaque;
     voidpf ptr;
 {
@@ -173,7 +169,7 @@ void ZLIB_INTERNAL zcfree(opaque, ptr)
     zcfree_trash_cookie(pHeaderCookie);
     zcfree_trash_cookie(pTrailerCookie);
 
-    if (!HeapFree(GetZlibHeap(), 0, pHeaderCookie)) { goto Fail; }
+    if (!HeapFree(GetZlibNgHeap(), 0, pHeaderCookie)) { goto Fail; }
     return;
 
 Fail:

@@ -5,14 +5,14 @@ macro(append_extra_compression_libs NativeLibsExtra)
       # nothing special to link
   elseif (CLR_CMAKE_TARGET_ANDROID OR HOST_ANDROID)
       # need special case here since we want to link against libz.so but find_package() would resolve libz.a
-      set(ZLIB_LIBRARIES z)
+      set(ZLIB_NG_LIBRARIES z)
   elseif (CLR_CMAKE_TARGET_SUNOS OR HOST_SOLARIS)
-      set(ZLIB_LIBRARIES z m)
+      set(ZLIB_NG_LIBRARIES z m)
   else ()
       find_package(ZLIB REQUIRED)
-      set(ZLIB_LIBRARIES ${ZLIB_LIBRARIES} m)
+      set(ZLIB_NG_LIBRARIES ${ZLIB_NG_LIBRARIES} m)
   endif ()
-  list(APPEND ${NativeLibsExtra} ${ZLIB_LIBRARIES})
+  list(APPEND ${NativeLibsExtra} ${ZLIB_NG_LIBRARIES})
 
   if (CLR_CMAKE_USE_SYSTEM_BROTLI)
     find_library(BROTLIDEC brotlidec REQUIRED)
