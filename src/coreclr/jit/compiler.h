@@ -456,13 +456,14 @@ enum class DoNotEnregisterReason
 #endif
     LclAddrNode, // the local is accessed with LCL_ADDR_VAR/FLD.
     CastTakesAddr,
-    StoreBlkSrc,          // the local is used as STORE_BLK source.
-    SwizzleArg,           // the local is passed using LCL_FLD as another type.
-    BlockOpRet,           // the struct is returned and it promoted or there is a cast.
-    ReturnSpCheck,        // the local is used to do SP check on return from function
-    CallSpCheck,          // the local is used to do SP check on every call
-    SimdUserForcesDep,    // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
-    HiddenBufferStructArg // the argument is a hidden return buffer passed to a method.
+    StoreBlkSrc,           // the local is used as STORE_BLK source.
+    SwizzleArg,            // the local is passed using LCL_FLD as another type.
+    BlockOpRet,            // the struct is returned and it promoted or there is a cast.
+    ReturnSpCheck,         // the local is used to do SP check on return from function
+    CallSpCheck,           // the local is used to do SP check on every call
+    SimdUserForcesDep,     // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
+    HiddenBufferStructArg, // the argument is a hidden return buffer passed to a method.
+    NonStandardParameter,  // local is a parameter that is passed in a register unhandled by genFnPrologCalleeRegArgs
 };
 
 enum class AddressExposedReason
@@ -489,7 +490,6 @@ public:
     // The constructor. Most things can just be zero'ed.
     //
     // Initialize the ArgRegs to REG_STK.
-    // Morph will update if this local is passed in a register.
     LclVarDsc()
         : _lvArgReg(REG_STK)
 #if FEATURE_MULTIREG_ARGS
@@ -1951,6 +1951,10 @@ public:
         return m_hasCycle;
     }
 
+#ifdef DEBUG
+    void Dump() const;
+#endif // DEBUG
+
     bool Contains(BasicBlock* block) const;
     bool IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) const;
 };
@@ -2220,6 +2224,8 @@ class FlowGraphNaturalLoops
     // Collection of loops that were found.
     jitstd::vector<FlowGraphNaturalLoop*> m_loops;
 
+    unsigned m_improperLoopHeaders;
+
     FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
 
     static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist);
@@ -2230,7 +2236,7 @@ public:
         return m_dfsTree;
     }
 
-    size_t NumLoops()
+    size_t NumLoops() const
     {
         return m_loops.size();
     }
@@ -2297,6 +2303,13 @@ public:
 
     static FlowGraphNaturalLoops* Find(const FlowGraphDfsTree* dfs);
 
+    // Number of blocks with DFS backedges that are not natural loop headers
+    // (indicates presence of "irreducible" loops)
+    unsigned ImproperLoopHeaders() const
+    {
+        return m_improperLoopHeaders;
+    }
+
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoops* loops);
 #endif // DEBUG
@@ -2322,6 +2335,7 @@ class FlowGraphDominatorTree
     }
 
     static BasicBlock* IntersectDom(BasicBlock* block1, BasicBlock* block2);
+
 public:
     const FlowGraphDfsTree* GetDfsTree()
     {
@@ -2355,6 +2369,10 @@ public:
     FlowGraphNaturalLoop* GetLoop(BasicBlock* block);
 
     static BlockToNaturalLoopMap* Build(FlowGraphNaturalLoops* loops);
+
+#ifdef DEBUG
+    void Dump() const;
+#endif // DEBUG
 };
 
 // Represents a data structure that can answer A -> B reachability queries in
@@ -3446,6 +3464,11 @@ public:
 
     GenTreeIndir* gtNewMethodTableLookup(GenTree* obj);
 
+#if defined(TARGET_ARM64)
+    GenTree* gtNewSimdConvertVectorToMaskNode(var_types type, GenTree* node, CorInfoType simdBaseJitType, unsigned simdSize);
+    GenTree* gtNewSimdConvertMaskToVectorNode(GenTreeHWIntrinsic* node, var_types type);
+#endif
+
     //------------------------------------------------------------------------
     // Other GenTree functions
 
@@ -3842,6 +3865,10 @@ public:
     // where it is used to detect tail-call chains.
     unsigned lvaRetAddrVar;
 
+#ifdef SWIFT_SUPPORT
+    unsigned lvaSwiftSelfArg;
+#endif
+
 #if defined(DEBUG) && defined(TARGET_XARCH)
 
     unsigned lvaReturnSpCheck; // Stores SP to confirm it is not corrupted on return.
@@ -3963,6 +3990,8 @@ public:
                        CORINFO_CLASS_HANDLE    typeHnd,
                        CORINFO_ARG_LIST_HANDLE varList,
                        CORINFO_SIG_INFO*       varSig);
+
+    bool lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd);
 
     var_types lvaGetActualType(unsigned lclNum);
     var_types lvaGetRealType(unsigned lclNum);
@@ -4555,11 +4584,6 @@ protected:
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
-
-#if defined(TARGET_ARM64)
-    GenTree* convertHWIntrinsicToMask(var_types type, GenTree* node, CorInfoType simdBaseJitType, unsigned simdSize);
-    GenTree* convertHWIntrinsicFromMask(GenTreeHWIntrinsic* node, var_types type);
-#endif
 
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
@@ -5504,6 +5528,12 @@ public:
         return m_signatureToLookupInfoMap;
     }
 
+#ifdef SWIFT_SUPPORT
+    typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, CORINFO_SWIFT_LOWERING*> SwiftLoweringMap;
+    SwiftLoweringMap* m_swiftLoweringCache;
+    const CORINFO_SWIFT_LOWERING* GetSwiftLowering(CORINFO_CLASS_HANDLE clsHnd);
+#endif
+
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
     void optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree);
 
@@ -6111,7 +6141,7 @@ public:
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfileWeights();
-    void fgDebugCheckProfileWeights(ProfileChecks checks);
+    bool fgDebugCheckProfileWeights(ProfileChecks checks);
     bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
 
@@ -6251,6 +6281,13 @@ public:
     unsigned                               fgPgoInlineeNoPgo;
     unsigned                               fgPgoInlineeNoPgoSingleBlock;
     bool                                   fgPgoHaveWeights;
+    bool                                   fgPgoSynthesized;
+    bool                                   fgPgoConsistent;
+
+#ifdef DEBUG
+    bool                                   fgPgoConsistentCheck;
+#endif
+
 
     void WalkSpanningTree(SpanningTreeVisitor* visitor);
     void fgSetProfileWeight(BasicBlock* block, weight_t weight);
@@ -7953,6 +7990,7 @@ protected:
 
 public:
     regNumber raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc);
+    void raCheckValidIntParamReg(LclVarDsc* dsc, regNumber inArgReg);
 
     void raMarkStkVars();
 
@@ -10605,6 +10643,7 @@ public:
         unsigned m_returnSpCheck;
         unsigned m_callSpCheck;
         unsigned m_simdUserForcesDep;
+        unsigned m_nonStandardParameter;
         unsigned m_liveInOutHndlr;
         unsigned m_depField;
         unsigned m_noRegVars;

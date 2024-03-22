@@ -43,7 +43,6 @@ namespace System.Runtime.InteropServices.JavaScript
         [JSImport("INTERNAL.get_dotnet_instance")]
         public static partial JSObject GetDotnetInstance();
         [JSImport("INTERNAL.dynamic_import")]
-        // TODO: the continuation should be running on deputy or TP in MT
         public static partial Task<JSObject> DynamicImport(string moduleName, string moduleUrl);
 
         [JSImport("INTERNAL.mono_wasm_bind_cs_function")]
@@ -51,7 +50,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #if FEATURE_WASM_MANAGED_THREADS
         [JSImport("INTERNAL.thread_available")]
-        // TODO: the continuation should be running on deputy or TP in MT
         public static partial Task ThreadAvailable();
 #endif
 

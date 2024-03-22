@@ -2987,6 +2987,18 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             }
         }
 
+#ifdef SWIFT_SUPPORT
+        // The Swift self parameter is passed in a callee save register and is
+        // not part of the arg register order that this function relies on to
+        // handle conflicts. For this reason we always mark it as DNER and
+        // handle it outside the normal register arguments.
+        // TODO-CQ: Fix this.
+        if (varNum == compiler->lvaSwiftSelfArg)
+        {
+            continue;
+        }
+#endif
+
         var_types regType = compiler->mangleVarArgsType(varDsc->TypeGet());
         // Change regType to the HFA type when we have a HFA argument
         if (varDsc->lvIsHfaRegArg())
@@ -6131,6 +6143,14 @@ void CodeGen::genFnProlog()
         intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SECRET_STUB_PARAM;
     }
 
+#ifdef SWIFT_SUPPORT
+    if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) && ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
+    {
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
+        intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
+    }
+#endif
+
     //
     // Zero out the frame as needed
     //
@@ -7770,7 +7790,8 @@ void CodeGen::genReturn(GenTree* treeNode)
             {
                 if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
                 {
-                    gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i), retTypeDesc.GetReturnRegType(i));
+                    gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
+                                           retTypeDesc.GetReturnRegType(i));
                 }
             }
         }
@@ -7787,7 +7808,7 @@ void CodeGen::genReturn(GenTree* treeNode)
             {
                 if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
                 {
-                    gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i)));
+                    gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv)));
                 }
             }
         }
@@ -7894,7 +7915,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         // On LoongArch64, for a struct like "{ int, double }", "retTypeDesc" will be "{ TYP_INT, TYP_DOUBLE }",
         // i. e. not include the padding for the first field, and so the general loop below won't work.
         var_types type  = retTypeDesc.GetReturnRegType(0);
-        regNumber toReg = retTypeDesc.GetABIReturnReg(0);
+        regNumber toReg = retTypeDesc.GetABIReturnReg(0, compiler->info.compCallConv);
         GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), 0);
         if (regCount > 1)
         {
@@ -7902,7 +7923,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             int offset = genTypeSize(type);
             type       = retTypeDesc.GetReturnRegType(1);
             offset     = (int)((unsigned int)offset < genTypeSize(type) ? genTypeSize(type) : offset);
-            toReg      = retTypeDesc.GetABIReturnReg(1);
+            toReg      = retTypeDesc.GetABIReturnReg(1, compiler->info.compCallConv);
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         }
 #else  // !TARGET_LOONGARCH64 && !TARGET_RISCV64
@@ -7910,7 +7931,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         for (unsigned i = 0; i < regCount; ++i)
         {
             var_types type  = retTypeDesc.GetReturnRegType(i);
-            regNumber toReg = retTypeDesc.GetABIReturnReg(i);
+            regNumber toReg = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
             offset += genTypeSize(type);
         }
@@ -7921,7 +7942,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         for (unsigned i = 0; i < regCount; ++i)
         {
             var_types type    = retTypeDesc.GetReturnRegType(i);
-            regNumber toReg   = retTypeDesc.GetABIReturnReg(i);
+            regNumber toReg   = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
             regNumber fromReg = op1->GetRegByIndex(i);
             if ((fromReg == REG_NA) && op1->OperIs(GT_COPY))
             {
@@ -7986,7 +8007,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 
     unsigned   lclNum = lclNode->GetLclNum();
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
-    if (op1->OperIs(GT_CALL))
+    if (actualOp1->OperIs(GT_CALL))
     {
         assert(regCount <= MAX_RET_REG_COUNT);
         noway_assert(varDsc->lvIsMultiRegRet);
@@ -8045,6 +8066,16 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         assert(regCount == varDsc->lvFieldCnt);
     }
 
+#ifdef SWIFT_SUPPORT
+    const uint32_t* offsets = nullptr;
+    if (actualOp1->IsCall() && (actualOp1->AsCall()->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift))
+    {
+        const CORINFO_SWIFT_LOWERING* lowering = compiler->GetSwiftLowering(actualOp1->AsCall()->gtRetClsHnd);
+        assert(!lowering->byReference && (regCount == lowering->numLoweredElements));
+        offsets = lowering->offsets;
+    }
+#endif
+
     for (unsigned i = 0; i < regCount; ++i)
     {
         regNumber reg     = genConsumeReg(op1, i);
@@ -8087,6 +8118,12 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // should consider the padding field within a struct.
             offset = (offset % genTypeSize(srcType)) ? AlignUp(offset, genTypeSize(srcType)) : offset;
+#endif
+#ifdef SWIFT_SUPPORT
+            if (offsets != nullptr)
+            {
+                offset = offsets[i];
+            }
 #endif
             // Several fields could be passed in one register, copy using the register type.
             // It could rewrite memory outside of the fields but local on the stack are rounded to POINTER_SIZE so
