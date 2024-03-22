@@ -1252,6 +1252,8 @@ namespace System.Net.Quic.Tests
                     serverSem.Release();
                     await clientSem.WaitAsync();
 
+                    var _ = await stream.ReadAsync(new byte[0]);
+
                     if (closeServer)
                     {
                         expectedError = QuicError.OperationAborted;
@@ -1281,6 +1283,8 @@ namespace System.Net.Quic.Tests
                     }
                     clientSem.Release();
                     await serverSem.WaitAsync();
+
+                    var _ = await stream.ReadAsync(new byte[0]);
 
                     if (!closeServer)
                     {
