@@ -30,16 +30,16 @@ namespace System.Reflection.Metadata
         internal TypeName(string name, string fullName,
             AssemblyName? assemblyName,
             int rankOrModifier = default,
-            TypeName? underlyingType = default,
-            TypeName? containingType = default,
+            TypeName? elementOrGenericType = default,
+            TypeName? declaringType = default,
             TypeName[]? genericTypeArguments = default)
         {
             Name = name;
             FullName = fullName;
             _assemblyName = assemblyName;
             _rankOrModifier = rankOrModifier;
-            _elementOrGenericType = underlyingType;
-            _declaringType = containingType;
+            _elementOrGenericType = elementOrGenericType;
+            _declaringType = declaringType;
             _genericArguments = genericTypeArguments;
 
             Debug.Assert(!(IsArray || IsPointer || IsByRef) || _elementOrGenericType is not null);

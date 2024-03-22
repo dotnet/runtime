@@ -37,14 +37,5 @@ namespace System.Reflection.Metadata
                 _maxNodes = value;
             }
         }
-
-        /// <summary>
-        /// Extends ECMA-335 standard limitations with a set of opinionated rules based on most up-to-date security knowledge.
-        /// </summary>
-        /// <remarks>
-        /// When parsing AssemblyName, only Version, Culture and PublicKeyToken attributes are allowed.
-        /// The comparison is also case-sensitive (in contrary to <seealso cref="AssemblyName(string)"/> constructor).
-        /// </remarks>
-        internal bool StrictValidation { get; set; } // it's internal for now, will very soon be changed after we have full requirements and the API gets approved
     }
 }

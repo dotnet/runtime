@@ -208,11 +208,11 @@ namespace System.Reflection.Metadata
 #endif
             }
 
-            TypeName? containingType = GetContainingType(fullTypeName, nestedNameLengths, assemblyName);
+            TypeName? declaringType = GetDeclaringType(fullTypeName, nestedNameLengths, assemblyName);
             string name = GetName(fullTypeName).ToString();
-            TypeName? underlyingType = genericArgs is null ? null : new(name, fullTypeName.ToString(), assemblyName, containingType: containingType);
+            TypeName? underlyingType = genericArgs is null ? null : new(name, fullTypeName.ToString(), assemblyName, declaringType: declaringType);
             string genericTypeFullName = GetGenericTypeFullName(fullTypeName, genericArgs);
-            TypeName result = new(name, genericTypeFullName, assemblyName, rankOrModifier: 0, underlyingType, containingType, genericArgs);
+            TypeName result = new(name, genericTypeFullName, assemblyName, rankOrModifier: 0, underlyingType, declaringType, genericArgs);
 
             if (previousDecorator != default) // some decorators were recognized
             {
@@ -229,7 +229,7 @@ namespace System.Reflection.Metadata
                     nameSb.Append(trimmedModifier);
                     fullNameSb.Append(trimmedModifier);
 
-                    result = new(nameSb.AsSpan().ToString(), fullNameSb.AsSpan().ToString(), assemblyName, parsedModifier, underlyingType: result);
+                    result = new(nameSb.AsSpan().ToString(), fullNameSb.AsSpan().ToString(), assemblyName, parsedModifier, elementOrGenericType: result);
                 }
 
                 // The code above is not calling ValueStringBuilder.ToString() directly,
@@ -291,25 +291,25 @@ namespace System.Reflection.Metadata
             return true;
         }
 
-        private static TypeName? GetContainingType(ReadOnlySpan<char> fullTypeName, List<int>? nestedNameLengths, AssemblyName? assemblyName)
+        private static TypeName? GetDeclaringType(ReadOnlySpan<char> fullTypeName, List<int>? nestedNameLengths, AssemblyName? assemblyName)
         {
             if (nestedNameLengths is null)
             {
                 return null;
             }
 
-            TypeName? containingType = null;
+            TypeName? declaringType = null;
             int nameOffset = 0;
             foreach (int nestedNameLength in nestedNameLengths)
             {
                 Debug.Assert(nestedNameLength > 0, "TryGetTypeNameInfo should return error on zero lengths");
                 ReadOnlySpan<char> fullName = fullTypeName.Slice(0, nameOffset + nestedNameLength);
                 ReadOnlySpan<char> name = GetName(fullName);
-                containingType = new(name.ToString(), fullName.ToString(), assemblyName, containingType: containingType);
+                declaringType = new(name.ToString(), fullName.ToString(), assemblyName, declaringType: declaringType);
                 nameOffset += nestedNameLength + 1; // include the '+' that was skipped in name
             }
 
-            return containingType;
+            return declaringType;
         }
 
         private bool TryDive(ref int depth)
