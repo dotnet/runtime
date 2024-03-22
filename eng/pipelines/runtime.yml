@@ -119,7 +119,7 @@ extends:
                 parameters:
                   packageType: rpm
                   target: rpmpkg
-                  packagingArgs: -c $(_BuildConfig) /p:BuildRpmPackage=true
+                  packagingArgs: -c Release /p:BuildRpmPackage=true
                   condition: and(succeeded(), eq(variables.osSubgroup, ''))
             condition: >-
               or(

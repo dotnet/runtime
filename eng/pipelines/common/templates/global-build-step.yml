@@ -6,6 +6,7 @@ parameters:
   crossArg: $(crossArg)
   displayName: Build product
   container: ''
+  condition: succeeded()
 
 steps:
   - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci ${{ parameters.archParameter }} $(_osParameter) ${{ parameters.crossArg }} ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
@@ -14,3 +15,4 @@ steps:
       continueOnError: ${{ parameters.shouldContinueOnError }}
     ${{ if ne(parameters.container, '') }}:
       target: ${{ parameters.container }}
+    condition: ${{ parameters.condition }}
