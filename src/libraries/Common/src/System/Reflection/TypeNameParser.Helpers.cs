@@ -148,6 +148,8 @@ namespace System.Reflection
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "Used to implement resolving types from strings.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "Used to implement resolving types from strings.")]
         private Type? Make(Type? type, Metadata.TypeName typeName)
         {
             if (type is null || typeName.IsSimple)
