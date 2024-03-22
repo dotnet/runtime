@@ -2,7 +2,6 @@ parameters:
   archType: ''
   buildConfig: ''
   container: ''
-  dependOnEvaluatePaths: false
   dependsOn: []
   isOfficialBuild: false
   osGroup: ''
@@ -27,7 +26,6 @@ jobs:
     pool: ${{ parameters.pool }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     dependsOn: ${{ parameters.dependsOn }}
 
@@ -42,6 +40,10 @@ jobs:
         value: '/p:OfficialBuildId=$(Build.BuildNumber)'
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
+    - name: workloadPackagesPath
+      value: $(Build.SourcesDirectory)/artifacts/workloadPackages
+    - name: workloadArtifactsPath
+      value: $(Build.SourcesDirectory)/artifacts/workloads
     - ${{ parameters.variables }}
 
     steps:
