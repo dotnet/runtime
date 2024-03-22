@@ -6,13 +6,15 @@ This contract is for reading and iterating the threads of the process.
 ``` csharp
 record struct DacThreadStoreData (
     int ThreadCount,
-    int UnstartedThreadCount,
-    int BackgroundThreadCount,
-    int PendingThreadCount,
-    int DeadThreadCount,
     TargetPointer FirstThread,
     TargetPointer FinalizerThread,
     TargetPointer GcThread);
+
+record struct DacThreadStoreCounts (
+    int UnstartedThreadCount,
+    int BackgroundThreadCount,
+    int PendingThreadCount,
+    int DeadThreadCount);
 
 enum ThreadState
 {
@@ -77,7 +79,7 @@ enum ThreadState
 
 record struct DacThreadData (
     uint ThreadId;
-    uint OsThreadId;
+    TargetNUint OsThreadId;
     ThreadState State;
     bool PreemptiveGCDisabled
     TargetPointer AllocContextPointer;
@@ -85,7 +87,7 @@ record struct DacThreadData (
     TargetPointer Frame;
     TargetPointer FirstNestedException;
     TargetPointer TEB;
-    TargetPointer LastThrownObjectHandle;
+    DacGCHandle LastThrownObjectHandle;
     TargetPointer NextThread;
 );
 ```
@@ -93,6 +95,10 @@ record struct DacThreadData (
 ## Apis of contract
 ``` csharp
 DacThreadStoreData GetThreadStoreData();
+DacThreadStoreCounts GetThreadCounts();
+DacThreadData GetThreadData(TargetPointer threadPointer);
+TargetPointer GetNestedExceptionInfo(TargetPointer nestedExceptionPointer, out TargetPointer nextNestedException);
+TargetPointer GetManagedThreadObject(TargetPointer threadPointer);
 ```
 
 ## Version 1
@@ -111,13 +117,22 @@ DacThreadStoreData GetThreadStoreData()
 
     return new DacThreadStoreData(
         ThreadCount : runtimeThreadStore.m_ThreadCount,
+        FirstThread: firstThread,
+        FinalizerThread: Target.ReadGlobalTargetPointer("g_pFinalizerThread"),
+        GcThread: Target.ReadGlobalTargetPointer("g_pSuspensionThread"));
+}
+
+DacThreadStoreCounts GetThreadCounts()
+{
+    TargetPointer threadStore = Target.ReadGlobalTargetPointer("s_pThreadStore");
+    var runtimeThreadStore = new ThreadStore(Target, threadStore);
+
+    return new DacThreadStoreCounts(
+        ThreadCount : runtimeThreadStore.m_ThreadCount,
         UnstartedThreadCount : runtimeThreadStore.m_UnstartedThreadCount,
         BackgroundThreadCount : runtimeThreadStore.m_BackgroundThreadCount,
         PendingThreadCount : runtimeThreadStore.m_PendingThreadCount,
         DeadThreadCount: runtimeThreadStore.m_DeadThreadCount,
-        FirstThread: firstThread,
-        FinalizerThread: Target.ReadGlobalTargetPointer("g_pFinalizerThread"),
-        GcThread: Target.ReadGlobalTargetPointer("g_pSuspensionThread"));
 }
 
 DacThreadData GetThreadData(TargetPointer threadPointer)
@@ -139,14 +154,14 @@ DacThreadData GetThreadData(TargetPointer threadPointer)
 
     return new DacThread(
         ThreadId : runtimeThread.m_ThreadId,
-        OsThreadId : runtimeThread.m_OSThreadId,
+        OsThreadId : (OsThreadId)runtimeThread.m_OSThreadId,
         State : (ThreadState)runtimeThread.m_State,
         PreemptiveGCDisabled : thread.m_fPreemptiveGCDisabled != 0,
         AllocContextPointer : thread.m_alloc_context.alloc_ptr,
         AllocContextLimit : thread.m_alloc_context.alloc_limit,
         Frame : thread.m_pFrame,
         TEB : thread.Has_m_pTEB ? thread.m_pTEB : TargetPointer.Null,
-        LastThreadObjectHandle : thread.m_LastThrownObjectHandle,
+        LastThreadObjectHandle : new DacGCHandle(thread.m_LastThrownObjectHandle),
         FirstNestedException : firstNestedException,
         NextThread : ThreadListReader.GetHead.GetNext(threadPointer)
     );
@@ -170,5 +185,11 @@ TargetPointer GetNestedExceptionInfo(TargetPointer nestedExceptionPointer, out T
         nextNestedException = exData.m_pPrevNestedInfo;
         return Contracts.GCHandle.GetObject(exData.m_hThrowable);
     }
+}
+
+TargetPointer GetManagedThreadObject(TargetPointer threadPointer)
+{
+    var runtimeThread = new Thread(Target, threadPointer);
+    return Contracts.GCHandle.GetObject(new DacGCHandle(runtimeThread.m_ExposedObject));
 }
 ```

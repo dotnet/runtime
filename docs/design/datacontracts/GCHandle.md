@@ -4,20 +4,25 @@ This contract allows decoding and reading of GCHandles. This will also include h
 
 ## Data structures defined by contract
 ``` csharp
+struct DacGCHandle
+{
+    DacGCHandle(TargetPointer value) { Value = value; }
+    TargetPointer Value;
+}
 ```
 
 ## Apis of contract
 ``` csharp
-TargetPointer GetObject(TargetPointer gcHandle);
+TargetPointer GetObject(DacGCHandle gcHandle);
 ```
 
 ## Version 1
 
 ``` csharp
-TargetPointer GetObject(TargetPointer gcHandle)
+TargetPointer GetObject(DacGCHandle gcHandle)
 {
-    if (gcHandle == TargetPointer.Null)
+    if (gcHandle.Value == TargetPointer.Null)
         return TargetPointer.Null;
-    return Target.ReadTargetPointer(gcHandle);
+    return Target.ReadTargetPointer(gcHandle.Value);
 }
 ```
