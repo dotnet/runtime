@@ -594,7 +594,7 @@ private:
     unsigned m_dupCount;
 
     // True if likelihood has been set
-    bool m_likelihoodSet;
+    INDEBUG(bool m_likelihoodSet);
 
 public:
     FlowEdge(BasicBlock* sourceBlock, BasicBlock* destBlock, FlowEdge* rest)
@@ -605,7 +605,9 @@ public:
         , m_edgeWeightMax(0)
         , m_likelihood(0)
         , m_dupCount(0)
+#ifdef DEBUG
         , m_likelihoodSet(false)
+#endif // DEBUG
     {
     }
 
@@ -668,6 +670,7 @@ public:
 
     weight_t getLikelihood() const
     {
+        assert(m_likelihoodSet);
         return m_likelihood;
     }
 
@@ -676,14 +679,16 @@ public:
 
     void clearLikelihood()
     {
-        m_likelihood    = 0.0;
-        m_likelihoodSet = false;
+        m_likelihood = 0.0;
+        INDEBUG(m_likelihoodSet = false);
     }
 
+#ifdef DEBUG
     bool hasLikelihood() const
     {
         return m_likelihoodSet;
     }
+#endif // DEBUG
 
     weight_t getLikelyWeight() const;
 

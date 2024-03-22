@@ -14,7 +14,6 @@ parameters:
   runtimeVariant: ''
   testScope: ''
   helixQueues: []
-  dependOnEvaluatePaths: false
   condition: true
   shouldContinueOnError: false
   variables: {}
@@ -55,8 +54,6 @@ jobs:
         disableComponentGovernance: true
 
       dependsOn:
-      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
-        - evaluate_paths
       - ${{ if ne(parameters.dependsOn[0], '') }}:
         - ${{ parameters.dependsOn }}
       - ${{ else }}:

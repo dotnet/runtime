@@ -389,20 +389,6 @@ FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
 }
 FCIMPLEND
 
-FCIMPL3(uint8_t, RhpLockCmpXchg8, uint8_t * location, uint8_t value, uint8_t comparand)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return 0;
-}
-FCIMPLEND
-
-FCIMPL3(int16_t, RhpLockCmpXchg16, int16_t * location, int16_t value, int16_t comparand)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return 0;
-}
-FCIMPLEND
-
 FCIMPL3(int32_t, RhpLockCmpXchg32, int32_t * location, int32_t value, int32_t comparand)
 {
     return PalInterlockedCompareExchange(location, value, comparand);

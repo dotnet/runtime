@@ -10,43 +10,6 @@
 // r0 = destination address
 // r1 = value
 // r2 = comparand
-LEAF_ENTRY RhpLockCmpXchg8, _TEXT
-          dmb
-LOCAL_LABEL(CmpXchg8Retry):
-          ldrexb       r3, [r0]
-          cmp          r2, r3
-          bne          LOCAL_LABEL(CmpXchg8Exit)
-          strexb       r12, r1, [r0]
-          cmp          r12, #0
-          bne          LOCAL_LABEL(CmpXchg8Retry)
-LOCAL_LABEL(CmpXchg8Exit):
-          mov          r0, r3
-          dmb
-          bx           lr
-LEAF_END RhpLockCmpXchg8, _TEXT
-
-// r0 = destination address
-// r1 = value
-// r2 = comparand
-LEAF_ENTRY RhpLockCmpXchg16, _TEXT
-          uxth         r2, r2
-          dmb
-LOCAL_LABEL(CmpXchg16Retry):
-          ldrexh       r3, [r0]
-          cmp          r2, r3
-          bne          LOCAL_LABEL(CmpXchg16Exit)
-          strexh       r12, r1, [r0]
-          cmp          r12, #0
-          bne          LOCAL_LABEL(CmpXchg16Retry)
-LOCAL_LABEL(CmpXchg16Exit):
-          sxth         r0, r3
-          dmb
-          bx           lr
-LEAF_END RhpLockCmpXchg16, _TEXT
-
-// r0 = destination address
-// r1 = value
-// r2 = comparand
 LEAF_ENTRY RhpLockCmpXchg32, _TEXT
           dmb
 LOCAL_LABEL(CmpXchg32Retry):
