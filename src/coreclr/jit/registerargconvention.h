@@ -10,7 +10,7 @@ struct InitVarDscInfo
 {
     LclVarDsc*             varDsc;
     unsigned               varNum;
-    AbiPassingInformation* abiInfo;
+    ABIPassingInformation* abiInfo;
 
     unsigned intRegArgNum;
     unsigned floatRegArgNum;
@@ -39,7 +39,7 @@ struct InitVarDscInfo
 public:
     // set to initial values
     void Init(LclVarDsc*             lvaTable,
-              AbiPassingInformation* abiInfoTable,
+              ABIPassingInformation* abiInfoTable,
               bool                   _hasRetBufArg,
               unsigned               _maxIntRegArgNum,
               unsigned               _maxFloatRegArgNum)

@@ -3771,7 +3771,7 @@ public:
     LclVarDsc* lvaTable;    // variable descriptor table
     unsigned   lvaTableCnt; // lvaTable size (>= lvaCount)
 
-    AbiPassingInformation* lvaParameterPassingInfo;
+    ABIPassingInformation* lvaParameterPassingInfo;
 
     unsigned lvaTrackedCount;             // actual # of locals being tracked
     unsigned lvaTrackedCountInSizeTUnits; // min # of size_t's sufficient to hold a bit for all the locals being tracked
@@ -3982,8 +3982,6 @@ public:
                        CORINFO_SIG_INFO*       varSig);
 
     bool lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd);
-
-    void lvaDeterminePassingInformation(InitVarDscInfo* varDscInfo, CorInfoType corInfoType, CORINFO_CLASS_HANDLE typeHnd);
 
     var_types lvaGetActualType(unsigned lclNum);
     var_types lvaGetRealType(unsigned lclNum);

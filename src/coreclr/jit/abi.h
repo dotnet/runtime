@@ -3,7 +3,7 @@
 
 #pragma once
 
-class AbiPassingSegment
+class ABIPassingSegment
 {
     regNumber m_register    = REG_NA;
     unsigned  m_stackOffset = 0;
@@ -29,11 +29,11 @@ public:
     // offset, relative to the first stack argument's offset.
     unsigned GetStackOffset() const;
 
-    static AbiPassingSegment InRegister(regNumber reg, unsigned offset, unsigned size);
-    static AbiPassingSegment OnStack(unsigned stackOffset, unsigned offset, unsigned size);
+    static ABIPassingSegment InRegister(regNumber reg, unsigned offset, unsigned size);
+    static ABIPassingSegment OnStack(unsigned stackOffset, unsigned offset, unsigned size);
 };
 
-struct AbiPassingInformation
+struct ABIPassingInformation
 {
     // The number of segments used to pass the value. Examples:
     // - On x86, TYP_LONG can be passed in two registers, resulting in two
@@ -47,7 +47,7 @@ struct AbiPassingInformation
     // - On Windows x64, all parameters always belong into one stack slot or register,
     // and thus always have NumSegments == 1
     unsigned           NumSegments = 0;
-    AbiPassingSegment* Segments    = nullptr;
+    ABIPassingSegment* Segments    = nullptr;
 
     bool IsSplitAcrossRegistersAndStack() const;
 };

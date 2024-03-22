@@ -11,7 +11,7 @@
 // Return Value:
 //   True if this is passed in a register.
 //
-bool AbiPassingSegment::IsPassedInRegister() const
+bool ABIPassingSegment::IsPassedInRegister() const
 {
     return m_register != REG_NA;
 }
@@ -23,7 +23,7 @@ bool AbiPassingSegment::IsPassedInRegister() const
 // Return Value:
 //   True if this is passed on the stack.
 //
-bool AbiPassingSegment::IsPassedOnStack() const
+bool ABIPassingSegment::IsPassedOnStack() const
 {
     return m_register == REG_NA;
 }
@@ -35,7 +35,7 @@ bool AbiPassingSegment::IsPassedOnStack() const
 // Return Value:
 //   The register.
 //
-regNumber AbiPassingSegment::GetRegister() const
+regNumber ABIPassingSegment::GetRegister() const
 {
     assert(IsPassedInRegister());
     return m_register;
@@ -48,7 +48,7 @@ regNumber AbiPassingSegment::GetRegister() const
 // Return Value:
 //   Offset relative to the first stack argument.
 //
-unsigned AbiPassingSegment::GetStackOffset() const
+unsigned ABIPassingSegment::GetStackOffset() const
 {
     assert(IsPassedOnStack());
     return m_stackOffset;
@@ -56,7 +56,7 @@ unsigned AbiPassingSegment::GetStackOffset() const
 
 //-----------------------------------------------------------------------------
 // InRegister:
-//   Create an AbiPassingSegment representing that a segment is passed in a
+//   Create an ABIPassingSegment representing that a segment is passed in a
 //   register.
 //
 // Parameters:
@@ -65,12 +65,12 @@ unsigned AbiPassingSegment::GetStackOffset() const
 //   size   - The size of the segment passed in the register
 //
 // Return Value:
-//   New instance of AbiPassingSegment.
+//   New instance of ABIPassingSegment.
 //
-AbiPassingSegment AbiPassingSegment::InRegister(regNumber reg, unsigned offset, unsigned size)
+ABIPassingSegment ABIPassingSegment::InRegister(regNumber reg, unsigned offset, unsigned size)
 {
     assert(reg != REG_NA);
-    AbiPassingSegment segment;
+    ABIPassingSegment segment;
     segment.m_register    = reg;
     segment.m_stackOffset = 0;
     segment.Offset        = offset;
@@ -80,7 +80,7 @@ AbiPassingSegment AbiPassingSegment::InRegister(regNumber reg, unsigned offset, 
 
 //-----------------------------------------------------------------------------
 // OnStack:
-//   Create an AbiPassingSegment representing that a segment is passed on the
+//   Create an ABIPassingSegment representing that a segment is passed on the
 //   stack.
 //
 // Parameters:
@@ -89,11 +89,11 @@ AbiPassingSegment AbiPassingSegment::InRegister(regNumber reg, unsigned offset, 
 //   size        - The size of the segment passed in the register
 //
 // Return Value:
-//   New instance of AbiPassingSegment.
+//   New instance of ABIPassingSegment.
 //
-AbiPassingSegment AbiPassingSegment::OnStack(unsigned stackOffset, unsigned offset, unsigned size)
+ABIPassingSegment ABIPassingSegment::OnStack(unsigned stackOffset, unsigned offset, unsigned size)
 {
-    AbiPassingSegment segment;
+    ABIPassingSegment segment;
     segment.m_register    = REG_NA;
     segment.m_stackOffset = stackOffset;
     segment.Offset        = offset;
@@ -103,13 +103,13 @@ AbiPassingSegment AbiPassingSegment::OnStack(unsigned stackOffset, unsigned offs
 
 //-----------------------------------------------------------------------------
 // IsSplitAcrossRegistersAndStack:
-//   Check if this AbiPassingInformation represents passing a value in both
+//   Check if this ABIPassingInformation represents passing a value in both
 //   registers and on stack.
 //
 // Return Value:
 //   True if the value is passed in both registers and on stack.
 //
-bool AbiPassingInformation::IsSplitAcrossRegistersAndStack() const
+bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
 {
     bool anyReg   = false;
     bool anyStack = false;
