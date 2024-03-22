@@ -13,7 +13,7 @@ FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
 {
 #if defined(HOST_X86) || defined(HOST_AMD64)
     const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
-    return (val != val || val < 0) ? 0 : (val >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)val;
+    return (val > 0) ? ((val >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)val) : 0;
 #else
     const double two63  = 2147483648.0 * 4294967296.0;
     uint64_t ret;
@@ -59,7 +59,7 @@ FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
 {
 #if defined(HOST_X86) || defined(HOST_AMD64)
     const double uint_max = 4294967295.0;
-    return (val != val || val <= 0) ? 0 : (val >= uint_max) ? UINT32_MAX : (uint32_t)val;
+    return (val > 0) ? ((val >= uint_max) ? UINT32_MAX : (uint32_t)val) : 0;
 #else
     return (uint32_t)val;
 #endif //HOST_X86 || HOST_AMD64
