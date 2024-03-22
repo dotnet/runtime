@@ -273,7 +273,7 @@ bool TLSIndexToMethodTableMap::FindClearedIndex(uint8_t whenClearedMarkerToAvoid
     return false;
 }
 
-uint32_t g_NextTLSSlot = (uint32_t)sizeof(TADDR);
+uint32_t g_NextTLSSlot = 1;
 CrstStatic g_TLSCrst;
 
 void InitializeThreadStaticData()
@@ -412,7 +412,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
     }
 
     TADDR pTLSArrayData = t_ThreadStatics.pTLSArrayData;
-    TADDR *ppTLSBaseAddress = reinterpret_cast<TADDR*>(reinterpret_cast<uint8_t*>(pTLSArrayData) + index.GetIndexOffset());
+    TADDR *ppTLSBaseAddress = reinterpret_cast<TADDR*>(reinterpret_cast<uintptr_t*>(pTLSArrayData) + index.GetIndexOffset());
     TADDR pTLSBaseAddress = *ppTLSBaseAddress;
 
     if (pTLSBaseAddress == NULL)
@@ -477,7 +477,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
 
             if (isCollectible)
             {
-                LOADERHANDLE *pLoaderHandle = reinterpret_cast<LOADERHANDLE*>(reinterpret_cast<uint8_t*>(pTLSArrayData) + index.GetIndexOffset());
+                LOADERHANDLE *pLoaderHandle = reinterpret_cast<LOADERHANDLE*>(reinterpret_cast<uintptr_t*>(pTLSArrayData) + index.GetIndexOffset());
                 // Note, that this can fail, but if it succeeds we don't have a holder in place to clean it up if future operations fail
                 // Add such a holder if we ever add a possibly failing operation after this
                 *pLoaderHandle = pMT->GetLoaderAllocator()->AllocateHandle(gc.tlsEntry);
@@ -525,7 +525,7 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
     {
         uint32_t tlsRawIndex = g_NextTLSSlot;
         newTLSIndex = TLSIndex(tlsRawIndex);
-        g_NextTLSSlot += (uint32_t)sizeof(TADDR);
+        g_NextTLSSlot += 1;
     }
 
     if (pMT->Collectible())

@@ -1540,7 +1540,7 @@ FORCEINLINE void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
     }
 
     TADDR pTLSArrayData = t_ThreadStatics.pTLSArrayData;
-    pTLSBaseAddress = *reinterpret_cast<TADDR*>(reinterpret_cast<uint8_t*>(pTLSArrayData) + index.GetIndexOffset());
+    pTLSBaseAddress = *reinterpret_cast<TADDR*>(reinterpret_cast<uintptr_t*>(pTLSArrayData) + index.GetIndexOffset());
     return reinterpret_cast<void*>(pTLSBaseAddress);
 }
 
