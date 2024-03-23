@@ -23,21 +23,8 @@
 
 class COMVariant
 {
-    friend class OleVariant;
-
 public:
-    //
-    // Helper Routines
-    //
-
-    static FCDECL2(void, SetFieldsObject, VariantData* vThisRef, Object* vVal);
     static FCDECL1(CLR_BOOL, IsSystemDrawingColor, MethodTable* valMT);
-
-private:
-    // GetCVTypeFromClass
-    // This method will return the CVTypes from the Variant instance
-    static CVTypes GetCVTypeFromClass(TypeHandle th);
-    static int GetEnumFlags(TypeHandle th);
 };
 
 extern "C" uint32_t QCALLTYPE Variant_ConvertSystemColorToOleColor(QCall::ObjectHandleOnStack obj);
