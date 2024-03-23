@@ -1546,6 +1546,67 @@ BOOL StackFrameIterator::IsValid(void)
     return TRUE;
 } // StackFrameIterator::IsValid()
 
+#ifndef DACCESS_COMPILE
+//---------------------------------------------------------------------------------------
+//
+// Advance to the position that the other iterator is currently at.
+//
+void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
+{
+    // We copy the other stack frame iterator over the current one, but we need to
+    // keep a couple of members untouched. So we save them here and restore them
+    // after the copy.
+    ExInfo* pPrevExInfo = GetNextExInfo();
+    REGDISPLAY *pRD = m_crawl.GetRegisterSet();
+    GSCookie *pCurGSCookie = m_crawl.pCurGSCookie;
+    GSCookie *pFirstGSCookie = m_crawl.pFirstGSCookie;
+    Frame *pStartFrame = m_pStartFrame;
+#ifdef _DEBUG
+    Frame *pRealStartFrame = m_pRealStartFrame;
+#endif
+
+    *this = *pOtherStackFrameIterator;
+
+    m_pNextExInfo = pPrevExInfo;
+    m_crawl.pRD = pRD;
+    m_crawl.pCurGSCookie = pCurGSCookie;
+    m_crawl.pFirstGSCookie = pFirstGSCookie;
+    m_pStartFrame = pStartFrame;
+#ifdef _DEBUG
+    m_pRealStartFrame = pRealStartFrame;
+#endif
+
+    REGDISPLAY *pOtherRD = pOtherStackFrameIterator->m_crawl.GetRegisterSet();
+    *pRD->pCurrentContextPointers = *pOtherRD->pCurrentContextPointers;
+    SetIP(pRD->pCurrentContext, GetIP(pOtherRD->pCurrentContext));
+    SetSP(pRD->pCurrentContext, GetSP(pOtherRD->pCurrentContext));
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    SetLR(pRD->pCurrentContext, GetLR(pOtherRD->pCurrentContext));
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    SetRA(pRD->pCurrentContext, GetRA(pOtherRD->pCurrentContext));
+#endif // TARGET_ARM || TARGET_ARM64
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *pRD->pCurrentContextPointers->regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+    pRD->IsCallerContextValid = pOtherRD->IsCallerContextValid;
+    if (pRD->IsCallerContextValid)
+    {
+        *pRD->pCallerContextPointers = *pOtherRD->pCallerContextPointers;
+        SetIP(pRD->pCallerContext, GetIP(pOtherRD->pCallerContext));
+        SetSP(pRD->pCallerContext, GetSP(pOtherRD->pCallerContext));
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+        SetLR(pRD->pCallerContext, GetLR(pOtherRD->pCallerContext));
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        SetRA(pRD->pCallerContext, GetRA(pOtherRD->pCallerContext));
+#endif // TARGET_ARM || TARGET_ARM64
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = *pRD->pCallerContextPointers->regname;
+        ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+    }
+    SyncRegDisplayToCurrentContext(pRD);
+}
+#endif // DACCESS_COMPILE
+
 //---------------------------------------------------------------------------------------
 //
 // Advance to the next frame according to the stackwalk flags.  If the iterator is stopped

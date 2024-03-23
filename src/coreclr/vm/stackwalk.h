@@ -599,6 +599,11 @@ public:
     // advance to the next frame according to the stackwalk flags
     StackWalkAction Next(void);
 
+#ifndef DACCESS_COMPILE
+    // advance to the position that the other iterator is currently at
+    void SkipTo(StackFrameIterator *pOtherStackFrameIterator);
+#endif // DACCESS_COMPILE
+
 #ifdef FEATURE_EH_FUNCLETS
     void ResetNextExInfoForSP(TADDR SP);
 
