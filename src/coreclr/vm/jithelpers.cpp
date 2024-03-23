@@ -628,6 +628,7 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULngOvf, double val)
     // Note that this expression also works properly for val = NaN case
     if (val > -1.0 && val < two64)
         return (UINT64)val;
+
     FCThrow(kOverflowException);
 }
 HCIMPLEND
