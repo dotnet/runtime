@@ -92,18 +92,6 @@ namespace System.Threading
             _recursionCount = previousRecursionCount;
         }
 
-        private static bool IsFullyInitialized
-        {
-            get
-            {
-                // If NativeRuntimeEventSource is already being class-constructed by this thread earlier in the stack, Log can
-                // be null. This property is used to avoid going down the wait path in that case to avoid null checks in several
-                // other places.
-                Debug.Assert((StaticsInitializationStage)s_staticsInitializationStage == StaticsInitializationStage.Complete);
-                return NativeRuntimeEventSource.Log != null;
-            }
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private TryLockResult LazyInitializeOrEnter()
         {
@@ -113,10 +101,6 @@ namespace System.Threading
                 case StaticsInitializationStage.Complete:
                     if (_spinCount == SpinCountNotInitialized)
                     {
-                        if (!IsFullyInitialized)
-                        {
-                            goto case StaticsInitializationStage.Started;
-                        }
                         _spinCount = s_maxSpinCount;
                     }
                     return TryLockResult.Spin;
@@ -137,7 +121,7 @@ namespace System.Threading
                         }
 
                         stage = (StaticsInitializationStage)Volatile.Read(ref s_staticsInitializationStage);
-                        if (stage == StaticsInitializationStage.Complete && IsFullyInitialized)
+                        if (stage == StaticsInitializationStage.Complete)
                         {
                             goto case StaticsInitializationStage.Complete;
                         }
@@ -155,7 +139,9 @@ namespace System.Threading
                     }
 
                 default:
-                    Debug.Assert(stage == StaticsInitializationStage.NotStarted);
+                    Debug.Assert(
+                        stage == StaticsInitializationStage.NotStarted ||
+                        stage == StaticsInitializationStage.PartiallyComplete);
                     if (TryInitializeStatics())
                     {
                         goto case StaticsInitializationStage.Complete;
@@ -169,29 +155,49 @@ namespace System.Threading
         {
             // Since Lock is used to synchronize class construction, and some of the statics initialization may involve class
             // construction, update the stage first to avoid infinite recursion
-            switch (
-                (StaticsInitializationStage)
-                Interlocked.CompareExchange(
-                    ref s_staticsInitializationStage,
-                    (int)StaticsInitializationStage.Started,
-                    (int)StaticsInitializationStage.NotStarted))
+            var oldStage = (StaticsInitializationStage)s_staticsInitializationStage;
+            while (true)
             {
-                case StaticsInitializationStage.Started:
-                    return false;
-                case StaticsInitializationStage.Complete:
+                if (oldStage == StaticsInitializationStage.Complete)
+                {
                     return true;
+                }
+
+                var stageBeforeUpdate =
+                    (StaticsInitializationStage)Interlocked.CompareExchange(
+                        ref s_staticsInitializationStage,
+                        (int)StaticsInitializationStage.Started,
+                        (int)oldStage);
+                if (stageBeforeUpdate == StaticsInitializationStage.Started)
+                {
+                    return false;
+                }
+                if (stageBeforeUpdate == oldStage)
+                {
+                    Debug.Assert(
+                        oldStage == StaticsInitializationStage.NotStarted ||
+                        oldStage == StaticsInitializationStage.PartiallyComplete);
+                    break;
+                }
+
+                oldStage = stageBeforeUpdate;
             }
 
             bool isFullyInitialized;
             try
             {
-                s_isSingleProcessor = Environment.IsSingleProcessor;
-                s_maxSpinCount = DetermineMaxSpinCount();
-                s_minSpinCount = DetermineMinSpinCount();
+                if (oldStage == StaticsInitializationStage.NotStarted)
+                {
+                    // If the stage is PartiallyComplete, these will have already been initialized
+                    s_isSingleProcessor = Environment.IsSingleProcessor;
+                    s_maxSpinCount = DetermineMaxSpinCount();
+                    s_minSpinCount = DetermineMinSpinCount();
+                }
 
                 // Also initialize some types that are used later to prevent potential class construction cycles. If
                 // NativeRuntimeEventSource is already being class-constructed by this thread earlier in the stack, Log can be
-                // null. Avoid going down the wait path in that case to avoid null checks in several other places.
+                // null. Avoid going down the wait path in that case to avoid null checks in several other places. If not fully
+                // initialized, the stage will also be set to PartiallyComplete to try again.
                 isFullyInitialized = NativeRuntimeEventSource.Log != null;
             }
             catch
@@ -200,7 +206,11 @@ namespace System.Threading
                 throw;
             }
 
-            Volatile.Write(ref s_staticsInitializationStage, (int)StaticsInitializationStage.Complete);
+            Volatile.Write(
+                ref s_staticsInitializationStage,
+                isFullyInitialized
+                    ? (int)StaticsInitializationStage.Complete
+                    : (int)StaticsInitializationStage.PartiallyComplete);
             return isFullyInitialized;
         }
 
@@ -242,6 +252,7 @@ namespace System.Threading
         {
             NotStarted,
             Started,
+            PartiallyComplete,
             Complete
         }
     }
