@@ -72,6 +72,8 @@ namespace ILCompiler
                 suppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
             if (Get(_command.NoAotWarn))
                 suppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
+            if (Get(_command.NoSingleFileWarn))
+                suppressedWarningCategories.Add(MessageSubCategory.SingleFileAnalysis);
 
             ILProvider ilProvider = new NativeAotILProvider();
 
