@@ -30,7 +30,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe CorElementType InternalGetCorElementType()
+        internal unsafe CorElementType InternalGetCorElementType()
         {
             CorElementType elementType = InternalGetCorElementType(RuntimeHelpers.GetMethodTable(this));
             GC.KeepAlive(this);

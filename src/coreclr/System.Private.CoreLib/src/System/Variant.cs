@@ -12,12 +12,13 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System
 {
-    internal struct Variant
+    internal partial struct Variant
     {
         // Do Not change the order of these fields.
         // They are mapped to the native VariantData * data structure.
@@ -60,6 +61,15 @@ namespace System
         internal const int CV_MISSING = 0x16;
         internal const int CV_NULL = 0x17;
         internal const int CV_LAST = 0x18;
+        internal const int EnumI1 = 0x100000;
+        internal const int EnumU1 = 0x200000;
+        internal const int EnumI2 = 0x300000;
+        internal const int EnumU2 = 0x400000;
+        internal const int EnumI4 = 0x500000;
+        internal const int EnumU4 = 0x600000;
+        internal const int EnumI8 = 0x700000;
+        internal const int EnumU8 = 0x800000;
+        internal const int EnumMask = 0xF00000;
 
         internal const int TypeCodeBitMask = 0xffff;
         internal const int VTBitMask = unchecked((int)0xff000000);
@@ -70,6 +80,12 @@ namespace System
         internal static Variant Missing => new Variant(CV_MISSING, Type.Missing, 0);
         internal static Variant DBNull => new Variant(CV_NULL, System.DBNull.Value, 0);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe bool IsSystemDrawingColor(MethodTable* pMT);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertSystemColorToOleColor")]
+        private static partial uint ConvertSystemColorToOleColor(ObjectHandleOnStack obj);
+
         internal unsafe void SetFieldsObject(object val)
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(val);
@@ -77,14 +93,41 @@ namespace System
             if (!pMT->IsValueType)
             {
                 _objref = val;
-                _flags = CV_OBJECT;
+                if (val.GetType() == typeof(Missing))
+                {
+                    _flags = CV_MISSING;
+                }
+                else if (val.GetType() == typeof(DBNull))
+                {
+                    _flags = CV_NULL;
+                }
+                else if (val.GetType() == typeof(Empty))
+                {
+                    _flags = CV_EMPTY;
+                    _objref = null;
+                }
             }
-            else if (val.GetType().FullName == "System.Drawing.Color")
+            else if (IsSystemDrawingColor(pMT))
             {
-
+                // System.Drawing.Color is converted to UInt32
+                object obj = val;
+                _data = ConvertSystemColorToOleColor(ObjectHandleOnStack.Create(ref obj));
+                _flags = CV_U4;
             }
             else
             {
+                //If this is a primitive type, we need to unbox it, get the value and create a variant
+                //with just those values.
+
+                _objref = null;
+
+                //copy all of the data.
+                // Copies must be done based on the exact number of bytes to copy.
+                // We don't want to read garbage from other blocks of memory.
+                //CV_I8 --> CV_R8, CV_DATETIME, CV_TIMESPAN, & CV_CURRENCY are all of the 8 byte quantities
+                //If we don't find one of those ranges, we've found a value class
+                //of which we don't have inherent knowledge, so just slam that into an
+                //ObjectRef.
                 switch (val)
                 {
                     case byte u1:
@@ -93,18 +136,71 @@ namespace System
                     case sbyte i1:
                         this = new(i1);
                         break;
+                    case bool boolean:
+                        this = new(boolean);
+                        break;
                     case short i2:
                         this = new(i2);
                         break;
                     case ushort u2:
                         this = new(u2);
                         break;
+                    case char ch:
+                        this = new(ch);
+                        break;
                     case int i4:
                         this = new(i4);
                         break;
-                }
+                    case uint u4:
+                        this = new(u4);
+                        break;
+                    case float r4:
+                        this = new(r4);
+                        break;
+                    // CV_DATETIME handled by caller
+                    case TimeSpan ts:
+                        _flags = CV_TIMESPAN;
+                        _data = ts.Ticks;
+                        break;
+                    // CV_CURRENCY handled by caller
+                    case long i8:
+                        this = new(i8);
+                        break;
+                    case ulong u8:
+                        this = new(u8);
+                        break;
+                    case double r8:
+                        this = new(r8);
+                        break;
+                    case Enum e:
+                        _data = (long)Enum.ToUInt64(e);
+                        _objref = e.GetType();
+                        _flags = e.InternalGetCorElementType() switch
+                        {
+                            CorElementType.ELEMENT_TYPE_I1 => CV_ENUM | EnumI1,
+                            CorElementType.ELEMENT_TYPE_U1 => CV_ENUM | EnumU1,
+                            CorElementType.ELEMENT_TYPE_I2 => CV_ENUM | EnumI2,
+                            CorElementType.ELEMENT_TYPE_U2 => CV_ENUM | EnumU2,
+                            CorElementType.ELEMENT_TYPE_I4 => CV_ENUM | EnumI4,
+                            CorElementType.ELEMENT_TYPE_U4 => CV_ENUM | EnumU4,
+#if TARGET_64BIT
+                            CorElementType.ELEMENT_TYPE_I => CV_ENUM | EnumI8,
+                            CorElementType.ELEMENT_TYPE_U => CV_ENUM | EnumU8,
+#else
 
-                ref byte data = ref RuntimeHelpers.GetRawData(val); // Unbox?
+                            CorElementType.ELEMENT_TYPE_I => CV_ENUM | EnumI4,
+                            CorElementType.ELEMENT_TYPE_U => CV_ENUM | EnumU4,
+#endif
+                            CorElementType.ELEMENT_TYPE_I8 => CV_ENUM | EnumI8,
+                            CorElementType.ELEMENT_TYPE_U8 => CV_ENUM | EnumU8,
+                            _ => throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType)
+                        };
+                        break;
+                    default:
+                        // Decimals and other boxed value classes get handled here.
+                        _objref = val;
+                        break;
+                }
             }
         }
 
