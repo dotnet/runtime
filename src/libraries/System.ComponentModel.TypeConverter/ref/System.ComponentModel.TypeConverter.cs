@@ -1030,9 +1030,9 @@ namespace System.ComponentModel
     }
     public partial class NullableConverter : System.ComponentModel.TypeConverter
     {
-        public NullableConverter([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The UnderlyingType cannot be statically discovered.")]
+        public NullableConverter(System.Type type) { }
         public System.Type NullableType { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public System.Type UnderlyingType { get { throw null; } }
         public System.ComponentModel.TypeConverter UnderlyingTypeConverter { get { throw null; } }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }

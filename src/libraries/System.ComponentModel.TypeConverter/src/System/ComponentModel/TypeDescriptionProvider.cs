@@ -251,14 +251,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
         {
-            if (!TypeDescriptor.SupportsInstanceBasedDescriptors)
-            {
-                if (instance != null)
-                {
-                    throw new NotSupportedException(SR.InstanceBasedTypeDescriptorsNotSupported);
-                }
-
-            }
+            TypeDescriptor.CheckInstance(instance);
             if (_parent != null)
             {
                 return _parent.GetTypeDescriptor(objectType, instance);

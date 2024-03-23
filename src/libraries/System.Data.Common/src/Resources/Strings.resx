@@ -411,6 +411,7 @@
   <data name="DataDom_NotSupport_GetElementById" xml:space="preserve"><value>GetElementById() is not supported on DataDocument.</value></data>
   <data name="DataDom_NotSupport_EntRef" xml:space="preserve"><value>Cannot create entity references on DataDocument.</value></data>
   <data name="DataDom_NotSupport_Clear" xml:space="preserve"><value>Clear function on DateSet and DataTable is not supported on XmlDataDocument.</value></data>
+  <data name="DbConnectionStringBuilder_InstanceBasedTypeDescriptorsNotSupported" xml:space="preserve"><value>Instance-based type descriptors are disabled in the app configuration and are not supported.</value></data>
   <data name="ADP_EmptyArray" xml:space="preserve"><value>Expecting non-empty array for '{0}' parameter.</value></data>
   <data name="SQL_WrongType" xml:space="preserve"><value>Expecting argument of type {1}, but received type {0}.</value></data>
   <data name="ADP_InvalidConnectionOptionValue" xml:space="preserve"><value>Invalid value for key '{0}'.</value></data>

@@ -113,6 +113,17 @@ namespace System.ComponentModel
         /// </summary>
         public static event RefreshEventHandler? Refreshed;
 
+        internal static void CheckInstance(object? instance)
+        {
+            if (!SupportsInstanceBasedDescriptors)
+            {
+                if (instance != null)
+                {
+                    throw new NotSupportedException(SR.InstanceBasedTypeDescriptorsNotSupported);
+                }
+            }
+        }
+
         /// <summary>
         /// The AddAttributes method allows you to add class-level attributes for a
         /// type or an instance. This method simply implements a type description provider
@@ -794,9 +805,6 @@ namespace System.ComponentModel
         {
             return GetDescriptor(type, nameof(type)).GetConverter();
         }
-
-        internal static TypeConverter GetConverterTrimUnsafe([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
-            GetConverter(type);
 
         // This is called by System.ComponentModel.DefaultValueAttribute via reflection.
         [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
@@ -2589,10 +2597,7 @@ namespace System.ComponentModel
                     return null;
                 }
 
-                if (!SupportsInstanceBasedDescriptors)
-                {
-                    throw new NotSupportedException(SR.InstanceBasedTypeDescriptorsNotSupported);
-                }
+                CheckInstance(instance);
 
                 if (!objectType.IsInstanceOfType(instance))
                 {
@@ -2697,14 +2702,7 @@ namespace System.ComponentModel
             /// </summary>
             public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
             {
-                if (!SupportsInstanceBasedDescriptors)
-                {
-                    if (instance != null)
-                    {
-                        throw new NotSupportedException(SR.InstanceBasedTypeDescriptorsNotSupported);
-                    }
-                }
-
+                CheckInstance(instance);
                 return new AttributeTypeDescriptor(_attrs, base.GetTypeDescriptor(objectType, instance));
             }
 
@@ -2872,14 +2870,7 @@ namespace System.ComponentModel
             [return: NotNullIfNotNull(nameof(instance))]
             public override ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
             {
-                if (!SupportsInstanceBasedDescriptors)
-                {
-                    if (instance != null)
-                    {
-                        throw new NotSupportedException(SR.InstanceBasedTypeDescriptorsNotSupported);
-                    }
-                }
-
+                CheckInstance(instance);
                 return _comNativeDescriptor.GetTypeDescriptor(objectType, instance);
             }
         }
@@ -3155,15 +3146,8 @@ namespace System.ComponentModel
             /// </summary>
             public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
             {
-                if (!SupportsInstanceBasedDescriptors)
-                {
-                    if (instance != null)
-                    {
-                        throw new NotSupportedException(SR.InstanceBasedTypeDescriptorsNotSupported);
-                    }
-                }
-
                 ArgumentNullException.ThrowIfNull(objectType);
+                CheckInstance(instance);
 
                 if (instance != null && !objectType.IsInstanceOfType(instance))
                 {
@@ -3497,10 +3481,7 @@ namespace System.ComponentModel
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType,
                 object? instance)
             {
-                if (!SupportsInstanceBasedDescriptors) {
-                    if (_instance != null)
-                        throw new NotSupportedException(SR.InstanceBasedTypeDescriptorsNotSupported);
-                }
+                CheckInstance(instance);
                 _node = node;
                 _objectType = objectType;
                 _instance = instance;
@@ -3596,9 +3577,13 @@ namespace System.ComponentModel
                 if (p is ReflectTypeDescriptionProvider rp)
                 {
                     if (SupportsInstanceBasedDescriptors)
+                    {
                         converter = rp.GetConverter(_objectType, _instance);
+                    }
                     else
+                    {
                         converter = rp.GetConverter(_objectType);
+                    }
                 }
                 else
                 {

@@ -382,7 +382,7 @@ namespace System.ComponentModel
             return td.GetConverter(instance);
         }
 
-        internal TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+         internal TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             ReflectedTypeData td = GetTypeData(type, true)!;
             return td.GetConverter();

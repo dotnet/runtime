@@ -26,7 +26,8 @@ namespace System.ComponentModel
         /// <summary>
         /// Nullable converter is initialized with the underlying simple type.
         /// </summary>
-        public NullableConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        [RequiresUnreferencedCode("The UnderlyingType cannot be statically discovered.")]
+        public NullableConverter(Type type)
         {
             NullableType = type;
 
@@ -274,7 +275,6 @@ namespace System.ComponentModel
         /// <summary>
         /// The simple type that is represented as a nullable.
         /// </summary>
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public Type UnderlyingType { get; }
 
         /// <summary>

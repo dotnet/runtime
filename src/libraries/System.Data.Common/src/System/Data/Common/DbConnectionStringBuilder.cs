@@ -21,6 +21,12 @@ namespace System.Data.Common
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public class DbConnectionStringBuilder : IDictionary, ICustomTypeDescriptor
     {
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+        [FeatureSwitchDefinition("System.ComponentModel.TypeDescriptor.SupportsInstanceBasedDescriptors")]
+#pragma warning disable IL4000
+        internal static bool SupportsInstanceBasedDescriptors => AppContext.TryGetSwitch("System.ComponentModel.TypeDescriptor.SupportsInstanceBasedDescriptors", out bool result) ? result : true;
+#pragma warning restore IL4000
+
         // keyword->value currently listed in the connection string
         private Dictionary<string, object>? _currentValues;
 
@@ -615,9 +621,14 @@ namespace System.Data.Common
         }
         TypeConverter ICustomTypeDescriptor.GetConverter()
         {
-            throw new NotImplementedException();
-            // return TypeDescriptor.GetConverter(this, true);
+            if (!SupportsInstanceBasedDescriptors)
+            {
+                throw new NotSupportedException(SR.DbConnectionStringBuilder_InstanceBasedTypeDescriptorsNotSupported);
+            }
+
+            return TypeDescriptor.GetConverter(this, true);
         }
+
         [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptor? ICustomTypeDescriptor.GetDefaultProperty()
         {
