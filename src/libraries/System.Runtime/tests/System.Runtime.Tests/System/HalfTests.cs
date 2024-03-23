@@ -1125,6 +1125,14 @@ namespace System.Tests
             AssertExtensions.Equal((Half)value, result);
         }
 
+        [Fact] // https://github.com/dotnet/runtime/issues/98841
+        public static void ToString_MaxPrecision()
+        {
+            Half value = BitConverter.Int16BitsToHalf(0x07FF);
+            string str = value.ToString("F24");
+            Assert.Equal("0.000122010707855224609375", str);
+        }
+
         public static IEnumerable<object[]> RoundTripFloat_CornerCases()
         {
             // Magnitude smaller than 2^-24 maps to 0
