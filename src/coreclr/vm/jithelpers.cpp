@@ -580,7 +580,7 @@ HCIMPL1_V(UINT32, JIT_Dbl2UIntOvf, double val)
 {
     FCALL_CONTRACT;
 
-        // Note that this expression also works properly for val = NaN case
+    // Note that this expression also works properly for val = NaN case
     if (val > -1.0 && val < 4294967296.0)
         return((UINT32)val);
 
@@ -594,7 +594,7 @@ HCIMPL1_V(int, JIT_Dbl2IntOvf, double val)
     FCALL_CONTRACT;
     const double two31 = 2147483648.0;
 
-        // Note that this expression also works properly for val = NaN case
+    // Note that this expression also works properly for val = NaN case
     if (val > -two31 - 1 && val < two31)
         return((INT32)val);
 
@@ -635,8 +635,8 @@ HCIMPL1_V(UINT32, JIT_Dbl2UInt, double val)
 {
     FCALL_CONTRACT;
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    // Note that this expression also works properly for val = NaN case
     const double uint_max = 4294967295.0;
+    // Note that this expression also works properly for val = NaN case
     return (val >= 0) ? ((val >= uint_max) ? UINT32_MAX : (UINT32)val) : 0;
 
 #else
@@ -666,8 +666,8 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
     FCALL_CONTRACT;
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    // Note that this expression also works properly for val = NaN case
     const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
+    // Note that this expression also works properly for val = NaN case
     return (val >= 0) ? ((val >= uint64_max_plus_1) ? UINT64_MAX : (UINT64)val) : 0;
 
 #else
