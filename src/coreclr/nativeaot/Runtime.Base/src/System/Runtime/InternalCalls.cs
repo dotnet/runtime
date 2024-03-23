@@ -150,7 +150,7 @@ namespace System.Runtime
 
         [RuntimeImport(Redhawk.BaseName, "RhpAssignRef")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpAssignRef(ref object address, object obj);
+        internal static extern unsafe void RhpAssignRef(ref object? address, object? obj);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(Redhawk.BaseName, "RhpGcSafeZeroMemory")]

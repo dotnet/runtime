@@ -77,13 +77,13 @@ C_FUNC(\Name):
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
         movw \HelperReg, #:lower16:C_FUNC(\Name) - (. + 12)
-        movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 12)
+        movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 8)
         add \HelperReg, pc
 .endm
 
 .macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
         movw \HelperReg, #:lower16:C_FUNC(\Name) - (. + 12)
-        movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 12)
+        movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 8)
         add \HelperReg, pc
         ldr \HelperReg, [\HelperReg]
 .endm

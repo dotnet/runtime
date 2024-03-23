@@ -5187,6 +5187,21 @@ void Compiler::optHoistCandidate(GenTree*              tree,
         return;
     }
 
+#if defined(DEBUG)
+
+    // Punt if we've reached the hoisting limit.
+    int      limit   = JitConfig.JitHoistLimit();
+    unsigned current = m_totalHoistedExpressions; // this doesn't include the current candidate yet
+
+    if ((limit >= 0) && (current >= static_cast<unsigned>(limit)))
+    {
+        JITDUMP("   ... not hoisting in " FMT_LP ", hoist count %u >= JitHoistLimit %u\n", loop->GetIndex(), current,
+                static_cast<unsigned>(limit));
+        return;
+    }
+
+#endif // defined(DEBUG)
+
     // Expression can be hoisted
     optPerformHoistExpr(tree, treeBb, loop);
 
