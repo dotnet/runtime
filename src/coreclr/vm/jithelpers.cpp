@@ -623,26 +623,11 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULngOvf, double val)
     FCALL_CONTRACT;
 
     const double two64  = 4294967296.0 * 4294967296.0;
-        // Note that this expression also works properly for val = NaN case
+    // Note that this expression also works properly for val = NaN case
     if (val > -1.0 && val < two64) {
-        const double two63  = 2147483648.0 * 4294967296.0;
-        UINT64 ret;
-        if (val < two63) {
-            ret = (INT64)val;
-        }
-        else {
-            // subtract 0x8000000000000000, do the convert then add it back again
-            ret = (INT64)(val - two63) + I64(0x8000000000000000);
-        }
-#ifdef _DEBUG
-        // since no overflow can occur, the value always has to be within 1
-        double roundTripVal = HCCALL1_V(JIT_ULng2Dbl, ret);
-        _ASSERTE(val - 1.0 <= roundTripVal && roundTripVal <= val + 1.0);
-#endif // _DEBUG
-        return ret;
+        return (UINT64)val;
     }
     FCThrow(kOverflowException);
-#endif //TARGET_X86 || TARGET_AMD64
 }
 HCIMPLEND
 
@@ -650,10 +635,7 @@ HCIMPL1_V(UINT32, JIT_Dbl2UInt, double val)
 {
     FCALL_CONTRACT;
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    // The code below works to saturate the input value
-    //      val = NaN or val <= 0; output = 0
-    //      0 < val < UINT32_MAX;  output = (uint32_t)val
-    //      UINT32_MAX <= val;     output = UINT32_MAX
+    // Note that this expression also works properly for val = NaN case
     const double uint_max = 4294967295.0;
     return (val >= 0) ? ((val >= uint_max) ? UINT32_MAX : (UINT32)val) : 0;
 
@@ -684,12 +666,9 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
     FCALL_CONTRACT;
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    // The code below works to saturate the input value
-    //      val = NaN or val <= 0; output = 0
-    //      0 < val < UINT64_MAX;  output = (uint64_t)val
-    //      UINT64_MAX <= val;     output = UINT64_MAX
+    // Note that this expression also works properly for val = NaN case
     const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
-    return (val > 0) ? ((val >= uint64_max_plus_1) ? UINT64_MAX : (UINT64)val) : 0;
+    return (val >= 0) ? ((val >= uint64_max_plus_1) ? UINT64_MAX : (UINT64)val) : 0;
 
 #else
     const double two63  = 2147483648.0 * 4294967296.0;
