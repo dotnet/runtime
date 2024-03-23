@@ -5857,18 +5857,19 @@ void Compiler::generatePatchpointInfo()
 //    The intent of this method is to clear any information typically assumed
 //    to be set only once; it is used between iterations when JitOptRepeat is
 //    in effect.
-
+//
 void Compiler::ResetOptAnnotations()
 {
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
     fgResetForSsa();
-    vnStore              = nullptr;
-    m_blockToEHPreds     = nullptr;
-    m_dominancePreds     = nullptr;
-    fgSsaPassesCompleted = 0;
-    fgVNPassesCompleted  = 0;
-    fgSsaValid           = false;
+    vnStore                    = nullptr;
+    m_blockToEHPreds           = nullptr;
+    m_dominancePreds           = nullptr;
+    fgSsaPassesCompleted       = 0;
+    fgVNPassesCompleted        = 0;
+    fgSsaValid                 = false;
+    m_nodeToLoopMemoryBlockMap = nullptr;
 
     for (BasicBlock* const block : Blocks())
     {
