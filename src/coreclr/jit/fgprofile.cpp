@@ -2949,8 +2949,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         //
         if (fgPgoHaveWeights && !dataIsGood)
         {
-            JITDUMP("\nIncorporated count data had inconsistencies; blending/repairing profile...\n");
-            ProfileSynthesis::Run(this, ProfileSynthesisOption::BlendLikelihoods);
+            JITDUMP("\nIncorporated count data had inconsistencies; repairing profile...\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
         }
     }
 
