@@ -210,10 +210,13 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
 
         _testOutput.WriteLine("Waiting for page to load");
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new () { Timeout = 1 * 60 * 1000 });
+        _testOutput.WriteLine("MF after DOMContentLoaded");
 
         if (runOptions.CheckCounter)
         {
+            _testOutput.WriteLine("MF before text=Counter");
             await page.Locator("text=Counter").ClickAsync();
+            _testOutput.WriteLine("MF after text=Counter");
             var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
             Assert.Equal("Current count: 0", txt);
 
@@ -224,10 +227,16 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         }
 
         if (runOptions.Test is not null)
+        {
+            _testOutput.WriteLine("MF before Test");
             await runOptions.Test(page);
+            _testOutput.WriteLine("MF after Test");
+        }
 
+        _testOutput.WriteLine("MF before 10s delay");
         _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
         await Task.Delay(10_000);
+        _testOutput.WriteLine("MF after 10s delay");
 
         void OnConsoleMessage(IPage page, IConsoleMessage msg)
         {
