@@ -460,11 +460,15 @@ namespace System.Net.Http
 
         private void WriteAsciiString(string s)
         {
+            Debug.Assert(Ascii.IsValid(s));
+
             _writeBuffer.EnsureAvailableSpace(s.Length);
-            int length = Encoding.ASCII.GetBytes(s, _writeBuffer.AvailableSpan);
-            Debug.Assert(length == s.Length);
-            Debug.Assert(Encoding.ASCII.GetString(_writeBuffer.AvailableSpan.Slice(0, length)) == s);
-            _writeBuffer.Commit(length);
+
+            OperationStatus status = Ascii.FromUtf16(s, _writeBuffer.AvailableSpan, out int bytesWritten);
+            Debug.Assert(status == OperationStatus.Done);
+            Debug.Assert(bytesWritten == s.Length);
+
+            _writeBuffer.Commit(s.Length);
         }
 
         private void WriteString(string s, Encoding? encoding)
