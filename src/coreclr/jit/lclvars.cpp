@@ -1372,7 +1372,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
     if (doubleAlignMask != RBM_NONE)
     {
         assert(RBM_ARG_REGS == 0xF);
-        assert((varDscInfo->doubleAlignMask & RBM_ARG_REGS) == doubleAlignMask);
+        assert((doubleAlignMask & RBM_ARG_REGS) == doubleAlignMask);
         if (doubleAlignMask != RBM_NONE && doubleAlignMask != RBM_ARG_REGS)
         {
             // 'double aligned types' can begin only at r0 or r2 and we always expect at least two registers to be used
