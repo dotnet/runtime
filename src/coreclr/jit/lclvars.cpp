@@ -537,13 +537,19 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
             unsigned retBuffArgNum = varDscInfo->allocRegArg(TYP_INT);
             varDsc->SetArgReg(genMapIntRegArgNumToRegNum(retBuffArgNum));
         }
+        else
+        {
+            varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, TARGET_POINTER_SIZE);
+            varDsc->SetStackOffset(varDscInfo->stackArgSize);
+            varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
+        }
 
 #if FEATURE_MULTIREG_ARGS
         varDsc->SetOtherArgReg(REG_NA);
 #endif
         varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
 
-        assert(varDsc->lvIsRegArg && isValidIntArgReg(varDsc->GetArgReg()));
+        assert(!varDsc->lvIsRegArg || isValidIntArgReg(varDsc->GetArgReg()));
 
 #ifdef DEBUG
         if (varDsc->lvIsRegArg && verbose)
@@ -554,8 +560,17 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
 
         ABIPassingInformation* abiInfo = varDscInfo->abiInfo;
         abiInfo->NumSegments           = 1;
-        abiInfo->Segments              = new (this, CMK_LvaTable)
-            ABIPassingSegment(ABIPassingSegment::InRegister(varDsc->GetArgReg(), 0, TARGET_POINTER_SIZE));
+        abiInfo->Segments              = new (this, CMK_LvaTable) ABIPassingSegment[1];
+
+        if (varDsc->lvIsRegArg)
+        {
+            abiInfo->Segments[0] = ABIPassingSegment::InRegister(varDsc->GetArgReg(), 0, TARGET_POINTER_SIZE);
+        }
+        else
+        {
+            abiInfo->Segments[0] = ABIPassingSegment::OnStack(varDsc->GetStackOffset(), 0, TARGET_POINTER_SIZE);
+        }
+
         compArgSize += TARGET_POINTER_SIZE;
 
         varDscInfo->nextParam();
