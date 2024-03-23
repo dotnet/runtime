@@ -496,9 +496,9 @@ public:
     DWORD   GetCleanupWorkListLocalNum();
     DWORD   GetThreadLocalNum();
     DWORD   GetReturnValueLocalNum();
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
     DWORD   GetCopyCtorChainLocalNum();
-#endif
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
     void    SetCleanupNeeded();
     void    SetExceptionCleanupNeeded();
     BOOL    IsCleanupWorkListSetup();
@@ -568,9 +568,9 @@ protected:
     DWORD               m_dwTargetEntryPointLocalNum;
 #endif // FEATURE_COMINTEROP
 
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
     DWORD               m_dwCopyCtorChainLocalNum;
-#endif
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
     BOOL                m_fHasCleanupCode;
     BOOL                m_fHasExceptionCleanupCode;

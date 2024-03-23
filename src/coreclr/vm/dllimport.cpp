@@ -1631,9 +1631,9 @@ NDirectStubLinker::NDirectStubLinker(
     }
 #endif // FEATURE_COMINTEROP
 
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
     m_dwCopyCtorChainLocalNum = (DWORD)-1;
-#endif
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 }
 
 void NDirectStubLinker::SetCallingConvention(CorInfoCallConvExtension unmngCallConv, BOOL fIsVarArg)
@@ -1846,7 +1846,7 @@ DWORD NDirectStubLinker::GetReturnValueLocalNum()
     return m_dwRetValLocalNum;
 }
 
-#ifdef TARGET_X86
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 DWORD NDirectStubLinker::GetCopyCtorChainLocalNum()
 {
     STANDARD_VM_CONTRACT;
@@ -1861,7 +1861,7 @@ DWORD NDirectStubLinker::GetCopyCtorChainLocalNum()
 
     return m_dwCopyCtorChainLocalNum;
 }
-#endif
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 BOOL NDirectStubLinker::IsCleanupNeeded()
 {
@@ -2092,9 +2092,9 @@ void NDirectStubLinker::End(DWORD dwStubFlags)
     }
 }
 
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 EXTERN_C void STDCALL CopyConstructorCallStub(void);
-#endif
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc * pStubMD)
 {
@@ -2179,7 +2179,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         }
     }
 
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
     if (m_dwCopyCtorChainLocalNum != (DWORD)-1)
     {
         // If we have a copy constructor chain local, we need to call the copy constructor stub
@@ -2192,7 +2192,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         pcsEmit->EmitCALL(METHOD__COPY_CONSTRUCTOR_CHAIN__INSTALL, 2, 0);
         pcsEmit->EmitLDC((DWORD_PTR)&CopyConstructorCallStub);
     }
-#endif // defined(TARGET_X86)
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
     // For managed-to-native calls, the rest of the work is done by the JIT. It will
     // erect InlinedCallFrame, flip GC mode, and use the specified calling convention
@@ -6141,7 +6141,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     RETURN pVASigCookie->pNDirectILStub;
 }
 
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 // Copy constructor support for C++/CLI
 EXTERN_C void* STDCALL CallCopyConstructorsWorker(void* esp)
 {
@@ -6156,6 +6156,6 @@ EXTERN_C void* STDCALL CallCopyConstructorsWorker(void* esp)
 
     return pExecute(esp);
 }
-#endif
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 #endif // #ifndef DACCESS_COMPILE

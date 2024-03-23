@@ -562,29 +562,6 @@ LOCAL_LABEL(GoCallCalliWorker):
     jmp C_FUNC(GenericPInvokeCalliHelper)
 LEAF_END GenericPInvokeCalliHelper, _TEXT
 
-//==========================================================================
-// This is small stub whose purpose is to record current stack pointer and
-// call CallCopyConstructorsWorker to invoke copy constructors and destructors
-// as appropriate. This stub operates on arguments already pushed to the
-// stack by JITted IL stub and must not create a new frame, i.e. it must tail
-// call to the target for it to see the arguments that copy ctors have been
-// called on.
-//
-LEAF_ENTRY CopyConstructorCallStub, _TEXT
-    // there may be an argument in ecx - save it
-    push    ecx
-
-    // push pointer to arguments
-    lea     edx, [esp + 8]
-    push    edx
-
-    call    C_FUNC(CallCopyConstructorsWorker)
-
-    // restore ecx and tail call to the target
-    pop     ecx
-    jmp     eax
-LEAF_END CopyConstructorCallStub, _TEXT
-
 #ifdef FEATURE_READYTORUN
 NESTED_ENTRY DynamicHelperArgsStub, _TEXT, NoHandler
     .cfi_def_cfa_offset 16
