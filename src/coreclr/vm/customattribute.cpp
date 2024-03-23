@@ -912,127 +912,110 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
 
     GCX_COOP();
 
-    struct
+    MethodDesc* pCtorMD = ((REFLECTMETHODREF)pMethod.Get())->GetMethod();
+    TypeHandle th = ((REFLECTCLASSBASEREF)pCaType.Get())->GetType();
+
+    MethodDescCallSite ctorCallSite(pCtorMD, th);
+    MetaSig* pSig = ctorCallSite.GetMetaSig();
+    BYTE* pBlob = *ppBlob;
+
+    // get the number of arguments and allocate an array for the args
+    ARG_SLOT *args = NULL;
+    UINT cArgs = pSig->NumFixedArgs() + 1; // make room for the this pointer
+    UINT i = 1; // used to flag that we actually get the right number of arg from the blob
+
+    args = (ARG_SLOT*)_alloca(cArgs * sizeof(ARG_SLOT));
+    memset((void*)args, 0, cArgs * sizeof(ARG_SLOT));
+
+    OBJECTREF *argToProtect = (OBJECTREF*)_alloca(cArgs * sizeof(OBJECTREF));
+    memset((void*)argToProtect, 0, cArgs * sizeof(OBJECTREF));
+
+    // load the this pointer
+    argToProtect[0] = th.GetMethodTable()->Allocate(); // this is the value to return after the ctor invocation
+
+    if (pBlob)
     {
-        REFLECTCLASSBASEREF refCaType;
-        OBJECTREF ca;
-        REFLECTMETHODREF refCtor;
-    } gc;
-    gc.refCaType = NULL;
-    gc.ca = NULL;
-    gc.refCtor = NULL;
-    GCPROTECT_BEGIN(gc);
-    {
-        gc.refCaType = (REFLECTCLASSBASEREF)pCaType.Get();
-        gc.refCtor = (REFLECTMETHODREF)pMethod.Get();
-
-        MethodDesc* pCtorMD = gc.refCtor->GetMethod();
-        TypeHandle th = gc.refCaType->GetType();
-
-        MethodDescCallSite ctorCallSite(pCtorMD, th);
-        MetaSig* pSig = ctorCallSite.GetMetaSig();
-        BYTE* pBlob = *ppBlob;
-
-        // get the number of arguments and allocate an array for the args
-        ARG_SLOT *args = NULL;
-        UINT cArgs = pSig->NumFixedArgs() + 1; // make room for the this pointer
-        UINT i = 1; // used to flag that we actually get the right number of arg from the blob
-
-        args = (ARG_SLOT*)_alloca(cArgs * sizeof(ARG_SLOT));
-        memset((void*)args, 0, cArgs * sizeof(ARG_SLOT));
-
-        OBJECTREF *argToProtect = (OBJECTREF*)_alloca(cArgs * sizeof(OBJECTREF));
-        memset((void*)argToProtect, 0, cArgs * sizeof(OBJECTREF));
-
-        // load the this pointer
-        argToProtect[0] = gc.refCaType->GetType().GetMethodTable()->Allocate(); // this is the value to return after the ctor invocation
-
-        if (pBlob)
-        {
-            if (pBlob < pEndBlob)
-            {
-                if (pBlob + 2 > pEndBlob)
-                {
-                    COMPlusThrow(kCustomAttributeFormatException);
-                }
-                INT16 prolog = GET_UNALIGNED_VAL16(pBlob);
-                if (prolog != 1)
-                    COMPlusThrow(kCustomAttributeFormatException);
-                pBlob += 2;
-            }
-
-            if (cArgs > 1)
-            {
-                GCPROTECT_ARRAY_BEGIN(*argToProtect, cArgs);
-                {
-                    // loop through the args
-                    for (i = 1; i < cArgs; i++) {
-                        CorElementType type = pSig->NextArg();
-                        if (type == ELEMENT_TYPE_END)
-                            break;
-                        BOOL bObjectCreated = FALSE;
-                        TypeHandle th = pSig->GetLastTypeHandleThrowing();
-                        if (th.IsArray())
-                            // get the array element
-                            th = th.GetArrayElementTypeHandle();
-                        ARG_SLOT data = GetDataFromBlob(pCtorMD->GetAssembly(), (CorSerializationType)type, th, &pBlob, pEndBlob, pModule, &bObjectCreated);
-                        if (bObjectCreated)
-                            argToProtect[i] = ArgSlotToObj(data);
-                        else
-                            args[i] = data;
-                    }
-                }
-                GCPROTECT_END();
-
-                // We have borrowed the signature from MethodDescCallSite. We have to put it back into the initial position
-                // because of that's where MethodDescCallSite expects to find it below.
-                pSig->Reset();
-
-                for (i = 1; i < cArgs; i++)
-                {
-                    if (argToProtect[i] != NULL)
-                    {
-                        _ASSERTE(args[i] == NULL);
-                        args[i] = ObjToArgSlot(argToProtect[i]);
-                    }
-                }
-            }
-        }
-        args[0] = ObjToArgSlot(argToProtect[0]);
-
-        if (i != cArgs)
-            COMPlusThrow(kCustomAttributeFormatException);
-
-        // check if there are any named properties to invoke,
-        // if so set the by ref int passed in to point
-        // to the blob position where name properties start
-        *pcNamedArgs = 0;
-
-        if (pBlob && pBlob != pEndBlob)
+        if (pBlob < pEndBlob)
         {
             if (pBlob + 2 > pEndBlob)
+            {
                 COMPlusThrow(kCustomAttributeFormatException);
-
-            *pcNamedArgs = GET_UNALIGNED_VAL16(pBlob);
-
+            }
+            INT16 prolog = GET_UNALIGNED_VAL16(pBlob);
+            if (prolog != 1)
+                COMPlusThrow(kCustomAttributeFormatException);
             pBlob += 2;
         }
 
-        *ppBlob = pBlob;
+        if (cArgs > 1)
+        {
+            GCPROTECT_ARRAY_BEGIN(*argToProtect, cArgs);
+            {
+                // loop through the args
+                for (i = 1; i < cArgs; i++) {
+                    CorElementType type = pSig->NextArg();
+                    if (type == ELEMENT_TYPE_END)
+                        break;
+                    BOOL bObjectCreated = FALSE;
+                    TypeHandle th = pSig->GetLastTypeHandleThrowing();
+                    if (th.IsArray())
+                        // get the array element
+                        th = th.GetArrayElementTypeHandle();
+                    ARG_SLOT data = GetDataFromBlob(pCtorMD->GetAssembly(), (CorSerializationType)type, th, &pBlob, pEndBlob, pModule, &bObjectCreated);
+                    if (bObjectCreated)
+                        argToProtect[i] = ArgSlotToObj(data);
+                    else
+                        args[i] = data;
+                }
+            }
+            GCPROTECT_END();
 
-        if (*pcNamedArgs == 0 && pBlob != pEndBlob)
+            // We have borrowed the signature from MethodDescCallSite. We have to put it back into the initial position
+            // because of that's where MethodDescCallSite expects to find it below.
+            pSig->Reset();
+
+            for (i = 1; i < cArgs; i++)
+            {
+                if (argToProtect[i] != NULL)
+                {
+                    _ASSERTE(args[i] == NULL);
+                    args[i] = ObjToArgSlot(argToProtect[i]);
+                }
+            }
+        }
+    }
+    args[0] = ObjToArgSlot(argToProtect[0]);
+
+    if (i != cArgs)
+        COMPlusThrow(kCustomAttributeFormatException);
+
+    // check if there are any named properties to invoke,
+    // if so set the by ref int passed in to point
+    // to the blob position where name properties start
+    *pcNamedArgs = 0;
+
+    if (pBlob && pBlob != pEndBlob)
+    {
+        if (pBlob + 2 > pEndBlob)
             COMPlusThrow(kCustomAttributeFormatException);
 
-        // make the invocation to the ctor
-        gc.ca = ArgSlotToObj(args[0]);
-        if (pCtorMD->GetMethodTable()->IsValueType())
-            args[0] = PtrToArgSlot(OBJECTREFToObject(gc.ca)->UnBox());
+        *pcNamedArgs = GET_UNALIGNED_VAL16(pBlob);
 
-        ctorCallSite.CallWithValueTypes(args);
-
-        result.Set(gc.ca);
+        pBlob += 2;
     }
-    GCPROTECT_END();
+
+    *ppBlob = pBlob;
+
+    if (*pcNamedArgs == 0 && pBlob != pEndBlob)
+        COMPlusThrow(kCustomAttributeFormatException);
+
+    // make the invocation to the ctor
+    result.Set(ArgSlotToObj(args[0]));
+    if (pCtorMD->GetMethodTable()->IsValueType())
+        args[0] = PtrToArgSlot(OBJECTREFToObject(result.Get())->UnBox());
+
+    ctorCallSite.CallWithValueTypes(args);
+
     END_QCALL;
 }
 
