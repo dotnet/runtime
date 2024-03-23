@@ -938,7 +938,7 @@ namespace System
             {
                 int strDigits = Math.Max(digits, valueDigits);
                 string? sNegative = value.Sign < 0 ? info.NegativeSign : null;
-                int strLength = digits + (sNegative?.Length ?? 0);
+                int strLength = strDigits + (sNegative?.Length ?? 0);
 
                 if (targetSpan)
                 {
