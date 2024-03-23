@@ -84,5 +84,21 @@ namespace ILCompiler.ObjectWriter
                     throw new NotSupportedException("Unsupported architecture");
             }
         }
+
+        public DwarfCie(DwarfCie baseCie, byte[] blobData)
+        {
+            PointerEncoding = baseCie.PointerEncoding;
+            LsdaEncoding = baseCie.LsdaEncoding;
+            PersonalityEncoding = baseCie.PersonalityEncoding;
+            PersonalitySymbolName = baseCie.PersonalitySymbolName;
+            CodeAlignFactor = baseCie.CodeAlignFactor;
+            DataAlignFactor = baseCie.DataAlignFactor;
+            IsSignalFrame = baseCie.IsSignalFrame;
+            FdesHaveAugmentationData = baseCie.FdesHaveAugmentationData;
+            ReturnAddressRegister = baseCie.ReturnAddressRegister;
+            InitialCFAOffset = baseCie.InitialCFAOffset;
+            byte[] additionalInstructions = DwarfFde.CfiCodeToInstructions(baseCie, blobData);
+            Instructions = [..baseCie.Instructions, ..additionalInstructions];
+        }
     }
 }

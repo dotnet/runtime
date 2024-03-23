@@ -753,27 +753,6 @@ namespace ILCompiler.ObjectWriter
 
         private protected override string ExternCName(string name) => "_" + name;
 
-        // This represents the following DWARF code:
-        //   DW_CFA_advance_loc: 4
-        //   DW_CFA_def_cfa_offset: +16
-        //   DW_CFA_offset: W29 -16
-        //   DW_CFA_offset: W30 -8
-        //   DW_CFA_advance_loc: 4
-        //   DW_CFA_def_cfa_register: W29
-        // which is generated for the following frame prolog/epilog:
-        //   stp fp, lr, [sp, #-10]!
-        //   mov fp, sp
-        //   ...
-        //   ldp fp, lr, [sp], #0x10
-        //   ret
-        private static ReadOnlySpan<byte> DwarfArm64EmptyFrame => new byte[]
-        {
-            0x04, 0x00, 0xFF, 0xFF, 0x10, 0x00, 0x00, 0x00,
-            0x04, 0x02, 0x1D, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x04, 0x02, 0x1E, 0x00, 0x08, 0x00, 0x00, 0x00,
-            0x08, 0x01, 0x1D, 0x00, 0x00, 0x00, 0x00, 0x00
-        };
-
         private protected override bool EmitCompactUnwinding(string startSymbolName, ulong length, string lsdaSymbolName, byte[] blob)
         {
             uint encoding = _compactUnwindDwarfCode;

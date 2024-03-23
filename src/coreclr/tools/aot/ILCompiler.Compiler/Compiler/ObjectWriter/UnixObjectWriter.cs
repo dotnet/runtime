@@ -30,6 +30,7 @@ namespace ILCompiler.ObjectWriter
         private SectionWriter _lsdaSectionWriter;
         private int _ehFrameSectionIndex;
         private DwarfCie _dwarfCie;
+        private DwarfCie _dwarfEmptyFrameCie;
         private DwarfEhFrame _dwarfEhFrame;
 
         protected int EhFrameSectionIndex => _ehFrameSectionIndex;
@@ -167,6 +168,27 @@ namespace ILCompiler.ObjectWriter
 
         private readonly LsdaCache _lsdaCache = new LsdaCache();
 
+        // This represents the following DWARF code:
+        //   DW_CFA_advance_loc: 4
+        //   DW_CFA_def_cfa_offset: +16
+        //   DW_CFA_offset: W29 -16
+        //   DW_CFA_offset: W30 -8
+        //   DW_CFA_advance_loc: 4
+        //   DW_CFA_def_cfa_register: W29
+        // which is generated for the following frame prolog/epilog:
+        //   stp fp, lr, [sp, #-10]!
+        //   mov fp, sp
+        //   ...
+        //   ldp fp, lr, [sp], #0x10
+        //   ret
+        protected static ReadOnlySpan<byte> DwarfArm64EmptyFrame => new byte[]
+        {
+            0x04, 0x00, 0xFF, 0xFF, 0x10, 0x00, 0x00, 0x00,
+            0x04, 0x02, 0x1D, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x04, 0x02, 0x1E, 0x00, 0x08, 0x00, 0x00, 0x00,
+            0x08, 0x01, 0x1D, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+
         private protected override void EmitUnwindInfo(
             SectionWriter sectionWriter,
             INodeWithCodeInfo nodeWithCodeInfo,
@@ -228,8 +250,31 @@ namespace ILCompiler.ObjectWriter
                     ulong length = (ulong)(end - start);
                     if (!EmitCompactUnwinding(startSymbolName, length, lsdaSymbolName, blob))
                     {
+                        DwarfCie cie = _dwarfCie;
+
+                        if (_nodeFactory.Target.Architecture == TargetArchitecture.ARM64)
+                        {
+                            byte[] optimizedBlob = blob;
+
+                            if (_nodeFactory.Target.OperatingSystem == TargetOS.Linux)
+                            {
+                                optimizedBlob = DwarfFde.CompressARM64CFI(blob);
+                            }
+
+                            if (blob.AsSpan().SequenceEqual(DwarfArm64EmptyFrame))
+                            {
+                                _dwarfEmptyFrameCie ??= new DwarfCie(_dwarfCie, optimizedBlob);
+                                cie = _dwarfEmptyFrameCie;
+                                blob = Array.Empty<byte>();
+                            }
+                            else
+                            {
+                                blob = optimizedBlob;
+                            }
+                        }
+
                         var fde = new DwarfFde(
-                            _dwarfCie,
+                            cie,
                             blob,
                             pcStartSymbolName: startSymbolName,
                             pcStartSymbolOffset: useFrameNames ? 0 : start,
