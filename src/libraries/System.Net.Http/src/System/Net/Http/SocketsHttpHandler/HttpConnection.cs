@@ -270,17 +270,14 @@ namespace System.Net.Http
             _readBuffer.Discard(bytesToConsume);
         }
 
-        private void WriteHeaders(HttpRequestMessage request, HttpMethod normalizedMethod)
+        private void WriteHeaders(HttpRequestMessage request)
         {
             Debug.Assert(request.RequestUri is not null);
 
             // Write the request line
-            WriteAsciiString(normalizedMethod.Method);
-            _writeBuffer.EnsureAvailableSpace(1);
-            _writeBuffer.AvailableSpan[0] = (byte)' ';
-            _writeBuffer.Commit(1);
+            WriteBytes(request.Method.Http1EncodedBytes);
 
-            if (ReferenceEquals(normalizedMethod, HttpMethod.Connect))
+            if (request.Method.IsConnect)
             {
                 // RFC 7231 #section-4.3.6.
                 // Write only CONNECT foo.com:345 HTTP/1.1
@@ -353,7 +350,7 @@ namespace System.Net.Http
             {
                 // Write out Content-Length: 0 header to indicate no body,
                 // unless this is a method that never has a body.
-                if (normalizedMethod.MustHaveRequestBody)
+                if (request.Method.MustHaveRequestBody)
                 {
                     WriteBytes("Content-Length: 0\r\n"u8);
                 }
@@ -509,7 +506,6 @@ namespace System.Net.Http
             Task? sendRequestContentTask = null;
 
             _currentRequest = request;
-            HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
 
             _canRetry = false;
 
@@ -520,7 +516,7 @@ namespace System.Net.Http
             {
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart(Id);
 
-                WriteHeaders(request, normalizedMethod);
+                WriteHeaders(request);
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
 
@@ -744,12 +740,12 @@ namespace System.Net.Http
 
                 // Create the response stream.
                 Stream responseStream;
-                if (ReferenceEquals(normalizedMethod, HttpMethod.Head) || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
+                if (request.Method.IsHead || response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotModified)
                 {
                     responseStream = EmptyReadStream.Instance;
                     CompleteResponse();
                 }
-                else if (ReferenceEquals(normalizedMethod, HttpMethod.Connect) && response.StatusCode == HttpStatusCode.OK)
+                else if (request.Method.IsConnect && response.StatusCode == HttpStatusCode.OK)
                 {
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
