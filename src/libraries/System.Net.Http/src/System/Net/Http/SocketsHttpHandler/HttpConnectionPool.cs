@@ -229,8 +229,6 @@ namespace System.Net.Http
                     break;
             }
 
-            Debug.Assert(!_http3Enabled || _http2Enabled, "We shouldn't support H3 while disabling H2.");
-
             if (!_http3Enabled)
             {
                 // Avoid parsing Alt-Svc headers if they won't be used.
@@ -255,16 +253,6 @@ namespace System.Net.Http
                 _hostHeaderLineBytes = hostHeaderLine;
 
                 Debug.Assert(Encoding.ASCII.GetString(_hostHeaderLineBytes) == $"Host: {hostHeader}\r\n");
-
-                if (sslHostName == null && _http2Enabled)
-                {
-                    _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
-
-                    if (IsHttp3Supported() && _http3Enabled)
-                    {
-                        _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
-                    }
-                }
             }
 
             if (sslHostName != null)
@@ -292,14 +280,19 @@ namespace System.Net.Http
                     // by which AllowRenegotiation could be set back to true in that case.
                     // For now, if an HTTP/2 server erroneously issues a renegotiation, we'll
                     // allow it.
+                }
+            }
 
-                    Debug.Assert(hostHeader != null);
+            if (hostHeader is not null)
+            {
+                if (_http2Enabled)
+                {
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
+                }
 
-                    if (IsHttp3Supported() && _http3Enabled)
-                    {
-                        _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
-                    }
+                if (IsHttp3Supported() && _http3Enabled)
+                {
+                    _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
                 }
             }
 
