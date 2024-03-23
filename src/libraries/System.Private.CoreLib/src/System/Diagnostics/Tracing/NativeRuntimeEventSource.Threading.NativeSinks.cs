@@ -92,9 +92,11 @@ namespace System.Diagnostics.Tracing
             LogContentionLockCreated(LockID, AssociatedObjectID, ClrInstanceID);
         }
 
+#pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void ContentionLockCreated(Lock lockObj) => ContentionLockCreated(lockObj.LockIdForEvents, ObjectIDForEvents(lockObj));
+#pragma warning restore CS9216
 
         [Event(81, Level = EventLevel.Informational, Message = Messages.ContentionStart, Task = Tasks.Contention, Opcode = EventOpcode.Start, Version = 2, Keywords = Keywords.ContentionKeyword)]
         private void ContentionStart(
@@ -108,6 +110,7 @@ namespace System.Diagnostics.Tracing
             LogContentionStart(ContentionFlags, ClrInstanceID, LockID, AssociatedObjectID, LockOwnerThreadID);
         }
 
+#pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void ContentionStart(Lock lockObj) =>
@@ -117,6 +120,7 @@ namespace System.Diagnostics.Tracing
                 lockObj.LockIdForEvents,
                 ObjectIDForEvents(lockObj),
                 lockObj.OwningThreadId);
+#pragma warning restore CS9216
 
         [Event(91, Level = EventLevel.Informational, Message = Messages.ContentionStop, Task = Tasks.Contention, Opcode = EventOpcode.Stop, Version = 1, Keywords = Keywords.ContentionKeyword)]
         private void ContentionStop(ContentionFlagsMap ContentionFlags, ushort ClrInstanceID, double DurationNs)
