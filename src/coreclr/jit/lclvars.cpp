@@ -1312,7 +1312,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #endif // TARGET_XXX
 
-#if FEATURE_FASTTAILCALL
 #ifdef TARGET_ARM
             unsigned argAlignment = cAlign * TARGET_POINTER_SIZE;
 #else
@@ -1333,7 +1332,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 ABIPassingSegment(ABIPassingSegment::OnStack(varDscInfo->stackArgSize, 0, argSize));
 
             varDscInfo->stackArgSize += argSize;
-#endif // FEATURE_FASTTAILCALL
         }
 
 #ifdef UNIX_AMD64_ABI

@@ -62,9 +62,8 @@ public:
         hasSplitParam = false;
 #endif // TARGET_ARM || TARGET_RISCV64
 
-#if FEATURE_FASTTAILCALL
+        argSize      = 0;
         stackArgSize = 0;
-#endif // FEATURE_FASTTAILCALL
     }
 
     // return ref to current register arg for this type
