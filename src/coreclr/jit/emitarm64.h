@@ -29,7 +29,7 @@ enum PredicateType
     PREDICATE_N_SIZED,  // Predicate printed as counter with element size
 };
 
-const char* emitSveRegName(regNumber reg);
+const char* emitSveRegName(regNumber reg) const;
 const char* emitVectorRegName(regNumber reg);
 const char* emitPredicateRegName(regNumber reg, PredicateType ptype);
 
@@ -56,7 +56,6 @@ void emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2, insOpts
 void emitDispSveImm(regNumber reg1, ssize_t imm, insOpts opt);
 void emitDispSveImmMulVl(regNumber reg1, ssize_t imm);
 void emitDispSveImmIndex(regNumber reg1, insOpts opt, ssize_t imm);
-void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
 void emitDispSveReg(regNumber reg, bool addComma);
 void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
@@ -220,8 +219,6 @@ union bitMaskImm {
 *   representation imm(i16,hw)
 */
 
-static emitter::bitMaskImm emitEncodeBitMaskImm(INT64 imm, emitAttr size);
-
 static INT64 emitDecodeBitMaskImm(const emitter::bitMaskImm bmImm, emitAttr size);
 
 /************************************************************************
@@ -244,8 +241,6 @@ union halfwordImm {
 *  Convert between a 64-bit immediate and its 'halfword immediate'
 *   representation imm(i16,hw)
 */
-
-static emitter::halfwordImm emitEncodeHalfwordImm(INT64 imm, emitAttr size);
 
 static INT64 emitDecodeHalfwordImm(const emitter::halfwordImm hwImm, emitAttr size);
 
@@ -271,8 +266,6 @@ union byteShiftedImm {
 *   representation imm(i8,by)
 */
 
-static emitter::byteShiftedImm emitEncodeByteShiftedImm(INT64 imm, emitAttr size, bool allow_MSL);
-
 static UINT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size);
 
 /************************************************************************
@@ -295,8 +288,6 @@ union floatImm8 {
 *
 *  Convert between a double and its 'float 8-bit immediate' representation
 */
-
-static emitter::floatImm8 emitEncodeFloatImm8(double immDbl);
 
 static double emitDecodeFloatImm8(const emitter::floatImm8 fpImm);
 
@@ -685,50 +676,32 @@ static code_t insEncodeSimm(ssize_t imm)
     return result << lo;
 }
 
+// Returns the encoding for unsigned immediate `imm` that is a multiple of `mul` with `bits` number of bits,
+// for bit locations `hi-lo`.
+template <const size_t hi, const size_t lo, const ssize_t mul>
+static code_t insEncodeUimm_MultipleOf(ssize_t imm)
+{
+
+    constexpr size_t bits = hi - lo + 1;
+    assert((isValidUimm_MultipleOf<bits, mul>(imm)));
+    return insEncodeUimm<hi, lo>(imm / mul);
+}
+
+// Returns the encoding for signed immediate `imm` that is a multiple of `mul` with `bits` number of bits,
+// for bit locations `hi-lo`.
+template <const size_t hi, const size_t lo, const ssize_t mul>
+static code_t insEncodeSimm_MultipleOf(ssize_t imm)
+{
+    constexpr size_t bits = hi - lo + 1;
+    assert((isValidSimm_MultipleOf<bits, mul>(imm)));
+    return insEncodeSimm<hi, lo>(imm / mul);
+}
+
 // Returns the encoding for the immediate value as 9-bits at bit locations '21-16' for high and '12-10' for low.
 static code_t insEncodeSimm9h9l_21_to_16_and_12_to_10(ssize_t imm);
 
-// Returns the encoding for the immediate value that is a multiple of 2 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf2_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 3 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf3_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 4 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf4_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 16 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 32 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
-static code_t insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 4 as 5-bits at bit locations '20-16'.
-static code_t insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
-static code_t insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
-static code_t insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 4 as 6-bits at bit locations '21-16'.
-static code_t insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
-static code_t insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value as 1-bit at bit locations '23'.
-static code_t insEncodeUimm1_23(ssize_t imm);
-
 // Returns the encoding for the immediate value as 3-bits at bit locations '23-22' for high and '12' for low.
 static code_t insEncodeUimm3h3l_23_to_22_and_12(ssize_t imm);
-
-// Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
-static code_t insEncodeUimm4From1_19_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
 static code_t insEncodeImm8_12_to_5(ssize_t imm);
@@ -741,14 +714,14 @@ static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift
 // for an Arm64 Sve instruction.
 static code_t insEncodeSveElemsize_R_22(emitAttr size);
 
-// Returns the immediate value for instructions that encode it as a difference from tszh:tszl:imm3.
-static ssize_t insGetImmDiff(const ssize_t imm, const insOpts opt);
+// Returns the immediate value for SVE instructions that encode it as a difference from tszh:tszl:imm3.
+static ssize_t insSveGetImmDiff(const ssize_t imm, const insOpts opt);
 
 // Returns the two 5-bit signed immediates encoded as one ssize_t.
-static ssize_t insEncodeTwoSimm5(ssize_t imm1, ssize_t imm2);
+static ssize_t insSveEncodeTwoSimm5(ssize_t imm1, ssize_t imm2);
 
-// Decodes imm into two 5-bit signed immediates, using the encoding format from insEncodeTwoSimm5.
-static void insDecodeTwoSimm5(ssize_t imm, /* OUT */ ssize_t* const imm1, /* OUT */ ssize_t* const imm2);
+// Decodes imm into two 5-bit signed immediates, using the encoding format from insSveEncodeTwoSimm5.
+static void insSveDecodeTwoSimm5(ssize_t imm, /* OUT */ ssize_t* const imm1, /* OUT */ ssize_t* const imm2);
 
 // Returns the encoding to select an insSvePattern
 static code_t insEncodeSvePattern(insSvePattern pattern);
@@ -1054,9 +1027,6 @@ static bool canEncodeWithShiftImmBy12(INT64 imm);
 // Normalize the 'imm' so that the upper bits, as defined by 'size' are zero
 static INT64 normalizeImm64(INT64 imm, emitAttr size);
 
-// Normalize the 'imm' so that the upper bits, as defined by 'size' are zero
-static INT32 normalizeImm32(INT32 imm, emitAttr size);
-
 // true if 'imm' can be encoded using a 'bitmask immediate', also returns the encoding if wbBMI is non-null
 static bool canEncodeBitMaskImm(INT64 imm, emitAttr size, emitter::bitMaskImm* wbBMI = nullptr);
 
@@ -1197,6 +1167,23 @@ inline static bool isLowPredicateRegister(regNumber reg)
 inline static bool isHighPredicateRegister(regNumber reg)
 {
     return (reg >= REG_PREDICATE_HIGH_FIRST) && (reg <= REG_PREDICATE_HIGH_LAST);
+}
+
+inline static bool isEvenRegister(regNumber reg)
+{
+    if (isGeneralRegister(reg))
+    {
+        return ((reg - REG_INT_FIRST) % 2 == 0);
+    }
+    else if (isVectorRegister(reg))
+    {
+        return ((reg - REG_FP_FIRST) % 2) == 0;
+    }
+    else
+    {
+        assert(isPredicateRegister(reg));
+        return ((reg - REG_PREDICATE_FIRST) % 2) == 0;
+    }
 }
 
 inline static bool insOptsNone(insOpts opt)
