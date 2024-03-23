@@ -34,7 +34,15 @@
           Condition="'$(TargetsWindows)' == 'true'"
           DestinationFolder="$(SymbolsOutputPath)" />
     <Copy SourceFiles="$(DotNetHostBinDir)\$(LibPrefix)nethost$(LibSuffix)$(SymbolsSuffix)"
-          Condition="'$(TargetsWindows)' != 'true'"
+          Condition="('$(TargetsWindows)' != 'true') and ('$(SymbolsIsDirectory)' != 'true')"
           DestinationFolder="$(SymbolsOutputPath)" />
+
+    <!-- Do some magic to tree copy the symbols if they represent a directory instead of a file (e.g., .dSYM) -->
+    <ItemGroup Condition="('$(TargetsWindows)' != 'true') and ('$(SymbolsIsDirectory)' == 'true')">
+        <RecursiveSourceFiles Include="$(DotNetHostBinDir)\$(LibPrefix)nethost$(LibSuffix)$(SymbolsSuffix)/**/*"/>
+    </ItemGroup>
+    <Copy SourceFiles="@(RecursiveSourceFiles)"
+          Condition="('$(TargetsWindows)' != 'true') and ('$(SymbolsIsDirectory)' == 'true')"
+          DestinationFolder="$(SymbolsOutputPath)/%(RecursiveDir)" />
   </Target>
 </Project>

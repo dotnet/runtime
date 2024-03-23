@@ -75,6 +75,7 @@
           Condition="'$(TargetOS)' == 'windows'"
           DestinationFolder="$(SymbolsOutputPath)" />
 
+    <!-- TODO: handle .dSYM -->
     <Copy SourceFiles="$(DotNetHostBinDir)\dotnet$(SymbolsSuffix)"
           Condition="'$(TargetOS)' != 'windows'"
           DestinationFolder="$(SymbolsOutputPath)" />

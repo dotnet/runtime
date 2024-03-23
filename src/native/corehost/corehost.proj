@@ -56,7 +56,12 @@
           Command="&quot;$(DotNetTool)&quot; exec @(InjectResourceTool) --bin &quot;$(DacPath)&quot; --image &quot;$(SingleFileHostDestinationPath)&quot; --name MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER" />
 
     <!-- Copy symbols if they exist. We may not have separate symbols if they were not stripped from the native binary itself. -->
-    <Copy SourceFiles="$(SingleFileHostSymbolsPath)" DestinationFiles="$(SingleFileHostSymbolsDestinationPath)" Condition="Exists('$(SingleFileHostSymbolsPath)')" />
+    <ItemGroup Condition="'$(SymbolsSuffix)'=='.dSYM'">
+      <DSYMFiles Include="$(SingleFileHostSymbolsPath)/**/*"/>
+    </ItemGroup>
+
+    <Copy SourceFiles="@(DSYMFiles)" DestinationFolder="$(SingleFileHostSymbolsDestinationPath)/%(RecursiveDir)" Condition="'$(SymbolsSuffix)'=='.dSYM' and Exists('$(SingleFileHostSymbolsPath)')" />
+    <Copy SourceFiles="$(SingleFileHostSymbolsPath)" DestinationFiles="$(SingleFileHostSymbolsDestinationPath)" Condition="'$(SymbolsSuffix)'!='.dSYM' and Exists('$(SingleFileHostSymbolsPath)')" />
   </Target>
 
   <Target Name="PrepareSingleFileHostWithEmbeddedDac"
