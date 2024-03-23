@@ -5,7 +5,7 @@ using System.Globalization;
 try
 {
     CultureInfo culture = new ("es-ES", false);
-    Console.WriteLine($"de-DE: Is Invariant LCID: {culture.LCID == CultureInfo.InvariantCulture.LCID}, NativeName: {culture.NativeName}");
+    Console.WriteLine($"es-ES: Is Invariant LCID: {culture.LCID == CultureInfo.InvariantCulture.LCID}, NativeName: {culture.NativeName}");
 }
 catch (CultureNotFoundException cnfe)
 {
