@@ -106,6 +106,10 @@ namespace System
                     _flags = CV_EMPTY;
                     _objref = null;
                 }
+                else
+                {
+                    _flags = CV_OBJECT;
+                }
             }
             else if (IsSystemDrawingColor(pMT))
             {
@@ -172,6 +176,9 @@ namespace System
                     case double r8:
                         this = new(r8);
                         break;
+                    case decimal d:
+                        this = new(d);
+                        break;
                     case Enum e:
                         _data = (long)Enum.ToUInt64(e);
                         _objref = e.GetType();
@@ -197,8 +204,9 @@ namespace System
                         };
                         break;
                     default:
-                        // Decimals and other boxed value classes get handled here.
+                        // Other boxed value classes get handled here.
                         _objref = val;
+                        _flags = CV_OBJECT;
                         break;
                 }
             }
