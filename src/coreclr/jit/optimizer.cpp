@@ -503,14 +503,14 @@ bool Compiler::optExtractInitTestIncr(
         if (initStmt->GetRootNode()->OperIs(GT_JTRUE))
         {
             bool doGetPrev = true;
-#ifdef DEBUG
+#ifdef OPT_CONFIG
             if (opts.optRepeat)
             {
                 // Previous optimization passes may have inserted compiler-generated
                 // statements other than duplicated loop conditions.
                 doGetPrev = (initStmt->GetPrevStmt() != nullptr);
             }
-#endif // DEBUG
+#endif // OPT_CONFIG
             if (doGetPrev)
             {
                 initStmt = initStmt->GetPrevStmt();
