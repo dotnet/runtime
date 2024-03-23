@@ -1033,7 +1033,6 @@ namespace System
         private static unsafe TChar* BigIntegerToDecChars<TChar>(TChar* bufferEnd, ReadOnlySpan<uint> base1E9Value, int digits)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(base1E9Value[^1] != 0, "Leading zeros should be trimmed by caller.");
 
             // The base 10^9 value is in reverse order
