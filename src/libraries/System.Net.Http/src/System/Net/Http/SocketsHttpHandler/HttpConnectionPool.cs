@@ -229,6 +229,8 @@ namespace System.Net.Http
                     break;
             }
 
+            Debug.Assert(!_http3Enabled || _http2Enabled, "We shouldn't support H3 while disabling H2.");
+
             if (!_http3Enabled)
             {
                 // Avoid parsing Alt-Svc headers if they won't be used.
@@ -254,10 +256,14 @@ namespace System.Net.Http
 
                 Debug.Assert(Encoding.ASCII.GetString(_hostHeaderLineBytes) == $"Host: {hostHeader}\r\n");
 
-                if (sslHostName == null)
+                if (sslHostName == null && _http2Enabled)
                 {
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
-                    _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
+
+                    if (IsHttp3Supported() && _http3Enabled)
+                    {
+                        _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
+                    }
                 }
             }
 
@@ -289,7 +295,11 @@ namespace System.Net.Http
 
                     Debug.Assert(hostHeader != null);
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
-                    _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
+
+                    if (IsHttp3Supported() && _http3Enabled)
+                    {
+                        _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
+                    }
                 }
             }
 
