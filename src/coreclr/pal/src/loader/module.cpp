@@ -497,6 +497,7 @@ LPCSTR FixLibCName(LPCSTR shortAsciiName)
     //   As a result, we have to use the full name (i.e. lib.so.6) that is defined by LIBC_SO.
     // * For macOS, use constant value absolute path "/usr/lib/libc.dylib".
     // * For FreeBSD, use constant value "libc.so.7".
+    // * For Haiku, use constant value "libroot.so".
     // * For rest of Unices, use constant value "libc.so".
     if (strcmp(shortAsciiName, LIBC_NAME_WITHOUT_EXTENSION) == 0)
     {
@@ -504,6 +505,8 @@ LPCSTR FixLibCName(LPCSTR shortAsciiName)
         return "/usr/lib/libc.dylib";
 #elif defined(__FreeBSD__)
         return "libc.so.7";
+#elif defined(__HAIKU__)
+        return "libroot.so";
 #elif defined(LIBC_SO)
         return LIBC_SO;
 #else

@@ -30,6 +30,10 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
+#elif defined(TARGET_HAIKU)
+#include <image.h>
+#include <OS.h>
+#include <sys/utsname.h>
 #endif
 
 #if !HAVE_DIRENT_D_TYPE
@@ -136,6 +140,7 @@ bool pal::getcwd(pal::string_t* recv)
     return true;
 }
 
+#if !defined(TARGET_HAIKU)
 namespace
 {
     bool get_loaded_library_from_proc_maps(const pal::char_t* library_name, pal::dll_t* dll, pal::string_t* path)
@@ -183,6 +188,7 @@ namespace
         return true;
     }
 }
+#endif // !TARGET_HAIKU
 
 bool pal::get_loaded_library(
     const char_t* library_name,
@@ -197,6 +203,33 @@ bool pal::get_loaded_library(
 #endif
     library_name_local.append(library_name);
 
+#if defined(TARGET_HAIKU)
+    // Haiku does not have RTLD_NOLOAD so dlopen will attempt to load the library
+    // instead of fetching a handle to the already loaded one.
+    int32 cookie = 0;
+    image_info info;
+
+    while (get_next_image_info(0, &cookie, &info) == B_OK)
+    {
+        if (info.type != B_LIBRARY_IMAGE)
+            continue;
+
+        pal::string_t path_local(info.name);
+        size_t pos = path_local.rfind(DIR_SEPARATOR);
+        if (pos == std::string::npos)
+            continue;
+
+        pos = path_local.find(library_name, pos);
+        if (pos != std::string::npos)
+        {
+            *dll = (pal::dll_t)(intptr_t)info.id;
+            path->assign(path_local);
+            return true;
+        }
+    }
+
+    return false;
+#else
     dll_t dll_maybe = dlopen(library_name_local.c_str(), RTLD_LAZY | RTLD_NOLOAD);
     if (dll_maybe == nullptr)
     {
@@ -223,6 +256,7 @@ bool pal::get_loaded_library(
     *dll = dll_maybe;
     path->assign(info.dli_fname);
     return true;
+#endif
 }
 
 bool pal::load_library(const string_t* path, dll_t* dll)
@@ -749,6 +783,21 @@ pal::string_t pal::get_current_os_rid_platform()
         ridOS.append(_X("solaris."))
             .append(utsname_obj.version, pos - utsname_obj.version); // e.g. solaris.11
     }
+
+    return ridOS;
+}
+#elif defined(TARGET_HAIKU)
+pal::string_t pal::get_current_os_rid_platform()
+{
+    pal::string_t ridOS;
+    struct utsname utsname_obj;
+    if (uname(&utsname_obj) < 0)
+    {
+        return ridOS;
+    }
+
+    ridOS.append(_X("haiku."))
+         .append(utsname_obj.release); // e.g. haiku.1
 
     return ridOS;
 }

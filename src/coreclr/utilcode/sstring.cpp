@@ -11,7 +11,6 @@
 #include "ex.h"
 #include "holder.h"
 
-
 #if defined(_MSC_VER)
 #pragma inline_depth (25)
 #endif
@@ -1712,18 +1711,6 @@ void SString::Printf(const CHAR *format, ...)
     VPrintf(format, args);
     va_end(args);
 }
-
-#ifndef EBADF
-#define EBADF 9
-#endif
-
-#ifndef ENOMEM
-#define ENOMEM 12
-#endif
-
-#ifndef ERANGE
-#define ERANGE 34
-#endif
 
 #if defined(_MSC_VER)
 #undef va_copy

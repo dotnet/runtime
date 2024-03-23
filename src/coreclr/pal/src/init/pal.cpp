@@ -91,6 +91,10 @@ int CacheLineSize;
 #include <sys/user.h>
 #endif
 
+#ifdef __HAIKU__
+#include <OS.h>
+#endif // __HAIKU__
+
 #include <algorithm>
 #include <clrconfignocache.h>
 
@@ -897,6 +901,13 @@ PAL_IsDebuggerPresent()
 
     close(fd);
     return status.pr_flttrace.word[0] != 0;
+#elif defined(__HAIKU__)
+    team_info info;
+    if (get_team_info(B_CURRENT_TEAM, &info) == B_OK)
+    {
+        return info.debugger_nub_thread > 0;
+    }
+    return FALSE;
 #else
     return FALSE;
 #endif

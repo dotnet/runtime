@@ -24,7 +24,6 @@ Abstract:
 #include "cs.hpp"
 
 #include <pthread.h>
-#include <sys/syscall.h>
 #if HAVE_MACH_EXCEPTIONS
 #include <mach/mach.h>
 #endif // HAVE_MACH_EXCEPTIONS
@@ -745,6 +744,7 @@ Abstract:
 
 --*/
 #if defined(__linux__)
+#include <sys/syscall.h>
 #define PlatformGetCurrentThreadId() (SIZE_T)syscall(SYS_gettid)
 #elif defined(__APPLE__)
 inline SIZE_T PlatformGetCurrentThreadId() {
@@ -758,6 +758,9 @@ inline SIZE_T PlatformGetCurrentThreadId() {
 #elif defined(__NetBSD__)
 #include <lwp.h>
 #define PlatformGetCurrentThreadId() (SIZE_T)_lwp_self()
+#elif defined(__HAIKU__)
+#include <OS.h>
+#define PlatformGetCurrentThreadId() (SIZE_T)find_thread(NULL)
 #else
 #define PlatformGetCurrentThreadId() (SIZE_T)pthread_self()
 #endif

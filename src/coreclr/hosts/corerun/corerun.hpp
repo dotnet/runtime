@@ -314,6 +314,10 @@ public:
 #include <ctype.h>
 #endif // !__APPLE__
 
+#if defined(__HAIKU__)
+#include <OS.h>
+#endif // __HAIKU__
+
 // CMake generated
 #include <config.h>
 #include <minipal/getexepath.h>
@@ -441,6 +445,15 @@ namespace pal
 
         return ( (info.kp_proc.p_flag & P_TRACED) != 0 ) ? debugger_state_t::attached : debugger_state_t::not_attached;
 
+#elif defined(__HAIKU__)
+        team_info info;
+        assert(get_team_info(B_CURRENT_TEAM, &info) == B_OK);
+
+        // A "nub thread" is spawned by the debugger when it attaches to a process.
+        // While being debugged, the id of this thread is recorded in the team_info struct.
+        // Otherwise the field should be -1.
+
+        return (info.debugger_nub_thread > 0) ? debugger_state_t::attached : debugger_state_t::not_attached;
 #else // !__APPLE__
         // Use procfs to detect if there is a tracer process.
         // See https://www.kernel.org/doc/html/latest/filesystems/proc.html

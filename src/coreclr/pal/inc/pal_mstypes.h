@@ -574,8 +574,8 @@ typedef long ptrdiff_t;
 typedef unsigned int size_t;
 typedef int ptrdiff_t;
 #endif // !HOST_64BIT
-#endif // !PAL_STDCPP_COMPAT
 #define _SIZE_T_DEFINED
+#endif // !PAL_STDCPP_COMPAT
 
 typedef LONG_PTR LPARAM;
 

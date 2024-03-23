@@ -15,6 +15,9 @@ using std::ifstream;
 using std::getline;
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
+#elif defined(__HAIKU__)
+#include <image.h>
+#include <OS.h>
 #endif // __APPLE__
 #endif // WIN32
 
@@ -158,6 +161,53 @@ HRESULT MetaDataGetDispenser::GetDispenser(IMetaDataDispenserEx **disp)
 
     FreeLibrary(coreclr);
     printf("Got IMetaDataDispenserEx");
+    return S_OK;
+}
+
+#elif defined(__HAIKU__)
+
+HRESULT MetaDataGetDispenser::GetDispenser(IMetaDataDispenserEx **disp)
+{
+    const char *coreclrName = "libcoreclr.so";
+    int32 cookie = 0;
+    image_info info;
+    image_id id = -1;
+
+    while (get_next_image_info(0, &cookie, &info) == B_OK)
+    {
+        if (info.type != B_LIBRARY_IMAGE)
+            continue;
+        if (EndsWith(info.name, coreclrName))
+        {
+            id = info.id;
+            break;
+        }
+    }
+
+    if (id == -1)
+    {
+        _failures++;
+        printf("Failed to find %s\n", coreclrName);
+        return E_FAIL;
+    }
+
+    GetDispenserFunc dispenserFunc;
+    if (get_image_symbol(id, "MetaDataGetDispenser", B_SYMBOL_TYPE_TEXT, (void **)&dispenserFunc) != B_OK)
+    {
+        _failures++;
+        printf("Failed to find MetaDataGetDispenser.\n");
+        return E_FAIL;
+    }
+
+    HRESULT hr = dispenserFunc(CLSID_CorMetaDataDispenser, IID_IMetaDataDispenserEx, (void **)disp);
+    if (FAILED(hr))
+    {
+        _failures++;
+        printf("Failed to call MetaDataGetDispenser.\n");
+        return hr;
+    }
+
+    printf("Got IMetaDataDispenserEx\n");
     return S_OK;
 }
 

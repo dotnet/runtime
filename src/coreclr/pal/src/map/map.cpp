@@ -107,6 +107,11 @@ MAPmmapAndRecord(
 #define MAP_ANON MAP_ANONYMOUS
 #endif
 
+/* Some platforms like Haiku does not provide MAP_FILE */
+#ifndef MAP_FILE
+#define MAP_FILE 0
+#endif
+
 void
 FileMappingCleanupRoutine(
     CPalThread *pThread,
