@@ -1139,6 +1139,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
             Assert.True(memberInfo.DeclaringType.IsAssignableFrom(typeInfo.Type));
             Assert.Equal(memberType, memberInfo.MemberType);
+            Assert.Equal(prop.PropertyType, memberInfo is PropertyInfo p ? p.PropertyType : ((FieldInfo)memberInfo).FieldType);
             Assert.Equal(propertyName, memberInfo.Name);
             Assert.Equal(jsonPropertyName, actualJsonPropertyName);
         }
