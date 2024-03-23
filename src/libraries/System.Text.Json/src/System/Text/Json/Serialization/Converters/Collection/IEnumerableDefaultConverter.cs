@@ -18,40 +18,48 @@ namespace System.Text.Json.Serialization.Converters
         {
             Debug.Assert(value is not null);
 
-            IEnumerator<TElement> enumerator;
-            if (state.Current.CollectionEnumerator == null)
+            IEnumerator<TElement>? enumerator = default;
+            try
             {
-                enumerator = value.GetEnumerator();
-                if (!enumerator.MoveNext())
+                if (state.Current.CollectionEnumerator == null)
                 {
-                    enumerator.Dispose();
-                    return true;
+                    enumerator = value.GetEnumerator();
+                    if (!enumerator.MoveNext())
+                    {
+                        enumerator.Dispose();
+                        return true;
+                    }
                 }
+                else
+                {
+                    Debug.Assert(state.Current.CollectionEnumerator is IEnumerator<TElement>);
+                    enumerator = (IEnumerator<TElement>)state.Current.CollectionEnumerator;
+                }
+
+                JsonConverter<TElement> converter = GetElementConverter(ref state);
+                do
+                {
+                    if (ShouldFlush(writer, ref state))
+                    {
+                        state.Current.CollectionEnumerator = enumerator;
+                        return false;
+                    }
+
+                    TElement element = enumerator.Current;
+                    if (!converter.TryWrite(writer, element, options, ref state))
+                    {
+                        state.Current.CollectionEnumerator = enumerator;
+                        return false;
+                    }
+
+                    state.Current.EndCollectionElement();
+                } while (enumerator.MoveNext());
             }
-            else
+            catch
             {
-                Debug.Assert(state.Current.CollectionEnumerator is IEnumerator<TElement>);
-                enumerator = (IEnumerator<TElement>)state.Current.CollectionEnumerator;
+                enumerator?.Dispose();
+                throw;
             }
-
-            JsonConverter<TElement> converter = GetElementConverter(ref state);
-            do
-            {
-                if (ShouldFlush(writer, ref state))
-                {
-                    state.Current.CollectionEnumerator = enumerator;
-                    return false;
-                }
-
-                TElement element = enumerator.Current;
-                if (!converter.TryWrite(writer, element, options, ref state))
-                {
-                    state.Current.CollectionEnumerator = enumerator;
-                    return false;
-                }
-
-                state.Current.EndCollectionElement();
-            } while (enumerator.MoveNext());
 
             enumerator.Dispose();
             return true;
