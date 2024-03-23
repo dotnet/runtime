@@ -1059,7 +1059,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 for (unsigned i = 0; i < cSlots; i++)
                 {
                     abiInfo->Segments[i] =
-                        ABIPassingSegment::InRegister(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + i, TYP_I_IMPL, info.compCallConv),
+                        ABIPassingSegment::InRegister(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + i, TYP_I_IMPL,
+                                                                              info.compCallConv),
                                                       i * TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
                 }
             }
@@ -1209,7 +1210,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             for (unsigned i = 0; i < numEnregistered; i++)
             {
                 abiInfo->Segments[i] =
-                    ABIPassingSegment::InRegister(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + i, argType, info.compCallConv),
+                    ABIPassingSegment::InRegister(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + i, argType,
+                                                                          info.compCallConv),
                                                   i * TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
             }
 
@@ -1234,7 +1236,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 for (unsigned i = 0; i < cSlots; i++)
                 {
                     abiInfo->Segments[i] =
-                        ABIPassingSegment::InRegister(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + i, argType, info.compCallConv),
+                        ABIPassingSegment::InRegister(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + i, argType,
+                                                                              info.compCallConv),
                                                       i * size, size);
                 }
             }
