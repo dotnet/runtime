@@ -955,6 +955,20 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [Fact]
+        public async Task WriteIEnumerableT_ElementSerializationThrows_DisposesEnumerators()
+        {
+            var items = new RefCountedList<IEnumerable<int>>(Enumerable.Repeat(ThrowingEnumerable(), 1));
+            await Assert.ThrowsAsync<DivideByZeroException>(() => Serializer.SerializeWrapper(items.AsEnumerable()));
+            Assert.Equal(0, items.RefCount);
+
+            static IEnumerable<int> ThrowingEnumerable()
+            {
+                yield return 42;
+                throw new DivideByZeroException();
+            }
+        }
+
         public class SimpleClassWithKeyValuePairs
         {
             public KeyValuePair<string, string> KvpWStrVal { get; set; }
