@@ -17,6 +17,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/SSA/MemorySsa/**">
             <Issue>https://github.com/dotnet/runtime/issues/86112</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/GC/API/NoGCRegion/Callback_Svr/**">
+            <Issue>https://github.com/dotnet/runtime/issues/100149</Issue>
+        </ExcludeList>    
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->
