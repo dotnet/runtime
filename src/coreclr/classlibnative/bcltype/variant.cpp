@@ -34,6 +34,30 @@
 #define EnumU8          0x800000
 #define EnumMask        0xF00000
 
+FCIMPL1(CLR_BOOL, COMVariant::IsSystemDrawingColor, MethodTable* valMT)
+{
+    FCALL_CONTRACT;
+
+    return IsTypeRefOrDef(g_ColorClassName, valMT->GetModule(), valMT->GetCl());
+}
+FCIMPLEND
+
+extern "C" uint32_t QCALLTYPE Variant_ConvertSystemColorToOleColor(QCall::ObjectHandleOnStack obj)
+{
+    QCALL_CONTRACT;
+
+    uint32_t ret = 0;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    OBJECTREF srcObj = obj.Get();
+    ret = ConvertSystemColorToOleColor(&srcObj);
+
+    END_QCALL;
+
+    return ret;
+}
 
 /*===============================SetFieldsObject================================
 **

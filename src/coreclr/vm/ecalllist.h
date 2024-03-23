@@ -361,6 +361,7 @@ FCFuncEnd()
 #ifdef FEATURE_COMINTEROP
 FCFuncStart(gVariantFuncs)
     FCFuncElement("SetFieldsObject", COMVariant::SetFieldsObject)
+    FCFuncElement("IsSystemDrawingColor", COMVariant::IsSystemDrawingColor)
 FCFuncEnd()
 #endif // FEATURE_COMINTEROP
 

@@ -31,6 +31,7 @@ public:
     //
 
     static FCDECL2(void, SetFieldsObject, VariantData* vThisRef, Object* vVal);
+    static FCDECL1(CLR_BOOL, IsSystemDrawingColor, MethodTable* valMT);
 
 private:
     // GetCVTypeFromClass
@@ -38,6 +39,8 @@ private:
     static CVTypes GetCVTypeFromClass(TypeHandle th);
     static int GetEnumFlags(TypeHandle th);
 };
+
+extern "C" uint32_t QCALLTYPE Variant_ConvertSystemColorToOleColor(QCall::ObjectHandleOnStack obj);
 
 #endif // _VARIANT_H_
 
