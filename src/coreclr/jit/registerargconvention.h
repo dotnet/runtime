@@ -24,15 +24,12 @@ struct InitVarDscInfo
     // handles arguments.
     regMaskTP fltArgSkippedRegMask;
     bool      anyFloatStackArgs;
-    regMaskTP doubleAlignMask;
 #endif // TARGET_ARM
 
 #if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     bool hasSplitParam;
 #endif // TARGET_ARM || TARGET_RISCV64
 
-    // Bytes passed in both registers and stack (including things like padding after structs)
-    unsigned argSize;
     // Bytes passed on the stack (including things like padding after structs)
     unsigned stackArgSize;
 
@@ -62,7 +59,6 @@ public:
         hasSplitParam = false;
 #endif // TARGET_ARM || TARGET_RISCV64
 
-        argSize      = 0;
         stackArgSize = 0;
     }
 

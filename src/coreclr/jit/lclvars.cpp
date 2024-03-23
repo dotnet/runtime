@@ -458,8 +458,6 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     info.compArgStackSize = varDscInfo->stackArgSize;
 #endif // FEATURE_FASTTAILCALL
 
-    compArgSize = GetOutgoingArgByteSize(varDscInfo->argSize);
-
     // The total argument size must be aligned.
     noway_assert((compArgSize % TARGET_POINTER_SIZE) == 0);
 
@@ -510,7 +508,7 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
             printf("'this'    passed in register %s\n", getRegName(varDsc->GetArgReg()));
         }
 #endif
-        varDscInfo->argSize += TARGET_POINTER_SIZE;
+        compArgSize += TARGET_POINTER_SIZE;
 
         varDscInfo->nextParam();
     }
@@ -545,7 +543,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
 #endif
         varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
 
-        assert(varDsc->lvIsRegArg);
+        assert(varDsc->lvIsRegArg && isValidIntArgReg(varDsc->GetArgReg()));
 
 #ifdef DEBUG
         if (varDsc->lvIsRegArg && verbose)
@@ -558,7 +556,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         abiInfo->NumSegments           = 1;
         abiInfo->Segments              = new (this, CMK_LvaTable)
             ABIPassingSegment(ABIPassingSegment::InRegister(varDsc->GetArgReg(), 0, TARGET_POINTER_SIZE));
-        varDscInfo->argSize += TARGET_POINTER_SIZE;
+        compArgSize += TARGET_POINTER_SIZE;
 
         varDscInfo->nextParam();
     }
@@ -602,6 +600,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
     {
         return;
     }
+
+#ifdef TARGET_ARM
+    regMaskTP doubleAlignMask = RBM_NONE;
+#endif // TARGET_ARM
 
     // Skip skipArgs arguments from the signature.
     for (unsigned i = 0; i < skipArgs; i++, argLst = info.compCompHnd->getArgNext(argLst))
@@ -751,7 +753,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
         if (isRegParamType(argType))
         {
-            varDscInfo->argSize += varDscInfo->alignReg(argType, cAlign) * REGSIZE_BYTES;
+            compArgSize += varDscInfo->alignReg(argType, cAlign) * REGSIZE_BYTES;
         }
 
         if (argType == TYP_STRUCT)
@@ -787,7 +789,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 regMaskTP regMask = genMapArgNumToRegMask(varDscInfo->regArgNum(TYP_INT) + ix, TYP_INT);
                 if (cAlign == 2)
                 {
-                    varDscInfo->doubleAlignMask |= regMask;
+                    doubleAlignMask |= regMask;
                 }
                 codeGen->regSet.rsMaskPreSpillRegArg |= regMask;
             }
@@ -1176,11 +1178,20 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
             if (abiInfo->NumSegments == 0)
             {
-                assert(cSlots == 1);
-                abiInfo->NumSegments = 1;
+                // Structs at this point are always passed in 1 slot (either
+                // because it is small enough, or because it is an implicit
+                // byref). HFA's are also handled here, but they were retyped
+                // to have argType equal to their element type.
+                assert((argType != TYP_STRUCT) || (cSlots == 1));
+                abiInfo->NumSegments = cSlots;
                 unsigned size        = argType == TYP_STRUCT ? TARGET_POINTER_SIZE : genTypeSize(argType);
-                abiInfo->Segments    = new (this, CMK_LvaTable)
-                    ABIPassingSegment(ABIPassingSegment::InRegister(varDsc->GetArgReg(), 0, size));
+                abiInfo->Segments    = new (this, CMK_LvaTable) ABIPassingSegment[cSlots];
+                for (unsigned i = 0; i < cSlots; i++)
+                {
+                    abiInfo->Segments[i] =
+                        ABIPassingSegment::InRegister(genMapRegArgNumToRegNum(firstAllocatedRegArgNum + i, TYP_I_IMPL),
+                                                      i * size, size);
+                }
             }
 
 #ifdef DEBUG
@@ -1338,9 +1349,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         // The arg size is returning the number of bytes of the argument. For a struct it could return a size not a
         // multiple of TARGET_POINTER_SIZE. The stack allocated space should always be multiple of TARGET_POINTER_SIZE,
         // so round it up.
-        varDscInfo->argSize += roundUp(varDscInfo->argSize, TARGET_POINTER_SIZE);
+        compArgSize += roundUp(compArgSize, TARGET_POINTER_SIZE);
 #else  // !UNIX_AMD64_ABI
-        varDscInfo->argSize += argSize;
+        compArgSize += argSize;
 #endif // !UNIX_AMD64_ABI
         if (info.compIsVarArgs || isSoftFPPreSpill)
         {
@@ -1355,8 +1366,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         }
     }
 
+    compArgSize = GetOutgoingArgByteSize(compArgSize);
+
 #ifdef TARGET_ARM
-    regMaskTP doubleAlignMask = varDscInfo->doubleAlignMask;
     if (doubleAlignMask != RBM_NONE)
     {
         assert(RBM_ARG_REGS == 0xF);
@@ -1429,7 +1441,7 @@ bool Compiler::lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType 
         abiInfo->NumSegments = 1;
         abiInfo->Segments    = new (this, CMK_LvaTable)
             ABIPassingSegment(ABIPassingSegment::InRegister(REG_SWIFT_SELF, 0, TARGET_POINTER_SIZE));
-        varDscInfo->argSize += TARGET_POINTER_SIZE;
+        compArgSize += TARGET_POINTER_SIZE;
 
         lvaSwiftSelfArg = varDscInfo->varNum;
         lvaSetVarDoNotEnregister(lvaSwiftSelfArg DEBUGARG(DoNotEnregisterReason::NonStandardParameter));
@@ -1488,11 +1500,11 @@ void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
             varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
         }
 
-        varDscInfo->argSize += TARGET_POINTER_SIZE;
+        compArgSize += TARGET_POINTER_SIZE;
 
 #if defined(TARGET_X86)
         if (info.compIsVarArgs)
-            varDsc->SetStackOffset(varDscInfo->argSize);
+            varDsc->SetStackOffset(compArgSize);
 #endif // TARGET_X86
 
         varDscInfo->nextParam();
@@ -1566,12 +1578,12 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
 
         /* Update the total argument size, count and varDsc */
 
-        varDscInfo->argSize += TARGET_POINTER_SIZE;
+        compArgSize += TARGET_POINTER_SIZE;
 
         varDscInfo->nextParam();
 
 #if defined(TARGET_X86)
-        varDsc->SetStackOffset(varDscInfo->argSize);
+        varDsc->SetStackOffset(compArgSize);
 
         // Allocate a temp to point at the beginning of the args
 

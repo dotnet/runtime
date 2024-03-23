@@ -488,6 +488,19 @@ enum class AddressExposedReason
 class LclVarDsc
 {
 public:
+    // The constructor. Most things can just be zero'ed.
+    //
+    // Initialize the ArgRegs to REG_STK.
+    LclVarDsc()
+        : _lvArgReg(REG_STK)
+#if FEATURE_MULTIREG_ARGS
+        , _lvOtherArgReg(REG_STK)
+#endif // FEATURE_MULTIREG_ARGS
+        , lvClassHnd(NO_CLASS_HANDLE)
+        , lvPerSsaData()
+    {
+    }
+
     // note this only packs because var_types is a typedef of unsigned char
     var_types lvType : 5; // TYP_INT/LONG/FLOAT/DOUBLE/REF
 
@@ -1093,7 +1106,7 @@ public:
     unsigned lvSlotNum; // original slot # (if remapped)
 
     // class handle for the local or null if not known or not a class
-    CORINFO_CLASS_HANDLE lvClassHnd = NO_CLASS_HANDLE;
+    CORINFO_CLASS_HANDLE lvClassHnd;
 
 private:
     ClassLayout* m_layout; // layout info for structs
