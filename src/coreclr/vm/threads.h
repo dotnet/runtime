@@ -4210,26 +4210,15 @@ private:
     // m_DeadThreadCount is the subset of m_ThreadCount which have died.  The Win32
     // thread has disappeared, but something (like the exposed object) has kept the
     // refcount non-zero so we can't destruct yet.
-    //
-    // m_MaxThreadCount is the maximum value of m_ThreadCount. ie. the largest number
-    // of simultaneously active threads
 
 protected:
     LONG        m_ThreadCount;
-    LONG        m_MaxThreadCount;
 public:
     LONG        ThreadCountInEE ()
     {
         LIMITED_METHOD_CONTRACT;
         return m_ThreadCount;
     }
-#if defined(_DEBUG) || defined(DACCESS_COMPILE)
-    LONG        MaxThreadCountInEE ()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_MaxThreadCount;
-    }
-#endif
 private:
     LONG        m_UnstartedThreadCount;
     LONG        m_BackgroundThreadCount;

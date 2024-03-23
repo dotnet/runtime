@@ -7086,6 +7086,9 @@ protected:
         return (enckey & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
     }
 
+    static bool optSharedConstantCSEEnabled();
+    static bool optConstantCSEEnabled();
+
 /**************************************************************************
  *                   Value Number based CSEs
  *************************************************************************/
@@ -7993,7 +7996,6 @@ protected:
 
 public:
     regNumber raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc);
-    void raCheckValidIntParamReg(LclVarDsc* dsc, regNumber inArgReg);
 
     void raMarkStkVars();
 

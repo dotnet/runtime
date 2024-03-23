@@ -2082,9 +2082,9 @@ void Compiler::compDoComponentUnitTestsOnce()
 // compGetJitDefaultFill:
 //
 // Return Value:
-//    An unsigned char value used to initizalize memory allocated by the JIT.
-//    The default value is taken from DOTNET_JitDefaultFill,  if is not set
-//    the value will be 0xdd.  When JitStress is active a random value based
+//    An unsigned char value used to initialize memory allocated by the JIT.
+//    The default value is taken from DOTNET_JitDefaultFill. If it is not set
+//    the value will be 0xdd. When JitStress is active a random value based
 //    on the method hash is used.
 //
 // Notes:
@@ -3593,6 +3593,14 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     const WCHAR* strStressModeNamesNot = JitConfig.JitStressModeNamesNot();
     if ((strStressModeNamesNot != nullptr) &&
         (u16_strstr(strStressModeNamesNot, s_compStressModeNamesW[stressArea]) != nullptr))
+    {
+        return false;
+    }
+
+    // Does user allow using this STRESS_MODE through the command line?
+    const WCHAR* strStressModeNamesAllow = JitConfig.JitStressModeNamesAllow();
+    if ((strStressModeNamesAllow != nullptr) &&
+        (u16_strstr(strStressModeNamesAllow, s_compStressModeNamesW[stressArea]) == nullptr))
     {
         return false;
     }
@@ -5849,18 +5857,19 @@ void Compiler::generatePatchpointInfo()
 //    The intent of this method is to clear any information typically assumed
 //    to be set only once; it is used between iterations when JitOptRepeat is
 //    in effect.
-
+//
 void Compiler::ResetOptAnnotations()
 {
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
     fgResetForSsa();
-    vnStore              = nullptr;
-    m_blockToEHPreds     = nullptr;
-    m_dominancePreds     = nullptr;
-    fgSsaPassesCompleted = 0;
-    fgVNPassesCompleted  = 0;
-    fgSsaValid           = false;
+    vnStore                    = nullptr;
+    m_blockToEHPreds           = nullptr;
+    m_dominancePreds           = nullptr;
+    fgSsaPassesCompleted       = 0;
+    fgVNPassesCompleted        = 0;
+    fgSsaValid                 = false;
+    m_nodeToLoopMemoryBlockMap = nullptr;
 
     for (BasicBlock* const block : Blocks())
     {
