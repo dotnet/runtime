@@ -565,6 +565,7 @@ HCIMPLEND
 HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
 {
     FCALL_CONTRACT;
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     const double int64_min = -2147483648.0 * 4294967296.0;
     const double int64_max = 2147483648.0 * 4294967296.0;
@@ -592,8 +593,8 @@ HCIMPLEND
 HCIMPL1_V(int, JIT_Dbl2IntOvf, double val)
 {
     FCALL_CONTRACT;
-    const double two31 = 2147483648.0;
 
+    const double two31 = 2147483648.0;
     // Note that this expression also works properly for val = NaN case
     if (val > -two31 - 1 && val < two31)
         return((INT32)val);
@@ -606,6 +607,7 @@ HCIMPLEND
 HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
 {
     FCALL_CONTRACT;
+
     const double two63  = 2147483648.0 * 4294967296.0;
 
     // Note that this expression also works properly for val = NaN case
@@ -624,9 +626,8 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULngOvf, double val)
 
     const double two64  = 4294967296.0 * 4294967296.0;
     // Note that this expression also works properly for val = NaN case
-    if (val > -1.0 && val < two64) {
+    if (val > -1.0 && val < two64)
         return (UINT64)val;
-    }
     FCThrow(kOverflowException);
 }
 HCIMPLEND
@@ -634,14 +635,13 @@ HCIMPLEND
 HCIMPL1_V(UINT32, JIT_Dbl2UInt, double val)
 {
     FCALL_CONTRACT;
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     const double uint_max = 4294967295.0;
     // Note that this expression also works properly for val = NaN case
     return (val >= 0) ? ((val >= uint_max) ? UINT32_MAX : (UINT32)val) : 0;
-
 #else
     return((UINT32)val);
-
 #endif //TARGET_X86 || TARGET_AMD64
 }
 HCIMPLEND
@@ -650,6 +650,7 @@ HCIMPLEND
 HCIMPL1_V(INT32, JIT_Dbl2Int, double val)
 {
     FCALL_CONTRACT;
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     const double int32_min = -2147483648.0;
     const double int32_max_plus_1 = 2147483648.0;
