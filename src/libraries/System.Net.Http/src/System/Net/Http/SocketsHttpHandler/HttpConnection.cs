@@ -1741,22 +1741,30 @@ namespace System.Net.Http
             return count;
         }
 
-        private async ValueTask<int> ReadAsync(Memory<byte> destination)
+        private ValueTask<int> ReadAsync(Memory<byte> destination)
         {
             // This is called when reading the response body.
 
             if (_readBuffer.ActiveLength > 0)
             {
                 // We have data in the read buffer.  Return it to the caller.
-                return ReadFromBuffer(destination.Span);
+                return new ValueTask<int>(ReadFromBuffer(destination.Span));
             }
 
             // No data in read buffer.
             // Do an unbuffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == default, "Read ahead task should have been consumed as part of the headers.");
-            int count = await _stream.ReadAsync(destination).ConfigureAwait(false);
-            if (NetEventSource.Log.IsEnabled()) Trace($"Received {count} bytes.");
-            return count;
+
+            return NetEventSource.Log.IsEnabled()
+                ? ReadAndLogBytesReadAsync(destination)
+                : _stream.ReadAsync(destination);
+
+            async ValueTask<int> ReadAndLogBytesReadAsync(Memory<byte> destination)
+            {
+                int count = await _stream.ReadAsync(destination).ConfigureAwait(false);
+                if (NetEventSource.Log.IsEnabled()) Trace($"Received {count} bytes.");
+                return count;
+            }
         }
 
         private int ReadBuffered(Span<byte> destination)
