@@ -26,7 +26,6 @@ namespace System.Text.Json.Serialization.Converters
                     enumerator = value.GetEnumerator();
                     if (!enumerator.MoveNext())
                     {
-                        enumerator.Dispose();
                         return true;
                     }
                 }
@@ -42,6 +41,7 @@ namespace System.Text.Json.Serialization.Converters
                     if (ShouldFlush(writer, ref state))
                     {
                         state.Current.CollectionEnumerator = enumerator;
+                        enumerator = default;
                         return false;
                     }
 
@@ -49,20 +49,19 @@ namespace System.Text.Json.Serialization.Converters
                     if (!converter.TryWrite(writer, element, options, ref state))
                     {
                         state.Current.CollectionEnumerator = enumerator;
+                        enumerator = default;
                         return false;
                     }
 
                     state.Current.EndCollectionElement();
                 } while (enumerator.MoveNext());
+
+                return true;
             }
-            catch
+            finally
             {
                 enumerator?.Dispose();
-                throw;
             }
-
-            enumerator.Dispose();
-            return true;
         }
     }
 }
