@@ -237,7 +237,8 @@ dwarf_extract_proc_info_from_fde (unw_addr_space_t as, unw_accessors_t *a,
 {
   unw_word_t fde_end_addr, cie_addr, cie_offset_addr, aug_end_addr = 0;
   unw_word_t start_ip, ip_range, aug_size, addr = *addrp;
-  int ret, ip_range_encoding;
+  int ret;
+  uint8_t ip_range_encoding;
   struct dwarf_cie_info dci;
   uint64_t u64val;
   uint32_t u32val;

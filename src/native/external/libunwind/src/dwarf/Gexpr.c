@@ -122,7 +122,7 @@ sword (unw_addr_space_t as UNUSED, unw_word_t val)
     }
 }
 
-static inline unw_word_t
+static inline int
 read_operand (unw_addr_space_t as, unw_accessors_t *a,
               unw_word_t *addr, int operand_type, unw_word_t *val, void *arg)
 {
