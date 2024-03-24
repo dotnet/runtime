@@ -46,17 +46,3 @@ LEAF_ENTRY RhGetCommonStubAddress, _TEXT
           bx            lr
 LEAF_END RhGetCommonStubAddress, _TEXT
 
-#ifndef FEATURE_EMULATED_TLS
-//
-// IntPtr RhGetCurrentThunkContext()
-//
-LEAF_ENTRY RhGetCurrentThunkContext, _TEXT
-
-          PROLOG_PUSH   "{r12, lr}"
-
-          INLINE_GET_TLS_VAR  tls_thunkData
-
-          ldr           r0, [r0]
-          EPILOG_POP    "{r12, pc}"
-LEAF_END RhGetCurrentThunkContext, _TEXT
-#endif
