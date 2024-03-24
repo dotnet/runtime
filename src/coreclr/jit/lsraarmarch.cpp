@@ -691,14 +691,14 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     allRegs(TYP_INT) & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
                 buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
 
-                if (size >= 2 * REGSIZE_BYTES)
+                const unsigned slots = blkNode->GetLayout()->GetSlotCount();
+                if (slots >= 2)
                 {
                     // We will use ldp/stp to reduce code size and improve performance
                     // so we need to reserve an extra internal register
                     buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
                 }
-
-                if (size >= 4 * REGSIZE_BYTES && compiler->IsBaselineSimdIsaSupported())
+                if ((slots >= 4) && compiler->IsBaselineSimdIsaSupported())
                 {
                     // We can use 128-bit SIMD ldp/stp for larger block sizes
                     buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
