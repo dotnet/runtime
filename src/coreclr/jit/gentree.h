@@ -9279,7 +9279,6 @@ inline GenTree* GenTree::gtGetOp1() const
         case GT_QMARK:
         case GT_COLON:
         case GT_INDEX_ADDR:
-        case GT_MKREFANY:
             return true;
         default:
             return false;
