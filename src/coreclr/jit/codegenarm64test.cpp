@@ -6329,16 +6329,16 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_OPTS_SCALABLE_S); // URSQRTE <Zd>.S, <Pg>/M, <Zn>.S
 
     // IF_SVE_FZ_2A
-    theEmitter->emitIns_R_R(INS_sve_sqcvtn, EA_SCALABLE, REG_V0, REG_V1);   // SQCVTN <Zd>.H, {<Zn1>.S-<Zn2>.S }
-    theEmitter->emitIns_R_R(INS_sve_sqcvtun, EA_SCALABLE, REG_V6, REG_V7);  // SQCVTUN <Zd>.H, {<Zn1>.S-<Zn2>.S }
-    theEmitter->emitIns_R_R(INS_sve_uqcvtn, EA_SCALABLE, REG_V14, REG_V15); // UQCVTN <Zd>.H, {<Zn1>.S-<Zn2>.S }
+    theEmitter->emitIns_R_R(INS_sve_sqcvtn, EA_SCALABLE, REG_V0, REG_V2);   // SQCVTN <Zd>.H, {<Zn1>.S-<Zn2>.S }
+    theEmitter->emitIns_R_R(INS_sve_sqcvtun, EA_SCALABLE, REG_V6, REG_V8);  // SQCVTUN <Zd>.H, {<Zn1>.S-<Zn2>.S }
+    theEmitter->emitIns_R_R(INS_sve_uqcvtn, EA_SCALABLE, REG_V14, REG_V16); // UQCVTN <Zd>.H, {<Zn1>.S-<Zn2>.S }
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
     // IF_SVE_HG_2A
-    theEmitter->emitIns_R_R(INS_sve_bfcvtn, EA_SCALABLE, REG_V0, REG_V1);   // BFCVTN <Zd>.B, {<Zn1>.H-<Zn2>.H }
-    theEmitter->emitIns_R_R(INS_sve_fcvtn, EA_SCALABLE, REG_V2, REG_V3);    // FCVTN <Zd>.B, {<Zn1>.H-<Zn2>.H }
-    theEmitter->emitIns_R_R(INS_sve_fcvtnb, EA_SCALABLE, REG_V6, REG_V7);   // FCVTNB <Zd>.B, {<Zn1>.S-<Zn2>.S }
-    theEmitter->emitIns_R_R(INS_sve_fcvtnt, EA_SCALABLE, REG_V14, REG_V15); // FCVTNT <Zd>.B, {<Zn1>.S-<Zn2>.S }
+    theEmitter->emitIns_R_R(INS_sve_bfcvtn, EA_SCALABLE, REG_V0, REG_V2);   // BFCVTN <Zd>.B, {<Zn1>.H-<Zn2>.H }
+    theEmitter->emitIns_R_R(INS_sve_fcvtn, EA_SCALABLE, REG_V2, REG_V4);    // FCVTN <Zd>.B, {<Zn1>.H-<Zn2>.H }
+    theEmitter->emitIns_R_R(INS_sve_fcvtnb, EA_SCALABLE, REG_V6, REG_V8);   // FCVTNB <Zd>.B, {<Zn1>.S-<Zn2>.S }
+    theEmitter->emitIns_R_R(INS_sve_fcvtnt, EA_SCALABLE, REG_V14, REG_V16); // FCVTNT <Zd>.B, {<Zn1>.S-<Zn2>.S }
 #endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
     // IF_SVE_GA_2A
@@ -8572,6 +8572,8 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_SCALABLE_OPTS_UNPREDICATED);
     theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_V3, REG_R4, 255, INS_OPTS_NONE,
                               INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_R_S(INS_sve_ldr, EA_8BYTE, REG_V17, 1, 0);
+    theEmitter->emitIns_R_S(INS_sve_ldr, EA_8BYTE, REG_V9, 1, 24);
 
     // IF_SVE_JH_2A
     // STR <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]
@@ -8585,6 +8587,8 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_SCALABLE_OPTS_UNPREDICATED);
     theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_V2, REG_R3, 255, INS_OPTS_NONE,
                               INS_SCALABLE_OPTS_UNPREDICATED);
+    theEmitter->emitIns_S_R(INS_sve_str, EA_8BYTE, REG_V3, 1, 0);
+    theEmitter->emitIns_S_R(INS_sve_str, EA_8BYTE, REG_V0, 1, 28);
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
     // IF_SVE_GG_3A

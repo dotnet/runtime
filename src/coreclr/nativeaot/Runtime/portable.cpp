@@ -374,7 +374,6 @@ FCIMPLEND
 
 FCIMPL3(Object *, RhpCheckedLockCmpXchg, Object ** location, Object * value, Object * comparand)
 {
-    // @TODO: USE_PORTABLE_HELPERS - Null check
     Object * ret = (Object *)PalInterlockedCompareExchangePointer((void * volatile *)location, value, comparand);
     InlineCheckedWriteBarrier(location, value);
     return ret;
@@ -387,34 +386,6 @@ FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
     Object * ret = (Object *)PalInterlockedExchangePointer((void * volatile *)location, value);
     InlineCheckedWriteBarrier(location, value);
     return ret;
-}
-FCIMPLEND
-
-FCIMPL3(uint8_t, RhpLockCmpXchg8, uint8_t * location, uint8_t value, uint8_t comparand)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return 0;
-}
-FCIMPLEND
-
-FCIMPL3(int16_t, RhpLockCmpXchg16, int16_t * location, int16_t value, int16_t comparand)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return 0;
-}
-FCIMPLEND
-
-FCIMPL3(int32_t, RhpLockCmpXchg32, int32_t * location, int32_t value, int32_t comparand)
-{
-    // @TODO: USE_PORTABLE_HELPERS - Null check
-    return PalInterlockedCompareExchange(location, value, comparand);
-}
-FCIMPLEND
-
-FCIMPL3(int64_t, RhpLockCmpXchg64, int64_t * location, int64_t value, int64_t comparand)
-{
-    // @TODO: USE_PORTABLE_HELPERS - Null check
-    return PalInterlockedCompareExchange64(location, value, comparand);
 }
 FCIMPLEND
 

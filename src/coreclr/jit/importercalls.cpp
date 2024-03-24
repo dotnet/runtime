@@ -1393,7 +1393,7 @@ DONE_CALL:
                 if (origCall->IsVirtual() && (origCall->gtCallType != CT_INDIRECT) && (exactContextHnd != nullptr) &&
                     (origCall->gtHandleHistogramProfileCandidateInfo == nullptr))
                 {
-                    JITDUMP("\nSaving context %p for call [%06u]\n", exactContextHnd, dspTreeID(origCall));
+                    JITDUMP("\nSaving context %p for call [%06u]\n", dspPtr(exactContextHnd), dspTreeID(origCall));
                     origCall->gtCallMoreFlags |= GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
                     LateDevirtualizationInfo* const info = new (this, CMK_Inlining) LateDevirtualizationInfo;
                     info->exactContextHnd                = exactContextHnd;
@@ -6596,7 +6596,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         {
             JITDUMP("No exact classes implementing %s\n", eeGetClassName(baseClass))
         }
-        else if (numExactClasses > maxTypeChecks)
+        else if (numExactClasses < 0 || numExactClasses > maxTypeChecks)
         {
             JITDUMP("Too many exact classes implementing %s (%d > %d)\n", eeGetClassName(baseClass), numExactClasses,
                     maxTypeChecks)
@@ -8449,8 +8449,9 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 return;
             }
 #endif
+
             JITDUMP("\nCheckCanInline: fetching method info for inline candidate %s -- context %p\n",
-                    compiler->eeGetMethodName(ftn), pParam->exactContextHnd);
+                    compiler->eeGetMethodName(ftn), compiler->dspPtr(pParam->exactContextHnd));
 
             if (pParam->exactContextHnd == METHOD_BEING_COMPILED_CONTEXT())
             {

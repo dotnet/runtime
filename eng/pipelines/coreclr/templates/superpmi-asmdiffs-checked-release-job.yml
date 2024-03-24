@@ -7,7 +7,6 @@ parameters:
   timeoutInMinutes: 320           # build timeout
   variables: {}
   helixQueues: ''
-  dependOnEvaluatePaths: false
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-asmdiffs-checked-release-job.yml'
 
 jobs:
@@ -20,7 +19,6 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     helixQueues: ${{ parameters.helixQueues }}
     dependsOn:
@@ -42,7 +40,7 @@ jobs:
         artifactFileName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
         artifactName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)'
         displayName: 'JIT checked build'
-        cleanupUnpackFolder: false
+        cleanUnpackFolder: false
 
     # Download jit release builds
     - template: /eng/pipelines/common/download-artifact-step.yml
@@ -51,4 +49,4 @@ jobs:
         artifactFileName: 'ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
         artifactName: 'ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)'
         displayName: 'JIT release build'
-        cleanupUnpackFolder: false
+        cleanUnpackFolder: false
