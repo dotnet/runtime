@@ -5707,7 +5707,7 @@ void LinearScan::allocateRegisters()
 
         // TODO: Can we combine this with the freeing of registers below? It might
         // mess with the dump, since this was previously being done before the call below
-        // to dumpRegRecords.
+        // to dumpRegRecords. TODO: Do not do anything if tempRegsToMakeInactive == RBM_NONE
         AllRegsMask tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
         inActivateRegisters(tempRegsToMakeInactive.GetGprFloatCombinedMask());
 #ifdef HAS_PREDICATE_REGS

@@ -216,6 +216,9 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
+typedef unsigned __int32 RegBitSet32;
+typedef unsigned __int64 RegBitSet64;
+
 #if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
 typedef unsigned __int64 regMaskGpr;
@@ -270,55 +273,99 @@ typedef unsigned char   regNumberSmall;
 typedef struct _regMaskAll
 {
 private:
-    regMaskTP registers[REGISTER_TYPE_COUNT];
+    union
+    {
+        RegBitSet32 _registers[REGISTER_TYPE_COUNT];
+        struct
+        {
+            RegBitSet64 _float_gpr;
+#ifdef HAS_PREDICATE_REGS
+            RegBitSet32 _predicateRegs;
+#endif
+        };
+        struct
+        {
+            RegBitSet32 _gprRegs;
+            RegBitSet32 _floatRegs;
+#ifdef HAS_PREDICATE_REGS
+            RegBitSet32 _predicateRegs;
+#endif
+        };
+    };
+    
     regMaskOnlyOne operator[](int index) const;
     regMaskOnlyOne& operator[](int index);
+    // This method shifts the high-32 bits of float to low-32 bits and return.
+    // For gpr and predicate registers, it returns the same value.
+    FORCEINLINE static RegBitSet32 encodeForIndex(int index, RegBitSet64 value)
+    {
+        int shiftAmount = 32 * (index == 1);
+        return (RegBitSet32)(value >> shiftAmount);
+    }
+
+    FORCEINLINE static RegBitSet64 decodeForIndex(int index, RegBitSet32 value)
+    {
+        int shiftAmount = 32 * (index == 1);
+        return ((RegBitSet64)value << shiftAmount);
+    }
 
 public:
     inline regMaskGpr gprRegs() const
     {
-        return registers[0];
+        return _gprRegs;
     }
     inline regMaskFloat floatRegs() const
     {
-        return registers[1];
+        return _float_gpr & 0xFFFFFFFF00000000;
     }
 #ifdef HAS_PREDICATE_REGS
     inline regMaskPredicate predicateRegs() const
     {
         static_assert((REGISTER_TYPE_COUNT == 3), "There should be 3 types of registers");
-        return registers[2];
+        return _predicateRegs;
     }
-#endif
 
-    _regMaskAll(regMaskGpr _gprRegMask, regMaskFloat _floatRegMask, regMaskPredicate _predicateRegMask = RBM_NONE)
-        : registers{_gprRegMask, _floatRegMask
-#ifdef HAS_PREDICATE_REGS
-                    ,
-                    _predicateRegMask
-#endif
-          }
+    // TODO: See if we can avoid the '|' operation here.
+    _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask, RegBitSet64 predicateRegMask)
+        : _float_gpr(floatRegMask | gprRegMask), _predicateRegs((RegBitSet32)predicateRegMask)
     {
     }
 
-    _regMaskAll()
-        : registers{RBM_NONE, RBM_NONE
-#ifdef HAS_PREDICATE_REGS
-                    ,
-                    RBM_NONE
-#endif
-          }
+    _regMaskAll(RegBitSet64 gprRegMask) : _float_gpr(gprRegMask), _predicateRegs(RBM_NONE)
     {
     }
 
-    _regMaskAll(int (&_registers)[REGISTER_TYPE_COUNT])
+#else
+    _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask, RegBitSet64 predicateRegMask)
+        : _float_gpr(floatRegMask | gprRegMask)
     {
-        registers[0] = _registers[0];
-        registers[1] = _registers[1];
-#ifdef HAS_PREDICATE_REGS
-        registers[2] = _registers[2];
-#endif
     }
+
+    _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask)
+        : _float_gpr(floatRegMask | gprRegMask)
+    {
+    }
+
+    _regMaskAll(RegBitSet64 gprRegMask) : _float_gpr(gprRegMask)
+    {
+    }
+#endif
+
+    _regMaskAll() : _float_gpr(RBM_NONE)
+#ifdef HAS_PREDICATE_REGS
+                    , _predicateRegs(RBM_NONE)
+#endif
+    {
+    }
+
+//    _regMaskAll(int (&_registers)[REGISTER_TYPE_COUNT])
+//    {
+////        registers[0] = _registers[0];
+////        registers[1] = _registers[1];
+////#ifdef HAS_PREDICATE_REGS
+////        registers[2] = _registers[2];
+////#endif
+//    }
 
 #ifdef TARGET_ARM
     _regMaskAll(regNumber reg) : _regMaskAll()
@@ -374,10 +421,8 @@ public:
 
 } AllRegsMask;
 
-#define GprRegsMask(gprRegs) AllRegsMask(gprRegs, RBM_NONE)
-#define FloatRegsMask(floatRegs) AllRegsMask(RBM_NONE, floatRegs) 3
-
-#define Create_AllRegsMask(gprRegs, floatRegs) AllRegsMask((gprRegs & ~RBM_ALLFLOAT), (floatRegs & RBM_ALLFLOAT))
+#define GprRegsMask(gprRegs) AllRegsMask(gprRegs)
+#define Create_AllRegsMask(gprRegs, floatRegs) AllRegsMask(gprRegs | floatRegs)
 
 #if REGMASK_BITS == 32
 typedef unsigned regMaskSmall;

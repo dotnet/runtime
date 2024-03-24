@@ -2822,12 +2822,14 @@ void           LinearScan::buildIntervals()
         // availableMaskRegs   = RBM_NONE; // Is this also needed?
     }
 
-    actualRegistersMask = AllRegsMask(availableIntRegs, availableFloatRegs
+    //TODO: Fix this for x86 and arm
+    actualRegistersMask = AllRegsMask(~RBM_NONE, ~RBM_NONE
 #ifdef HAS_PREDICATE_REGS
                                       ,
                                       availableMaskRegs
 #endif // HAS_PREDICATE_REGS
-                                      );
+    );
+    
 
 #ifdef DEBUG
     // Make sure we don't have any blocks that were not visited
