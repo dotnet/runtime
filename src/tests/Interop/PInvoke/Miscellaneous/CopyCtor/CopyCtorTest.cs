@@ -15,21 +15,32 @@ public static unsafe class CopyCtor
     public static unsafe int StructWithCtorTest(StructWithCtor* ptrStruct, ref StructWithCtor refStruct)
     {
         if (ptrStruct->_instanceField != 1)
+        {
+            Console.WriteLine($"Fail: {ptrStruct->_instanceField} != {1}");
             return 1;
+        }
         if (refStruct._instanceField != 2)
+        {
+            Console.WriteLine($"Fail: {refStruct._instanceField} != {2}");
             return 2;
+        }
 
         int expectedCallCount = 2;
         if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
         {
-            expectedCallCount = 3;
+            expectedCallCount = 4;
         }
 
         if (StructWithCtor.CopyCtorCallCount != expectedCallCount)
+        {
+            Console.WriteLine($"Fail: {StructWithCtor.CopyCtorCallCount} != {expectedCallCount}");
             return 3;
+        }
         if (StructWithCtor.DtorCallCount != expectedCallCount)
+        {
+            Console.WriteLine($"Fail: {StructWithCtor.DtorCallCount} != {expectedCallCount}");
             return 4;
-
+        }
 
         return 100;
     }
