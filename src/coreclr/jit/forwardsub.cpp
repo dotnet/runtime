@@ -748,7 +748,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     if (fsv.IsCallArg() && fsv.GetNode()->TypeIs(TYP_STRUCT) && !fwdSubNode->OperIs(GT_BLK, GT_LCL_VAR, GT_LCL_FLD))
     {
-        JITDUMP(" use is a struct arg; fwd sub node is not BLK/LCL_VAR/LCL_FLD/MKREFANY\n");
+        JITDUMP(" use is a struct arg; fwd sub node is not BLK/LCL_VAR/LCL_FLD\n");
         return false;
     }
 

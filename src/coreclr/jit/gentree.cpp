@@ -5713,7 +5713,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     break;
 
                 case GT_BLK:
-                    // We estimate the cost of a GT_BLK or GT_MKREFANY to be two loads (GT_INDs)
+                    // We estimate the cost of a GT_BLK to be two loads (GT_INDs)
                     costEx = 2 * IND_COST_EX;
                     costSz = 2 * 2;
                     break;
