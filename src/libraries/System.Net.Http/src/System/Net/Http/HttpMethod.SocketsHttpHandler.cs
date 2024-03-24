@@ -59,6 +59,11 @@ namespace System.Net.Http
                 bytes = new byte[method.Length + 1];
                 Ascii.FromUtf16(method, bytes, out _);
                 bytes[^1] = (byte)' ';
+
+                if (knownMethod is not null)
+                {
+                    knownMethod._http1EncodedBytes = bytes;
+                }
             }
 
             _http1EncodedBytes = bytes;
@@ -68,13 +73,22 @@ namespace System.Net.Http
         private byte[] CreateHttp2EncodedBytes()
         {
             HttpMethod? knownMethod = GetKnownMethod(Method);
+            byte[]? bytes = knownMethod?._http2EncodedBytes;
 
-            byte[] bytes = knownMethod?._http2EncodedBytes ?? _http3Index switch
+            if (bytes is null)
             {
-                H3StaticTable.MethodGet => [0x80 | H2StaticTable.MethodGet],
-                H3StaticTable.MethodPost => [0x80 | H2StaticTable.MethodPost],
-                _ => HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.MethodGet, knownMethod?.Method ?? Method)
-            };
+                bytes = _http3Index switch
+                {
+                    H3StaticTable.MethodGet => [0x80 | H2StaticTable.MethodGet],
+                    H3StaticTable.MethodPost => [0x80 | H2StaticTable.MethodPost],
+                    _ => HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.MethodGet, knownMethod?.Method ?? Method)
+                };
+
+                if (knownMethod is not null)
+                {
+                    knownMethod._http2EncodedBytes = bytes;
+                }
+            }
 
             _http2EncodedBytes = bytes;
             return bytes;
@@ -83,10 +97,19 @@ namespace System.Net.Http
         private byte[] CreateHttp3EncodedBytes()
         {
             HttpMethod? knownMethod = GetKnownMethod(Method);
+            byte[]? bytes = knownMethod?._http3EncodedBytes;
 
-            byte[] bytes = knownMethod?._http3EncodedBytes ?? (_http3Index > 0
-                ? QPackEncoder.EncodeStaticIndexedHeaderFieldToArray(_http3Index)
-                : QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.MethodGet, knownMethod?.Method ?? Method));
+            if (bytes is null)
+            {
+                bytes = _http3Index > 0
+                    ? QPackEncoder.EncodeStaticIndexedHeaderFieldToArray(_http3Index)
+                    : QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.MethodGet, knownMethod?.Method ?? Method);
+
+                if (knownMethod is not null)
+                {
+                    knownMethod._http3EncodedBytes = bytes;
+                }
+            }
 
             _http3EncodedBytes = bytes;
             return bytes;
