@@ -9,6 +9,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class Dummy
 {
@@ -113,7 +114,8 @@ public class CastingTest
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         CastingTest t = new CastingTest();
 

@@ -4,10 +4,12 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 public class FinalizeTimeout
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Console.WriteLine("Main start");
 
@@ -35,7 +37,6 @@ public class FinalizeTimeout
 
         // Create another finalizable object, and immediately return from Main to have finalization occur during shutdown
         finalizableObject = new BlockingFinalizerOnShutdown() { isLastObject = true };
-        return 100;
     }
 
     private static void ThreadMain()
