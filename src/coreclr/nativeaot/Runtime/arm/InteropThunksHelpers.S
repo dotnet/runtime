@@ -22,7 +22,11 @@ NESTED_ENTRY RhCommonStub, _TEXT, NoHandler
 
           mov          r4, r12
 
+#ifdef FEATURE_EMULATED_TLS
+          bl           C_FUNC(RhpGetThunkData)
+#else
           INLINE_GET_TLS_VAR  tls_thunkData
+#endif
 
           // r0 = base address of TLS data
           // r4 = address of context cell in thunk's data
