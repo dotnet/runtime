@@ -573,8 +573,7 @@ namespace System.Net.Http
             _sendBuffer.AvailableSpan[1] = 0x00; // s + delta base.
             _sendBuffer.Commit(2);
 
-            HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
-            BufferBytes(normalizedMethod.Http3EncodedBytes);
+            BufferBytes(request.Method.Http3EncodedBytes);
             BufferIndexedHeader(H3StaticTable.SchemeHttps);
 
             if (request.HasHeaders && request.Headers.Host is string host)
@@ -626,7 +625,7 @@ namespace System.Net.Http
 
             if (request.Content == null)
             {
-                if (normalizedMethod.MustHaveRequestBody)
+                if (request.Method.MustHaveRequestBody)
                 {
                     BufferIndexedHeader(H3StaticTable.ContentLength0);
                     headerListSize += HttpKnownHeaderNames.ContentLength.Length + HeaderField.RfcOverhead;

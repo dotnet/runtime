@@ -909,6 +909,15 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            foreach (GenericParameterDesc genericParam in _method.GetTypicalMethodDefinition().Instantiation)
+            {
+                foreach (TypeDesc typeConstraint in genericParam.TypeConstraints)
+                {
+                    if (typeConstraint.IsInterface)
+                        yield return new DependencyListEntry(context.InterfaceUse(typeConstraint.GetTypeDefinition()), "Used as constraint");
+                }
+            }
+
             yield return new DependencyListEntry(context.GenericDictionaryLayout(_method), "Dictionary layout");
         }
 
@@ -1024,6 +1033,15 @@ namespace ILCompiler.DependencyAnalysis
             if (context.PreinitializationManager.HasLazyStaticConstructor(_type.ConvertToCanonForm(CanonicalFormKind.Specific)))
             {
                 yield return new DependencyListEntry(context.MethodEntrypoint(_type.GetStaticConstructor().GetCanonMethodTarget(CanonicalFormKind.Specific)), "cctor for template");
+            }
+
+            foreach (GenericParameterDesc genericParam in _type.GetTypeDefinition().Instantiation)
+            {
+                foreach (TypeDesc typeConstraint in genericParam.TypeConstraints)
+                {
+                    if (typeConstraint.IsInterface)
+                        yield return new DependencyListEntry(context.InterfaceUse(typeConstraint.GetTypeDefinition()), "Used as constraint");
+                }
             }
 
             if (!_isUniversalCanon)
