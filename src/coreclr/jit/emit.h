@@ -2001,10 +2001,6 @@ protected:
 
     insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc* id);
 
-#ifdef TARGET_ARM64
-    void getInsSveExecutionCharacteristics(instrDesc* id, insExecutionCharacteristics& result);
-#endif // TARGET_ARM64
-
     void perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacteristics* result);
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
@@ -3107,10 +3103,6 @@ public:
 #ifdef DEBUG
 #ifndef TARGET_LOONGARCH64
     void emitInsSanityCheck(instrDesc* id);
-
-#ifdef TARGET_ARM64
-    void emitInsSveSanityCheck(instrDesc* id);
-#endif // TARGET_ARM64
 #endif // TARGET_LOONGARCH64
 #endif // DEBUG
 

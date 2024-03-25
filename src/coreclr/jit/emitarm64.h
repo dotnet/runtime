@@ -33,6 +33,14 @@ const char* emitSveRegName(regNumber reg) const;
 const char* emitVectorRegName(regNumber reg);
 const char* emitPredicateRegName(regNumber reg, PredicateType ptype);
 
+#ifdef DEBUG
+void emitInsSveSanityCheck(instrDesc* id);
+#endif // DEBUG
+
+#if defined(DEBUG) || defined(LATE_DISASM)
+void getInsSveExecutionCharacteristics(instrDesc* id, insExecutionCharacteristics& result);
+#endif // defined(DEBUG) || defined(LATE_DISASM)
+
 void emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
 void emitDispInsSveHelp(instrDesc* id);
