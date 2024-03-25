@@ -163,6 +163,12 @@ public class ResourcesData
     public ResourceHashesByNameDictionary assembly { get; set; } = new ResourceHashesByNameDictionary();
 
     /// <summary>
+    /// "debug" (.pdb) resources needed to start MonoVM
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary corePdb { get; set; }
+
+    /// <summary>
     /// "debug" (.pdb) resources
     /// </summary>
     [DataMember(EmitDefaultValue = false)]

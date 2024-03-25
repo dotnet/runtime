@@ -332,18 +332,31 @@ export function prepareAssets() {
             }
         }
 
-        if (config.debugLevel != 0 && loaderHelpers.isDebuggingSupported() && resources.pdb) {
-            for (const name in resources.pdb) {
-                const asset: AssetEntryInternal = {
-                    name,
-                    hash: resources.pdb[name],
-                    behavior: "pdb"
-                };
-                if (isCoreAssembly(asset)) {
-                    asset.isCore = true;
-                    coreAssetsToLoad.push(asset);
-                } else {
-                    assetsToLoad.push(asset);
+        const addPdbAsset = (name: string, hash: string | null, isCore: boolean) => {
+            const asset: AssetEntryInternal = {
+                name,
+                hash,
+                behavior: "pdb"
+            };
+            if (isCore) {
+                asset.isCore = true;
+                coreAssetsToLoad.push(asset);
+            } else {
+                assetsToLoad.push(asset);
+            }
+        };
+
+
+        if (config.debugLevel != 0 && loaderHelpers.isDebuggingSupported()) {
+            if (resources.corePdb) {
+                for (const name in resources.corePdb) {
+                    addPdbAsset(name, resources.corePdb[name], false);
+                }
+            }
+
+            if (resources.pdb) {
+                for (const name in resources.pdb) {
+                    addPdbAsset(name, resources.pdb[name], false);
                 }
             }
         }
@@ -377,9 +390,9 @@ export function prepareAssets() {
         };
 
         if (resources.coreVfs) {
-            for (const virtualPath in resources.vfs) {
-                for (const name in resources.vfs[virtualPath]) {
-                    addVfsAsset(virtualPath, name, resources.vfs[virtualPath][name], true);
+            for (const virtualPath in resources.coreVfs) {
+                for (const name in resources.coreVfs[virtualPath]) {
+                    addVfsAsset(virtualPath, name, resources.coreVfs[virtualPath][name], true);
                 }
             }
         }

@@ -207,18 +207,27 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 }
 
                 var assemblyName = Path.GetFileName(assemblyPath);
-                var assemblyList = helper.IsCoreAssembly(assemblyName) ? bootConfig.resources.coreAssembly : bootConfig.resources.assembly;
-
+                bool isCoreAssembly = helper.IsCoreAssembly(assemblyName);
+                var assemblyList = isCoreAssembly ? bootConfig.resources.coreAssembly : bootConfig.resources.assembly;
                 assemblyList[assemblyName] = Utils.ComputeIntegrity(bytes);
                 if (DebugLevel != 0)
                 {
                     var pdb = Path.ChangeExtension(assembly, ".pdb");
                     if (File.Exists(pdb))
                     {
-                        if (bootConfig.resources.pdb == null)
-                            bootConfig.resources.pdb = new();
+                        if (isCoreAssembly)
+                        {
+                            if (bootConfig.resources.corePdb == null)
+                                bootConfig.resources.corePdb = new();
+                        }
+                        else
+                        {
+                            if (bootConfig.resources.pdb == null)
+                                bootConfig.resources.pdb = new();
+                        }
 
-                        bootConfig.resources.pdb[Path.GetFileName(pdb)] = Utils.ComputeIntegrity(pdb);
+                        var pdbList = isCoreAssembly ? bootConfig.resources.corePdb : bootConfig.resources.pdb;
+                        pdbList[Path.GetFileName(pdb)] = Utils.ComputeIntegrity(pdb);
                     }
                 }
             }

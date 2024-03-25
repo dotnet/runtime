@@ -206,6 +206,7 @@ export interface ResourceGroups {
     coreAssembly?: ResourceList; // nullable only temporarily
     assembly?: ResourceList; // nullable only temporarily
     lazyAssembly?: ResourceList; // nullable only temporarily
+    corePdb?: ResourceList;
     pdb?: ResourceList;
 
     jsModuleWorker?: ResourceList;

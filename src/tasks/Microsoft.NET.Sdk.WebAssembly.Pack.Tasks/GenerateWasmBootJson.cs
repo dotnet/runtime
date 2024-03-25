@@ -209,16 +209,25 @@ public class GenerateWasmBootJson : Task
                     }
                     else
                     {
-                        Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as symbols file.", resource.ItemSpec);
-                        resourceData.pdb ??= new ResourceHashesByNameDictionary();
-                        resourceList = resourceData.pdb;
+                        if (IsTargeting90OrLater() && helper.IsCoreAssembly(resourceName))
+                        {
+                            Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as core symbols file.", resource.ItemSpec);
+                            resourceData.corePdb ??= new ResourceHashesByNameDictionary();
+                            resourceList = resourceData.corePdb;
+                        }
+                        else
+                        {
+                            Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as symbols file.", resource.ItemSpec);
+                            resourceData.pdb ??= new ResourceHashesByNameDictionary();
+                            resourceList = resourceData.pdb;
+                        }
                     }
                 }
                 else if (string.Equals("runtime", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
                     if (IsTargeting90OrLater() && helper.IsCoreAssembly(resourceName))
                     {
-                        Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as an core assembly.", resource.ItemSpec);
+                        Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as core assembly.", resource.ItemSpec);
                         resourceList = resourceData.coreAssembly;
                     }
                     else
