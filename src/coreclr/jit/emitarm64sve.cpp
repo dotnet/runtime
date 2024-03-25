@@ -16401,6 +16401,7 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
     }
 }
 
+#if defined(DEBUG) || defined(LATE_DISASM)
 //----------------------------------------------------------------------------------------
 // getInsSveExecutionCharacteristics:
 //    Returns the current SVE instruction's execution characteristics
@@ -18498,5 +18499,6 @@ void emitter::getInsSveExecutionCharacteristics(instrDesc* id, insExecutionChara
             break;
     }
 }
+#endif // defined(DEBUG) || defined(LATE_DISASM)
 
 #endif // TARGET_ARM64
