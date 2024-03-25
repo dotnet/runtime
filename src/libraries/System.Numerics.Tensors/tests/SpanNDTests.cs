@@ -146,6 +146,26 @@ namespace System.Numerics.Tensors.Tests
         {
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             SpanND<int> spanInt = a.AsSpanND(3, 3);
+
+            var slice = spanInt.Slice(0..2, 0..2);
+            slice.Clear();
+            Assert.Equal(0, slice[0, 0]);
+            Assert.Equal(0, slice[0, 1]);
+            Assert.Equal(0, slice[1, 0]);
+            Assert.Equal(0, slice[1, 1]);
+            //First values of original span should be cleared.
+            Assert.Equal(0, spanInt[0, 0]);
+            Assert.Equal(0, spanInt[0, 1]);
+            Assert.Equal(0, spanInt[1, 0]);
+            Assert.Equal(0, spanInt[1, 1]);
+            //Make sure the rest of the values from the original span didn't get cleared.
+            Assert.Equal(3, spanInt[0, 2]);
+            Assert.Equal(6, spanInt[1, 2]);
+            Assert.Equal(7, spanInt[2, 0]);
+            Assert.Equal(8, spanInt[2, 1]);
+            Assert.Equal(9, spanInt[2, 2]);
+
+
             spanInt.Clear();
             var enumerator = spanInt.GetEnumerator();
             while (enumerator.MoveNext())
@@ -153,22 +173,24 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(0, enumerator.Current);
             }
 
-            spanInt.Clear();
-            enumerator = spanInt.GetEnumerator();
-            while (enumerator.MoveNext())
-            {
-                Assert.Equal(0, enumerator.Current);
-            }
-
-            spanInt.Clear();
-            enumerator = spanInt.GetEnumerator();
-            while (enumerator.MoveNext())
-            {
-                Assert.Equal(0, enumerator.Current);
-            }
-
             a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             spanInt = a.AsSpanND(9);
+            slice = spanInt.Slice(0..1);
+            slice.Clear();
+            Assert.Equal(0, slice[0]);
+            //First value of original span should be cleared.
+            Assert.Equal(0, spanInt[0]);
+            //Make sure the rest of the values from the original span didn't get cleared.
+            Assert.Equal(2, spanInt[1]);
+            Assert.Equal(3, spanInt[2]);
+            Assert.Equal(4, spanInt[3]);
+            Assert.Equal(5, spanInt[4]);
+            Assert.Equal(6, spanInt[5]);
+            Assert.Equal(7, spanInt[6]);
+            Assert.Equal(8, spanInt[7]);
+            Assert.Equal(9, spanInt[8]);
+
+
             spanInt.Clear();
             enumerator = spanInt.GetEnumerator();
             while (enumerator.MoveNext())
@@ -450,8 +472,6 @@ namespace System.Numerics.Tensors.Tests
             }
         }
 
-        
-
         [Fact]
         public static void LongArrayAsSpanND()
         {
@@ -464,16 +484,6 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(-95, spanLong[4]);
         }
 
-        //[Fact]
-        //public static void ObjectArrayAsSpanND()
-        //{
-        //    object o1 = new object();
-        //    object o2 = new object();
-        //    object[] c = { o1, o2 };
-        //    SpanND<object> spanObject = c.AsSpanND();
-        //    spanObject.ValidateReferenceType(o1, o2);
-        //}
-
         [Fact]
         public static void NullArrayAsSpanND()
         {
@@ -481,189 +491,5 @@ namespace System.Numerics.Tensors.Tests
             SpanND<int> span = a.AsSpanND();
             Assert.True(span == default);
         }
-
-        //[Fact]
-        //public static void EmptyArrayAsSpanND()
-        //{
-        //    int[] empty = Array.Empty<int>();
-        //    SpanND<int> span = empty.AsSpanND();
-        //    span.ValidateNonNullEmpty();
-        //}
-
-        //[Fact]
-        //public static void IntArraySegmentAsSpanND()
-        //{
-        //    int[] a = { 91, 92, -93, 94 };
-        //    ArraySegment<int> segmentInt = new ArraySegment<int>(a, 1, 2);
-        //    SpanND<int> spanInt = segmentInt.AsSpanND();
-        //    spanInt.Validate(92, -93);
-        //}
-
-        //[Fact]
-        //public static void LongArraySegmentAsSpanND()
-        //{
-        //    long[] b = { 91, -92, 93, 94, -95 };
-        //    ArraySegment<long> segmentLong = new ArraySegment<long>(b, 1, 3);
-        //    SpanND<long> spanLong = segmentLong.AsSpanND();
-        //    spanLong.Validate(-92, 93, 94);
-        //}
-
-        //[Fact]
-        //public static void ObjectArraySegmentAsSpanND()
-        //{
-        //    object o1 = new object();
-        //    object o2 = new object();
-        //    object o3 = new object();
-        //    object o4 = new object();
-        //    object[] c = { o1, o2, o3, o4 };
-        //    ArraySegment<object> segmentObject = new ArraySegment<object>(c, 1, 2);
-        //    SpanND<object> spanObject = segmentObject.AsSpanND();
-        //    spanObject.ValidateReferenceType(o2, o3);
-        //}
-
-        //[Fact]
-        //public static void ZeroLengthArraySegmentAsSpanND()
-        //{
-        //    int[] empty = Array.Empty<int>();
-        //    ArraySegment<int> segmentEmpty = new ArraySegment<int>(empty);
-        //    SpanND<int> spanEmpty = segmentEmpty.AsSpanND();
-        //    spanEmpty.ValidateNonNullEmpty();
-
-        //    int[] a = { 91, 92, -93, 94 };
-        //    ArraySegment<int> segmentInt = new ArraySegment<int>(a, 0, 0);
-        //    SpanND<int> spanInt = segmentInt.AsSpanND();
-        //    spanInt.ValidateNonNullEmpty();
-        //}
-
-        //[Fact]
-        //public static void CovariantAsSpanNDNotSupported()
-        //{
-        //    object[] a = new string[10];
-        //    Assert.Throws<ArrayTypeMismatchException>(() => a.AsSpanND());
-        //    Assert.Throws<ArrayTypeMismatchException>(() => a.AsSpanND(0, a.Length));
-        //}
-
-        //[Fact]
-        //public static void GuidArrayAsSpanNDWithStartAndLength()
-        //{
-        //    var arr = new Guid[20];
-
-        //    SpanND<Guid> slice = arr.AsSpanND(2, 2);
-        //    Guid guid = Guid.NewGuid();
-        //    slice[1] = guid;
-
-        //    Assert.Equal(guid, arr[3]);
-        //}
-
-        //[Theory]
-        //[InlineData(0, 0)]
-        //[InlineData(3, 0)]
-        //[InlineData(3, 1)]
-        //[InlineData(3, 2)]
-        //[InlineData(3, 3)]
-        //[InlineData(10, 0)]
-        //[InlineData(10, 3)]
-        //[InlineData(10, 10)]
-        //public static void ArrayAsSpanNDWithStart(int length, int start)
-        //{
-        //    int[] a = new int[length];
-        //    SpanND<int> s = a.AsSpanND(start);
-        //    Assert.Equal(length - start, s.Length);
-        //    if (start != length)
-        //    {
-        //        s[0] = 42;
-        //        Assert.Equal(42, a[start]);
-        //    }
-        //}
-
-        //[Theory]
-        //[InlineData(0, 0)]
-        //[InlineData(3, 0)]
-        //[InlineData(3, 1)]
-        //[InlineData(3, 2)]
-        //[InlineData(3, 3)]
-        //[InlineData(10, 0)]
-        //[InlineData(10, 3)]
-        //[InlineData(10, 10)]
-        //public static void ArraySegmentAsSpanNDWithStart(int length, int start)
-        //{
-        //    const int segmentOffset = 5;
-
-        //    int[] a = new int[length + segmentOffset];
-        //    ArraySegment<int> segment = new ArraySegment<int>(a, 5, length);
-        //    SpanND<int> s = segment.AsSpanND(start);
-        //    Assert.Equal(length - start, s.Length);
-        //    if (s.Length != 0)
-        //    {
-        //        s[0] = 42;
-        //        Assert.Equal(42, a[segmentOffset + start]);
-        //    }
-        //}
-
-        //[Theory]
-        //[InlineData(0, 0, 0)]
-        //[InlineData(3, 0, 3)]
-        //[InlineData(3, 1, 2)]
-        //[InlineData(3, 2, 1)]
-        //[InlineData(3, 3, 0)]
-        //[InlineData(10, 0, 5)]
-        //[InlineData(10, 3, 2)]
-        //public static void ArrayAsSpanNDWithStartAndLength(int length, int start, int subLength)
-        //{
-        //    int[] a = new int[length];
-        //    SpanND<int> s = a.AsSpanND(start, subLength);
-        //    Assert.Equal(subLength, s.Length);
-        //    if (subLength != 0)
-        //    {
-        //        s[0] = 42;
-        //        Assert.Equal(42, a[start]);
-        //    }
-        //}
-
-        //[Theory]
-        //[InlineData(0, 0, 0)]
-        //[InlineData(3, 0, 3)]
-        //[InlineData(3, 1, 2)]
-        //[InlineData(3, 2, 1)]
-        //[InlineData(3, 3, 0)]
-        //[InlineData(10, 0, 5)]
-        //[InlineData(10, 3, 2)]
-        //public static void ArraySegmentAsSpanNDWithStartAndLength(int length, int start, int subLength)
-        //{
-        //    const int segmentOffset = 5;
-
-        //    int[] a = new int[length + segmentOffset];
-        //    ArraySegment<int> segment = new ArraySegment<int>(a, segmentOffset, length);
-        //    SpanND<int> s = segment.AsSpanND(start, subLength);
-        //    Assert.Equal(subLength, s.Length);
-        //    if (subLength != 0)
-        //    {
-        //        s[0] = 42;
-        //        Assert.Equal(42, a[segmentOffset + start]);
-        //    }
-        //}
-
-        //[Theory]
-        //[InlineData(0, -1)]
-        //[InlineData(0, 1)]
-        //[InlineData(5, 6)]
-        //public static void ArrayAsSpanNDWithStartNegative(int length, int start)
-        //{
-        //    int[] a = new int[length];
-        //    Assert.Throws<ArgumentOutOfRangeException>(() => a.AsSpanND(start));
-        //}
-
-        //[Theory]
-        //[InlineData(0, -1, 0)]
-        //[InlineData(0, 1, 0)]
-        //[InlineData(0, 0, -1)]
-        //[InlineData(0, 0, 1)]
-        //[InlineData(5, 6, 0)]
-        //[InlineData(5, 3, 3)]
-        //public static void ArrayAsSpanNDWithStartAndLengthNegative(int length, int start, int subLength)
-        //{
-        //    int[] a = new int[length];
-        //    Assert.Throws<ArgumentOutOfRangeException>(() => a.AsSpanND(start, subLength));
-        //}
     }
 }

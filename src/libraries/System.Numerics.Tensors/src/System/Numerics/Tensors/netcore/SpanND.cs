@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -54,14 +55,13 @@ namespace System.Numerics.Tensors
             }
             if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
-            _linearLength = CalculateTotalLength(ref lengths);
+            _linearLength = SpanHelpers.CalculateTotalLength(ref lengths);
             if (_linearLength != array.Length)
                 ThrowHelper.ThrowArgument_LengthsMustEqualArrayLength();
 
             _reference = ref MemoryMarshal.GetArrayDataReference(array);
-            _linearLength = array.Length;
             _lengths = lengths;
-            _strides = CalculateStrides();
+            _strides = SpanHelpers.CalculateStrides(Rank, lengths);
         }
 
         /// <summary>
@@ -70,7 +70,6 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="array">The target array.</param>
         /// <param name="start">The index at which to begin the span.</param>
-        /// <param name="length">The number of items in the span.</param>
         /// <param name="lengths">The lengths of the dimensions. If default is provided its assumed to have 1 dimension with a length equal to the length of the data.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
@@ -78,11 +77,12 @@ namespace System.Numerics.Tensors
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public SpanND(T[]? array, nint start, nint length, ReadOnlySpan<nint> lengths)
+        public SpanND(T[]? array, nint start, ReadOnlySpan<nint> lengths)
         {
+            _linearLength = SpanHelpers.CalculateTotalLength(ref lengths);
             if (array == null)
             {
-                if (start != 0 || length != 0)
+                if (start != 0 || _linearLength != 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
                 this = default;
                 return; // returns default
@@ -94,17 +94,14 @@ namespace System.Numerics.Tensors
             if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 #else
-            if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
+            if ((uint)start > (uint)array.Length || (uint)_linearLength > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 #endif
-            if (length != CalculateTotalLength(ref lengths))
-                ThrowHelper.ThrowArgument_LengthsMustEqualArrayLength();
 
             _reference = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */);
-            _linearLength = length;
 
             _lengths = lengths;
-            _strides = CalculateStrides();
+            _strides = SpanHelpers.CalculateStrides(Rank, lengths);
         }
 
         /// <summary>
@@ -114,58 +111,47 @@ namespace System.Numerics.Tensors
         /// But if this creation is correct, then all subsequent uses are correct.
         /// </summary>
         /// <param name="pointer">An unmanaged pointer to memory.</param>
-        /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
         /// <param name="lengths">The lengths of the dimensions. If default is provided its assumed to have 1 dimension with a length equal to the length of the data.</param>
         /// <param name="isPinned">Whether the backing memory is permanently pinned or not.</param>
+        /// <param name="strides"></param>
         /// <exception cref="ArgumentException">
         /// Thrown when <typeparamref name="T"/> is reference type or contains pointers and hence cannot be stored in unmanaged memory.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="length"/> is negative.
+        /// Thrown when the specified length is negative.
         /// </exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe SpanND(void* pointer, nint length, ReadOnlySpan<nint> lengths, bool isPinned)
+        public unsafe SpanND(void* pointer, ReadOnlySpan<nint> lengths, bool isPinned, ReadOnlySpan<nint> strides = default)
         {
+            _linearLength = SpanHelpers.CalculateTotalLength(ref lengths);
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
-            if (length < 0)
+            if (_linearLength < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
-            if (length != CalculateTotalLength(ref lengths))
-                ThrowHelper.ThrowArgument_LengthsMustEqualArrayLength();
 
             _isPinned = isPinned;
 
             _reference = ref *(T*)pointer;
-            _linearLength = length;
 
             _lengths = lengths;
-            _strides = CalculateStrides();
+            _strides = strides;
+            if (strides == default)
+                _strides = SpanHelpers.CalculateStrides(Rank, lengths);
         }
 
         // Constructor for internal use only. It is not safe to expose publicly, and is instead exposed via the unsafe MemoryMarshal.CreateSpan.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal SpanND(ref T reference, nint length, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides)
+        internal SpanND(ref T reference, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool isPinned)
         {
-            Debug.Assert(length >= 0);
+            _linearLength = SpanHelpers.CalculateTotalLength(ref lengths);
+            Debug.Assert(_linearLength >= 0);
 
             _reference = ref reference;
-            _linearLength = length;
 
             _lengths = lengths;
             _strides = strides;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static nint CalculateTotalLength(ref ReadOnlySpan<nint> lengths)
-        {
-            nint totalLength = 1;
-            for (int i = 0; i < lengths.Length; i++)
-            {
-                totalLength *= lengths[i];
-            }
-
-            return totalLength;
+            _isPinned = isPinned;
         }
 
         // REVIEW: WHEN IS params ReadOnlySpan<T> GOING TO BE SUPPORTED.
@@ -197,7 +183,7 @@ namespace System.Numerics.Tensors
                 if (indices.Length != Rank)
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
-                var index = GetIndex(indices);
+                var index = SpanHelpers.GetIndex(indices, Strides, Lengths);
                 return ref Unsafe.Add(ref _reference, index /* force zero-extension */);
             }
         }
@@ -326,45 +312,6 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Calculates the 1-d index for n-d indices in layout specified by strides.
-        /// </summary>
-        /// <param name="indices"></param>
-        /// <returns></returns>
-        private nint GetIndex(ReadOnlySpan<nint> indices)
-        {
-            Debug.Assert(Strides.Length == indices.Length);
-
-            nint index = 0;
-            for (int i = 0; i < indices.Length; i++)
-            {
-                if (indices[i] >= Lengths[i])
-                    ThrowHelper.ThrowIndexOutOfRangeException();
-                index += Strides[i] * (indices[i]);
-            }
-
-            return index;
-        }
-
-        /// <summary>
-        /// Gets the set of strides that can be used to calculate the offset of n-dimensions in a 1-dimensional layout
-        /// </summary>
-        /// <returns></returns>
-        private nint[] CalculateStrides()
-        {
-            nint[] strides = new nint[Rank];
-
-            nint stride = 1;
-
-            for (int i = strides.Length - 1; i >= 0; i--)
-            {
-                strides[i] = stride;
-                stride *= Lengths[i];
-            }
-
-            return strides;
-        }
-
-        /// <summary>
         /// Returns a reference to the 0th element of the Span. If the SpanND is empty, returns null reference.
         /// It can be used for pinning and is required to support the use of span within a fixed statement.
         /// </summary>
@@ -386,22 +333,17 @@ namespace System.Numerics.Tensors
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 // DON'T SUPPORT REFERENCE TYPES CURRENTLY.
-                SpanHelpers.ClearWithReferences(ref Unsafe.As<T, IntPtr>(ref _reference), (uint)_linearLength * (nuint)(sizeof(T) / sizeof(nuint)));
+                SpanHelpers.ClearWithReferences(ref Unsafe.As<T, IntPtr>(ref _reference), (nuint)_linearLength * (nuint)(sizeof(T) / sizeof(nuint)));
             }
             else
             {
-                if (_lengths.Length == 1)
-                    SpanHelpers.ClearWithoutReferences(ref Unsafe.As<T, byte>(ref _reference), (uint)_linearLength * (nuint)sizeof(T));
-                else
+                var curIndices = new nint[Rank];
+                nint copiedValues = 0;
+                while (copiedValues < _linearLength)
                 {
-                    // REVIEW: POOR PERFORMANCE. FIX PERF.
-                    var enumerator = GetEnumerator();
-                    while (enumerator.MoveNext())
-                    {
-#pragma warning disable CS8601 // Possible null reference assignment.
-                        enumerator.Current = default;
-#pragma warning restore CS8601 // Possible null reference assignment.
-                    }
+                    SpanHelpers.ClearWithoutReferences(ref Unsafe.As<T, byte>(ref Unsafe.Add(ref _reference, SpanHelpers.GetIndex(curIndices, Strides, Lengths))), (nuint)Lengths[Rank-1] * (nuint)sizeof(T));
+                    SpanHelpers.AdjustIndices(Rank - 2, 1, ref curIndices, _lengths);
+                    copiedValues += Lengths[Rank - 1];
                 }
             }
         }
@@ -410,18 +352,15 @@ namespace System.Numerics.Tensors
         /// Fills the contents of this span with the given value.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void Fill(T value)
+        public void Fill(T value)
         {
-            if (_lengths.Length == 1)
-                SpanHelpers.Fill(ref _reference, (nuint)_linearLength, value);
-            else
+            var curIndices = new nint[Rank];
+            nint filledValues = 0;
+            while (filledValues < _linearLength)
             {
-                // REVIEW: POOR PERFORMANCE. FIX PERF.
-                var enumerator = GetEnumerator();
-                while (enumerator.MoveNext())
-                {
-                    enumerator.Current = value;
-                }
+                SpanHelpers.Fill(ref Unsafe.Add(ref _reference, SpanHelpers.GetIndex(curIndices, Strides, Lengths)), (nuint)Lengths[Rank - 1], value);
+                SpanHelpers.AdjustIndices(Rank - 2, 1, ref curIndices, _lengths);
+                filledValues += Lengths[Rank - 1];
             }
         }
 
@@ -441,13 +380,14 @@ namespace System.Numerics.Tensors
             // check, and one for the result of TryCopyTo. Since these checks are equivalent,
             // we can optimize by performing the check once ourselves then calling Memmove directly.
 
-            // REVIEW: POOR PERFORMANCE. FIX PERF.
+            var curIndices = new nint[Rank];
+            nint copiedValues = 0;
             var slice = destination.Slice(_lengths);
-            var enumerator = GetEnumerator();
-            var destEnumerator = slice.GetEnumerator();
-            while (enumerator.MoveNext() && destEnumerator.MoveNext())
+            while (copiedValues < _linearLength)
             {
-                destEnumerator.Current = enumerator.Current;
+                SpanHelpers.Memmove(ref Unsafe.Add(ref slice._reference, SpanHelpers.GetIndex(curIndices, Strides, Lengths)), ref Unsafe.Add(ref _reference, SpanHelpers.GetIndex(curIndices, Strides, Lengths)), Lengths[Rank - 1]);
+                SpanHelpers.AdjustIndices(Rank - 2, 1, ref curIndices, _lengths);
+                copiedValues += Lengths[Rank - 1];
             }
         }
 
@@ -465,12 +405,14 @@ namespace System.Numerics.Tensors
 
             try
             {
+                var curIndices = new nint[Rank];
+                nint copiedValues = 0;
                 var slice = destination.Slice(_lengths);
-                var enumerator = GetEnumerator();
-                var destEnumerator = slice.GetEnumerator();
-                while (enumerator.MoveNext() && destEnumerator.MoveNext())
+                while (copiedValues < _linearLength)
                 {
-                    destEnumerator.Current = enumerator.Current;
+                    SpanHelpers.Memmove(ref Unsafe.Add(ref slice._reference, SpanHelpers.GetIndex(curIndices, Strides, Lengths)), ref Unsafe.Add(ref _reference, SpanHelpers.GetIndex(curIndices, Strides, Lengths)), Lengths[Rank - 1]);
+                    SpanHelpers.AdjustIndices(Rank - 2, 1, ref curIndices, _lengths);
+                    copiedValues += Lengths[Rank - 1];
                 }
                 retVal = true;
             }
@@ -496,7 +438,7 @@ namespace System.Numerics.Tensors
         /// Defines an implicit conversion of a <see cref="SpanND{T}"/> to a <see cref="ReadOnlySpanND{T}"/>
         /// </summary>
         public static implicit operator ReadOnlySpanND<T>(SpanND<T> span) =>
-            new ReadOnlySpanND<T>(ref span._reference, span._linearLength);
+            new ReadOnlySpanND<T>(ref span._reference, span._lengths, span._strides, span.IsPinned);
 
         /// <summary>
         /// For <see cref="Span{Char}"/>, returns a new instance of string that represents the characters pointed to by the span.
@@ -509,7 +451,7 @@ namespace System.Numerics.Tensors
                 //BUGBUG: FIX
                 //return new string(new ReadOnlySpan<char>(ref Unsafe.As<T, char>(ref _reference), _length));
             }
-            return $"System.Span<{typeof(T).Name}>[{_linearLength}]";
+            return $"System.Numerics.Tensors.SpanND<{typeof(T).Name}>[{_linearLength}]";
         }
 
         /// <summary>
@@ -537,7 +479,6 @@ namespace System.Numerics.Tensors
             if (ranges.Length != Lengths.Length)
                 throw new ArgumentOutOfRangeException(nameof(ranges), "Number of dimensions to slice does not equal the number of dimensions in the span");
 
-            nint length = 1;
             var lengths = new nint[ranges.Length];
             var offsets = new nint[ranges.Length];
 
@@ -545,7 +486,6 @@ namespace System.Numerics.Tensors
             {
                 if (ranges[i].End > Lengths[i])
                     ThrowHelper.ThrowArgumentOutOfRangeException();
-                length *= (nint)(ranges[i].End - ranges[i].Start);
                 lengths[i] = (nint)(ranges[i].End - ranges[i].Start);
                 offsets[i] = (nint)ranges[i].Start;
             }
@@ -556,7 +496,7 @@ namespace System.Numerics.Tensors
                 index += Strides[i] * (offsets[i]);
             }
 
-            return new SpanND<T>(ref Unsafe.Add(ref _reference, index), length, lengths.AsSpan(), _strides);
+            return new SpanND<T>(ref Unsafe.Add(ref _reference, index), lengths.AsSpan(), _strides, _isPinned);
         }
 
         /// <summary>
@@ -573,18 +513,13 @@ namespace System.Numerics.Tensors
             var destination = new T[_linearLength];
             ref T dstRef = ref MemoryMarshal.GetArrayDataReference(destination);
 
-            if (_lengths.Length == 1)
+            var curIndices = new nint[Rank];
+            nint copiedValues = 0;
+            while (copiedValues < _linearLength)
             {
-                SpanHelpers.Memmove(ref dstRef, ref _reference, _linearLength);
-                return destination;
-            }
-
-            // REVIEW: POOR PERFORMANCE. FIX PERF.
-            var enumerator = GetEnumerator();
-            var index = 0;
-            while (enumerator.MoveNext())
-            {
-                destination[index++] = enumerator.Current;
+                SpanHelpers.Memmove(ref Unsafe.Add(ref dstRef, copiedValues), ref Unsafe.Add(ref _reference, SpanHelpers.GetIndex(curIndices, Strides, Lengths)), Lengths[Rank - 1]);
+                SpanHelpers.AdjustIndices(Rank - 2, 1, ref curIndices, _lengths);
+                copiedValues += Lengths[Rank - 1];
             }
 
             return destination;

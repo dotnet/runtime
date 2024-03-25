@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Microsoft.VisualBasic;
 
 #pragma warning disable 8500 // sizeof of managed types
 
@@ -357,6 +358,80 @@ namespace System.Numerics.Tensors
                 first = ref Unsafe.Add(ref first, 1);
                 last = ref Unsafe.Subtract(ref last, 1);
             } while (Unsafe.IsAddressLessThan(ref first, ref last));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint CalculateTotalLength(ref nint[] lengths)
+        {
+            nint totalLength = 1;
+            for (int i = 0; i < lengths.Length; i++)
+            {
+                totalLength *= lengths[i];
+            }
+
+            return totalLength;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint CalculateTotalLength(ref ReadOnlySpan<nint> lengths)
+        {
+            nint totalLength = 1;
+            for (int i = 0; i < lengths.Length; i++)
+            {
+                totalLength *= lengths[i];
+            }
+
+            return totalLength;
+        }
+
+        /// <summary>
+        /// Gets the set of strides that can be used to calculate the offset of n-dimensions in a 1-dimensional layout
+        /// </summary>
+        /// <returns></returns>
+        public static nint[] CalculateStrides(int rank, ReadOnlySpan<nint> lengths)
+        {
+            nint[] strides = new nint[rank];
+
+            nint stride = 1;
+
+            for (int i = strides.Length - 1; i >= 0; i--)
+            {
+                strides[i] = stride;
+                stride *= lengths[i];
+            }
+
+            return strides;
+        }
+
+        /// <summary>
+        /// Calculates the 1-d index for n-d indices in layout specified by strides.
+        /// </summary>
+        /// <param name="indices"></param>
+        /// <param name="strides"></param>
+        /// <param name="lengths"></param>
+        /// <returns></returns>
+        public static nint GetIndex(ReadOnlySpan<nint> indices, ReadOnlySpan<nint> strides, ReadOnlySpan<nint> lengths)
+        {
+            Debug.Assert(strides.Length == indices.Length);
+
+            nint index = 0;
+            for (int i = 0; i < indices.Length; i++)
+            {
+                if (indices[i] >= lengths[i])
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+                index += strides[i] * (indices[i]);
+            }
+
+            return index;
+        }
+
+        public static void AdjustIndices(int curIndex, nint addend, ref nint[] curIndices, ReadOnlySpan<nint> lengths)
+        {
+            if (addend == 0 || curIndex < 0)
+                return;
+            curIndices[curIndex] += addend;
+            AdjustIndices(curIndex - 1, curIndices[curIndex] / lengths[curIndex], ref curIndices, lengths);
+            curIndices[curIndex] = curIndices[curIndex] % lengths[curIndex];
         }
     }
 }

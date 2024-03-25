@@ -16,6 +16,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\ITensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\SpanNDDebugView.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\SpanNDExtensions.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ReadOnlySpanND.cs" />
