@@ -169,7 +169,7 @@ read_operand (unw_addr_space_t as, unw_accessors_t *a,
       ret = dwarf_readu64 (as, a, addr, &u64, arg);
       if (ret < 0)
         return ret;
-      *val = u64;
+      *val = (unw_word_t) u64;
       break;
 
     case ULEB128:
@@ -475,7 +475,7 @@ if (stackerror)                                 \
             case 8:
               if ((ret = dwarf_readu64 (as, a, &tmp1, &u64, arg)) < 0)
                 return ret;
-              tmp2 = u64;
+              tmp2 = (unw_word_t) u64;
               if (operand1 != 8)
                 {
                   if (dwarf_is_big_endian (as))

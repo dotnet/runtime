@@ -102,7 +102,7 @@ parse_cie (unw_addr_space_t as, unw_accessors_t *a, unw_word_t addr,
 
       if ((ret = dwarf_readu64 (as, a, &addr, &u64val, arg)) < 0)
         return ret;
-      len = u64val;
+      len = (unw_word_t) u64val;
       cie_end_addr = addr + len;
       if ((ret = dwarf_readu64 (as, a, &addr, &cie_id, arg)) < 0)
         return ret;
@@ -289,18 +289,18 @@ dwarf_extract_proc_info_from_fde (unw_addr_space_t as, unw_accessors_t *a,
       if ((ret = dwarf_readu64 (as, a, &addr, &u64val, arg)) < 0)
         return ret;
 
-      *addrp = fde_end_addr = addr + u64val;
+      *addrp = fde_end_addr = (unw_word_t) (addr + u64val);
       cie_offset_addr = addr;
 
       if ((ret = dwarf_reads64 (as, a, &addr, &cie_offset, arg)) < 0)
         return ret;
 
-      if (is_cie_id (cie_offset, is_debug_frame))
+      if (is_cie_id ((unw_word_t) cie_offset, is_debug_frame))
         /* ignore CIEs (happens during linear searches) */
         return 0;
 
       if (is_debug_frame)
-        cie_addr = base + cie_offset;
+        cie_addr = (unw_word_t) (base + cie_offset);
       else
         /* DWARF says that the CIE_pointer in the FDE is a
            .debug_frame-relative offset, but the GCC-generated .eh_frame
