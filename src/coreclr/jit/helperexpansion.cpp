@@ -1503,6 +1503,10 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     // Clear gtInitClsHnd as a mark that we've already visited this call
     call->gtInitClsHnd = NO_CLASS_HANDLE;
+
+    // The blocks and statements have been modified enough to make the ending offset invalid.
+    block->bbCodeOffsEnd = BAD_IL_OFFSET;
+
     return true;
 }
 

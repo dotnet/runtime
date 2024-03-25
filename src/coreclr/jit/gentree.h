@@ -4435,10 +4435,6 @@ struct CallArgABIInformation
         , ByteOffset(0)
         , ByteSize(0)
         , ByteAlignment(0)
-#ifdef UNIX_AMD64_ABI
-        , StructIntRegs(0)
-        , StructFloatRegs(0)
-#endif
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         , StructFloatFieldType()
 #endif
@@ -4474,8 +4470,6 @@ public:
     // Unix amd64 will split floating point types and integer types in structs
     // between floating point and general purpose registers. Keep track of that
     // information so we do not need to recompute it later.
-    unsigned                                            StructIntRegs;
-    unsigned                                            StructFloatRegs;
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
 #endif // UNIX_AMD64_ABI
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -4583,7 +4577,7 @@ public:
     bool IsMismatchedArgType() const
     {
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        return isValidIntArgReg(GetRegNum()) && varTypeUsesFloatReg(ArgType);
+        return genIsValidIntReg(GetRegNum()) && varTypeUsesFloatReg(ArgType);
 #else
         return false;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
@@ -6400,6 +6394,28 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsCreateScalarUnsafe() const;
     bool OperIsBitwiseHWIntrinsic() const;
     bool OperIsEmbRoundingEnabled() const;
+
+    bool OperIsConvertMaskToVector() const
+    {
+#if defined(TARGET_XARCH)
+        return GetHWIntrinsicId() == NI_AVX512F_ConvertMaskToVector;
+#elif defined(TARGET_ARM64)
+        return GetHWIntrinsicId() == NI_Sve_ConvertMaskToVector;
+#else
+        return false;
+#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
+    }
+
+    bool OperIsConvertVectorToMask() const
+    {
+#if defined(TARGET_XARCH)
+        return GetHWIntrinsicId() == NI_AVX512F_ConvertVectorToMask;
+#elif defined(TARGET_ARM64)
+        return GetHWIntrinsicId() == NI_Sve_ConvertVectorToMask;
+#else
+        return false;
+#endif
+    }
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;

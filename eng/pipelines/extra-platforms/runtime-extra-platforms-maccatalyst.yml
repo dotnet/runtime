@@ -28,9 +28,9 @@ jobs:
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
@@ -62,9 +62,9 @@ jobs:
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_AppSandbox

@@ -2662,7 +2662,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                         {
                             assert(size == 1);
                             size            = 2;
-                            nextOtherRegNum = genMapIntRegArgNumToRegNum(intArgRegNum);
+                            nextOtherRegNum = genMapIntRegArgNumToRegNum(intArgRegNum, call->GetUnmanagedCallConv());
                         }
                     }
                 }
@@ -2677,7 +2677,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 isRegArg = (intArgRegNum + (size - 1)) < maxRegArgs;
                 if (!passUsingFloatRegs && isRegArg && (size > 1))
                 {
-                    nextOtherRegNum = genMapIntRegArgNumToRegNum(intArgRegNum + 1);
+                    nextOtherRegNum = genMapIntRegArgNumToRegNum(intArgRegNum + 1, call->GetUnmanagedCallConv());
                 }
 
                 // Did we run out of registers when we had a 16-byte struct (size===2) ?
@@ -2816,7 +2816,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 {
                     if (structDesc.IsIntegralSlot(i))
                     {
-                        *nextRegNumPtrs[i] = genMapIntRegArgNumToRegNum(intArgRegNum + structIntRegs);
+                        *nextRegNumPtrs[i] =
+                            genMapIntRegArgNumToRegNum(intArgRegNum + structIntRegs, call->GetUnmanagedCallConv());
                         ++structIntRegs;
                     }
                     else if (structDesc.IsSseSlot(i))
@@ -2830,8 +2831,9 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             else
             {
                 // fill in or update the argInfo table
-                nextRegNum = passUsingFloatRegs ? genMapFloatRegArgNumToRegNum(nextFltArgRegNum)
-                                                : genMapIntRegArgNumToRegNum(intArgRegNum);
+                nextRegNum = passUsingFloatRegs
+                                 ? genMapFloatRegArgNumToRegNum(nextFltArgRegNum)
+                                 : genMapIntRegArgNumToRegNum(intArgRegNum, call->GetUnmanagedCallConv());
             }
 
 #ifdef WINDOWS_AMD64_ABI
@@ -2844,8 +2846,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             arg.AbiInfo.NumRegs = size;
             arg.AbiInfo.SetByteSize(byteSize, argAlignBytes, isStructArg, isFloatHfa);
 #ifdef UNIX_AMD64_ABI
-            arg.AbiInfo.StructIntRegs   = structIntRegs;
-            arg.AbiInfo.StructFloatRegs = structFloatRegs;
 
             if (isStructArg)
             {
