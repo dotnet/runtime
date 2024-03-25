@@ -418,7 +418,7 @@ namespace System.IO.Packaging
                     break;
                 case CompressionOption.SuperFast:
                     {
-                        compressionLevel = CompressionLevel.NoCompression;
+                        compressionLevel = CompressionLevel.Fastest;
                     }
                     break;
 

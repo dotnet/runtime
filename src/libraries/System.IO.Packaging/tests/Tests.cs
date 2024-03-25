@@ -3988,6 +3988,47 @@ namespace System.IO.Packaging.Tests
 
         }
 
+        [Theory]
+#if NET
+        [InlineData(CompressionOption.NotCompressed, CompressionOption.Normal, 0)]
+        [InlineData(CompressionOption.Normal, CompressionOption.Normal, 0)]
+        [InlineData(CompressionOption.Maximum, CompressionOption.Normal, 2)]
+        [InlineData(CompressionOption.Fast, CompressionOption.Normal, 6)]
+        [InlineData(CompressionOption.SuperFast, CompressionOption.Normal, 6)]
+#else
+        [InlineData(CompressionOption.NotCompressed, CompressionOption.NotCompressed, 0)]
+        [InlineData(CompressionOption.Normal, CompressionOption.Normal, 0)]
+        [InlineData(CompressionOption.Maximum, CompressionOption.Maximum, 2)]
+        [InlineData(CompressionOption.Fast, CompressionOption.Fast, 4)]
+        [InlineData(CompressionOption.SuperFast, CompressionOption.SuperFast, 6)]
+#endif
+        public void Roundtrip_Compression_Option(CompressionOption createdCompressionOption, CompressionOption expectedCompressionOption, ushort expectedZipFileBitFlags)
+        {
+            var documentPath = "untitled.txt";
+            Uri partUriDocument = PackUriHelper.CreatePartUri(new Uri(documentPath, UriKind.Relative));
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
+                PackagePart part = package.CreatePart(partUriDocument, "application/text", createdCompressionOption);
+
+                package.Flush();
+                package.Close();
+                (package as IDisposable).Dispose();
+
+                ms.Seek(0, SeekOrigin.Begin);
+
+                var zipBytes = ms.ToArray();
+                var generalBitFlags = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(zipBytes.AsSpan(6));
+
+                package = Package.Open(ms, FileMode.Open, FileAccess.Read);
+                part = package.GetPart(partUriDocument);
+
+                Assert.Equal(expectedZipFileBitFlags, generalBitFlags);
+                Assert.Equal(expectedCompressionOption, part.CompressionOption);
+            }
+        }
+
         private const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
     }
 
