@@ -13929,9 +13929,9 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
 
         case IF_SVE_JD_4A: // .........xxmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
             assert(isVectorRegister(id->idReg1()));       // ttttt
-            assert(isPredicateRegister(id->idReg2())); // ggg
-            assert(isGeneralRegister(id->idReg3()));   // nnnnn
-            assert(isGeneralRegister(id->idReg4()));   // mmmmm
+            assert(isPredicateRegister(id->idReg2()));    // ggg
+            assert(isGeneralRegister(id->idReg3()));      // nnnnn
+            assert(isGeneralRegister(id->idReg4()));      // mmmmm
             assert(isScalableVectorSize(id->idOpSize())); // xx
             // st1h is reserved for scalable B
             assert((id->idIns() == INS_sve_st1h) ? insOptsScalableAtLeastHalf(id->idInsOpt())
@@ -13940,11 +13940,11 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
 
         case IF_SVE_JD_4B: // ..........xmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
             assert(insOptsScalableWords(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));    // ttttt
-            assert(isPredicateRegister(id->idReg2())); // ggg
-            assert(isGeneralRegister(id->idReg3()));   // nnnnn
-            assert(isGeneralRegister(id->idReg4()));   // mmmmm
-            assert(isScalableVectorSize(id->idOpSize()));    // x
+            assert(isVectorRegister(id->idReg1()));       // ttttt
+            assert(isPredicateRegister(id->idReg2()));    // ggg
+            assert(isGeneralRegister(id->idReg3()));      // nnnnn
+            assert(isGeneralRegister(id->idReg4()));      // mmmmm
+            assert(isScalableVectorSize(id->idOpSize())); // x
             break;
 
         case IF_SVE_JJ_4A:   // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
@@ -13969,21 +13969,21 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
         case IF_SVE_JN_3A: // .........xx.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
             imm = emitGetInsSC(id);
             assert(insOptsScalableStandard(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));    // ttttt
-            assert(isPredicateRegister(id->idReg2())); // ggg
-            assert(isGeneralRegister(id->idReg3()));   // nnnnn
-            assert(isScalableVectorSize(id->idOpSize()));    // xx
-            assert(isValidSimm<4>(imm));               // iiii
+            assert(isVectorRegister(id->idReg1()));       // ttttt
+            assert(isPredicateRegister(id->idReg2()));    // ggg
+            assert(isGeneralRegister(id->idReg3()));      // nnnnn
+            assert(isScalableVectorSize(id->idOpSize())); // xx
+            assert(isValidSimm<4>(imm));                  // iiii
             break;
 
         case IF_SVE_JN_3B: // ..........x.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
             imm = emitGetInsSC(id);
             assert(insOptsScalableWords(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));    // ttttt
-            assert(isPredicateRegister(id->idReg2())); // ggg
-            assert(isGeneralRegister(id->idReg3()));   // nnnnn
-            assert(isScalableVectorSize(id->idOpSize()));    // x
-            assert(isValidSimm<4>(imm));               // iiii
+            assert(isVectorRegister(id->idReg1()));       // ttttt
+            assert(isPredicateRegister(id->idReg2()));    // ggg
+            assert(isGeneralRegister(id->idReg3()));      // nnnnn
+            assert(isScalableVectorSize(id->idOpSize())); // x
+            assert(isValidSimm<4>(imm));                  // iiii
             break;
 
         case IF_SVE_HW_4A:   // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
