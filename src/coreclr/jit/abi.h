@@ -76,8 +76,8 @@ public:
 struct ClassifierInfo
 {
     CorInfoCallConvExtension CallConv;
-    bool IsVarArgs;
-    bool HasThis;
+    bool                     IsVarArgs;
+    bool                     HasThis;
 };
 
 class X86Classifier
@@ -127,9 +127,9 @@ public:
 class Arm64Classifier
 {
     const ClassifierInfo& m_info;
-    RegisterQueue m_intRegs;
-    RegisterQueue m_floatRegs;
-    unsigned      m_stackArgSize = 0;
+    RegisterQueue         m_intRegs;
+    RegisterQueue         m_floatRegs;
+    unsigned              m_stackArgSize = 0;
 
 public:
     Arm64Classifier(const ClassifierInfo& info);
@@ -156,8 +156,7 @@ class SwiftABIClassifier
     PlatformClassifier m_classifier;
 
 public:
-    SwiftABIClassifier(const ClassifierInfo& info)
-        : m_classifier(info)
+    SwiftABIClassifier(const ClassifierInfo& info) : m_classifier(info)
     {
     }
 

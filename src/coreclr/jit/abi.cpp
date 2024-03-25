@@ -152,15 +152,14 @@ static unsigned TypeSize(var_types type, ClassLayout* structLayout)
 }
 
 #ifdef TARGET_X86
-X86Classifier::X86Classifier(const ClassifierInfo& info)
-    : m_regs(nullptr, 0)
+X86Classifier::X86Classifier(const ClassifierInfo& info) : m_regs(nullptr, 0)
 {
     switch (info.CallConv)
     {
         case CorInfoCallConvExtension::Thiscall:
         {
             static const regNumberSmall thiscallRegs[] = {REG_ECX};
-            m_regs = RegisterQueue(thiscallRegs, ArrLen(thiscallRegs));
+            m_regs                                     = RegisterQueue(thiscallRegs, ArrLen(thiscallRegs));
             break;
         }
         case CorInfoCallConvExtension::C:
@@ -424,19 +423,19 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
         unsigned size = structLayout->GetSize();
         if (size > 16)
         {
-            slots = 1; // Passed by implicit byref
+            slots      = 1; // Passed by implicit byref
             passedSize = TARGET_POINTER_SIZE;
         }
         else
         {
-            slots = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+            slots      = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
             passedSize = size;
         }
     }
     else
     {
         assert(genTypeSize(type) <= TARGET_POINTER_SIZE);
-        slots = 1;
+        slots      = 1;
         passedSize = genTypeSize(type);
     }
 

@@ -1667,9 +1667,9 @@ void Compiler::lvaClassifyParameterABI()
     }
 
     ClassifierInfo cInfo;
-    cInfo.CallConv = info.compCallConv;
+    cInfo.CallConv  = info.compCallConv;
     cInfo.IsVarArgs = info.compIsVarArgs;
-    cInfo.HasThis = info.compThisArg != BAD_VAR_NUM;
+    cInfo.HasThis   = info.compThisArg != BAD_VAR_NUM;
 
 #ifdef SWIFT_SUPPORT
     if (info.compCallConv == CorInfoCallConvExtension::Swift)
@@ -1693,7 +1693,7 @@ void Compiler::lvaClassifyParameterABI()
 
     for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
     {
-        LclVarDsc* dsc = lvaGetDesc(lclNum);
+        LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
         const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
 
         assert(abiInfo.NumSegments > 0);
@@ -1709,7 +1709,7 @@ void Compiler::lvaClassifyParameterABI()
         for (unsigned i = 0; i < numSegmentsToCompare; i++)
         {
             const ABIPassingSegment& expected = abiInfo.Segments[i];
-            regNumber reg = REG_NA;
+            regNumber                reg      = REG_NA;
             if (i == 0)
             {
                 reg = dsc->GetArgReg();
