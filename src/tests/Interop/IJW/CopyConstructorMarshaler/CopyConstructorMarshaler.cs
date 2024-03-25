@@ -31,7 +31,7 @@ namespace CopyConstructorMarshaler
                 {
                     platformExtra = 1;
                 }
-    
+
                 // PInvoke will copy twice. Once from argument to parameter, and once from the managed to native parameter.
                 Assert.Equal(2 + platformExtra, (int)testMethod.Invoke(testInstance, null));
 
@@ -57,10 +57,20 @@ namespace CopyConstructorMarshaler
                 Console.WriteLine(ex);
                 return 101;
             }
+
+            try
+            {
+                CopyConstructorsInArgumentStackSlots();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return 101;
+            }
+
             return 100;
         }
 
-        [Fact]
         public static void CopyConstructorsInArgumentStackSlots()
         {
             Assembly ijwNativeDll = Assembly.Load("IjwCopyConstructorMarshaler");
