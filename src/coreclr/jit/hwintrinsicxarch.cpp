@@ -2804,7 +2804,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1 = impSIMDPopStack();
 
                 bool isUnsafe = intrinsic == NI_Vector128_ShuffleUnsafe || intrinsic == NI_Vector256_ShuffleUnsafe ||
-                    intrinsic == NI_Vector512_ShuffleUnsafe;
+                                intrinsic == NI_Vector512_ShuffleUnsafe;
                 if (indices->IsVectorConst())
                 {
                     retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isUnsafe);
