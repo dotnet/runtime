@@ -141,11 +141,11 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         }
         else
         {
-            string nativeName = IsWorkloadWithMultiThreadingForDefaultFramework ? "es-ES" : "espa\u00F1ol (Espa\u00F1a)"; // MT does not use JS to get the full name
             Assert.DoesNotContain("Could not create es-ES culture", output);
             Assert.DoesNotContain("invalid culture", output);
             Assert.DoesNotContain("CurrentCulture.NativeName: Invariant Language (Invariant Country)", output);
-            Assert.Contains($"es-ES: Is-LCID-InvariantCulture: False, NativeName: {nativeName}", output);
+            Assert.Contains("es-ES: Is Invariant LCID: False", output);
+            Assert.Contains("NativeName: espa\u00F1ol (Espa\u00F1a)", output);
 
             // ignoring the last line of the output which prints the current culture
         }
