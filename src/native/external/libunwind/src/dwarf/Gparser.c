@@ -882,7 +882,7 @@ apply_reg_state (struct dwarf_cursor *c, struct dwarf_reg_state *rs)
           cfa = c->cfa;
       else
         {
-          regnum = dwarf_to_unw_regnum (rs->reg.val[DWARF_CFA_REG_COLUMN]);
+          regnum = dwarf_to_unw_regnum ((unw_regnum_t) rs->reg.val[DWARF_CFA_REG_COLUMN]);
           if ((ret = unw_get_reg (dwarf_to_cursor(c), regnum, &cfa)) < 0)
             return ret;
         }

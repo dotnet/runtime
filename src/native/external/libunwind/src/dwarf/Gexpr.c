@@ -366,7 +366,7 @@ if (stackerror)                                 \
           Debug (15, "OP_bregx(r%d,0x%lx)\n",
                  (int) operand1, (unsigned long) operand2);
           if ((ret = unw_get_reg (dwarf_to_cursor (c),
-                                  dwarf_to_unw_regnum (operand1), &tmp1)) < 0)
+                                  dwarf_to_unw_regnum ((int) operand1), &tmp1)) < 0)
             return ret;
           push (tmp1 + operand2);
           break;
