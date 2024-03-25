@@ -150,7 +150,7 @@ namespace System.IO.Compression.Tests
         [InlineData(CompressionLevel.NoCompression, 0)]
         [InlineData(CompressionLevel.Optimal, 0)]
         [InlineData(CompressionLevel.SmallestSize, 2)]
-        [InlineData(CompressionLevel.Fastest, 4)]
+        [InlineData(CompressionLevel.Fastest, 6)]
         public static void CreateArchiveEntriesWithBitFlags(CompressionLevel compressionLevel, ushort expectedGeneralBitFlags)
         {
             var testfilename = "testfile";
