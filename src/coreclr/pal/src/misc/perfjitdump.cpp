@@ -7,7 +7,11 @@
 
 #include <cstddef>
 
-#ifdef FEATURE_PERFMAP
+#if defined(__linux__) || defined(__APPLE__)
+#define JITDUMP_SUPPORTED
+#endif
+
+#ifdef JITDUMP_SUPPORTED
 
 #include <fcntl.h>
 #include <pthread.h>
