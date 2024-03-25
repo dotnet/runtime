@@ -1677,6 +1677,13 @@ void StackFrameIterator::CalculateCurrentMethodState()
     m_effectiveSafePointAddress = m_ControlPC;
     m_FramePointer = GetCodeManager()->GetFramePointer(&m_methodInfo, &m_RegDisplay);
 
+#ifdef TARGET_X86
+    if (m_dwFlags & UpdateResumeSp)
+    {
+        m_RegDisplay.ResumeSP = GetCodeManager()->GetResumeSp(&m_methodInfo, &m_RegDisplay);
+    }
+#endif
+
     m_dwFlags |= MethodStateCalculated;
 }
 

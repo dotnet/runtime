@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <IlcExportUnmanagedEntrypoints>true</IlcExportUnmanagedEntrypoints>
     <!--
       For some reason, this particular test hits some case in AddressSanitizer where it fails to intercept methods correctly, causing failures.

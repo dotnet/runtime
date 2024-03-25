@@ -17,7 +17,7 @@
 #define STDCALL
 #endif
 
-#define REDHAWK_CALLCONV FASTCALL
+#define F_CALL_CONV FASTCALL
 #define QCALLTYPE
 
 #ifdef _MSC_VER
@@ -219,6 +219,46 @@ typedef uint8_t CODE_LOCATION;
     _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_DECL_ALTNAME(FCALL_METHOD_NAME_((__VA_ARGS__)), FCALL_ARGHELPER_STACKSIZE(__VA_ARGS__)))))
 #define FCIMPL_RENAME(_rettype, ...) \
     _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_IMPL_ALTNAME(FCALL_METHOD_NAME_((__VA_ARGS__)), FCALL_ARGHELPER_STACKSIZE(__VA_ARGS__)))))
+#define FCIMPL_RENAME_ARGSIZE(_rettype, _method, _argSize) \
+    _Pragma(FCALL_XSTRINGIFY(comment (linker, FCALL_XSTRINGIFY(/alternatename:_method=@_method##_FCall@_argSize))))
+
+#define FCIMPL1_F(_rettype, _method, a) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 4) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (a) \
+    {
+#define FCIMPL1_D(_rettype, _method, a) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 8) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (a) \
+    {
+#define FCIMPL1_L FCIMPL1_D
+#define FCIMPL2_FF(_rettype, _method, a, b) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 8) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (b, a) \
+    {
+#define FCIMPL2_DD(_rettype, _method, a, b) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 16) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (b, a) \
+    {
+#define FCIMPL2_FI(_rettype, _method, a, b) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 8) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, b) \
+    {
+#define FCIMPL2_DI(_rettype, _method, a, b) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 12) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, b) \
+    {
+#define FCIMPL3_FFF(_rettype, _method, a, b, c) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 12) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (c, b, a) \
+    {
+#define FCIMPL3_DDD(_rettype, _method, a, b, c) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 24) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (c, b, a) \
+    {
+#define FCIMPL3_ILL(_rettype, _method, a, b, c) \
+    FCIMPL_RENAME_ARGSIZE(_rettype, _method, 20) \
+    EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, c, b) \
+    {
 
 #else
 
@@ -228,11 +268,40 @@ typedef uint8_t CODE_LOCATION;
 #define FCALL_METHOD_ARGS(dummy, ...) (__VA_ARGS__)
 #define FCALL_METHOD_ARGS_(tuple) FCALL_METHOD_ARGS tuple
 
+#define FCIMPL1_F(_rettype, _method, a) \
+    EXTERN_C _rettype F_CALL_CONV _method (a) \
+    {
+#define FCIMPL1_D(_rettype, _method, a) \
+    EXTERN_C _rettype F_CALL_CONV _method (a) \
+    {
+#define FCIMPL1_L FCIMPL1_D
+#define FCIMPL2_FF(_rettype, _method, a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    {
+#define FCIMPL2_DD(_rettype, _method, a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    {
+#define FCIMPL2_FI(_rettype, _method, a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    {
+#define FCIMPL2_DI(_rettype, _method, a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    {
+#define FCIMPL3_FFF(_rettype, _method, a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method (a, b, c) \
+    {
+#define FCIMPL3_DDD(_rettype, _method, a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method (a, b, c) \
+    {
+#define FCIMPL3_ILL(_rettype, _method, a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method (a, b, c) \
+    {
+
 #endif
 
 #define FCDECL_(_rettype, ...) \
     FCDECL_RENAME(_rettype, __VA_ARGS__) \
-    EXTERN_C _rettype REDHAWK_CALLCONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__))
+    EXTERN_C _rettype F_CALL_CONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__))
 #define FCDECL0(_rettype, _method) FCDECL_(_rettype, _method)
 #define FCDECL1(_rettype, _method, a) FCDECL_(_rettype, _method, a)
 #define FCDECL2(_rettype, _method, a, b) FCDECL_(_rettype, _method, a, b)
@@ -242,7 +311,7 @@ typedef uint8_t CODE_LOCATION;
 
 #define FCIMPL_(_rettype, ...) \
     FCIMPL_RENAME(_rettype, __VA_ARGS__) \
-    EXTERN_C _rettype REDHAWK_CALLCONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__)) \
+    EXTERN_C _rettype F_CALL_CONV FCALL_METHOD_NAME_((__VA_ARGS__)) FCALL_METHOD_ARGS_((__VA_ARGS__)) \
     {
 #define FCIMPL0(_rettype, _method) FCIMPL_(_rettype, _method)
 #define FCIMPL1(_rettype, _method, a) FCIMPL_(_rettype, _method, a)
