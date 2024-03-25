@@ -130,7 +130,7 @@ namespace Mono.Linker
 				MapType (nested);
 		}
 
-		public List<(TypeReference, List<InterfaceImplementation>)>? GetRecursiveInterfaces(TypeDefinition type)
+		internal List<(TypeReference, List<InterfaceImplementation>)>? GetRecursiveInterfaces(TypeDefinition type)
 		{
 			if (interfaces.TryGetValue (type, out var value))
 				return value;
@@ -151,7 +151,7 @@ namespace Mono.Linker
 				var type = Context.TryResolve (typeRef);
 				if (type is null)
 					return;
-				// GeVt all explicit interfaces of this type
+				// Get all explicit interfaces of this type
 				foreach (var directIface in type.Interfaces) {
 					//var directlyImplementedType = Context.Resolve (directIface.InterfaceType);
 					var directlyImplementedType = directIface.InterfaceType.TryInflateFrom (typeRef, Context);
