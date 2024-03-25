@@ -6,9 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Microsoft.DotNet.Cli.Build.Framework
@@ -315,33 +313,32 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return prefix + " " + info.Arguments;
         }
 
+        private static DateTime _initialTime = DateTime.Now;
+
+        private string GetFormattedTime()
+        {
+            const string TimeSpanFormat = @"hh\:mm\:ss\.fff";
+            return (DateTime.Now - _initialTime).ToString(TimeSpanFormat);
+        }
+
         private void ReportExecBegin()
         {
-            BuildReporter.BeginSection("EXEC", FormatProcessInfo(Process.StartInfo, includeWorkingDirectory: false));
+            string message = FormatProcessInfo(Process.StartInfo, includeWorkingDirectory: false);
+            Console.WriteLine($"[EXEC >] [....] [{GetFormattedTime()}] {message}");
         }
 
         private void ReportExecWaitOnExit()
         {
-            BuildReporter.SectionComment("EXEC", $"Waiting for process {Process.Id} to exit...");
+            string message = $"Waiting for process {Process.Id} to exit...";
+            Console.WriteLine($"[EXEC -] [....] [{GetFormattedTime()}] {message}");
         }
 
         private void ReportExecEnd(int exitCode, bool fExpectedToFail)
         {
-            bool success = exitCode == 0;
-            string msgExpectedToFail = "";
-
-            if (fExpectedToFail)
-            {
-                success = !success;
-                msgExpectedToFail = "failed as expected and ";
-            }
-
-            var message = $"{FormatProcessInfo(Process.StartInfo, includeWorkingDirectory: !success)} {msgExpectedToFail}exited with {exitCode}";
-
-            BuildReporter.EndSection(
-                "EXEC",
-                success ? message.Green() : message.Red().Bold(),
-                success);
+            bool success = fExpectedToFail ? exitCode != 0 : exitCode == 0;
+            var status = success ? " OK " : "FAIL";
+            var message = $"{FormatProcessInfo(Process.StartInfo, includeWorkingDirectory: !success)} exited with {exitCode}. Expected: {(fExpectedToFail ? "non-zero" : "0")}";
+            Console.WriteLine($"[EXEC <] [{status}] [{GetFormattedTime()}] {message}");
         }
 
         private void ThrowIfRunning([CallerMemberName] string memberName = null)

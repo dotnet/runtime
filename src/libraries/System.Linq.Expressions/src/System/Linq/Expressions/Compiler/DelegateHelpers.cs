@@ -122,13 +122,10 @@ namespace System.Linq.Expressions.Compiler
                 const MethodImplAttributes implAttributes = MethodImplAttributes.Runtime | MethodImplAttributes.Managed;
                 const MethodAttributes invokeAttributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual;
 
-#pragma warning disable IL3050
-                // Suppress analyzer warnings since they don't currently support feature flags
                 TypeBuilder builder = AssemblyGen.DefineDelegateType("Delegate" + types.Length);
                 builder.DefineConstructor(ctorAttributes, CallingConventions.Standard, delegateCtorSignature).SetImplementationFlags(implAttributes);
                 builder.DefineMethod("Invoke", invokeAttributes, returnType, parameters).SetImplementationFlags(implAttributes);
                 return builder.CreateTypeInfo();
-#pragma warning restore IL3050
             }
             else
             {

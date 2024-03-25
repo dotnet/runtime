@@ -824,14 +824,13 @@ public:
     // during object construction.
     void CheckRunClassInitAsIfConstructingThrowing();
 
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    static bool IsOnlyOneField(MethodTable * pMT);
 #if defined(TARGET_LOONGARCH64)
-    static bool IsLoongArch64OnlyOneField(MethodTable * pMT);
     static int GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
-#endif
-
-#if defined(TARGET_RISCV64)
-    static bool IsRiscV64OnlyOneField(MethodTable * pMT);
+#elif defined(TARGET_RISCV64)
     static int GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
+#endif
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)
@@ -1182,6 +1181,8 @@ public:
         LIMITED_METHOD_CONTRACT;
         return !HasInstantiation() || IsGenericTypeDefinition();
     }
+
+    PTR_MethodTable GetTypicalMethodTable();
 
     BOOL HasSameTypeDefAs(MethodTable *pMT);
 

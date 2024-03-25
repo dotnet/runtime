@@ -1806,6 +1806,7 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
 
 void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                                      const BasicBlock* nextBlock /* = nullptr */,
+                                     bool              printEdgeLikelihoods /* = true */,
                                      int               blockTargetFieldWidth /* = 21 */,
                                      int               ibcColWidth /* = 0 */)
 {
@@ -1931,27 +1932,41 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
     // Call `dspBlockNum()` to get the block number to print, and update `printedBlockWidth` with the width
     // of the generated string. Note that any computation using `printedBlockWidth` must be done after all
     // calls to this function.
-    auto dspBlockNum = [terseNext, nextBlock, &printedBlockWidth](const BasicBlock* b) -> const char* {
+    auto dspBlockNum = [printEdgeLikelihoods, terseNext, nextBlock,
+                        &printedBlockWidth](const FlowEdge* e) -> const char* {
         static char buffers[3][64]; // static array of 3 to allow 3 concurrent calls in one printf()
         static int  nextBufferIndex = 0;
 
-        auto& buffer    = buffers[nextBufferIndex];
-        nextBufferIndex = (nextBufferIndex + 1) % ArrLen(buffers);
+        auto& buffer              = buffers[nextBufferIndex];
+        nextBufferIndex           = (nextBufferIndex + 1) % ArrLen(buffers);
+        const size_t sizeOfBuffer = ArrLen(buffer);
+        int          written;
 
+        const BasicBlock* b = e->getDestinationBlock();
         if (b == nullptr)
         {
-            _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), "NULL");
-            printedBlockWidth += 4;
+            written = _snprintf_s(buffer, sizeOfBuffer, sizeOfBuffer, "NULL");
+            printedBlockWidth += written;
         }
         else if (terseNext && (b == nextBlock))
         {
-            _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), "*");
-            printedBlockWidth += 1;
+            written = _snprintf_s(buffer, sizeOfBuffer, sizeOfBuffer, "*");
+            printedBlockWidth += written;
         }
         else
         {
-            _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), FMT_BB, b->bbNum);
-            printedBlockWidth += 2 /* BB */ + max(CountDigits(b->bbNum), 2);
+            written = _snprintf_s(buffer, sizeOfBuffer, sizeOfBuffer, FMT_BB, b->bbNum);
+            printedBlockWidth += written;
+        }
+
+        if (printEdgeLikelihoods)
+        {
+            if (e->hasLikelihood())
+            {
+                written = _snprintf_s(buffer + written, sizeOfBuffer - written, sizeOfBuffer - written,
+                                      "(" FMT_WT_NARROW ")", e->getLikelihood());
+                printedBlockWidth += written;
+            }
         }
 
         return buffer;
@@ -1968,19 +1983,19 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
         {
             case BBJ_COND:
                 printedBlockWidth = 3 /* "-> " */ + 1 /* comma */ + 9 /* kind */;
-                printf("-> %s,%s", dspBlockNum(block->GetTrueTargetRaw()), dspBlockNum(block->GetFalseTargetRaw()));
+                printf("-> %s,%s", dspBlockNum(block->GetTrueEdgeRaw()), dspBlockNum(block->GetFalseEdgeRaw()));
                 printf("%*s ( cond )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_CALLFINALLY:
                 printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
-                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
+                printf("-> %s", dspBlockNum(block->GetTargetEdgeRaw()));
                 printf("%*s (callf )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_CALLFINALLYRET:
                 printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
-                printf("-> %s", dspBlockNum(block->GetFinallyContinuation()));
+                printf("-> %s", dspBlockNum(block->GetTargetEdgeRaw()));
                 printf("%*s (callfr)", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
@@ -1988,13 +2003,13 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                 const char* label;
                 label             = (flags & BBF_KEEP_BBJ_ALWAYS) ? "ALWAYS" : "always";
                 printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
-                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
+                printf("-> %s", dspBlockNum(block->GetTargetEdgeRaw()));
                 printf("%*s (%s)", blockTargetFieldWidth - printedBlockWidth, "", label);
                 break;
 
             case BBJ_LEAVE:
                 printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
-                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
+                printf("-> %s", dspBlockNum(block->GetTargetEdgeRaw()));
                 printf("%*s (leave )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
@@ -2019,7 +2034,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                     for (unsigned i = 0; i < jumpCnt; i++)
                     {
                         printedBlockWidth += 1 /* space/comma */;
-                        printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]->getDestinationBlock()));
+                        printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
                     }
                 }
 
@@ -2039,13 +2054,13 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
 
             case BBJ_EHFILTERRET:
                 printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
-                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
+                printf("-> %s", dspBlockNum(block->GetTargetEdgeRaw()));
                 printf("%*s (fltret)", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_EHCATCHRET:
                 printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
-                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
+                printf("-> %s", dspBlockNum(block->GetTargetEdgeRaw()));
                 printf("%*s ( cret )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
@@ -2071,7 +2086,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                 for (unsigned i = 0; i < jumpCnt; i++)
                 {
                     printedBlockWidth += 1 /* space/comma */;
-                    printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]->getDestinationBlock()));
+                    printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
 
                     const bool isDefault = jumpSwt->bbsHasDefault && (i == jumpCnt - 1);
                     if (isDefault)
@@ -2321,10 +2336,16 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
     maxBlockNumWidth          = max(maxBlockNumWidth, 2);
     int padWidth              = maxBlockNumWidth - 2; // Account for functions with a large number of blocks.
 
+    const bool printEdgeLikelihoods = true; // TODO: parameterize?
+
+    // Edge likelihoods are printed as "(0.123)", so take 7 characters maxmimum.
+    int edgeLikelihoodsWidth = printEdgeLikelihoods ? 7 : 0;
+
     // Calculate the field width allocated for the block target. The field width is allocated to allow for two blocks
     // for BBJ_COND. It does not include any extra space for variable-sized BBJ_EHFINALLYRET and BBJ_SWITCH.
-    int blockTargetFieldWidth = 3 /* "-> " */ + 2 /* BB */ + maxBlockNumWidth + 1 /* comma */ + 2 /* BB */ +
-                                maxBlockNumWidth + 1 /* space */ + 8 /* kind: "(xxxxxx)" */;
+    int blockTargetFieldWidth = 3 /* "-> " */ + 2 /* BB */ + maxBlockNumWidth + edgeLikelihoodsWidth + 1 /* comma */ +
+                                2 /* BB */ + maxBlockNumWidth + edgeLikelihoodsWidth + 1 /* space */ +
+                                8 /* kind: "(xxxxxx)" */;
 
     // clang-format off
 
@@ -2332,7 +2353,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
     printf("------%*s-------------------------------------%*s--------------------------%*s--------------------------\n",
         padWidth, "------------", //
         ibcColWidth, "------------", //
-        blockTargetFieldWidth, "-----------------------"); //
+        blockTargetFieldWidth, "----------------------------------------------"); //
     printf("BBnum %*sBBid ref try hnd %s     weight  %*s%s [IL range]   [jump]%*s [EH region]        [flags]\n",
         padWidth, "",
         (fgPredsComputed        ? "preds      "
@@ -2345,7 +2366,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
     printf("------%*s-------------------------------------%*s--------------------------%*s--------------------------\n",
         padWidth, "------------", //
         ibcColWidth, "------------", //
-        blockTargetFieldWidth, "-----------------------"); //
+        blockTargetFieldWidth, "----------------------------------------------"); //
 
     // clang-format on
 
@@ -2377,9 +2398,9 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         {
             printf("~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~"
                    "~~~~~~~~~~~~~~~~\n",
-                   padWidth, "~~~~~~~~~~~~",                          //
-                   ibcColWidth, "~~~~~~~~~~~~",                       //
-                   blockTargetFieldWidth, "~~~~~~~~~~~~~~~~~~~~~~~"); //
+                   padWidth, "~~~~~~~~~~~~",                                                 //
+                   ibcColWidth, "~~~~~~~~~~~~",                                              //
+                   blockTargetFieldWidth, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"); //
         }
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -2387,13 +2408,13 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         {
             printf("++++++%*s+++++++++++++++++++++++++++++++++++++%*s++++++++++++++++++++++++++%*s++++++++++"
                    "++++++++++++++++ funclets follow\n",
-                   padWidth, "++++++++++++",                          //
-                   ibcColWidth, "++++++++++++",                       //
-                   blockTargetFieldWidth, "+++++++++++++++++++++++"); //
+                   padWidth, "++++++++++++",                                                 //
+                   ibcColWidth, "++++++++++++",                                              //
+                   blockTargetFieldWidth, "++++++++++++++++++++++++++++++++++++++++++++++"); //
         }
 #endif // FEATURE_EH_FUNCLETS
 
-        fgTableDispBasicBlock(block, nextBlock, blockTargetFieldWidth, ibcColWidth);
+        fgTableDispBasicBlock(block, nextBlock, printEdgeLikelihoods, blockTargetFieldWidth, ibcColWidth);
 
         if (block == lastBlock)
         {
@@ -2403,9 +2424,9 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
 
     printf("------%*s-------------------------------------%*s--------------------------%*s------------------"
            "--------\n",
-           padWidth, "------------",                          //
-           ibcColWidth, "------------",                       //
-           blockTargetFieldWidth, "-----------------------"); //
+           padWidth, "------------",                                                 //
+           ibcColWidth, "------------",                                              //
+           blockTargetFieldWidth, "----------------------------------------------"); //
 
     if (dumpTrees)
     {
@@ -3390,19 +3411,16 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                 GenTreeFlags handleKind = op1->GetIconHandleFlag();
 
                 // Some of these aren't handles to invariant data...
-                if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
-                    (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
-                    (handleKind == GTF_ICON_FTN_ADDR) ||   // Pointer to a potentially mutable VM slot
-                    (handleKind == GTF_ICON_GLOBAL_PTR))   // Pointer to mutable data from the VM state
+                if (GenTree::HandleKindDataIsInvariant(handleKind) && (handleKind != GTF_ICON_FTN_ADDR))
+                {
+                    expectedFlags |= GTF_IND_INVARIANT;
+                }
+                else
                 {
                     // For statics, we expect the GTF_GLOB_REF to be set. However, we currently
                     // fail to set it in a number of situations, and so this check is disabled.
                     // TODO: enable checking of GTF_GLOB_REF.
                     // expectedFlags |= GTF_GLOB_REF;
-                }
-                else // All the other handle indirections are considered invariant
-                {
-                    expectedFlags |= GTF_IND_INVARIANT;
                 }
 
                 // Currently we expect all indirections with constant addresses to be nonfaulting.

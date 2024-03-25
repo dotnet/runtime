@@ -17,7 +17,8 @@ steps:
       ${{ parameters.subsetArg }} \
       ${{ parameters.packagingArgs }} \
       $(CommonMSBuildArgs) \
-      $(LiveOverridePathArgs) \
+      $(librariesBuildConfigArg) \
+      $(runtimeBuildConfigArg) \
       /bl:artifacts/log/$(_BuildConfig)/msbuild.${{ parameters.packageType }}.installers.binlog
   displayName: Package ${{ parameters.packageStepDescription }} - ${{ parameters.packageType }}
   target: ${{ parameters.target }}

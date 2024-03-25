@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public JSAsyncTaskScheduler? AsyncTaskScheduler;
 
         public static MainThreadingMode MainThreadingMode = MainThreadingMode.DeputyThread;
-        public static JSThreadBlockingMode ThreadBlockingMode = JSThreadBlockingMode.NoBlockingWait;
+        public static JSThreadBlockingMode ThreadBlockingMode = JSThreadBlockingMode.AllowBlockingWaitInAsyncCode;
         public static JSThreadInteropMode ThreadInteropMode = JSThreadInteropMode.SimpleSynchronousJSInterop;
         public bool IsPendingSynchronousCall;
 

@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
+import BuildConfiguration from "consts:configuration";
 
 import { DotnetModuleInternal, CharPtrNull, MainThreadingMode } from "./types/internal";
-import { ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, ENVIRONMENT_IS_WORKER } from "./globals";
+import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert } from "./globals";
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -20,7 +21,7 @@ import { wait_for_all_assets } from "./assets";
 import { replace_linker_placeholders } from "./exports-binding";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
-import { mono_log_debug, mono_log_error, mono_log_warn } from "./logging";
+import { mono_log_debug, mono_log_error, mono_log_info, mono_log_warn } from "./logging";
 
 // threads
 import { populateEmscriptenPool, mono_wasm_init_threads, init_finalizer_thread } from "./pthreads";
@@ -269,14 +270,23 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
 
         Module.runtimeKeepalivePush();
+        if (WasmEnableThreads && BuildConfiguration === "Debug" && globalThis.setInterval) globalThis.setInterval(() => {
+            mono_log_info("UI thread is alive!");
+        }, 3000);
 
-        if (WasmEnableThreads && runtimeHelpers.config.mainThreadingMode == MainThreadingMode.DeputyThread) {
+        if (WasmEnableThreads &&
+            (runtimeHelpers.config.mainThreadingMode == MainThreadingMode.DeputyThread
+                || runtimeHelpers.config.mainThreadingMode == MainThreadingMode.DeputyAndIOThreads)) {
             // this will create thread and call start_runtime() on it
             runtimeHelpers.monoThreadInfo = monoThreadInfo;
             runtimeHelpers.isManagedRunningOnCurrentThread = false;
             update_thread_info();
             runtimeHelpers.managedThreadTID = tcwraps.mono_wasm_create_deputy_thread();
             runtimeHelpers.proxyGCHandle = await runtimeHelpers.afterMonoStarted.promise;
+
+            if (WasmEnableThreads && runtimeHelpers.config.mainThreadingMode == MainThreadingMode.DeputyAndIOThreads) {
+                runtimeHelpers.ioThreadTID = tcwraps.mono_wasm_create_io_thread();
+            }
 
             // TODO make UI thread not managed
             tcwraps.mono_wasm_register_ui_thread();
@@ -291,8 +301,8 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             await start_runtime();
         }
 
-        if (ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER) {
-            Module.runtimeKeepalivePush();
+        if (WasmEnableThreads && runtimeHelpers.config.mainThreadingMode == MainThreadingMode.DeputyAndIOThreads) {
+            await runtimeHelpers.afterIOStarted.promise;
         }
 
         runtimeList.registerRuntime(exportedRuntimeAPI);

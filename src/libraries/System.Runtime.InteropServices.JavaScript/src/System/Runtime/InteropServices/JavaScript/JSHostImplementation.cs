@@ -101,7 +101,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 CancelablePromise.CancelPromise((Task<JSObject>)s!);
             }, jsTask))
             {
-                return await jsTask.ConfigureAwait(true);
+                return await jsTask.ConfigureAwait(false);
             }
         }
 

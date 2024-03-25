@@ -69,6 +69,18 @@
 #error Mono requires _Noreturn (C11 or newer)
 #endif
 
+G_ATTR_NORETURN
+static inline void eg_unreachable (void) {
+#if defined(_MSC_VER)
+	 __assume(0);
+#elif defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 5)))
+	__builtin_unreachable();
+#else
+	for (;;)
+	;
+#endif
+}
+
 #ifdef __cplusplus
 
 #define g_cast monoeg_g_cast // in case not inlined (see eglib-remap.h)
@@ -735,14 +747,13 @@ G_ATTR_NORETURN void
 const char *   g_get_assertion_message (void);
 
 #ifndef DISABLE_ASSERT_MESSAGES
-/* The for (;;) tells gc thats g_error () doesn't return, avoiding warnings */
-#define g_error(...) do { g_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, __VA_ARGS__); for (;;); } while (0)
+#define g_error(...) do { g_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, __VA_ARGS__); eg_unreachable (); } while (0)
 #define g_critical(...) g_log (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, __VA_ARGS__)
 #define g_warning(...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define g_message(...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, __VA_ARGS__)
 #define g_debug(...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #else
-#define g_error(...)    do { g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, __FILE__, __LINE__); for (;;); } while (0)
+#define g_error(...)    do { g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, __FILE__, __LINE__); eg_unreachable (); } while (0)
 #define g_critical(...) g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, __FILE__, __LINE__)
 #define g_warning(...)  g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, __FILE__, __LINE__)
 #define g_message(...)  g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, __FILE__, __LINE__)
@@ -783,14 +794,6 @@ gpointer g_convert_error_quark(void);
 #else
 #define G_LIKELY(x) (x)
 #define G_UNLIKELY(x) (x)
-#endif
-
-#if defined(_MSC_VER)
-#define  eg_unreachable() __assume(0)
-#elif defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 5)))
-#define  eg_unreachable() __builtin_unreachable()
-#else
-#define  eg_unreachable()
 #endif
 
 /* g_assert is a boolean expression; the precise value is not preserved, just true or false. */

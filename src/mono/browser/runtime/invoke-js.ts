@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
-import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid } from "./marshal";
+import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid, get_sync_done_semaphore_ptr } from "./marshal";
 import { setI32_unchecked, receiveWorkerHeapViews, forceThreadMemoryViewRefresh } from "./memory";
 import { stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
@@ -17,6 +17,8 @@ import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
+import { threads_c_functions as tcwraps } from "./cwraps";
+import { monoThreadInfo } from "./pthreads";
 
 export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 
@@ -35,7 +37,7 @@ export function mono_wasm_bind_js_import(signature: JSFunctionSignature, is_exce
     }
 }
 
-export function mono_wasm_invoke_jsimport(signature: JSFunctionSignature, args: JSMarshalerArguments) {
+export function mono_wasm_invoke_jsimport_MT(signature: JSFunctionSignature, args: JSMarshalerArguments) {
     if (!WasmEnableThreads) return;
     assert_js_interop();
 
@@ -137,7 +139,6 @@ function bind_js_import(signature: JSFunctionSignature): Function {
         forceThreadMemoryViewRefresh();
         bound_fn(args);
     }
-
     function sync_bound_fn(args: JSMarshalerArguments): void {
         const previous = runtimeHelpers.isPendingSynchronousCall;
         try {
@@ -150,14 +151,29 @@ function bind_js_import(signature: JSFunctionSignature): Function {
             runtimeHelpers.isPendingSynchronousCall = previous;
         }
     }
+    function async_bound_fn_ui(args: JSMarshalerArguments): void {
+        invoke_later_when_on_ui_thread_async(() => async_bound_fn(args));
+    }
+    function sync_bound_fn_ui(args: JSMarshalerArguments): void {
+        invoke_later_when_on_ui_thread_sync(() => sync_bound_fn(args), args);
+    }
 
     let wrapped_fn: WrappedJSFunction = bound_fn;
     if (WasmEnableThreads) {
-        if (is_async || is_discard_no_wait) {
-            wrapped_fn = async_bound_fn;
-        }
-        else {
-            wrapped_fn = sync_bound_fn;
+        if (monoThreadInfo.isUI) {
+            if (is_async || is_discard_no_wait) {
+                wrapped_fn = async_bound_fn_ui;
+            }
+            else {
+                wrapped_fn = sync_bound_fn_ui;
+            }
+        } else {
+            if (is_async || is_discard_no_wait) {
+                wrapped_fn = async_bound_fn;
+            }
+            else {
+                wrapped_fn = sync_bound_fn;
+            }
         }
     }
 
@@ -337,6 +353,10 @@ type BindingClosure = {
 }
 
 export function mono_wasm_invoke_js_function(bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
+    invoke_later_when_on_ui_thread_sync(() => mono_wasm_invoke_js_function_impl(bound_function_js_handle, args), args);
+}
+
+export function mono_wasm_invoke_js_function_impl(bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
     loaderHelpers.assert_runtime_running();
     const bound_fn = mono_wasm_get_jsobj_from_js_handle(bound_function_js_handle);
     mono_assert(bound_fn && typeof (bound_fn) === "function" && bound_fn[bound_js_function_symbol], () => `Bound function handle expected ${bound_function_js_handle}`);
@@ -491,5 +511,31 @@ export function assert_c_interop(): void {
         mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
     } else {
         mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
+    }
+}
+
+// make sure we are not blocking em_task_queue_execute up the call stack
+// so that when we call back to managed, the FS calls could still be processed by the UI thread
+// see also emscripten_yield which can process the FS calls inside the spin wait
+export function invoke_later_when_on_ui_thread_sync(fn: Function, args: JSMarshalerArguments) {
+    if (WasmEnableThreads && monoThreadInfo.isUI) {
+        Module.safeSetTimeout(() => {
+            fn();
+            // see also mono_threads_wasm_sync_run_in_target_thread_vii_cb
+            const done_semaphore = get_sync_done_semaphore_ptr(args);
+            tcwraps.mono_threads_wasm_sync_run_in_target_thread_done(done_semaphore);
+        }, 0);
+    } else {
+        fn();
+    }
+}
+
+// make sure we are not blocking em_task_queue_execute up the call stack
+// so that when we call back to managed, the FS calls could still be processed by the UI thread
+export function invoke_later_when_on_ui_thread_async(fn: Function) {
+    if (WasmEnableThreads && monoThreadInfo.isUI) {
+        Module.safeSetTimeout(fn, 0);
+    } else {
+        fn();
     }
 }

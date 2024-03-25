@@ -17,3 +17,4 @@ export {
 } from "./worker-thread";
 
 export { mono_wasm_start_deputy_thread_async } from "./deputy-thread";
+export { mono_wasm_start_io_thread_async } from "./io-thread";

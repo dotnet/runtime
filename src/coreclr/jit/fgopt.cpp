@@ -620,7 +620,6 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         else
                         {
                             FlowEdge* const newEdge = fgAddRefPred(newTryEntry->Next(), newTryEntry);
-                            newTryEntry->SetFlags(BBF_NONE_QUIRK);
                             newTryEntry->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
                         }
 
@@ -1309,17 +1308,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     assert(block->KindIs(bNext->GetKind()));
 
-    if (block->KindIs(BBJ_ALWAYS))
-    {
-        // Propagate BBF_NONE_QUIRK flag
-        block->CopyFlags(bNext, BBF_NONE_QUIRK);
-    }
-    else
-    {
-        // It's no longer a BBJ_ALWAYS; remove the BBF_NONE_QUIRK flag.
-        block->RemoveFlags(BBF_NONE_QUIRK);
-    }
-
 #if DEBUG
     if (verbose && 0)
     {
@@ -1548,16 +1536,12 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 if (block->TrueTargetIs(bDest))
                 {
                     assert(!block->FalseTargetIs(bDest));
-                    fgRemoveRefPred(block->GetTrueEdge());
-                    FlowEdge* const trueEdge = fgAddRefPred(bDest->GetTarget(), block, block->GetTrueEdge());
-                    block->SetTrueEdge(trueEdge);
+                    fgRedirectTrueEdge(block, bDest->GetTarget());
                 }
                 else
                 {
                     assert(block->FalseTargetIs(bDest));
-                    fgRemoveRefPred(block->GetFalseEdge());
-                    FlowEdge* const falseEdge = fgAddRefPred(bDest->GetTarget(), block, block->GetFalseEdge());
-                    block->SetFalseEdge(falseEdge);
+                    fgRedirectFalseEdge(block, bDest->GetTarget());
                 }
                 break;
 
@@ -1617,15 +1601,6 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             {
                 assert(block == fgFirstBB);
                 if (!block->JumpsToNext())
-                {
-                    break;
-                }
-            }
-            else
-            {
-                // TODO-NoFallThrough: Once BBJ_COND blocks have pointers to their false branches,
-                // allow removing empty BBJ_ALWAYS and pointing bPrev's false branch to block's target.
-                if (bPrev->bbFallsThrough() && !block->JumpsToNext())
                 {
                     break;
                 }
@@ -1862,23 +1837,21 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             // Update edge likelihoods
             // Note old edge may still be "in use" so we decrease its likelihood.
             //
-            if (oldEdge->hasLikelihood())
+
+            // We want to move this much likelihood from old->new
+            //
+            const weight_t likelihoodFraction = oldEdge->getLikelihood() / (oldEdge->getDupCount() + 1);
+
+            if (newEdge->getDupCount() == 1)
             {
-                // We want to move this much likelihood from old->new
-                //
-                const weight_t likelihoodFraction = oldEdge->getLikelihood() / (oldEdge->getDupCount() + 1);
-
-                if (newEdge->getDupCount() == 1)
-                {
-                    newEdge->setLikelihood(likelihoodFraction);
-                }
-                else
-                {
-                    newEdge->addLikelihood(likelihoodFraction);
-                }
-
-                oldEdge->addLikelihood(-likelihoodFraction);
+                newEdge->setLikelihood(likelihoodFraction);
             }
+            else
+            {
+                newEdge->addLikelihood(likelihoodFraction);
+            }
+
+            oldEdge->addLikelihood(-likelihoodFraction);
 
             // we optimized a Switch label - goto REPEAT_SWITCH to follow this new jump
             modified = true;
@@ -1932,6 +1905,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         {
             printf("\nRemoving a switch jump with a single target (" FMT_BB ")\n", block->bbNum);
             printf("BEFORE:\n");
+            fgDispBasicBlocks();
         }
 #endif // DEBUG
 
@@ -2478,11 +2452,11 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // Fix up block's flow.
     // Assume edge likelihoods transfer over.
     //
-    fgRemoveRefPred(block->GetTargetEdge());
+    fgRedirectTargetEdge(block, target->GetTrueTarget());
+    block->GetTargetEdge()->setLikelihood(target->GetTrueEdge()->getLikelihood());
 
-    FlowEdge* const trueEdge  = fgAddRefPred(target->GetTrueTarget(), block, target->GetTrueEdge());
     FlowEdge* const falseEdge = fgAddRefPred(target->GetFalseTarget(), block, target->GetFalseEdge());
-    block->SetCond(trueEdge, falseEdge);
+    block->SetCond(block->GetTargetEdge(), falseEdge);
 
     JITDUMP("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), modified " FMT_BB "\n",
             block->bbNum, target->bbNum, block->bbNum);
@@ -2624,9 +2598,6 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 
     block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
     assert(block->TargetIs(target));
-
-    // TODO-NoFallThrough: Set BBF_NONE_QUIRK only when false target is the next block
-    block->SetFlags(BBF_NONE_QUIRK);
 
     /* Update bbRefs and bbNum - Conditional predecessors to the same
         * block are counted twice so we have to remove one of them */
@@ -2911,15 +2882,12 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     //
     FlowEdge* const falseEdge = fgAddRefPred(bJump->Next(), bJump, destFalseEdge);
 
-    // bJump no longer jumps to bDest
-    //
-    fgRemoveRefPred(bJump->GetTargetEdge());
-
     // bJump now jumps to bDest's normal jump target
     //
-    FlowEdge* const trueEdge = fgAddRefPred(bDestNormalTarget, bJump, destTrueEdge);
+    fgRedirectTargetEdge(bJump, bDestNormalTarget);
+    bJump->GetTargetEdge()->setLikelihood(destTrueEdge->getLikelihood());
 
-    bJump->SetCond(trueEdge, falseEdge);
+    bJump->SetCond(bJump->GetTargetEdge(), falseEdge);
 
     if (weightJump > 0)
     {
@@ -4329,16 +4297,6 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         const bool bStartPrevJumpsToNext = bStartPrev->KindIs(BBJ_ALWAYS) && bStartPrev->JumpsToNext();
         fgUnlinkRange(bStart, bEnd);
 
-        // If bStartPrev is a BBJ_ALWAYS to some block after bStart, unlinking bStart can move
-        // bStartPrev's jump destination up, making bStartPrev jump to the next block for now.
-        // This can lead us to make suboptimal decisions in Compiler::fgFindInsertPoint,
-        // so make sure the BBF_NONE_QUIRK flag is unset for bStartPrev beforehand.
-        // TODO: Remove quirk.
-        if (bStartPrev->KindIs(BBJ_ALWAYS) && (bStartPrevJumpsToNext != bStartPrev->JumpsToNext()))
-        {
-            bStartPrev->RemoveFlags(BBF_NONE_QUIRK);
-        }
-
         if (insertAfterBlk == nullptr)
         {
             // Find new location for the unlinked block(s)
@@ -4855,10 +4813,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                 if (bDest == bNext)
                 {
                     // Skip jump optimizations, and try to compact block and bNext later
-                    if (!block->isBBCallFinallyPairTail())
-                    {
-                        block->SetFlags(BBF_NONE_QUIRK);
-                    }
                     bDest = nullptr;
                 }
             }
@@ -4882,9 +4836,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                 if (bDest->KindIs(BBJ_ALWAYS) && !bDest->TargetIs(bDest) && // special case for self jumps
                     bDest->isEmpty())
                 {
-                    // TODO: Allow optimizing branches to blocks that jump to the next block
-                    const bool optimizeBranch = !bDest->JumpsToNext() || !bDest->HasFlag(BBF_NONE_QUIRK);
-                    if (optimizeBranch && fgOptimizeBranchToEmptyUnconditional(block, bDest))
+                    // Empty blocks that jump to the next block can probably be compacted instead
+                    if (!bDest->JumpsToNext() && fgOptimizeBranchToEmptyUnconditional(block, bDest))
                     {
                         change   = true;
                         modified = true;
@@ -5036,8 +4989,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                         // Rewire flow from block
                         //
                         block->SetFalseEdge(oldTrueEdge);
-                        FlowEdge* const newTrueEdge = fgAddRefPred(bNext->GetTarget(), block, oldFalseEdge);
-                        block->SetTrueEdge(newTrueEdge);
+                        block->SetTrueEdge(oldFalseEdge);
+                        fgRedirectTrueEdge(block, bNext->GetTarget());
 
                         /*
                           Unlink bNext from the BasicBlock list; note that we can
@@ -5278,7 +5231,7 @@ PhaseStatus Compiler::fgDfsBlocksAndRemove()
 #ifdef DEBUG
         if (verbose)
         {
-            printf("%u/%u blocks are unreachable and will be removed\n", fgBBcount - m_dfsTree->GetPostOrderCount(),
+            printf("%u/%u blocks are unreachable and will be removed:\n", fgBBcount - m_dfsTree->GetPostOrderCount(),
                    fgBBcount);
             for (BasicBlock* block : Blocks())
             {
@@ -5288,7 +5241,7 @@ PhaseStatus Compiler::fgDfsBlocksAndRemove()
                 }
             }
         }
-#endif
+#endif // DEBUG
 
         // The DFS we run is not precise around call-finally, so
         // `fgRemoveUnreachableBlocks` can expose newly unreachable blocks
@@ -5315,6 +5268,24 @@ PhaseStatus Compiler::fgDfsBlocksAndRemove()
 
             m_dfsTree = fgComputeDfs();
         }
+
+#ifdef DEBUG
+        // Did we actually remove all the blocks we said we were going to?
+        if (verbose)
+        {
+            if (m_dfsTree->GetPostOrderCount() != fgBBcount)
+            {
+                printf("%u unreachable blocks were not removed:\n", fgBBcount - m_dfsTree->GetPostOrderCount());
+                for (BasicBlock* block : Blocks())
+                {
+                    if (!m_dfsTree->Contains(block))
+                    {
+                        printf("  " FMT_BB "\n", block->bbNum);
+                    }
+                }
+            }
+        }
+#endif // DEBUG
 
         status = PhaseStatus::MODIFIED_EVERYTHING;
     }
@@ -5683,11 +5654,14 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 //
                 if (commSucc != nullptr)
                 {
-                    fgRemoveRefPred(predBlock->GetTargetEdge());
+                    assert(predBlock->KindIs(BBJ_ALWAYS));
+                    fgRedirectTargetEdge(predBlock, crossJumpTarget);
                 }
-
-                FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
-                predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                else
+                {
+                    FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
+                    predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                }
             }
 
             // We changed things

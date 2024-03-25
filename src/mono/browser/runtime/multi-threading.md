@@ -12,6 +12,13 @@
     - DOM events like `onClick` need to be asynchronous, if the handler needs use synchronous `[JSImport]`
     - synchronous calls to `[JSImport]`/`[JSExport]` can't synchronously call back
 
+ * `MainThreadingMode.DeputyAndIOThreads` + `JSThreadBlockingMode.AllowBlockingWaitInAsyncCode` + `JSThreadInteropMode.SimpleSynchronousJSInterop`
+    + **default threading**, safe, tested, supported
+    + blocking `.Wait` is allowed on thread pool and new threads
+    - blocking `.Wait` throws `PlatformNotSupportedException` on `JSWebWorker` and main thread only when they are called from JS via synchronous `JSExport`
+    - DOM events like `onClick` need to be asynchronous, if the handler needs use synchronous `[JSImport]`
+    - synchronous calls to `[JSImport]`/`[JSExport]` can't synchronously call back
+
  * `MainThreadingMode.DeputyThread` + `JSThreadBlockingMode.AllowBlockingWait` + `JSThreadInteropMode.SimpleSynchronousJSInterop`
     + pragmatic for legacy codebase, which contains blocking code and can't be fully executed on thread pool or new threads
     - ** could cause deadlocks !!!**

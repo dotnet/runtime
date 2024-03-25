@@ -1325,7 +1325,7 @@ void LCGMethodResolver::AddToUsedIndCellList(BYTE * indcell)
 
 }
 
-void LCGMethodResolver::ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD)
+void LCGMethodResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1335,24 +1335,35 @@ void LCGMethodResolver::ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc
 
     DECLARE_ARGHOLDER_ARRAY(args, 5);
 
+    TypeHandle handle;
+    MethodDesc* pMD = NULL;
+    FieldDesc* pFD = NULL;
     args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
     args[ARGNUM_1] = DWORD_TO_ARGHOLDER(token);
-    args[ARGNUM_2] = pTH;
-    args[ARGNUM_3] = ppMD;
-    args[ARGNUM_4] = ppFD;
+    args[ARGNUM_2] = &handle;
+    args[ARGNUM_3] = &pMD;
+    args[ARGNUM_4] = &pFD;
 
     CALL_MANAGED_METHOD_NORET(args);
 
-    _ASSERTE(*ppMD == NULL || *ppFD == NULL);
+    _ASSERTE(pMD == NULL || pFD == NULL);
 
-    if (pTH->IsNull())
+    if (handle.IsNull())
     {
-        if (*ppMD != NULL) *pTH = (*ppMD)->GetMethodTable();
-        else
-        if (*ppFD != NULL) *pTH = (*ppFD)->GetEnclosingMethodTable();
+        if (pMD != NULL)
+        {
+            handle = pMD->GetMethodTable();
+        }
+        else if (pFD != NULL)
+        {
+            handle = pFD->GetEnclosingMethodTable();
+        }
     }
 
-    _ASSERTE(!pTH->IsNull());
+    _ASSERTE(!handle.IsNull());
+    resolvedToken->TypeHandle = handle;
+    resolvedToken->Method = pMD;
+    resolvedToken->Field = pFD;
 }
 
 //---------------------------------------------------------------------------------------

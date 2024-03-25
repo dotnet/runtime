@@ -614,5 +614,5 @@ void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDL
         }
     }
 
-    printf("%s '%s'\n", prefix, str);
+    printf("%s '%s'", prefix, str);
 }

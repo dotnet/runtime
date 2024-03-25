@@ -286,10 +286,6 @@ NotInHeap
 ;; Interlocked operation helpers where the location is an objectref, thus requiring a GC write barrier upon
 ;; successful updates.
 
-;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpCheckedLockCmpXchgAVLocation
-;; - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
-
 ;; RhpCheckedLockCmpXchg(Object** dest, Object* value, Object* comparand)
 ;;
 ;; Interlocked compare exchange on objectref.
@@ -311,7 +307,6 @@ NotInHeap
 #endif
 
         mov    x10, x2
-    ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
         casal  x10, x1, [x0]                  ;; exchange
         cmp    x2, x10
         bne    CmpXchgNoUpdate
@@ -320,7 +315,6 @@ NotInHeap
         b      DoCardsCmpXchg
 CmpXchgRetry
         ;; Check location value is what we expect.
-    ALTERNATE_ENTRY  RhpCheckedLockCmpXchgAVLocation2
         ldaxr   x10, [x0]
         cmp     x10, x2
         bne     CmpXchgNoUpdate
@@ -350,10 +344,6 @@ NoBarrierCmpXchg
 
     LEAF_END RhpCheckedLockCmpXchg
 
-;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen within at RhpCheckedXchgAVLocation
-;; - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
-
 ;; RhpCheckedXchg(Object** destination, Object* value)
 ;;
 ;; Interlocked exchange on objectref.
@@ -374,14 +364,12 @@ NoBarrierCmpXchg
         tbz    x16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, ExchangeRetry
 #endif
 
-    ALTERNATE_ENTRY  RhpCheckedXchgAVLocation
         swpal  x1, x10, [x0]                   ;; exchange
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
         b      DoCardsXchg
 ExchangeRetry
         ;; Read the existing memory location.
-    ALTERNATE_ENTRY  RhpCheckedXchgAVLocation2
         ldaxr   x10,  [x0]
 
         ;; Attempt to update with the new value.

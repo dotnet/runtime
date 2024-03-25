@@ -106,7 +106,9 @@ do {                                                                            
     if (ARGUMENT_PRESENT(Params)) {                                                   \
         PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
         if (ARGUMENT_PRESENT(ContextPointers)) {                                      \
-            if (RegisterNumber == 8)                                                  \
+            if (RegisterNumber == 1)                                                  \
+                ContextPointers->Ra = (PDWORD64)Address;                              \
+            else if (RegisterNumber == 8)                                             \
                 ContextPointers->Fp = (PDWORD64)Address;                              \
             else if (RegisterNumber == 9)                                             \
                 ContextPointers->S1 = (PDWORD64)Address;                              \

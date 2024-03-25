@@ -50,14 +50,15 @@ namespace System.Runtime.InteropServices.JavaScript
             lock (ctx)
             {
                 PromiseHolder holder = ctx.GetPromiseHolder(slot.GCHandle);
-                // we want to run the continuations on the original thread which called the JSImport, so RunContinuationsAsynchronously, rather than ExecuteSynchronously
-                // TODO TaskCreationOptions.RunContinuationsAsynchronously
-                TaskCompletionSource tcs = new TaskCompletionSource(holder);
+                TaskCompletionSource tcs = new TaskCompletionSource(holder, TaskCreationOptions.RunContinuationsAsynchronously);
                 ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
                 {
                     if (arguments_buffer == null)
                     {
-                        tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
+                        if (!tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated.")))
+                        {
+                            Environment.FailFast("Failed to set exception to TaskCompletionSource (arguments buffer is null)");
+                        }
                         return;
                     }
                     ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
@@ -65,11 +66,17 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (arg_2.slot.Type != MarshalerType.None)
                     {
                         arg_2.ToManaged(out Exception? fail);
-                        tcs.TrySetException(fail!);
+                        if (!tcs.TrySetException(fail!))
+                        {
+                            Environment.FailFast("Failed to set exception to TaskCompletionSource (exception raised)");
+                        }
                     }
                     else
                     {
-                        tcs.TrySetResult();
+                        if (!tcs.TrySetResult())
+                        {
+                            Environment.FailFast("Failed to set result to TaskCompletionSource (marshaler type is none)");
+                        }
                     }
                     // eventual exception is handled by caller
                 };
@@ -101,14 +108,15 @@ namespace System.Runtime.InteropServices.JavaScript
             lock (ctx)
             {
                 var holder = ctx.GetPromiseHolder(slot.GCHandle);
-                // we want to run the continuations on the original thread which called the JSImport, so RunContinuationsAsynchronously, rather than ExecuteSynchronously
-                // TODO TaskCreationOptions.RunContinuationsAsynchronously
-                TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder);
+                TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder, TaskCreationOptions.RunContinuationsAsynchronously);
                 ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
                 {
                     if (arguments_buffer == null)
                     {
-                        tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
+                        if (!tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated.")))
+                        {
+                            Environment.FailFast("Failed to set exception to TaskCompletionSource (arguments buffer is null)");
+                        }
                         return;
                     }
 
@@ -118,12 +126,18 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         arg_2.ToManaged(out Exception? fail);
                         if (fail == null) throw new InvalidOperationException(SR.FailedToMarshalException);
-                        tcs.TrySetException(fail);
+                        if (!tcs.TrySetException(fail))
+                        {
+                            Environment.FailFast("Failed to set exception to TaskCompletionSource (exception raised)");
+                        }
                     }
                     else
                     {
                         marshaler(ref arg_3, out T result);
-                        tcs.TrySetResult(result);
+                        if(!tcs.TrySetResult(result))
+                        {
+                            Environment.FailFast("Failed to set result to TaskCompletionSource (marshaler type is none)");
+                        }
                     }
                     // eventual exception is handled by caller
                 };

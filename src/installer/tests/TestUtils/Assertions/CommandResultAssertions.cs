@@ -155,19 +155,5 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 $"StdOut:{Environment.NewLine}{Result.StdOut}{Environment.NewLine}" +
                 $"StdErr:{Environment.NewLine}{Result.StdErr}{Environment.NewLine}";
         }
-
-        public AndConstraint<CommandResultAssertions> HaveSkippedProjectCompilation(string skippedProject, string frameworkFullName)
-        {
-            Result.StdOut.Should().Contain("Project {0} ({1}) was previously compiled. Skipping compilation.", skippedProject, frameworkFullName);
-
-            return new AndConstraint<CommandResultAssertions>(this);
-        }
-
-        public AndConstraint<CommandResultAssertions> HaveCompiledProject(string compiledProject, string frameworkFullName)
-        {
-            Result.StdOut.Should().Contain($"Project {0} ({1}) will be compiled", compiledProject, frameworkFullName);
-
-            return new AndConstraint<CommandResultAssertions>(this);
-        }
     }
 }

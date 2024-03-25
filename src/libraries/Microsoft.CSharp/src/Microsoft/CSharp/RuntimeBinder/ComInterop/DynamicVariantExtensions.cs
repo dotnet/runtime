@@ -379,14 +379,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             variant = ComVariant.Create(new BStrWrapper(value));
         }
 
-        public static void SetUnknown(this ref ComVariant variant, object value)
+        public static void SetUnknown(this ref ComVariant variant, object? value)
         {
-            variant = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, Marshal.GetIUnknownForObject(value));
+            variant = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, value is null ? IntPtr.Zero : Marshal.GetIUnknownForObject(value));
         }
 
-        public static void SetDispatch(this ref ComVariant variant, object value)
+        public static void SetDispatch(this ref ComVariant variant, object? value)
         {
-            variant = ComVariant.CreateRaw(VarEnum.VT_DISPATCH, Marshal.GetIDispatchForObject(value));
+            variant = ComVariant.CreateRaw(VarEnum.VT_DISPATCH, value is null ? IntPtr.Zero : Marshal.GetIDispatchForObject(value));
         }
 
         public static void SetError(this ref ComVariant variant, int value)

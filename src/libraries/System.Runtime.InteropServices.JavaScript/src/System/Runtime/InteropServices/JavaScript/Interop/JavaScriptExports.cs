@@ -104,8 +104,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
             try
             {
-                // when we arrive here, we are on the thread which owns the proxies
-                var ctx = arg_exc.AssertCurrentThreadContext();
+                // when we arrive here, we are on the thread which owns the proxies or on IO thread
+                var ctx = arg_exc.ToManagedContext;
                 ctx.ReleaseJSOwnedObjectByGCHandle(arg_1.slot.GCHandle);
             }
             catch (Exception ex)
@@ -131,6 +131,11 @@ namespace System.Runtime.InteropServices.JavaScript
                 // we may need to consider how to solve blocking of the synchronous call
                 // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
                 arg_exc.AssertCurrentThreadContext();
+
+                if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.AllowBlockingWaitInAsyncCode)
+                {
+                    Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+                }
 #endif
 
                 GCHandle callback_gc_handle = (GCHandle)arg_1.slot.GCHandle;
@@ -148,8 +153,16 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 arg_exc.ToJS(ex);
             }
+#if FEATURE_WASM_MANAGED_THREADS
+            finally
+            {
+                if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.AllowBlockingWaitInAsyncCode)
+                {
+                    Thread.ThrowOnBlockingWaitOnJSInteropThread = false;
+                }
+            }
+#endif
         }
-
         // the marshaled signature is: void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
         public static void CompleteTask(JSMarshalerArgument* arguments_buffer)
         {
@@ -161,8 +174,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
             try
             {
-                // when we arrive here, we are on the thread which owns the proxies
-                var ctx = arg_exc.AssertCurrentThreadContext();
+                // when we arrive here, we are on the thread which owns the proxies or on IO thread
+                var ctx = arg_exc.ToManagedContext;
                 var holder = ctx.GetPromiseHolder(arg_1.slot.GCHandle);
                 JSHostImplementation.ToManagedCallback callback;
 
@@ -270,6 +283,10 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 var ctx = arg_exc.AssertCurrentThreadContext();
                 ctx.IsPendingSynchronousCall = true;
+                if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.AllowBlockingWaitInAsyncCode)
+                {
+                    Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+                }
             }
             catch (Exception ex)
             {
@@ -288,6 +305,10 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 var ctx = arg_exc.AssertCurrentThreadContext();
                 ctx.IsPendingSynchronousCall = false;
+                if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.AllowBlockingWaitInAsyncCode)
+                {
+                    Thread.ThrowOnBlockingWaitOnJSInteropThread = false;
+                }
             }
             catch (Exception ex)
             {

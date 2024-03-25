@@ -1976,11 +1976,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
     fastPreheader->bbWeight = fastPreheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
 
-    if (fastPreheader->NextIs(loop->GetHeader()))
-    {
-        fastPreheader->SetFlags(BBF_NONE_QUIRK);
-    }
-
     assert(preheader->KindIs(BBJ_ALWAYS));
     assert(preheader->TargetIs(loop->GetHeader()));
 
@@ -2072,8 +2067,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         FlowEdge* const newEdge = fgAddRefPred(preheader->Next(), preheader);
         preheader->SetTargetEdge(newEdge);
     }
-
-    preheader->SetFlags(BBF_NONE_QUIRK);
 
     // And make sure we insert a pred link for the final fallthrough into the fast preheader.
     assert(condLast->NextIs(fastPreheader));

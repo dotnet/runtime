@@ -315,21 +315,6 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 #endif
 }
 
-gboolean
-mono_thread_platform_external_eventloop_keepalive_check (void)
-{
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	MONO_REQ_GC_SAFE_MODE;
-	/* if someone called emscripten_runtime_keepalive_push (), the
-	 * thread will stay alive in the JS event loop after returning
-	 * from the thread's main function.
-	 */
-	return emscripten_runtime_keepalive_check ();
-#else
-	return FALSE;
-#endif
-}
-
 void mono_threads_platform_init (void)
 {
 }
@@ -496,7 +481,7 @@ mono_threads_wasm_on_thread_attached (pthread_t tid, const char* thread_name, gb
 #else
 	if (mono_threads_wasm_is_ui_thread ()) {
 		// FIXME: we should not be attaching UI thread with deputy design
-		// but right now we do, because mono_wasm_load_runtime is running in UI thread
+		// but right now we do
 		// g_assert(!mono_threads_wasm_is_ui_thread ());
 		return;
 	}
@@ -542,7 +527,9 @@ mono_threads_wasm_on_thread_registered (void)
 
 #ifndef DISABLE_THREADS
 static pthread_t deputy_thread_tid;
+static pthread_t io_thread_tid;
 extern void mono_wasm_start_deputy_thread_async (void);
+extern void mono_wasm_start_io_thread_async (void);
 extern void mono_wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data);
 extern void mono_wasm_dump_threads (void);
 
@@ -582,9 +569,53 @@ mono_wasm_create_deputy_thread (void)
 	return deputy_thread_tid;
 }
 
+gboolean
+mono_threads_wasm_is_io_thread (void)
+{
+	return pthread_self () == io_thread_tid;
+}
+
+MonoNativeThreadId
+mono_threads_wasm_io_thread_tid (void)
+{
+	return (MonoNativeThreadId) io_thread_tid;
+}
+
+// this is running in io thread
+static gsize
+io_thread_fn (void* unused_arg G_GNUC_UNUSED)
+{
+	io_thread_tid = pthread_self ();
+
+	// this will throw JS "unwind"
+	mono_wasm_start_io_thread_async();
+	
+	return 0;// never reached
+}
+
+EMSCRIPTEN_KEEPALIVE MonoNativeThreadId
+mono_wasm_create_io_thread (void)
+{
+	pthread_create (&io_thread_tid, NULL, (void *(*)(void *)) io_thread_fn, NULL);
+	return io_thread_tid;
+}
+
 // TODO ideally we should not need to have UI thread registered as managed
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_register_ui_thread (void)
+{
+	MonoThread *thread = mono_thread_internal_attach (mono_get_root_domain ());
+	mono_thread_set_state (thread, ThreadState_Background);
+	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
+
+	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	g_assert (info);
+	info->runtime_thread = TRUE;
+	MONO_ENTER_GC_SAFE_UNBALANCED;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_register_io_thread (void)
 {
 	MonoThread *thread = mono_thread_internal_attach (mono_get_root_domain ());
 	mono_thread_set_state (thread, ThreadState_Background);
@@ -614,18 +645,33 @@ mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void 
 	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VII, func, NULL, user_data1, user_data2);
 }
 
-static void mono_threads_wasm_sync_run_in_target_thread_vii_cb (MonoCoopSem *done, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+static void mono_threads_wasm_sync_run_in_target_thread_vii_cb (MonoCoopSem *done, void (*func) (gpointer, gpointer), gpointer user_data1, void* args)
 {
-	func (user_data1, user_data2);
-	mono_coop_sem_post (done);
+	// in UI thread we postpone the execution via safeSetTimeout so that emscripten_proxy_execute_queue is not blocked by this call
+	// see invoke_later_on_ui_thread
+	if (mono_threads_wasm_is_ui_thread()) {
+		MonoCoopSem **semPtrPtr = (MonoCoopSem **)(((char *) args) + 28/*JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr*/);
+		*semPtrPtr = done;
+		func (user_data1, args);
+	}
+	else {
+		func (user_data1, args);
+		mono_coop_sem_post (done);
+	}
+}
+
+EMSCRIPTEN_KEEPALIVE void 
+mono_threads_wasm_sync_run_in_target_thread_done (MonoCoopSem *sem)
+{
+	mono_coop_sem_post (sem);
 }
 
 void
-mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer args)
 {
 	MonoCoopSem sem;
 	mono_coop_sem_init (&sem, 0);
-	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VIIII, mono_threads_wasm_sync_run_in_target_thread_vii_cb, NULL, &sem, func, user_data1, user_data2);
+	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VIIII, mono_threads_wasm_sync_run_in_target_thread_vii_cb, NULL, &sem, func, user_data1, args);
 
 	MONO_ENTER_GC_UNSAFE;
 	mono_coop_sem_wait (&sem, MONO_SEM_FLAGS_NONE);
