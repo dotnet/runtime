@@ -569,11 +569,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitEnumParseMethod()
             {
-                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.getPath}()}}", $"{{typeof(T)}}");
+                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.path}}}", $"{{typeof(T)}}");
 
                 string parseEnumCall = _emitGenericParseEnum ? "Enum.Parse<T>(value, ignoreCase: true)" : "(T)Enum.Parse(typeof(T), value, ignoreCase: true)";
                 _writer.WriteLine($$"""
-                    public static T ParseEnum<T>(string value, Func<string?> getPath) where T : struct
+                    public static T ParseEnum<T>(string value, string? path) where T : struct
                     {
                         try
                         {
@@ -639,9 +639,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                 }
 
-                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.getPath}()}}", $"{{typeof({typeFQN})}}");
+                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.path}}}", $"{{typeof({typeFQN})}}");
 
-                EmitStartBlock($"public static {typeFQN} {TypeIndex.GetParseMethodName(type)}(string {Identifier.value}, Func<string?> {Identifier.getPath})");
+                EmitStartBlock($"public static {typeFQN} {TypeIndex.GetParseMethodName(type)}(string {Identifier.value}, string? {Identifier.path})");
                 EmitEndBlock($$"""
                     try
                     {
@@ -1084,8 +1084,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string parsedValueExpr = typeKind switch
                 {
                     StringParsableTypeKind.AssignFromSectionValue => stringValueToParse_Expr,
-                    StringParsableTypeKind.Enum => $"ParseEnum<{type.TypeRef.FullyQualifiedName}>({stringValueToParse_Expr}, () => {sectionPathExpr})",
-                    _ => $"{TypeIndex.GetParseMethodName(type)}({stringValueToParse_Expr}, () => {sectionPathExpr})",
+                    StringParsableTypeKind.Enum => $"ParseEnum<{type.TypeRef.FullyQualifiedName}>({stringValueToParse_Expr}, {sectionPathExpr})",
+                    _ => $"{TypeIndex.GetParseMethodName(type)}({stringValueToParse_Expr}, {sectionPathExpr})",
                 };
 
                 if (!checkForNullSectionValue)

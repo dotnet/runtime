@@ -75,73 +75,73 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             int age = (int)(42);
             if (configuration["Age"] is string value2)
             {
-                age = ParseInt(value2, () => configuration.GetSection("Age").Path);
+                age = ParseInt(value2, configuration.GetSection("Age").Path);
             }
 
             float f = 42F;
             if (configuration["F"] is string value3)
             {
-                f = ParseFloat(value3, () => configuration.GetSection("F").Path);
+                f = ParseFloat(value3, configuration.GetSection("F").Path);
             }
 
             double d = 3.1415899999999999D;
             if (configuration["D"] is string value4)
             {
-                d = ParseDouble(value4, () => configuration.GetSection("D").Path);
+                d = ParseDouble(value4, configuration.GetSection("D").Path);
             }
 
             decimal m = 3.1415926535897932384626433M;
             if (configuration["M"] is string value5)
             {
-                m = ParseDecimal(value5, () => configuration.GetSection("M").Path);
+                m = ParseDecimal(value5, configuration.GetSection("M").Path);
             }
 
             global::System.StringComparison sc = (global::System.StringComparison)(4);
             if (configuration["SC"] is string value6)
             {
-                sc = ParseEnum<global::System.StringComparison>(value6, () => configuration.GetSection("SC").Path);
+                sc = ParseEnum<global::System.StringComparison>(value6, configuration.GetSection("SC").Path);
             }
 
             char c = 'q';
             if (configuration["C"] is string value7)
             {
-                c = ParseChar(value7, () => configuration.GetSection("C").Path);
+                c = ParseChar(value7, configuration.GetSection("C").Path);
             }
 
             int? nage = (int?)(42);
             if (configuration["NAge"] is string value8)
             {
-                nage = ParseInt(value8, () => configuration.GetSection("NAge").Path);
+                nage = ParseInt(value8, configuration.GetSection("NAge").Path);
             }
 
             float? nf = 42F;
             if (configuration["NF"] is string value9)
             {
-                nf = ParseFloat(value9, () => configuration.GetSection("NF").Path);
+                nf = ParseFloat(value9, configuration.GetSection("NF").Path);
             }
 
             double? nd = 3.1415899999999999D;
             if (configuration["ND"] is string value10)
             {
-                nd = ParseDouble(value10, () => configuration.GetSection("ND").Path);
+                nd = ParseDouble(value10, configuration.GetSection("ND").Path);
             }
 
             decimal? nm = 3.1415926535897932384626433M;
             if (configuration["NM"] is string value11)
             {
-                nm = ParseDecimal(value11, () => configuration.GetSection("NM").Path);
+                nm = ParseDecimal(value11, configuration.GetSection("NM").Path);
             }
 
             global::System.StringComparison? nsc = (global::System.StringComparison?)(4);
             if (configuration["NSC"] is string value12)
             {
-                nsc = ParseEnum<global::System.StringComparison>(value12, () => configuration.GetSection("NSC").Path);
+                nsc = ParseEnum<global::System.StringComparison>(value12, configuration.GetSection("NSC").Path);
             }
 
             char? nc = 'q';
             if (configuration["NC"] is string value13)
             {
-                nc = ParseChar(value13, () => configuration.GetSection("NC").Path);
+                nc = ParseChar(value13, configuration.GetSection("NC").Path);
             }
 
             return new global::Program.ClassWhereParametersHaveDefaultValue(name, address, age, f, d, m, sc, c, nage, nf, nd, nm, nsc, nc);
@@ -170,7 +170,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static T ParseEnum<T>(string value, Func<string?> getPath) where T : struct
+        public static T ParseEnum<T>(string value, string? path) where T : struct
         {
             try
             {
@@ -178,11 +178,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(T)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(T)}'.", exception);
             }
         }
 
-        public static int ParseInt(string value, Func<string?> getPath)
+        public static int ParseInt(string value, string? path)
         {
             try
             {
@@ -190,11 +190,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
 
-        public static float ParseFloat(string value, Func<string?> getPath)
+        public static float ParseFloat(string value, string? path)
         {
             try
             {
@@ -202,11 +202,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(float)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(float)}'.", exception);
             }
         }
 
-        public static double ParseDouble(string value, Func<string?> getPath)
+        public static double ParseDouble(string value, string? path)
         {
             try
             {
@@ -214,11 +214,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(double)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(double)}'.", exception);
             }
         }
 
-        public static decimal ParseDecimal(string value, Func<string?> getPath)
+        public static decimal ParseDecimal(string value, string? path)
         {
             try
             {
@@ -226,11 +226,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(decimal)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(decimal)}'.", exception);
             }
         }
 
-        public static char ParseChar(string value, Func<string?> getPath)
+        public static char ParseChar(string value, string? path)
         {
             try
             {
@@ -238,7 +238,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(char)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(char)}'.", exception);
             }
         }
         #endregion Core binding extensions.

@@ -77,6 +77,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string instance = nameof(instance);
                 public const string optionsBuilder = nameof(optionsBuilder);
                 public const string originalCount = nameof(originalCount);
+                public const string path = nameof(path);
                 public const string section = nameof(section);
                 public const string sectionKey = nameof(sectionKey);
                 public const string services = nameof(services);
