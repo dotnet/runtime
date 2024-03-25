@@ -1122,7 +1122,7 @@ void RandomPolicy::NoteInt(InlineObservation obs, int value)
 //    methodInfo -- method info for the callee
 //
 // Notes:
-//    The random policy makes random decisions about profitablity.
+//    The random policy makes random decisions about profitability.
 //    Generally we aspire to inline differently, not necessarily to
 //    inline more.
 
@@ -1130,6 +1130,20 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 {
     assert(InlDecisionIsCandidate(m_Decision));
     assert(m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+
+#if defined(DEBUG)
+
+    // Punt if we're inlining and we've reached the acceptance limit.
+    int      limit   = JitConfig.JitInlineLimit();
+    unsigned current = m_RootCompiler->m_inlineStrategy->GetInlineCount();
+
+    if (!m_IsPrejitRoot && (limit >= 0) && (current >= static_cast<unsigned>(limit)))
+    {
+        SetFailure(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
+        return;
+    }
+
+#endif // defined(DEBUG)
 
     // Budget check.
     const bool overBudget = this->BudgetCheck();

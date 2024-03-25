@@ -2432,7 +2432,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     if (imm == 0)
         return true; // Encodable using IF_LS_2A
 
-    if ((imm >= -256) && (imm <= 255))
+    if (isValidSimm<9>(imm))
         return true; // Encodable using IF_LS_2C (or possibly IF_LS_2B)
 
     if (imm < 0)
@@ -5670,7 +5670,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
         }
         else if (insOptsIndexed(opt) || unscaledOp || (imm < 0) || ((imm & mask) != 0))
         {
-            if ((imm >= -256) && (imm <= 255))
+            if (isValidSimm<9>(imm))
             {
                 fmt = IF_LS_2C;
             }
@@ -7767,13 +7767,22 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
  */
 void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
-    emitAttr  size     = EA_SIZE(attr);
-    insFormat fmt      = IF_NONE;
-    int       disp     = 0;
-    unsigned  scale    = 0;
-    bool      isLdrStr = false;
+    emitAttr  size         = EA_SIZE(attr);
+    insFormat fmt          = IF_NONE;
+    unsigned  scale        = 0;
+    bool      isLdrStr     = false;
+    bool      isSimple     = true;
+    bool      useRegForImm = false;
 
     assert(offs >= 0);
+
+    /* Figure out the variable's frame position */
+    bool    FPbased;
+    int     base = emitComp->lvaFrameAddress(varx, &FPbased);
+    int     disp = base + offs;
+    ssize_t imm  = disp;
+
+    regNumber reg2 = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
 
     // TODO-ARM64-CQ: use unscaled loads?
     /* Figure out the encoding format of the instruction */
@@ -7804,8 +7813,83 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_lea:
             assert(size == EA_8BYTE);
-            scale = 0;
+            isSimple = false;
+            scale    = 0;
+
+            if (disp >= 0)
+            {
+                ins = INS_add;
+            }
+            else
+            {
+                ins = INS_sub;
+                imm = -disp;
+            }
+
+            if (imm <= 0x0fff)
+            {
+                fmt = IF_DI_2A; // add reg1,reg2,#disp
+            }
+            else
+            {
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+                fmt = IF_DR_3A; // add reg1,reg2,rsvdReg
+            }
             break;
+
+        case INS_sve_ldr:
+        {
+            assert(isVectorRegister(reg1));
+            isSimple = false;
+            size     = EA_SCALABLE;
+            attr     = size;
+            fmt      = IF_SVE_IE_2A;
+
+            // TODO-SVE: Don't assume 128bit vectors
+            scale        = NaturalScale_helper(EA_16BYTE);
+            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+
+            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
+            {
+                imm >>= scale; // The immediate is scaled by the size of the ld/st
+            }
+            else
+            {
+                useRegForImm      = true;
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+            }
+        }
+        break;
+
+        // TODO-SVE: Fold into INS_sve_ldr once REG_V0 and REG_P0 are distinct
+        case INS_sve_ldr_mask:
+        {
+            assert(isPredicateRegister(reg1));
+            isSimple = false;
+            size     = EA_SCALABLE;
+            attr     = size;
+            fmt      = IF_SVE_ID_2A;
+            ins      = INS_sve_ldr;
+
+            // TODO-SVE: Don't assume 128bit vectors
+            // Predicate size is vector length / 8
+            scale        = NaturalScale_helper(EA_2BYTE);
+            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+
+            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
+            {
+                imm >>= scale; // The immediate is scaled by the size of the ld/st
+            }
+            else
+            {
+                useRegForImm      = true;
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+            }
+        }
+        break;
 
         default:
             NYI("emitIns_R_S"); // FP locals?
@@ -7813,54 +7897,19 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     } // end switch (ins)
 
-    /* Figure out the variable's frame position */
-    ssize_t imm;
-    int     base;
-    bool    FPbased;
-
-    base = emitComp->lvaFrameAddress(varx, &FPbased);
-    disp = base + offs;
     assert((scale >= 0) && (scale <= 4));
 
-    bool      useRegForImm = false;
-    regNumber reg2         = FPbased ? REG_FPBASE : REG_SPBASE;
-    reg2                   = encodingSPtoZR(reg2);
-
-    if (ins == INS_lea)
-    {
-        if (disp >= 0)
-        {
-            ins = INS_add;
-            imm = disp;
-        }
-        else
-        {
-            ins = INS_sub;
-            imm = -disp;
-        }
-
-        if (imm <= 0x0fff)
-        {
-            fmt = IF_DI_2A; // add reg1,reg2,#disp
-        }
-        else
-        {
-            regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-            fmt = IF_DR_3A; // add reg1,reg2,rsvdReg
-        }
-    }
-    else
+    if (isSimple)
     {
         ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-        imm          = disp;
+
         if (imm == 0)
         {
             fmt = IF_LS_2A;
         }
         else if ((imm < 0) || ((imm & mask) != 0))
         {
-            if ((imm >= -256) && (imm <= 255))
+            if (isValidSimm<9>(imm))
             {
                 fmt = IF_LS_2C;
             }
@@ -8023,10 +8072,20 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     assert(offs >= 0);
     emitAttr  size          = EA_SIZE(attr);
     insFormat fmt           = IF_NONE;
-    int       disp          = 0;
     unsigned  scale         = 0;
     bool      isVectorStore = false;
     bool      isStr         = false;
+    bool      isSimple      = true;
+    bool      useRegForImm  = false;
+
+    /* Figure out the variable's frame position */
+    bool    FPbased;
+    int     base = emitComp->lvaFrameAddress(varx, &FPbased);
+    int     disp = base + offs;
+    ssize_t imm  = disp;
+
+    // TODO-ARM64-CQ: with compLocallocUsed, should we use REG_SAVED_LOCALLOC_SP instead?
+    regNumber reg2 = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
 
     // TODO-ARM64-CQ: use unscaled loads?
     /* Figure out the encoding format of the instruction */
@@ -8058,20 +8117,66 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             isStr = true;
             break;
 
+        case INS_sve_str:
+        {
+            assert(isVectorRegister(reg1));
+            isSimple = false;
+            size     = EA_SCALABLE;
+            attr     = size;
+            fmt      = IF_SVE_JH_2A;
+
+            // TODO-SVE: Don't assume 128bit vectors
+            scale        = NaturalScale_helper(EA_16BYTE);
+            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+
+            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
+            {
+                imm >>= scale; // The immediate is scaled by the size of the ld/st
+            }
+            else
+            {
+                useRegForImm      = true;
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+            }
+        }
+        break;
+
+        // TODO-SVE: Fold into INS_sve_str once REG_V0 and REG_P0 are distinct
+        case INS_sve_str_mask:
+        {
+            assert(isPredicateRegister(reg1));
+            isSimple = false;
+            size     = EA_SCALABLE;
+            attr     = size;
+            fmt      = IF_SVE_JG_2A;
+            ins      = INS_sve_str;
+
+            // TODO-SVE: Don't assume 128bit vectors
+            // Predicate size is vector length / 8
+            scale        = NaturalScale_helper(EA_2BYTE);
+            ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+
+            if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
+            {
+                imm >>= scale; // The immediate is scaled by the size of the ld/st
+            }
+            else
+            {
+                useRegForImm      = true;
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+            }
+        }
+        break;
+
         default:
             NYI("emitIns_S_R"); // FP locals?
             return;
 
     } // end switch (ins)
 
-    /* Figure out the variable's frame position */
-    int  base;
-    bool FPbased;
-
-    base = emitComp->lvaFrameAddress(varx, &FPbased);
-    disp = base + offs;
-    assert(scale >= 0);
-    if (isVectorStore)
+    if (isVectorStore || !isSimple)
     {
         assert(scale <= 4);
     }
@@ -8080,49 +8185,46 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         assert(scale <= 3);
     }
 
-    // TODO-ARM64-CQ: with compLocallocUsed, should we use REG_SAVED_LOCALLOC_SP instead?
-    regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
-    reg2           = encodingSPtoZR(reg2);
+    if (isSimple)
+    {
+        ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
 
-    bool    useRegForImm = false;
-    ssize_t imm          = disp;
-    ssize_t mask         = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-    if (imm == 0)
-    {
-        fmt = IF_LS_2A;
-    }
-    else if ((imm < 0) || ((imm & mask) != 0))
-    {
-        if ((imm >= -256) && (imm <= 255))
+        if (imm == 0)
         {
-            fmt = IF_LS_2C;
+            fmt = IF_LS_2A;
         }
-        else
+        else if ((imm < 0) || ((imm & mask) != 0))
         {
-            useRegForImm = true;
+            if (isValidSimm<9>(imm))
+            {
+                fmt = IF_LS_2C;
+            }
+            else
+            {
+                useRegForImm = true;
+            }
         }
-    }
-    else if (imm > 0)
-    {
-        if (((imm & mask) == 0) && ((imm >> scale) < 0x1000))
+        else if (imm > 0)
         {
-            imm >>= scale; // The immediate is scaled by the size of the ld/st
+            if (((imm & mask) == 0) && ((imm >> scale) < 0x1000))
+            {
+                imm >>= scale; // The immediate is scaled by the size of the ld/st
+                fmt = IF_LS_2B;
+            }
+            else
+            {
+                useRegForImm = true;
+            }
+        }
 
-            fmt = IF_LS_2B;
-        }
-        else
+        if (useRegForImm)
         {
-            useRegForImm = true;
+            // The reserved register is not stored in idReg3() since that field overlaps with iiaLclVar.
+            // It is instead implicit when idSetIsLclVar() is set, with this encoding format.
+            regNumber rsvdReg = codeGen->rsGetRsvdReg();
+            codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+            fmt = IF_LS_3A;
         }
-    }
-
-    if (useRegForImm)
-    {
-        // The reserved register is not stored in idReg3() since that field overlaps with iiaLclVar.
-        // It is instead implicit when idSetIsLclVar() is set, with this encoding format.
-        regNumber rsvdReg = codeGen->rsGetRsvdReg();
-        codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-        fmt = IF_LS_3A;
     }
 
     assert(fmt != IF_NONE);
@@ -10157,138 +10259,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns the encoding for the immediate value that is a multiple of 2 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf2_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 2>(imm)));
-    return insEncodeSimm<19, 16>(imm / 2);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 3 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf3_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 3>(imm)));
-    return insEncodeSimm<19, 16>(imm / 3);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 4 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf4_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 4>(imm)));
-    return insEncodeSimm<19, 16>(imm / 4);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 16 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 16>(imm)));
-    return insEncodeSimm<19, 16>(imm / 16);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 32 as 4-bits at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm)
-{
-    assert((isValidSimm_MultipleOf<4, 32>(imm)));
-    return insEncodeSimm<19, 16>(imm / 32);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<5, 2>(imm)));
-    return insEncodeUimm<20, 16>(imm / 2);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 4 as 5-bits at bit locations '20-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<5, 4>(imm)));
-    return insEncodeUimm<20, 16>(imm / 4);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<5, 8>(imm)));
-    return insEncodeUimm<20, 16>(imm / 8);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<6, 2>(imm)));
-    return insEncodeUimm<21, 16>(imm / 2);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 4 as 6-bits at bit locations '21-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<6, 4>(imm)));
-    return insEncodeUimm<21, 16>(imm / 4);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm)
-{
-    assert((isValidUimm_MultipleOf<6, 8>(imm)));
-    return insEncodeUimm<21, 16>(imm / 8);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 1-bit at bit locations '23'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm1_23(ssize_t imm)
-{
-    assert(isValidUimm<1>(imm));
-    return (code_t)imm << 23;
-}
-
-/*****************************************************************************
- *
  *  Returns the encoding for the immediate value as 3-bits at bit locations '23-22' for high and '12' for low.
  */
 
@@ -10300,17 +10270,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
     code_t l = (code_t)(imm & 0x1) << 12; // encode low 1-bit at locations '12'
 
     return (h | l);
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm4From1_19_to_16(ssize_t imm)
-{
-    assert(isValidUimmFrom1<4>(imm));
-    return (code_t)(imm - 1) << 16;
 }
 
 /*****************************************************************************
