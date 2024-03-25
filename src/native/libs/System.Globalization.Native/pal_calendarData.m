@@ -118,26 +118,6 @@ const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName, Ca
             {
                 [dateFormat setDateStyle:NSDateFormatterShortStyle];
                 NSString *shortFormatString = [dateFormat dateFormat];
-                // Replace "y" and "yy" year format with a 4-digit year format
-                NSRange range = [shortFormatString rangeOfString:@"y"];
-                if (range.location != NSNotFound)
-                {
-                    int length = [shortFormatString length];
-                    if (range.location + 2 < length && [shortFormatString characterAtIndex:range.location + 1] == 'y' && [shortFormatString characterAtIndex:range.location + 2] == 'y')
-                    {
-                        // Not "y" or "yy" year format
-                        ;
-                    } else if (range.location + 1 < length && [shortFormatString characterAtIndex:range.location + 1] == 'y') // "yy"
-                    {
-                        range.length = 2;
-                        shortFormatString = [shortFormatString stringByReplacingCharactersInRange:range withString:@"yyyy"];
-                    }
-                    else // "y"
-                    {
-                        range.length = 1;
-                        shortFormatString = [shortFormatString stringByReplacingCharactersInRange:range withString:@"yyyy"];
-                    }
-                }
                 [dateFormat setDateStyle:NSDateFormatterMediumStyle];
                 NSString *mediumFormatString = [dateFormat dateFormat];
                 NSString *yearMonthDayFormat = [NSDateFormatter dateFormatFromTemplate:@"yMd" options:0 locale:currentLocale];
