@@ -379,34 +379,4 @@ PAL_PerfJitDump_Finish()
     return GetState().Finish();
 }
 
-#else // JITDUMP_SUPPORTED
-
-int
-PALAPI
-PAL_PerfJitDump_Start(const char* path)
-{
-    return 0;
-}
-
-bool
-PALAPI
-PAL_PerfJitDump_IsStarted()
-{
-    return false;
-}
-
-int
-PALAPI
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo)
-{
-    return 0;
-}
-
-int
-PALAPI
-PAL_PerfJitDump_Finish()
-{
-    return 0;
-}
-
-#endif // JITDUMP_SUPPORTED
+#endif // FEATURE_PERFMAP
