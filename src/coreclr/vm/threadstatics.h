@@ -4,91 +4,55 @@
 // Thread local storage is designed to be as efficient as possible.
 // This leads to several different access patterns.
 //
-// There shall be a global TLS data structure used for all threads. This is initialized before any managed code is permitted to run on a thread
-// struct TLSArray
-// {
-//     int32_t cTLSData; // Size in bytes of offset into the TLS array which is valid
-//     void* pTLSArrayData; // Points at the Thread local array data.
-// };
-//
-// Used to store access to TLS data for a single index when the TLS is accessed while the class constructor is running
-// struct InFlightTLSData
-// {
-//     InFlightTLSData* pNext; // Points at the next in-flight TLS data
-//     TLSIndex tlsIndex; // The TLS index for the static
-//     void* pTLSData; // The TLS data for the static
-// };
-//
-// struct ThreadLocalLoaderAllocator
-// {
-//     ThreadLocalLoaderAllocator* pNext; // Points at the next thread local loader allocator
-//     LoaderAllocator* pLoaderAllocator; // The loader allocator that has a TLS used in this thread
-//     bool ReportToGC(PromoteFunction* fn, ScanContext* sc, int flags); // Reports the thread local loader allocator state to the GC, returns true if the ThreadLocalLoaderAllocator structure should be removed from the linked list. This is what allows the GC statics for collectible types to actually exist on the nonGC thread local storage array
-// };
-//
-// struct ThreadLocalData
-// {
-//     TLSArray nongcArray; // Array for nonGC data, as well as collectible GC static. cTLSData is initialized to PRE_ALLOCATED_TLS_NONGC_SLOT_COUNT * sizeof(void*) - 1, and pTLSArrayData points at memory of size PRE_ALLOCATED_TLS_NONGC_SLOT_COUNT * sizeof(void*) at thread startup
-//     TLSArray gcArray; // Array for non-collectible GC pointers. cTLSData is initialized to PRE_ALLOCATED_TLS_GC_SLOT_COUNT * sizeof(OBJECTREF) + sizeof(void*) * 2 - 1, and pTLSArrayData points at a managed object[], initialized to an object array of size PRE_ALLOCATED_TLS_GC_SLOT_COUNT at thread startup
-//     InFlightTLSData* pNext; // Points at the next in-flight TLS data
-// };
-//
-// struct TLSIndex
-// {
-//     int32_t TLSIndexRawIndex;
-//     int32_t GetIndexOffset() { return TLSIndexRawIndex & 0xFFFFFF; }
-//     int8_t GetTLSArrayOffset() { return TLSIndexRawIndex >> 24; }
-// };
-//
-// thread_local ThreadLocalData t_ThreadStatics;
-// SArray<MethodTable*>* g_pNonGCTLSIndexToMethodTable;
-// int g_maxNonGCTlsSize;
-// SArray<MethodTable*>* g_pGCTLSIndexToMethodTable;
-// int g_maxGCTlsSlots;
-//
 // Access pattern for a TLS static
 // 0. Get the TLS index somehow
-// 1. Get TLS pointer to OS managed TLS block for the current thread ie. pThreadLocalData = &t_ThreadStatics
-// 2. Get the TLSArray for the TLS index (pTLSArray = ((uint8_t*)pThreadLocalData) + index.GetTLSArrayOffset())
-// 3. Read 1 integer value (cTLSData=pThreadLocalData->cTLSData)
-// 4. Compare cTLSData against the index we're looking up (if (cTLSData < index.GetIndexOffset()))
-// 5. If the index is not within range, jump to step 10.
-// 6. Read 1 pointer value from TLS block (pTLSArrayData=pThreadLocalData->pTLSArrayData)
-// 7. Read 1 pointer from within the TLS Array. (pTLSBaseAddress = *(intptr_t*)(((uint8_t*)pTLSArrayData) + index.GetIndexOffset());
-// 8. If pointer is NULL jump to step 10 (if pTLSBaseAddress == NULL)
-// 9. Return pTLSBaseAddress
-// 10. Tail-call a helper (return GetThreadLocalStaticBase(index))
+// 1. Get TLS pointer to OS managed TLS block for the current thread ie. pThreadStatics = &t_ThreadStatics
+// 2. Determine the TLSIndexType of the TLS index. Currently the only TLS access type in use is TLSIndexType::Standard, but over the .NET 9 period we expect to add a couple more
+//   If TLSIndexType == TLSIndexType::Standard
+//   - Compare pThreadStatics->cTLSData against the index offset of the TLSIndex.
+//   - If in range, multiply the index offset by the size of a a pointer and add it to pThreadStatics->pTLSArrayData, then dereference
+//   - If not found
+//     - Slow path look in the pThreadStatics->pInFlightData, if found there, return
+//     - If not found there, trigger allocation behavior to grow TLS data, etc.
 //
-// The Runtime shall define a couple of well known TLS indices. These are used for the most common
-// TLS statics, and are used to avoid the overhead of checking for the index being in range, and
-// the class constructor for having run, so that we can skip steps 3, 4, 5, and 8. It shall do this
-// by allocating the associated memory before permitting any code to run on the thread.
+// Normal thread-local statics lifetime management
+// -------------------------------------
+//   - Each entry in the TLS table which is not collectible shall be reported to the GC during promotion and
+//     relocation. There are no GCHandle or other structures which keep TLS data alive
 //
-// Psuedocode for
-// ref byte GetThreadLocalStaticBase(uint index)
-// {
-//     Do the access pattern above, but if the TLS array is too small, allocate a new one, and if the base pointer is NULL, call the class constructor for the static.
-//     if After all that the base pointer is still NULL, walk the InFlightTLSData chain to see if it exists in there.
-//     If the InFlightTLSData chain has a value
-//         check to see if the class constructor has run. If it has completed, update the base pointer in the TLS array, and delete the InFlightTLSData entry.
-//         return the found value
-//     ELSE
-//         allocate a new InFlightTLSData entry, and return the address of the pTLSData field.
-// }
-//
-// Rationale for basic decisions here
-// 1. We want access to TLS statics to be as fast as possible, especially for extremely common
-//    thread statics like the ones used for async, and memory allocation.
-// 2. We want access to TLS statics for shared generic types to be nearly fully inlineable. This
-//    is why the variation between collectible and non-collectible gc statics access is handled by
-//    a single byte in the index itself. The intent is that access to statics shall be as simple as
-//    reading the index from a MethodTable, and then using a very straightforward pattern from there.
-
-
+// Collectible thread-local statics lifetime management
+// -------------------------------------
+// Lifetime management is substantially  complicated due the issue that it is possible for either a thread or a
+// collectible type to be collected first. Thus the collection algorithm is as follows.
+//   - The system shall maintain a global mapping of TLS indices to MethodTable structures
+//   - When a native LoaderAllocator is being cleaned up, before the WeakTrackResurrection GCHandle that 
+//     points at the the managed LoaderAllocator object is destroyed, the mapping from TLS indices to 
+//     collectible LoaderAllocator structures shall be cleared of all relevant entries (and the current
+//     GC index shall be stored in the TLS to MethodTable mapping)
+//   - When a GC promotion or relocation scan occurs, for every TLS index which was freed to point at a GC
+//     index the relevant entry in the TLS table shall be set to NULL in preparation for that entry in the
+//     table being reused in the future. In addition, if the TLS index refers to a MethodTable which is in
+//     a collectible assembly, and the associated LoaderAllocator has been freed, then set the relevant
+//     entry to NULL.
+//   - When allocating new entries from the TLS mapping table for new collectible thread local structures,
+//     do not re-use an entry in the table until at least 2 GCs have occurred. This is to allow every
+//     thread to have NULL'd out the relevant entry in its thread local table.
+//   - When allocating new TLS entries for collectible TLS statics on a per-thread basis allocate a
+//     LOADERHANDLE for each object allocated, and associate it with the TLS index on that thread.
+//   - When cleaning up a thread, for each collectible thread static which is still allocated, we will have
+//     a LOADERHANDLE. If the collectible type still has a live managed LoaderAllocator free the
+//     LOADERHANDLE.
+//   - In each relocation scan, report all live collectible entries to the GC.
+// 
 #ifndef __THREADLOCALSTORAGE_H__
 #define __THREADLOCALSTORAGE_H__
 
 class Thread;
+
+enum class TLSIndexType
+{
+    Standard, // IndexOffset for this form of TLSIndex is scaled by sizeof(void*) and then added to ThreadLocalData::pTLSArrayData to get the final address
+}
 
 struct TLSIndex
 {
@@ -96,6 +60,7 @@ struct TLSIndex
     TLSIndex(uint32_t rawIndex) : TLSIndexRawIndex(rawIndex) { }
     uint32_t TLSIndexRawIndex;
     int32_t GetIndexOffset() const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex & 0xFFFFFF; }
+    TLSIndexType GetIndexType() const { LIMITED_METHOD_DAC_CONTRACT; return (TLSIndexType)(TLSIndexRawIndex >> 24); }
     bool IsAllocated() const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex != 0xFFFFFFFF;}
     static TLSIndex Unallocated() { LIMITED_METHOD_DAC_CONTRACT; return TLSIndex(0xFFFFFFFF); }
     bool operator == (TLSIndex index) const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex == index.TLSIndexRawIndex; }

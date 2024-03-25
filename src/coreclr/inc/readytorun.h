@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 0x0009
-#define READYTORUN_MINOR_VERSION 0x0002
+#define READYTORUN_MAJOR_VERSION 0x000A
+#define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 0x009
+#define MINIMUM_READYTORUN_MAJOR_VERSION 0x00A
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -34,6 +34,7 @@
 // R2R Version 9.0 adds support for the Vector512 type
 // R2R Version 9.1 adds new helpers to allocate objects on frozen segments
 // R2R Version 9.2 adds MemZero and NativeMemSet helpers
+// R2R Version 10.0 changes the algorithm for statics layout
 
 
 struct READYTORUN_CORE_HEADER
@@ -404,11 +405,8 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_DblRem                    = 0xE0,
     READYTORUN_HELPER_FltRem                    = 0xE1,
 
-    // These two helpers can be removed once MINIMUM_READYTORUN_MAJOR_VERSION is 10+
-    // alongside the CORINFO_HELP_FLTROUND/CORINFO_HELP_DBLROUND
-    // counterparts and all related code.
-    READYTORUN_HELPER_DblRound                  = 0xE2,
-    READYTORUN_HELPER_FltRound                  = 0xE3,
+    // Formerly READYTORUN_HELPER_DblRound      = 0xE2,
+    // Formerly READYTORUN_HELPER_FltRound      = 0xE3,
 
 #ifdef FEATURE_EH_FUNCLETS
     // Personality routines
