@@ -5190,9 +5190,13 @@ unsigned AllRegsMask::Count()
 
 regMaskOnlyOne AllRegsMask::operator[](int index) const
 {
+#ifdef HAS_PREDICATE_REGS
     assert(index <= REGISTER_TYPE_COUNT);
     RegBitSet32 value = _registers[index];
     return decodeForIndex(index, value);
+#else
+    return _float_gpr;
+#endif
 }
 
 //regMaskOnlyOne& AllRegsMask::operator[](int index)
@@ -5203,13 +5207,21 @@ regMaskOnlyOne AllRegsMask::operator[](int index) const
 
 void AllRegsMask::AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type)
 {
+#ifdef HAS_PREDICATE_REGS
     int         index = regIndexForType(type);
     _registers[regIndexForType(type)] |= encodeForIndex(index, maskToAdd);
+#else
+    _float_gpr |= maskToAdd;
+#endif
 }
 
 void AllRegsMask::AddGprRegMask(regMaskOnlyOne maskToAdd)
 {
+#ifdef HAS_PREDICATE_REGS
     _registers[0] |= maskToAdd;
+#else
+    _float_gpr |= maskToAdd;
+#endif
 }
 
 void AllRegsMask::AddFloatRegMask(regMaskOnlyOne maskToAdd)
@@ -5253,22 +5265,35 @@ bool AllRegsMask::IsRegNumInMask(regNumber reg)
 //
 void AllRegsMask::AddRegNumInMask(regNumber reg ARM_ARG(var_types type))
 {
-    int         index = regIndexForRegister(reg);
     RegBitSet64 value = genRegMask(reg ARM_ARG(type));
+#ifdef HAS_PREDICATE_REGS
+    int         index = regIndexForRegister(reg);    
     _registers[index] |= encodeForIndex(index, value);
+#else
+    _float_gpr |= value;
+#endif
+
 }
 
 void AllRegsMask::RemoveRegNumFromMask(regNumber reg ARM_ARG(var_types type))
 {
-    int         index           = regIndexForRegister(reg);
     RegBitSet64 regMaskToRemove = genRegMask(reg ARM_ARG(type));
+#ifdef HAS_PREDICATE_REGS
+    int index = regIndexForRegister(reg); 
     _registers[index] &= ~encodeForIndex(index, regMaskToRemove);
+#else
+    _float_gpr &= ~regMaskToRemove;
+#endif
 }
 
 void AllRegsMask::RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type)
 {
+#ifdef HAS_PREDICATE_REGS
     int         index           = regIndexForType(type);
     _registers[index] &= ~encodeForIndex(index, regMaskToRemove);
+#else
+    _float_gpr &= ~regMaskToRemove;
+#endif
 }
 
 bool AllRegsMask::IsRegNumInMask(regNumber reg ARM_ARG(var_types type))
@@ -5294,9 +5319,13 @@ bool AllRegsMask::IsFloatMaskPresent(regMaskFloat maskToCheck) const
 
 regMaskOnlyOne AllRegsMask::GetRegMaskForType(var_types type) const
 {
+#ifdef HAS_PREDICATE_REGS
     int index = regIndexForType(type);
     RegBitSet32 value = _registers[index];
     return decodeForIndex(index, value);
+#else
+    return _float_gpr;
+#endif
 }
 
 regMaskOnlyOne AllRegsMask::GetMaskForRegNum(regNumber reg) const
