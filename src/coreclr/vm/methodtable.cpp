@@ -3459,19 +3459,16 @@ static bool GetFlattenedFieldTypes(MethodTable* pMT, CorElementType types[2], in
 
     for (int i = 0; i < nFields; ++i)
     {
-        if (fields[i].GetSize() > TARGET_POINTER_SIZE)
-            return false;
-
         CorElementType type = fields[i].GetFieldType();
-        if (CorTypeInfo::IsPrimitiveType_NoThrow(type))
-        {
-            assert(*typeIndex < 2);
-            types[(*typeIndex)++] = type;
-        }
-        else if (type == ELEMENT_TYPE_VALUETYPE)
+        if (type == ELEMENT_TYPE_VALUETYPE)
         {
             if (!GetFlattenedFieldTypes(fields[i].GetApproxFieldTypeHandleThrowing().GetMethodTable(), types, typeIndex))
                 return false;
+        }
+        else if (fields[i].GetSize() <= TARGET_POINTER_SIZE)
+        {
+            assert(*typeIndex < 2);
+            types[(*typeIndex)++] = type;
         }
         else
         {
@@ -3523,8 +3520,8 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
             goto _End_arg;
 
         assert(nFields == 1 || nFields == 2);
-        assert(CorTypeInfo::IsPrimitiveType_NoThrow(types[0]));
-        assert(CorTypeInfo::IsPrimitiveType_NoThrow(types[1]) || nFields == 1);
+        assert(CorTypeInfo::Size_NoThrow(types[0]) <= TARGET_POINTER_SIZE);
+        assert(CorTypeInfo::Size_NoThrow(types[1]) <= TARGET_POINTER_SIZE || nFields == 1);
 
         size =
             (CorTypeInfo::IsFloat_NoThrow(types[0]) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
@@ -3545,8 +3542,8 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
         }
 
         size |=
-            (CorTypeInfo::Size_NoThrow(types[0]) == 8 ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
-            (CorTypeInfo::Size_NoThrow(types[1]) == 8 ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
+            (CorTypeInfo::Size_NoThrow(types[0]) == TARGET_POINTER_SIZE ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
+            (CorTypeInfo::Size_NoThrow(types[1]) == TARGET_POINTER_SIZE ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
     }
     else
     {
