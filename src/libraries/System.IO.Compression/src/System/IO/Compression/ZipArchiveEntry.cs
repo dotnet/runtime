@@ -803,18 +803,21 @@ namespace System.IO.Compression
         {
             // Information about the Deflate compression option is stored in bits 1 and 2 of the general purpose bit flags.
             // If the compression method is not Deflate, the Deflate compression option is invalid - default to NoCompression.
-            int deflateCompressionOption = compressionMethod == CompressionMethodValues.Deflate || compressionMethod == CompressionMethodValues.Deflate64
-                ? (int)generalPurposeBitFlag & 0x6
-                : 6;
-
-            return  deflateCompressionOption switch
+            if (compressionMethod == CompressionMethodValues.Deflate || compressionMethod == CompressionMethodValues.Deflate64)
             {
-                0 => CompressionLevel.Optimal,
-                2 => CompressionLevel.SmallestSize,
-                4 => CompressionLevel.Fastest,
-                6 => CompressionLevel.NoCompression,
-                _ => CompressionLevel.Optimal
-            };
+                return ((int)generalPurposeBitFlag & 0x6) switch
+                {
+                    0 => CompressionLevel.Optimal,
+                    2 => CompressionLevel.SmallestSize,
+                    4 => CompressionLevel.Fastest,
+                    6 => CompressionLevel.Fastest,
+                    _ => CompressionLevel.Optimal
+                };
+            }
+            else
+            {
+                return CompressionLevel.NoCompression;
+            }
         }
 
         private static BitFlagValues MapDeflateCompressionOption(BitFlagValues generalPurposeBitFlag, CompressionLevel compressionLevel, CompressionMethodValues compressionMethod)
@@ -827,7 +830,7 @@ namespace System.IO.Compression
                     {
                         CompressionLevel.Optimal => 0,
                         CompressionLevel.SmallestSize => 2,
-                        CompressionLevel.Fastest => 4,
+                        CompressionLevel.Fastest => 6,
                         CompressionLevel.NoCompression => 6,
                         _ => 0
                     }
