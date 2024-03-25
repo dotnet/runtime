@@ -11,6 +11,10 @@
 
 #include <cstddef>
 
+#if defined(__linux__) || (defined(__APPLE__) && defined(TARGET_OS_OSX) && TARGET_OS_OSX)
+#define JITDUMP_SUPPORTED
+#endif
+
 #ifdef JITDUMP_SUPPORTED
 
 #include <fcntl.h>
@@ -131,7 +135,7 @@ namespace
     {
         JitCodeLoadRecord() :
             pid(getpid()),
-            tid(sys_gettid())
+            tid((uint32_t)PlatformGetCurrentThreadId())
         {
             header.id = JIT_CODE_LOAD;
             header.timestamp = GetTimeStampNS();
