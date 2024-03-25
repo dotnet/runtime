@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -162,17 +163,39 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public ICustomAttributeProvider? AttributeProvider
         {
-            get => _attributeProvider;
+            get
+            {
+                ICustomAttributeProvider attributeProvider = _attributeProvider ?? InitializeAttributeProvider();
+                return ReferenceEquals(attributeProvider, s_nullAttributeProvider) ? null : attributeProvider;
+            }
             set
             {
                 VerifyMutable();
 
-                _attributeProvider = value;
+                _attributeProvider = value ?? s_nullAttributeProvider;
             }
         }
 
-        private JsonObjectCreationHandling? _objectCreationHandling;
-        internal JsonObjectCreationHandling EffectiveObjectCreationHandling { get; private set; }
+        // Because the getter can initialize its own backing field, we want to avoid races between the getter and setter.
+        // This is done using CAS on the single _attributeProvider field which employs the following encoding:
+        // null: not initialized, s_nullAttributeProvider: null, otherwise: _attributeProvider
+        private ICustomAttributeProvider? _attributeProvider;
+        private static readonly ICustomAttributeProvider s_nullAttributeProvider = typeof(NullAttributeProviderPlaceholder);
+        private sealed class NullAttributeProviderPlaceholder;
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+            Justification = "Looks up members that are already being referenced by the source generator.")]
+        private ICustomAttributeProvider InitializeAttributeProvider()
+        {
+            // If the property is source generated, perform a reflection lookup of its MemberInfo.
+            // Avoids overhead of reflection at startup and makes this method trimmable if unused.
+            ICustomAttributeProvider? provider = IsSourceGenerated && MemberName != null
+                ? DefaultJsonTypeInfoResolver.LookupMemberInfo(DeclaringType, MemberType, MemberName)
+                : null;
+
+            provider ??= s_nullAttributeProvider;
+            return Interlocked.CompareExchange(ref _attributeProvider, provider, null) ?? provider;
+        }
 
         /// <summary>
         /// Gets or sets a value indicating if the property or field should be replaced or populated during deserialization.
@@ -202,10 +225,13 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private ICustomAttributeProvider? _attributeProvider;
+        private JsonObjectCreationHandling? _objectCreationHandling;
+        internal JsonObjectCreationHandling EffectiveObjectCreationHandling { get; private set; }
+
         internal string? MemberName { get; set; }
         internal MemberTypes MemberType { get; set; }
         internal bool IsVirtual { get; set; }
+        internal bool IsSourceGenerated { get; set; }
 
         /// <summary>
         /// Specifies whether the current property is a special extension data property.

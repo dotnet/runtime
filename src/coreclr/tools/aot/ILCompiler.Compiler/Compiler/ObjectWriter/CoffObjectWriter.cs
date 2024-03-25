@@ -92,7 +92,7 @@ namespace ILCompiler.ObjectWriter
                 Name =
                     section == ObjectNodeSection.TLSSection ? ".tls$" :
                     section == ObjectNodeSection.HydrationTargetSection ? "hydrated" :
-                    (section.Name.StartsWith(".") ? section.Name : "." + section.Name),
+                    (section.Name.StartsWith('.') ? section.Name : "." + section.Name),
                 SectionCharacteristics = section.Type switch
                 {
                     SectionType.ReadOnly =>
