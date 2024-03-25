@@ -3525,21 +3525,25 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
         size =
             (CorTypeInfo::IsFloat_NoThrow(types[0]) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
-            (CorTypeInfo::IsFloat_NoThrow(types[1]) ? STRUCT_FLOAT_FIELD_SECOND : 0) |
+            (CorTypeInfo::IsFloat_NoThrow(types[1]) ? STRUCT_FLOAT_FIELD_SECOND : 0);
+
+        if (size == 0)
+            goto _End_arg;
+
+        if (size == (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND))
+        {
+            assert(nFields == 2);
+            size = STRUCT_FLOAT_FIELD_ONLY_TWO;
+        }
+        else if (nFields == 1)
+        {
+            assert(size == STRUCT_FLOAT_FIELD_FIRST);
+            size = STRUCT_FLOAT_FIELD_ONLY_ONE;
+        }
+
+        size |=
             (CorTypeInfo::Size_NoThrow(types[0]) == 8 ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
             (CorTypeInfo::Size_NoThrow(types[1]) == 8 ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
-
-        int firstOrSecond = size & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND);
-        if (firstOrSecond == (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND))
-        {
-            size |= STRUCT_FLOAT_FIELD_ONLY_TWO;
-            size &= ~(STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND);
-        }
-        else if (firstOrSecond != 0 && nFields == 1)
-        {
-            size |= STRUCT_FLOAT_FIELD_ONLY_ONE;
-            size &= ~(STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND);
-        }
     }
     else
     {
