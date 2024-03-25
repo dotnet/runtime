@@ -7,12 +7,19 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
+using static Microsoft.Quic.QUIC_CIPHER_ALGORITHM;
+using static Microsoft.Quic.QUIC_CIPHER_SUITE;
+using static Microsoft.Quic.QUIC_HASH_ALGORITHM;
+using static Microsoft.Quic.QUIC_KEY_EXCHANGE_ALGORITHM;
+using static Microsoft.Quic.QUIC_TLS_PROTOCOL_VERSION;
+
 using CONNECTED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._CONNECTED_e__Struct;
 using LOCAL_ADDRESS_CHANGED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._LOCAL_ADDRESS_CHANGED_e__Struct;
 using PEER_ADDRESS_CHANGED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_ADDRESS_CHANGED_e__Struct;
@@ -222,6 +229,40 @@ public sealed partial class QuicConnection : IAsyncDisposable
             return _remoteCertificate;
         }
     }
+
+    /// <summary>
+    /// Gets the <see cref="SslProtocols" /> corresponding to the TLS version used during the connection handshake.
+    /// </summary>
+    public SslProtocols SslProtocol { get; private set; }
+
+    /// <summary>
+    /// Gets the cipher suite which was negotiated for this connection.
+    /// </summary>
+    [CLSCompliant(false)]
+    public TlsCipherSuite NegotiatedCipherSuite { get; private set; }
+
+    /// <summary>
+    /// Gets a value that identifies the bulk encryption algorithm used by this connection.
+    /// </summary>
+    public CipherAlgorithmType CipherAlgorithm { get; private set; }
+
+    /// <summary>
+    /// Gets a value that identifies the strength of the cipher algorithm used by this connection.
+    /// </summary>
+    public int CipherStrength { get; private set; }
+
+    //
+    // defined in SslStream but we don't need it as QUIC uses AEAD which don't use the hash algorithm
+    // from the cipher suite
+    //
+    public HashAlgorithmType HashAlgorithm { get; private set; }
+    public int HashStrength { get; private set; }
+
+    //
+    // based on SslConnectionInfo.Unix.cs it would return 0/None in all cases
+    //
+    public ExchangeAlgorithmType KeyExchangeAlgorithm { get; private set; }
+    public int KeyExchangeStrength { get; private set; }
 
     /// <summary>
     /// Final, negotiated application protocol.
@@ -513,6 +554,45 @@ public sealed partial class QuicConnection : IAsyncDisposable
 #if DEBUG
         _tlsSecret?.WriteSecret();
 #endif
+
+        QUIC_HANDSHAKE_INFO handshakeInfo = MsQuicHelpers.GetMsQuicParameter<QUIC_HANDSHAKE_INFO>(_handle, QUIC_PARAM_TLS_HANDSHAKE_INFO);
+
+        SslProtocol = handshakeInfo.TlsProtocolVersion switch
+        {
+            QUIC_TLS_PROTOCOL_VERSION.TLS_1_3 => SslProtocols.Tls13,
+            _ => SslProtocols.None,
+        };
+
+        CipherAlgorithm = handshakeInfo.CipherAlgorithm switch
+        {
+            QUIC_CIPHER_ALGORITHM.AES_128 => CipherAlgorithmType.Aes128,
+            QUIC_CIPHER_ALGORITHM.AES_256 => CipherAlgorithmType.Aes256,
+            QUIC_CIPHER_ALGORITHM.CHACHA20 => CipherAlgorithmType.None, // TODO: CipherAlgorithmType.ChaCha20,
+            _ => CipherAlgorithmType.None,
+        };
+        CipherStrength = handshakeInfo.CipherStrength;
+
+        HashAlgorithm = handshakeInfo.Hash switch
+        {
+            QUIC_HASH_ALGORITHM.SHA_256 => HashAlgorithmType.Sha256,
+            QUIC_HASH_ALGORITHM.SHA_384 => HashAlgorithmType.Sha384,
+            _ => HashAlgorithmType.None,
+        };
+        HashStrength = handshakeInfo.HashStrength;
+
+        KeyExchangeAlgorithm = handshakeInfo.KeyExchangeAlgorithm switch
+        {
+            _ => ExchangeAlgorithmType.None,
+        };
+        KeyExchangeStrength = handshakeInfo.KeyExchangeStrength;
+
+        NegotiatedCipherSuite = handshakeInfo.CipherSuite switch
+        {
+            QUIC_CIPHER_SUITE.TLS_AES_128_GCM_SHA256 => TlsCipherSuite.TLS_AES_128_GCM_SHA256,
+            QUIC_CIPHER_SUITE.TLS_AES_256_GCM_SHA384 => TlsCipherSuite.TLS_AES_256_GCM_SHA384,
+            QUIC_CIPHER_SUITE.TLS_CHACHA20_POLY1305_SHA256 => TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256,
+            _ => TlsCipherSuite.TLS_AES_128_GCM_SHA256,
+        };
 
         if (NetEventSource.Log.IsEnabled())
         {
