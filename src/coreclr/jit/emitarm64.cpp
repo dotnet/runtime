@@ -9836,7 +9836,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             fmt      = IF_SVE_IE_2A;
 
             // TODO-SVE: Don't assume 128bit vectors
-            scale        = 4;
+            scale        = NaturalScale_helper(EA_16BYTE);
             ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
 
             if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
@@ -10115,7 +10115,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             fmt      = IF_SVE_JH_2A;
 
             // TODO-SVE: Don't assume 128bit vectors
-            scale        = 4;
+            scale        = NaturalScale_helper(EA_16BYTE);
             ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
 
             if (((imm & mask) == 0) && (isValidSimm<9>(imm >> scale)))
