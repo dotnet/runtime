@@ -137,7 +137,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["MyInt"] is string value1)
             {
-                instance.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
+                instance.MyInt = ParseInt(value1, configuration.GetSection("MyInt").Path);
             }
             else if (defaultValueIfNotFound)
             {

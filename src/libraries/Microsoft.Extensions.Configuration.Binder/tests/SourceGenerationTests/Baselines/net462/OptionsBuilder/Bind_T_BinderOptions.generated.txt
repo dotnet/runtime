@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (section.Value is string value)
                 {
-                    instance.Add(ParseInt(value, () => section.Path));
+                    instance.Add(ParseInt(value, section.Path));
                 }
             }
         }

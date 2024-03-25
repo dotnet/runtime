@@ -174,7 +174,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             int x = (int)(10);
             if (configuration["x"] is string value13)
             {
-                x = ParseInt(value13, () => configuration.GetSection("x").Path);
+                x = ParseInt(value13, configuration.GetSection("x").Path);
             }
 
             return new global::Record<global::System.Action>(x)
