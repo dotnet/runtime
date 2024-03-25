@@ -174,30 +174,31 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          buildConfig: release
-          runtimeFlavor: mono
-          platforms:
-          - linux_x64
-          - linux_arm64
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_LLVMFullAOT_RuntimeTests
-            buildArgs: -s mono+clr.iltools+clr.hosts+libs+host+packs -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }}
-                      /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-            postBuildSteps:
-              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-                parameters:
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: Mono_Release
-                  llvmAotStepContainer: linux_x64_llvmaot
-                  runtimeVariant: llvmfullaot
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+      # Disabled due to OOM issues https://github.com/dotnet/runtime/issues/90427
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
+      #     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+      #     buildConfig: release
+      #     runtimeFlavor: mono
+      #     platforms:
+      #     - linux_x64
+      #     - linux_arm64
+      #     jobParameters:
+      #       testGroup: innerloop
+      #       nameSuffix: AllSubsets_Mono_LLVMFullAOT_RuntimeTests
+      #       buildArgs: -s mono+clr.iltools+clr.hosts+libs+host+packs -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }}
+      #                 /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+      #       postBuildSteps:
+      #         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+      #           parameters:
+      #             creator: dotnet-bot
+      #             testRunNamePrefixSuffix: Mono_Release
+      #             llvmAotStepContainer: linux_x64_llvmaot
+      #             runtimeVariant: llvmfullaot
+      #       condition: >-
+      #         or(
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+      #           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+      #           eq(variables['isRollingBuild'], true))
