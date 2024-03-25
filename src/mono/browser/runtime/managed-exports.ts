@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { GCHandle, GCHandleNull, JSMarshalerArguments, JSThreadInteropMode, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod, PThreadPtr } from "./types/internal";
+import { GCHandle, GCHandleNull, JSMarshalerArguments, JSThreadBlockingMode, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod, PThreadPtr } from "./types/internal";
 import cwraps, { threads_c_functions as twraps } from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
 import { JavaScriptMarshalerArgSize, alloc_stack_frame, get_arg, get_arg_gc_handle, is_args_exception, set_arg_i32, set_arg_intptr, set_arg_type, set_gc_handle, set_receiver_should_free } from "./marshal";
@@ -165,11 +165,13 @@ export function complete_task(holder_gc_handle: GCHandle, error?: any, data?: an
 export function call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) {
     loaderHelpers.assert_runtime_running();
     if (WasmEnableThreads) {
-        if (runtimeHelpers.config.jsThreadInteropMode == JSThreadInteropMode.NoSyncJSInterop) {
-            throw new Error("Cannot call synchronous C# methods.");
-        }
-        else if (runtimeHelpers.isPendingSynchronousCall) {
-            throw new Error("Cannot call synchronous C# method from inside a synchronous call to a JS method.");
+        if (monoThreadInfo.isUI) {
+            if (runtimeHelpers.config.jsThreadBlockingMode == JSThreadBlockingMode.PreventSynchronousJSExport) {
+                throw new Error("Cannot call synchronous C# methods.");
+            }
+            else if (runtimeHelpers.isPendingSynchronousCall) {
+                throw new Error("Cannot call synchronous C# method from inside a synchronous call to a JS method.");
+            }
         }
     }
     const sp = Module.stackSave();
@@ -226,26 +228,22 @@ export function get_managed_stack_trace(exception_gc_handle: GCHandle) {
     }
 }
 
-// GCHandle InstallMainSynchronizationContext(nint jsNativeTID, JSThreadBlockingMode jsThreadBlockingMode, JSThreadInteropMode jsThreadInteropMode, MainThreadingMode mainThreadingMode)
-export function install_main_synchronization_context(jsThreadBlockingMode: number, jsThreadInteropMode: number, mainThreadingMode: number): GCHandle {
+// GCHandle InstallMainSynchronizationContext(nint jsNativeTID, JSThreadBlockingMode jsThreadBlockingMode)
+export function install_main_synchronization_context(jsThreadBlockingMode: number): GCHandle {
     if (!WasmEnableThreads) return GCHandleNull;
     assert_c_interop();
 
     try {
         // this block is like alloc_stack_frame() but without set_args_context()
-        const bytes = JavaScriptMarshalerArgSize * 6;
+        const bytes = JavaScriptMarshalerArgSize * 4;
         const args = Module.stackAlloc(bytes) as any;
         _zero_region(args, bytes);
 
         const res = get_arg(args, 1);
         const arg1 = get_arg(args, 2);
         const arg2 = get_arg(args, 3);
-        const arg3 = get_arg(args, 4);
-        const arg4 = get_arg(args, 5);
         set_arg_intptr(arg1, mono_wasm_main_thread_ptr() as any);
         set_arg_i32(arg2, jsThreadBlockingMode);
-        set_arg_i32(arg3, jsThreadInteropMode);
-        set_arg_i32(arg4, mainThreadingMode);
 
         // this block is like invoke_sync_jsexport() but without assert_js_interop()
         cwraps.mono_wasm_invoke_jsexport(managedExports.InstallMainSynchronizationContext!, args);
@@ -282,11 +280,13 @@ export function invoke_sync_jsexport(method: MonoMethod, args: JSMarshalerArgume
     if (!WasmEnableThreads) {
         cwraps.mono_wasm_invoke_jsexport(method, args as any);
     } else {
-        if (runtimeHelpers.config.jsThreadInteropMode == JSThreadInteropMode.NoSyncJSInterop) {
-            throw new Error("Cannot call synchronous C# methods.");
-        }
-        else if (runtimeHelpers.isPendingSynchronousCall) {
-            throw new Error("Cannot call synchronous C# method from inside a synchronous call to a JS method.");
+        if (monoThreadInfo.isUI) {
+            if (runtimeHelpers.config.jsThreadBlockingMode == JSThreadBlockingMode.PreventSynchronousJSExport) {
+                throw new Error("Cannot call synchronous C# methods.");
+            }
+            else if (runtimeHelpers.isPendingSynchronousCall) {
+                throw new Error("Cannot call synchronous C# method from inside a synchronous call to a JS method.");
+            }
         }
         if (runtimeHelpers.isManagedRunningOnCurrentThread) {
             twraps.mono_wasm_invoke_jsexport_sync(method, args as any);

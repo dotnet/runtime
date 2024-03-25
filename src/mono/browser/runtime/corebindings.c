@@ -51,6 +51,7 @@ void mono_wasm_invoke_js_function_send (pthread_t target_tid, int function_js_ha
 extern void mono_threads_wasm_async_run_in_target_thread_vi (pthread_t target_thread, void (*func) (gpointer), gpointer user_data1);
 extern void mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 extern void mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer args);
+extern void mono_wasm_warn_about_blocking_wait (void* ptr, int32_t length);
 #else
 extern void mono_wasm_bind_js_import (void *signature, int *is_exception, MonoObject **result);
 extern void mono_wasm_invoke_jsimport_ST (int function_handle, void *args);
@@ -85,6 +86,7 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::InvokeJSImportAsyncPost", mono_wasm_invoke_jsimport_async_post);
 	mono_add_internal_call ("Interop/Runtime::InvokeJSFunctionSend", mono_wasm_invoke_js_function_send);
 	mono_add_internal_call ("Interop/Runtime::CancelPromisePost", mono_wasm_cancel_promise_post);
+	mono_add_internal_call ("System.Threading.Thread::WarnAboutBlockingWait", mono_wasm_warn_about_blocking_wait);
 #else
 	mono_add_internal_call ("Interop/Runtime::BindJSImport", mono_wasm_bind_js_import);
 	mono_add_internal_call ("Interop/Runtime::InvokeJSImportST", mono_wasm_invoke_jsimport_ST);

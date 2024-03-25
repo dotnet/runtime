@@ -50,9 +50,18 @@ namespace System.Runtime.InteropServices.JavaScript
             ctx.previousSynchronizationContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(ctx);
 
-            if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.NoBlockingWait)
+            if (!isMainThread)
             {
-                Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+                if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.ThrowWhenBlockingWait)
+                {
+                    Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+                }
+                else if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.WarnWhenBlockingWait
+                    || JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.PreventSynchronousJSExport
+                    )
+                {
+                    Thread.WarnOnBlockingWaitOnJSInteropThread = true;
+                }
             }
 
             var proxyContext = ctx.ProxyContext;
