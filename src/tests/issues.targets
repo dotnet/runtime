@@ -3127,8 +3127,8 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- Mobile NativeAOT using Mono runtime -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(RuntimeFlavor)' == 'mono' and '$(TestBuildMode)' == 'nativeaot'">
+    <!-- Apple mobile NativeAOT -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsAppleMobile)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">
         <ExcludeList Include = "$(XunitTestBinBase)/nativeaot/SmokeTests/TrimmingBehaviors/**">
             <Issue>https://github.com/dotnet/runtime/issues/100226</Issue>
         </ExcludeList>
