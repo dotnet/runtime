@@ -36,8 +36,7 @@ Note that Visual Studio and the development tools described below are required, 
 
 * It's recommended to use **Workloads** installation approach. The following are the minimum requirements:
   * **.NET Desktop Development** with all default components,
-  * **Desktop Development with C++** with all default components, plus:
-    * *Windows 10 SDK (10.0.20348)* or newer, instead of version 10.0.19041
+  * **Desktop Development with C++** with all default components.
 * To build for Arm64, make sure that you have the right architecture-specific compilers installed. In the **Individual components** window, in the **Compilers, build tools, and runtimes** section:
   * For Arm64, check the box for _MSVC v143* VS 2022 C++ ARM64 build tools (Latest)_.
 * To build the tests, you will need some additional components:
