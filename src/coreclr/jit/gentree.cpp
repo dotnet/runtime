@@ -24621,12 +24621,39 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             if (varTypeIsShort(simdBaseType))
             {
                 // TODO-XARCH-CQ: We should emulate cross-lane shuffling for short/ushort
+                // TODO-XARCH-CQ: We should use Avx2.Shuffle for short/ushort
                 assert(!crossLane);
 
-                op2 = gtNewVconNode(type);
-                op2->AsVecCon()->gtSimdVal = vecCns;
+                // If we aren't crossing lanes, then we can decompose the short/ushort
+                // operations into 2x 128-bit operations
 
-                retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
+                // We want to build what is essentially the following managed code:
+                //     var op1Lower = op1.GetLower();
+                //     op1Lower = Ssse3.Shuffle(op1Lower, Vector128.Create(...));
+                //
+                //     var op1Upper = op1.GetUpper();
+                //     op1Upper = Ssse3.Shuffle(op1Upper, Vector128.Create(...));
+                //
+                //     return Vector256.Create(op1Lower, op1Upper);
+
+                simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
+
+                GenTree* op1Dup   = fgMakeMultiUse(&op1);
+                GenTree* op1Lower = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseJitType, simdSize);
+
+                op2                          = gtNewVconNode(TYP_SIMD16);
+                op2->AsVecCon()->gtSimd16Val = vecCns.v128[0];
+
+                op1Lower = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lower, op2, NI_SSSE3_Shuffle, simdBaseJitType, 16);
+
+                GenTree* op1Upper = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseJitType, simdSize);
+
+                op2                          = gtNewVconNode(TYP_SIMD16);
+                op2->AsVecCon()->gtSimd16Val = vecCns.v128[1];
+
+                op1Upper = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Upper, op2, NI_SSSE3_Shuffle, simdBaseJitType, 16);
+
+                return gtNewSimdWithUpperNode(type, op1Lower, op1Upper, simdBaseJitType, simdSize);
             }
             else
             {
@@ -24645,7 +24672,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                     else wants = &rightWants;
 
                     // update our wants based on which values we use
-                    value = op2->GetIntegralVectorConstElement(index, simdBaseType);
+                    value = vecCns.u8[index];
                     if (value < 16) *wants |= 1;
                     else if (value < 32) *wants |= 2;
 
@@ -24681,7 +24708,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                         op2 = gtNewVconNode(type);
                         op2->AsVecCon()->gtSimdVal = vecCns;
 
-                        retNode = gtNewSimdHWIntrinsicNode(type, op1, fgMakeMultiUse(&op2), NI_AVX2_Shuffle, simdBaseJitType, simdSize);
+                        retNode = gtNewSimdHWIntrinsicNode(type, retNode, fgMakeMultiUse(&op2), NI_AVX2_Shuffle, simdBaseJitType, simdSize);
                     }
                 }
                 else
