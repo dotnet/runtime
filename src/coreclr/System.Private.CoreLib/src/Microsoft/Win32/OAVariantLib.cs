@@ -13,9 +13,9 @@
 ===========================================================*/
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -33,34 +33,28 @@ namespace Microsoft.Win32
         public const int CalendarHijri = 0x08;
         public const int LocalBool = 0x10;
 
-        internal static readonly Type?[] ClassTypes = {
-            typeof(Empty),
-            typeof(void),
-            typeof(bool),
-            typeof(char),
-            typeof(sbyte),
-            typeof(byte),
-            typeof(short),
-            typeof(ushort),
-            typeof(int),
-            typeof(uint),
-            typeof(long),
-            typeof(ulong),
-            typeof(float),
-            typeof(double),
-            typeof(string),
-            typeof(void),
-            typeof(DateTime),
-            typeof(TimeSpan),
-            typeof(object),
-            typeof(decimal),
-            null,  // Enums - what do we do here?
-            typeof(Missing),
-            typeof(DBNull),
+        private static readonly Dictionary<Type, VarEnum> ClassTypes = new Dictionary<Type, VarEnum>
+        {
+            { typeof(Empty), VarEnum.VT_EMPTY },
+            { typeof(void), VarEnum.VT_VOID },
+            { typeof(bool), VarEnum.VT_BOOL },
+            { typeof(char), VarEnum.VT_I2 },
+            { typeof(sbyte), VarEnum.VT_I1 },
+            { typeof(byte), VarEnum.VT_UI1 },
+            { typeof(short), VarEnum.VT_I2 },
+            { typeof(ushort), VarEnum.VT_UI2 },
+            { typeof(int), VarEnum.VT_I4 },
+            { typeof(uint), VarEnum.VT_UI4 },
+            { typeof(long), VarEnum.VT_I8 },
+            { typeof(ulong), VarEnum.VT_UI8 },
+            { typeof(float), VarEnum.VT_R4 },
+            { typeof(double), VarEnum.VT_R8 },
+            { typeof(string), VarEnum.VT_BSTR },
+            { typeof(DateTime), VarEnum.VT_DATE },
+            { typeof(object), VarEnum.VT_UNKNOWN },
+            { typeof(decimal), VarEnum.VT_DECIMAL },
+            { typeof(DBNull), VarEnum.VT_NULL },
         };
-
-        // Keep these numbers in sync w/ the above array.
-        private const int CV_OBJECT = 0x12;
 
         #endregion
 
@@ -76,77 +70,44 @@ namespace Microsoft.Win32
          * Variant and the types that CLR supports explicitly in the
          * CLR Variant class.
          */
-        internal static Variant ChangeType(Variant source, Type targetClass, short options, CultureInfo culture)
+        internal static object ChangeType(object source, Type targetClass, short options, CultureInfo culture)
         {
             ArgumentNullException.ThrowIfNull(targetClass);
             ArgumentNullException.ThrowIfNull(culture);
 
-            Variant result = default;
-            bool converted = false;
+            object? result = null;
 
             TypeHandle th = ((RuntimeType)targetClass).GetNativeTypeHandle();
             Debug.Assert(!th.IsTypeDesc);
             if (Variant.IsSystemDrawingColor(th.AsMethodTable()))
             {
-                if (source.CVType is Variant.CV_I4 or Variant.CV_U4)
+                if (source.GetType() == typeof(int) || source.GetType() == typeof(uint))
                 {
+                    uint sourceData = source.GetType() == typeof(int) ? (uint)(int)source : (uint)source;
                     // Int32/UInt32 can be converted to System.Drawing.Color
-                    object? ret = null;
-                    ConvertOleColorToSystemColor(ObjectHandleOnStack.Create(ref ret), (uint)source._data);
-                    Debug.Assert(ret != null);
-                    result._objref = ret;
-                    result._flags = Variant.CV_OBJECT;
-
-                    converted = true;
+                    ConvertOleColorToSystemColor(ObjectHandleOnStack.Create(ref result), sourceData);
+                    Debug.Assert(result != null);
+                    return result;
                 }
             }
 
-            if (!converted)
+            VarEnum vt = GetVTFromClass(targetClass);
+
+            ComVariant vOp = ToOAVariant(source);
+            ComVariant ret = default;
+
+            int hr = VariantChangeTypeEx(ref ret, ref vOp, culture.LCID, options, (ushort)vt);
+
+            using (vOp)
+            using (ret)
             {
-                VarEnum vt = source.CVType switch
+                if (hr < 0)
+                    OAFailed(hr);
+
+                result = FromOAVariant(ret);
+                if (targetClass == typeof(char))
                 {
-                    Variant.CV_EMPTY => VarEnum.VT_EMPTY,
-                    Variant.CV_VOID => VarEnum.VT_VOID,
-                    Variant.CV_BOOLEAN => VarEnum.VT_BOOL,
-                    Variant.CV_CHAR => VarEnum.VT_UI2,
-                    Variant.CV_I1 => VarEnum.VT_I1,
-                    Variant.CV_U1 => VarEnum.VT_UI1,
-                    Variant.CV_I2 => VarEnum.VT_I2,
-                    Variant.CV_U2 => VarEnum.VT_UI2,
-                    Variant.CV_I4 => VarEnum.VT_I4,
-                    Variant.CV_U4 => VarEnum.VT_UI4,
-                    Variant.CV_I8 => VarEnum.VT_UI8,
-                    Variant.CV_R4 => VarEnum.VT_R4,
-                    Variant.CV_R8 => VarEnum.VT_R8,
-                    Variant.CV_STRING => VarEnum.VT_BSTR,
-                    // Variant.CV_PTR => INVALID_MAPPING,
-                    Variant.CV_DATETIME => VarEnum.VT_DATE,
-                    // Variant.CV_TIMESPAN => INVALID_MAPPING,
-                    Variant.CV_OBJECT => VarEnum.VT_UNKNOWN,
-                    Variant.CV_DECIMAL => VarEnum.VT_DECIMAL,
-                    Variant.CV_CURRENCY => VarEnum.VT_CY,
-                    // Variant.CV_ENUM => INVALID_MAPPING,
-                    // Variant.CV_MISSING => INVALID_MAPPING,
-                    Variant.CV_NULL => VarEnum.VT_NULL,
-                    _ => throw new NotSupportedException(SR.NotSupported_ChangeType)
-                };
-
-                ComVariant vOp = ToOAVariant(source);
-                ComVariant ret = default;
-
-                int hr = VariantChangeTypeEx(ref ret, ref vOp, culture.LCID, options, (ushort)vt);
-
-                using (vOp)
-                using (ret)
-                {
-                    if (hr < 0)
-                        OAFailed(hr);
-
-                    result = FromOAVariant(ret);
-                    if (source.CVType == Variant.CV_CHAR)
-                    {
-                        result._flags = Variant.CV_CHAR;
-                    }
+                    result = (char)(uint)result;
                 }
             }
 
@@ -175,14 +136,22 @@ namespace Microsoft.Win32
             }
         }
 
-        private static ComVariant ToOAVariant(Variant input)
+        private static ComVariant ToOAVariant(object input)
         {
 
         }
 
-        private static Variant FromOAVariant(ComVariant input)
+        private static object FromOAVariant(ComVariant input)
         {
 
+        }
+
+        private static VarEnum GetVTFromClass(Type type)
+        {
+            if (ClassTypes.TryGetValue(type, out VarEnum vt))
+                return vt;
+
+            throw new NotSupportedException(SR.NotSupported_ChangeType);
         }
 
         [LibraryImport(Interop.Libraries.OleAut32)]
@@ -196,32 +165,6 @@ namespace Microsoft.Win32
 
 #pragma warning restore CS8500
 
-        #endregion
-
-
-        #region Private Helpers
-
-        private static int GetCVTypeFromClass(Type ctype)
-        {
-            Debug.Assert(ctype != null);
-            Debug.Assert(ClassTypes[CV_OBJECT] == typeof(object), "OAVariantLib::ClassTypes[CV_OBJECT] == Object.class");
-
-            // OleAut Binder works better if unrecognized
-            // types were changed to Object.
-            int cvtype = CV_OBJECT;
-
-            for (int i = 0; i < ClassTypes.Length; i++)
-            {
-                if (ctype.Equals(ClassTypes[i]))
-                {
-                    cvtype = i;
-                    break;
-                }
-            }
-
-            return cvtype;
-        }
-
-        #endregion
+#endregion
     }
 }
