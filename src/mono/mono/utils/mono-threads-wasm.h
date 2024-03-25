@@ -87,7 +87,6 @@ mono_wasm_atomic_wait_i32 (volatile int32_t *addr, int32_t expected, int32_t tim
 	return __builtin_wasm_memory_atomic_wait32((int32_t*)addr, expected, timeout_ns);
 }
 
-extern MonoNativeTlsKey jobs_key;
 #else /* DISABLE_THREADS */
 extern GSList *jobs;
 #endif /* DISABLE_THREADS */
