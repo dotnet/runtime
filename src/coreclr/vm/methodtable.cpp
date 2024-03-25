@@ -3483,16 +3483,19 @@ static bool GetFlattenedFieldTypes(MethodTable* pMT, CorElementType types[2], in
     {
         assert(nFields == 1);
 
-        int nFieldsPerElement = *typeIndex - elementTypeIndex;
-        assert(nFieldsPerElement == 1 || nFieldsPerElement == 2);
+        int nFlattenedFieldsPerElement = *typeIndex - elementTypeIndex;
+        if (nFlattenedFieldsPerElement == 0)
+            return true;
+
+        assert(nFlattenedFieldsPerElement == 1 || nFlattenedFieldsPerElement == 2);
 
         int nElements = pMT->GetNumInstanceFieldBytes() / fields[0].GetSize();
         if (nElements > 2)
             return false;
 
-        if (nElements == 2 && nFieldsPerElement == 1)
+        if (nElements == 2)
         {
-            if (*typeIndex + 1 > 2)
+            if (*typeIndex + nFlattenedFieldsPerElement > 2)
                 return false;
 
             assert(elementTypeIndex == 0);
