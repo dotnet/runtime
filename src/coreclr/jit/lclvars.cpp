@@ -521,6 +521,16 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
             lvaSetClass(varDscInfo->varNum, info.compClassHnd);
         }
 
+        varDsc->lvIsRegArg = 1;
+        noway_assert(varDscInfo->intRegArgNum == 0);
+
+        varDsc->SetArgReg(
+            genMapRegArgNumToRegNum(varDscInfo->allocRegArg(TYP_INT), varDsc->TypeGet(), info.compCallConv));
+#if FEATURE_MULTIREG_ARGS
+        varDsc->SetOtherArgReg(REG_NA);
+#endif
+        varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
+
 #ifdef DEBUG
         if (verbose)
         {
@@ -733,6 +743,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     !varDscInfo->canEnreg(TYP_INT, cSlots)) // The end of the struct can't fit in a register
                 {
                     cSlotsToEnregister = 1; // Force the split
+                    varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
                 }
             }
         }
@@ -1655,50 +1666,22 @@ void Compiler::lvaClassifyParameterABI()
         return;
     }
 
-#if defined(TARGET_X86)
-    switch (info.compCallConv)
-    {
-        case CorInfoCallConvExtension::Thiscall:
-        {
-            static const regNumberSmall thiscallRegs[] = {REG_ECX};
-            X86Classifier               classifier(thiscallRegs, ArrLen(thiscallRegs));
-            lvaClassifyParameterABI(classifier);
-            break;
-        }
-        case CorInfoCallConvExtension::C:
-        case CorInfoCallConvExtension::Stdcall:
-        case CorInfoCallConvExtension::CMemberFunction:
-        case CorInfoCallConvExtension::StdcallMemberFunction:
-        {
-            X86Classifier classifier(nullptr, 0);
-            lvaClassifyParameterABI(classifier);
-            break;
-        }
-        default:
-        {
-            static const regNumberSmall regs[]  = {REG_ECX, REG_EDX};
-            unsigned                    numRegs = ArrLen(regs);
-            if (info.compIsVarArgs)
-            {
-                // In varargs methods we only enregister the this pointer (if there is one).
-                numRegs = info.compThisArg == BAD_VAR_NUM ? 0 : 1;
-            }
-            X86Classifier classifier(regs, numRegs);
-            lvaClassifyParameterABI(classifier);
-            break;
-        }
-    }
-#elif !defined(TARGET_ARM)
+    ClassifierInfo cInfo;
+    cInfo.CallConv = info.compCallConv;
+    cInfo.IsVarArgs = info.compIsVarArgs;
+    cInfo.HasThis = info.compThisArg != BAD_VAR_NUM;
+
 #ifdef SWIFT_SUPPORT
     if (info.compCallConv == CorInfoCallConvExtension::Swift)
     {
-        SwiftABIClassifier classifier;
+        SwiftABIClassifier classifier(cInfo);
         lvaClassifyParameterABI(classifier);
     }
     else
 #endif
+#ifndef TARGET_ARM
     {
-        PlatformClassifier classifier;
+        PlatformClassifier classifier(cInfo);
         lvaClassifyParameterABI(classifier);
     }
 #endif
@@ -1706,6 +1689,51 @@ void Compiler::lvaClassifyParameterABI()
     if (lvaParameterPassingInfo == nullptr)
     {
         return;
+    }
+
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        LclVarDsc* dsc = lvaGetDesc(lclNum);
+        const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+
+        assert(abiInfo.NumSegments > 0);
+
+        unsigned numSegmentsToCompare = abiInfo.NumSegments;
+        if (dsc->lvIsHfa())
+        {
+            assert(abiInfo.NumSegments >= 1);
+            // LclVarDsc only has one register set for HFAs
+            numSegmentsToCompare = 1;
+        }
+
+        for (unsigned i = 0; i < numSegmentsToCompare; i++)
+        {
+            const ABIPassingSegment& expected = abiInfo.Segments[i];
+            regNumber reg = REG_NA;
+            if (i == 0)
+            {
+                reg = dsc->GetArgReg();
+            }
+#if FEATURE_MULTIREG_ARGS
+            else if (i == 1)
+            {
+                reg = dsc->GetOtherArgReg();
+            }
+#endif
+
+            if (expected.IsPassedOnStack())
+            {
+                if (i == 0)
+                {
+                    assert(reg == REG_STK);
+                    assert((unsigned)dsc->GetStackOffset() == expected.GetStackOffset());
+                }
+            }
+            else
+            {
+                assert(reg == expected.GetRegister());
+            }
+        }
     }
 }
 

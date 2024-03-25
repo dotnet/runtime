@@ -422,7 +422,7 @@ inline bool genIsValidDoubleReg(regNumber reg)
 inline bool hasFixedRetBuffReg(CorInfoCallConvExtension callConv)
 {
 #if defined(TARGET_ARM64)
-    return true;
+    return !TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(callConv);
 #elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
     return callConv == CorInfoCallConvExtension::Swift;
 #else

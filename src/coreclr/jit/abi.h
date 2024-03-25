@@ -73,15 +73,20 @@ public:
     void      Clear();
 };
 
+struct ClassifierInfo
+{
+    CorInfoCallConvExtension CallConv;
+    bool IsVarArgs;
+    bool HasThis;
+};
+
 class X86Classifier
 {
     RegisterQueue m_regs;
     unsigned      m_stackArgSize = 0;
 
 public:
-    X86Classifier(const regNumberSmall* regs, unsigned int numRegs) : m_regs(regs, numRegs)
-    {
-    }
+    X86Classifier(const ClassifierInfo& info);
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
@@ -96,7 +101,7 @@ class WinX64Classifier
     unsigned      m_stackArgSize = 0;
 
 public:
-    WinX64Classifier();
+    WinX64Classifier(const ClassifierInfo& info);
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
@@ -111,7 +116,7 @@ class SysVX64Classifier
     unsigned      m_stackArgSize = 0;
 
 public:
-    SysVX64Classifier();
+    SysVX64Classifier(const ClassifierInfo& info);
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
@@ -121,12 +126,13 @@ public:
 
 class Arm64Classifier
 {
+    const ClassifierInfo& m_info;
     RegisterQueue m_intRegs;
     RegisterQueue m_floatRegs;
     unsigned      m_stackArgSize = 0;
 
 public:
-    Arm64Classifier();
+    Arm64Classifier(const ClassifierInfo& info);
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
@@ -150,7 +156,8 @@ class SwiftABIClassifier
     PlatformClassifier m_classifier;
 
 public:
-    SwiftABIClassifier()
+    SwiftABIClassifier(const ClassifierInfo& info)
+        : m_classifier(info)
     {
     }
 

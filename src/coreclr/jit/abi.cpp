@@ -152,6 +152,39 @@ static unsigned TypeSize(var_types type, ClassLayout* structLayout)
 }
 
 #ifdef TARGET_X86
+X86Classifier::X86Classifier(const ClassifierInfo& info)
+    : m_regs(nullptr, 0)
+{
+    switch (info.CallConv)
+    {
+        case CorInfoCallConvExtension::Thiscall:
+        {
+            static const regNumberSmall thiscallRegs[] = {REG_ECX};
+            m_regs = RegisterQueue(thiscallRegs, ArrLen(thiscallRegs));
+            break;
+        }
+        case CorInfoCallConvExtension::C:
+        case CorInfoCallConvExtension::Stdcall:
+        case CorInfoCallConvExtension::CMemberFunction:
+        case CorInfoCallConvExtension::StdcallMemberFunction:
+        {
+            break;
+        }
+        default:
+        {
+            static const regNumberSmall regs[]  = {REG_ECX, REG_EDX};
+            unsigned                    numRegs = ArrLen(regs);
+            if (info.IsVarArgs)
+            {
+                // In varargs methods we only enregister the this pointer (if there is one).
+                numRegs = info.HasThis ? 1 : 0;
+            }
+            m_regs = RegisterQueue(regs, numRegs);
+            break;
+        }
+    }
+}
+
 ABIPassingInformation X86Classifier::Classify(Compiler*    comp,
                                               var_types    type,
                                               ClassLayout* structLayout,
@@ -202,7 +235,7 @@ ABIPassingInformation X86Classifier::Classify(Compiler*    comp,
 static const regNumberSmall WinX64IntArgRegs[]   = {REG_RCX, REG_RDX, REG_R8, REG_R9};
 static const regNumberSmall WinX64FloatArgRegs[] = {REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3};
 
-WinX64Classifier::WinX64Classifier()
+WinX64Classifier::WinX64Classifier(const ClassifierInfo& info)
     : m_intRegs(WinX64IntArgRegs, ArrLen(WinX64IntArgRegs)), m_floatRegs(WinX64FloatArgRegs, ArrLen(WinX64FloatArgRegs))
 {
 }
@@ -247,7 +280,7 @@ static const regNumberSmall SysVX64IntArgRegs[]   = {REG_EDI, REG_ESI, REG_EDX, 
 static const regNumberSmall SysVX64FloatArgRegs[] = {REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3,
                                                      REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7};
 
-SysVX64Classifier::SysVX64Classifier()
+SysVX64Classifier::SysVX64Classifier(const ClassifierInfo& info)
     : m_intRegs(SysVX64IntArgRegs, ArrLen(SysVX64IntArgRegs))
     , m_floatRegs(SysVX64FloatArgRegs, ArrLen(SysVX64FloatArgRegs))
 {
@@ -332,8 +365,10 @@ ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
 static const regNumberSmall Arm64IntArgRegs[]   = {REG_R0, REG_R1, REG_R2, REG_R3, REG_R4, REG_R5, REG_R6, REG_R7};
 static const regNumberSmall Arm64FloatArgRegs[] = {REG_V0, REG_V1, REG_V2, REG_V3, REG_V4, REG_V5, REG_V6, REG_V7};
 
-Arm64Classifier::Arm64Classifier()
-    : m_intRegs(Arm64IntArgRegs, ArrLen(Arm64IntArgRegs)), m_floatRegs(Arm64FloatArgRegs, ArrLen(Arm64FloatArgRegs))
+Arm64Classifier::Arm64Classifier(const ClassifierInfo& info)
+    : m_info(info)
+    , m_intRegs(Arm64IntArgRegs, ArrLen(Arm64IntArgRegs))
+    , m_floatRegs(Arm64FloatArgRegs, ArrLen(Arm64FloatArgRegs))
 {
 }
 
@@ -342,13 +377,13 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
                                                 ClassLayout* structLayout,
                                                 WellKnownArg wellKnownParam)
 {
-    if (wellKnownParam == WellKnownArg::RetBuffer)
+    if ((wellKnownParam == WellKnownArg::RetBuffer) && hasFixedRetBuffReg(m_info.CallConv))
     {
         return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_ARG_RET_BUFF, 0,
                                                                                       TARGET_POINTER_SIZE));
     }
 
-    if (varTypeIsStruct(type) && !comp->info.compIsVarArgs)
+    if (varTypeIsStruct(type) && !m_info.IsVarArgs)
     {
         var_types hfaType = comp->GetHfaType(structLayout->GetClassHandle());
 
@@ -373,7 +408,7 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
                 m_stackArgSize     = roundUp(m_stackArgSize, alignment);
                 info = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0,
                                                                                            structLayout->GetSize()));
-                m_stackArgSize += structLayout->GetSize();
+                m_stackArgSize += roundUp(structLayout->GetSize(), TARGET_POINTER_SIZE);
                 // After passing any float value on the stack, we should not enregister more float values.
                 m_floatRegs.Clear();
             }
@@ -383,28 +418,32 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
     }
 
     unsigned slots;
+    unsigned passedSize;
     if (varTypeIsStruct(type))
     {
         unsigned size = structLayout->GetSize();
         if (size > 16)
         {
             slots = 1; // Passed by implicit byref
+            passedSize = TARGET_POINTER_SIZE;
         }
         else
         {
             slots = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+            passedSize = size;
         }
     }
     else
     {
         assert(genTypeSize(type) <= TARGET_POINTER_SIZE);
         slots = 1;
+        passedSize = genTypeSize(type);
     }
 
     assert((slots == 1) || (slots == 2));
 
     ABIPassingInformation info;
-    if (comp->info.compIsVarArgs && (slots == 2) && (m_intRegs.Count() == 1))
+    if (m_info.IsVarArgs && (slots == 2) && (m_intRegs.Count() == 1))
     {
         // On varargs we split structs between register and stack in this case.
         // Normally a struct that does not fit in registers will always be
@@ -419,19 +458,26 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
     }
     else
     {
-        RegisterQueue& regs = varTypeUsesFloatArgReg(type) ? m_floatRegs : m_intRegs;
+        RegisterQueue* regs = &m_intRegs;
 
-        if (regs.Count() >= slots)
+        // In varargs methods (only supported on Windows) all arguments go in
+        // integer registers.
+        if (varTypeUsesFloatArgReg(type) && !m_info.IsVarArgs)
+        {
+            regs = &m_floatRegs;
+        }
+
+        if (regs->Count() >= slots)
         {
             info.NumSegments  = slots;
             info.Segments     = new (comp, CMK_ABI) ABIPassingSegment[slots];
             unsigned slotSize = varTypeIsStruct(type) ? TARGET_POINTER_SIZE : genTypeSize(type);
-            info.Segments[0]  = ABIPassingSegment::InRegister(regs.Dequeue(), 0, slotSize);
+            info.Segments[0]  = ABIPassingSegment::InRegister(regs->Dequeue(), 0, slotSize);
             if (slots == 2)
             {
                 assert(varTypeIsStruct(type));
                 unsigned tailSize = structLayout->GetSize() - slotSize;
-                info.Segments[1]  = ABIPassingSegment::InRegister(regs.Dequeue(), slotSize, tailSize);
+                info.Segments[1]  = ABIPassingSegment::InRegister(regs->Dequeue(), slotSize, tailSize);
             }
         }
         else
@@ -456,14 +502,13 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
                 assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
             }
 
-            unsigned size = TypeSize(type, structLayout);
-            info = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0, size));
+            info = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0, passedSize));
 
-            m_stackArgSize += roundUp(size, alignment);
+            m_stackArgSize += roundUp(passedSize, alignment);
 
             // As soon as we pass something on stack we cannot go back and
             // enregister something else.
-            regs.Clear();
+            regs->Clear();
         }
     }
 
