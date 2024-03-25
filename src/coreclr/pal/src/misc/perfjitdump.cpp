@@ -7,11 +7,7 @@
 
 #include <cstddef>
 
-#if defined(__linux__) || (defined(__APPLE__) && defined(TARGET_OS_OSX) && TARGET_OS_OSX)
-#define JITDUMP_SUPPORTED
-#endif
-
-#ifdef JITDUMP_SUPPORTED
+#ifdef FEATURE_PERFMAP
 
 #include <fcntl.h>
 #include <pthread.h>
@@ -26,10 +22,6 @@
 #include <time.h>
 #include <unistd.h>
 #include <limits.h>
-
-#if defined(__APPLE__)
-#include <mach/mach_time.h>
-#endif
 
 #include "../inc/llvm/ELF.h"
 
