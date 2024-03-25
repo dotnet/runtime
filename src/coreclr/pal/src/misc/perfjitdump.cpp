@@ -65,23 +65,8 @@ namespace
         JIT_CODE_LOAD = 0,
     };
 
-    uint64_t GetTimeStampNS()
+    static uint64_t GetTimeStampNS()
     {
-#if defined(_DEBUG)
-        static bool freq_valid = false;
-        if (!freq_valid)
-        {
-            LARGE_INTEGER freq;
-            QueryPerformanceFrequency(&freq);
-            // On platforms where JITDUMP is used, the PAL QueryPerformanceFrequency
-            // returns tccSecondsToNanoSeconds, meaning QueryPerformanceCounter
-            // will return a direct nanosecond value. If this isn't true,
-            // then some other method will need to be used to implement GetTimeStampNS.
-            ASSERT(freq.QuadPart == tccSecondsToNanoSeconds);
-            freq_valid = true;
-        }
-#endif
-
         LARGE_INTEGER result;
         QueryPerformanceCounter(&result);
         return result.QuadPart;
@@ -175,6 +160,19 @@ struct PerfJitDumpState
     int Start(const char* path)
     {
         int result = 0;
+
+        // On platforms where JITDUMP is used, the PAL QueryPerformanceFrequency
+        // returns tccSecondsToNanoSeconds, meaning QueryPerformanceCounter
+        // will return a direct nanosecond value. If this isn't true,
+        // then some other method will need to be used to implement GetTimeStampNS.
+        // Validate this is true once in Start here.
+        LARGE_INTEGER freq;
+        QueryPerformanceFrequency(&freq);
+        if (freq.QuadPart != tccSecondsToNanoSeconds)
+        {
+            _ASSERTE(!"QueryPerformanceFrequency does not return tccSecondsToNanoSeconds. Implement JITDUMP GetTimeStampNS directly for this platform.\n");
+            FatalError();
+        }
 
         // Write file header
         FileHeader header;
