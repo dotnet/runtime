@@ -4577,7 +4577,7 @@ public:
     bool IsMismatchedArgType() const
     {
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        return isValidIntArgReg(GetRegNum()) && varTypeUsesFloatReg(ArgType);
+        return genIsValidIntReg(GetRegNum()) && varTypeUsesFloatReg(ArgType);
 #else
         return false;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64

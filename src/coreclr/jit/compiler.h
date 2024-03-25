@@ -7083,6 +7083,9 @@ protected:
         return (enckey & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
     }
 
+    static bool optSharedConstantCSEEnabled();
+    static bool optConstantCSEEnabled();
+
 /**************************************************************************
  *                   Value Number based CSEs
  *************************************************************************/
@@ -7990,7 +7993,6 @@ protected:
 
 public:
     regNumber raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc);
-    void raCheckValidIntParamReg(LclVarDsc* dsc, regNumber inArgReg);
 
     void raMarkStkVars();
 
@@ -9859,7 +9861,8 @@ public:
         bool altJit;     // True if we are an altjit and are compiling this method
 
 #ifdef OPT_CONFIG
-        bool optRepeat; // Repeat optimizer phases k times
+        bool optRepeat;      // Repeat optimizer phases k times
+        int  optRepeatCount; // How many times to repeat. By default, comes from JitConfig.JitOptRepeatCount().
 #endif
 
         bool disAsm;       // Display native code as it is generated
@@ -10104,13 +10107,14 @@ public:
         STRESS_MODE(PHYSICAL_PROMOTION) /* Use physical promotion */                            \
         STRESS_MODE(PHYSICAL_PROMOTION_COST)                                                    \
         STRESS_MODE(UNWIND) /* stress unwind info; e.g., create function fragments */           \
+        STRESS_MODE(OPT_REPEAT) /* stress JitOptRepeat */                                       \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
         STRESS_MODE(COUNT_VARN)                                                                 \
                                                                                                 \
         /* "Check" stress areas that can be exhaustively used if we */                          \
-        /*  dont care about performance at all */                                               \
+        /*  don't care about performance at all */                                              \
                                                                                                 \
         STRESS_MODE(FORCE_INLINE) /* Treat every method as AggressiveInlining */                \
         STRESS_MODE(CHK_FLOW_UPDATE)                                                            \
