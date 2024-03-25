@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Text;
+using System.Linq;
 using System.Threading.Tasks;
 using Wasm.Build.Tests.Blazor;
 using Xunit;
@@ -91,5 +92,65 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
 
         if (!hasEmittedWasmEnableThreads)
             throw new XunitException($"The test didn't emit expected message 'WasmEnableThreads=true'");
+    }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
+    [InlineData("Release")]
+    public async Task SwitchSingleAndMultiThreaded(string config)
+    {
+        string id = $"blazor_mt_{config}_{GetRandomId()}";
+        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+
+        // Build and run multithreaded
+        _testOutput.WriteLine("Publish and run MT");
+        await PublishAndRunAsync(id, config, true, "First MT");
+
+        File.Delete(
+            Directory
+                .EnumerateFiles(_provider.FindBinFrameworkDir(config, true, DefaultTargetFramework), "dotnet.native.worker.*")
+                .First()
+        );
+
+        // Build and run singlethreaded without clean
+        _testOutput.WriteLine("Publish and run ST");
+        await PublishAndRunAsync(id, config, false, "ST after MT");
+
+        // Build and run multithreaded again
+        _testOutput.WriteLine("Publish and run MT");
+        await PublishAndRunAsync(id, config, false, "MT after ST");
+    }
+
+    private async Task PublishAndRunAsync(string id, string config, bool isMultiThreaded, string label) 
+    {
+        BlazorPublish(
+            new BlazorBuildOptions(
+                id,
+                config,
+                NativeFilesType.Relinked,
+                RuntimeType: isMultiThreaded ? RuntimeVariant.MultiThreaded : RuntimeVariant.SingleThreaded,
+                Label: label
+            ), 
+            isMultiThreaded ? new string[] { "-p:WasmEnableThreads=true"} : new string[0]
+        );
+
+        StringBuilder errorOutput = new();
+        await BlazorRunForPublishWithWebServer(
+            runOptions: new BlazorRunOptions(
+                Config: config,
+                ExtraArgs: isMultiThreaded ? "--web-server-use-cors --web-server-use-cop" : string.Empty,
+                OnConsoleMessage: (message) =>
+                {
+                    if (message.Type == "error")
+                        errorOutput.AppendLine(message.Text);
+                },
+                OnErrorMessage: (message) =>
+                {
+                    errorOutput.AppendLine(message);
+                }
+            )
+        );
+
+        if (errorOutput.Length > 0)
+            throw new XunitException($"Errors found in browser console output:\n{errorOutput}");
     }
 }
