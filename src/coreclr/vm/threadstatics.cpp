@@ -175,12 +175,12 @@ void ScanThreadStaticRoots(ThreadLocalData *pThreadLocalData, bool forGC, promot
         }
         pInFlightData = pInFlightData->pNext;
     }
-    PTR_BYTE pTLSArrayData = dac_cast<PTR_BYTE>(pThreadLocalData->pTLSArrayData);
+    PTR_TADDR pTLSArrayData = dac_cast<PTR_TADDR>(pThreadLocalData->pTLSArrayData);
     int32_t cTLSData = pThreadLocalData->cTLSData;
-    for (int32_t i = 0; i < cTLSData; i += sizeof(TADDR))
+    for (int32_t i = 0; i < cTLSData; ++i)
     {
         TLSIndex index(i);
-        TADDR *pTLSBaseAddress = dac_cast<PTR_TADDR>(pTLSArrayData + i);
+        TADDR *pTLSBaseAddress = pTLSArrayData + i;
         ReportTLSIndexCarefully(index, pThreadLocalData->cLoaderHandles, pThreadLocalData->pLoaderHandles, dac_cast<PTR_PTR_Object>(pTLSBaseAddress), fn, sc);
     }
 }
