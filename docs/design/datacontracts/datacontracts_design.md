@@ -16,15 +16,54 @@ The physical layout of this data is not defined in this document, but its practi
 
 The Data Contract Descriptor has a set of records of the following forms.
 
-### Global Values
+### Data descriptor
+
+The data descriptor is a logical entity that defines the layout of certain types relevant to one or
+more algorithmic contracts, as well as global values known to the target runtime that may be
+relevant to one or more algorithmic contracts.
+
+More details are provided in the [data descriptor spec](./data_descriptor.md).  We highlight some important aspects below:
+
+#### Baseline data descriptor identifier
+
+An optional string identifying a well-known record of global values and data structure layouts.  The
+identifier is an arbitrary string, that could be used, for example to tag a collection of globals
+and data structure layouts present in a particular release of a .NET runtime for a certain
+architecture (for example `net9.0-rc1/Release/linux-arm64`).  Global values and data structure
+layouts present in the data contract descriptor take precedence over the baseline contract.  This
+way variant builds can be specified as a delta over a baseline.  For example, debug builds of
+CoreCLR that include additional fields in a `MethodTable` data structure could be based on the
+Release data descriptor augmented with new `MethodTable` and other structure descriptors.
+
+It is not a requirement that the baseline is chosen so that additional "delta" is the smallest
+possible size, although for practical purposes that may be desired.
+
+Data descriptors are registered as "well known" by checking them into the main branch of
+`dotnet/runtime` in the `docs/design/datacontracts/data/` directory in a format to be specified
+later.  The relative path name (with `/` as the path separator, if any) of the descriptor without
+any extension is the identifier.  (for example:
+`/docs/design/datacontracts/data/net9.0-rc1/Release/linux-arm64.json` is the filename for the data
+descriptor with identifier `net9.0-rc1/Release/linux-arm64`)
+
+#### Global Values
 Global values which can be of types (int8, uint8, int16, uint16, int32, uint32, int64, uint64, pointer, nint, nuint, string)
 All global values have a string describing their name, and a value of one of the above types.
 
+For instance, we will likely have a `TargetPointerSize` global value represented in a data descriptor.
+
+#### Data Structure Layout
+Each data structure layout has a name for the type, followed by a list of fields. These fields can be of primitive types (int8, uint8, int16, uint16, int32, uint32, int64, uint64, nint, nuint, pointer) or of another named data structure type. Each field descriptor provides the offset of the field, the name of the field, and the type of the field.
+
+Data structures may have a determinate size, specified in the descriptor, or an indeterminate size.
+Determinate sizes are used by contracts for pointer arithmetic such as for iterating over arrays.
+The determinate size of a structure may be larger than the sum of the sizes of the fields specified
+in the data descriptor (that is, the data descriptor does not include every field and may not
+include padding bytes).
+
 ### Compatible Contract
+
 Each compatible contract is described by a string naming the contract, and a uint32 version. It is an ERROR if multiple versions of a contract are specified in the contract descriptor.
 
-### Data Structure Layout
-Each data structure layout has a name for the type, followed by a list of fields. These fields can be of primitive types (int8, uint8, int16, uint16, int32, uint32, int64, uint64, nint, nuint, pointer) or of another named data structure type. Each field descriptor provides the offset of the field, the name of the field, and the type of the field.
 
 ## Versioning of contracts
 Contracts are described an integer version number. A higher version number is not more recent, it just means different. In order to avoid conflicts, all contracts should be documented in the main branch of the dotnet repository with a version number which does not conflict with any other. It is expected that every version of every contract describes the same functionality/data layout/set of global values.
@@ -34,19 +73,10 @@ Logically a contract may refer to another contract. If it does so, it will typic
 
 ## Types of contracts
 
-There are 3 different types of contracts each representing a different phase of execution of the data contract system.
+There are 2 different types of contracts each representing a different phase of execution of the data contract system.
 
 ### Composition contracts
 These contracts indicate the version numbers of other contracts. This is done to reduce the size of contract list needed in the Data Contract Descriptor. In general it is intended that as a runtime nears shipping, the product team can gather up all of the current versions of the contracts into a single magic value, which can be used to initialize most of the contract versions of the data contract system. A specific version number in the Data Contract Descriptor for a given contract will override any composition contracts specified in the Data Contract Descriptor. If there are multiple composition contracts in a Data Contract Descriptor which specify the same contract to have a different version, the first composition contract linearly in the Data Contract Descriptor wins. This is intended to allow for a composite contract for the architecture/os indepedent work, and a separate composite contract for the non independent work. If a contract is specified explicitly in the Data Contract Descriptor and a different version is specified via the composition contract mechanism, the explicitly specified contract takes precedence.
-
-### Fixed value contracts
-These contracts represent data which is entirely determined by the contract version + contract name. There are 2 subtypes of this form of contract.
-
-#### Global Value Contract
-A global value contract specifies numbers which can be referred to by other contracts. If a global value is specified directly in the Data Contract Descriptor, then the global value defintion in the Data Contract Descriptor takes precedence. The intention is that these global variable contracts represent magic numbers and values which are useful for the operation of algorithmic contracts. For instance, we will likely have a `TargetPointerSize` global value represented via a contract, and things like `FEATURE_SUPPORTS_COM` can also be a global value contract, with a value of 1.
-
-#### Data Structure Definition Contract
-A data structure definition contract defines a single type's physical layout. It MUST be named "MyDataStructureType_layout". If a data structure layout is specified directly in the Data Contract Descriptor, then the data structure defintion in the Data Contract Descriptor takes precedence. These contracts are responsible for declaring the field layout of individual fields. While not all versions of a data structure are required to have the same fields/type of fields, algorithms may be built targetting the union of the set of field types defined in the version of a given data structure definition contract. Access to a field which isn't defined on the current runtime will produce an error.
 
 ### Algorithmic contracts
 Algorithmic contracts define how to process a given set of data structures to produce useful results. These are effectively code snippets which utilize the abstracted data structures provided by Data Structure Definition Contracts and Global Value Contract to produce useful output about a given program. Descriptions of these contracts may refer to functionality provided by other contracts to do their work. The algorithms provided in these contracts are designed to operate given the ability to read various primitive types and defined data structures from the process memory space, as well as perform general purpose computation.
@@ -59,131 +89,17 @@ For working with data from the target process/other contracts, the following C# 
 
 Best practice is to either write the algorithm in C# like psuedocode working on top of the [C# style api](contract_csharp_api_design.cs) or by reference to specifications which are not co-developed with the runtime, such as OS/architecture specifications. Within the contract algorithm specification, the intention is that all interesting api work is done by using an instance of the `Target` class.
 
+Algorithmic contracts may include specifications for numbers which can be referred to in the contract or by other contracts. The intention is that these global values represent magic numbers and values which are useful for the operation of algorithmic contracts. 
+
+While not all versions of a data structure are required to have the same fields/type of fields,
+algorithms may be built targetting the union of the set of field types defined in the data structure
+descriptors of possible target runtimes. Access to a field which isn't defined on the current
+runtime will produce an error.
+
+
 ## Arrangement of contract specifications in the repo
 
 Specs shall be stored in the repo in a set of directories. `docs/design/datacontracts` Each one of them shall be a seperate markdown file named with the name of contract. `docs/design/datacontracts/datalayout/<contract_name>.md` Every version of each contract shall be located in the same file to facilitate understanding how variations between different contracts work.
-
-### Global Value Contracts
-The format of each contract spec shall be
-
-
-```
-# Contract <contract_name>
-
-Insert description of contract, and what its for here.
-
-## Version <version_number>
-
-Insert description (if possible) about what is interesting about this particular version of the contract
-
-### Values
-| Global Name | Type | Value |
-| --- | --- | --- |
-| SomeGlobal | Int32 | 1 |
-| SomeOtherGlobal | Int8 | 0 |
-
-## Version <other_version_number>
-
-Insert description (if possible) about what is interesting about this particular version of the contract
-
-### Values
-| Global Name | Type | Value |
-| --- | --- | --- |
-| SomeGlobal | Int32 | 1 |
-| SomeOtherGlobal | Int8 | 1 |
-```
-
-Which should format like:
-# Contract <contract_name>
-
-Insert description of contract, and what its for here.
-
-## Version <version_number>
-
-Insert description (if possible) about what is interesting about this particular version of the contract
-
-### Values
-| Global Name | Type | Value |
-| --- | --- | --- |
-| SomeGlobal | Int32 | 1 |
-| SomeOtherGlobal | Int8 | 0 |
-
-## Version <other_version_number>
-
-Insert description (if possible) about what is interesting about this particular version of the contract
-
-### Values
-| Global Name | Type | Value |
-| --- | --- | --- |
-| SomeGlobal | Int32 | 1 |
-| SomeOtherGlobal | Int8 | 1 |
-
-
-### Data Structure Contracts
-Data structure contracts describe the field layout of individual types in the that are referred to by algorithmic contracts. If one of the versions is marked as DEFAULT then that version exists if no specific version is specified in the Data Contract Descriptor.
-
-```
-# Contract <type_name>_layout
-
-Insert description of type, and what its for here.
-
-## Version <version_number>, DEFAULT
-
-Insert description (if possible) about what is interesting about this particular version of the contract
-
-### Structure Size
-8 bytes
-
-### Fields
-| Field Name | Type | Offset |
-| --- | --- | --- |
-| FirstField | Int32 | 0 |
-| SecondField | Int64 | 4 |
-
-## Version <other_version_number>
-
-Insert description (if possible) about what is interesting about this particular version of the contract
-
-### Structure Size
-16 bytes
-
-### Fields
-| Field Name | Type | Offset |
-| --- | --- | --- |
-| FirstField | Int32 | 0 |
-| SecondField | Int64 | 8 |
-```
-
-Which should format like:
-# Contract <type_name>_layout
-
-Insert description of type, and what its for here.
-
-## Version <version_number>, DEFAULT
-
-Insert description (if possible) about what is interesting about this particular version of the contract
-
-### Structure Size
-8 bytes
-
-### Fields
-| Field Name | Type | Offset |
-| --- | --- | --- |
-| FirstField | Int32 | 0 |
-| SecondField | Int64 | 4 |
-
-## Version <other_version_number>
-
-Insert description (if possible) about what is interesting about this particular version of the contract
-
-### Structure Size
-16 bytes
-
-### Fields
-| Field Name | Type | Offset |
-| --- | --- | --- |
-| FirstField | Int32 | 0 |
-| SecondField | Int64 | 8 |
 
 ### Algorthmic Contract
 
