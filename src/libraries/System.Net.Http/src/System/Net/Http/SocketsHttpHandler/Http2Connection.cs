@@ -1495,27 +1495,7 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace("");
 
-            // HTTP2 does not support Transfer-Encoding: chunked, so disable this on the request.
-            if (request.HasHeaders && request.Headers.TransferEncodingChunked == true)
-            {
-                request.Headers.TransferEncodingChunked = false;
-            }
-
-            HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
-
-            // Method is normalized so we can do reference equality here.
-            if (ReferenceEquals(normalizedMethod, HttpMethod.Get))
-            {
-                WriteIndexedHeader(H2StaticTable.MethodGet, ref headerBuffer);
-            }
-            else if (ReferenceEquals(normalizedMethod, HttpMethod.Post))
-            {
-                WriteIndexedHeader(H2StaticTable.MethodPost, ref headerBuffer);
-            }
-            else
-            {
-                WriteIndexedHeader(H2StaticTable.MethodGet, normalizedMethod.Method, ref headerBuffer);
-            }
+            WriteBytes(request.Method.Http2EncodedBytes, ref headerBuffer);
 
             WriteIndexedHeader(_pool.IsSecure ? H2StaticTable.SchemeHttps : H2StaticTable.SchemeHttp, ref headerBuffer);
 
@@ -1543,6 +1523,12 @@ namespace System.Net.Http
 
             if (request.HasHeaders)
             {
+                // HTTP2 does not support Transfer-Encoding: chunked, so disable this on the request.
+                if (request.Headers.TransferEncodingChunked == true)
+                {
+                    request.Headers.TransferEncodingChunked = false;
+                }
+
                 if (request.Headers.Protocol is string protocol)
                 {
                     WriteBytes(ProtocolLiteralHeaderBytes, ref headerBuffer);
@@ -1571,7 +1557,7 @@ namespace System.Net.Http
             {
                 // Write out Content-Length: 0 header to indicate no body,
                 // unless this is a method that never has a body.
-                if (normalizedMethod.MustHaveRequestBody)
+                if (request.Method.MustHaveRequestBody)
                 {
                     WriteBytes(KnownHeaders.ContentLength.Http2EncodedName, ref headerBuffer);
                     WriteLiteralHeaderValue("0", valueEncoding: null, ref headerBuffer);
@@ -1586,7 +1572,7 @@ namespace System.Net.Http
             // The headerListSize is an approximation of the total header length.
             // This is acceptable as long as the value is always >= the actual length.
             // We must avoid ever sending more than the server allowed.
-            // This approach must be revisted if we ever support the dynamic table or compression when sending requests.
+            // This approach must be revisited if we ever support the dynamic table or compression when sending requests.
             headerListSize += headerBuffer.ActiveLength;
 
             uint maxHeaderListSize = _maxHeaderListSize;

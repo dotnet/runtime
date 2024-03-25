@@ -56,7 +56,7 @@ public:
         }
     }
 #endif // _DEBUG
-    
+
 #ifndef DACCESS_COMPILE
     void InitTypeContext(Instantiation classInst, Instantiation methodInst)
     {
@@ -496,6 +496,9 @@ public:
     DWORD   GetCleanupWorkListLocalNum();
     DWORD   GetThreadLocalNum();
     DWORD   GetReturnValueLocalNum();
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    DWORD   GetCopyCtorChainLocalNum();
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
     void    SetCleanupNeeded();
     void    SetExceptionCleanupNeeded();
     BOOL    IsCleanupWorkListSetup();
@@ -564,6 +567,10 @@ protected:
     DWORD               m_dwTargetInterfacePointerLocalNum;
     DWORD               m_dwTargetEntryPointLocalNum;
 #endif // FEATURE_COMINTEROP
+
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    DWORD               m_dwCopyCtorChainLocalNum;
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
     BOOL                m_fHasCleanupCode;
     BOOL                m_fHasExceptionCleanupCode;
