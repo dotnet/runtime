@@ -130,9 +130,6 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         internal static bool IsKnownConstant(char t) => false;
-
-        [Intrinsic]
-        internal static bool IsKnownConstant(Vector256<byte> v) => false;
 #pragma warning restore IDE0060
     }
 }

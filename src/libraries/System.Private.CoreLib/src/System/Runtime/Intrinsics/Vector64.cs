@@ -2227,51 +2227,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<byte> Shuffle(Vector64<byte> vector, Vector64<byte> indices)
-        {
-            if (ShuffleUnsafeIntrinsicSupported)
-            {
-                if (ShuffleUnsafeIntrinsicIsSafe)
-                {
-                    return ShuffleUnsafeIntrinsic(vector, indices);
-                }
-                else
-                {
-                    Vector64<byte> mask = Vector64.LessThan(indices, Vector64.Create((byte)8));
-                    return ShuffleUnsafeIntrinsic(vector, indices) & mask;
-                }
-            }
-            return ShuffleSoftwareFallback(vector, indices);
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<sbyte> Shuffle(Vector64<sbyte> vector, Vector64<sbyte> indices)
-        {
-            return Shuffle(vector.AsByte(), indices.AsByte()).AsSByte();
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
-        /// Behavior is platform-dependent for out-of-range indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(AdvSimd))]
-        public static Vector64<byte> ShuffleUnsafe(Vector64<byte> vector, Vector64<byte> indices)
-        {
-            if (ShuffleUnsafeIntrinsicSupported) return ShuffleUnsafeIntrinsic(vector, indices);
-            return Shuffle(vector, indices);
-        }
-
-        private static Vector64<byte> ShuffleSoftwareFallback(Vector64<byte> vector, Vector64<byte> indices)
         {
             Unsafe.SkipInit(out Vector64<byte> result);
 
@@ -2290,21 +2246,57 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(AdvSimd))]
-        private static Vector64<byte> ShuffleUnsafeIntrinsic(Vector64<byte> vector, Vector64<byte> indices)
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector64<sbyte> Shuffle(Vector64<sbyte> vector, Vector64<sbyte> indices)
         {
-            if (AdvSimd.IsSupported)
+            Unsafe.SkipInit(out Vector64<sbyte> result);
+
+            for (int index = 0; index < Vector64<sbyte>.Count; index++)
             {
-                return AdvSimd.VectorTableLookup(Vector128.Create(vector, Vector64<byte>.Zero), indices);
+                byte selectedIndex = (byte)indices.GetElementUnsafe(index);
+                sbyte selectedValue = 0;
+
+                if (selectedIndex < Vector64<sbyte>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe(selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
             }
 
-            Debug.Fail("Expected an intrinsic to be supported");
-            return default;
+            return result;
         }
 
-        private static bool ShuffleUnsafeIntrinsicIsSafe => true; // all implementations for this size are safe
-        private static bool ShuffleUnsafeIntrinsicSupported => AdvSimd.IsSupported;
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
+        /// Behavior is platform-dependent for out-of-range indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
+        [Intrinsic]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        public static Vector64<byte> ShuffleUnsafe(Vector64<byte> vector, Vector64<byte> indices)
+        {
+            Unsafe.SkipInit(out Vector64<byte> result);
+
+            for (int index = 0; index < Vector64<byte>.Count; index++)
+            {
+                byte selectedIndex = indices.GetElementUnsafe(index);
+                byte selectedValue = 0;
+
+                if (selectedIndex < Vector64<byte>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe(selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>

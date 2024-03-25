@@ -2718,13 +2718,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_Shuffle:
         case NI_Vector256_Shuffle:
         case NI_Vector512_Shuffle:
+        case NI_Vector128_ShuffleUnsafe:
+        case NI_Vector256_ShuffleUnsafe:
+        case NI_Vector512_ShuffleUnsafe:
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
             assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!indices->IsVectorConst())
+            if (!varTypeIsByte(simdBaseType) && !indices->IsVectorConst())
             {
                 // TODO-XARCH-CQ: Handling non-constant indices is a bit more complex
                 break;
@@ -2741,9 +2744,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     // it's likely not worth it overall given that IsHardwareAccelerated reports false
                     break;
                 }
-                else if ((varTypeIsByte(simdBaseType) &&
-                          !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
-                         (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL)))
+                else if (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL))
                 {
                     bool crossLane = false;
 
@@ -2773,7 +2774,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     if (crossLane)
                     {
-                        // TODO-XARCH-CQ: We should emulate cross-lane shuffling for byte/sbyte and short/ushort
+                        // TODO-XARCH-CQ: We should emulate cross-lane shuffling for short/ushort
                         break;
                     }
                 }
@@ -2802,7 +2803,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
-                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize);
+                if (indices->IsVectorConst())
+                {
+                    retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize,
+                        intrinsic == NI_Vector128_ShuffleUnsafe || intrinsic == NI_Vector256_ShuffleUnsafe || intrinsic == NI_Vector512_ShuffleUnsafe);
+                }
+                else
+                {
+                    retNode = gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize,
+                        intrinsic == NI_Vector128_ShuffleUnsafe || intrinsic == NI_Vector256_ShuffleUnsafe || intrinsic == NI_Vector512_ShuffleUnsafe);
+                }
             }
             break;
         }

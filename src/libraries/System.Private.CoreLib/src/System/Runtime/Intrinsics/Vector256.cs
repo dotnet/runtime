@@ -2294,52 +2294,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<byte> Shuffle(Vector256<byte> vector, Vector256<byte> indices)
-        {
-            if (ShuffleUnsafeIntrinsicSupported)
-            {
-                if (ShuffleUnsafeIntrinsicIsSafe)
-                {
-                    return ShuffleUnsafeIntrinsic(vector, indices);
-                }
-                else
-                {
-                    Vector256<byte> mask = Vector256.LessThan(indices, Vector256.Create((byte)32));
-                    return ShuffleUnsafeIntrinsic(vector, indices) & mask;
-                }
-            }
-            return ShuffleSoftwareFallback(vector, indices);
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<sbyte> Shuffle(Vector256<sbyte> vector, Vector256<sbyte> indices)
-        {
-            return Shuffle(vector.AsByte(), indices.AsByte()).AsSByte();
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
-        /// Behavior is platform-dependent for out-of-range indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].</remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx2))]
-        [CompExactlyDependsOn(typeof(Avx512Vbmi.VL))]
-        public static Vector256<byte> ShuffleUnsafe(Vector256<byte> vector, Vector256<byte> indices)
-        {
-            if (ShuffleUnsafeIntrinsicSupported) return ShuffleUnsafeIntrinsic(vector, indices);
-            return Shuffle(vector, indices);
-        }
-
-        private static Vector256<byte> ShuffleSoftwareFallback(Vector256<byte> vector, Vector256<byte> indices)
         {
             Unsafe.SkipInit(out Vector256<byte> result);
 
@@ -2358,62 +2313,58 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx2))]
-        [CompExactlyDependsOn(typeof(Avx512Vbmi.VL))]
-        private static Vector256<byte> ShuffleUnsafeIntrinsic(Vector256<byte> vector, Vector256<byte> indices)
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector256<sbyte> Shuffle(Vector256<sbyte> vector, Vector256<sbyte> indices)
         {
-            if (Avx512Vbmi.VL.IsSupported)
-            {
-                return Avx512Vbmi.VL.PermuteVar32x8(vector, indices);
-            }
+            Unsafe.SkipInit(out Vector256<sbyte> result);
 
-            if (Avx2.IsSupported)
+            for (int index = 0; index < Vector256<sbyte>.Count; index++)
             {
-                // check for constant value of indices where we can optimise further
-                if (RuntimeHelpers.IsKnownConstant(indices))
+                byte selectedIndex = (byte)indices.GetElementUnsafe(index);
+                sbyte selectedValue = 0;
+
+                if (selectedIndex < Vector256<sbyte>.Count)
                 {
-                    // check for all in correct lane (or will result in 0)
-                    if (LessThanAll(((indices & Vector256.Create((byte)0x9F)) ^ Vector256.Create(Vector128.Create((byte)0), Vector128.Create((byte)0x10))).AsSByte(), Vector256.Create((sbyte)0x10)))
-                    {
-                        return Avx2.Shuffle(vector, indices);
-                    }
-
-                    // check for all indices in first lane (or will result in 0)
-                    if (LessThanAll((indices & Vector256.Create((byte)0x9F)).AsSByte(), Vector256.Create((sbyte)0x10)))
-                    {
-                        var laneShuffle = Avx2.Permute2x128(vector, vector, 0b00000000);
-                        return Avx2.Shuffle(laneShuffle, indices);
-                    }
-
-                    // can add other similar cases as required
+                    selectedValue = vector.GetElementUnsafe(selectedIndex);
                 }
-
-                // get the indices, but only keep the high bit and bits used for indexing, and xor the cross-lane bit on the high 128-bit lane part of indices
-                // we begin computing this early as it seems to take the longest to calculate (it can be done in parallel to other operations ideally)
-                Vector256<byte> indicesXord = (indices ^ Vector256.Create(Vector128.Create((byte)0), Vector128.Create((byte)0x10))) & Vector256.Create((byte)0x9F);
-
-                // swap the low and high 128-bit lanes
-                // calculate swap before shuf1 so they can be computed in parallel
-                Vector256<byte> swap = Avx2.Permute2x128(vector, vector, 0b00000001);
-
-                // shuffle with both the normal and swapped values
-                Vector256<byte> shuf1 = Avx2.Shuffle(vector, indices);
-                Vector256<byte> shuf2 = Avx2.Shuffle(swap, indices);
-
-                // compare our modified indices to 0x0F (highest value not swapping lane), we get 0xFF when we are swapping lane and 0x00 otherwise
-                Vector256<byte> selection = Avx2.CompareGreaterThan(indicesXord.AsSByte(), Vector256.Create((sbyte)0x0F)).AsByte();
-
-                // blend our two shuffles based on whether each element swaps lanes or not
-                return Avx2.BlendVariable(shuf1, shuf2, selection);
+                result.SetElementUnsafe(index, selectedValue);
             }
 
-            Debug.Fail("Expected an intrinsic to be supported");
-            return default;
+            return result;
         }
 
-        private static bool ShuffleUnsafeIntrinsicIsSafe => false; // none are safe
-        private static bool ShuffleUnsafeIntrinsicSupported => Avx512Vbmi.VL.IsSupported || Avx2.IsSupported;
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
+        /// Behavior is platform-dependent for out-of-range indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].</remarks>
+        [Intrinsic]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi.VL))]
+        public static Vector256<byte> ShuffleUnsafe(Vector256<byte> vector, Vector256<byte> indices)
+        {
+            Unsafe.SkipInit(out Vector256<byte> result);
+
+            for (int index = 0; index < Vector256<byte>.Count; index++)
+            {
+                byte selectedIndex = indices.GetElementUnsafe(index);
+                byte selectedValue = 0;
+
+                if (selectedIndex < Vector256<byte>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe(selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>

@@ -1615,13 +1615,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector64_Shuffle:
         case NI_Vector128_Shuffle:
+        case NI_Vector64_ShuffleUnsafe:
+        case NI_Vector128_ShuffleUnsafe:
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
             assert((simdSize == 8) || (simdSize == 16));
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!indices->IsVectorConst())
+            if (!varTypeIsByte(simdBaseType) && !indices->IsVectorConst())
             {
                 // TODO-ARM64-CQ: Handling non-constant indices is a bit more complex
                 break;
@@ -1632,7 +1634,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
-                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize);
+                if (indices->IsVectorConst())
+                {
+                    retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize,
+                        intrinsic == NI_Vector64_ShuffleUnsafe || intrinsic == NI_Vector128_ShuffleUnsafe);
+                }
+                else
+                {
+                    retNode = gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize,
+                        intrinsic == NI_Vector64_ShuffleUnsafe || intrinsic == NI_Vector128_ShuffleUnsafe);
+                }
             }
             break;
         }
