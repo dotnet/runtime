@@ -3394,7 +3394,6 @@ ILCriticalHandleMarshaler::ReturnOverride(
     return OVERRIDDEN;
 } // ILCriticalHandleMarshaler::ReturnOverride
 
-#if defined(TARGET_WINDOWS)
 MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOverride(NDirectStubLinker* psl,
                                                 BOOL               byref,
                                                 BOOL               fin,
@@ -3461,6 +3460,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
         pslIL->SetStubTargetArgType(&locDesc);              // native type is the value type
         pslILDispatch->EmitLDLOC(dwNewValueTypeLocal);      // we load the local directly
 
+#if defined(TARGET_WINDOWS)
         // Record this argument's stack slot in the copy constructor chain so we can correctly invoke the copy constructor.
         DWORD ctorCookie = pslIL->NewLocal(CoreLibBinder::GetClass(CLASS__COPY_CONSTRUCTOR_COOKIE));
         pslIL->EmitLDLOCA(ctorCookie);
@@ -3489,6 +3489,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
         pslIL->EmitLDLOCA(psl->GetCopyCtorChainLocalNum());
         pslIL->EmitLDLOCA(ctorCookie);
         pslIL->EmitCALL(METHOD__COPY_CONSTRUCTOR_CHAIN__ADD, 2, 0);
+#endif // defined(TARGET_WINDOWS)
 
 #else
         pslIL->SetStubTargetArgType(ELEMENT_TYPE_I);        // native type is a pointer
@@ -3508,7 +3509,13 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
 
         DWORD       dwNewValueTypeLocal;
         dwNewValueTypeLocal = pslIL->NewLocal(locDesc);
+#ifdef TARGET_WINDOWS
         pslILDispatch->EmitLDARGA(argidx);
+#else // !TARGET_WINDOWS
+        pslILDispatch->EmitLDARG(argidx);
+        pslILDispatch->EmitSTLOC(dwNewValueTypeLocal);
+        pslILDispatch->EmitLDLOCA(dwNewValueTypeLocal);
+#endif // TARGET_WINDOWS
 #else
         LocalDesc   locDesc(pargs->mm.m_pMT);
         locDesc.MakeCopyConstructedPointer();
@@ -3520,7 +3527,6 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
         return OVERRIDDEN;
     }
 }
-#endif // defined(TARGET_WINDOWS)
 
 LocalDesc ILArgIteratorMarshaler::GetNativeType()
 {
