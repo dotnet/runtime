@@ -600,8 +600,10 @@ public:
     StackWalkAction Next(void);
 
 #ifndef DACCESS_COMPILE
+#ifdef FEATURE_EH_FUNCLETS
     // advance to the position that the other iterator is currently at
     void SkipTo(StackFrameIterator *pOtherStackFrameIterator);
+#endif // FEATURE_EH_FUNCLETS
 #endif // DACCESS_COMPILE
 
 #ifdef FEATURE_EH_FUNCLETS

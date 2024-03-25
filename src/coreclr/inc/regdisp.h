@@ -426,6 +426,7 @@ inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CO
     {
         *(&pCtxPtrs->R4 + i) = (&pCtx->R4 + i);
     }
+    *(&pCtxPtrs->Lr) = &pCtx->Lr;
 #elif defined(TARGET_X86) // TARGET_ARM
     for (int i = 0; i < 7; i++)
     {

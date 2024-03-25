@@ -1547,6 +1547,7 @@ BOOL StackFrameIterator::IsValid(void)
 } // StackFrameIterator::IsValid()
 
 #ifndef DACCESS_COMPILE
+#ifdef FEATURE_EH_FUNCLETS
 //---------------------------------------------------------------------------------------
 //
 // Advance to the position that the other iterator is currently at.
@@ -1580,13 +1581,11 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
     *pRD->pCurrentContextPointers = *pOtherRD->pCurrentContextPointers;
     SetIP(pRD->pCurrentContext, GetIP(pOtherRD->pCurrentContext));
     SetSP(pRD->pCurrentContext, GetSP(pOtherRD->pCurrentContext));
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
-    SetLR(pRD->pCurrentContext, GetLR(pOtherRD->pCurrentContext));
-#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-    SetRA(pRD->pCurrentContext, GetRA(pOtherRD->pCurrentContext));
-#endif // TARGET_ARM || TARGET_ARM64
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *pRD->pCurrentContextPointers->regname;
     ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = pRD->pCurrentContext->regname;
+    ENUM_FP_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
     pRD->IsCallerContextValid = pOtherRD->IsCallerContextValid;
     if (pRD->IsCallerContextValid)
@@ -1594,17 +1593,16 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
         *pRD->pCallerContextPointers = *pOtherRD->pCallerContextPointers;
         SetIP(pRD->pCallerContext, GetIP(pOtherRD->pCallerContext));
         SetSP(pRD->pCallerContext, GetSP(pOtherRD->pCallerContext));
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
-        SetLR(pRD->pCallerContext, GetLR(pOtherRD->pCallerContext));
-#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-        SetRA(pRD->pCallerContext, GetRA(pOtherRD->pCallerContext));
-#endif // TARGET_ARM || TARGET_ARM64
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = *pRD->pCallerContextPointers->regname;
         ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = pRD->pCallerContext->regname;
+        ENUM_FP_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
     }
     SyncRegDisplayToCurrentContext(pRD);
 }
+#endif // FEATURE_EH_FUNCLETS
 #endif // DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
