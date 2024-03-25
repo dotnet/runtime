@@ -8,12 +8,12 @@ RUN apt-get update -y && \
     apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
     gem install fpm
 RUN git clone -b recv-buffer-data-loss --recursive https://github.com/rzikm/msquic
-RUN cd msquic/src/msquic && \
+RUN cd msquic/ && \
     mkdir build && \
     cmake -B build -DCMAKE_BUILD_TYPE=Release -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off -DQUIC_TLS=openssl3  -DQUIC_ENABLE_SANITIZERS=on && \
     cd build && \
     cmake --build . --config Release
-RUN cd msquic/src/msquic/build/bin/Release && \
+RUN cd msquic/build/bin/Release && \
     rm libmsquic.so && \
     fpm -f -s dir -t deb -n libmsquic -v $( find -type f | cut -d "." -f 4- ) \
     --license MIT --url https://github.com/microsoft/msquic --log error \
