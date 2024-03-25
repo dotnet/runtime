@@ -296,7 +296,9 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             await start_runtime();
         }
 
-        await runtimeHelpers.afterIOStarted.promise;
+        if (WasmEnableThreads) {
+            await runtimeHelpers.afterIOStarted.promise;
+        }
 
         runtimeList.registerRuntime(exportedRuntimeAPI);
 
