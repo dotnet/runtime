@@ -24395,20 +24395,17 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             // Vector256<byte> indicesXord = (indices ^ Vector256.Create(Vector128.Create((byte)0), Vector128.Create((byte)0x10))) & Vector256.Create((byte)0x9F);
             simd_t xorCns = {};
             for (size_t index = 0; index < simdSize; index++) xorCns.u8[index] = static_cast<uint8_t>(index & 0x10);
-            simd_t xorMaskCns = {};
-            for (size_t index = 0; index < simdSize; index++) xorMaskCns.u8[index] = 0x9F;
             cnsNode = gtNewVconNode(type);
             cnsNode->AsVecCon()->gtSimdVal = xorCns;
             GenTree* indicesXord = gtNewSimdBinOpNode(GT_XOR, type, fgMakeMultiUse(&op2), cnsNode, simdBaseJitType, simdSize);
-            cnsNode = gtNewVconNode(type);
-            cnsNode->AsVecCon()->gtSimdVal = xorMaskCns;
+            cnsNode = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(0x9F, TYP_INT), CORINFO_TYPE_UBYTE, simdSize);
             indicesXord = gtNewSimdBinOpNode(GT_AND, type, indicesXord, cnsNode, simdBaseJitType, simdSize);
 
             // swap the low and high 128-bit lanes
             // calculate swap before shuf1 so they can be computed in parallel
             // Vector256<byte> swap = Avx2.Permute2x128(vector, vector, 0b00000001);
             uint8_t control = 1;
-            cnsNode = gtNewIconNode(control);
+            cnsNode = gtNewIconNode(control, TYP_INT);
             GenTree* swap = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&op1), fgMakeMultiUse(&op1), cnsNode, NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
 
             // shuffle with both the normal and swapped values
@@ -24419,10 +24416,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
             // compare our modified indices to 0x0F (highest value not swapping lane), we get 0xFF when we are swapping lane and 0x00 otherwise
             // Vector256<byte> selection = Avx2.CompareGreaterThan(indicesXord.AsSByte(), Vector256.Create((sbyte)0x0F)).AsByte();
-            simd_t selCns = {};
-            for (size_t index = 0; index < simdSize; index++) selCns.u8[index] = 0x0F;
-            cnsNode = gtNewVconNode(type);
-            cnsNode->AsVecCon()->gtSimdVal = selCns;
+            cnsNode = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(0x0F, TYP_INT), CORINFO_TYPE_UBYTE, simdSize);
             GenTree* selection = gtNewSimdCmpOpNode(GT_GT, type, indicesXord, cnsNode, CORINFO_TYPE_BYTE, simdSize);
 
             // blend our two shuffles based on whether each element swaps lanes or not
@@ -24534,9 +24528,10 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     // we want to match ShuffleUnsafe behaviour with constants to with variable,
     // therefore we need to make sure we treat where we should get 0s the same as what ShuffleUnsafe uses
     size_t maxNonZeroIndex = elementCount; // exclusive
-    size_t valueMask = static_cast<uint64_t>(elementCount - 1);
+    uint64_t valueMask = static_cast<uint64_t>(elementCount - 1);
     if (isUnsafe)
     {
+        assert(varTypeIsByte(simdBaseType));
         if (simdSize == 64 || (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL)))
         {
             maxNonZeroIndex = 256;
@@ -24711,7 +24706,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                     // select the appropriate values
                     GenTree* selNode = gtNewVconNode(type);
                     selNode->AsVecCon()->gtSimdVal = selCns;
-                    retNode = gtNewConditionalNode(GT_SELECT, selNode, swap, op1, simdBaseType);
+                    retNode = gtNewSimdHWIntrinsicNode(type, op1, swap, selNode, NI_AVX2_BlendVariable, simdBaseJitType, simdSize);
                 }
 
                 assert(retNode != nullptr);
