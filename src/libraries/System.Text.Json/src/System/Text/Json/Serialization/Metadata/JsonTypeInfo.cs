@@ -1396,6 +1396,12 @@ namespace System.Text.Json.Serialization.Metadata
                         {
                             ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(_jsonTypeInfo.Type, jsonPropertyInfo.Name);
                         }
+
+                        if (!other.HasGetter && jsonPropertyInfo.HasGetter &&
+                            jsonPropertyInfo.IsOverriddenOrShadowedBy(other))
+                        {
+                            other.Get = jsonPropertyInfo.Get;
+                        }
                     }
                 }
 
