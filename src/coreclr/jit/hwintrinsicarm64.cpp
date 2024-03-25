@@ -1648,15 +1648,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
+                bool isUnsafe = intrinsic == NI_Vector64_ShuffleUnsafe || intrinsic == NI_Vector128_ShuffleUnsafe;
                 if (indices->IsVectorConst())
                 {
-                    retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize,
-                        intrinsic == NI_Vector64_ShuffleUnsafe || intrinsic == NI_Vector128_ShuffleUnsafe);
+                    retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isUnsafe);
                 }
                 else
                 {
-                    retNode = gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize,
-                        intrinsic == NI_Vector64_ShuffleUnsafe || intrinsic == NI_Vector128_ShuffleUnsafe);
+                    retNode = gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isUnsafe);
                 }
             }
             break;
