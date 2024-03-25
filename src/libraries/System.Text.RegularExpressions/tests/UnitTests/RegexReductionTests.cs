@@ -582,7 +582,7 @@ namespace System.Text.RegularExpressions.Tests
 
             Assert.Equal(expectedMin, tree.FindOptimizations.MinRequiredLength);
 
-            if (!pattern.EndsWith("$", StringComparison.Ordinal) &&
+            if (!pattern.EndsWith('$') &&
                 !pattern.EndsWith(@"\Z", StringComparison.OrdinalIgnoreCase))
             {
                 // MaxPossibleLength is currently only computed/stored if there's a trailing End{Z} anchor as the max length is otherwise unused

@@ -108,7 +108,7 @@ namespace ILCompiler
                     hash = SHA256.HashData(GetBytesFromString(literal));
                 }
 
-                mangledName += "_" + BitConverter.ToString(hash).Replace("-", "");
+                mangledName += "_" + Convert.ToHexString(hash);
             }
 
             return mangledName;
