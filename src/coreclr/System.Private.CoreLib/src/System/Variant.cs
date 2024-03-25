@@ -22,9 +22,9 @@ namespace System
     {
         // Do Not change the order of these fields.
         // They are mapped to the native VariantData * data structure.
-        private object? _objref;
-        private long _data;
-        private int _flags;
+        internal object? _objref;
+        internal long _data;
+        internal int _flags;
 
         // The following bits have been taken up as follows
         // bits 0-15    - Type code
@@ -57,6 +57,7 @@ namespace System
         internal const int CV_TIMESPAN = 0x11;
         internal const int CV_OBJECT = 0x12;
         internal const int CV_DECIMAL = 0x13;
+        internal const int CV_CURRENCY = 0x14;
         internal const int CV_ENUM = 0x15;
         internal const int CV_MISSING = 0x16;
         internal const int CV_NULL = 0x17;
@@ -81,7 +82,7 @@ namespace System
         internal static Variant DBNull => new Variant(CV_NULL, System.DBNull.Value, 0);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe bool IsSystemDrawingColor(MethodTable* pMT);
+        internal static extern unsafe bool IsSystemDrawingColor(MethodTable* pMT);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertSystemColorToOleColor")]
         private static partial uint ConvertSystemColorToOleColor(ObjectHandleOnStack obj);
