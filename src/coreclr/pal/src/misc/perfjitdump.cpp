@@ -67,39 +67,24 @@ namespace
 
     uint64_t GetTimeStampNS()
     {
-#if defined(__APPLE__)
-        // This is the same value as CLOCK_UPTIME_RAW returns, but it's not clear
-        // if it caches the timebase_info conversion. Just call the mach functions
-        // directly.
-        static mach_timebase_info_data_t info = { 0, 0 };
-        if (info.denom == 0)
+#if defined(_DEBUG)
+        static bool freq_valid = false;
+        if (!freq_valid)
         {
-            int result = mach_timebase_info(&info);
-            if (result != 0 || info.denom == 0) {
-                info.numer = 1;
-                info.denom = 1;
-            }
+            LARGE_INTEGER freq;
+            QueryPerformanceFrequency(&freq);
+            // On platforms where JITDUMP is used, the PAL QueryPerformanceFrequency
+            // returns tccSecondsToNanoSeconds, meaning QueryPerformanceCounter
+            // will return a direct nanosecond value. If this isn't true,
+            // then some other method will need to be used to implement GetTimeStampNS.
+            ASSERT(freq.QuadPart == tccSecondsToNanoSeconds);
+            freq_valid = true;
         }
-
-        uint64_t time = mach_absolute_time();
-
-        return time * uint64_t(info.numer) / uint64_t(info.denom);
-#elif HAVE_CLOCK_MONOTONIC
-        struct timespec ts;
-        int result = clock_gettime(CLOCK_MONOTONIC, &ts);
-
-        if (result != 0)
-        {
-            ASSERT("clock_gettime(CLOCK_MONOTONIC) failed: %d\n", result);
-            return 0;
-        }
-        else
-        {
-            return  ts.tv_sec * 1000000000ULL + ts.tv_nsec;
-        }
-#else
-    #error "The PAL jitdump requires clock_gettime(CLOCK_MONOTONIC) or another way of obtaining monotonic time to be supported."
 #endif
+
+        LARGE_INTEGER result;
+        QueryPerformanceCounter(&result);
+        return result.QuadPart;
     }
 
     struct FileHeader
