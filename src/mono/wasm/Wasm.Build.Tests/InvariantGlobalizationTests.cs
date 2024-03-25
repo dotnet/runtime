@@ -69,9 +69,8 @@ namespace Wasm.Build.Tests
             }
             else
             {
-                string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id);
+                string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, args: "nativename=\"espa\u00F1ol (Espa\u00F1a)\"");
                 Assert.Contains("es-ES: Is Invariant LCID: False", output);
-                Assert.Contains("NativeName: espa\u00F1ol (Espa\u00F1a)", output);
 
                 // ignoring the last line of the output which prints the current culture
             }
