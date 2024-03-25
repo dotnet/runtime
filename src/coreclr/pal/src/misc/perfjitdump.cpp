@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // ===========================================================================
 
-#if defined(__linux__) || defined(__APPLE__)
-#define JITDUMP_SUPPORTED
-#endif
-
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 
@@ -30,6 +26,10 @@
 #include <time.h>
 #include <unistd.h>
 #include <limits.h>
+
+#if defined(__APPLE__)
+#include <mach/mach_time.h>
+#endif
 
 #include "../inc/llvm/ELF.h"
 
@@ -65,25 +65,26 @@ namespace
         JIT_CODE_LOAD = 0,
     };
 
-#if defined(__linux__)
-    static uint32_t sys_gettid()
-    {
-        return syscall(SYS_gettid);
-    }
-#else
-    static uint32_t sys_gettid()
-    {
-        // macOS SYS_gettid is completely unrelated to linux gettid (it returns
-        // effective uid/gid a thread is operating under)
-        // There is pthread_threadid_np(), but it returns a uint64_t.
-        // Given that we need a uint32_t, just return 0 here for now.
-        return 0;
-    }
-#endif
-
     uint64_t GetTimeStampNS()
     {
-#if HAVE_CLOCK_MONOTONIC
+#if defined(__APPLE__)
+        // This is the same value as CLOCK_UPTIME_RAW returns, but it's not clear
+        // if it caches the timebase_info conversion. Just call the mach functions
+        // directly.
+        static mach_timebase_info_data_t info = { 0, 0 };
+        if (info.denom == 0)
+        {
+            int result = mach_timebase_info(&info);
+            if (result != 0 || info.denom == 0) {
+                info.numer = 1;
+                info.denom = 1;
+            }
+        }
+
+        uint64_t time = mach_absolute_time();
+
+        return time * uint64_t(info.numer) / uint64_t(info.denom);
+#elif HAVE_CLOCK_MONOTONIC
         struct timespec ts;
         int result = clock_gettime(CLOCK_MONOTONIC, &ts);
 
@@ -97,7 +98,7 @@ namespace
             return  ts.tv_sec * 1000000000ULL + ts.tv_nsec;
         }
 #else
-    #error "The PAL jitdump requires clock_gettime(CLOCK_MONOTONIC) to be supported."
+    #error "The PAL jitdump requires clock_gettime(CLOCK_MONOTONIC) or another way of obtaining monotonic time to be supported."
 #endif
     }
 
