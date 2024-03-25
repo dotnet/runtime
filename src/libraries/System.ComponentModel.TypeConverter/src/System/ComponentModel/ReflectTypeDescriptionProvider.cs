@@ -204,8 +204,6 @@ namespace System.ComponentModel
             Justification = "IntrinsicTypeConverters is marked with RequiresUnreferencedCode. It is the only place that should call this.")]
         private static NullableConverter CreateNullableConverter(Type type) => new NullableConverter(type);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "Trimmer does not trim enums")]
         private static EnumConverter CreateEnumConverter(Type type)
         {
             Debug.Assert(type.IsEnum || type == typeof(Enum));

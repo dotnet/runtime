@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
@@ -20,12 +21,12 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.EnumConverter'/> class for the given
         /// type.
         /// </summary>
-        public EnumConverter([DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)] Type type)
+        public EnumConverter(Type type)
         {
+            Debug.Assert(type.IsEnum, "type should be an Enum type");
             EnumType = type;
         }
 
-        [DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)]
         protected Type EnumType { get; }
 
         protected StandardValuesCollection? Values { get; set; }
@@ -115,6 +116,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to the specified destination type.
         /// </summary>
+        [UnconditionalSuppressMessage("Trimming", "IL2075:", Justification = "Trimmer does not trim enums")]
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             ArgumentNullException.ThrowIfNull(destinationType);
@@ -220,6 +222,8 @@ namespace System.ComponentModel
         /// Gets a collection of standard values for the data type this validator is
         /// designed for.
         /// </summary>
+        [UnconditionalSuppressMessage("Trimming", "IL2075:", Justification = "Trimmer does not trim enums")]
+        [UnconditionalSuppressMessage("Trimming", "IL2072:", Justification = "Trimmer does not trim enums")]
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
         {
             if (Values == null)
