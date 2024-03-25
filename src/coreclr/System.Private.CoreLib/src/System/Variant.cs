@@ -433,19 +433,11 @@ namespace System
                 CV_R8 => BitConverter.Int64BitsToDouble(_data),
                 CV_DATETIME => new DateTime(_data),
                 CV_TIMESPAN => new TimeSpan(_data),
-                CV_ENUM => BoxEnum(),
+                CV_ENUM => Enum.InternalBoxEnum((RuntimeType)_objref!, _data),
                 CV_MISSING => Type.Missing,
                 CV_NULL => System.DBNull.Value,
                 _ => _objref, // CV_DECIMAL, CV_STRING, CV_OBJECT
             };
-
-        private unsafe object BoxEnum()
-        {
-            Debug.Assert(_objref != null);
-            return RuntimeHelpers.Box(
-                RuntimeHelpers.GetMethodTable(_objref),
-                ref Unsafe.As<long, byte>(ref _data))!;
-        }
 
         // Helper code for marshaling managed objects to VARIANT's (we use
         // managed variants as an intermediate type.

@@ -15,7 +15,7 @@ namespace System
         private static partial void GetEnumValuesAndNames(QCallTypeHandle enumType, ObjectHandleOnStack values, ObjectHandleOnStack names, Interop.BOOL getNames);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object InternalBoxEnum(RuntimeType enumType, long value);
+        internal static extern object InternalBoxEnum(RuntimeType enumType, long value);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe CorElementType InternalGetCorElementType(MethodTable* pMT);
