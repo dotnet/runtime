@@ -3127,6 +3127,12 @@
         </ExcludeList>
     </ItemGroup>
 
+    <!-- Mobile NativeAOT using Mono runtime -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(RuntimeFlavor)' == 'mono' and '$(TestBuildMode)' == 'nativeaot'">
+        <ExcludeList Include = "$(XunitTestBinBase)/nativeaot/SmokeTests/TrimmingBehaviors/**">
+            <Issue>https://github.com/dotnet/runtime/issues/100226</Issue>
+        </ExcludeList>
+
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandled/**">
             <Issue>System.Diagnostics.Process is not supported</Issue>
