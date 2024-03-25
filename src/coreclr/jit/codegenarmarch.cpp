@@ -429,9 +429,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         }
 
 #ifdef TARGET_ARM64
-        case GT_XCHG:
         case GT_XORR:
         case GT_XAND:
+#endif // TARGET_ARM64
+        case GT_XCHG:
         case GT_XADD:
             genLockedInstructions(treeNode->AsOp());
             break;
@@ -439,7 +440,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_CMPXCHG:
             genCodeForCmpXchg(treeNode->AsCmpXchg());
             break;
-#endif // TARGET_ARM64
 
 #ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR:
