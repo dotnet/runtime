@@ -19,7 +19,7 @@ namespace System.ComponentModel
         [FeatureSwitchDefinition("System.ComponentModel.NullableConverter.IsSupported")]
         [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 #pragma warning disable IL4000
-        internal static bool IsSupported => AppContext.TryGetSwitch("System.ComponentModel.NullableConverter.IsSupported", out bool isEnabled) && !isEnabled;
+        internal static bool IsSupported => AppContext.TryGetSwitch("System.ComponentModel.NullableConverter.IsSupported", out bool isEnabled) ? isEnabled : true;
 #pragma warning restore IL4000
         private static readonly ConstructorInfo s_nullableConstructor = typeof(Nullable<>).GetConstructor(typeof(Nullable<>).GetGenericArguments())!;
 
