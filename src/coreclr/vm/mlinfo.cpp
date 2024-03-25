@@ -2383,6 +2383,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     {
                         if (fNeedsCopyCtor && !IsFieldScenario()) // We don't support automatically discovering copy constructors for fields.
                         {
+#if defined(TARGET_WINDOWS)
                             MethodDesc *pCopyCtor;
                             MethodDesc *pDtor;
                             FindCopyCtor(pModule, m_pMT, &pCopyCtor);
@@ -2392,6 +2393,10 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             m_args.mm.m_pCopyCtor = pCopyCtor;
                             m_args.mm.m_pDtor = pDtor;
                             m_type = MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR;
+#else // !defined(TARGET_WINDOWS)
+                            m_resID = IDS_EE_BADMARSHAL_BADMANAGED;
+                            IfFailGoto(E_FAIL, lFail);
+#endif // defined(TARGET_WINDOWS)
                         }
                         else
                         {
@@ -3121,7 +3126,9 @@ bool MarshalInfo::IsValueClass(MarshalType mtype)
     {
     case MARSHAL_TYPE_BLITTABLEVALUECLASS:
     case MARSHAL_TYPE_VALUECLASS:
+#if defined(TARGET_WINDOWS)
     case MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR:
+#endif // defined(TARGET_WINDOWS)
         return true;
 
     default:
@@ -3605,7 +3612,9 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
         case MARSHAL_TYPE_BLITTABLEVALUECLASS:
         case MARSHAL_TYPE_BLITTABLEPTR:
         case MARSHAL_TYPE_LAYOUTCLASSPTR:
+#if defined(TARGET_WINDOWS)
         case MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR:
+#endif // defined(TARGET_WINDOWS)
             pDispParamMarshaler = new DispParamRecordMarshaler(m_pMT);
             break;
 

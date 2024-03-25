@@ -15,7 +15,6 @@ parameters:
   enableTelemetry: false          # optional -- enable for telemetry
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   helixQueues: ''                 # required -- Helix queues
-  dependOnEvaluatePaths: false
 
 jobs:
 - template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
@@ -29,7 +28,6 @@ jobs:
     enableTelemetry: ${{ parameters.enableTelemetry }}
     enablePublishBuildArtifacts: true
     continueOnError: ${{ parameters.continueOnError }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     ${{ if ne(parameters.displayName, '') }}:
