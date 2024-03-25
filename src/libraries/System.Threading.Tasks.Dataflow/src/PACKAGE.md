@@ -49,7 +49,7 @@ TransformBlock<string, string[]> createWordList = new TransformBlock<string, str
     return text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 });
 
-// Removes short words and duplicates.
+// Removes short words.
 TransformBlock<string[], string[]> filterWordList = new TransformBlock<string[], string[]>(words =>
 {
     Console.WriteLine("Filtering word list...");
@@ -67,7 +67,7 @@ TransformManyBlock<string[], string> findReversedWords = new TransformManyBlock<
     var wordsSet = new HashSet<string>(words);
 
     return from word in wordsSet
-           let reverse = new string(word.Reverse().ToArray())
+           let reverse = string.Concat(word.Reverse())
            where word != reverse && wordsSet.Contains(reverse)
            select word;
 });
@@ -75,7 +75,7 @@ TransformManyBlock<string[], string> findReversedWords = new TransformManyBlock<
 // Prints the provided reversed words to the console.
 ActionBlock<string> printReversedWords = new ActionBlock<string>(reversedWord =>
 {
-    Console.WriteLine("Found reversed words {0}/{1}", reversedWord, new string(reversedWord.Reverse().ToArray()));
+    Console.WriteLine("Found reversed words {0}/{1}", reversedWord, string.Concat(reversedWord.Reverse()));
 });
 
 
