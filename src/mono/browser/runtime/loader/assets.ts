@@ -17,7 +17,7 @@ import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 let throttlingPromise: PromiseAndController<void> | undefined;
 // in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
 let parallel_count = 0;
-const coreAssemblies: AssetEntryInternal[] = [];
+const coreAssetsToLoad: AssetEntryInternal[] = [];
 const assetsToLoad: AssetEntryInternal[] = [];
 const singleAssets: Map<string, AssetEntryInternal> = new Map();
 
@@ -173,7 +173,7 @@ export async function mono_download_assets(): Promise<void> {
         };
 
         // start fetching assets in parallel
-        for (const asset of coreAssemblies) {
+        for (const asset of coreAssetsToLoad) {
             countAndStartDownload(asset, promises_of_assets_core);
         }
         for (const asset of assetsToLoad) {
@@ -286,8 +286,7 @@ export function prepareAssets() {
             mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
             if (isCoreAssembly(asset)) {
-                asset.isCoreAssembly = true;
-                coreAssemblies.push(asset);
+                coreAssetsToLoad.push(asset);
             } else {
                 assetsToLoad.push(asset);
             }
@@ -307,15 +306,15 @@ export function prepareAssets() {
             convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
         }
 
-        const addAssemblyAsset = (name: string, hash: string | null, isCoreAssembly: boolean) => {
+        const addAssemblyAsset = (name: string, hash: string | null, isCore: boolean) => {
             const asset: AssetEntryInternal = {
                 name,
                 hash,
                 behavior: "assembly"
             };
-            if (isCoreAssembly) {
-                asset.isCoreAssembly = true;
-                coreAssemblies.push(asset);
+            if (isCore) {
+                asset.isCore = true;
+                coreAssetsToLoad.push(asset);
             } else {
                 assetsToLoad.push(asset);
             }
@@ -341,8 +340,8 @@ export function prepareAssets() {
                     behavior: "pdb"
                 };
                 if (isCoreAssembly(asset)) {
-                    asset.isCoreAssembly = true;
-                    coreAssemblies.push(asset);
+                    asset.isCore = true;
+                    coreAssetsToLoad.push(asset);
                 } else {
                     assetsToLoad.push(asset);
                 }
@@ -362,15 +361,33 @@ export function prepareAssets() {
             }
         }
 
+        const addVfsAsset = (virtualPath: string, name: string, hash: string | null, isCore: boolean) => {
+            const asset: AssetEntryInternal = {
+                name,
+                hash,
+                behavior: "vfs",
+                virtualPath
+            };
+            if (isCore) {
+                asset.isCore = true;
+                coreAssetsToLoad.push(asset);
+            } else {
+                assetsToLoad.push(asset);
+            }
+        };
+
+        if (resources.coreVfs) {
+            for (const virtualPath in resources.vfs) {
+                for (const name in resources.vfs[virtualPath]) {
+                    addVfsAsset(virtualPath, name, resources.vfs[virtualPath][name], true);
+                }
+            }
+        }
+
         if (resources.vfs) {
             for (const virtualPath in resources.vfs) {
                 for (const name in resources.vfs[virtualPath]) {
-                    assetsToLoad.push({
-                        name,
-                        hash: resources.vfs[virtualPath][name],
-                        behavior: "vfs",
-                        virtualPath
-                    });
+                    addVfsAsset(virtualPath, name, resources.vfs[virtualPath][name], false);
                 }
             }
         }

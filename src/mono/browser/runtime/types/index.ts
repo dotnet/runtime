@@ -221,6 +221,7 @@ export interface ResourceGroups {
     modulesAfterRuntimeReady?: ResourceList
 
     extensions?: ResourceExtensions
+    coreVfs?: { [virtualPath: string]: ResourceList };
     vfs?: { [virtualPath: string]: ResourceList };
 }
 

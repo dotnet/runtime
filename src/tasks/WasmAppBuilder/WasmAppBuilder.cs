@@ -271,9 +271,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             var i = 0;
             StringDictionary targetPathTable = new();
             var vfs = new Dictionary<string, Dictionary<string, string>>();
+            var coreVfs = new Dictionary<string, Dictionary<string, string>>();
             foreach (var item in FilesToIncludeInFileSystem)
             {
                 string? targetPath = item.GetMetadata("TargetPath");
+                string? loadingStage = item.GetMetadata("LoadingStage");
                 if (string.IsNullOrEmpty(targetPath))
                 {
                     targetPath = Path.GetFileName(item.ItemSpec);
@@ -301,7 +303,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 var vfsPath = Path.Combine(supportFilesDir, generatedFileName);
                 FileCopyChecked(item.ItemSpec, vfsPath, "FilesToIncludeInFileSystem");
 
-                vfs[targetPath] = new()
+                (loadingStage == "Core" ? coreVfs : vfs)[targetPath] = new()
                 {
                     [$"supportFiles/{generatedFileName}"] = Utils.ComputeIntegrity(vfsPath)
                 };
@@ -309,6 +311,9 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
             if (vfs.Count > 0)
                 bootConfig.resources.vfs = vfs;
+
+            if (coreVfs.Count > 0)
+                bootConfig.resources.coreVfs = coreVfs;
         }
 
         if (!InvariantGlobalization)

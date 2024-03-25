@@ -207,6 +207,9 @@ public class ResourcesData
     public Dictionary<string, AdditionalAsset> runtimeAssets { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, ResourceHashesByNameDictionary> coreVfs { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, ResourceHashesByNameDictionary> vfs { get; set; }
 
     [DataMember(EmitDefaultValue = false)]

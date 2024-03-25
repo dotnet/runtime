@@ -113,7 +113,7 @@ export interface AssetEntryInternal extends AssetEntry {
     pendingDownloadInternal?: LoadingResource
     noCache?: boolean
     useCredentials?: boolean
-    isCoreAssembly?: boolean
+    isCore?: boolean
 }
 
 export type LoaderHelpers = {
