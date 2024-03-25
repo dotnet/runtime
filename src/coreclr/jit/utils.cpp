@@ -1696,8 +1696,6 @@ void HelperCallProperties::init()
             // Helpers that load the base address for static variables.
             // We divide these between those that may and may not invoke
             // static class constructors.
-            // TODO, logic previously had the dynamic class init helper but not the non-dynamic ones, now the dynamic
-            // helper is gone, what to do?
             case CORINFO_HELP_GET_GCSTATIC_BASE:
             case CORINFO_HELP_GET_NONGCSTATIC_BASE:
             case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
@@ -1721,6 +1719,12 @@ void HelperCallProperties::init()
                 isPure        = true;
                 nonNullReturn = true;
                 mayRunCctor   = true;
+                break;
+
+            case CORINFO_HELP_INITCLASS:
+            case CORINFO_HELP_INITINSTCLASS:
+                isPure      = true;
+                mayRunCctor = true;
                 break;
 
             case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
