@@ -52,7 +52,7 @@ class Thread;
 enum class TLSIndexType
 {
     Standard, // IndexOffset for this form of TLSIndex is scaled by sizeof(void*) and then added to ThreadLocalData::pTLSArrayData to get the final address
-}
+};
 
 struct TLSIndex
 {
