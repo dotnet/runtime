@@ -27,23 +27,6 @@
     private List<string> chatMessages = new List<string>();
     private string wrongQueryError = "Query string with parameters 'message' and 'transport' are required";
 
-    public Chat()
-    {
-        Helper.TestOutputWriteLine("Chat component constructor called");
-    }
-
-    protected override void OnInitialized()
-    {
-        Helper.TestOutputWriteLine("OnInitialized");
-        base.OnInitialized();
-    }
-
-    protected override void OnParametersSet()
-    {
-        Helper.TestOutputWriteLine("OnParametersSet");
-        base.OnParametersSet();
-    }
-
     protected override bool ShouldRender()
     {
         bool shouldRender = base.ShouldRender();
@@ -53,13 +36,12 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
-        Helper.TestOutputWriteLine($"OnAfterRender firstRender = {firstRender}");
-        base.OnAfterRender(firstRender);
         if (firstRender)
         {
             Helper.TestOutputWriteLine($"OnAfterRender on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
             GetQueryParameters();
         }
+        base.OnAfterRender(firstRender);
     }
 
     private void GetQueryParameters()
