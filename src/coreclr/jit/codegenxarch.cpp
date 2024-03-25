@@ -9053,6 +9053,24 @@ void CodeGen::genAmd64EmitterUnitTestsSse2()
     GetEmitter()->emitIns_R_R_R(INS_cvtsd2ss, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
 }
 
+/*****************************************************************************
+ * Unit tests for the APX instructions.
+ */
+
+void CodeGen::genAmd64EmitterUnitTestsApx()
+{
+    emitter* theEmitter = GetEmitter();
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // REX2 sub eax, ebx
+
+    theEmitter->emitComp->JitStressRex2Encoding(true);
+
+    theEmitter->emitIns_R_R(INS_sub, EA_4BYTE, REG_EAX, REG_EBX);
+    theEmitter->emitIns_R_R(INS_sub, EA_4BYTE, REG_EAX, REG_ECX);
+}
+
 #endif // defined(DEBUG) && defined(TARGET_AMD64)
 
 #ifdef PROFILING_SUPPORTED

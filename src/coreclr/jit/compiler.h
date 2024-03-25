@@ -9980,6 +9980,25 @@ private:
 
         return false;
     }
+
+//------------------------------------------------------------------------
+    // DoJitStressRex2Encoding- Answer the question: Do we force REX2 encoding.
+    //
+    // Returns:
+    //    `true` if user requests REX2 encoding.
+    //
+    bool DoJitStressRex2Encoding() 
+    {
+#ifdef DEBUG
+        // Using JitStressEVEXEncoding flag will force instructions which would
+        // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
+        // This requires AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL support
+
+        return this->m_jitStressRex2Encoding;
+#endif // DEBUG
+
+        return false;
+    }
 #endif // TARGET_XARCH
 
     /*
@@ -11690,7 +11709,19 @@ public:
     {
         return this->cntCalleeTrashMask;
     }
+
+private:
+    bool m_jitStressRex2Encoding;
+
+public:
+    FORCEINLINE void JitStressRex2Encoding(bool val) 
+    {
+        this->m_jitStressRex2Encoding = val;
+    }
+
 #endif // TARGET_XARCH
+
+
 
 }; // end of class Compiler
 

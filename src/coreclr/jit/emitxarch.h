@@ -38,6 +38,16 @@ inline static bool isHighSimdReg(regNumber reg)
 #endif
 }
 
+inline static bool isSimdReg(regNumber reg)
+{
+#ifdef TARGET_AMD64
+    return ((reg >= REG_XMM0) && (reg <= REG_XMM31));
+#else
+    // X86 JIT operates in 32-bit mode and hence extended regs are not available.
+    return false;
+#endif
+}
+
 /************************************************************************/
 /*         Routines that compute the size of / encode instructions      */
 /************************************************************************/
@@ -88,6 +98,7 @@ unsigned emitGetEvexPrefixSize(instrDesc* id) const;
 unsigned emitGetPrefixSize(instrDesc* id, code_t code, bool includeRexPrefixSize);
 unsigned emitGetAdjustedSize(instrDesc* id, code_t code) const;
 
+code_t emitExtractRex2Prefix(instruction ins, code_t& code) const;
 code_t emitExtractVexPrefix(instruction ins, code_t& code) const;
 code_t emitExtractEvexPrefix(instruction ins, code_t& code) const;
 
@@ -117,19 +128,27 @@ static bool IsKInstructionWithLBit(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
-bool             HasVexEncoding(instruction ins) const;
-bool             HasEvexEncoding(instruction ins) const;
-bool             IsVexEncodableInstruction(instruction ins) const;
-bool             IsEvexEncodableInstruction(instruction ins) const;
-bool             IsVexOrEvexEncodableInstruction(instruction ins) const;
+bool HasVexEncoding(instruction ins) const;
+bool HasEvexEncoding(instruction ins) const;
+bool HasRex2Encoding(instruction ins) const;
+bool IsVexEncodableInstruction(instruction ins) const;
+bool IsEvexEncodableInstruction(instruction ins) const;
+bool IsRex2EncodableInstruction(instruction ins) const;
+bool IsLegacyMap1(code_t code) const;
+bool IsVexOrEvexEncodableInstruction(instruction ins) const;
 
 code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
 
 code_t AddRexWPrefix(const instrDesc* id, code_t code);
+code_t AddRex2WPrefix(const instrDesc* id, code_t code);
 code_t AddRexRPrefix(const instrDesc* id, code_t code);
+code_t AddRex2RPrefix(const instrDesc* id, regNumber reg, code_t code);
 code_t AddRexXPrefix(const instrDesc* id, code_t code);
+code_t AddRex2XPrefix(const instrDesc* id, regNumber reg, code_t code);
 code_t AddRexBPrefix(const instrDesc* id, code_t code);
+code_t AddRex2BPrefix(const instrDesc* id, regNumber reg, code_t code);
 code_t AddRexPrefix(instruction ins, code_t code);
+code_t AddRex2Prefix(instruction ins, code_t code);
 
 bool   EncodedBySSE38orSSE3A(instruction ins) const;
 bool   Is4ByteSSEInstruction(instruction ins) const;
@@ -201,6 +220,28 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
 }
 
 insTupleType insTupleTypeInfo(instruction ins) const;
+
+// 2-byte REX2 prefix starts with byte 0xD5
+#define REX2_PREFIX_MASK_2BYTE 0xFF0000000000ULL
+#define REX2_PREFIX_CODE_2BYTE 0xD50000000000ULL
+
+bool TakesRex2Prefix(const instrDesc* id) const;
+//------------------------------------------------------------------------
+// hasEvexPrefix: Returns true if the instruction encoding already
+// contains Evex prefix.
+//
+// Arguments:
+//    code - opcode + prefixes bits at some stage of encoding.
+//
+// Returns:
+//    `true` if code has an Evex prefix.
+//
+bool hasRex2Prefix(code_t code)
+{
+    return (code & REX2_PREFIX_MASK_2BYTE) == REX2_PREFIX_CODE_2BYTE;
+}
+
+bool IsExtendedGPReg(regNumber reg) const;
 
 //------------------------------------------------------------------------
 // HasKMaskRegisterDest: Temporary check to identify instructions that can
@@ -1089,6 +1130,7 @@ inline bool HasEmbeddedMask(const instrDesc* id) const
 }
 
 inline bool HasHighSIMDReg(const instrDesc* id) const;
+inline bool HasExtendedGPReg(const instrDesc* id) const;
 
 inline bool HasMaskReg(const instrDesc* id) const;
 

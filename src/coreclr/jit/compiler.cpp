@@ -3407,6 +3407,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         cntCalleeTrashMask += CNT_CALLEE_TRASH_MASK_EVEX;
     }
 
+    m_jitStressRex2Encoding = JitConfig.JitStressRex2Encoding();
+
     // Make sure we copy the register info and initialize the
     // trash regs after the underlying fields are initialized
 
