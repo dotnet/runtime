@@ -13,6 +13,7 @@
 
 #include "olevariant.h"
 
-extern "C" void QCALLTYPE OAVariant_ChangeType(VariantData* result, VariantData* source, LCID lcid, void* targetType, int cvType, INT16 flags);
+extern "C" IUnknown* QCALLTYPE OAVariant_GetComIPFromObjectRef(QCall::ObjectHandleOnStack obj, ComIpType reqIPType, ComIpType* fetchedIpType);
+extern "C" void* QCALLTYPE OAVariant_GetObjectRefFromComIP(QCall::ObjectHandleOnStack objRet, IUnknown* pUnk);
 
 #endif  // _OAVARIANT_H_

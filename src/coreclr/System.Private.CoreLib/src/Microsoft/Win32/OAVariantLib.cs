@@ -62,8 +62,6 @@ namespace Microsoft.Win32
 
         #region Internal Methods
 
-#pragma warning disable CS8500
-
         /**
          * Changes a Variant from one type to another, calling the OLE
          * Automation VariantChangeTypeEx routine.  Note the legal types here are
@@ -216,16 +214,11 @@ namespace Microsoft.Win32
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertOleColorToSystemColor")]
         private static partial void ConvertOleColorToSystemColor(ObjectHandleOnStack objret, uint value);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "OAVariant_ChangeType")]
-        private static partial void ChangeType(Variant* result, Variant* source, int lcid, IntPtr typeHandle, int cvType, short flags);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "OAVariant_GetComIPFromObjectRef")]
+        private static partial IntPtr GetComIPFromObjectRef(ObjectHandleOnStack obj, ComIpType reqIPType, out ComIpType fetchedIpType);
 
-        [DllImport("Foo")]
-        private static extern IntPtr GetComIPFromObjectRef(ObjectHandleOnStack obj, ComIpType reqIPType, out ComIpType fetchedIpType);
-
-        [DllImport("Foo")]
-        private static extern void GetObjectRefFromComIP(ObjectHandleOnStack objRet, IntPtr pUnk);
-
-#pragma warning restore CS8500
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "OAVariant_GetObjectRefFromComIP")]
+        private static partial void GetObjectRefFromComIP(ObjectHandleOnStack objRet, IntPtr pUnk);
 
         #endregion
     }
