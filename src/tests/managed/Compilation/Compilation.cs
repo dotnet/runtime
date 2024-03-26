@@ -8,34 +8,24 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using Xunit;
 
-public class Program
+class Program
 {
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         Console.WriteLine("Starting the test");
         string codeFile = @"HelloWorld.cs";
 
-        var sourceTree = new List<SyntaxTree>()
-        {
-            SyntaxFactory.ParseSyntaxTree(File.ReadAllText(codeFile))
-        };
+        var sourceTree = new List<SyntaxTree>(){SyntaxFactory.ParseSyntaxTree(File.ReadAllText(codeFile))};
 
-        string mscorlibFile = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"),
-                                           "System.Private.CoreLib.dll");
-
+        string mscorlibFile = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "System.Private.CoreLib.dll");
         Console.WriteLine("Using reference to: {0}", mscorlibFile);
-        var reference = new List<MetadataReference>()
-        {
-            MetadataReference.CreateFromFile(mscorlibFile)
-        };
+        var reference = new List<MetadataReference>(){ MetadataReference.CreateFromFile(mscorlibFile)};
 
         var compilation = CSharpCompilation.Create("helloworld", sourceTree, reference);
+
         Console.WriteLine("Test compiled");
         var result = compilation.Emit(new FileStream("helloworld.exe", FileMode.Create));
-
         if (!result.Success)
         {
             return -1;
