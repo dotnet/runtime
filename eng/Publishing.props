@@ -20,7 +20,6 @@
     </MSBuild>
   </Target>
 
-  <!-- This target only runs when EnableDefaultArtifacts=true which is a single build leg in CI. -->
   <Target Name="GenerateProductVersionFiles"
           DependsOnTargets="GetNonStableProductVersion"
           BeforeTargets="PublishToAzureDevOpsArtifacts">

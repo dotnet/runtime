@@ -1,15 +1,12 @@
 <Project>
   <PropertyGroup>
-    <!--
-      Windows arm/arm64 jobs don't have MSIs to sign. Keep it simple: allow not finding any matches
-      here and rely on overall signing validation.
-
-      During post build signing, there are no packages to sign during SignFinalPackages.
-    -->
-    <AllowEmptySignList Condition="'$(DotNetBuildOrchestrator)' != 'true'">true</AllowEmptySignList>
-    <!-- TODO: Change condition when runtime's official publishing starts using Publishing.proj:
-         https://github.com/dotnet/source-build/issues/4239 -->
-    <EnableDefaultArtifacts Condition="'$(DotNetBuildOrchestrator)' != 'true'">false</EnableDefaultArtifacts>
+    <!-- Runtime needs to sign all artifacts (including other verticals) on Windows until a cross-plat signing solution
+         is available that has all the required features. Inside the VMR we publish every vertical which is why this
+         property is then not true. -->
+    <SignAndPublishAsJoinPoint Condition="'$(DotNetBuildOrchestrator)' != 'true'">true</SignAndPublishAsJoinPoint>
+    <!-- When signing and publishing as a join point, don't glob for default artifacts. Instead, artifacts are
+         manually added from a provided DownloadDirectory property. -->
+    <EnableDefaultArtifacts Condition="'$(SignAndPublishAsJoinPoint)' == 'true'">false</EnableDefaultArtifacts>
   </PropertyGroup>
 
   <ItemGroup>
@@ -46,7 +43,7 @@
     <FileSignInfo Update="@(FileSignInfo->WithMetadataValue('CertificateName','Microsoft400'))" CertificateName="MicrosoftDotNet500" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(EnableDefaultArtifacts)' != 'true'">
+  <ItemGroup Condition="'$(SignAndPublishAsJoinPoint)' == 'true'">
     <!-- Exclude symbol packages from have a NuGet signature. These are never pushed to NuGet.org or
          other feeds (in fact, that have identical identity to their non-symbol variant) -->
     <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
@@ -64,7 +61,7 @@
   </ItemGroup>
 
   <!-- Include installers -->
-  <ItemGroup Condition="'$(EnableDefaultArtifacts)' == 'true'">
+  <ItemGroup Condition="'$(SignAndPublishAsJoinPoint)' != 'true'">
     <Artifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
                        $(ArtifactsPackagesDir)**\*.zip;
                        $(ArtifactsPackagesDir)**\*.deb;
