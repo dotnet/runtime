@@ -2748,7 +2748,7 @@ ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* src, const insGroup* ig
     return distVal;
 }
 
-static inline constexpr unsigned WordMask(uint8_t bits) noexcept
+static inline constexpr unsigned WordMask(uint8_t bits)
 {
     return static_cast<unsigned>((1ull << bits) - 1);
 }
