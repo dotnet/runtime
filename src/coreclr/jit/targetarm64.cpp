@@ -84,7 +84,7 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
             }
             else
             {
-                unsigned alignment = compAppleArm64Abi() ? elemSize : TARGET_POINTER_SIZE;
+                unsigned alignment = compAppleArm64Abi() ? min(elemSize, TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
                 m_stackArgSize     = roundUp(m_stackArgSize, alignment);
                 info = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0,
                                                                                            structLayout->GetSize()));
