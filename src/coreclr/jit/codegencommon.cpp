@@ -6316,13 +6316,16 @@ void CodeGen::genFnProlog()
  */
 
 #ifdef SWIFT_SUPPORT
-    if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) && ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
+    if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
     {
-        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
-        intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
-    }
+        if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) && ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
+        {
+            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
+            intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
+        }
 
-    genHomeSwiftStructParameters(initReg, &initRegZeroed);
+        genHomeSwiftStructParameters(initReg, &initRegZeroed);
+    }
 #endif
 
     // Home incoming arguments and generate any required inits.
