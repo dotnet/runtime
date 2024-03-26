@@ -212,6 +212,7 @@ namespace SslStress
                     {
                         using var client = new TcpClient();
                         await client.ConnectAsync(_config.ServerEndpoint.Address, _config.ServerEndpoint.Port);
+                        return;
                     }
                     catch (SocketException) when (remainingRetries > 0)
                     {
