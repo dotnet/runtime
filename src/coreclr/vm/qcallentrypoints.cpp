@@ -318,6 +318,7 @@ static const Entry s_QCall[] =
     DllImportEntry(OAVariant_GetComIPFromObjectRef)
     DllImportEntry(OAVariant_GetObjectRefFromComIP)
     DllImportEntry(Variant_ConvertSystemColorToOleColor)
+    DllImportEntry(Variant_ConvertOleColorToSystemColor)
 #endif // FEATURE_COMINTEROP
     DllImportEntry(NativeLibrary_LoadFromPath)
     DllImportEntry(NativeLibrary_LoadByName)

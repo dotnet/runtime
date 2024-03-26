@@ -21,14 +21,6 @@
 #include "variant.h"
 #include "string.h"
 
-FCIMPL1(CLR_BOOL, COMVariant::IsSystemDrawingColor, MethodTable* valMT)
-{
-    FCALL_CONTRACT;
-
-    return IsTypeRefOrDef(g_ColorClassName, valMT->GetModule(), valMT->GetCl());
-}
-FCIMPLEND
-
 extern "C" uint32_t QCALLTYPE Variant_ConvertSystemColorToOleColor(QCall::ObjectHandleOnStack obj)
 {
     QCALL_CONTRACT;
@@ -44,6 +36,20 @@ extern "C" uint32_t QCALLTYPE Variant_ConvertSystemColorToOleColor(QCall::Object
     END_QCALL;
 
     return ret;
+}
+
+extern "C" void QCALLTYPE Variant_ConvertOleColorToSystemColor(QCall::ObjectHandleOnStack objRet, uint32_t oleColor, MethodTable* pMT)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    SYSTEMCOLOR SystemColor = {};
+    ConvertOleColorToSystemColor(oleColor, &SystemColor);
+    objRet.Set(pMT->Box(&SystemColor));
+
+    END_QCALL;
 }
 
 #endif // FEATURE_COMINTEROP

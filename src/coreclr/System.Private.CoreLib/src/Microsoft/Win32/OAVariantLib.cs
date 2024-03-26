@@ -76,15 +76,13 @@ namespace Microsoft.Win32
 
             object? result = null;
 
-            TypeHandle th = ((RuntimeType)targetClass).GetNativeTypeHandle();
-            Debug.Assert(!th.IsTypeDesc);
-            if (Variant.IsSystemDrawingColor(th.AsMethodTable()))
+            if (Variant.IsSystemDrawingColor(targetClass))
             {
                 if (source.GetType() == typeof(int) || source.GetType() == typeof(uint))
                 {
                     uint sourceData = source.GetType() == typeof(int) ? (uint)(int)source : (uint)source;
                     // Int32/UInt32 can be converted to System.Drawing.Color
-                    ConvertOleColorToSystemColor(ObjectHandleOnStack.Create(ref result), sourceData);
+                    ConvertOleColorToSystemColor(ObjectHandleOnStack.Create(ref result), sourceData, targetClass.TypeHandle.Value);
                     Debug.Assert(result != null);
                     return result;
                 }
@@ -157,7 +155,7 @@ namespace Microsoft.Win32
                 null => default,
                 Missing missing => ComVariant.Create(missing),
                 DBNull => ComVariant.Null,
-                _ when Variant.IsSystemDrawingColor(RuntimeHelpers.GetMethodTable(input))
+                _ when Variant.IsSystemDrawingColor(input.GetType())
                     => ComVariant.Create(Variant.ConvertSystemColorToOleColor(ObjectHandleOnStack.Create(ref input))),
                 _ => GetComIPFromObjectRef(input) // Convert the object to an IDispatch/IUnknown pointer.
             };
@@ -209,7 +207,7 @@ namespace Microsoft.Win32
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertOleColorToSystemColor")]
-        private static partial void ConvertOleColorToSystemColor(ObjectHandleOnStack objret, uint value);
+        private static partial void ConvertOleColorToSystemColor(ObjectHandleOnStack objret, uint value, IntPtr pMT);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "OAVariant_GetComIPFromObjectRef")]
         private static partial IntPtr GetComIPFromObjectRef(ObjectHandleOnStack obj, ComIpType reqIPType, out ComIpType fetchedIpType);

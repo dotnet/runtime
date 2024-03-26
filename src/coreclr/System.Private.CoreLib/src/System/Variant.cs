@@ -81,8 +81,7 @@ namespace System
         internal static Variant Missing => new Variant(CV_MISSING, Type.Missing, 0);
         internal static Variant DBNull => new Variant(CV_NULL, System.DBNull.Value, 0);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe bool IsSystemDrawingColor(MethodTable* pMT);
+        internal static bool IsSystemDrawingColor(Type type) => type.Name == "System.Drawing.Color"; // Matches the behavior of IsTypeRefOrDef
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertSystemColorToOleColor")]
         internal static partial uint ConvertSystemColorToOleColor(ObjectHandleOnStack obj);
@@ -112,7 +111,7 @@ namespace System
                     _flags = CV_OBJECT;
                 }
             }
-            else if (IsSystemDrawingColor(pMT))
+            else if (IsSystemDrawingColor(val.GetType()))
             {
                 // System.Drawing.Color is converted to UInt32
                 object obj = val;
