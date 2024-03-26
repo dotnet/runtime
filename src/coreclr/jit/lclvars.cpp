@@ -1694,7 +1694,7 @@ void Compiler::lvaClassifyParameterABI()
     }
     else
 #endif
-#ifndef TARGET_ARM
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     {
         PlatformClassifier classifier(cInfo);
         lvaClassifyParameterABI(classifier);
