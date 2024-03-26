@@ -5022,7 +5022,7 @@ void CodeGen::genHomeSwiftStructParameters(regNumber initReg, bool* initRegZeroe
                         continue;
                 }
 
-                ssize_t offset;
+                int offset;
                 if (isFramePointerUsed())
                 {
                     offset = -genCallerSPtoFPdelta();
@@ -5032,13 +5032,16 @@ void CodeGen::genHomeSwiftStructParameters(regNumber initReg, bool* initRegZeroe
                     offset = -genCallerSPtoInitialSPdelta();
                 }
 
+
+                offset += (int)seg.GetStackOffset();
+
 #ifdef TARGET_XARCH
                 offset += TARGET_POINTER_SIZE; // Return address
-#endif
-
-                offset += (ssize_t)seg.GetStackOffset();
+                GetEmitter()->emitIns_R_AR(ins_Load(loadType), emitTypeSize(loadType), initReg, genFramePointerReg(), offset);
+#else
                 genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), initReg, genFramePointerReg(), offset,
                                      initReg);
+#endif
                 *initRegZeroed = false;
 
                 GetEmitter()->emitIns_S_R(ins_Store(loadType), emitTypeSize(loadType), initReg, lclNum, seg.Offset);
