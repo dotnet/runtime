@@ -54,6 +54,10 @@ public class SignalRClientTests : AppTestBase
                 if (msg.Text.Contains("TestOutput ->"))
                     _testOutput.WriteLine(msg.Text);
 
+                // prevent timeouts with [Long Running Test] on error
+                if (msg.Text.Contains("[ERROR]"))
+                    throw new Exception($"{_testOutput}\n{msg.Text}");
+
                 if (msg.Text.Contains("Finished GetQueryParameters"))
                 {
                     await Task.Delay(500); // make sure OnAfterRender returned
