@@ -277,7 +277,7 @@ protected:
     void genEnregisterOSRArgsAndLocals();
 #endif
 
-    void genHomeSwiftStructParameters(regNumber initReg, bool *initRegZeroed);
+    void genHomeSwiftStructParameters(regNumber initReg, bool* initRegZeroed);
 
     void genCheckUseBlockInit();
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)

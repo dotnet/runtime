@@ -4976,12 +4976,12 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 }
 
 #ifdef SWIFT_SUPPORT
-void CodeGen::genHomeSwiftStructParameters(regNumber initReg, bool *initRegZeroed)
+void CodeGen::genHomeSwiftStructParameters(regNumber initReg, bool* initRegZeroed)
 {
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
         LclVarDsc* dsc = compiler->lvaGetDesc(lclNum);
-        if ((dsc->TypeGet() != TYP_STRUCT) || dsc->lvIsImplicitByRef)
+        if ((dsc->TypeGet() != TYP_STRUCT) || compiler->lvaIsImplicitByRefLocal(lclNum))
         {
             continue;
         }
@@ -4997,28 +4997,29 @@ void CodeGen::genHomeSwiftStructParameters(regNumber initReg, bool *initRegZeroe
             {
                 var_types storeType = seg.GetRegisterStoreType();
                 assert(storeType != TYP_UNDEF);
-                GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), seg.GetRegister(), lclNum, seg.Offset);
+                GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), seg.GetRegister(), lclNum,
+                                          seg.Offset);
             }
             else
             {
                 var_types loadType = TYP_UNDEF;
                 switch (seg.Size)
                 {
-                case 1:
-                    loadType = TYP_UBYTE;
-                    break;
-                case 2:
-                    loadType = TYP_USHORT;
-                    break;
-                case 4:
-                    loadType = TYP_INT;
-                    break;
-                case 8:
-                    loadType = TYP_LONG;
-                    break;
-                default:
-                    assert(!"Unexpected segment size for struct parameter not passed implicitly by ref");
-                    continue;
+                    case 1:
+                        loadType = TYP_UBYTE;
+                        break;
+                    case 2:
+                        loadType = TYP_USHORT;
+                        break;
+                    case 4:
+                        loadType = TYP_INT;
+                        break;
+                    case 8:
+                        loadType = TYP_LONG;
+                        break;
+                    default:
+                        assert(!"Unexpected segment size for struct parameter not passed implicitly by ref");
+                        continue;
                 }
 
                 ssize_t offset;
@@ -5036,7 +5037,8 @@ void CodeGen::genHomeSwiftStructParameters(regNumber initReg, bool *initRegZeroe
 #endif
 
                 offset += (ssize_t)seg.GetStackOffset();
-                genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), initReg, genFramePointerReg(), offset, initReg);
+                genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), initReg, genFramePointerReg(), offset,
+                                     initReg);
                 *initRegZeroed = false;
 
                 GetEmitter()->emitIns_S_R(ins_Store(loadType), emitTypeSize(loadType), initReg, lclNum, seg.Offset);
@@ -6306,9 +6308,9 @@ void CodeGen::genFnProlog()
     genClearStackVec3ArgUpperBits();
 #endif // UNIX_AMD64_ABI && FEATURE_SIMD
 
-    /*-----------------------------------------------------------------------------
-     * Take care of register arguments first
-     */
+/*-----------------------------------------------------------------------------
+ * Take care of register arguments first
+ */
 
 #ifdef SWIFT_SUPPORT
     if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) && ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))

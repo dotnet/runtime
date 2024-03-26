@@ -69,34 +69,34 @@ var_types ABIPassingSegment::GetRegisterStoreType() const
     {
         switch (Size)
         {
-        case 4:
-            return TYP_FLOAT;
-        case 8:
-            return TYP_DOUBLE;
+            case 4:
+                return TYP_FLOAT;
+            case 8:
+                return TYP_DOUBLE;
 #ifdef FEATURE_SIMD
-        case 16:
-            return TYP_SIMD16;
-        default:
-            return TYP_UNDEF;
+            case 16:
+                return TYP_SIMD16;
 #endif
+            default:
+                return TYP_UNDEF;
         }
     }
     else
     {
         switch (Size)
         {
-        case 1:
-            return TYP_UBYTE;
-        case 2:
-            return TYP_USHORT;
-        case 4:
-            return TYP_INT;
+            case 1:
+                return TYP_UBYTE;
+            case 2:
+                return TYP_USHORT;
+            case 4:
+                return TYP_INT;
 #ifdef TARGET_64BIT
-        case 8:
-            return TYP_LONG;
+            case 8:
+                return TYP_LONG;
 #endif
-        default:
-            return TYP_UNDEF;
+            default:
+                return TYP_UNDEF;
         }
     }
 }
@@ -300,7 +300,7 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
         ArrayStack<ABIPassingSegment> segments(comp->getAllocator(CMK_ABI));
         for (unsigned i = 0; i < lowering->numLoweredElements; i++)
         {
-            var_types elemType = JITtype2varType(lowering->loweredElements[i]);
+            var_types             elemType = JITtype2varType(lowering->loweredElements[i]);
             ABIPassingInformation elemInfo = m_classifier.Classify(comp, elemType, nullptr, WellKnownArg::None);
 
             for (unsigned j = 0; j < elemInfo.NumSegments; j++)
@@ -313,7 +313,7 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
 
         ABIPassingInformation result;
         result.NumSegments = static_cast<unsigned>(segments.Height());
-        result.Segments = new (comp, CMK_ABI) ABIPassingSegment[result.NumSegments];
+        result.Segments    = new (comp, CMK_ABI) ABIPassingSegment[result.NumSegments];
         for (int i = 0; i < segments.Height(); i++)
         {
             result.Segments[i] = segments.Bottom(i);
