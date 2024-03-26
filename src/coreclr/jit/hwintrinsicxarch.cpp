@@ -2729,7 +2729,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!varTypeIsByte(simdBaseType) && !indices->IsVectorConst())
             {
-                // TODO-XARCH-CQ: Handling non-constant indices is a bit more complex
+                // TODO-XARCH-CQ: Handling non-constant indices (other than for byte/sbyte) is a bit more complex
                 break;
             }
 
@@ -2743,40 +2743,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     // While we could accelerate some functions on hardware with only AVX support
                     // it's likely not worth it overall given that IsHardwareAccelerated reports false
                     break;
-                }
-                else if (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL))
-                {
-                    bool crossLane = false;
-
-                    for (size_t index = 0; index < elementCount; index++)
-                    {
-                        uint64_t value = indices->GetIntegralVectorConstElement(index, simdBaseType);
-
-                        if (value >= elementCount)
-                        {
-                            continue;
-                        }
-
-                        if (index < (elementCount / 2))
-                        {
-                            if (value >= (elementCount / 2))
-                            {
-                                crossLane = true;
-                                break;
-                            }
-                        }
-                        else if (value < (elementCount / 2))
-                        {
-                            crossLane = true;
-                            break;
-                        }
-                    }
-
-                    if (crossLane)
-                    {
-                        // TODO-XARCH-CQ: We should emulate cross-lane shuffling for short/ushort
-                        break;
-                    }
                 }
             }
             else if (simdSize == 64)

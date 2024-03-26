@@ -24632,154 +24632,118 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         if ((varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
             (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL)))
         {
+            // if we have short, we want to treat it like byte here
             if (varTypeIsShort(simdBaseType))
             {
-                // TODO-XARCH-CQ: We should emulate cross-lane shuffling for short/ushort
-                // TODO-XARCH-CQ: We should use Avx2.Shuffle for short/ushort
-                assert(!crossLane);
-
-                // If we aren't crossing lanes, then we can decompose the short/ushort
-                // operations into 2x 128-bit operations
-
-                // We want to build what is essentially the following managed code:
-                //     var op1Lower = op1.GetLower();
-                //     op1Lower = Ssse3.Shuffle(op1Lower, Vector128.Create(...));
-                //
-                //     var op1Upper = op1.GetUpper();
-                //     op1Upper = Ssse3.Shuffle(op1Upper, Vector128.Create(...));
-                //
-                //     return Vector256.Create(op1Lower, op1Upper);
-
                 simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
+            }
 
-                GenTree* op1Dup   = fgMakeMultiUse(&op1);
-                GenTree* op1Lower = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseJitType, simdSize);
+            uint8_t leftWants  = 0; // result left lane wants which lanes bitfield (1 - left, 2 - right)
+            uint8_t rightWants = 0; // result right lane wants which lanes bitfield (1 - left, 2 - right)
+            bool    nonDefaultShuffleMask =
+                false; // tracks whether any element in vecCns is not the default value: 0->15, 0->15
 
-                op2                          = gtNewVconNode(TYP_SIMD16);
-                op2->AsVecCon()->gtSimd16Val = vecCns.v128[0];
+            simd_t selCns = {};
+            for (size_t index = 0; index < simdSize; index++)
+            {
+                // get pointer to our leftWants/rightWants
+                uint8_t* wants = (index < 16) ? &leftWants : &rightWants;
 
-                op1Lower = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lower, op2, NI_SSSE3_Shuffle, simdBaseJitType, 16);
+                // update our wants based on which values we use
+                value = vecCns.u8[index];
+                if (value < 16)
+                {
+                    *wants |= 1;
+                }
+                else if (value < 32)
+                {
+                    *wants |= 2;
+                }
 
-                GenTree* op1Upper = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseJitType, simdSize);
+                // update our conditional select mask for if we need 2 shuffles
+                value ^= static_cast<uint64_t>(index & 0x10);
+                selCns.u8[index] = (value < 32 && value >= 16) ? 0xFF : 0;
 
-                op2                          = gtNewVconNode(TYP_SIMD16);
-                op2->AsVecCon()->gtSimd16Val = vecCns.v128[1];
+                // normalise our shuffle mask, and check if it's default
+                if (vecCns.u8[index] < 32)
+                {
+                    vecCns.u8[index] &= 0x0F;
+                }
+                if (vecCns.u8[index] != (index & 0x0F))
+                {
+                    nonDefaultShuffleMask = true;
+                }
+            }
 
-                op1Upper = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Upper, op2, NI_SSSE3_Shuffle, simdBaseJitType, 16);
+            // we might be able to get away with only 1 shuffle, this is the case if neither leftWants nor
+            // rightWants are 3 (indicating only 0/1 side used)
+            if (leftWants != 3 && rightWants != 3)
+            {
+                // set result to its initial value
+                retNode = op1;
 
-                return gtNewSimdWithUpperNode(type, op1Lower, op1Upper, simdBaseJitType, simdSize);
+                // get the permutation control
+                uint8_t control = 0;
+                if (leftWants == 2)
+                {
+                    // if left wants right lane, then set that bit
+                    control |= 1;
+                }
+                if (rightWants != 1)
+                {
+                    // if right wants right lane (or neither), then set the bit for right lane
+                    control |= 16;
+                }
+
+                // create the permutation node
+                // if we have 16, then we don't need to actually permute, since that's what we start with
+                if (control != 16)
+                {
+                    cnsNode = gtNewIconNode(control);
+                    retNode = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&retNode), retNode, cnsNode,
+                                                       NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
+                }
+
+                // if we have a non-default shuffle mask, we need to do Avx2.Shuffle
+                if (nonDefaultShuffleMask)
+                {
+                    op2                        = gtNewVconNode(type);
+                    op2->AsVecCon()->gtSimdVal = vecCns;
+
+                    retNode = gtNewSimdHWIntrinsicNode(type, retNode, fgMakeMultiUse(&op2), NI_AVX2_Shuffle,
+                                                       simdBaseJitType, simdSize);
+                }
             }
             else
             {
-                assert(varTypeIsByte(simdBaseType));
+                // create the control for swapping
+                uint8_t control = 1; // 0b00000001
+                cnsNode         = gtNewIconNode(control);
+                GenTree* swap = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&op1), fgMakeMultiUse(&op1), cnsNode,
+                                                         NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
 
-                uint8_t leftWants  = 0; // result left lane wants which lanes bitfield (1 - left, 2 - right)
-                uint8_t rightWants = 0; // result right lane wants which lanes bitfield (1 - left, 2 - right)
-                bool    nonDefaultShuffleMask =
-                    false; // tracks whether any element in vecCns is not the default value: 0->15, 0->15
-
-                simd_t selCns = {};
-                for (size_t index = 0; index < simdSize; index++)
+                // if we have non-default shuffle mask
+                if (nonDefaultShuffleMask)
                 {
-                    // get pointer to our leftWants/rightWants
-                    uint8_t* wants = (index < 16) ? &leftWants : &rightWants;
+                    // create the shuffle indices node
+                    op2                        = gtNewVconNode(type);
+                    op2->AsVecCon()->gtSimdVal = vecCns;
 
-                    // update our wants based on which values we use
-                    value = vecCns.u8[index];
-                    if (value < 16)
-                    {
-                        *wants |= 1;
-                    }
-                    else if (value < 32)
-                    {
-                        *wants |= 2;
-                    }
-
-                    // update our conditional select mask for if we need 2 shuffles
-                    value ^= static_cast<uint64_t>(index & 0x10);
-                    selCns.u8[index] = (value < 32 && value >= 16) ? 0xFF : 0;
-
-                    // normalise our shuffle mask, and check if it's default
-                    if (vecCns.u8[index] < 32)
-                    {
-                        vecCns.u8[index] &= 0x0F;
-                    }
-                    if (vecCns.u8[index] != (index & 0x0F))
-                    {
-                        nonDefaultShuffleMask = true;
-                    }
+                    // shuffle both op1 and swap(op1)
+                    op1 = gtNewSimdHWIntrinsicNode(type, op1, fgMakeMultiUse(&op2), NI_AVX2_Shuffle,
+                                                   simdBaseJitType, simdSize);
+                    swap = gtNewSimdHWIntrinsicNode(type, swap, op2, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
                 }
 
-                // we might be able to get away with only 1 shuffle, this is the case if neither leftWants nor
-                // rightWants are 3 (indicating only 0/1 side used)
-                if (leftWants != 3 && rightWants != 3)
-                {
-                    // set result to its initial value
-                    retNode = op1;
-
-                    // get the permutation control
-                    uint8_t control = 0;
-                    if (leftWants == 2)
-                    {
-                        // if left wants right lane, then set that bit
-                        control |= 1;
-                    }
-                    if (rightWants != 1)
-                    {
-                        // if right wants right lane (or neither), then set the bit for right lane
-                        control |= 16;
-                    }
-
-                    // create the permutation node
-                    // if we have 16, then we don't need to actually permute, since that's what we start with
-                    if (control != 16)
-                    {
-                        cnsNode = gtNewIconNode(control);
-                        retNode = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&retNode), retNode, cnsNode,
-                                                           NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
-                    }
-
-                    // if we have a non-default shuffle mask, we need to do Avx2.Shuffle
-                    if (nonDefaultShuffleMask)
-                    {
-                        op2                        = gtNewVconNode(type);
-                        op2->AsVecCon()->gtSimdVal = vecCns;
-
-                        retNode = gtNewSimdHWIntrinsicNode(type, retNode, fgMakeMultiUse(&op2), NI_AVX2_Shuffle,
-                                                           simdBaseJitType, simdSize);
-                    }
-                }
-                else
-                {
-                    // create the control for swapping
-                    uint8_t control = 1; // 0b00000001
-                    cnsNode         = gtNewIconNode(control);
-                    GenTree* swap = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&op1), fgMakeMultiUse(&op1), cnsNode,
-                                                             NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
-
-                    // if we have non-default shuffle mask
-                    if (nonDefaultShuffleMask)
-                    {
-                        // create the shuffle indices node
-                        op2                        = gtNewVconNode(type);
-                        op2->AsVecCon()->gtSimdVal = vecCns;
-
-                        // shuffle both op1 and swap(op1)
-                        op1 = gtNewSimdHWIntrinsicNode(type, op1, fgMakeMultiUse(&op2), NI_AVX2_Shuffle,
-                                                       simdBaseJitType, simdSize);
-                        swap = gtNewSimdHWIntrinsicNode(type, swap, op2, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
-                    }
-
-                    // select the appropriate values
-                    GenTree* selNode               = gtNewVconNode(type);
-                    selNode->AsVecCon()->gtSimdVal = selCns;
-                    retNode = gtNewSimdHWIntrinsicNode(type, op1, swap, selNode, NI_AVX2_BlendVariable, simdBaseJitType,
-                                                       simdSize);
-                }
-
-                assert(retNode != nullptr);
-                return retNode;
+                // select the appropriate values
+                GenTree* selNode               = gtNewVconNode(type);
+                selNode->AsVecCon()->gtSimdVal = selCns;
+                retNode = gtNewSimdHWIntrinsicNode(type, op1, swap, selNode, NI_AVX2_BlendVariable, simdBaseJitType,
+                                                   simdSize);
             }
+
+            assert(retNode != nullptr);
+            return retNode;
         }
 
         if (elementSize == 4)
