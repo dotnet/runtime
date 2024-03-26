@@ -12,6 +12,8 @@ namespace System.Data
 {
     internal class BinaryNode : ExpressionNode
     {
+        private static readonly object s_true = true;
+        private static readonly object s_false = false;
         internal int _op;
 
         internal ExpressionNode _left;
@@ -862,37 +864,37 @@ namespace System.Data
                         if ((vLeft == DBNull.Value) || (left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft)) ||
                              (vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight)))
                             return DBNull.Value;
-                        return (0 == BinaryCompare(vLeft, vRight, resultType, Operators.EqualTo));
+                        return (0 == BinaryCompare(vLeft, vRight, resultType, Operators.EqualTo)) ? s_true : s_false;
 
                     case Operators.GreaterThen:
                         if ((vLeft == DBNull.Value) || (left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft)) ||
                              (vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight)))
                             return DBNull.Value;
-                        return (0 < BinaryCompare(vLeft, vRight, resultType, op));
+                        return (0 < BinaryCompare(vLeft, vRight, resultType, op)) ? s_true : s_false;
 
                     case Operators.LessThen:
                         if ((vLeft == DBNull.Value) || (left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft)) ||
                              (vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight)))
                             return DBNull.Value;
-                        return (0 > BinaryCompare(vLeft, vRight, resultType, op));
+                        return (0 > BinaryCompare(vLeft, vRight, resultType, op)) ? s_true : s_false;
 
                     case Operators.GreaterOrEqual:
                         if ((vLeft == DBNull.Value) || (left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft)) ||
                              (vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight)))
                             return DBNull.Value;
-                        return (0 <= BinaryCompare(vLeft, vRight, resultType, op));
+                        return (0 <= BinaryCompare(vLeft, vRight, resultType, op)) ? s_true : s_false;
 
                     case Operators.LessOrEqual:
                         if (((vLeft == DBNull.Value) || (left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft))) ||
                              ((vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight))))
                             return DBNull.Value;
-                        return (0 >= BinaryCompare(vLeft, vRight, resultType, op));
+                        return (0 >= BinaryCompare(vLeft, vRight, resultType, op)) ? s_true : s_false;
 
                     case Operators.NotEqual:
                         if (((vLeft == DBNull.Value) || (left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft))) ||
                              ((vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight))))
                             return DBNull.Value;
-                        return (0 != BinaryCompare(vLeft, vRight, resultType, op));
+                        return (0 != BinaryCompare(vLeft, vRight, resultType, op)) ? s_true : s_false;
 
                     case Operators.Is:
                         vLeft = BinaryNode.Eval(left, row, version, recordNos);
@@ -932,7 +934,7 @@ namespace System.Data
                         {
                             if ((bool)vLeft == false)
                             {
-                                value = false;
+                                value = s_false;
                                 break;
                             }
                         }
@@ -940,7 +942,7 @@ namespace System.Data
                         {
                             if (((SqlBoolean)vLeft).IsFalse)
                             {
-                                value = false;
+                                value = s_false;
                                 break;
                             }
                         }
@@ -956,12 +958,12 @@ namespace System.Data
 
                         if (vRight is bool)
                         {
-                            value = (bool)vRight;
+                            value = (bool)vRight ? s_true : s_false;
                             break;
                         }
                         else
                         {
-                            value = ((SqlBoolean)vRight).IsTrue;
+                            value = ((SqlBoolean)vRight).IsTrue ? s_true : s_false;
                         }
                         break;
                     case Operators.Or:
@@ -985,7 +987,7 @@ namespace System.Data
 
                             if ((bool)vLeft)
                             {
-                                value = true;
+                                value = s_true;
                                 break;
                             }
                         }
@@ -1003,7 +1005,7 @@ namespace System.Data
                             break;
                         }
 
-                        value = (vRight is bool) ? ((bool)vRight) : (((SqlBoolean)vRight).IsTrue);
+                        value = ((vRight is bool) ? ((bool)vRight) : (((SqlBoolean)vRight).IsTrue)) ? s_true : s_false;
                         break;
 
                     /*  for M3, use original code , in below,  and make sure to have two different code path; increases perf
@@ -1097,7 +1099,7 @@ namespace System.Data
 
                         /* validate IN parameters : must all be constant expressions */
 
-                        value = false;
+                        value = s_false;
 
                         FunctionNode into = (FunctionNode)right;
 
@@ -1113,7 +1115,7 @@ namespace System.Data
 
                             if (0 == BinaryCompare(vLeft, vRight, resultType, Operators.EqualTo))
                             {
-                                value = true;
+                                value = s_true;
                                 break;
                             }
                         }
