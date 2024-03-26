@@ -8,11 +8,6 @@ WORKDIR /app/System.Net.Security/tests/StressTests/SslStress
 ARG VERSION=9.0
 ARG CONFIGURATION=Release
 
-# install iproute2 for ss command for healthchecks
-RUN apt-get update && \
-    apt-get install iproute2 -y && \
-    rm -rf /var/lib/apt/lists/*
-
 RUN dotnet build -c $CONFIGURATION \
     -p:TargetingPacksTargetsLocation=/live-runtime-artifacts/targetingpacks.targets \
     -p:MicrosoftNetCoreAppRefPackDir=/live-runtime-artifacts/microsoft.netcore.app.ref/ \
