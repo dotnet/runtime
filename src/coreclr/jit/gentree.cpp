@@ -24509,7 +24509,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
-    if (op2->IsVectorAllBitsSet())
+    if (!isUnsafe && op2->IsVectorAllBitsSet())
     {
         // AllBitsSet represents indices that are always "out of range" which means zero should be
         // selected for every element. We can special-case this down to just returning a zero node
