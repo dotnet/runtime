@@ -1637,12 +1637,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!varTypeIsByte(simdBaseType) && !indices->IsVectorConst())
-            {
-                // TODO-ARM64-CQ: Handling non-constant indices is a bit more complex
-                break;
-            }
-
             if (sig->numArgs == 2)
             {
                 op2 = impSIMDPopStack();

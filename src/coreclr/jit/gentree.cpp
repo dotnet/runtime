@@ -24362,8 +24362,6 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     assert(op2->TypeIs(type));
     assert(!op2->IsVectorConst());
 
-    assert(varTypeIsByte(simdBaseType));
-
     GenTree* retNode = nullptr;
     GenTree* cnsNode = nullptr;
 
@@ -24373,6 +24371,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     assert(elementSize == 1);
 
 #if defined(TARGET_XARCH)
+    assert(varTypeIsByte(simdBaseType));
+
     // duplicate operand 2 for non-isUnsafe implementation later
     GenTree* op2DupSafe = isUnsafe ? nullptr : fgMakeMultiUse(&op2);
 
@@ -24485,7 +24485,88 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     // VectorTableLookup is only valid on byte/sbyte
     simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
-    return gtNewSimdHWIntrinsicNode(type, op1, op2, lookupIntrinsic, simdBaseJitType, simdSize);
+    // fix-up indices for non-byte sized element types:
+    // if we have short / int / long, then we want to VectorTableLookup the least-significant byte to all bytes of that
+    // index element, and then shift left by the applicable amount, then or on the bits for the elements
+    // if it's not isUnsafe, we also need to then fix-up the out-of-range indices
+    GenTree* op2DupSafe = (isUnsafe || elementSize == 1) ? nullptr : fgMakeMultiUse(&op2);
+    if (elementSize > 1)
+    {
+        if (simdSize == 16)
+        {
+            lookupIntrinsic = NI_AdvSimd_Arm64_VectorTableLookup;
+
+            op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_Vector64_ToVector128, simdBaseJitType, simdSize);
+        }
+
+        simd_t shufCns = {};
+        for (size_t index; index < elementCount; index++)
+        {
+            for (size_t i = 0; i < elementSize; i++)
+            {
+                shufCns.u8[(index * elementSize) + i] = static_cast<uint8_t>(index * elementCount);
+            }
+        }
+
+        cnsNode                        = gtNewVconNode(type);
+        cnsNode->AsVecCon()->gtSimdVal = shufCns;
+
+        op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, lookupIntrinsic, simdBaseJitType, simdSize);
+
+        int shift = BitOperations::TrailingZeroCount(elementSize);
+        cnsNode   = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(shift, TYP_INT), simdBaseJitType, simdSize);
+        op2       = gtNewSimdBinOpNode(GT_LSH, retType, op2, cnsNode, simdBaseJitType, simdSize);
+
+        simd_t orCns = {};
+        for (size_t index; index < elementCount; index++)
+        {
+            for (size_t i = 0; i < elementSize; i++)
+            {
+                shufCns.u8[(index * elementSize) + i] = static_cast<uint8_t>(i);
+            }
+        }
+
+        cnsNode                        = gtNewVconNode(type);
+        cnsNode->AsVecCon()->gtSimdVal = shufCns;
+
+        op2 = gtNewSimdBinOpNode(GT_OR, type, op2, cnsNode, simdBaseJitType, simdSize);
+    }
+
+    retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, lookupIntrinsic, simdBaseJitType, simdSize);
+
+    // we need to ensure indexes larger than 255 become 0 for larger element types
+    if (!isUnsafe && elementSize > 1)
+    {
+        assert(op2DupSafe != nullptr);
+
+        // get the CorInfoType used for the index comparison
+        CorInfoType corType = CORINFO_TYPE_UBYTE;
+        if (elementSize == 2)
+        {
+            corType = CORINFO_TYPE_USHORT;
+        }
+        else if (elementSize == 4)
+        {
+            corType = CORINFO_TYPE_UINT;
+        }
+        else if (elementSize == 8)
+        {
+            corType = CORINFO_TYPE_ULONG;
+        }
+        assert(corType != CORINFO_TYPE_UBYTE);
+
+        // create the comparand node, and the mask node (op2 < comparand), and the result node (mask & unsafeResult)
+        GenTree* comparand =
+            gtNewSimdCreateBroadcastNode(type, gtNewIconNode(elementCount, TYP_INT), corType, simdSize);
+        GenTree* mask = gtNewSimdCmpOpNode(GT_LT, type, op2DupSafe, comparand, corType, simdSize);
+        retNode       = gtNewSimdBinOpNode(GT_AND, type, mask, retNode, simdBaseJitType, simdSize);
+    }
+    else
+    {
+        assert(op2DupSafe == nullptr);
+    }
+
+    return retNode;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
