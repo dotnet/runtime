@@ -24488,7 +24488,6 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
                 op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
 
-
                 // shift all indices to the left by 1, then or every second index with 1
 
                 cnsNode = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(1, TYP_INT), simdBaseJitType, simdSize);
@@ -24662,8 +24661,6 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 #endif // !TARGET_XARCH && !TARGET_ARM64
     assert(retNode != nullptr);
 
-    // we need to ensure indexes larger than elementCount become 0 for larger element types
-
 #if defined(TARGET_XARCH)
     if (!isUnsafe)
 #elif defined(TARGET_ARM64)
@@ -24672,6 +24669,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
     {
+        // we need to ensure indices larger than elementCount become 0 for larger element types
+
         assert(op2DupSafe != nullptr);
 
         // get the CorInfoType used for the index comparison
