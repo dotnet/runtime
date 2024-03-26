@@ -24368,8 +24368,6 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     size_t elementSize  = genTypeSize(simdBaseType);
     size_t elementCount = simdSize / elementSize;
 
-    assert(elementSize == 1);
-
 #if defined(TARGET_XARCH)
     // duplicate operand 2 for non-isUnsafe implementation later
     GenTree* op2DupSafe = isUnsafe ? nullptr : fgMakeMultiUse(&op2);
@@ -24436,13 +24434,15 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
 
-            retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize);
+            // swap the operands to match the encoding requirements
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize);
         }
         else
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
 
-            retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX_PermuteVar, CORINFO_TYPE_FLOAT, simdSize);
+            // swap the operands to match the encoding requirements
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX_PermuteVar, CORINFO_TYPE_FLOAT, simdSize);
         }
     }
     else if (elementSize == 8 && compOpportunisticallyDependsOn(InstructionSet_AVX))
@@ -24456,7 +24456,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         }
         else
         {
-            retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX_PermuteVar, CORINFO_TYPE_DOUBLE, simdSize);
+            // swap the operands to match the encoding requirements
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX_PermuteVar, CORINFO_TYPE_DOUBLE, simdSize);
         }
     }
     else
@@ -24615,11 +24616,6 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     GenTree* op2DupSafe = (isUnsafe || elementSize == 1) ? nullptr : fgMakeMultiUse(&op2);
     if (elementSize > 1)
     {
-        if (simdSize == 16)
-        {
-            op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_Vector64_ToVector128, simdBaseJitType, simdSize);
-        }
-
         simd_t shufCns = {};
         for (size_t index = 0; index < elementCount; index++)
         {
@@ -24683,11 +24679,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             corType = CORINFO_TYPE_ULONG;
         }
 
-#if defined(TARGET_ARM64)
-        assert(corType != CORINFO_TYPE_UBYTE);
-#else
-        assert(corType != CORINFO_TYPE_UBYTE || elementSize == 1);
-#endif
+        assert(genTypeSize(JitType2PreciseVarType(corType)) == elementSize);
 
         // create the comparand node, and the mask node (op2 < comparand), and the result node (mask & unsafeResult)
         GenTree* comparand =
