@@ -34,8 +34,8 @@ X86Classifier::X86Classifier(const ClassifierInfo& info) : m_regs(nullptr, 0)
     {
         case CorInfoCallConvExtension::Thiscall:
         {
-            static const regNumberSmall thiscallRegs[] = {REG_ECX};
-            m_regs                                     = RegisterQueue(thiscallRegs, ArrLen(thiscallRegs));
+            static const regNumber thiscallRegs[] = {REG_ECX};
+            m_regs                                = RegisterQueue(thiscallRegs, ArrLen(thiscallRegs));
             break;
         }
         case CorInfoCallConvExtension::C:
@@ -47,14 +47,13 @@ X86Classifier::X86Classifier(const ClassifierInfo& info) : m_regs(nullptr, 0)
         }
         default:
         {
-            static const regNumberSmall regs[]  = {REG_ECX, REG_EDX};
-            unsigned                    numRegs = ArrLen(regs);
+            unsigned numRegs = ArrLen(intArgRegs);
             if (info.IsVarArgs)
             {
                 // In varargs methods we only enregister the this pointer or retbuff.
                 numRegs = info.HasThis || info.HasRetBuff ? 1 : 0;
             }
-            m_regs = RegisterQueue(regs, numRegs);
+            m_regs = RegisterQueue(intArgRegs, numRegs);
             break;
         }
     }
