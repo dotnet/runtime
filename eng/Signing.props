@@ -4,7 +4,7 @@
     <!-- Runtime needs to sign all artifacts (including other verticals) on Windows until a cross-plat signing solution
          is available that has all the required features. Inside the VMR we publish every vertical which is why this
          property is then not true. -->
-    <SignAndPublishAsJoinPoint Condition="'$(DotNetBuildOrchestrator)' != 'true'">true</SignAndPublishAsJoinPoint>
+    <SignAndPublishAsJoinPoint Condition="'$(DownloadDirectory)' != ''">true</SignAndPublishAsJoinPoint>
     <!-- When signing and publishing as a join point, don't glob for default artifacts. Instead, artifacts are
          manually added from a provided DownloadDirectory property. -->
     <EnableDefaultArtifacts Condition="'$(SignAndPublishAsJoinPoint)' == 'true'">false</EnableDefaultArtifacts>
@@ -44,24 +44,7 @@
     <FileSignInfo Update="@(FileSignInfo->WithMetadataValue('CertificateName','Microsoft400'))" CertificateName="MicrosoftDotNet500" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(SignAndPublishAsJoinPoint)' == 'true'">
-    <!-- Exclude symbol packages from have a NuGet signature. These are never pushed to NuGet.org or
-         other feeds (in fact, that have identical identity to their non-symbol variant) -->
-    <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
-    <DownloadedSymbolPackagesWithoutPaths Include="@(DownloadedSymbolPackages->'%(Filename)%(Extension)')" />
-    <FileSignInfo Include="@(DownloadedSymbolPackagesWithoutPaths->Distinct())" CertificateName="None" />
-
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.msi" />
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.exe" />
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.nupkg" />
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.zip" />
-
-    <ItemsToSignWithoutPaths Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
-    <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" Condition="'$(PostBuildSign)' == 'true'" />
-    <ItemsToSign Include="@(ItemsToSignWithPaths->Distinct())" Condition="'$(PostBuildSign)' != 'true'" />
-  </ItemGroup>
-
-  <!-- Include installers -->
+  <!-- In build signing and publishing without a join point -->
   <ItemGroup Condition="'$(SignAndPublishAsJoinPoint)' != 'true'">
     <Artifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
                        $(ArtifactsPackagesDir)**\*.zip;
@@ -75,6 +58,16 @@
       <!-- Exclude wixpack.zip files from checksum generation -->
       <ChecksumPath Condition="$([System.String]::Copy('%(Filename)%(Extension)').EndsWith('.wixpack.zip')) != 'true'">%(FullPath).sha512</ChecksumPath>
     </Artifact>
+  </ItemGroup>
+
+  <!-- Only the following artifacts should be signed.
+       Set SkipPublish=true as those artifacts are added again in Publishing.props. -->
+  <ItemGroup Condition="'$(SignAndPublishAsJoinPoint)' == 'true'">
+    <Artifact Include="$(DownloadDirectory)**\*.msi;
+                       $(DownloadDirectory)**\*.exe;
+                       $(DownloadDirectory)**\*.nupkg;
+                       $(DownloadDirectory)**\*.zip"
+              SkipPublish="true" />
   </ItemGroup>
 
 </Project>

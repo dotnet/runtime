@@ -46,9 +46,7 @@ jobs:
       checkDownloadedFiles: true
 
   - script: >-
-      build.cmd -ci
-      -subset publish
-      -configuration Release
+      build.cmd -sign -publish -ci -configuration Release
       /p:PublishRidAgnosticPackagesFromPlatform=${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
       /p:DownloadDirectory=$(Build.SourcesDirectory)\artifacts\PackageDownload\
       /p:OfficialBuildId=$(Build.BuildNumber)
