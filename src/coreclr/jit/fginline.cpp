@@ -461,7 +461,7 @@ private:
     //
     GenTree* StoreStructInlineeToVar(GenTree* inlinee, CORINFO_CLASS_HANDLE retClsHnd)
     {
-        assert(!inlinee->OperIs(GT_MKREFANY, GT_RET_EXPR));
+        assert(!inlinee->OperIs(GT_RET_EXPR));
 
         unsigned   lclNum = m_compiler->lvaGrabTemp(false DEBUGARG("RetBuf for struct inline return candidates."));
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
@@ -1691,7 +1691,7 @@ void Compiler::fgInsertInlineeArgument(
             *newStmt    = nullptr;
             bool append = true;
 
-            if (argNode->gtOper == GT_BLK || argNode->gtOper == GT_MKREFANY)
+            if (argNode->gtOper == GT_BLK)
             {
                 // Don't put GT_BLK node under a GT_COMMA.
                 // Codegen can't deal with it.
