@@ -2727,12 +2727,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!varTypeIsByte(simdBaseType) && !indices->IsVectorConst())
-            {
-                // TODO-XARCH-CQ: Handling non-constant indices (other than for byte/sbyte) is a bit more complex
-                break;
-            }
-
             size_t elementSize  = genTypeSize(simdBaseType);
             size_t elementCount = simdSize / elementSize;
 
@@ -2760,6 +2754,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 if (varTypeIsSmall(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
                 {
                     // TYP_BYTE, TYP_UBYTE, TYP_SHORT, and TYP_USHORT need SSSE3 to be able to shuffle any operation
+                    break;
+                }
+
+                if (!indices->IsVectorConst() && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+                {
+                    // the variable implementation for Vector128 Shuffle always needs SSSE3
                     break;
                 }
             }

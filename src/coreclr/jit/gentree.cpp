@@ -24371,28 +24371,145 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     assert(elementSize == 1);
 
 #if defined(TARGET_XARCH)
-    assert(varTypeIsByte(simdBaseType));
-
     // duplicate operand 2 for non-isUnsafe implementation later
     GenTree* op2DupSafe = isUnsafe ? nullptr : fgMakeMultiUse(&op2);
 
-    if (simdSize == 32)
-    {
-        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+    // TODO-XARCH-CQ: If we have known min/max or set/unset bits for the indices, we could further optimise many cases
+    // below
 
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL))
+    if (simdSize == 64)
+    {
+        if (elementSize == 1)
         {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512VBMI));
+
             // swap the operands to match the encoding requirements
-            retNode =
-                gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_VL_PermuteVar32x8, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_PermuteVar64x8, simdBaseJitType,
+                                               simdSize);
+        }
+        else if (elementSize == 2)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+
+            // swap the operands to match the encoding requirements
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512BW_PermuteVar32x16, simdBaseJitType, simdSize);
+        }
+        else if (elementSize == 4)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+
+            // swap the operands to match the encoding requirements
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512F_PermuteVar16x32, simdBaseJitType, simdSize);
         }
         else
         {
-            // TODO-XARCH-CQ: If we have known min/max or set/unset bits for the indices, then we could avoid an
-            // Avx2.Shuffle and/or Avx2.Permute2x128 in some cases
+            assert(elementSize == 8);
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
 
-            // get the indices, but only keep the high bit and bits used for indexing, and xor the cross-lane bit on the
-            // high 128-bit lane part of indices we begin computing this early as it seems to take the longest to
+            // swap the operands to match the encoding requirements
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512F_PermuteVar8x64, simdBaseJitType, simdSize);
+        }
+    }
+    else if (elementSize == 1 && simdSize == 16)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_SSSE3));
+
+        retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSSE3_Shuffle, simdBaseJitType, simdSize);
+    }
+    else if (elementSize == 1 && simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL))
+    {
+        // swap the operands to match the encoding requirements
+        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_VL_PermuteVar32x8, simdBaseJitType, simdSize);
+    }
+    else if (elementSize == 2 && compOpportunisticallyDependsOn(InstructionSet_AVX512BW))
+    {
+        assert(simdSize == 16 || simdSize == 32);
+
+        // swap the operands to match the encoding requirements
+        NamedIntrinsic intrinsic = simdSize == 16 ? NI_AVX512BW_PermuteVar8x16 : NI_AVX512BW_PermuteVar16x16;
+        retNode                  = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseJitType, simdSize);
+    }
+    else if (elementSize == 4 && (simdSize == 32 || compOpportunisticallyDependsOn(InstructionSet_AVX)))
+    {
+        assert(simdSize == 16 || simdSize == 32);
+
+        if (simdSize == 32)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
+            retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize);
+        }
+        else
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+
+            retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX_PermuteVar, CORINFO_TYPE_FLOAT, simdSize);
+        }
+    }
+    else if (elementSize == 8 && compOpportunisticallyDependsOn(InstructionSet_AVX))
+    {
+        assert(simdSize == 16 || simdSize == 32);
+
+        if (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+        {
+            // swap the operands to match the encoding requirements
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512F_VL_PermuteVar4x64, simdBaseJitType,
+                                               simdSize);
+        }
+        else
+        {
+            retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX_PermuteVar, CORINFO_TYPE_DOUBLE, simdSize);
+        }
+    }
+    else
+    {
+        assert((elementSize == 1 && simdSize == 32) || elementSize == 2 || (elementSize == 4 && simdSize == 16) ||
+               (elementSize == 8 && simdSize == 16));
+
+        if (simdSize == 32)
+        {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+            assert(elementSize <= 2);
+
+            // if we have elementSize == 2, we need to convert op2 (short indices) to byte indices
+            if (elementSize == 2)
+            {
+                // shuffle with a pattern like 0 0 2 2 4 4 6 6 ... 0 0 2 2 ...
+
+                simd_t shufCns = {};
+                for (size_t index; index < elementCount; index++)
+                {
+                    for (size_t i = 0; i < elementSize; i++)
+                    {
+                        shufCns.u8[(index * elementSize) + i] = static_cast<uint8_t>((index * elementCount) & 0x0F);
+                    }
+                }
+
+                cnsNode                        = gtNewVconNode(type);
+                cnsNode->AsVecCon()->gtSimdVal = shufCns;
+
+                op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
+
+
+                // shift all indices to the left by 1, then or every second index with 1
+
+                cnsNode = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(1, TYP_INT), simdBaseJitType, simdSize);
+                op2     = gtNewSimdBinOpNode(GT_LSH, retType, op2, cnsNode, simdBaseJitType, simdSize);
+
+                simd_t orCns = {};
+                for (size_t index; index < simdSize; index++)
+                {
+                    shufCns.u8 = static_cast<uint8_t>(index & 1);
+                }
+
+                cnsNode                        = gtNewVconNode(type);
+                cnsNode->AsVecCon()->gtSimdVal = shufCns;
+
+                op2 = gtNewSimdBinOpNode(GT_OR, type, op2, cnsNode, simdBaseJitType, simdSize);
+            }
+
+            // get the indices, but only keep the high bit and bits used for indexing, and xor the cross-lane bit on
+            // the high 128-bit lane part of indices we begin computing this early as it seems to take the longest to
             // calculate (it can be done in parallel to other operations ideally)
             // Vector256<byte> indicesXord = (indices ^ Vector256.Create(Vector128.Create((byte)0),
             //     Vector128.Create((byte)0x10))) & Vector256.Create((byte)0x9F);
@@ -24415,7 +24532,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             uint8_t control = 1;
             cnsNode         = gtNewIconNode(control, TYP_INT);
             GenTree* swap   = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&op1), fgMakeMultiUse(&op1), cnsNode,
-                                                     NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
+                                                    NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
 
             // shuffle with both the normal and swapped values
             // Vector256<byte> shuf1 = Avx2.Shuffle(vector, indices);
@@ -24434,44 +24551,53 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             // blend our two shuffles based on whether each element swaps lanes or not
             // return Avx2.BlendVariable(shuf1, shuf2, selection);
             retNode = gtNewSimdHWIntrinsicNode(type, shuf1, shuf2, selection, NI_AVX2_BlendVariable, simdBaseJitType,
-                                               simdSize);
+                                            simdSize);
+        }
+        else
+        {
+            compIsaSupportedDebugOnly(InstructionSet_SSSE3);
+            assert(simdSize == 16);
+            assert(elementSize > 1);
+
+            // we need to convert the indices to byte indices
+            // shuffle with a pattern like 0 0 2 2 4 4 6 6 ... (for short, and similar for larger)
+
+            simd_t shufCns = {};
+            for (size_t index; index < elementCount; index++)
+            {
+                for (size_t i = 0; i < elementSize; i++)
+                {
+                    shufCns.u8[(index * elementSize) + i] = static_cast<uint8_t>(index * elementCount);
+                }
+            }
+
+            cnsNode                        = gtNewVconNode(type);
+            cnsNode->AsVecCon()->gtSimdVal = shufCns;
+
+            op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_SSSE3_Shuffle, simdBaseJitType, simdSize);
+
+            // shift all indices to the left by tzcnt(elementSize), then or the relevant bits
+
+            int shift = BitOperations::TrailingZeroCount(elementSize);
+            cnsNode = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(shift, TYP_INT), simdBaseJitType, simdSize);
+            op2     = gtNewSimdBinOpNode(GT_LSH, retType, op2, cnsNode, simdBaseJitType, simdSize);
+
+            simd_t orCns = {};
+            for (size_t index; index < simdSize; index++)
+            {
+                shufCns.u8 = static_cast<uint8_t>(index & (elementSize - 1));
+            }
+
+            cnsNode                        = gtNewVconNode(type);
+            cnsNode->AsVecCon()->gtSimdVal = shufCns;
+
+            op2 = gtNewSimdBinOpNode(GT_OR, type, op2, cnsNode, simdBaseJitType, simdSize);
+
+            // apply normal byte shuffle now that we've converted it
+
+            retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSSE3_Shuffle, simdBaseJitType, simdSize);
         }
     }
-    else if (simdSize == 64)
-    {
-        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512VBMI));
-
-        // swap the operands to match the encoding requirements
-        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_PermuteVar64x8, simdBaseJitType, simdSize);
-    }
-    else
-    {
-        assert(simdSize == 16);
-        assert(compOpportunisticallyDependsOn(InstructionSet_SSSE3));
-
-        retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSSE3_Shuffle, simdBaseJitType, simdSize);
-    }
-
-    assert(retNode != nullptr);
-
-    if (!isUnsafe)
-    {
-        assert(op2DupSafe != nullptr);
-        assert((elementCount & 0xFF) == elementCount); // assert we don't lose info with the cast below
-
-        // create the comparand node, and the mask node (op2 < comparand), and the result node (mask & unsafeResult)
-        GenTree* comparand =
-            gtNewSimdCreateBroadcastNode(type, gtNewIconNode(static_cast<uint8_t>(elementCount), TYP_INT),
-                                         CORINFO_TYPE_UBYTE, simdSize);
-        GenTree* mask = gtNewSimdCmpOpNode(GT_LT, type, op2DupSafe, comparand, CORINFO_TYPE_UBYTE, simdSize);
-        retNode       = gtNewSimdBinOpNode(GT_AND, type, mask, retNode, simdBaseJitType, simdSize);
-    }
-    else
-    {
-        assert(op2DupSafe == nullptr);
-    }
-
-    return retNode;
 #elif defined(TARGET_ARM64)
     NamedIntrinsic lookupIntrinsic = NI_AdvSimd_VectorTableLookup;
 
@@ -24533,9 +24659,19 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     }
 
     retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, lookupIntrinsic, simdBaseJitType, simdSize);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+    assert(retNode != nullptr);
 
-    // we need to ensure indexes larger than 255 become 0 for larger element types
+    // we need to ensure indexes larger than elementCount become 0 for larger element types
+#if defined(TARGET_XARCH)
+    if (!isUnsafe)
+#elif defined(TARGET_ARM64)
     if (!isUnsafe && elementSize > 1)
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
     {
         assert(op2DupSafe != nullptr);
 
@@ -24553,7 +24689,12 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         {
             corType = CORINFO_TYPE_ULONG;
         }
+
+#if defined(TARGET_ARM64)
         assert(corType != CORINFO_TYPE_UBYTE);
+#else
+        assert(corType != CORINFO_TYPE_UBYTE || elementSize == 1);
+#endif
 
         // create the comparand node, and the mask node (op2 < comparand), and the result node (mask & unsafeResult)
         GenTree* comparand =
@@ -24567,9 +24708,6 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     }
 
     return retNode;
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
 }
 
 GenTree* Compiler::gtNewSimdShuffleNode(
