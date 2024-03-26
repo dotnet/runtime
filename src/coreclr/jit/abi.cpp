@@ -318,7 +318,7 @@ ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
                 }
             }
 
-            canEnreg = (m_intRegs.Count() <= intRegCount) && (m_floatRegs.Count() <= floatRegCount);
+            canEnreg = (intRegCount <= m_intRegs.Count()) && (floatRegCount <= m_floatRegs.Count());
         }
     }
     else
