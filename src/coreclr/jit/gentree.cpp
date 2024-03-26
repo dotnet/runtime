@@ -24384,8 +24384,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512VBMI));
 
             // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_PermuteVar64x8, simdBaseJitType,
-                                               simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_PermuteVar64x8, simdBaseJitType, simdSize);
         }
         else if (elementSize == 2)
         {
@@ -24453,8 +24452,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         if (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
         {
             // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512F_VL_PermuteVar4x64, simdBaseJitType,
-                                               simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512F_VL_PermuteVar4x64, simdBaseJitType, simdSize);
         }
         else
         {
@@ -24532,7 +24530,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             uint8_t control = 1;
             cnsNode         = gtNewIconNode(control, TYP_INT);
             GenTree* swap   = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&op1), fgMakeMultiUse(&op1), cnsNode,
-                                                    NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
+                                                     NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
 
             // shuffle with both the normal and swapped values
             // Vector256<byte> shuf1 = Avx2.Shuffle(vector, indices);
@@ -24551,7 +24549,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             // blend our two shuffles based on whether each element swaps lanes or not
             // return Avx2.BlendVariable(shuf1, shuf2, selection);
             retNode = gtNewSimdHWIntrinsicNode(type, shuf1, shuf2, selection, NI_AVX2_BlendVariable, simdBaseJitType,
-                                            simdSize);
+                                               simdSize);
         }
         else
         {
@@ -24579,8 +24577,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             // shift all indices to the left by tzcnt(elementSize), then or the relevant bits
 
             int shift = BitOperations::TrailingZeroCount(static_cast<uint64_t>(elementSize));
-            cnsNode = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(shift, TYP_INT), simdBaseJitType, simdSize);
-            op2     = gtNewSimdBinOpNode(GT_LSH, type, op2, cnsNode, simdBaseJitType, simdSize);
+            cnsNode   = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(shift, TYP_INT), simdBaseJitType, simdSize);
+            op2       = gtNewSimdBinOpNode(GT_LSH, type, op2, cnsNode, simdBaseJitType, simdSize);
 
             simd_t orCns = {};
             for (size_t index = 0; index < simdSize; index++)
@@ -24665,6 +24663,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     assert(retNode != nullptr);
 
     // we need to ensure indexes larger than elementCount become 0 for larger element types
+
 #if defined(TARGET_XARCH)
     if (!isUnsafe)
 #elif defined(TARGET_ARM64)
