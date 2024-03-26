@@ -39,17 +39,15 @@ It is not a requirement that the baseline is chosen so that additional "delta" i
 possible size, although for practical purposes that may be desired.
 
 Data descriptors are registered as "well known" by checking them into the main branch of
-`dotnet/runtime` in the `docs/design/datacontracts/data/` directory in a format to be specified
-later.  The relative path name (with `/` as the path separator, if any) of the descriptor without
+`dotnet/runtime` in the `docs/design/datacontracts/data/` directory in the JSON format specified
+in the [data descriptor spec](./data_descriptor.md#Physical_JSON_Descriptor).  The relative path name (with `/` as the path separator, if any) of the descriptor without
 any extension is the identifier.  (for example:
-`/docs/design/datacontracts/data/net9.0-rc1/Release/linux-arm64.json` is the filename for the data
-descriptor with identifier `net9.0-rc1/Release/linux-arm64`)
+`/docs/design/datacontracts/data/net9.0/coreclr/linux-arm64.json` is the filename for the data
+descriptor with identifier `net9.0/coreclr/linux-arm64`)
 
 #### Global Values
-Global values which can be of types (int8, uint8, int16, uint16, int32, uint32, int64, uint64, pointer, nint, nuint, string)
-All global values have a string describing their name, and a value of one of the above types.
-
-For instance, we will likely have a `TargetPointerSize` global value represented in a data descriptor.
+Global values which can be of types (int8, uint8, int16, uint16, int32, uint32, int64, uint64, pointer, nint, nuint)
+All global values have a string describing their name, a type, and a value of one of the above types.
 
 #### Data Structure Layout
 Each data structure layout has a name for the type, followed by a list of fields. These fields can be of primitive types (int8, uint8, int16, uint16, int32, uint32, int64, uint64, nint, nuint, pointer) or of another named data structure type. Each field descriptor provides the offset of the field, the name of the field, and the type of the field.
@@ -71,15 +69,9 @@ Contracts are described an integer version number. A higher version number is no
 ## Contract data model
 Logically a contract may refer to another contract. If it does so, it will typically refer to other contracts by names which do not include the contract version. This is to allow for version flexibility. Logically once the Data Contract Descriptor is fully processed, there is a single list of contracts that represents the set of contracts useable with whatever runtime instance is being processed.
 
-## Types of contracts
+## Algorithmic contracts
 
-There are 2 different types of contracts each representing a different phase of execution of the data contract system.
-
-### Composition contracts
-These contracts indicate the version numbers of other contracts. This is done to reduce the size of contract list needed in the Data Contract Descriptor. In general it is intended that as a runtime nears shipping, the product team can gather up all of the current versions of the contracts into a single magic value, which can be used to initialize most of the contract versions of the data contract system. A specific version number in the Data Contract Descriptor for a given contract will override any composition contracts specified in the Data Contract Descriptor. If there are multiple composition contracts in a Data Contract Descriptor which specify the same contract to have a different version, the first composition contract linearly in the Data Contract Descriptor wins. This is intended to allow for a composite contract for the architecture/os indepedent work, and a separate composite contract for the non independent work. If a contract is specified explicitly in the Data Contract Descriptor and a different version is specified via the composition contract mechanism, the explicitly specified contract takes precedence.
-
-### Algorithmic contracts
-Algorithmic contracts define how to process a given set of data structures to produce useful results. These are effectively code snippets which utilize the abstracted data structures provided by Data Structure Definition Contracts and Global Value Contract to produce useful output about a given program. Descriptions of these contracts may refer to functionality provided by other contracts to do their work. The algorithms provided in these contracts are designed to operate given the ability to read various primitive types and defined data structures from the process memory space, as well as perform general purpose computation.
+Algorithmic contracts define how to process a given set of data structures to produce useful results. These are effectively code snippets which utilize the abstracted data structures and global values provided by data descriptor to produce useful output about a given program. Descriptions of these contracts may refer to functionality provided by other contracts to do their work. The algorithms provided in these contracts are designed to operate given the ability to read various primitive types and defined data structures from the process memory space, as well as perform general purpose computation.
 
 It is entirely reasonable for an algorithmic contract to have multiple entrypoints which take different inputs. For example imagine a contract which provides information about a `MethodTable`. It may provide the an api to get the `BaseSize` of a `MethodTable`, and an api to get the `DynamicTypeID` of a `MethodTable`. However, while the set of contracts which describe an older version of .NET may provide a means by which the `DynamicTypeID` may be acquired for a `MethodTable`, a newer runtime may not have that concept. In such a case, it is very reasonable to define that the `GetDynamicTypeID` api portion of that contract is defined to simply `throw new NotSupportedException();`
 
@@ -99,11 +91,11 @@ runtime will produce an error.
 
 ## Arrangement of contract specifications in the repo
 
-Specs shall be stored in the repo in a set of directories. `docs/design/datacontracts` Each one of them shall be a seperate markdown file named with the name of contract. `docs/design/datacontracts/datalayout/<contract_name>.md` Every version of each contract shall be located in the same file to facilitate understanding how variations between different contracts work.
+Specs shall be stored in the repo in a set of directories. `docs/design/datacontracts` Each one of them shall be a seperate markdown file named with the name of contract. `docs/design/datacontracts/<contract_name>.md` Every version of each contract shall be located in the same file to facilitate understanding how variations between different contracts work.
 
 ### Algorthmic Contract
 
-Algorithmic contracts these describe how an algorithm that processes over data layouts work. Unlike all other contract forms, every version of an algorithmic contract presents a consistent api to consumers of the contract.
+Algorithmic contracts describe how an algorithm that processes over data layouts work. Every version of an algorithmic contract presents a consistent api to consumers of the contract.
 
 There are several sections:
 1. The header, where a description of what the contract can do is placed.

@@ -20,29 +20,25 @@ store it.  It is primarily meant to be read and written by tooling.
 
 ## Logical descriptor
 
-Each logical descriptor exists within an implied /target architecture/ consisting of:
+Each logical descriptor exists within an implied *target architecture* consisting of:
 * target architecture endianness (little endian or big endian)
 * target architecture pointer size (4 bytes or 8 bytes)
 
-The following /primitive types/ are assumed: int8, uint8, int16, uint16, int32, uint32, int64,
+The following *primitive types* are assumed: int8, uint8, int16, uint16, int32, uint32, int64,
 uint64, nint, nuint, pointer.  The multi-byte types are in the target architecture
 endianness.  The types `nint`, `nuint` and `pointer` have target architecture pointer size.
 
 The data descriptor consists of:
-* the data descriptor specification version
 * a collection of type structure descriptors
-* a collection of global value descriptors.
-
-## Data descriptor specification version
-
-This is the version of the physical data descriptor.
+* a collection of global value descriptors
 
 ## Types
 
 The types (both primitive types and structures described by structure descriptors) are classified as
-having either determinate or indeterminate size.  Determinate sizes may be used for pointer
-arithmetic.  Types with indeterminate size may not be.  Note that some sizes may be determinate, but
-/target specific/.  For example pointer types have a fixed size that varies by architecture.
+having either determinate or indeterminate size.  Types with a determinate size may be used for
+pointer arithmetic, whereas types with an indeterminate size may not be.  Note that some sizes may
+be determinate, but *target specific*.  For example pointer types have a fixed size that varies by
+architecture.
 
 ## Structure descriptors
 
@@ -64,6 +60,7 @@ Type names must be globally unique within a single logical descriptor.
 
 Each field descriptor consists of:
 * a name
+* a type
 * an offset in bytes from the beginning of the struct
 
 The name of a field descriptor must be unique within the definition of a structure.
@@ -98,27 +95,21 @@ memory.
 
 ## Physical descriptors
 
-The physical descriptors are meant to describe /subsets/ of a logical descriptor and to compose.
-Each physical descriptor can name an ordered sequence of zero or more "baseline" descriptor which is then
-considered to comprise a piece of the overall logical descriptor.
+The physical descriptors are meant to describe *subsets* of a logical descriptor and to compose.
 
-Starting from a single physical descriptor, the "baseline" relationship forms a directed graph.  It
-is an error for the graph to contain a cycle. The baseline relationship may form a DAG (that is: two
-or more nodes may refer to the same baseline).
+In typical usage we expect to have two physical descriptors that are combined to form the logical descriptor for a target runtime:
+* a "baseline" physical descriptor with a well-known name,
+* a "binary blob" physical descriptor that is part of the target runtime process' memory
 
-When constructing the logical descriptor, the DAG is traversed in a post-order traversal with each
-node visited at most once with baselines of a particular node visited from first to last.
+When constructing the logical descriptor, first the baseline physical desctriptor is consumed: the
+types and values from the baseline are added to the logical descriptor.  Then the types of the
+binary blob are used to augment the baseline: fields are added or modified, sizes and offsets are
+overwritten.  The global values of the binary blob are used to augment the baseline: new globals are
+added, existing globals are modified by overwriting their types or values.
 
-To form the logical descriptor the types are added in traversal order with later appearances
-augmenting earlier ones (fields are added or modified, sizes and offsets are overwritten).  The
-global values are added in traversal order with later appearances overwriting previous ones.
-
-Rationale: if a baseline is included more than once, only the first inclusion counts.  If a type
-appears in multiple physical descriptors, the later appearances may add more fields or change the
-offsets or definite/indefinite sizes of prior definitions.  If a value appears multiple times, later
-definitions take precedence.
-
-**FIXME** do we really want a DAG? Are we ok with a linked list?
+Rationale: If a type appears in multiple physical descriptors, the later appearances may add more
+fields or change the offsets or definite/indefinite sizes of prior definitions.  If a value appears
+multiple times, later definitions take precedence.
 
 ## Physical JSON descriptor
 
@@ -133,7 +124,6 @@ A data descriptor may be stored in the "JSON with comments" format.
 The toplevel dictionary will contain:
 
 * `"version": 0`
-* `"baseline": "FREEFORM STRING"` or `baseline: ["FREEFORM STRING"", ...]`
 * `"types": TYPE_ARRAY` see below
 * `"globals": VALUE_ARRAY` see below
 
@@ -148,13 +138,14 @@ The types will be in an array, with each type described by a dictionary containi
 Each `FIELD_ARRAY` is an array of dictionaries each containing keys:
 
 * `"name": "field name"` the name of each field
-* `"type": "type name"` the name of a primitive type or another type defined in the same /logical/ descriptor
+* `"type": "type name"` the name of a primitive type or another type defined in the logical descriptor
 * optional `"offset": int | "unknown"` the offset of the field or "unknown". If omitted, same as "unknown".
 
-Note that the logical descriptor does not contain "unknown" offsets.
+Note that the logical descriptor does not contain "unknown" offsets: it is expected that the binary
+blob will augment the baseline with a known offset for all fields in the baseline.
 
-Rationale: "unknown" offsets may be used to document in the physical JSON descriptor that another
-physical descriptor in the "baseline" graph is expected to provide the offset of the field.
+Rationale: "unknown" offsets may be used to document in the physical JSON descriptor that the binary
+blob descriptor is expected to provide the offset of the field.
 
 ### Global values
 
@@ -164,7 +155,8 @@ The global values will be in an array, with each value described by a dictionary
 * `"type": "type name"` the type of the global value
 * optional `"value": VALUE | "unknown"` the value of the global value or "unknown". If omitted, same as "unknown".
 
-Note that the logical descriptor does not contain "unknown" values.
+Note that the logical descriptor does not contain "unknown" values: it is expected that the binary
+blob will augment the baseline with a known offset for all fields in the baseline.
 
 The `VALUE` may be a JSON numeric constant integer or a string containing a signed or unsigned
 decimal or hex (with prefix `0x` or `0X`) integer constant.  The constant must be within the range
@@ -172,9 +164,6 @@ of the type of the global value.
 
 For pointer and nuint globals, the value may be assumed to fit in a 64-bit unsigned integer.  For
 nint globals, the value may be assumed to fit in a 64-bit signed integer.
-
-If the value is specified as "unknown" another physical descriptor in the "baseline" graph is
-expected to provide the value.
 
 ## Physical binary blob descriptor
 
