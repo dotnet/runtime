@@ -4,13 +4,13 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { mono_log_error, mono_log_info } from "../logging";
-import { monoThreadInfo, postMessageToMain, update_thread_info } from "./shared";
-import { Module, loaderHelpers } from "../globals";
-import { WorkerToMainMessageType } from "../types/internal";
-import { threads_c_functions as tcwraps } from "../cwraps";
+import {mono_log_error, mono_log_info} from "../logging";
+import {monoThreadInfo, postMessageToMain, update_thread_info} from "./shared";
+import {Module, loaderHelpers} from "../globals";
+import {WorkerToMainMessageType} from "../types/internal";
+import {threads_c_functions as tcwraps} from "../cwraps";
 
-export function mono_wasm_start_io_thread_async() {
+export function mono_wasm_start_io_thread_async () {
     if (!WasmEnableThreads) return;
 
 
@@ -28,8 +28,7 @@ export function mono_wasm_start_io_thread_async() {
             info: monoThreadInfo,
         });
         Module.runtimeKeepalivePush();
-    }
-    catch (err) {
+    } catch (err) {
         mono_log_error("mono_wasm_start_io_thread_async() failed", err);
         loaderHelpers.mono_exit(1, err);
         throw err;

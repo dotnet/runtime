@@ -3,7 +3,7 @@
 //!
 //! This is generated file, see src/mono/wasm/runtime/rollup.config.js
 
-//! This is not considered public API with backward compatibility guarantees. 
+//! This is not considered public API with backward compatibility guarantees.
 
 interface PromiseController<T = any> {
     isDone: boolean;
@@ -71,4 +71,4 @@ interface MockEnvironment {
     expectAdvertise: FilterPredicate;
 }
 
-export { MockEnvironment, MockScriptConnection, PromiseAndController };
+export {MockEnvironment, MockScriptConnection, PromiseAndController};

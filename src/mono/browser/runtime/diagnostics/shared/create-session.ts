@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import * as memory from "../../memory";
-import { VoidPtr } from "../../types/emscripten";
-import { threads_c_functions as cwraps } from "../../cwraps";
-import type { EventPipeSessionIDImpl } from "./types";
+import {VoidPtr} from "../../types/emscripten";
+import {threads_c_functions as cwraps} from "../../cwraps";
+import type {EventPipeSessionIDImpl} from "./types";
 
 const sizeOfInt32 = 4;
 
@@ -25,7 +25,7 @@ type SessionType =
     };
 
 
-function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeCreateSessionOptions, sessionType: SessionType): false | EventPipeSessionIDImpl {
+function createSessionWithPtrCB (sessionIdOutPtr: VoidPtr, options: EventPipeCreateSessionOptions, sessionType: SessionType): false | EventPipeSessionIDImpl {
     memory.setI32(sessionIdOutPtr, 0);
     let tracePath: string | null;
     let ipcStreamAddr: VoidPtr;
@@ -43,10 +43,10 @@ function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeCrea
     }
 }
 
-export function createEventPipeStreamingSession(ipcStreamAddr: VoidPtr, options: EventPipeCreateSessionOptions): EventPipeSessionIDImpl | false {
-    return memory.withStackAlloc(sizeOfInt32, createSessionWithPtrCB, options, { type: "stream", stream: ipcStreamAddr });
+export function createEventPipeStreamingSession (ipcStreamAddr: VoidPtr, options: EventPipeCreateSessionOptions): EventPipeSessionIDImpl | false {
+    return memory.withStackAlloc(sizeOfInt32, createSessionWithPtrCB, options, {type: "stream", stream: ipcStreamAddr});
 }
 
-export function createEventPipeFileSession(tracePath: string, options: EventPipeCreateSessionOptions): EventPipeSessionIDImpl | false {
-    return memory.withStackAlloc(sizeOfInt32, createSessionWithPtrCB, options, { type: "file", filePath: tracePath });
+export function createEventPipeFileSession (tracePath: string, options: EventPipeCreateSessionOptions): EventPipeSessionIDImpl | false {
+    return memory.withStackAlloc(sizeOfInt32, createSessionWithPtrCB, options, {type: "file", filePath: tracePath});
 }

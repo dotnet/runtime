@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, RuntimeAPI, SingleAssetBehaviors } from ".";
-import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
+import type {AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, RuntimeAPI, SingleAssetBehaviors} from ".";
+import type {CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr} from "./emscripten";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -64,7 +64,7 @@ export const CharPtrNull: CharPtr = <CharPtr><any>0;
 export const NativePointerNull: NativePointer = <NativePointer><any>0;
 export const PThreadPtrNull: PThreadPtr = <PThreadPtr><any>0;
 
-export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | null | undefined): T {
+export function coerceNull<T extends ManagedPointer | NativePointer> (ptr: T | null | undefined): T {
     if ((ptr === null) || (ptr === undefined))
         return (0 as any) as T;
     else
@@ -254,7 +254,7 @@ export type DotnetModuleInternal = EmscriptenModule & DotnetModuleConfig & Emscr
 
 // Evaluates whether a value is nullish (same definition used as the ?? operator,
 //  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
-export function is_nullish<T>(value: T | null | undefined): value is null | undefined {
+export function is_nullish<T> (value: T | null | undefined): value is null | undefined {
     return (value === undefined) || (value === null);
 }
 
@@ -299,14 +299,14 @@ export interface ExitStatusError {
 
 /// Always throws. Used to handle unreachable switch branches when TypeScript refines the type of a variable
 /// to 'never' after you handle all the cases it knows about.
-export function assertNever(x: never): never {
+export function assertNever (x: never): never {
     throw new Error("Unexpected value: " + x);
 }
 
 /// returns true if the given value is not Thenable
 ///
 /// Useful if some function returns a value or a promise of a value.
-export function notThenable<T>(x: T | PromiseLike<T>): x is T {
+export function notThenable<T> (x: T | PromiseLike<T>): x is T {
     return typeof x !== "object" || typeof ((<PromiseLike<T>>x).then) !== "function";
 }
 
@@ -571,8 +571,8 @@ export interface MonoThreadMessage {
 
 // keep in sync with JSHostImplementation.Types.cs
 export const enum MainThreadingMode {
-    // Running the managed main thread on UI thread. 
-    // Managed GC and similar scenarios could be blocking the UI. 
+    // Running the managed main thread on UI thread.
+    // Managed GC and similar scenarios could be blocking the UI.
     // Easy to deadlock. Not recommended for production.
     UIThread = 0,
     // Running the managed main thread on dedicated WebWorker. Marshaling all JavaScript calls to and from the main thread.
@@ -588,7 +588,7 @@ export const enum JSThreadBlockingMode {
     NoBlockingWait = 0,
     // TODO comment
     AllowBlockingWaitInAsyncCode = 1,
-    // allow .Wait on all threads. 
+    // allow .Wait on all threads.
     // Could cause deadlocks with blocking .Wait on a pending JS Task/Promise on the same thread or similar Task/Promise chain.
     AllowBlockingWait = 100,
 }

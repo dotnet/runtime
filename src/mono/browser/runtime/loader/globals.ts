@@ -4,19 +4,19 @@
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="../types/sidecar.d.ts" />
 
-import { exceptions, simd } from "wasm-feature-detect";
+import {exceptions, simd} from "wasm-feature-detect";
 
 import gitHash from "consts:gitHash";
 
-import type { DotnetModuleInternal, GlobalObjects, LoaderHelpers, MonoConfigInternal, RuntimeHelpers } from "../types/internal";
-import type { MonoConfig, RuntimeAPI } from "../types";
-import { assert_runtime_running, installUnhandledErrorHandler, is_exited, is_runtime_running, mono_exit } from "./exit";
-import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
-import { mono_download_assets, resolve_single_asset_path, retrieve_asset_download } from "./assets";
-import { mono_log_error, set_thread_prefix, setup_proxy_console } from "./logging";
-import { invokeLibraryInitializers } from "./libraryInitializers";
-import { deep_merge_config, isDebuggingSupported } from "./config";
-import { logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync } from "./assetsCache";
+import type {DotnetModuleInternal, GlobalObjects, LoaderHelpers, MonoConfigInternal, RuntimeHelpers} from "../types/internal";
+import type {MonoConfig, RuntimeAPI} from "../types";
+import {assert_runtime_running, installUnhandledErrorHandler, is_exited, is_runtime_running, mono_exit} from "./exit";
+import {assertIsControllablePromise, createPromiseController, getPromiseController} from "./promise-controller";
+import {mono_download_assets, resolve_single_asset_path, retrieve_asset_download} from "./assets";
+import {mono_log_error, set_thread_prefix, setup_proxy_console} from "./logging";
+import {invokeLibraryInitializers} from "./libraryInitializers";
+import {deep_merge_config, isDebuggingSupported} from "./config";
+import {logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync} from "./assetsCache";
 
 // if we are the first script loaded in the web worker, we are expected to become the sidecar
 if (typeof importScripts === "function" && !globalThis.onmessage) {
@@ -53,7 +53,7 @@ export const globalObjectsRoot: GlobalObjects = {
 
 setLoaderGlobals(globalObjectsRoot);
 
-export function setLoaderGlobals(
+export function setLoaderGlobals (
     globalObjects: GlobalObjects,
 ) {
     if (_loaderModuleLoaded) {
@@ -70,14 +70,18 @@ export function setLoaderGlobals(
     });
 
     Object.assign(globalObjects.module, {
-        config: deep_merge_config(monoConfig, { environmentVariables: {} }),
+        config: deep_merge_config(monoConfig, {environmentVariables: {}}),
     });
     const rh: Partial<RuntimeHelpers> = {
         mono_wasm_bindings_is_ready: false,
         config: globalObjects.module.config,
         diagnosticTracing: false,
-        nativeAbort: (reason: any) => { throw reason || new Error("abort"); },
-        nativeExit: (code: number) => { throw new Error("exit:" + code); }
+        nativeAbort: (reason: any) => {
+            throw reason || new Error("abort");
+        },
+        nativeExit: (code: number) => {
+            throw new Error("exit:" + code);
+        }
     };
     const lh: Partial<LoaderHelpers> = {
         gitHash,
@@ -133,7 +137,7 @@ export function setLoaderGlobals(
 // this will abort the program if the condition is false
 // see src\mono\browser\runtime\rollup.config.js
 // we inline the condition, because the lambda could allocate closure on hot path otherwise
-export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
+export function mono_assert (condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (condition) return;
     const message = "Assert failed: " + (typeof messageFactory === "function"
         ? messageFactory()

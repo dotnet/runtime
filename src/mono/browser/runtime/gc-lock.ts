@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
-import { ENVIRONMENT_IS_PTHREAD } from "./globals";
+import {ENVIRONMENT_IS_PTHREAD} from "./globals";
 import cwraps from "./cwraps";
 
 export let gc_locked = false;
 
-export function mono_wasm_gc_lock(): void {
+export function mono_wasm_gc_lock (): void {
     if (gc_locked) {
         throw new Error("GC is already locked");
     }
@@ -20,7 +20,7 @@ export function mono_wasm_gc_lock(): void {
     gc_locked = true;
 }
 
-export function mono_wasm_gc_unlock(): void {
+export function mono_wasm_gc_unlock (): void {
     if (!gc_locked) {
         throw new Error("GC is not locked");
     }
