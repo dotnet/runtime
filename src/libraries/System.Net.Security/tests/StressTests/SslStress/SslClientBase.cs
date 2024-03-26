@@ -30,7 +30,7 @@ namespace SslStress
 
             _config = config;
             _aggregator = new StressResultAggregator(config.MaxConnections);
-            _clientTask = new Lazy<Task>(Task.Run(StartCore));
+            _clientTask = new Lazy<Task>(() => Task.Run(StartCore));
         }
 
         protected abstract Task HandleConnection(int workerId, long jobId, SslStream stream, TcpClient client, Random random, TimeSpan duration, CancellationToken token);
@@ -136,7 +136,7 @@ namespace SslStress
                     async void CheckForStalledConnection()
                     {
                         await Task.Delay(10_000);
-                        if(!isTestCompleted)
+                        if (!isTestCompleted)
                         {
                             lock (Console.Out)
                             {
