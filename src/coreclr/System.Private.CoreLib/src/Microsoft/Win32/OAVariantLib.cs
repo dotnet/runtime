@@ -161,8 +161,14 @@ namespace Microsoft.Win32
                 DBNull => ComVariant.Null,
                 _ when Variant.IsSystemDrawingColor(RuntimeHelpers.GetMethodTable(input))
                     => ComVariant.Create(Variant.ConvertSystemColorToOleColor(ObjectHandleOnStack.Create(ref input))),
-                _ => throw new NotImplementedException() // Convert the object to an IDispatch/IUnknown pointer.
+                _ => GetComIPFromObjectRef(input) // Convert the object to an IDispatch/IUnknown pointer.
             };
+        }
+
+        private static ComVariant GetComIPFromObjectRef(object obj)
+        {
+            IntPtr pUnk = GetComIPFromObjectRef(ObjectHandleOnStack.Create(ref obj), ComIpType.ComIpType_Both, out ComIpType FetchedIpType);
+            return ComVariant.CreateRaw(FetchedIpType == ComIpType.ComIpType_Dispatch ? VarEnum.VT_DISPATCH : VarEnum.VT_UNKNOWN, pUnk);
         }
 
         private static object FromOAVariant(ComVariant input) =>
@@ -184,9 +190,17 @@ namespace Microsoft.Win32
                 VarEnum.VT_R8 => input.As<double>()!,
                 VarEnum.VT_EMPTY => null!,
                 VarEnum.VT_NULL => DBNull.Value,
-                VarEnum.VT_UNKNOWN or VarEnum.VT_DISPATCH => throw new NotImplementedException(), // Convert the IUnknown pointer to an OBJECTREF.
+                VarEnum.VT_UNKNOWN or VarEnum.VT_DISPATCH => GetObjectRefFromComIP(input), // Convert the IUnknown pointer to an OBJECTREF.
                 _ => throw new NotSupportedException(SR.NotSupported_ChangeType),
             };
+
+        private static object GetObjectRefFromComIP(ComVariant variant)
+        {
+            object? ret = null;
+            GetObjectRefFromComIP(ObjectHandleOnStack.Create(ref ret), variant.GetRawDataRef<IntPtr>());
+            Debug.Assert(ret != null);
+            return ret;
+        }
 
         private static VarEnum GetVTFromClass(Type type)
         {
@@ -205,8 +219,23 @@ namespace Microsoft.Win32
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "OAVariant_ChangeType")]
         private static partial void ChangeType(Variant* result, Variant* source, int lcid, IntPtr typeHandle, int cvType, short flags);
 
+        [DllImport("Foo")]
+        private static extern IntPtr GetComIPFromObjectRef(ObjectHandleOnStack obj, ComIpType reqIPType, out ComIpType fetchedIpType);
+
+        [DllImport("Foo")]
+        private static extern void GetObjectRefFromComIP(ObjectHandleOnStack objRet, IntPtr pUnk);
+
 #pragma warning restore CS8500
 
-#endregion
+        #endregion
+    }
+
+    internal enum ComIpType : int
+    {
+        ComIpType_None = 0x0,
+        ComIpType_Unknown = 0x1,
+        ComIpType_Dispatch = 0x2,
+        ComIpType_Both = 0x3,
+        ComIpType_OuterUnknown = 0x5,
     }
 }
