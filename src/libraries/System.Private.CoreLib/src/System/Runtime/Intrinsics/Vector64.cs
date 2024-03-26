@@ -2306,7 +2306,7 @@ namespace System.Runtime.Intrinsics
                 {
                     selectedValue = vector.GetElementUnsafe(selectedIndex);
                 }
-                result.SetElementUnsafe(index, selectedValue);
+                result.SetElementUnsafe(index, (sbyte)selectedValue);
             }
 
             return result;
