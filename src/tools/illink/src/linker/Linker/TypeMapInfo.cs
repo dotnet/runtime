@@ -152,32 +152,31 @@ namespace Mono.Linker
 				if (type is null)
 					return;
 				// Get all explicit interfaces of this type
-				foreach (var directIface in type.Interfaces) {
-					//var directlyImplementedType = Context.Resolve (directIface.InterfaceType);
-					var directlyImplementedType = directIface.InterfaceType.TryInflateFrom (typeRef, Context);
-					if (directlyImplementedType is null) {
+				foreach (var iface in type.Interfaces) {
+					var interfaceType = iface.InterfaceType.TryInflateFrom (typeRef, Context);
+					if (interfaceType is null) {
 						continue;
 					}
-					if (!firstImplementationChain.Any (i => InterfaceTypeEquals (i.Item1, directlyImplementedType, Context))) {
-						firstImplementationChain.Add ((directlyImplementedType, pathToType.Append (directIface).ToList ()));
+					if (!firstImplementationChain.Any (i => InterfaceTypeEquals (i.Item1, interfaceType, Context))) {
+						firstImplementationChain.Add ((interfaceType, pathToType.Append (iface).ToList ()));
 					}
 				}
 
-				// Recursive interfaces next to preserve Inherit/Implement tree order
-				foreach (var directIface in type.Interfaces) {
+				// Recursive interfaces after all direct interfaces to preserve Inherit/Implement tree order
+				foreach (var iface in type.Interfaces) {
 					// If we can't resolve the interface type we can't find recursive interfaces
-					var ifaceDirectlyOnType = directIface.InterfaceType.TryInflateFrom (typeRef, Context);
+					var ifaceDirectlyOnType = iface.InterfaceType.TryInflateFrom (typeRef, Context);
 					if (ifaceDirectlyOnType is null) {
 						continue;
 					}
-					AddRecursiveInterfaces (ifaceDirectlyOnType, pathToType.Append (directIface), firstImplementationChain, Context);
+					AddRecursiveInterfaces (ifaceDirectlyOnType, pathToType.Append (iface), firstImplementationChain, Context);
 				}
 			}
 
 			/// <summary>
 			/// Compares two TypeReferences to interface types and determines if they are equivalent references, taking into account generic arguments and element types.
 			/// </summary>
-			static bool InterfaceTypeEquals (TypeReference? type, TypeReference? other, ITryResolveMetadata resolver)
+			static bool InterfaceTypeEquals (TypeReference type, TypeReference other, ITryResolveMetadata resolver)
 			{
 				Debug.Assert (type is not null && other is not null);
 				Debug.Assert (resolver.TryResolve (type)?.IsInterface is null or true);
