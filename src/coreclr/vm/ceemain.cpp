@@ -163,6 +163,7 @@
 #include "jithost.h"
 #include "pgo.h"
 #include "pendingload.h"
+#include "yieldprocessornormalized.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
