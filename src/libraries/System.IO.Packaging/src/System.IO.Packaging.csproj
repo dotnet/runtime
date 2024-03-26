@@ -19,6 +19,8 @@
     <Compile Include="System\IO\Packaging\EncryptionOption.cs" />
     <Compile Include="System\IO\Packaging\FileFormatException.cs" />
     <Compile Include="System\IO\Packaging\IgnoreFlushAndCloseStream.cs" />
+    <Compile Include="System\IO\Packaging\InterleavedZipPackagePartStream.cs" />
+    <Compile Include="System\IO\Packaging\InterleavedZipPackagePartStream.PieceDirectory.cs" />
     <Compile Include="System\IO\Packaging\InternalRelationshipCollection.cs" />
     <Compile Include="System\IO\Packaging\OrderedDictionary.cs" />
     <Compile Include="System\IO\Packaging\Package.cs" />
@@ -39,10 +41,13 @@
     <Compile Include="System\IO\Packaging\XmlWrappingReader.cs" />
     <Compile Include="System\IO\Packaging\ZipPackage.cs" />
     <Compile Include="System\IO\Packaging\ZipPackagePart.cs" />
+    <Compile Include="System\IO\Packaging\ZipPackagePartPiece.cs" />
     <Compile Include="System\IO\Packaging\ZipStreamManager.cs" />
     <Compile Include="System\IO\Packaging\ZipWrappingStream.cs" />
     <Compile Include="System\IO\Packaging\PackUriHelper.PackUriScheme.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+
+    <InternalsVisibleTo Include="System.IO.Packaging.Tests" Key="00240000048000009400000006020000002400005253413100040000010001004b86c4cb78549b34bab61a3b1800e23bfeb5b3ec390074041536a7e3cbd97f5f04cf0f857155a8928eaa29ebfd11cfbbad3ba70efea7bda3226c6a8d370a4cd303f714486b6ebc225985a638471e6ef571cc92a4613c00b8fa65d61ccee0cbe5f36330c9a01f4183559f1bef24cc2917c6d913e3a541333a1d05d9bed22b38cb" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.IO.Compression;
 
@@ -42,6 +41,10 @@ namespace System.IO.Packaging
                 var stream = _zipStreamManager.Open(_zipArchiveEntry, streamFileAccess);
                 return stream;
             }
+            else if (_pieces.Count > 0)
+            {
+                return new InterleavedZipPackagePartStream(this, _zipStreamManager, streamFileAccess);
+            }
             return null;
         }
 
@@ -74,6 +77,33 @@ namespace System.IO.Packaging
             _zipArchive = zipArchive;
             _zipStreamManager = zipStreamManager;
             _zipArchiveEntry = zipArchiveEntry;
+            _pieces = [];
+        }
+
+        /// <summary>
+        /// Constructs a ZipPackagePart for an interleaved part. This is called outside of streaming
+        /// production when an interleaved part is encountered in the package.
+        /// </summary>
+        /// <param name="zipPackage"></param>
+        /// <param name="zipArchive"></param>
+        /// <param name="zipStreamManager"></param>
+        /// <param name="pieces"></param>
+        /// <param name="partUri"></param>
+        /// <param name="contentType"></param>
+        /// <param name="compressionOption"></param>
+        internal ZipPackagePart(ZipPackage zipPackage,
+            ZipArchive zipArchive,
+            ZipStreamManager zipStreamManager,
+            List<ZipPackagePartPiece> pieces,
+            PackUriHelper.ValidatedPartUri partUri,
+            string contentType,
+            CompressionOption compressionOption)
+            : base(zipPackage, partUri, contentType, compressionOption)
+        {
+            _zipPackage = zipPackage;
+            _zipArchive = zipArchive;
+            _zipStreamManager = zipStreamManager;
+            _pieces = pieces;
         }
 
         #endregion Internal Constructors
@@ -81,9 +111,20 @@ namespace System.IO.Packaging
         #region Internal Properties
 
         /// <summary>
+        /// Obtain the sorted list of piece descriptors for an interleaved part.
+        /// </summary>
+        internal List<ZipPackagePartPiece> PieceDescriptors
+        {
+            get
+            {
+                return _pieces;
+            }
+        }
+
+        /// <summary>
         /// Obtain the ZipFileInfo descriptor of an atomic part.
         /// </summary>
-        internal ZipArchiveEntry ZipArchiveEntry
+        internal ZipArchiveEntry? ZipArchiveEntry
         {
             get
             {
@@ -96,9 +137,10 @@ namespace System.IO.Packaging
         #region Private Variables
 
         private readonly ZipPackage _zipPackage;
-        private readonly ZipArchiveEntry _zipArchiveEntry;
+        private readonly ZipArchiveEntry? _zipArchiveEntry;
         private readonly ZipArchive _zipArchive;
         private readonly ZipStreamManager _zipStreamManager;
+        private readonly List<ZipPackagePartPiece> _pieces;
 
         #endregion Private Variables
     }
