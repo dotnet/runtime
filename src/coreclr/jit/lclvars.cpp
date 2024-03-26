@@ -1705,7 +1705,19 @@ void Compiler::lvaClassifyParameterABI()
             LclVarDsc* dsc = lvaGetDesc(lclNum);
             const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
 
-            if (dsc->TypeGet() != TYP_STRUCT)
+#if FEATURE_IMPLICIT_BYREFS
+            if (dsc->TypeGet() == TYP_STRUCT)
+            {
+                const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(dsc->GetLayout()->GetClassHandle());
+                dsc->lvIsImplicitByRef = lowering->byReference;
+            }
+#endif
+
+            if ((dsc->TypeGet() == TYP_STRUCT) && !lvaIsImplicitByRefLocal(lclNum))
+            {
+                dsc->lvIsRegArg = false;
+            }
+            else
             {
                 assert(abiInfo.NumSegments == 1);
                 if (abiInfo.Segments[0].IsPassedInRegister())
@@ -1721,13 +1733,7 @@ void Compiler::lvaClassifyParameterABI()
                     dsc->SetOtherArgReg(REG_NA);
                     dsc->SetStackOffset(abiInfo.Segments[0].GetStackOffset());
                 }
-            }
-            else
-            {
-#if FEATURE_IMPLICIT_BYREFS
-                const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(dsc->GetLayout()->GetClassHandle());
-                dsc->lvIsImplicitByRef = lowering->byReference;
-#endif
+
             }
         }
     }

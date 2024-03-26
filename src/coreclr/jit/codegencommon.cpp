@@ -5004,6 +5004,15 @@ void CodeGen::genHomeSwiftStructParameters(regNumber initReg, bool* initRegZeroe
                 assert(storeType != TYP_UNDEF);
                 GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), seg.GetRegister(), lclNum,
                                           seg.Offset);
+
+                if (genIsValidFloatReg(seg.GetRegister()))
+                {
+                    floatRegState.rsCalleeRegArgMaskLiveIn &= ~genRegMask(seg.GetRegister());
+                }
+                else
+                {
+                    intRegState.rsCalleeRegArgMaskLiveIn &= ~genRegMask(seg.GetRegister());
+                }
             }
             else
             {
