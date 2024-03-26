@@ -6,8 +6,8 @@
 typedef struct ManagedThread ManagedThread;
 
 struct ManagedThread {
-	uint32_t GCHandle;
-	ManagedThread *next;
+	uint32_t m_gcHandle;
+	ManagedThread *m_next;
 };
 
 typedef struct ManagedThreadStore {
@@ -15,8 +15,6 @@ typedef struct ManagedThreadStore {
 } ManagedThreadStore;
 
 static ManagedThreadStore g_managedThreadStore;
-
-static const int FEATURE_COM = 1;
 
 // end example structures
 
@@ -32,14 +30,14 @@ struct TypeSpec
 struct FieldSpec
 {
     uint32_t Name;
+    uint32_t TypeName;
     uint16_t FieldOffset;
-    uint16_t Reserved;
 };
 
 struct GlobalSpec
 {
     uint32_t Name;
-    uint32_t Reserved;
+    uint32_t TypeName;
     uint64_t Value;
 };
 
@@ -48,7 +46,9 @@ struct GlobalSpec
 
 #define MAKE_TYPELEN_NAME(tyname) CONCAT(cdac_string_pool_typename__, tyname)
 #define MAKE_FIELDLEN_NAME(tyname,membername) CONCAT4(cdac_string_pool_membername__, tyname, __, membername)
+#define MAKE_FIELDTYPELEN_NAME(tyname,membername) CONCAT4(cdac_string_pool_membertypename__, tyname, __, membername)
 #define MAKE_GLOBALLEN_NAME(globalname) CONCAT(cdac_string_pool_globalname__, globalname)
+#define MAKE_GLOBALTYPELEN_NAME(globalname) CONCAT(cdac_string_pool_globaltypename__, globalname)
 
 // define a struct where the size of each field is the length of some string.  we will use offsetof to get
 // the offset of each struct element, which will be equal to the offset of the beginning of that string in the
@@ -63,11 +63,13 @@ struct CDacStringPoolSizes
 #define CDAC_TYPE_BEGIN(name) DECL_LEN(MAKE_TYPELEN_NAME(name), sizeof(#name))
 #define CDAC_TYPE_INDETERMINATE(name)
 #define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membername,offset) DECL_LEN(MAKE_FIELDLEN_NAME(tyname,membername), sizeof(#membername))
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) DECL_LEN(MAKE_FIELDLEN_NAME(tyname,membername), sizeof(#membername)) \
+	DECL_LEN(MAKE_FIELDTYPELEN_NAME(tyname,membername), sizeof(#membertyname))
 #define CDAC_TYPE_END(name)
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
+#define CDAC_GLOBAL(name,tyname,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
+	DECL_LEN(MAKE_GLOBALTYPELEN_NAME(name), sizeof(#tyname))
 #define CDAC_GLOBALS_END()
 #include "sample.data.h"
 #undef CDAC_BASELINE
@@ -86,7 +88,9 @@ struct CDacStringPoolSizes
 
 #define GET_TYPE_NAME(name) offsetof(struct CDacStringPoolSizes, MAKE_TYPELEN_NAME(name))
 #define GET_FIELD_NAME(tyname,membername) offsetof(struct CDacStringPoolSizes, MAKE_FIELDLEN_NAME(tyname,membername))
+#define GET_FIELDTYPE_NAME(tyname,membername) offsetof(struct CDacStringPoolSizes, MAKE_FIELDTYPELEN_NAME(tyname,membername))
 #define GET_GLOBAL_NAME(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALLEN_NAME(globalname))
+#define GET_GLOBALTYPE_NAME(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALTYPELEN_NAME(globalname))
 
 // count the types
 enum
@@ -97,11 +101,11 @@ enum
 #define CDAC_TYPE_BEGIN(name) + 1
 #define CDAC_TYPE_INDETERMINATE(name)
 #define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membername,offset)
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset)
 #define CDAC_TYPE_END(name)
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL(name,value)
+#define CDAC_GLOBAL(name,tyname,value)
 #define CDAC_GLOBALS_END()
 #include "sample.data.h"
 #undef CDAC_BASELINE
@@ -129,11 +133,11 @@ enum
 #define CDAC_TYPE_BEGIN(name)
 #define CDAC_TYPE_INDETERMINATE(name)
 #define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membername,offset) + 1
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) + 1
 #define CDAC_TYPE_END(name) + 1
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL(name,value)
+#define CDAC_GLOBAL(name,tyname,value)
 #define CDAC_GLOBALS_END()
 #include "sample.data.h"
 #undef CDAC_BASELINE
@@ -160,11 +164,11 @@ enum
 #define CDAC_TYPE_BEGIN(name)
 #define CDAC_TYPE_INDETERMINATE(name)
 #define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membername,offset)
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset)
 #define CDAC_TYPE_END(name)
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL(name,value) + 1
+#define CDAC_GLOBAL(name,tyname,value) + 1
 #define CDAC_GLOBALS_END()
 #include "sample.data.h"
 #undef CDAC_BASELINE
@@ -207,12 +211,12 @@ struct CDacFieldPoolSizes
 #define CDAC_TYPE_BEGIN(name) struct MAKE_TYPEFIELDS_TYNAME(name) {
 #define CDAC_TYPE_INDETERMINATE(name)
 #define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membername,offset) DECL_LEN(CONCAT4(cdac_field_pool_member__, tyname, __, membername))
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) DECL_LEN(CONCAT4(cdac_field_pool_member__, tyname, __, membername))
 #define CDAC_TYPE_END(name) DECL_LEN(CONCAT4(cdac_field_pool_member__, tyname, _, endmarker)) \
 	} MAKE_TYPEFIELDS_TYNAME(name);
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL(name,value)
+#define CDAC_GLOBAL(name,tyname,value)
 #define CDAC_GLOBALS_END()
 #include "sample.data.h"
 #undef CDAC_BASELINE
@@ -244,13 +248,11 @@ struct BinaryBlobDataDescriptor
         uint32_t FieldPoolCount;
         
         uint32_t NamesPoolCount;
-        uint32_t Reserved0;
         
-        uint16_t TypeSpecSize;
-        uint16_t FieldSpecSize;
-        
-        uint16_t GlobalSpecSize;
-        uint16_t Reserved1;
+        uint8_t TypeSpecSize;
+        uint8_t FieldSpecSize;
+        uint8_t GlobalSpecSize;
+        uint8_t Reserved0;
     } Directory;
     uint32_t BaselineName;
     struct TypeSpec Types[CDacBlobTypesCount];
@@ -260,12 +262,12 @@ struct BinaryBlobDataDescriptor
 };
 
 struct MagicAndBlob {
-	char magic[4];
+	char magic[8];
 	struct BinaryBlobDataDescriptor Blob;
 };
 
 const struct MagicAndBlob Blob = {
-	.magic = "DAC",
+	.magic = "DACBLOB",
 	.Blob = {
 		.Directory = {
 			.TypesStart = offsetof(struct BinaryBlobDataDescriptor, Types),
@@ -285,11 +287,11 @@ const struct MagicAndBlob Blob = {
 #define CDAC_TYPE_BEGIN(name) #name "\0"
 #define CDAC_TYPE_INDETERMINATE(name)
 #define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membername,offset) #membername "\0"
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) #membername "\0" #membertyname "\0"
 #define CDAC_TYPE_END(name)
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL(name,value) #name "\0"
+#define CDAC_GLOBAL(name,tyname,value) #name "\0"
 #define CDAC_GLOBALS_END()
 #include "sample.data.h"
 #undef CDAC_BASELINE
@@ -311,14 +313,15 @@ const struct MagicAndBlob Blob = {
 #define CDAC_TYPE_BEGIN(name)
 #define CDAC_TYPE_INDETERMINATE(name)
 #define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membername,offset) { \
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) { \
 	.Name = GET_FIELD_NAME(tyname,membername), \
+	.TypeName = GET_FIELDTYPE_NAME(tyname,membername), \
 	.FieldOffset = offset, \
 },
 #define CDAC_TYPE_END(name) { 0, },
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL(name,value)
+#define CDAC_GLOBAL(name,tyname,value)
 #define CDAC_GLOBALS_END()
 #include "sample.data.h"
 #undef CDAC_BASELINE
@@ -342,11 +345,11 @@ const struct MagicAndBlob Blob = {
 	.Fields = GET_TYPE_FIELDS(name),
 #define CDAC_TYPE_INDETERMINATE(name) .Size = 0,
 #define CDAC_TYPE_SIZE(size) .Size = size,
-#define CDAC_TYPE_FIELD(tyname,membername,offset)
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset)
 #define CDAC_TYPE_END(name) },
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL(name,value)
+#define CDAC_GLOBAL(name,tyname,value)
 #define CDAC_GLOBALS_END()
 #include "sample.data.h"
 #undef CDAC_BASELINE
@@ -368,11 +371,11 @@ const struct MagicAndBlob Blob = {
 #define CDAC_TYPE_BEGIN(name)
 #define CDAC_TYPE_INDETERMINATE(name)
 #define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membername,offset)
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset)
 #define CDAC_TYPE_END(name)
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL(name,value) { .Name = GET_GLOBAL_NAME(name), .Value = value },
+#define CDAC_GLOBAL(name,tyname,value) { .Name = GET_GLOBAL_NAME(name), .TypeName = GET_GLOBALTYPE_NAME(name), .Value = value },
 #define CDAC_GLOBALS_END()
 #include "sample.data.h"
 #undef CDAC_BASELINE

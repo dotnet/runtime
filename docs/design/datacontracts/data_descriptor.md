@@ -25,7 +25,7 @@ Each logical descriptor exists within an implied /target architecture/ consisiti
 * target architecture pointer size (4 bytes or 8 bytes)
 
 The following /primitive types/ are assumed: int8, uint8, int16, uint16, int32, uint32, int64,
-uint64, nint, nuint, pointer, (UTF-8) string.  The multi-byte types are in the target architecture
+uint64, nint, nuint, pointer.  The multi-byte types are in the target architecture
 endianness.  The types `nint`, `nuint` and `pointer` have target architecture pointer size.
 
 The data descriptor consists of:
@@ -43,8 +43,6 @@ The types (both primitive types and structures described by structure descriptor
 having either determinate or indeterminate size.  Determinate sizes may be used for pointer
 arithmetic.  Types with indeterminate size may not be.  Note that some sizes may be determinate, but
 /target specific/.  For example pointer types have a fixed size that varies by architecture.
-
-The following primitive types have indeterminate size: `string`.
 
 ## Structure descriptors
 
@@ -67,18 +65,13 @@ Type names must be globally unique within a single logical descriptor.
 Each field descriptor consists of:
 * a name
 * an offset in bytes from the beginning of the struct
-* a type or the special type `variable`
 
 The name of a field descriptor must be unique within the definition of a structure.
-
-The offset may be negative.
 
 Two or more fields may have the same offsets or imply that the underlying fields overlap.  The field
 offsets need not be aligned using any sort of target-specific alignment rules.
 
 Each field's type may refer to one of the primitive types or to any other type defined in the logical descriptor.
-
-If the field's type is `variable` it represents a byte-array of indeterminate size starting at the given offset.
 
 If a structure descriptor contains at least one field of indeterminate size, the whole structure
 must have indeterminate size.  Tooling is not required to, but may, signal a warning if a descriptor
@@ -98,8 +91,9 @@ The name of each global value must be unique within the logical descriptor.
 
 The type must be one of the determinate-size primitive types.
 
-The value must be a integral constant within the range of its type.  Signed values are two's
-complement.  Pointer values need not be aligned and need not point to addressable target memory.
+The value must be an integral constant within the range of its type.  Signed values use the target's
+natural encoding.  Pointer values need not be aligned and need not point to addressable target
+memory.
 
 
 ## Physical descriptors
@@ -188,6 +182,29 @@ expected to provide the value.
 
 This is version 0 of the physical binary blob format.
 
+### Design requirements
+
+The design of the physical binary blob descriptor is constrained by the following requirements:
+* The binary blob should be easy to process by examining an object file on disk - even if the object
+  file is for a foreign architecture/OS.  It should be possible to read the binary blob purely by
+  looking at the bytes.  Tooling should be able to analyze the blob without having to understand
+  relocation entries, dwarf debug info, symbols etc.
+* It should be possible to produce the blob using the native C/C++/NativeAOT compiler for a given
+  target/architecture.  In particular for a runtime written in C, the binary blob should be
+  constructible using C idioms.  If the C compiler needs to pad or align the data, the blob format
+  should provide a way to iterate the blob contents without having to know anything abotu the target
+  platform ABI or C compiler conventions.
+
+This leads to the following overall strategy for the design:
+* The physical blob is "self-contained": using pointers would mean that the encoding of the blob
+  would have relocations applied to it, which would preclude reading the blob out of of an object
+  file without understanding the object file format.
+* The physical blob must be "self-describing": If the C compiler adds padding or alignment, the blob
+  descriptor must contain information for how to skip the pading/alignment data.
+* The physical blob must be constructible using "lowest common denominator" target toolchain
+  tooling - the C preprocessor.  That doesn't mean that tooling _must_ use the C preprocessor to
+  generate the blob, but the format must not exceed the capabilities of the C preprocessor.
+
 ### Summary
 
 The binary blob format for a physical descriptor is expected to be stored in the memory space of a
@@ -223,13 +240,11 @@ struct BinaryBlobDataDescriptor
         uint32_t FieldPoolCount;
         
         uint32_t NamesPoolCount;
-        uint32_t Reserved0;
         
-        uint16_t TypeSpecSize;
-        uint16_t FieldSpecSize;
-        
-        uint16_t GlobalSpecSize;
-        uint16_t Reserved1;
+        uint8_t TypeSpecSize;
+        uint8_t FieldSpecSize;
+        uint8_t GlobalSpecSize;
+        uint8_t Reserved0;
     }
     uint32_t BaselineName;
     TypeSpec[TypeCount] Types;
@@ -248,21 +263,17 @@ struct TypeSpec
 struct FieldSpec
 {
     uint32_t Name;
+    uint32_t TypeName;
     uint16_t FieldOffset;
-    uint16_t Reserved;
 };
 
 struct GlobalSpec
 {
     uint32_t Name;
-    uint32_t Reserved;
+    uint32_t TypeName;
     uint64_t Value;
 };
 ```
-
-Rationale: the blob should be producable by including a specially formatted C header file multiple
-times with redefinitions of some macro names appearing in its content.  Additionally the blob avoids
-pointers so that it may be read off from the on-disk representation of an object file.
 
 The blob begins with a directory that gives the relative offsets of the `Types`, `FieldPool`,
 `GlobalValues` and `Names` fields of the blob.  The number of elements of each of the arrays is
@@ -270,7 +281,9 @@ next. This is followed by the sizes of the `TypeSpec`, `FieldSpec` and `GlobalSp
 
 Rationale: If a `BinaryBlobDataDescriptor` is created via C macros, we want to embed the `offsetof`
 and `sizeof` of the components of the blob into the blob itself without having to account for any
-padding that the C compiler may introduce to enfore alignment.
+padding that the C compiler may introduce to enfore alignment.  Additionally the `Directory` tries
+to follow a common C alignment rule (we don't want padding introduced in the directory itself):
+N-byte members are aligned to start on N-byte boundaries.
 
 The baseline is specified as an offset into the names pool.
 
