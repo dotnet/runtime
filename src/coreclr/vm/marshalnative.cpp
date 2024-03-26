@@ -283,26 +283,44 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 #endif
 
 /************************************************************************
- * Marshal.GetLastPInvokeError
+ * Support for the last PInvoke error
  */
+static thread_local int t_lastPInvokeError;
+
 FCIMPL0(int, MarshalNative::GetLastPInvokeError)
 {
     FCALL_CONTRACT;
 
-    return (UINT32)(GetThread()->m_dwLastError);
+    return t_lastPInvokeError;
 }
 FCIMPLEND
 
-/************************************************************************
- * Marshal.SetLastPInvokeError
- */
 FCIMPL1(void, MarshalNative::SetLastPInvokeError, int error)
 {
     FCALL_CONTRACT;
 
-    GetThread()->m_dwLastError = (DWORD)error;
+    t_lastPInvokeError = error;
 }
 FCIMPLEND
+
+FCIMPL0(void, StubHelpers::SetLastError)
+{
+    // Make sure this is the first thing we do after returning from the target, as almost everything can cause the last error to get trashed
+    DWORD lastError = ::GetLastError();
+
+    FCALL_CONTRACT;
+
+    t_lastPInvokeError = lastError;
+}
+FCIMPLEND
+
+// GetLastError override for IJW
+DWORD STDMETHODCALLTYPE FalseGetLastError()
+{
+    WRAPPER_NO_CONTRACT;
+
+    return t_lastPInvokeError;
+}
 
 /************************************************************************
  * Support for the GCHandle class.

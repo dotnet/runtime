@@ -9271,19 +9271,6 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             break;
         }
 
-        // Plus some other calls that we're going to treat "like" intrinsics...
-        if (methToCall == CoreLibBinder::GetMethod(METHOD__STUBHELPERS__SET_LAST_ERROR))
-        {
-            // If we're interpreting a method that calls "SetLastError", it's very likely that the call(i) whose
-            // error we're trying to capture was performed with MethodDescCallSite machinery that itself trashes
-            // the last error.  We solve this by saving the last error in a special interpreter-specific field of
-            // "Thread" in that case, and essentially implement SetLastError here, taking that field as the
-            // source for the last error.
-            Thread* thrd = GetThread();
-            thrd->m_dwLastError = thrd->m_dwLastErrorInterp;
-            didIntrinsic = true;
-        }
-
         // TODO: The following check for hardware intrinsics is not a production-level
         //       solution and may produce incorrect results.
         static ConfigDWORD s_InterpreterHWIntrinsicsIsSupportedFalse;

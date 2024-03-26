@@ -2454,18 +2454,6 @@ public:
     // making m_Link public.
     SLink       m_Link;
 
-    // For N/Direct calls with the "setLastError" bit, this field stores
-    // the errorcode from that call.
-    DWORD       m_dwLastError;
-
-#ifdef FEATURE_INTERPRETER
-    // When we're interpreting IL stubs for N/Direct calls with the "setLastError" bit,
-    // the interpretation will trash the last error before we get to the call to "SetLastError".
-    // Therefore, we record it here immediately after the calli, and treat "SetLastError" as an
-    // intrinsic that transfers the value stored here into the field above.
-    DWORD       m_dwLastErrorInterp;
-#endif
-
     // Debugger per-thread flag for enabling notification on "manual"
     // method calls,  for stepping logic
     void IncrementTraceCallCount();

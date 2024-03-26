@@ -2917,14 +2917,6 @@ BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget)
     return FALSE;
 }
 
-DWORD STDMETHODCALLTYPE FalseGetLastError()
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetThread()->m_dwLastError;
-}
-
-
 CorInfoCallConvExtension GetDefaultCallConv(BOOL bIsVarArg)
 {
     return bIsVarArg ? CorInfoCallConvExtension::C : CallConv::GetDefaultUnmanagedCallingConvention();
