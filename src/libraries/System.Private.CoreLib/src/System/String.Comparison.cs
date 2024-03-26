@@ -870,7 +870,6 @@ namespace System
                     return (int)resOnScalarPath;
                 }
 
-                Debug.Assert(!Vector128.IsHardwareAccelerated);
 
                 while(length > 8)
                 {
@@ -984,7 +983,6 @@ namespace System
                     return (int)res;
                 }
 
-                Debug.Assert(!Vector128.IsHardwareAccelerated);
                 while(length > 8)
                 {
                     uint p0 = ptr[0];
