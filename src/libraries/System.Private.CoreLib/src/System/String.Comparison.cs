@@ -818,6 +818,8 @@ namespace System
         {
             uint hash1 = (5381 << 16) + 5381;
             uint hash2 = hash1;
+            uint hash3 = hash1;
+            uint hash4 = hash1;
 
             fixed (char* src = &_firstChar)
             {
@@ -827,10 +829,6 @@ namespace System
                 uint* ptr = (uint*) src;
                 int length = this.Length;
 
-                // We "normalize to lowercase" every char by ORing with 0x0020. This casts
-                // a very wide net because it will change, e.g., '^' to '~'. But that should
-                // be ok because we expect this to be very rare in practice.
-
                 if(Vector128.IsHardwareAccelerated && length >= 2 * Vector128<ushort>.Count)
                 {
                     Vector128<uint> hashVector = Vector128.Create(hash1);
@@ -839,7 +837,7 @@ namespace System
                     {
                         Vector128<uint> srcVec = Vector128.Load(ptr);
                         length -= 8;
-                        hashVector = Vector128.Xor(Vector128.Add(hashVector, RotateLeft(hashVector, 5)), srcVec);
+                        hashVector = (hashVector + RotateLeft(hashVector, 5)) ^ srcVec;
                         ptr += 4;
                     }
 
@@ -862,42 +860,64 @@ namespace System
                     while (length > 0)
                     {
                         uint p0 = ptr[0];
-                        hashed4 = (BitOperations.RotateLeft(hashed4, 5) + hashed4) ^ (p0);
+
                         length -= 2;
+                        hashed4 = (BitOperations.RotateLeft(hashed4, 5) + hashed4) ^ (p0);
                         ptr += 1;
                     }
 
-                    uint res = (((BitOperations.RotateLeft(hashed1, 5) + hashed1)) ^ hashed3) + 1566083941 * (((BitOperations.RotateLeft(hashed2, 5) + hashed2)) ^ hashed4);
-                    return (int)res;
+                    uint resOnScalarPath = (((BitOperations.RotateLeft(hashed1, 5) + hashed1)) ^ hashed3) + 1566083941 * (((BitOperations.RotateLeft(hashed2, 5) + hashed2)) ^ hashed4);
+                    return (int)resOnScalarPath;
                 }
 
-                // Debug.Assert(!Vector128.IsHardwareAccelerated);
-                while (length > 2)
+                Debug.Assert(!Vector128.IsHardwareAccelerated);
+
+                while(length > 8)
+                {
+                    uint p0 = ptr[0];
+                    uint p1 = ptr[1];
+                    uint p2 = ptr[2];
+                    uint p3 = ptr[3];
+                    length -= 8;
+                    // hashVector = (hashVector + RotateLeft(hashVector, 5)) ^ srcVec;
+                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0);
+                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1);
+                    hash3 = (BitOperations.RotateLeft(hash3, 5) + hash3) ^ (p2);
+                    hash4 = (BitOperations.RotateLeft(hash4, 5) + hash4) ^ (p3);
+                    ptr += 4;
+                }
+
+                while (length > 4)
                 {
                     uint p0 = ptr[0];
                     uint p1 = ptr[1];
                     length -= 4;
                     // Where length is 4n-1 (e.g. 3,7,11,15,19) this additionally consumes the null terminator
-                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0);
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1);
+                    hash3 = (BitOperations.RotateLeft(hash3, 5) + hash3) ^ (p0);
+                    hash4 = (BitOperations.RotateLeft(hash4, 5) + hash4) ^ (p1);
                     ptr += 2;
                 }
 
-                if (length > 0)
+                while (length > 0)
                 {
                     uint p0 = ptr[0];
-                    // Where length is 4n-3 (e.g. 1,5,9,13,17) this additionally consumes the null terminator
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p0);
+
+                    length -= 2;
+                    hash4 = (BitOperations.RotateLeft(hash4, 5) + hash4) ^ (p0);
+                    ptr += 1;
                 }
             }
 
-            return (int)(hash1 + (hash2 * 1566083941));
+            uint res = (((BitOperations.RotateLeft(hash1, 5) + hash1)) ^ hash3) + 1566083941 * (((BitOperations.RotateLeft(hash2, 5) + hash2)) ^ hash4);
+            return (int)res;
         }
 
         internal unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCase()
         {
             uint hash1 = (5381 << 16) + 5381;
             uint hash2 = hash1;
+            uint hash3 = hash1;
+            uint hash4 = hash1;
 
             fixed (char* src = &_firstChar)
             {
@@ -925,7 +945,7 @@ namespace System
                             goto NotAscii;
                         }
                         length -= 8;
-                        hashVector = Vector128.Xor(Vector128.Add(hashVector, RotateLeft(hashVector, 5)), Vector128.BitwiseOr(srcVec, NormalizeToLowercaseVec));
+                        hashVector = (hashVector + RotateLeft(hashVector, 5)) ^ (srcVec | NormalizeToLowercaseVec);
                         ptr += 4;
                     }
 
@@ -964,7 +984,25 @@ namespace System
                     return (int)res;
                 }
 
-                // Debug.Assert(!Vector128.IsHardwareAccelerated);
+                Debug.Assert(!Vector128.IsHardwareAccelerated);
+                while(length > 8)
+                {
+                    uint p0 = ptr[0];
+                    uint p1 = ptr[1];
+                    uint p2 = ptr[2];
+                    uint p3 = ptr[3];
+                    if (!Utf16Utility.AllCharsInUInt32AreAscii(p0 | p1 | p2 | p3))
+                    {
+                        goto NotAscii;
+                    }
+                    length -= 8;
+                    // hashVector = (hashVector + RotateLeft(hashVector, 5)) ^ srcVec;
+                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0 | NormalizeToLowercase);
+                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1 | NormalizeToLowercase);
+                    hash3 = (BitOperations.RotateLeft(hash3, 5) + hash3) ^ (p2 | NormalizeToLowercase);
+                    hash4 = (BitOperations.RotateLeft(hash4, 5) + hash4) ^ (p3 | NormalizeToLowercase);
+                    ptr += 4;
+                }
                 while (length > 2)
                 {
                     uint p0 = ptr[0];
@@ -976,12 +1014,12 @@ namespace System
 
                     length -= 4;
                     // Where length is 4n-1 (e.g. 3,7,11,15,19) this additionally consumes the null terminator
-                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0 | NormalizeToLowercase);
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1 | NormalizeToLowercase);
+                    hash3 = (BitOperations.RotateLeft(hash3, 5) + hash3) ^ (p0 | NormalizeToLowercase);
+                    hash4 = (BitOperations.RotateLeft(hash4, 5) + hash4) ^ (p1 | NormalizeToLowercase);
                     ptr += 2;
                 }
 
-                if (length > 0)
+                while (length > 0)
                 {
                     uint p0 = ptr[0];
                     if (!Utf16Utility.AllCharsInUInt32AreAscii(p0))
@@ -990,11 +1028,12 @@ namespace System
                     }
 
                     // Where length is 4n-3 (e.g. 1,5,9,13,17) this additionally consumes the null terminator
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p0 | NormalizeToLowercase);
+                    hash4 = (BitOperations.RotateLeft(hash4, 5) + hash4) ^ (p0 | NormalizeToLowercase);
                 }
             }
 
-            return (int)(hash1 + (hash2 * 1566083941));
+            uint resOnScalarPath = (((BitOperations.RotateLeft(hash1, 5) + hash1)) ^ hash3) + 1566083941 * (((BitOperations.RotateLeft(hash2, 5) + hash2)) ^ hash4);
+            return (int)resOnScalarPath;
 
         NotAscii:
             return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(this);
