@@ -1977,21 +1977,46 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
         }
 
+        //helper method for the below set of helper methods:
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void CheckVectorUnsafeEquality<T>(Vector64<T> shuffle, Vector64<T> shuffleUnsafe)
+        {
+            for (int i = 0; i < Vector64<T>.Count; i++)
+            {
+                if (shuffle.GetElement(i) != shuffleUnsafe.GetElement(i))
+                {
+                    throw new Exception($"Different results were produced: Shuffle - {shuffle}, ShuffleUnsafe - {shuffleUnsafe}");
+                }
+            }
+        }
+
+        //these helper methods allow us to check Shuffle and ShuffleUnsafe give the same results:
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector64<byte> ShuffleUnsafeEqualHelper(Vector64<byte> vector, Vector64<byte> indices)
+        {
+            var shuffle = Vector64.Shuffle(value, indices);
+            var shuffleUnsafe = Vector64.ShuffleUnsafe(value, indices);
+            CheckVectorUnsafeEquality(shuffle, shuffleUnsafe);
+            return shuffle;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector64<sbyte> ShuffleUnsafeEqualHelper(Vector64<sbyte> vector, Vector64<sbyte> indices)
+        {
+            var shuffle = Vector64.Shuffle(value, indices);
+            var shuffleUnsafe = Vector64.ShuffleUnsafe(value, indices);
+            CheckVectorUnsafeEquality(shuffle, shuffleUnsafe);
+            return shuffle;
+        }
+
         [Fact]
         public void Vector64ByteShuffleOneInputTest()
         {
             Vector64<byte> vector = Vector64.Create((byte)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector64<byte> result = Vector64.Shuffle(vector, Vector64.Create((byte)7, 6, 5, 4, 3, 2, 1, 0));
-            Vector64<byte> resultUnsafe = Vector64.ShuffleUnsafe(vector, Vector64.Create((byte)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector64<byte> result = ShuffleUnsafeEqualHelper(vector, Vector64.Create((byte)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector64<byte>.Count; index++)
             {
                 Assert.Equal((byte)(Vector64<byte>.Count - index), result.GetElement(index));
-            }
-
-            for (int index = 0; index < Vector64<byte>.Count; index++)
-            {
-                Assert.Equal((byte)(Vector64<byte>.Count - index), resultUnsafe.GetElement(index));
             }
         }
 
@@ -2023,7 +2048,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Vector64SByteShuffleOneInputTest()
         {
             Vector64<sbyte> vector = Vector64.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector64<sbyte> result = Vector64.Shuffle(vector, Vector64.Create((sbyte)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector64<sbyte> result = ShuffleUnsafeEqualHelper(vector, Vector64.Create((sbyte)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector64<sbyte>.Count; index++)
             {
@@ -2070,17 +2095,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void Vector64ByteShuffleOneInputWithDirectVectorTest()
         {
-            Vector64<byte> result = Vector64.Shuffle(Vector64.Create((byte)1, 2, 3, 4, 5, 6, 7, 8), Vector64.Create((byte)7, 6, 5, 4, 3, 2, 1, 0));
-            Vector64<byte> resultUnsafe = Vector64.ShuffleUnsafe(Vector64.Create((byte)1, 2, 3, 4, 5, 6, 7, 8), Vector64.Create((byte)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector64<byte> result = ShuffleUnsafeEqualHelper(Vector64.Create((byte)1, 2, 3, 4, 5, 6, 7, 8), Vector64.Create((byte)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector64<byte>.Count; index++)
             {
                 Assert.Equal((byte)(Vector64<byte>.Count - index), result.GetElement(index));
-            }
-
-            for (int index = 0; index < Vector64<byte>.Count; index++)
-            {
-                Assert.Equal((byte)(Vector64<byte>.Count - index), resultUnsafe.GetElement(index));
             }
         }
 
@@ -2109,7 +2128,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void Vector64SByteShuffleOneInputWithDirectVectorTest()
         {
-            Vector64<sbyte> result = Vector64.Shuffle(Vector64.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8), Vector64.Create((sbyte)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector64<sbyte> result = ShuffleUnsafeEqualHelper(Vector64.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8), Vector64.Create((sbyte)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector64<sbyte>.Count; index++)
             {
@@ -2155,17 +2174,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector64<byte> vector = Vector64.Create((byte)1, 2, 3, 4, 5, 6, 7, 8);
             Vector64<byte> indices = Vector64.Create((byte)7, 6, 5, 4, 3, 2, 1, 0);
-            Vector64<byte> result = Vector64.Shuffle(vector, indices);
-            Vector64<byte> resultUnsafe = Vector64.ShuffleUnsafe(vector, indices);
+            Vector64<byte> result = ShuffleUnsafeEqualHelper(vector, indices);
 
             for (int index = 0; index < Vector64<byte>.Count; index++)
             {
                 Assert.Equal((byte)(Vector64<byte>.Count - index), result.GetElement(index));
-            }
-
-            for (int index = 0; index < Vector64<byte>.Count; index++)
-            {
-                Assert.Equal((byte)(Vector64<byte>.Count - index), resultUnsafe.GetElement(index));
             }
         }
 
@@ -2200,7 +2213,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector64<sbyte> vector = Vector64.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8);
             Vector64<sbyte> indices = Vector64.Create((sbyte)7, 6, 5, 4, 3, 2, 1, 0);
-            Vector64<sbyte> result = Vector64.Shuffle(vector, indices);
+            Vector64<sbyte> result = ShuffleUnsafeEqualHelper(vector, indices);
 
             for (int index = 0; index < Vector64<sbyte>.Count; index++)
             {
@@ -2251,18 +2264,12 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Vector64ByteShuffleOneInputWithAllBitsSetIndicesTest()
         {
             Vector64<byte> vector = Vector64.Create((byte)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector64<byte> result = Vector64.Shuffle(vector, Vector64<byte>.AllBitsSet);
-            Vector64<byte> resultUnsafe = Vector64.ShuffleUnsafe(vector, Vector64<byte>.AllBitsSet);
+            Vector64<byte> result = ShuffleUnsafeEqualHelper(vector, Vector64<byte>.AllBitsSet);
 
+            // (for unsafe) this is true on all platforms currently
             for (int index = 0; index < Vector64<byte>.Count; index++)
             {
                 Assert.Equal((byte)0, result.GetElement(index));
-            }
-
-            // this is true on all platforms currently
-            for (int index = 0; index < Vector64<byte>.Count; index++)
-            {
-                Assert.Equal((byte)0, resultUnsafe.GetElement(index));
             }
         }
 
@@ -2294,8 +2301,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Vector64SByteShuffleOneInputWithAllBitsSetIndicesTest()
         {
             Vector64<sbyte> vector = Vector64.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector64<sbyte> result = Vector64.Shuffle(vector, Vector64<sbyte>.AllBitsSet);
+            Vector64<sbyte> result = ShuffleUnsafeEqualHelper(vector, Vector64<sbyte>.AllBitsSet);
 
+            // (for unsafe) this is true on all platforms currently
             for (int index = 0; index < Vector64<sbyte>.Count; index++)
             {
                 Assert.Equal((sbyte)0, result.GetElement(index));
@@ -2342,17 +2350,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Vector64ByteShuffleOneInputWithZeroIndicesTest()
         {
             Vector64<byte> vector = Vector64.Create((byte)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector64<byte> result = Vector64.Shuffle(vector, Vector64<byte>.Zero);
-            Vector64<byte> resultUnsafe = Vector64.ShuffleUnsafe(vector, Vector64<byte>.Zero);
+            Vector64<byte> result = ShuffleUnsafeEqualHelper(vector, Vector64<byte>.Zero);
 
             for (int index = 0; index < Vector64<byte>.Count; index++)
             {
                 Assert.Equal((byte)1, result.GetElement(index));
-            }
-
-            for (int index = 0; index < Vector64<byte>.Count; index++)
-            {
-                Assert.Equal((byte)1, resultUnsafe.GetElement(index));
             }
         }
 
@@ -2384,7 +2386,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Vector64SByteShuffleOneInputWithZeroIndicesTest()
         {
             Vector64<sbyte> vector = Vector64.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector64<sbyte> result = Vector64.Shuffle(vector, Vector64<sbyte>.Zero);
+            Vector64<sbyte> result = ShuffleUnsafeEqualHelper(vector, Vector64<sbyte>.Zero);
 
             for (int index = 0; index < Vector64<sbyte>.Count; index++)
             {
@@ -2438,6 +2440,19 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             for (int index = 0; index < Vector64<byte>.Count; index++)
             {
                 Assert.Equal((byte)0, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector64SByteShuffleUnsafeTooLargeTest()
+        {
+            Vector64<sbyte> vector = Vector64.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector64<sbyte> result = Vector64.ShuffleUnsafe(vector, Vector64.Create((byte)8, 16, 17, 31, 255, 254, 127, 128).AsSByte());
+
+            // this is true on all platforms currently
+            for (int index = 0; index < Vector64<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)0, result.GetElement(index));
             }
         }
 
