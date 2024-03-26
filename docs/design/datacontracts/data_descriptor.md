@@ -20,7 +20,7 @@ store it.  It is primarily meant to be read and written by tooling.
 
 ## Logical descriptor
 
-Each logical descriptor exists within an implied /target architecture/ consisiting of:
+Each logical descriptor exists within an implied /target architecture/ consisting of:
 * target architecture endianness (little endian or big endian)
 * target architecture pointer size (4 bytes or 8 bytes)
 
@@ -115,7 +115,7 @@ global values are added in traversal order with later appearances overwriting pr
 
 Rationale: if a baseline is included more than once, only the first inclusion counts.  If a type
 appears in multiple physical descriptors, the later appearances may add more fields or change the
-offsets or definite/indefinite sizes of prior definitions.  If a value appears multipel times, later
+offsets or definite/indefinite sizes of prior definitions.  If a value appears multiple times, later
 definitions take precedence.
 
 **FIXME** do we really want a DAG? Are we ok with a linked list?
@@ -139,7 +139,7 @@ The toplevel dictionary will contain:
 
 ### Types
 
-The types will be in an array, with each type described by a dictionary containining keys:
+The types will be in an array, with each type described by a dictionary containing keys:
 
 * `"name": "type name"` the name of each type
 * optional `"size": int | "indeterminate"` if omitted the size is indeterminate
@@ -192,7 +192,7 @@ The design of the physical binary blob descriptor is constrained by the followin
 * It should be possible to produce the blob using the native C/C++/NativeAOT compiler for a given
   target/architecture.  In particular for a runtime written in C, the binary blob should be
   constructible using C idioms.  If the C compiler needs to pad or align the data, the blob format
-  should provide a way to iterate the blob contents without having to know anything abotu the target
+  should provide a way to iterate the blob contents without having to know anything about the target
   platform ABI or C compiler conventions.
 
 This leads to the following overall strategy for the design:
@@ -200,7 +200,7 @@ This leads to the following overall strategy for the design:
   would have relocations applied to it, which would preclude reading the blob out of of an object
   file without understanding the object file format.
 * The physical blob must be "self-describing": If the C compiler adds padding or alignment, the blob
-  descriptor must contain information for how to skip the pading/alignment data.
+  descriptor must contain information for how to skip the padding/alignment data.
 * The physical blob must be constructible using "lowest common denominator" target toolchain
   tooling - the C preprocessor.  That doesn't mean that tooling _must_ use the C preprocessor to
   generate the blob, but the format must not exceed the capabilities of the C preprocessor.
@@ -214,7 +214,7 @@ It is likely that the physical descriptor will be a part of a build-time constan
 of a .NET runtime, and the format is designed to be compact and specifiable as a (likely
 machine-generated) compile-time constant in a suitable source language.
 
-The data descriptor forms one part of an overall physical data contract descriptor in a targret .NET
+The data descriptor forms one part of an overall physical data contract descriptor in a target .NET
 runtime and as such this format does not specify a "magic number", or "well known symbol", or
 another means of identifying the blob within a target process.  Additionally the version of the
 binary blob data descriptor is expected to be stored within the larger enclosing data contract
@@ -281,7 +281,7 @@ next. This is followed by the sizes of the `TypeSpec`, `FieldSpec` and `GlobalSp
 
 Rationale: If a `BinaryBlobDataDescriptor` is created via C macros, we want to embed the `offsetof`
 and `sizeof` of the components of the blob into the blob itself without having to account for any
-padding that the C compiler may introduce to enfore alignment.  Additionally the `Directory` tries
+padding that the C compiler may introduce to enforce alignment.  Additionally the `Directory` tries
 to follow a common C alignment rule (we don't want padding introduced in the directory itself):
 N-byte members are aligned to start on N-byte boundaries.
 
@@ -292,7 +292,7 @@ The types are given as an array of `TypeSpec` elements.  Each one contains an of
 specified field of the type, and the size of the type in bytes or 0 if it is indeterminate.
 
 The fields pool is given as a sequence of `FieldSpec` elements.  The fields for each type are given
-in a contiguious subsequence and are terminated by a marker `FieldSpec` with a `Name` offset of 0.
+in a contiguous subsequence and are terminated by a marker `FieldSpec` with a `Name` offset of 0.
 (Thus if a type has an empty sequence of fields it just points to a marker field spec directly.)
 For each field there is a name that gives an offset in the name pool and an offset indicating the
 field's offset.  The field type is not given.
