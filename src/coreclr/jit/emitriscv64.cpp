@@ -2751,8 +2751,7 @@ ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* src, const insGroup* ig
 template <uint8_t Bits>
 static inline constexpr typename std::conditional<(Bits > 32), size_t, unsigned>::type NBitMask() noexcept
 {
-    return static_cast<typename std::conditional<(Bits > 32), size_t, unsigned>::type>(
-        (static_cast<size_t>(1) << Bits) - 1);
+    return static_cast<decltype(NBitMask<Bits>())>((static_cast<size_t>(1) << Bits) - 1);
 }
 
 template <uint8_t MaskSize>
