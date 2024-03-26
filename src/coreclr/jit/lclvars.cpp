@@ -1083,15 +1083,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2, info.compCallConv));
                         varDsc->lvIs4Field2 = (genTypeSize(argRegTypeInStruct2) == 4) ? 1 : 0;
-
-                        abiInfo->NumSegments = 2;
-                        abiInfo->Segments    = new (this, CMK_LvaTable) ABIPassingSegment[2];
-                        abiInfo->Segments[0] =
-                            ABIPassingSegment::InRegister(varDsc->GetArgReg(), 0, genTypeSize(argRegTypeInStruct1));
-                        abiInfo->Segments[1] = ABIPassingSegment::InRegister(varDsc->GetOtherArgReg(),
-                                                                             roundUp(genTypeSize(argRegTypeInStruct1),
-                                                                                     genTypeSize(argRegTypeInStruct2)),
-                                                                             genTypeSize(argRegTypeInStruct2));
                     }
                     else if (cSlots > 1)
                     {
@@ -1116,14 +1107,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     }
 
                     assert(cSlots <= 2);
-                    abiInfo->NumSegments = cSlots;
-                    abiInfo->Segments    = new (this, CMK_LvaTable) ABIPassingSegment[cSlots];
-                    for (unsigned i = 0; i < cSlots; i++)
-                    {
-                        regNumber reg = i == 0 ? varDsc->GetArgReg() : varDsc->GetOtherArgReg();
-                        abiInfo->Segments[i] =
-                            ABIPassingSegment::InRegister(reg, TARGET_POINTER_SIZE * i, argRegTypeInStruct1);
-                    }
                 }
             }
 #else  // ARM32
