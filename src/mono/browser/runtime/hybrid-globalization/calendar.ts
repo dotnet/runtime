@@ -14,7 +14,7 @@ const YEAR_CODE = "yyyy";
 const DAY_CODE = "d";
 
 // this function joins all calendar info with OUTER_SEPARATOR into one string and returns it back to managed code
-export function mono_wasm_get_calendar_info(culture: MonoStringRef, calendarId: number, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number {
+export function mono_wasm_get_calendar_info (culture: MonoStringRef, calendarId: number, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
     try {
@@ -71,14 +71,14 @@ export function mono_wasm_get_calendar_info(culture: MonoStringRef, calendarId: 
     }
 }
 
-function getCalendarName(locale: any) {
+function getCalendarName (locale: any) {
     const calendars = getCalendarInfo(locale);
     if (!calendars || calendars.length == 0)
         return "";
     return calendars[0];
 }
 
-function getCalendarInfo(locale: string) {
+function getCalendarInfo (locale: string) {
     try {
         // most tools have it implemented as a property
         return (new Intl.Locale(locale) as any).calendars;
@@ -92,7 +92,7 @@ function getCalendarInfo(locale: string) {
     }
 }
 
-function getMonthYearPattern(locale: string | undefined, date: Date): string {
+function getMonthYearPattern (locale: string | undefined, date: Date): string {
     let pattern = date.toLocaleDateString(locale, { year: "numeric", month: "long" }).toLowerCase();
     // pattern has month name as string or as number
     const monthName = date.toLocaleString(locale, { month: "long" }).toLowerCase().trim();
@@ -108,7 +108,7 @@ function getMonthYearPattern(locale: string | undefined, date: Date): string {
     return pattern.replace(yearStr, YEAR_CODE);
 }
 
-function getMonthDayPattern(locale: string | undefined, date: Date): string {
+function getMonthDayPattern (locale: string | undefined, date: Date): string {
     let pattern = date.toLocaleDateString(locale, { month: "long", day: "numeric" }).toLowerCase();
     // pattern has month name as string or as number
     const monthName = date.toLocaleString(locale, { month: "long" }).toLowerCase().trim();
@@ -124,7 +124,7 @@ function getMonthDayPattern(locale: string | undefined, date: Date): string {
     return pattern.replace(dayStr, DAY_CODE);
 }
 
-function getShortDatePattern(locale: string | undefined): string {
+function getShortDatePattern (locale: string | undefined): string {
     if (locale?.substring(0, 2) == "fa") {
         // persian calendar is shifted and it has no lapping dates with
         // arabic and gregorian calendars, so that both day and month would be < 10
@@ -176,7 +176,7 @@ function getShortDatePattern(locale: string | undefined): string {
     return normalizeSpaces(pattern);
 }
 
-function getLongDatePattern(locale: string | undefined, date: Date): string {
+function getLongDatePattern (locale: string | undefined, date: Date): string {
     if (locale == "th-TH") {
         // cannot be caught with regexes
         return "ddddที่ d MMMM g yyyy";
@@ -208,7 +208,7 @@ function getLongDatePattern(locale: string | undefined, date: Date): string {
     return pattern.replace(dayStr, DAY_CODE);
 }
 
-function getGenitiveForName(date: Date, pattern: string, name: string, formatWithoutName: Intl.DateTimeFormat) {
+function getGenitiveForName (date: Date, pattern: string, name: string, formatWithoutName: Intl.DateTimeFormat) {
     let genitiveName = name;
     const nameStart = pattern.indexOf(name);
     if (nameStart == -1 ||
@@ -226,7 +226,7 @@ function getGenitiveForName(date: Date, pattern: string, name: string, formatWit
     return genitiveName;
 }
 
-function getDayNames(locale: string | undefined) : { long: string[], abbreviated: string[], shortest: string[] } {
+function getDayNames (locale: string | undefined) : { long: string[], abbreviated: string[], shortest: string[] } {
     const weekDay = new Date(2023, 5, 25); // Sunday
     const dayNames = [];
     const dayNamesAbb = [];
@@ -240,7 +240,7 @@ function getDayNames(locale: string | undefined) : { long: string[], abbreviated
     return { long: dayNames, abbreviated: dayNamesAbb, shortest: dayNamesSS };
 }
 
-function getMonthNames(locale: string | undefined) : { long: string[], abbreviated: string[], longGenitive: string[], abbreviatedGenitive: string[] } {
+function getMonthNames (locale: string | undefined) : { long: string[], abbreviated: string[], longGenitive: string[], abbreviatedGenitive: string[] } {
     // some calendars have the first month on non-0 index in JS
     // first month: Muharram ("ar") or Farwardin ("fa") or January
     const localeLang = locale ? locale.split("-")[0] : "";
@@ -285,7 +285,7 @@ function getMonthNames(locale: string | undefined) : { long: string[], abbreviat
 
 // .NET expects that only the Japanese calendars have more than 1 era.
 // So for other calendars, only return the latest era.
-function getEraNames(date: Date, locale: string | undefined, calendarId: number) : { eraNames: string, abbreviatedEraNames: string} {
+function getEraNames (date: Date, locale: string | undefined, calendarId: number) : { eraNames: string, abbreviatedEraNames: string} {
     if (shouldBePopulatedByManagedCode(calendarId)) {
         // managed code already handles these calendars,
         // so empty strings will get overwritten in
@@ -309,11 +309,11 @@ function getEraNames(date: Date, locale: string | undefined, calendarId: number)
         abbreviatedEraNames: getEraFromDateParts(eraDateParts.abbrEraDateParts, eraDateParts.ignoredPart)
     };
 
-    function shouldBePopulatedByManagedCode(calendarId: number) {
+    function shouldBePopulatedByManagedCode (calendarId: number) {
         return (calendarId > 1 && calendarId < 15) || calendarId == 22 || calendarId == 23;
     }
 
-    function getEraFromDateParts(dateParts: string[], ignoredPart: string) : string {
+    function getEraFromDateParts (dateParts: string[], ignoredPart: string) : string {
         const regex = new RegExp(`^((?!${ignoredPart}|[0-9]).)*$`);
         const filteredEra = dateParts.filter(part => regex.test(part));
         if (filteredEra.length == 0)
@@ -321,7 +321,7 @@ function getEraNames(date: Date, locale: string | undefined, calendarId: number)
         return filteredEra[0].trim();
     }
 
-    function getEraDateParts(yearStr: string) {
+    function getEraDateParts (yearStr: string) {
         if (eraDate.startsWith(yearStr) || eraDate.endsWith(yearStr)) {
             return {
                 eraDateParts: eraDate.split(dayStr),

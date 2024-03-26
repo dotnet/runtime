@@ -10,15 +10,15 @@ let node_fs: any | undefined = undefined;
 let node_url: any | undefined = undefined;
 const URLPolyfill = class URL {
     private url;
-    constructor(url: string) {
+    constructor (url: string) {
         this.url = url;
     }
-    toString() {
+    toString () {
         return this.url;
     }
 };
 
-export function verifyEnvironment() {
+export function verifyEnvironment () {
     mono_assert(ENVIRONMENT_IS_SHELL || typeof globalThis.URL === "function", "This browser/engine doesn't support URL API. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     mono_assert(typeof globalThis.BigInt64Array === "function", "This browser/engine doesn't support BigInt64Array API. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     if (WasmEnableThreads) {
@@ -28,7 +28,7 @@ export function verifyEnvironment() {
     }
 }
 
-export async function detect_features_and_polyfill(module: DotnetModuleInternal): Promise<void> {
+export async function detect_features_and_polyfill (module: DotnetModuleInternal): Promise<void> {
     if (ENVIRONMENT_IS_NODE) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
@@ -87,7 +87,7 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
     }
 }
 
-export async function fetch_like(url: string, init?: RequestInit): Promise<Response> {
+export async function fetch_like (url: string, init?: RequestInit): Promise<Response> {
     try {
         // this need to be detected only after we import node modules in onConfigLoaded
         const hasFetch = typeof (globalThis.fetch) === "function";
@@ -167,7 +167,7 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
 // For example `xxx/a.js` and we have to make it absolute
 // For compatibility reasons, it's based of document.baseURI even for JS modules like `./xxx/a.js`, which normally use script directory of a caller of `import`
 // Script directory in general doesn't match document.baseURI
-export function makeURLAbsoluteWithApplicationBase(url: string) {
+export function makeURLAbsoluteWithApplicationBase (url: string) {
     mono_assert(typeof url === "string", "url must be a string");
     if (!isPathAbsolute(url) && url.indexOf("./") !== 0 && url.indexOf("../") !== 0 && globalThis.URL && globalThis.document && globalThis.document.baseURI) {
         url = (new URL(url, globalThis.document.baseURI)).toString();
@@ -175,19 +175,19 @@ export function makeURLAbsoluteWithApplicationBase(url: string) {
     return url;
 }
 
-function normalizeFileUrl(filename: string) {
+function normalizeFileUrl (filename: string) {
     // unix vs windows
     // remove query string
     return filename.replace(/\\/g, "/").replace(/[?#].*/, "");
 }
 
-function normalizeDirectoryUrl(dir: string) {
+function normalizeDirectoryUrl (dir: string) {
     return dir.slice(0, dir.lastIndexOf("/")) + "/";
 }
 
 const protocolRx = /^[a-zA-Z][a-zA-Z\d+\-.]*?:\/\//;
 const windowsAbsoluteRx = /[a-zA-Z]:[\\/]/;
-function isPathAbsolute(path: string): boolean {
+function isPathAbsolute (path: string): boolean {
     if (ENVIRONMENT_IS_NODE || ENVIRONMENT_IS_SHELL) {
         // unix /x.json
         // windows \x.json

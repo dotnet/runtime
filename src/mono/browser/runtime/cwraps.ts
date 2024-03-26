@@ -283,7 +283,7 @@ export const enum I52Error {
 
 const fastCwrapTypes = ["void", "number", null];
 
-function cwrap(name: string, returnType: string | null, argTypes: string[] | undefined, opts: any): Function {
+function cwrap (name: string, returnType: string | null, argTypes: string[] | undefined, opts: any): Function {
     // Attempt to bypass emscripten's generated wrapper if it is safe to do so
     let fce =
         // Special cwrap options disable the fast path
@@ -314,7 +314,7 @@ function cwrap(name: string, returnType: string | null, argTypes: string[] | und
     return fce;
 }
 
-export function init_c_exports(): void {
+export function init_c_exports (): void {
     const fns = [...fn_signatures];
     for (const sig of fns) {
         const wf: any = wrapped_c_functions;
@@ -322,7 +322,7 @@ export function init_c_exports(): void {
         const maybeSkip = typeof lazyOrSkip === "function";
         if (lazyOrSkip === true || maybeSkip) {
             // lazy init on first run
-            wf[name] = function(...args: any[]) {
+            wf[name] = function (...args: any[]) {
                 const isNotSkipped = !maybeSkip || !lazyOrSkip();
                 mono_assert(isNotSkipped, () => `cwrap ${name} should not be called when binding was skipped`);
                 const fce = cwrap(name, returnType, argTypes, opts);

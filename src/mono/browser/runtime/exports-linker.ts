@@ -4,7 +4,7 @@
 import { mono_wasm_imports, mono_wasm_threads_imports } from "./exports-binding";
 import gitHash from "consts:gitHash";
 
-export function export_linker_indexes_as_code(): string {
+export function export_linker_indexes_as_code (): string {
     const indexByName: any = {
         mono_wasm_imports: {},
         mono_wasm_threads_imports: {},

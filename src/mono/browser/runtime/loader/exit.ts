@@ -6,15 +6,15 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, emscriptenModule, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_debug, mono_log_error, mono_log_info_no_prefix, mono_log_warn, teardown_proxy_console } from "./logging";
 
-export function is_exited() {
+export function is_exited () {
     return loaderHelpers.exitCode !== undefined;
 }
 
-export function is_runtime_running() {
+export function is_runtime_running () {
     return runtimeHelpers.runtimeReady && !is_exited();
 }
 
-export function assert_runtime_running() {
+export function assert_runtime_running () {
     mono_assert(!is_exited(), () => `.NET runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}. You can use runtime.runMain() which doesn't exit the runtime.`);
     if (WasmEnableThreads && ENVIRONMENT_IS_WORKER) {
         mono_assert(runtimeHelpers.runtimeReady, "The WebWorker is not attached to the runtime. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
@@ -24,7 +24,7 @@ export function assert_runtime_running() {
 }
 
 
-export function installUnhandledErrorHandler() {
+export function installUnhandledErrorHandler () {
     // it seems that emscripten already does the right thing for NodeJs and that there is no good solution for V8 shell.
     if (ENVIRONMENT_IS_WEB) {
         globalThis.addEventListener("unhandledrejection", unhandledrejection_handler);
@@ -32,14 +32,14 @@ export function installUnhandledErrorHandler() {
     }
 }
 
-export function uninstallUnhandledErrorHandler() {
+export function uninstallUnhandledErrorHandler () {
     if (ENVIRONMENT_IS_WEB) {
         globalThis.removeEventListener("unhandledrejection", unhandledrejection_handler);
         globalThis.removeEventListener("error", error_handler);
     }
 }
 
-export function registerEmscriptenExitHandlers() {
+export function registerEmscriptenExitHandlers () {
     if (!emscriptenModule.onAbort) {
         emscriptenModule.onAbort = onAbort;
     }
@@ -48,7 +48,7 @@ export function registerEmscriptenExitHandlers() {
     }
 }
 
-function unregisterEmscriptenExitHandlers() {
+function unregisterEmscriptenExitHandlers () {
     if (emscriptenModule.onAbort == onAbort) {
         emscriptenModule.onAbort = undefined;
     }
@@ -56,16 +56,16 @@ function unregisterEmscriptenExitHandlers() {
         emscriptenModule.onExit = undefined;
     }
 }
-function onExit(code: number) {
+function onExit (code: number) {
     mono_exit(code, loaderHelpers.exitReason);
 }
 
-function onAbort(reason: any) {
+function onAbort (reason: any) {
     mono_exit(1, loaderHelpers.exitReason || reason);
 }
 
 // this will also call mono_wasm_exit if available, which will call exitJS -> _proc_exit -> terminateAllThreads
-export function mono_exit(exit_code: number, reason?: any): void {
+export function mono_exit (exit_code: number, reason?: any): void {
     unregisterEmscriptenExitHandlers();
     uninstallUnhandledErrorHandler();
 
@@ -136,7 +136,7 @@ export function mono_exit(exit_code: number, reason?: any): void {
 
     if (loaderHelpers.config && loaderHelpers.config.asyncFlushOnExit && exit_code === 0) {
         // this would NOT call Node's exit() immediately, it's a hanging promise
-        (async() => {
+        (async () => {
             try {
                 await flush_node_streams();
             } finally {
@@ -151,7 +151,7 @@ export function mono_exit(exit_code: number, reason?: any): void {
     }
 }
 
-function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
+function set_exit_code_and_quit_now (exit_code: number, reason?: any): void {
     if (WasmEnableThreads && ENVIRONMENT_IS_WORKER && runtimeHelpers.runtimeReady && runtimeHelpers.nativeAbort) {
         // note that the reason is not passed to UI thread
         runtimeHelpers.runtimeReady = false;
@@ -180,7 +180,7 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     }
 }
 
-async function flush_node_streams() {
+async function flush_node_streams () {
     try {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
@@ -204,7 +204,7 @@ async function flush_node_streams() {
     }
 }
 
-function abort_promises(reason: any) {
+function abort_promises (reason: any) {
     loaderHelpers.exitReason = reason;
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
@@ -222,7 +222,7 @@ function abort_promises(reason: any) {
     }
 }
 
-function appendElementOnExit(exit_code: number) {
+function appendElementOnExit (exit_code: number) {
     if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && loaderHelpers.config && loaderHelpers.config.appendElementOnExit && document) {
         //Tell xharness WasmBrowserTestRunner what was the exit code
         const tests_done_elem = document.createElement("label");
@@ -233,7 +233,7 @@ function appendElementOnExit(exit_code: number) {
     }
 }
 
-function logOnExit(exit_code: number, reason: any) {
+function logOnExit (exit_code: number, reason: any) {
     if (exit_code !== 0 && reason) {
         // ExitStatus usually is not real JS error and so stack strace is not very useful.
         // We will use debug level for it, which will print only when diagnosticTracing is set.
@@ -268,15 +268,15 @@ function logOnExit(exit_code: number, reason: any) {
         }
     }
 }
-function unhandledrejection_handler(event: any) {
+function unhandledrejection_handler (event: any) {
     fatal_handler(event, event.reason, "rejection");
 }
 
-function error_handler(event: any) {
+function error_handler (event: any) {
     fatal_handler(event, event.error, "error");
 }
 
-function fatal_handler(event: any, reason: any, type: string) {
+function fatal_handler (event: any, reason: any, type: string) {
     event.preventDefault();
     try {
         if (!reason) {

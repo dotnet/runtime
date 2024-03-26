@@ -11,7 +11,7 @@ import type { VoidPtr } from "./types/emscripten";
 import { ControllablePromise } from "./types/internal";
 
 
-function verifyEnvironment() {
+function verifyEnvironment () {
     if (typeof globalThis.fetch !== "function" || typeof globalThis.AbortController !== "function") {
         const message = ENVIRONMENT_IS_NODE
             ? "Please install `node-fetch` and `node-abort-controller` npm packages to enable HTTP client support. See also https://aka.ms/dotnet-wasm-features"
@@ -20,13 +20,13 @@ function verifyEnvironment() {
     }
 }
 
-function commonAsserts(controller: HttpController) {
+function commonAsserts (controller: HttpController) {
     assert_js_interop();
     mono_assert(controller, "expected controller");
 }
 
 let http_wasm_supports_streaming_request_cached: boolean | undefined;
-export function http_wasm_supports_streaming_request(): boolean {
+export function http_wasm_supports_streaming_request (): boolean {
     if (http_wasm_supports_streaming_request_cached !== undefined) {
         return http_wasm_supports_streaming_request_cached;
     }
@@ -42,7 +42,7 @@ export function http_wasm_supports_streaming_request(): boolean {
         const hasContentType = new Request("", {
             body: new ReadableStream(),
             method: "POST",
-            get duplex() {
+            get duplex () {
                 duplexAccessed = true;
                 return "half";
             },
@@ -55,7 +55,7 @@ export function http_wasm_supports_streaming_request(): boolean {
 }
 
 let http_wasm_supports_streaming_response_cached: boolean | undefined;
-export function http_wasm_supports_streaming_response(): boolean {
+export function http_wasm_supports_streaming_response (): boolean {
     if (http_wasm_supports_streaming_response_cached !== undefined) {
         return http_wasm_supports_streaming_response_cached;
     }
@@ -63,7 +63,7 @@ export function http_wasm_supports_streaming_response(): boolean {
     return http_wasm_supports_streaming_response_cached;
 }
 
-export function http_wasm_create_controller(): HttpController {
+export function http_wasm_create_controller (): HttpController {
     verifyEnvironment();
     assert_js_interop();
     const controller: HttpController = {
@@ -72,7 +72,7 @@ export function http_wasm_create_controller(): HttpController {
     return controller;
 }
 
-export function http_wasm_abort_request(controller: HttpController): void {
+export function http_wasm_abort_request (controller: HttpController): void {
     try {
         if (controller.streamWriter) {
             controller.streamWriter.abort();
@@ -83,7 +83,7 @@ export function http_wasm_abort_request(controller: HttpController): void {
     http_wasm_abort_response(controller);
 }
 
-export function http_wasm_abort_response(controller: HttpController): void {
+export function http_wasm_abort_response (controller: HttpController): void {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     try {
         controller.isAborted = true;
@@ -101,13 +101,13 @@ export function http_wasm_abort_response(controller: HttpController): void {
     }
 }
 
-export function http_wasm_transform_stream_write(controller: HttpController, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<void> {
+export function http_wasm_transform_stream_write (controller: HttpController, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<void> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     mono_assert(bufferLength > 0, "expected bufferLength > 0");
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     const copy = view.slice() as Uint8Array;
-    return wrap_as_cancelable_promise(async() => {
+    return wrap_as_cancelable_promise(async () => {
         mono_assert(controller.streamWriter, "expected streamWriter");
         mono_assert(controller.responsePromise, "expected fetch promise");
         // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
@@ -116,9 +116,9 @@ export function http_wasm_transform_stream_write(controller: HttpController, buf
     });
 }
 
-export function http_wasm_transform_stream_close(controller: HttpController): ControllablePromise<void> {
+export function http_wasm_transform_stream_close (controller: HttpController): ControllablePromise<void> {
     mono_assert(controller, "expected controller");
-    return wrap_as_cancelable_promise(async() => {
+    return wrap_as_cancelable_promise(async () => {
         mono_assert(controller.streamWriter, "expected streamWriter");
         mono_assert(controller.responsePromise, "expected fetch promise");
         // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
@@ -127,7 +127,7 @@ export function http_wasm_transform_stream_close(controller: HttpController): Co
     });
 }
 
-export function http_wasm_fetch_stream(controller: HttpController, url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[]): ControllablePromise<void> {
+export function http_wasm_fetch_stream (controller: HttpController, url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[]): ControllablePromise<void> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     const transformStream = new TransformStream<Uint8Array, Uint8Array>();
     controller.streamWriter = transformStream.writable.getWriter();
@@ -135,7 +135,7 @@ export function http_wasm_fetch_stream(controller: HttpController, url: string, 
     return fetch_promise;
 }
 
-export function http_wasm_fetch_bytes(controller: HttpController, url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], bodyPtr: VoidPtr, bodyLength: number): ControllablePromise<void> {
+export function http_wasm_fetch_bytes (controller: HttpController, url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], bodyPtr: VoidPtr, bodyLength: number): ControllablePromise<void> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     // the bodyPtr is pinned by the caller
     const view = new Span(bodyPtr, bodyLength, MemoryViewType.Byte);
@@ -143,7 +143,7 @@ export function http_wasm_fetch_bytes(controller: HttpController, url: string, h
     return http_wasm_fetch(controller, url, header_names, header_values, option_names, option_values, copy);
 }
 
-export function http_wasm_fetch(controller: HttpController, url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], body: Uint8Array | ReadableStream | null): ControllablePromise<void> {
+export function http_wasm_fetch (controller: HttpController, url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], body: Uint8Array | ReadableStream | null): ControllablePromise<void> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     verifyEnvironment();
     assert_js_interop();
@@ -189,32 +189,32 @@ export function http_wasm_fetch(controller: HttpController, url: string, header_
     return controller.responsePromise;
 }
 
-export function http_wasm_get_response_type(controller: HttpController): string | undefined {
+export function http_wasm_get_response_type (controller: HttpController): string | undefined {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     return controller.response?.type;
 }
 
-export function http_wasm_get_response_status(controller: HttpController): number {
+export function http_wasm_get_response_status (controller: HttpController): number {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     return controller.response?.status ?? 0;
 }
 
 
-export function http_wasm_get_response_header_names(controller: HttpController): string[] {
+export function http_wasm_get_response_header_names (controller: HttpController): string[] {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     mono_assert(controller.responseHeaderNames, "expected responseHeaderNames");
     return controller.responseHeaderNames;
 }
 
-export function http_wasm_get_response_header_values(controller: HttpController): string[] {
+export function http_wasm_get_response_header_values (controller: HttpController): string[] {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     mono_assert(controller.responseHeaderValues, "expected responseHeaderValues");
     return controller.responseHeaderValues;
 }
 
-export function http_wasm_get_response_length(controller: HttpController): ControllablePromise<number> {
+export function http_wasm_get_response_length (controller: HttpController): ControllablePromise<number> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
-    return wrap_as_cancelable_promise(async() => {
+    return wrap_as_cancelable_promise(async () => {
         const buffer = await controller.response!.arrayBuffer();
         controller.responseBuffer = buffer;
         controller.currentBufferOffset = 0;
@@ -222,7 +222,7 @@ export function http_wasm_get_response_length(controller: HttpController): Contr
     });
 }
 
-export function http_wasm_get_response_bytes(controller: HttpController, view: Span): number {
+export function http_wasm_get_response_bytes (controller: HttpController, view: Span): number {
     mono_assert(controller, "expected controller");
     mono_assert(controller.responseBuffer, "expected resoved arrayBuffer");
     mono_assert(controller.currentBufferOffset != undefined, "expected currentBufferOffset");
@@ -236,11 +236,11 @@ export function http_wasm_get_response_bytes(controller: HttpController, view: S
     return bytes_read;
 }
 
-export function http_wasm_get_streamed_response_bytes(controller: HttpController, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<number> {
+export function http_wasm_get_streamed_response_bytes (controller: HttpController, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<number> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
-    return wrap_as_cancelable_promise(async() => {
+    return wrap_as_cancelable_promise(async () => {
         mono_assert(controller.response, "expected response");
         if (!controller.streamReader) {
             controller.streamReader = controller.response.body!.getReader();

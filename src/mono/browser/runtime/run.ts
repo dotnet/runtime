@@ -14,7 +14,7 @@ import { call_entry_point } from "./managed-exports";
 /**
  * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
  */
-export async function mono_run_main_and_exit(main_assembly_name?: string, args?: string[]): Promise<number> {
+export async function mono_run_main_and_exit (main_assembly_name?: string, args?: string[]): Promise<number> {
     try {
         const result = await mono_run_main(main_assembly_name, args);
         loaderHelpers.mono_exit(result);
@@ -35,7 +35,7 @@ export async function mono_run_main_and_exit(main_assembly_name?: string, args?:
 /**
  * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
  */
-export async function mono_run_main(main_assembly_name?: string, args?: string[]): Promise<number> {
+export async function mono_run_main (main_assembly_name?: string, args?: string[]): Promise<number> {
     if (main_assembly_name === undefined || main_assembly_name === null || main_assembly_name === "") {
         main_assembly_name = loaderHelpers.config.mainAssemblyName;
         mono_assert(main_assembly_name, "Null or empty config.mainAssemblyName");
@@ -76,14 +76,14 @@ export async function mono_run_main(main_assembly_name?: string, args?: string[]
 
 
 
-export function nativeExit(code: number) {
+export function nativeExit (code: number) {
     if (WasmEnableThreads) {
         cancelThreads();
     }
     cwraps.mono_wasm_exit(code);
 }
 
-export function nativeAbort(reason: any) {
+export function nativeAbort (reason: any) {
     loaderHelpers.exitReason = reason;
     if (!loaderHelpers.is_exited()) {
         cwraps.mono_wasm_abort();

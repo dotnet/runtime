@@ -35,7 +35,7 @@ export const makeWorkerThreadEvent: (type: keyof WorkerThreadEventMap, pthread_s
     })
     : ((type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => {
         if (!WorkerThreadEventClassConstructor) WorkerThreadEventClassConstructor = class WorkerThreadEventImpl extends Event implements WorkerThreadEvent {
-            constructor(type: keyof WorkerThreadEventMap, readonly pthread_self: PThreadSelf) {
+            constructor (type: keyof WorkerThreadEventMap, readonly pthread_self: PThreadSelf) {
                 super(type);
             }
         };

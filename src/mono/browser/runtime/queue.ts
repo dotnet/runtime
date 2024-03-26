@@ -6,19 +6,19 @@ export class Queue<T> {
     private queue: T[];
     private offset: number;
 
-    constructor() {
+    constructor () {
         this.queue = [];
         this.offset = 0;
     }
     // initialise the queue and offset
 
     // Returns the length of the queue.
-    getLength(): number {
+    getLength (): number {
         return (this.queue.length - this.offset);
     }
 
     // Returns true if the queue is empty, and false otherwise.
-    isEmpty(): boolean {
+    isEmpty (): boolean {
         return (this.queue.length == 0);
     }
 
@@ -26,14 +26,14 @@ export class Queue<T> {
     *
     * item - the item to enqueue
     */
-    enqueue(item: T): void {
+    enqueue (item: T): void {
         this.queue.push(item);
     }
 
     /* Dequeues an item and returns it. If the queue is empty, the value
     * 'undefined' is returned.
     */
-    dequeue(): T | undefined {
+    dequeue (): T | undefined {
 
         // if the queue is empty, return immediately
         if (this.queue.length === 0) return undefined;
@@ -57,11 +57,11 @@ export class Queue<T> {
     /* Returns the item at the front of the queue (without dequeuing it). If the
      * queue is empty then undefined is returned.
      */
-    peek(): T | undefined {
+    peek (): T | undefined {
         return (this.queue.length > 0 ? this.queue[this.offset] : undefined);
     }
 
-    drain(onEach: (item: T) => void): void {
+    drain (onEach: (item: T) => void): void {
         while (this.getLength()) {
             const item = this.dequeue()!;
             onEach(item);

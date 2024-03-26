@@ -10,7 +10,7 @@ import { Module, loaderHelpers } from "../globals";
 import { WorkerToMainMessageType } from "../types/internal";
 import { threads_c_functions as tcwraps } from "../cwraps";
 
-export function mono_wasm_start_io_thread_async() {
+export function mono_wasm_start_io_thread_async () {
     if (!WasmEnableThreads) return;
 
 

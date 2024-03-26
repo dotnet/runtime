@@ -23,6 +23,7 @@ module.exports = {
         "jiterpreter-opcodes.ts",
         "jiterpreter-tables.ts",
         "dotnet.d.ts",
+        "diagnostics-mock.d.ts",
     ],
     "rules": {
         "@typescript-eslint/no-explicit-any": "off",
@@ -58,6 +59,6 @@ module.exports = {
         "object-curly-spacing": ["error", "always"],
         "array-bracket-spacing": ["error"],
         "space-infix-ops": ["error"],
-        "space-before-function-paren": ["error", "never"],
+        "space-before-function-paren": ["error", "always"],
     }
 };

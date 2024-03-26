@@ -17,7 +17,7 @@ import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 import { bind_assembly_exports, invoke_async_jsexport, invoke_sync_jsexport } from "./managed-exports";
 import { mono_log_debug } from "./logging";
 
-export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: string, namespaceName: string, shortClassName: string, methodName: string, signatureHash: number, signature: JSFunctionSignature): void {
+export function mono_wasm_bind_cs_function (method: MonoMethod, assemblyName: string, namespaceName: string, shortClassName: string, methodName: string, signatureHash: number, signature: JSFunctionSignature): void {
     const fullyQualifiedName = `[${assemblyName}] ${namespaceName}.${shortClassName}:${methodName}`;
     const mark = startMeasure();
     mono_log_debug(`Binding [JSExport] ${namespaceName}.${shortClassName}:${methodName} from ${assemblyName} assembly`);
@@ -108,11 +108,11 @@ export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: str
     endMeasure(mark, MeasuredBlock.bindCsFunction, fullyQualifiedName);
 }
 
-function bind_fn_0V(closure: BindingClosure) {
+function bind_fn_0V (closure: BindingClosure) {
     const method = closure.method;
     const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
-    return function bound_fn_0V() {
+    return function bound_fn_0V () {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -129,12 +129,12 @@ function bind_fn_0V(closure: BindingClosure) {
     };
 }
 
-function bind_fn_1V(closure: BindingClosure) {
+function bind_fn_1V (closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
     const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
-    return function bound_fn_1V(arg1: any) {
+    return function bound_fn_1V (arg1: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -153,13 +153,13 @@ function bind_fn_1V(closure: BindingClosure) {
     };
 }
 
-function bind_fn_1R(closure: BindingClosure) {
+function bind_fn_1R (closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
-    return function bound_fn_1R(arg1: any) {
+    return function bound_fn_1R (arg1: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -181,13 +181,13 @@ function bind_fn_1R(closure: BindingClosure) {
     };
 }
 
-function bind_fn_1RA(closure: BindingClosure) {
+function bind_fn_1RA (closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
-    return function bind_fn_1RA(arg1: any) {
+    return function bind_fn_1RA (arg1: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -214,14 +214,14 @@ function bind_fn_1RA(closure: BindingClosure) {
     };
 }
 
-function bind_fn_2R(closure: BindingClosure) {
+function bind_fn_2R (closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
-    return function bound_fn_2R(arg1: any, arg2: any) {
+    return function bound_fn_2R (arg1: any, arg2: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -244,14 +244,14 @@ function bind_fn_2R(closure: BindingClosure) {
     };
 }
 
-function bind_fn_2RA(closure: BindingClosure) {
+function bind_fn_2RA (closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
-    return function bind_fn_2RA(arg1: any, arg2: any) {
+    return function bind_fn_2RA (arg1: any, arg2: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -279,7 +279,7 @@ function bind_fn_2RA(closure: BindingClosure) {
     };
 }
 
-function bind_fn(closure: BindingClosure) {
+function bind_fn (closure: BindingClosure) {
     const args_count = closure.args_count;
     const arg_marshalers = closure.arg_marshalers;
     const res_converter = closure.res_converter;
@@ -288,7 +288,7 @@ function bind_fn(closure: BindingClosure) {
     const is_async = closure.is_async;
     const is_discard_no_wait = closure.is_discard_no_wait;
     if (!WasmEnableThreads) (<any>closure) = null;
-    return function bound_fn(...js_args: any[]) {
+    return function bound_fn (...js_args: any[]) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -343,7 +343,7 @@ type BindingClosure = {
 }
 
 export const exportsByAssembly: Map<string, any> = new Map();
-function _walk_exports_to_set_function(assembly: string, namespace: string, classname: string, methodname: string, signature_hash: number, fn: Function): void {
+function _walk_exports_to_set_function (assembly: string, namespace: string, classname: string, methodname: string, signature_hash: number, fn: Function): void {
     const parts = `${namespace}.${classname}`.replace(/\//g, ".").split(".");
     let scope: any = undefined;
     let assemblyScope = exportsByAssembly.get(assembly);
@@ -372,7 +372,7 @@ function _walk_exports_to_set_function(assembly: string, namespace: string, clas
     scope[`${methodname}.${signature_hash}`] = fn;
 }
 
-export async function mono_wasm_get_assembly_exports(assembly: string): Promise<any> {
+export async function mono_wasm_get_assembly_exports (assembly: string): Promise<any> {
     assert_js_interop();
     const result = exportsByAssembly.get(assembly);
     if (!result) {

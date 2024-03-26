@@ -8,7 +8,7 @@ import { Int32Ptr } from "../types/emscripten";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { OUTER_SEPARATOR, normalizeLocale, normalizeSpaces } from "./helpers";
 
-export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number {
+export function mono_wasm_get_culture_info (culture: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
     try {
@@ -41,7 +41,7 @@ export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, 
     }
 }
 
-function getAmPmDesignators(locale: any) {
+function getAmPmDesignators (locale: any) {
     const pmTime = new Date("August 19, 1975 12:15:33"); // do not change, some PM hours result in hour digits change, e.g. 13 -> 01 or 1
     const amTime = new Date("August 19, 1975 11:15:33"); // do not change, some AM hours result in hour digits change, e.g. 9 -> 09
     const pmDesignator = getDesignator(pmTime, locale);
@@ -52,7 +52,7 @@ function getAmPmDesignators(locale: any) {
     };
 }
 
-function getDesignator(time: Date, locale: string) {
+function getDesignator (time: Date, locale: string) {
     let withDesignator = time.toLocaleTimeString(locale, { hourCycle: "h12" });
     const localizedZero = (0).toLocaleString(locale);
     if (withDesignator.includes(localizedZero)) {
@@ -71,7 +71,7 @@ function getDesignator(time: Date, locale: string) {
     return designator;
 }
 
-function getLongTimePattern(locale: string | undefined, designators: any): string {
+function getLongTimePattern (locale: string | undefined, designators: any): string {
     const hourIn24Format = 18; // later hours than 18 have night designators in some locales (instead of AM designator)
     const hourIn12Format = 6;
     const localizedHour24 = (hourIn24Format).toLocaleString(locale); // not all locales use arabic numbers
@@ -101,7 +101,7 @@ function getLongTimePattern(locale: string | undefined, designators: any): strin
     return normalizeSpaces(pattern);
 }
 
-function getShortTimePattern(pattern: string): string {
+function getShortTimePattern (pattern: string): string {
     // remove seconds:
     // short dotnet pattern does not contain seconds while JS's pattern always contains them
     const secondsIdx = pattern.indexOf("ss");

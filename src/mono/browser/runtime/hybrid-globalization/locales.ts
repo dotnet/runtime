@@ -8,7 +8,7 @@ import { Int32Ptr } from "../types/emscripten";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { OUTER_SEPARATOR, normalizeLocale } from "./helpers";
 
-export function mono_wasm_get_locale_info(culture: MonoStringRef, locale: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number {
+export function mono_wasm_get_locale_info (culture: MonoStringRef, locale: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number {
     const localeRoot = mono_wasm_new_external_root<MonoString>(locale),
         cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
@@ -82,7 +82,7 @@ export function mono_wasm_get_locale_info(culture: MonoStringRef, locale: MonoSt
     }
 }
 
-export function mono_wasm_get_first_day_of_week(culture: MonoStringRef, isException: Int32Ptr, exAddress: MonoObjectRef): number {
+export function mono_wasm_get_first_day_of_week (culture: MonoStringRef, isException: Int32Ptr, exAddress: MonoObjectRef): number {
 
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
@@ -100,7 +100,7 @@ export function mono_wasm_get_first_day_of_week(culture: MonoStringRef, isExcept
     }
 }
 
-export function mono_wasm_get_first_week_of_year(culture: MonoStringRef, isException: Int32Ptr, exAddress: MonoObjectRef): number {
+export function mono_wasm_get_first_week_of_year (culture: MonoStringRef, isException: Int32Ptr, exAddress: MonoObjectRef): number {
 
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
@@ -118,7 +118,7 @@ export function mono_wasm_get_first_week_of_year(culture: MonoStringRef, isExcep
     }
 }
 
-function getFirstDayOfWeek(locale: string) {
+function getFirstDayOfWeek (locale: string) {
     const weekInfo = getWeekInfo(locale);
     if (weekInfo) {
         // JS's Sunday == 7 while dotnet's Sunday == 0
@@ -139,7 +139,7 @@ function getFirstDayOfWeek(locale: string) {
     return 1;
 }
 
-function getFirstWeekOfYear(locale: string) {
+function getFirstWeekOfYear (locale: string) {
     const weekInfo = getWeekInfo(locale);
     if (weekInfo) {
         // enum CalendarWeekRule
@@ -160,7 +160,7 @@ function getFirstWeekOfYear(locale: string) {
     return 0;
 }
 
-function getWeekInfo(locale: string) {
+function getWeekInfo (locale: string) {
     try {
         // most tools have it implemented as property
         return (new Intl.Locale(locale) as any).weekInfo;
