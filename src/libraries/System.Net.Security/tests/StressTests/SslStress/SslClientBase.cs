@@ -35,7 +35,7 @@ namespace SslStress
 
         protected abstract Task HandleConnection(int workerId, long jobId, SslStream stream, TcpClient client, Random random, TimeSpan duration, CancellationToken token);
 
-        protected virtual async Task<SslStream> EstablishSslStream(Stream networkStream, Random random, CancellationToken token)
+        protected virtual async Task<SslStream> EstablishSslStream(Stream networkStream, CancellationToken token)
         {
             var sslStream = new SslStream(networkStream, leaveInnerStreamOpen: false);
             var clientOptions = new SslClientAuthenticationOptions
@@ -115,7 +115,7 @@ namespace SslStress
                         using var client = new TcpClient();
                         await client.ConnectAsync(_config.ServerEndpoint.Address, _config.ServerEndpoint.Port);
                         var stream = new CountingStream(client.GetStream(), counter);
-                        using SslStream sslStream = await EstablishSslStream(stream, random, cts.Token);
+                        using SslStream sslStream = await EstablishSslStream(stream, cts.Token);
                         await HandleConnection(workerId, jobId, sslStream, client, random, connectionLifetime, cts.Token);
 
                         _aggregator.RecordSuccess(workerId);
