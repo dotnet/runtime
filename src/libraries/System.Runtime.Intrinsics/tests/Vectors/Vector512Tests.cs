@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -2290,7 +2291,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             for (int i = 0; i < Vector512<T>.Count; i++)
             {
-                if (shuffle.GetElement(i) != shuffleUnsafe.GetElement(i))
+                if (!EqualityComparer<T>.Default.Equals(shuffle.GetElement(i), shuffleUnsafe.GetElement(i)))
                 {
                     throw new Exception($"Different results were produced: Shuffle - {shuffle}, ShuffleUnsafe - {shuffleUnsafe}");
                 }
