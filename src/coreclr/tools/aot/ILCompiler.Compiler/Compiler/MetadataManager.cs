@@ -77,6 +77,7 @@ namespace ILCompiler
         private readonly SortedSet<TypeDesc> _typeTemplates = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MetadataType> _typesWithGenericStaticBaseInfo = new SortedSet<MetadataType>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _genericMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
+        private readonly HashSet<TypeDesc> _usedInterfaces = new HashSet<TypeDesc>();
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
 
@@ -327,6 +328,11 @@ namespace ILCompiler
             if (obj is GenericMethodsHashtableEntryNode genericMethodsHashtableEntryNode)
             {
                 _genericMethodHashtableEntries.Add(genericMethodsHashtableEntryNode.Method);
+            }
+
+            if (obj is InterfaceUseNode interfaceUse)
+            {
+                _usedInterfaces.Add(interfaceUse.Type);
             }
         }
 
@@ -983,6 +989,12 @@ namespace ILCompiler
         public IEnumerable<MethodDesc> GetGenericMethodHashtableEntries()
         {
             return _genericMethodHashtableEntries;
+        }
+
+        public bool IsInterfaceUsed(TypeDesc type)
+        {
+            Debug.Assert(type.IsTypeDefinition);
+            return _usedInterfaces.Contains(type);
         }
 
         internal IEnumerable<IMethodBodyNode> GetCompiledMethodBodies()

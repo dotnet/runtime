@@ -42,7 +42,7 @@ export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: str
     // hack until we have public API for JSType.DiscardNoWait
     if (WasmEnableThreads && shortClassName === "DefaultWebAssemblyJSRuntime"
         && namespaceName === "Microsoft.AspNetCore.Components.WebAssembly.Services"
-        && (methodName === "BeginInvokeDotNet" || methodName === "EndInvokeJS")) {
+        && (methodName === "BeginInvokeDotNet" || methodName === "EndInvokeJS" || methodName === "ReceiveByteArrayFromJS")) {
         res_marshaler_type = MarshalerType.DiscardNoWait;
     }
 

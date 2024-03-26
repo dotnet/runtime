@@ -178,11 +178,6 @@ namespace System.Net
                     Uri? proxyAddress = proxy.GetProxy(address);
                     if (proxyAddress != null)
                     {
-                        if (proxyAddress.Scheme != Uri.UriSchemeHttp)
-                        {
-                            throw new NotSupportedException(SR.Format(SR.net_proxyschemenotsupported, address.Scheme));
-                        }
-
                         address = proxyAddress;
                         return true;
                     }

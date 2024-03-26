@@ -2082,9 +2082,9 @@ void Compiler::compDoComponentUnitTestsOnce()
 // compGetJitDefaultFill:
 //
 // Return Value:
-//    An unsigned char value used to initizalize memory allocated by the JIT.
-//    The default value is taken from DOTNET_JitDefaultFill,  if is not set
-//    the value will be 0xdd.  When JitStress is active a random value based
+//    An unsigned char value used to initialize memory allocated by the JIT.
+//    The default value is taken from DOTNET_JitDefaultFill. If it is not set
+//    the value will be 0xdd. When JitStress is active a random value based
 //    on the method hash is used.
 //
 // Notes:
@@ -2902,6 +2902,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disAlignment = false;
     opts.disCodeBytes = false;
 
+#ifdef OPT_CONFIG
+    opts.optRepeat      = false;
+    opts.optRepeatCount = 1;
+#endif // OPT_CONFIG
+
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -2916,7 +2921,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disAsm2         = false;
     opts.dspUnwind       = false;
     opts.compLongAddress = false;
-    opts.optRepeat       = false;
 
 #ifdef LATE_DISASM
     opts.doLateDisasm = false;
@@ -2998,9 +3002,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             opts.compLongAddress = true;
         }
 
-        if (JitConfig.JitOptRepeat().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+        if ((JitConfig.JitEnableOptRepeat() != 0) &&
+            (JitConfig.JitOptRepeat().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args)))
         {
-            opts.optRepeat = true;
+            opts.optRepeat      = true;
+            opts.optRepeatCount = JitConfig.JitOptRepeatCount();
         }
 
         opts.dspMetrics = (JitConfig.JitMetrics() != 0);
@@ -3100,7 +3106,46 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
     }
 
-//-------------------------------------------------------------------------
+#ifdef OPT_CONFIG
+
+    if (opts.optRepeat)
+    {
+        // Defer printing this until now, after the "START" line printed above.
+        JITDUMP("\n*************** JitOptRepeat enabled; repetition count: %d\n\n", opts.optRepeatCount);
+    }
+    else if (JitConfig.JitEnableOptRepeat() != 0)
+    {
+#ifdef DEBUG
+        // Opt-in to JitOptRepeat based on method hash ranges.
+        // The default is no JitOptRepeat.
+        static ConfigMethodRange fJitOptRepeatRange;
+        fJitOptRepeatRange.EnsureInit(JitConfig.JitOptRepeatRange());
+        assert(!fJitOptRepeatRange.Error());
+        if (!fJitOptRepeatRange.IsEmpty() && fJitOptRepeatRange.Contains(info.compMethodHash()))
+        {
+            opts.optRepeat      = true;
+            opts.optRepeatCount = JitConfig.JitOptRepeatCount();
+
+            JITDUMP("\n*************** JitOptRepeat enabled by JitOptRepeatRange; repetition count: %d\n\n",
+                    opts.optRepeatCount);
+        }
+#endif // DEBUG
+
+        if (!opts.optRepeat && compStressCompile(STRESS_OPT_REPEAT, 10))
+        {
+            // Turn on optRepeat as part of JitStress. In this case, decide how many iterations to do, from 2 to 5,
+            // based on a random number seeded by the method hash.
+            opts.optRepeat = true;
+
+            CLRRandom rng;
+            rng.Init(info.compMethodHash());
+            opts.optRepeatCount = rng.Next(4) + 2; // generates [2..5]
+
+            JITDUMP("\n*************** JitOptRepeat for stress; repetition count: %d\n\n", opts.optRepeatCount);
+        }
+    }
+
+#endif // OPT_CONFIG
 
 #ifdef DEBUG
     assert(!codeGen->isGCTypeFixed());
@@ -3593,6 +3638,14 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     const WCHAR* strStressModeNamesNot = JitConfig.JitStressModeNamesNot();
     if ((strStressModeNamesNot != nullptr) &&
         (u16_strstr(strStressModeNamesNot, s_compStressModeNamesW[stressArea]) != nullptr))
+    {
+        return false;
+    }
+
+    // Does user allow using this STRESS_MODE through the command line?
+    const WCHAR* strStressModeNamesAllow = JitConfig.JitStressModeNamesAllow();
+    if ((strStressModeNamesAllow != nullptr) &&
+        (u16_strstr(strStressModeNamesAllow, s_compStressModeNamesW[stressArea]) == nullptr))
     {
         return false;
     }
@@ -4958,7 +5011,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         if (opts.optRepeat)
         {
-            iterations = JitConfig.JitOptRepeatCount();
+            iterations = opts.optRepeatCount;
         }
 #endif // defined(OPT_CONFIG)
 
@@ -5071,6 +5124,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
             }
 
+#ifdef DEBUG
+            if (verbose && opts.optRepeat)
+            {
+                printf("\n*************** JitOptRepeat: iterations remaining: %d\n\n", iterations - 1);
+            }
+#endif // DEBUG
+
             // Iterate if requested, resetting annotations first.
             if (--iterations == 0)
             {
@@ -5085,6 +5145,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             ResetOptAnnotations();
             RecomputeFlowGraphAnnotations();
+
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("Trees before next JitOptRepeat iteration:\n");
+                fgDispBasicBlocks(true);
+            }
+#endif // DEBUG
         }
     }
 
@@ -5845,18 +5913,19 @@ void Compiler::generatePatchpointInfo()
 //    The intent of this method is to clear any information typically assumed
 //    to be set only once; it is used between iterations when JitOptRepeat is
 //    in effect.
-
+//
 void Compiler::ResetOptAnnotations()
 {
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
     fgResetForSsa();
-    vnStore              = nullptr;
-    m_blockToEHPreds     = nullptr;
-    m_dominancePreds     = nullptr;
-    fgSsaPassesCompleted = 0;
-    fgVNPassesCompleted  = 0;
-    fgSsaValid           = false;
+    vnStore                    = nullptr;
+    m_blockToEHPreds           = nullptr;
+    m_dominancePreds           = nullptr;
+    fgSsaPassesCompleted       = 0;
+    fgVNPassesCompleted        = 0;
+    fgSsaValid                 = false;
+    m_nodeToLoopMemoryBlockMap = nullptr;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -10525,6 +10594,7 @@ HelperCallProperties Compiler::s_helperCallProperties;
 // Return Value:
 //    true       - tree kills GC refs on callee save registers
 //    false      - tree doesn't affect GC refs on callee save registers
+//
 bool Compiler::killGCRefs(GenTree* tree)
 {
     if (tree->IsCall())
@@ -10821,6 +10891,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_simdUserForcesDep++;
                 break;
 
+            case DoNotEnregisterReason::NonStandardParameter:
+                m_nonStandardParameter++;
+                break;
+
             default:
                 unreached();
                 break;
@@ -10948,6 +11022,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_returnSpCheck, notEnreg);
     PRINT_STATS(m_callSpCheck, notEnreg);
     PRINT_STATS(m_simdUserForcesDep, notEnreg);
+    PRINT_STATS(m_nonStandardParameter, notEnreg);
 
     fprintf(fout, "\nAddr exposed details:\n");
     if (m_addrExposed == 0)

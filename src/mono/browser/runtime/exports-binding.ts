@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint, mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause } from "./debug";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
-import { mono_wasm_bind_js_import, mono_wasm_invoke_js_function, mono_wasm_invoke_jsimport, mono_wasm_invoke_jsimport_ST } from "./invoke-js";
+import { mono_wasm_bind_js_import, mono_wasm_invoke_js_function, mono_wasm_invoke_jsimport_MT, mono_wasm_invoke_jsimport_ST } from "./invoke-js";
 import { mono_interp_tier_prepare_jiterpreter, mono_jiterp_free_method_data_js } from "./jiterpreter";
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
@@ -22,7 +22,7 @@ import { mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, m
 import { mono_wasm_get_calendar_info } from "./hybrid-globalization/calendar";
 
 import { mono_wasm_get_culture_info } from "./hybrid-globalization/culture-info";
-import { mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
+import { mono_wasm_get_locale_info, mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
 import { mono_wasm_browser_entropy } from "./crypto";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
@@ -55,7 +55,7 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     // corebindings.c
     mono_wasm_install_js_worker_interop,
     mono_wasm_uninstall_js_worker_interop,
-    mono_wasm_invoke_jsimport,
+    mono_wasm_invoke_jsimport_MT,
 ];
 
 export const mono_wasm_imports = [
@@ -107,6 +107,7 @@ export const mono_wasm_imports = [
     mono_wasm_index_of,
     mono_wasm_get_calendar_info,
     mono_wasm_get_culture_info,
+    mono_wasm_get_locale_info,
     mono_wasm_get_first_day_of_week,
     mono_wasm_get_first_week_of_year,
 ];

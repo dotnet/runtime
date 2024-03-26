@@ -1783,23 +1783,21 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             // Update edge likelihoods
             // Note old edge may still be "in use" so we decrease its likelihood.
             //
-            if (oldEdge->hasLikelihood())
+
+            // We want to move this much likelihood from old->new
+            //
+            const weight_t likelihoodFraction = oldEdge->getLikelihood() / (oldEdge->getDupCount() + 1);
+
+            if (newEdge->getDupCount() == 1)
             {
-                // We want to move this much likelihood from old->new
-                //
-                const weight_t likelihoodFraction = oldEdge->getLikelihood() / (oldEdge->getDupCount() + 1);
-
-                if (newEdge->getDupCount() == 1)
-                {
-                    newEdge->setLikelihood(likelihoodFraction);
-                }
-                else
-                {
-                    newEdge->addLikelihood(likelihoodFraction);
-                }
-
-                oldEdge->addLikelihood(-likelihoodFraction);
+                newEdge->setLikelihood(likelihoodFraction);
             }
+            else
+            {
+                newEdge->addLikelihood(likelihoodFraction);
+            }
+
+            oldEdge->addLikelihood(-likelihoodFraction);
 
             // we optimized a Switch label - goto REPEAT_SWITCH to follow this new jump
             modified = true;
