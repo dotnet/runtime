@@ -24511,8 +24511,10 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
     if (op2->IsVectorAllBitsSet())
     {
-        if (!isUnsafe || !(simdSize == 64 || (simdSize == 32 &&
-                                              compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL))))
+#if defined(TARGET_XARCH)
+        if (!isUnsafe ||
+            !(simdSize == 64 || (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL))))
+#endif
         {
             // AllBitsSet represents indices that are always "out of range" which means zero should be
             // selected for every element. We can special-case this down to just returning a zero node
