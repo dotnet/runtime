@@ -255,19 +255,19 @@
     <!-- installer version, for testing workloads -->
     <MicrosoftDotnetSdkInternalVersion>9.0.100-preview.4.24175.5</MicrosoftDotnetSdkInternalVersion>
     <SdkVersionForWorkloadTesting>$(MicrosoftDotnetSdkInternalVersion)</SdkVersionForWorkloadTesting>
-    <MicrosoftNETRuntimeEmscripten3134Nodeosxarm64Version>9.0.0-preview.4.24172.11</MicrosoftNETRuntimeEmscripten3134Nodeosxarm64Version>
-    <MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version>9.0.0-preview.4.24172.11</MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version>
-    <MicrosoftNETRuntimeEmscripten3134Sdkosxx64Version>9.0.0-preview.4.24172.11</MicrosoftNETRuntimeEmscripten3134Sdkosxx64Version>
-    <MicrosoftNETRuntimeEmscripten3134Sdkwinx64Version>9.0.0-preview.4.24172.11</MicrosoftNETRuntimeEmscripten3134Sdkwinx64Version>
-    <MicrosoftNETRuntimeEmscripten3134Sdkwinarm64Version>9.0.0-preview.4.24172.11</MicrosoftNETRuntimeEmscripten3134Sdkwinarm64Version>
-    <MicrosoftNETRuntimeEmscripten3134Sdklinuxx64Version>9.0.0-preview.4.24172.11</MicrosoftNETRuntimeEmscripten3134Sdklinuxx64Version>
-    <MicrosoftNETRuntimeEmscripten3134Sdklinuxarm64Version>9.0.0-preview.4.24172.11</MicrosoftNETRuntimeEmscripten3134Sdklinuxarm64Version>
-    <MicrosoftNETRuntimeEmscripten3134Cachelinuxx64Version>9.0.0-preview.4.24172.11</MicrosoftNETRuntimeEmscripten3134Cachelinuxx64Version>
-    <MicrosoftNETRuntimeEmscripten3134Cachelinuxarm64Version>9.0.0-preview.4.24172.11</MicrosoftNETRuntimeEmscripten3134Cachelinuxarm64Version>
-    <MicrosoftNETRuntimeEmscripten3134Cacheosxx64Version>9.0.0-preview.4.24172.11</MicrosoftNETRuntimeEmscripten3134Cacheosxx64Version>
-    <MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version>9.0.0-preview.4.24172.11</MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version>
-    <MicrosoftNETRuntimeEmscripten3134Cachewinx64Version>9.0.0-preview.4.24172.11</MicrosoftNETRuntimeEmscripten3134Cachewinx64Version>
-    <MicrosoftNETRuntimeEmscripten3134Cachewinarm64Version>9.0.0-preview.4.24172.11</MicrosoftNETRuntimeEmscripten3134Cachewinarm64Version>
+    <MicrosoftNETRuntimeEmscripten3134Nodeosxarm64Version>9.0.0-preview.4.24175.6</MicrosoftNETRuntimeEmscripten3134Nodeosxarm64Version>
+    <MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version>9.0.0-preview.4.24175.6</MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version>
+    <MicrosoftNETRuntimeEmscripten3134Sdkosxx64Version>9.0.0-preview.4.24175.6</MicrosoftNETRuntimeEmscripten3134Sdkosxx64Version>
+    <MicrosoftNETRuntimeEmscripten3134Sdkwinx64Version>9.0.0-preview.4.24175.6</MicrosoftNETRuntimeEmscripten3134Sdkwinx64Version>
+    <MicrosoftNETRuntimeEmscripten3134Sdkwinarm64Version>9.0.0-preview.4.24175.6</MicrosoftNETRuntimeEmscripten3134Sdkwinarm64Version>
+    <MicrosoftNETRuntimeEmscripten3134Sdklinuxx64Version>9.0.0-preview.4.24175.6</MicrosoftNETRuntimeEmscripten3134Sdklinuxx64Version>
+    <MicrosoftNETRuntimeEmscripten3134Sdklinuxarm64Version>9.0.0-preview.4.24175.6</MicrosoftNETRuntimeEmscripten3134Sdklinuxarm64Version>
+    <MicrosoftNETRuntimeEmscripten3134Cachelinuxx64Version>9.0.0-preview.4.24175.6</MicrosoftNETRuntimeEmscripten3134Cachelinuxx64Version>
+    <MicrosoftNETRuntimeEmscripten3134Cachelinuxarm64Version>9.0.0-preview.4.24175.6</MicrosoftNETRuntimeEmscripten3134Cachelinuxarm64Version>
+    <MicrosoftNETRuntimeEmscripten3134Cacheosxx64Version>9.0.0-preview.4.24175.6</MicrosoftNETRuntimeEmscripten3134Cacheosxx64Version>
+    <MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version>9.0.0-preview.4.24175.6</MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version>
+    <MicrosoftNETRuntimeEmscripten3134Cachewinx64Version>9.0.0-preview.4.24175.6</MicrosoftNETRuntimeEmscripten3134Cachewinx64Version>
+    <MicrosoftNETRuntimeEmscripten3134Cachewinarm64Version>9.0.0-preview.4.24175.6</MicrosoftNETRuntimeEmscripten3134Cachewinarm64Version>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion>9.0.0-alpha.1.24175.1</runtimelinuxarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion>
     <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion>9.0.0-alpha.1.24175.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeWasmNodeTransportVersion>
     <runtimelinuxx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion>9.0.0-alpha.1.24175.1</runtimelinuxx64MicrosoftNETCoreRuntimeWasmNodeTransportVersion>
