@@ -6,6 +6,9 @@ services:
       dockerfile: ./System.Net.Security/tests/StressTests/SslStress//${DOCKERFILE:-Dockerfile}
     links:
       - server
+    depends_on:
+      server:
+        condition: service_healthy
     environment:
       - SSLSTRESS_ARGS=--mode client --server-endpoint server:5001 ${SSLSTRESS_CLIENT_ARGS}
   server:
@@ -14,5 +17,10 @@ services:
       dockerfile: ./System.Net.Security/tests/StressTests/SslStress/${DOCKERFILE:-Dockerfile}
     ports:
       - "5001:5001"
+    healthcheck:
+      test: ss -tnlp | grep -q ':5001'
+      interval: 1s
+      timeout: 10s
+      retries: 10
     environment:
       - SSLSTRESS_ARGS=--mode server --server-endpoint 0.0.0.0:5001 ${SSLSTRESS_SERVER_ARGS}
