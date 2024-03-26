@@ -78,6 +78,7 @@ struct ClassifierInfo
     CorInfoCallConvExtension CallConv;
     bool                     IsVarArgs;
     bool                     HasThis;
+    bool                     HasRetBuff;
 };
 
 class X86Classifier

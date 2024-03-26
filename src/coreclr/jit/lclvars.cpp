@@ -1667,9 +1667,10 @@ void Compiler::lvaClassifyParameterABI()
     }
 
     ClassifierInfo cInfo;
-    cInfo.CallConv  = info.compCallConv;
-    cInfo.IsVarArgs = info.compIsVarArgs;
-    cInfo.HasThis   = info.compThisArg != BAD_VAR_NUM;
+    cInfo.CallConv   = info.compCallConv;
+    cInfo.IsVarArgs  = info.compIsVarArgs;
+    cInfo.HasThis    = info.compThisArg != BAD_VAR_NUM;
+    cInfo.HasRetBuff = info.compRetBuffArg != BAD_VAR_NUM;
 
 #ifdef SWIFT_SUPPORT
     if (info.compCallConv == CorInfoCallConvExtension::Swift)
@@ -1726,7 +1727,14 @@ void Compiler::lvaClassifyParameterABI()
                 if (i == 0)
                 {
                     assert(reg == REG_STK);
+
+// On x86, varargs methods access stack args off of a base pointer, and the
+// first stack arg is not considered to be at offset 0.
+// TODO-Cleanup: Unify things so that x86 is consistent with other platforms
+// here and change fgMorphExpandStackArgForVarArgs to account for that.
+#ifndef TARGET_X86
                     assert((unsigned)dsc->GetStackOffset() == expected.GetStackOffset());
+#endif
                 }
             }
             else

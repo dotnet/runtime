@@ -175,8 +175,8 @@ X86Classifier::X86Classifier(const ClassifierInfo& info) : m_regs(nullptr, 0)
             unsigned                    numRegs = ArrLen(regs);
             if (info.IsVarArgs)
             {
-                // In varargs methods we only enregister the this pointer (if there is one).
-                numRegs = info.HasThis ? 1 : 0;
+                // In varargs methods we only enregister the this pointer or retbuff.
+                numRegs = info.HasThis || info.HasRetBuff ? 1 : 0;
             }
             m_regs = RegisterQueue(regs, numRegs);
             break;
