@@ -2297,12 +2297,12 @@ namespace System.Runtime.Intrinsics
         {
             Unsafe.SkipInit(out Vector64<sbyte> result);
 
-            for (int index = 0; index < Vector64<byte>.Count; index++)
+            for (int index = 0; index < Vector64<sbyte>.Count; index++)
             {
                 byte selectedIndex = (byte)indices.GetElementUnsafe(index);
                 sbyte selectedValue = 0;
 
-                if (selectedIndex < Vector64<byte>.Count)
+                if (selectedIndex < Vector64<sbyte>.Count)
                 {
                     selectedValue = vector.GetElementUnsafe(selectedIndex);
                 }

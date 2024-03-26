@@ -2388,7 +2388,7 @@ namespace System.Runtime.Intrinsics
                 byte selectedIndex = (byte)indices.GetElementUnsafe(index);
                 sbyte selectedValue = 0;
 
-                if (selectedIndex < Vector256<byte>.Count)
+                if (selectedIndex < Vector256<sbyte>.Count)
                 {
                     selectedValue = vector.GetElementUnsafe(selectedIndex);
                 }

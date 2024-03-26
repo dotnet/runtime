@@ -2426,14 +2426,14 @@ namespace System.Runtime.Intrinsics
         [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         public static Vector512<sbyte> ShuffleUnsafe(Vector512<sbyte> vector, Vector512<sbyte> indices)
         {
-            Unsafe.SkipInit(out Vector512<byte> result);
+            Unsafe.SkipInit(out Vector512<sbyte> result);
 
             for (int index = 0; index < Vector512<sbyte>.Count; index++)
             {
                 byte selectedIndex = (byte)indices.GetElementUnsafe(index);
                 sbyte selectedValue = 0;
 
-                if (selectedIndex < Vector512<byte>.Count)
+                if (selectedIndex < Vector512<sbyte>.Count)
                 {
                     selectedValue = vector.GetElementUnsafe(selectedIndex);
                 }
