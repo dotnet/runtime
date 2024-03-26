@@ -423,7 +423,7 @@ inline bool hasFixedRetBuffReg(CorInfoCallConvExtension callConv)
 {
 #if defined(TARGET_ARM64)
     // Windows does not use fixed ret buff arg for instance calls, but does otherwise.
-    return !TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(cc);
+    return !TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(callConv);
 #elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
     return callConv == CorInfoCallConvExtension::Swift;
 #else
