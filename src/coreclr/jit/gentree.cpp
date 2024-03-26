@@ -24719,8 +24719,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                 // create the control for swapping
                 uint8_t control = 1; // 0b00000001
                 cnsNode         = gtNewIconNode(control);
-                GenTree* swap = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&op1), fgMakeMultiUse(&op1), cnsNode,
-                                                         NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
+                GenTree* swap   = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&op1), fgMakeMultiUse(&op1), cnsNode,
+                                                           NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
 
                 // if we have non-default shuffle mask
                 if (nonDefaultShuffleMask)
@@ -24730,8 +24730,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                     op2->AsVecCon()->gtSimdVal = vecCns;
 
                     // shuffle both op1 and swap(op1)
-                    op1 = gtNewSimdHWIntrinsicNode(type, op1, fgMakeMultiUse(&op2), NI_AVX2_Shuffle,
-                                                   simdBaseJitType, simdSize);
+                    op1 = gtNewSimdHWIntrinsicNode(type, op1, fgMakeMultiUse(&op2), NI_AVX2_Shuffle, simdBaseJitType,
+                                                   simdSize);
                     swap = gtNewSimdHWIntrinsicNode(type, swap, op2, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
                 }
 
