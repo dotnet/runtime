@@ -81,7 +81,7 @@ For working with data from the target process/other contracts, the following C# 
 
 Best practice is to either write the algorithm in C# like psuedocode working on top of the [C# style api](contract_csharp_api_design.cs) or by reference to specifications which are not co-developed with the runtime, such as OS/architecture specifications. Within the contract algorithm specification, the intention is that all interesting api work is done by using an instance of the `Target` class.
 
-Algorithmic contracts may include specifications for numbers which can be referred to in the contract or by other contracts. The intention is that these global values represent magic numbers and values which are useful for the operation of algorithmic contracts. 
+Algorithmic contracts may include specifications for numbers which can be referred to in the contract or by other contracts. The intention is that these global values represent magic numbers and values which are useful for the operation of algorithmic contracts.
 
 While not all versions of a data structure are required to have the same fields/type of fields,
 algorithms may be built targetting the union of the set of field types defined in the data structure
