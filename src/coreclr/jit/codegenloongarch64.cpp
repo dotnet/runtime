@@ -668,7 +668,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *     filter:         a0 = non-zero if the handler should handle the exception, zero otherwise (see GT_RETFILT)
  *     finally/fault:  none
  *
- *  The LOONGARCH64 funclet prolog is the following (Note: #framesz is total funclet frame size,
+ *  The LoongArch64 funclet prolog is the following (Note: #framesz is total funclet frame size,
  *  including everything; #outsz is outgoing argument space. #framesz must be a multiple of 16):
  *
  *  Frame type liking:
@@ -690,6 +690,8 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
+ *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned
+ *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes, not includting FP/RA
  *      |-----------------------|
  *      |      Saved FP, RA     | // 16 bytes
@@ -702,37 +704,21 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *              V
  *
  *
- * Both #1 and #2 only change SP once. That means that there will be a maximum of one alignment slot needed. For the general case, #3,
- * it is possible that we will need to add alignment to both changes to SP, leading to 16 bytes of alignment. Remember that the stack
- * pointer needs to be 16 byte aligned at all times. The size of the PSP slot plus callee-saved registers space is a maximum of 232 bytes:
- *
- *     FP,RA registers
- *     9 int callee-saved register s0-s8
- *     8 float callee-saved registers f24-f31
- *     8 saved integer argument registers a0-a7, if varargs function support.
- *     1 PSP slot
- *     == 20 slots * 8 bytes = 160 bytes.
- *
  * The outgoing argument size, however, can be very large, if we call a function that takes a large number of
  * arguments (note that we currently use the same outgoing argument space size in the funclet as for the main
  * function, even if the funclet doesn't have any calls, or has a much smaller, or larger, maximum number of
- * outgoing arguments for any call). In that case, we need to 16-byte align the initial change to SP, before
- * saving off the callee-saved registers and establishing the PSPsym, so we can use the limited immediate offset
- * encodings we have available, before doing another 16-byte aligned SP adjustment to create the outgoing argument
- * space. Both changes to SP might need to add alignment padding.
+ * outgoing arguments for any call).
  *
- * In addition to the above "standard" frames, we also need to support a frame where the saved FP/RA are at the
- * highest addresses. This is to match the frame layout (specifically, callee-saved registers including FP/RA
- * and the PSPSym) that is used in the main function when a GS cookie is required due to the use of localloc.
- * (Note that localloc cannot be used in a funclet.) In these variants, not only has the position of FP/RA
- * changed, but where the alignment padding is placed has also changed.
- *
- *
- * Note that in all cases, the PSPSym is in exactly the same position with respect to Caller-SP, and that location is the same relative to Caller-SP
- * as in the main function.
+ * Note that in all cases, the PSPSym is in exactly the same position with respect to Caller-SP,
+ * and that location is the same relative to Caller-SP as in the main function where higher than
+ * the callee-saved registers.
+ * That is to say, the PSPSym's relative offset to Caller-SP is not depended on the callee-saved registers.
+ * TODO-LoongArch64: the funclet's callee-saved registers should not shared with main function.
  *
  * Funclets do not have varargs arguments. However, because the PSPSym must exist at the same offset from Caller-SP as in the main function, we
  * must add buffer space for the saved varargs/argument registers here, if the main function did the same.
+ *
+ * Note that localloc cannot be used in a funclet.
  *
  *     ; After this header, fill the PSP slot, for use by the VM (it gets reported with the GC info), or by code generation of nested filters.
  *     ; This is not part of the "OS prolog"; it has no associated unwind data, and is not reversed in the funclet epilog.
@@ -819,11 +805,10 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         maskArgRegsLiveIn = RBM_A0;
     }
 
-    regMaskTP maskSaveRegs            = genFuncletInfo.fiSaveRegs & RBM_CALLEE_SAVED;
-    int       SP_to_CalleeSaved_delta = genFuncletInfo.fiSP_to_CalleeSaved_delta;
-    int       FP_offset               = SP_to_CalleeSaved_delta - 16;
+    regMaskTP maskSaveRegs = genFuncletInfo.fiSaveRegs & RBM_CALLEE_SAVED;
+    int       FP_offset    = genFuncletInfo.fiSP_to_CalleeSaved_delta;
 
-    if ((SP_to_CalleeSaved_delta + (compiler->compCalleeRegsPushed << 3)) <= (2040 + 16))
+    if ((FP_offset + (compiler->compCalleeRegsPushed << 3)) <= (2040 + 16))
     {
         genStackPointerAdjustment(frameSize, REG_R21, nullptr, /* reportUnwindData */ true);
 
@@ -833,16 +818,16 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
         compiler->unwindSaveReg(REG_RA, FP_offset + 8);
 
-        genSaveCalleeSavedRegistersHelp(maskSaveRegs, SP_to_CalleeSaved_delta, 0);
+        genSaveCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16, 0);
     }
     else
     {
         assert(frameSize < -2040);
 
-        SP_to_CalleeSaved_delta = FP_offset & -16;
-        FP_offset &= 0xf;
+        genStackPointerAdjustment(frameSize + (FP_offset & -16), REG_R21, nullptr, true);
 
-        genStackPointerAdjustment(frameSize + SP_to_CalleeSaved_delta, REG_R21, nullptr, true);
+        frameSize = -(FP_offset & -16);
+        FP_offset &= 0xf;
 
         GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_offset);
         compiler->unwindSaveReg(REG_FP, FP_offset);
@@ -852,7 +837,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
         genSaveCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16, 0);
 
-        genStackPointerAdjustment(-SP_to_CalleeSaved_delta, REG_R21, nullptr, true);
+        genStackPointerAdjustment(frameSize, REG_R21, nullptr, true);
     }
 
     // This is the end of the OS-reported prolog for purposes of unwinding
@@ -919,24 +904,20 @@ void CodeGen::genFuncletEpilog()
     int frameSize = genFuncletInfo.fiSpDelta;
     assert(frameSize < 0);
 
-    regMaskTP regsToRestoreMask       = genFuncletInfo.fiSaveRegs & RBM_CALLEE_SAVED;
-    int       SP_to_CalleeSaved_delta = genFuncletInfo.fiSP_to_CalleeSaved_delta;
-    int       FP_offset               = SP_to_CalleeSaved_delta - 16;
+    regMaskTP regsToRestoreMask = genFuncletInfo.fiSaveRegs & RBM_CALLEE_SAVED;
+    int       FP_offset         = genFuncletInfo.fiSP_to_CalleeSaved_delta;
 
-    if ((SP_to_CalleeSaved_delta + (compiler->compCalleeRegsPushed << 3)) > (2040 + 16))
+    if ((FP_offset + (compiler->compCalleeRegsPushed << 3)) > (2040 + 16))
     {
         assert(frameSize < -2040);
 
-        int SP_delta = FP_offset & -16;
+        genStackPointerAdjustment(FP_offset & -16, REG_R21, nullptr, /* reportUnwindData */ true);
 
-        FP_offset               = FP_offset & 0xf;
-        SP_to_CalleeSaved_delta = FP_offset + 16;
-
-        genStackPointerAdjustment(SP_delta, REG_R21, nullptr, /* reportUnwindData */ true);
-        frameSize += SP_delta;
+        frameSize += FP_offset & -16;
+        FP_offset = FP_offset & 0xf;
     }
 
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, SP_to_CalleeSaved_delta, 0);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, FP_offset + 16, 0);
 
     GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
     compiler->unwindSaveReg(REG_RA, FP_offset + 8);
@@ -968,6 +949,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     {
         return;
     }
+
     assert(isFramePointerUsed());
     // The frame size and offsets must be finalized
     assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT);
@@ -988,30 +970,27 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         assert((osrPad % STACK_ALIGN) == 0);
     }
 
+    /* Now save it for future use */
     genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta() + osrPad;
 
-    int funcletFrameSizeAligned = genTotalFrameSize();
-    int delta_PSP               = -8;
-    int SP_to_CalleeSaved_delta = compiler->compLclFrameSize;
-    if (compiler->lvaPSPSym == BAD_VAR_NUM)
+    int funcletFrameSize = compiler->lvaOutgoingArgSpaceSize;
+
+    genFuncletInfo.fiSP_to_CalleeSaved_delta = funcletFrameSize;
+
+    funcletFrameSize += genCountBits(regSet.rsMaskCalleeSaved) * REGSIZE_BYTES;
+
+    int delta_PSP = -TARGET_POINTER_SIZE;
+    if (compiler->lvaMonAcquired != BAD_VAR_NUM)
     {
-        SP_to_CalleeSaved_delta += TARGET_POINTER_SIZE;
-    }
-    if (compiler->lvaMonAcquired == BAD_VAR_NUM)
-    {
-        SP_to_CalleeSaved_delta += TARGET_POINTER_SIZE;
-    }
-    else
-    {
-        delta_PSP += -8;
+        delta_PSP -= TARGET_POINTER_SIZE;
     }
 
-    /* Now save it for future use */
-    genFuncletInfo.fiSpDelta                 = -funcletFrameSizeAligned;
-    genFuncletInfo.fiSaveRegs                = rsMaskSaveRegs;
-    genFuncletInfo.fiSP_to_CalleeSaved_delta = SP_to_CalleeSaved_delta;
+    funcletFrameSize = funcletFrameSize - delta_PSP;
+    funcletFrameSize = roundUp((unsigned)funcletFrameSize, STACK_ALIGN);
 
-    genFuncletInfo.fiSP_to_PSP_slot_delta       = funcletFrameSizeAligned + delta_PSP;
+    genFuncletInfo.fiSpDelta                    = -funcletFrameSize;
+    genFuncletInfo.fiSaveRegs                   = rsMaskSaveRegs;
+    genFuncletInfo.fiSP_to_PSP_slot_delta       = funcletFrameSize + delta_PSP;
     genFuncletInfo.fiCallerSP_to_PSP_slot_delta = osrPad + delta_PSP;
 
 #ifdef DEBUG
@@ -1030,7 +1009,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         printf("  SP to CalleeSaved location delta: %d\n", genFuncletInfo.fiSP_to_CalleeSaved_delta);
         printf("                       SP delta: %d\n", genFuncletInfo.fiSpDelta);
     }
-    assert(genFuncletInfo.fiSP_to_CalleeSaved_delta >= 16); // Always above the ra/fp.
+    assert(genFuncletInfo.fiSP_to_CalleeSaved_delta >= 0);
 
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
