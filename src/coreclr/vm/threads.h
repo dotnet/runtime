@@ -753,7 +753,7 @@ public:
     void InternalReset (BOOL fNotFinalizerThread=FALSE, BOOL fThreadObjectResetNeeded=TRUE, BOOL fResetAbort=TRUE);
     INT32 ResetManagedThreadObject(INT32 nPriority);
     INT32 ResetManagedThreadObjectInCoopMode(INT32 nPriority);
-    BOOL  IsRealThreadPoolResetNeeded();
+
 public:
     HRESULT DetachThread(BOOL fDLLThreadDetach);
 
