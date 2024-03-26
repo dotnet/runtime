@@ -2748,8 +2748,12 @@ ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* src, const insGroup* ig
     return distVal;
 }
 
-template <uint8_t       Bits>
-static constexpr size_t NBitMask = (static_cast<size_t>(1) << Bits) - 1;
+template <uint8_t Bits>
+static inline constexpr typename std::conditional<(Bits > 32), size_t, unsigned>::type NBitMask() noexcept
+{
+    return static_cast<typename std::conditional<(Bits > 32), size_t, unsigned>::type>(
+        (static_cast<size_t>(1) << Bits) - 1);
+}
 
 template <uint8_t MaskSize>
 static unsigned LowerNBitsOfWord(ssize_t word)
@@ -2757,7 +2761,7 @@ static unsigned LowerNBitsOfWord(ssize_t word)
     static_assert(MaskSize < 32, "Given mask size is bigger than the word itself");
     static_assert(MaskSize > 0, "Given mask size cannot be zero");
 
-    static constexpr unsigned kMask = NBitMask<MaskSize>;
+    static constexpr unsigned kMask = NBitMask<MaskSize>();
 
     return static_cast<unsigned>(word & kMask);
 }
@@ -2785,7 +2789,7 @@ static unsigned UpperWordOfDoubleWord(ssize_t immediate)
 
 static unsigned LowerWordOfDoubleWord(ssize_t immediate)
 {
-    static constexpr size_t kWordMask = NBitMask<32>;
+    static constexpr size_t kWordMask = NBitMask<32>();
 
     return static_cast<unsigned>(immediate & kWordMask);
 }
@@ -2888,7 +2892,7 @@ BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t im
     if (id->idReg2())
     {
         // special for INT64_MAX or UINT32_MAX
-        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_R0, NBitMask<12>);
+        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_R0, NBitMask<12>());
         const unsigned shiftValue = (immediate == INT64_MAX) ? 1 : 32;
         dst += emitOutput_ITypeInstr(dst, INS_srli, reg1, reg1, shiftValue);
     }
