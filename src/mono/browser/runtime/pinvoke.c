@@ -1,5 +1,11 @@
 #include "wasm-config.h"
 #include "pinvoke.h"
+#include <mono/metadata/assembly.h>
+#include <mono/utils/mono-error.h>
+#include <mono/utils/details/mono-error-types.h>
+#include <mono/utils/details/mono-logger-types.h>
+#include <mono/metadata/object.h>
+#include "runtime.h"
 
 #include <stdint.h>
 

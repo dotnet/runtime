@@ -371,7 +371,23 @@ internal sealed class PInvokeTableGenerator
             if (!is_void)
                 sb.Append($"  {MapType(method.ReturnType)} res;\n");
 
-            //sb.Append($"  printf(\"{entry_name} called\\n\");\n");
+            sb.Append("#include <stdio.h>\n");
+            // In case when null force interpreter to initialize the pointers
+            sb.Append($"  if (!(WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) {{\n");
+            sb.Append("#include <mono/utils/details/mono-error-types.h>\n");
+            sb.Append("#include <mono/metadata/assembly.h>\n");
+            sb.Append("#include <mono/utils/mono-error.h>\n");
+            sb.Append("#include <mono/metadata/object.h>\n");
+            sb.Append("#include <mono/utils/details/mono-logger-types.h>\n");
+            sb.Append("#include \"runtime.h\"\n");
+            var assemblyFullName = cb.Method.DeclaringType == null ? "" : cb.Method.DeclaringType.Assembly.FullName;
+            var assemblyName = assemblyFullName != null && assemblyFullName.Split(',').Length > 0 ? assemblyFullName.Split(',')[0].Trim() : "";
+            var typeName = cb.Method.DeclaringType == null  || cb.Method.DeclaringType.FullName == null ? "" : cb.Method.DeclaringType.FullName;
+            var methodName = cb.Method.Name;
+            int numParams = method.GetParameters().Length;
+            sb.Append($"   mono_wasm_marshal_get_managed_wrapper (\"{assemblyName}\", \"{string.Empty}\", \"{typeName}\", \"{methodName}\", {numParams});\n");
+            sb.Append($"  }}\n");
+
             sb.Append($"  ((WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) (");
             if (!is_void)
             {
