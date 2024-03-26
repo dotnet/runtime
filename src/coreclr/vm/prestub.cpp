@@ -1874,7 +1874,7 @@ BOOL PrepareCodeConfig::SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
 COR_ILMETHOD* PrepareCodeConfig::GetILHeader()
 {
     STANDARD_VM_CONTRACT;
-    return m_pMethodDesc->GetILHeader(TRUE);
+    return m_pMethodDesc->GetILHeader();
 }
 
 CORJIT_FLAGS PrepareCodeConfig::GetJitCompilationFlags()
