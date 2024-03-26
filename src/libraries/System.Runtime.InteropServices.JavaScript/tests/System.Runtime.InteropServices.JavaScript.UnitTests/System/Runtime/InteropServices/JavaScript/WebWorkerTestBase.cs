@@ -185,6 +185,27 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             new NamedCall { IsBlocking = true, Name = "Task.Wait", Call = delegate (CancellationToken ct) { Task.Delay(30, ct).Wait(ct); }},
             new NamedCall { IsBlocking = true, Name = "Task.WaitAll", Call = delegate (CancellationToken ct) { Task.WaitAll(Task.Delay(30, ct)); }},
             new NamedCall { IsBlocking = true, Name = "Task.WaitAny", Call = delegate (CancellationToken ct) { Task.WaitAny(Task.Delay(30, ct)); }},
+            new NamedCall { IsBlocking = true, Name = "ManualResetEventSlim.Wait", Call = delegate (CancellationToken ct) {
+                using var mr = new ManualResetEventSlim(false);
+                LocalCtsIgnoringCall(mr.Wait);
+            }},
+            new NamedCall { IsBlocking = true, Name = "SemaphoreSlim.Wait", Call = delegate (CancellationToken ct) {
+                using var sem = new SemaphoreSlim(2);
+                LocalCtsIgnoringCall(sem.Wait);
+            }},
+            new NamedCall { IsBlocking = true, Name = "Mutex.WaitOne", Call = delegate (CancellationToken ct) {
+                using var mr = new ManualResetEventSlim(false);
+                var mutex = new Mutex();
+                var thread = new Thread(() => {
+                    mutex.WaitOne();
+                    mr.Set();
+                    Thread.Sleep(50);
+                    mutex.ReleaseMutex();
+                });
+                thread.Start();
+                Thread.ForceBlockingWait(static (b) => ((ManualResetEventSlim)b).Wait(), mr);
+                mutex.WaitOne();
+            }},
         };
 
         public static IEnumerable<object[]> GetTargetThreadsAndBlockingCalls()
