@@ -73,23 +73,30 @@ int32_t AppleCryptoNative_SecKeyCopyExternalRepresentation(SecKeyRef pKey,
 
     *pErrorOut = NULL;
     *ppDataOut = NULL;
+    int32_t ret = 0;
     CFDictionaryRef attributes = SecKeyCopyAttributes(pKey);
 
     if (attributes != NULL)
     {
-        CFBooleanRef isSensitive = CFDictionaryGetValue(attributes, kSecAttrIsSensitive);
-
-        if (isSensitive == kCFBooleanTrue)
+        if (CFDictionaryGetValue(attributes, kSecAttrIsExtractable) == kCFBooleanFalse)
         {
-            CFRelease(attributes);
-            return kOperationNotSupported;
+            ret = kKeyIsNotExtractable;
+        }
+        else if (CFDictionaryGetValue(attributes, kSecAttrIsSensitive) == kCFBooleanTrue)
+        {
+            ret = kKeyIsSensitive;
         }
 
         CFRelease(attributes);
     }
 
-    *ppDataOut = SecKeyCopyExternalRepresentation(pKey, pErrorOut);
-    return *ppDataOut == NULL ? kErrorSeeError : 1;
+    if (ret == 0)
+    {
+        *ppDataOut = SecKeyCopyExternalRepresentation(pKey, pErrorOut);
+        ret = *ppDataOut == NULL ? kErrorSeeError : 1;
+    }
+
+    return ret;
 }
 
 SecKeyRef AppleCryptoNative_SecKeyCopyPublicKey(SecKeyRef privateKey)

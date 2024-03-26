@@ -15,7 +15,8 @@ internal static partial class Interop
         private const int kSuccess = 1;
         private const int kErrorSeeError = -2;
         private const int kPlatformNotSupported = -5;
-        private const int kOperationNotSupported = -6;
+        private const int kKeyIsSensitive = -6;
+        private const int kKeyIsNotExtractable = -7;
 
         internal enum PAL_KeyAlgorithm : uint
         {
@@ -139,9 +140,11 @@ internal static partial class Interop
                     case kSuccess:
                         externalRepresentation = CoreFoundation.CFGetData(data);
                         return true;
-                    case kOperationNotSupported:
+                    case kKeyIsSensitive:
                         externalRepresentation = [];
                         return false;
+                    case kKeyIsNotExtractable:
+                        throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
                     case kErrorSeeError:
                         throw CreateExceptionForCFError(errorHandle);
                     default:
