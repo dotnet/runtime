@@ -95,7 +95,7 @@ namespace Microsoft.Win32
             ComVariant vOp = ToOAVariant(source);
             ComVariant ret = default;
 
-            int hr = VariantChangeTypeEx(ref ret, ref vOp, culture.LCID, options, (ushort)vt);
+            int hr = Interop.OleAut32.VariantChangeTypeEx(&ret, &vOp, culture.LCID, options, (ushort)vt);
 
             using (vOp)
             using (ret)
@@ -207,9 +207,6 @@ namespace Microsoft.Win32
 
             throw new NotSupportedException(SR.NotSupported_ChangeType);
         }
-
-        [LibraryImport(Interop.Libraries.OleAut32)]
-        private static partial int VariantChangeTypeEx(ref ComVariant pVarRes, ref ComVariant pVarSrc, int lcid, short wFlags, ushort vt);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertOleColorToSystemColor")]
         private static partial void ConvertOleColorToSystemColor(ObjectHandleOnStack objret, uint value);
