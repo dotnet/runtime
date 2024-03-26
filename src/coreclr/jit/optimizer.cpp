@@ -2508,6 +2508,40 @@ PhaseStatus Compiler::optOptimizeLayout()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
+//-----------------------------------------------------------------------------
+// optOptimizePostLayout: Optimize flow after block layout is finalized
+//
+// Returns:
+//   suitable phase status
+//
+PhaseStatus Compiler::optOptimizePostLayout()
+{
+    assert(opts.OptimizationEnabled());
+    PhaseStatus status = PhaseStatus::MODIFIED_NOTHING;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        // Reverse conditions to enable fallthrough flow into BBJ_COND's false target
+        if (block->KindIs(BBJ_COND) && block->CanRemoveJumpToTarget(block->GetTrueTarget(), this))
+        {
+            GenTree* const test = block->lastNode();
+            assert(test->OperIsConditionalJump());
+            GenTree* const cond = gtReverseCond(test);
+            assert(cond == test); // Ensure `gtReverseCond` did not create a new node
+
+            FlowEdge* const oldTrueEdge  = block->GetTrueEdge();
+            FlowEdge* const oldFalseEdge = block->GetFalseEdge();
+            block->SetTrueEdge(oldFalseEdge);
+            block->SetFalseEdge(oldTrueEdge);
+
+            assert(block->CanRemoveJumpToTarget(block->GetFalseTarget(), this));
+            status = PhaseStatus::MODIFIED_EVERYTHING;
+        }
+    }
+
+    return status;
+}
+
 //------------------------------------------------------------------------
 // optMarkLoopHeads: Mark all potential loop heads as BBF_LOOP_HEAD. A potential loop head is a block
 // targeted by a lexical back edge, where the source of the back edge is reachable from the block.
