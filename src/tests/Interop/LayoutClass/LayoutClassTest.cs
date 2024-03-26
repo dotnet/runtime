@@ -337,5 +337,20 @@ namespace LayoutClass
 
             Assert.Throws<TypeLoadException>(() => RecursiveNativeLayoutInvalid(new RecursiveTestStruct()));
         }
+
+        [Fact]
+        public static void StructWithGCAndExplicitSizeIsAlignedByPtr()
+        {
+            Assert.True((Unsafe.SizeOf<MyStruct>() % IntPtr.Size) == 0);
+        }
+
+        [StructLayout(LayoutKind.Explicit, Size = 9)]
+        private struct StructWithGCAndExplicitSize
+        {
+            [FieldOffset(0)]
+            public byte[] a;
+            [FieldOffset(8)]
+            public byte b;
+        }
     }
 }
