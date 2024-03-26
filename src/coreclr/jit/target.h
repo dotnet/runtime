@@ -393,7 +393,7 @@ inline bool genIsValidFloatReg(regNumber reg)
     return reg >= REG_FP_FIRST && reg <= REG_FP_LAST;
 }
 
-#if defined(TARGET_XARCH)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 /*****************************************************************************
  * Return true if the register is a valid mask register
  */
@@ -401,7 +401,7 @@ inline bool genIsValidMaskReg(regNumber reg)
 {
     return reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST;
 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 #ifdef TARGET_ARM
 
@@ -419,10 +419,12 @@ inline bool genIsValidDoubleReg(regNumber reg)
 // hasFixedRetBuffReg:
 //     Returns true if our target architecture uses a fixed return buffer register
 //
-inline bool hasFixedRetBuffReg()
+inline bool hasFixedRetBuffReg(CorInfoCallConvExtension callConv)
 {
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64)
     return true;
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    return callConv == CorInfoCallConvExtension::Swift;
 #else
     return false;
 #endif
@@ -432,11 +434,14 @@ inline bool hasFixedRetBuffReg()
 // theFixedRetBuffReg:
 //     Returns the regNumber to use for the fixed return buffer
 //
-inline regNumber theFixedRetBuffReg()
+inline regNumber theFixedRetBuffReg(CorInfoCallConvExtension callConv)
 {
-    assert(hasFixedRetBuffReg()); // This predicate should be checked before calling this method
-#ifdef TARGET_ARM64
+    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
+#if defined(TARGET_ARM64)
     return REG_ARG_RET_BUFF;
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    assert(callConv == CorInfoCallConvExtension::Swift);
+    return REG_SWIFT_ARG_RET_BUFF;
 #else
     return REG_NA;
 #endif
@@ -446,11 +451,14 @@ inline regNumber theFixedRetBuffReg()
 // theFixedRetBuffMask:
 //     Returns the regNumber to use for the fixed return buffer
 //
-inline regMaskTP theFixedRetBuffMask()
+inline regMaskTP theFixedRetBuffMask(CorInfoCallConvExtension callConv)
 {
-    assert(hasFixedRetBuffReg()); // This predicate should be checked before calling this method
-#ifdef TARGET_ARM64
+    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
+#if defined(TARGET_ARM64)
     return RBM_ARG_RET_BUFF;
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    assert(callConv == CorInfoCallConvExtension::Swift);
+    return RBM_SWIFT_ARG_RET_BUFF;
 #else
     return 0;
 #endif
@@ -460,11 +468,14 @@ inline regMaskTP theFixedRetBuffMask()
 // theFixedRetBuffArgNum:
 //     Returns the argNum to use for the fixed return buffer
 //
-inline unsigned theFixedRetBuffArgNum()
+inline unsigned theFixedRetBuffArgNum(CorInfoCallConvExtension callConv)
 {
-    assert(hasFixedRetBuffReg()); // This predicate should be checked before calling this method
+    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
 #ifdef TARGET_ARM64
     return RET_BUFF_ARGNUM;
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    assert(callConv == CorInfoCallConvExtension::Swift);
+    return SWIFT_RET_BUFF_ARGNUM;
 #else
     return BAD_VAR_NUM;
 #endif
@@ -475,16 +486,22 @@ inline unsigned theFixedRetBuffArgNum()
 //     Returns the full mask of all possible integer registers
 //     Note this includes the fixed return buffer register on Arm64
 //
-inline regMaskTP fullIntArgRegMask()
+inline regMaskTP fullIntArgRegMask(CorInfoCallConvExtension callConv)
 {
-    if (hasFixedRetBuffReg())
+    regMaskTP result = RBM_ARG_REGS;
+    if (hasFixedRetBuffReg(callConv))
     {
-        return RBM_ARG_REGS | theFixedRetBuffMask();
+        result |= theFixedRetBuffMask(callConv);
     }
-    else
+
+#ifdef SWIFT_SUPPORT
+    if (callConv == CorInfoCallConvExtension::Swift)
     {
-        return RBM_ARG_REGS;
+        result |= RBM_SWIFT_SELF;
     }
+#endif
+
+    return result;
 }
 
 //-------------------------------------------------------------------------------------------
@@ -492,9 +509,9 @@ inline regMaskTP fullIntArgRegMask()
 //     Returns true if the register is a valid integer argument register
 //     Note this method also returns true on Arm64 when 'reg' is the RetBuff register
 //
-inline bool isValidIntArgReg(regNumber reg)
+inline bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
 {
-    return (genRegMask(reg) & fullIntArgRegMask()) != 0;
+    return (genRegMask(reg) & fullIntArgRegMask(callConv)) != 0;
 }
 
 //-------------------------------------------------------------------------------------------

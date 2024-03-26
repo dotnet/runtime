@@ -663,7 +663,6 @@ namespace System.Numerics.Tensors.Tests
         {
             if (!IsFloatingPoint) return;
 
-            // TODO https://github.com/dotnet/runtime/issues/98861
             T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14);
 
             Assert.All(VectorLengthAndIteratedRange(ConvertFromSingle(-100f), ConvertFromSingle(100f), ConvertFromSingle(3f)), arg =>
@@ -955,8 +954,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void Dot_AllLengths()
         {
-            // TODO https://github.com/dotnet/runtime/issues/98861
-            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14f, floatTolerance: 1e-3f);
+            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14f, floatTolerance: 1e-5f);
 
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
             {
@@ -2885,7 +2883,6 @@ namespace System.Numerics.Tensors.Tests
         {
             if (!IsFloatingPoint) return;
 
-            // TODO https://github.com/dotnet/runtime/issues/98861
             T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14);
 
             Assert.All(VectorLengthAndIteratedRange(ConvertFromSingle(-100f), ConvertFromSingle(100f), ConvertFromSingle(3f)), args =>
@@ -3148,7 +3145,6 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void Sum_AllLengths()
         {
-            // TODO https://github.com/dotnet/runtime/issues/98861
             T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-5f);
 
             Assert.All(Helpers.TensorLengths, tensorLength =>
@@ -3169,7 +3165,6 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void SumOfMagnitudes_AllLengths()
         {
-            // TODO https://github.com/dotnet/runtime/issues/98861
             T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12, floatTolerance: 1e-6f);
 
             Assert.All(Helpers.TensorLengths, tensorLength =>
@@ -3191,7 +3186,6 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void SumOfSquares_AllLengths()
         {
-            // TODO https://github.com/dotnet/runtime/issues/98861
             T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12, floatTolerance: 1e-6f);
 
             Assert.All(Helpers.TensorLengths, tensorLength =>

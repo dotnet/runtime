@@ -1446,7 +1446,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 string key = sourceLinkDocument.Key;
 
-                if (!key.EndsWith("*", StringComparison.OrdinalIgnoreCase))
+                if (!key.EndsWith('*'))
                 {
                     continue;
                 }

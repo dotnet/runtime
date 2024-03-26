@@ -56,6 +56,9 @@
   #define REG_PREDICATE_HIGH_FIRST REG_P8  // Similarly, some instructions can only use the second half of the predicate registers.
   #define REG_PREDICATE_HIGH_LAST  REG_P15
 
+  #define REG_MASK_FIRST           REG_PREDICATE_FIRST
+  #define REG_MASK_LAST            REG_PREDICATE_LAST
+
   static_assert_no_msg(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
@@ -382,5 +385,8 @@
   #define REG_SWIFT_ERROR REG_R21
   #define RBM_SWIFT_ERROR RBM_R21
   #define REG_SWIFT_SELF  REG_R20
+  #define RBM_SWIFT_SELF  RBM_R20
+  #define REG_SWIFT_INTRET_ORDER REG_R0,REG_R1,REG_R2,REG_R3
+  #define REG_SWIFT_FLOATRET_ORDER REG_V0,REG_V1,REG_V2,REG_V3
 
 // clang-format on

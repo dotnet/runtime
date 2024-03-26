@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <CLRTestPriority>0</CLRTestPriority>
     <DefineConstants>$(DefineConstants);RESOURCE_KEYS</DefineConstants>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     
     <!-- Requires the framework to also be compiled with UseSystemResourceKeys -->
     <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
