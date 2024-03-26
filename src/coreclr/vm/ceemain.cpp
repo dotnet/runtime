@@ -1345,31 +1345,8 @@ part2:
                 TerminateDebugger();
 #endif // DEBUGGING_SUPPORTED
 
-                StubManager::TerminateStubManagers();
-
-#ifdef FEATURE_INTERPRETER
-                Interpreter::Terminate();
-#endif // FEATURE_INTERPRETER
-
                 //@TODO: find the right place for this
                 VirtualCallStubManager::UninitStatic();
-
-                // Unregister our vectored exception and continue handlers from the OS.
-                // This will ensure that if any other DLL unload (after ours) has an exception,
-                // we wont attempt to process that exception (which could lead to various
-                // issues including AV in the runtime).
-                //
-                // This should be done:
-                //
-                // 1) As the last action during the shutdown so that any unexpected AVs
-                //    in the runtime during shutdown do result in FailFast in VEH.
-                //
-                // 2) Only when the runtime is processing DLL_PROCESS_DETACH.
-                CLRRemoveVectoredHandlers();
-
-#if USE_DISASSEMBLER
-                Disassembler::StaticClose();
-#endif // USE_DISASSEMBLER
 
                 WriteJitHelperCountToSTRESSLOG();
 
@@ -1693,10 +1670,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
                     LOG((LF_STARTUP, INFO3, "EEShutDown invoked from EEDllMain"));
                     EEShutDown(TRUE); // shut down EE if it was started up
-                }
-                else
-                {
-                    CLRRemoveVectoredHandlers();
                 }
                 break;
             }
