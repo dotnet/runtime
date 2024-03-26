@@ -1,4 +1,5 @@
 <Project>
+
   <PropertyGroup>
     <!-- Runtime needs to sign all artifacts (including other verticals) on Windows until a cross-plat signing solution
          is available that has all the required features. Inside the VMR we publish every vertical which is why this
