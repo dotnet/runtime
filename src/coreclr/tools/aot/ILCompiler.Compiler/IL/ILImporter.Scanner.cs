@@ -707,11 +707,7 @@ namespace Internal.IL
                     _dependencies.Add(_factory.InterfaceDispatchCell(method), reason);
                 }
             }
-            else if (_compilation.HasAssignedSlots(method.OwningType))
-            {
-                // No dependencies: virtual call through the vtable
-            }
-            else
+            else if (_compilation.NeedsSlotUseTracking(method.OwningType))
             {
                 MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
                         targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);

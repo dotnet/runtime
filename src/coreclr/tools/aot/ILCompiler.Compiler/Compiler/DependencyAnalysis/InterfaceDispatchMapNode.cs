@@ -96,18 +96,8 @@ namespace ILCompiler.DependencyAnalysis
                     null :
                     (InstantiatedType)declType.GetTypeDefinition().RuntimeInterfaces[interfaceIndex];
 
-                IEnumerable<MethodDesc> slots;
-
-                // If the vtable has fixed slots, we can query it directly.
-                // If it's a lazily built vtable, we might not be able to query slots
-                // just yet, so approximate by looking at all methods.
                 VTableSliceNode vtableSlice = factory.VTable(interfaceType);
-                if (vtableSlice.HasAssignedSlots)
-                    slots = vtableSlice.Slots;
-                else
-                    slots = interfaceType.GetAllVirtualMethods();
-
-                foreach (MethodDesc slotMethod in slots)
+                foreach (MethodDesc slotMethod in vtableSlice.Slots)
                 {
                     MethodDesc declMethod = slotMethod;
 
