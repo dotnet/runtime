@@ -538,9 +538,9 @@
   #define AllRegsMask_PROFILER_LEAVE_TRASH  (AllRegsMask_CALLEE_TRASH & Create_AllRegsMask(~(RBM_INTRET | RBM_INTRET_1), ~(RBM_FLOATRET | RBM_FLOATRET_1)))
 #else
   // See vm\amd64\asmhelpers.asm for more details.
-  #define AllRegsMask_STOP_FOR_GC_TRASH AllRegsMask_CALLEE_TRASH & Create_AllRegsMask(~RBM_INTRET, ~RBM_FLOATRET)
+  #define AllRegsMask_STOP_FOR_GC_TRASH (AllRegsMask_CALLEE_TRASH & AllRegsMask(~(RBM_INTRET | RBM_FLOATRET)))
   #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
-  #define AllRegsMask_PROFILER_LEAVE_TRASH  (AllRegsMask_CALLEE_TRASH & Create_AllRegsMask(~RBM_INTRET, ~RBM_FLOATRET))
+  #define AllRegsMask_PROFILER_LEAVE_TRASH  (AllRegsMask_CALLEE_TRASH & AllRegsMask(~(RBM_INTRET | RBM_FLOATRET)))
 #endif
 
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.

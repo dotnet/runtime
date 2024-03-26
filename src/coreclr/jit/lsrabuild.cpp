@@ -2823,7 +2823,7 @@ void           LinearScan::buildIntervals()
     }
 
     //TODO: Fix this for x86 and arm
-    actualRegistersMask = AllRegsMask(~RBM_NONE, ~RBM_NONE
+    actualRegistersMask = AllRegsMask(availableIntRegs, availableFloatRegs
 #ifdef HAS_PREDICATE_REGS
                                       ,
                                       availableMaskRegs
