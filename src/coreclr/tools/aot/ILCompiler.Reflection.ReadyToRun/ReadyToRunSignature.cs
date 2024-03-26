@@ -1587,7 +1587,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             uint helperType = ReadUIntAndEmitInlineSignatureBinary(builder);
 
             bool retiredHelperFound = false;
-            if (r2rReader.MajorVersion <= 9)
+            if (_contextReader.ReadyToRunHeader.MajorVersion <= 9)
             {
                 if (helperType == 0xE2)
                 {
