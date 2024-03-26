@@ -24199,6 +24199,7 @@ done:
 
 #define mark_stack_empty_p() (mark_stack_base == mark_stack_tos)
 
+#pragma optimize("", off) 
 inline
 size_t gc_heap::get_promoted_bytes()
 {
@@ -24245,6 +24246,7 @@ size_t gc_heap::get_promoted_bytes()
 #endif //MULTIPLE_HEAPS
 #endif //USE_REGIONS
 }
+#pragma optimize("", on) 
 
 #ifdef USE_REGIONS
 void gc_heap::sync_promoted_bytes()
