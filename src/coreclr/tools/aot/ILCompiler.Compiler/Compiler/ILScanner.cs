@@ -297,7 +297,7 @@ namespace ILCompiler
                         string typeName = ExceptionTypeNameFormatter.Instance.FormatName(type);
                         throw new ScannerFailedException($"VTable of type '{typeName}' not computed by the IL scanner.");
                     }
-                    return new PrecomputedVTableSliceNode(type, slots);
+                    return new LazilyBuiltVTableSliceNode(type, slots);
                 }
                 else
                     return new LazilyBuiltVTableSliceNode(type);

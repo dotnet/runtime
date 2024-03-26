@@ -210,9 +210,14 @@ namespace ILCompiler
             return intrinsicMethod;
         }
 
-        public bool HasFixedSlotVTable(TypeDesc type)
+        public bool HasAssignedSlots(TypeDesc type)
         {
-            return NodeFactory.VTable(type).HasFixedSlots;
+            return NodeFactory.VTable(type).HasAssignedSlots;
+        }
+
+        public bool NeedsSlotUseTracking(TypeDesc type)
+        {
+            return !NodeFactory.VTable(type).HasKnownVirtualMethodUse;
         }
 
         public bool IsEffectivelySealed(TypeDesc type)
@@ -391,7 +396,7 @@ namespace ILCompiler
             // Can we do a fixed lookup? Start by checking if we can get to the dictionary.
             // Context source having a vtable with fixed slots is a prerequisite.
             if (contextSource == GenericContextSource.MethodParameter
-                || HasFixedSlotVTable(contextMethod.OwningType))
+                || HasAssignedSlots(contextMethod.OwningType))
             {
                 DictionaryLayoutNode dictionaryLayout;
                 if (contextSource == GenericContextSource.MethodParameter)

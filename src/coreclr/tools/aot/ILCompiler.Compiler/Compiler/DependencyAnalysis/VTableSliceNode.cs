@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -21,6 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         public VTableSliceNode(TypeDesc type)
         {
             Debug.Assert(!type.IsArray, "Wanted to call GetClosestDefType?");
+            Debug.Assert(!type.IsGenericDefinition);
             _type = type;
         }
 
@@ -29,12 +31,23 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
+        public abstract bool IsSlotUsed(MethodDesc slot);
+
         public TypeDesc Type => _type;
 
         /// <summary>
-        /// Gets a value indicating whether the slots are assigned at the beginning of the compilation.
+        /// Gets a value indicating whether slots are assigned and known during dependency analysis.
         /// </summary>
-        public abstract bool HasFixedSlots
+        public abstract bool HasAssignedSlots
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether <see cref="VirtualMethodUseNode"> is needed to track virtual method uses
+        /// in this vtable slice.
+        /// </summary>
+        public abstract bool HasKnownVirtualMethodUse
         {
             get;
         }
@@ -47,10 +60,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (_type.HasBaseType)
             {
-                return new[] { new DependencyListEntry(factory.VTable(_type.BaseType), "Base type VTable") };
+                yield return new DependencyListEntry(factory.VTable(_type.BaseType), "Base type VTable");
             }
 
-            return null;
+            TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
+            if (_type != canonType)
+            {
+                yield return new DependencyListEntry(factory.VTable(canonType), "Canonical type VTable");
+            }
         }
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
@@ -66,9 +83,9 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal class PrecomputedVTableSliceNode : VTableSliceNode
     {
-        private readonly IReadOnlyList<MethodDesc> _slots;
+        private readonly MethodDesc[] _slots;
 
-        public PrecomputedVTableSliceNode(TypeDesc type, IReadOnlyList<MethodDesc> slots)
+        public PrecomputedVTableSliceNode(TypeDesc type, MethodDesc[] slots)
             : base(type)
         {
             _slots = slots;
@@ -82,7 +99,21 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override bool HasFixedSlots
+        public override bool IsSlotUsed(MethodDesc slot)
+        {
+            Debug.Assert(Array.IndexOf(_slots, slot) != -1);
+            return true;
+        }
+
+        public override bool HasKnownVirtualMethodUse
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+        public override bool HasAssignedSlots
         {
             get
             {
@@ -141,10 +172,19 @@ namespace ILCompiler.DependencyAnalysis
     {
         private HashSet<MethodDesc> _usedMethods = new HashSet<MethodDesc>();
         private MethodDesc[] _slots;
+#if DEBUG
+        private bool _isLocked;
+#endif
 
-        public LazilyBuiltVTableSliceNode(TypeDesc type)
+        public LazilyBuiltVTableSliceNode(TypeDesc type, IReadOnlyList<MethodDesc> slots = null)
             : base(type)
         {
+            if (slots != null)
+            {
+                _slots = new MethodDesc[slots.Count];
+                for (int i = 0; i < _slots.Length; i++)
+                    _slots[i] = slots[i];
+            }
         }
 
         public override IReadOnlyList<MethodDesc> Slots
@@ -166,20 +206,48 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     Debug.Assert(_usedMethods.Count == slotsBuilder.Count);
                     _slots = slotsBuilder.ToArray();
-
-                    // Null out used methods so that we AV if someone tries to add now.
-                    _usedMethods = null;
+#if DEBUG
+                    _isLocked = true;
+#endif
                 }
 
                 return _slots;
             }
         }
 
-        public override bool HasFixedSlots
+        public override bool IsSlotUsed(MethodDesc slot)
+        {
+#if DEBUG
+            // This has two effects: validates we're not asking about non-sensical method
+            // and locking Slots so that AddEntry is not possible to call anymore.
+            IReadOnlyList<MethodDesc> slots = Slots;
+            bool contains = false;
+            for (int i = 0; i < slots.Count; i++)
+            {
+                if (slots[i] == slot)
+                {
+                    contains = true;
+                    break;
+                }
+            }
+            Debug.Assert(contains);
+#endif
+            return _usedMethods.Contains(slot);
+        }
+
+        public override bool HasKnownVirtualMethodUse
         {
             get
             {
                 return false;
+            }
+        }
+
+        public override bool HasAssignedSlots
+        {
+            get
+            {
+                return _slots != null;
             }
         }
 
@@ -188,8 +256,11 @@ namespace ILCompiler.DependencyAnalysis
             // GVMs are not emitted in the type's vtable.
             Debug.Assert(!virtualMethod.HasInstantiation);
             Debug.Assert(virtualMethod.IsVirtual);
-            Debug.Assert(_slots == null && _usedMethods != null);
             Debug.Assert(virtualMethod.OwningType == _type);
+#if DEBUG
+            Debug.Assert(!_isLocked);
+            Debug.Assert(_slots == null || Array.IndexOf(_slots, virtualMethod) != -1);
+#endif
 
             // Finalizers are called via a field on the MethodTable, not through the VTable
             if (_type.IsObject && virtualMethod.Name == "Finalize")

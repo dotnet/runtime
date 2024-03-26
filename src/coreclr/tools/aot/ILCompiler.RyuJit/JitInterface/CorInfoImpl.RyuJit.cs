@@ -1620,7 +1620,7 @@ namespace Internal.JitInterface
                 // We don't want to accidentally ask about Foo<object, __Canon> that may or may not
                 // be available to ask vtable questions about.
                 // This can happen in inlining that the scanner didn't expect.
-                && _compilation.HasFixedSlotVTable(targetMethod.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)))
+                && _compilation.HasAssignedSlots(targetMethod.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)))
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE;
                 pResult->nullInstanceCheck = true;
@@ -1840,11 +1840,15 @@ namespace Internal.JitInterface
             // Canonically-equivalent types have the same slots, so ask for Foo<__Canon, __Canon>.
             methodDesc = methodDesc.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(_compilation.NodeFactory, methodDesc, methodDesc.OwningType);
+            TypeDesc owningType = methodDesc.OwningType;
+            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(_compilation.NodeFactory, methodDesc, owningType);
             if (slot == -1)
             {
                 throw new InvalidOperationException(methodDesc.ToString());
             }
+
+            if (_compilation.NeedsSlotUseTracking(owningType))
+                (_additionalDependencies ??= new ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyList()).Add(_compilation.NodeFactory.VirtualMethodUse(methodDesc), "Virtual method call");
 
             offsetAfterIndirection = (uint)(EETypeNode.GetVTableOffset(pointerSize) + slot * pointerSize);
         }

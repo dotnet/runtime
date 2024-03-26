@@ -131,7 +131,7 @@ namespace ILCompiler.DependencyAnalysis
 #if !SUPPORT_JIT
                 factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencyList, factory, targetMethod);
 
-                if (!factory.VTable(targetMethod.OwningType).HasFixedSlots)
+                if (!factory.VTable(targetMethod.OwningType).HasKnownVirtualMethodUse)
 
                 {
                     dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
@@ -152,7 +152,7 @@ namespace ILCompiler.DependencyAnalysis
 #if !SUPPORT_JIT
                     factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencyList, factory, targetMethod);
 
-                    if (!factory.VTable(info.TargetMethod.OwningType).HasFixedSlots)
+                    if (!factory.VTable(info.TargetMethod.OwningType).HasKnownVirtualMethodUse)
                     {
                         dependencyList ??= new DependencyList();
                         dependencyList.Add(factory.VirtualMethodUse(info.TargetMethod), "ReadyToRun Delegate to virtual method");

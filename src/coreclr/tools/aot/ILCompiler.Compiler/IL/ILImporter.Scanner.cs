@@ -707,7 +707,7 @@ namespace Internal.IL
                     _dependencies.Add(_factory.InterfaceDispatchCell(method), reason);
                 }
             }
-            else if (_compilation.HasFixedSlotVTable(method.OwningType))
+            else if (_compilation.HasAssignedSlots(method.OwningType))
             {
                 // No dependencies: virtual call through the vtable
             }
