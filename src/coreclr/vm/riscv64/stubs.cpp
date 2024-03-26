@@ -414,7 +414,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         pRD->pCurrentContextPointers->S11 = pUnwoundState->ptrCalleeSavedRegisters[11];
         pRD->pCurrentContextPointers->Gp = pUnwoundState->ptrCalleeSavedRegisters[12];
         pRD->pCurrentContextPointers->Tp = pUnwoundState->ptrCalleeSavedRegisters[13];
-        pRD->pCurrentContextPointers->Ra = NULL;
+        pRD->pCurrentContextPointers->Ra = &pRD->pCurrentContext->Ra;
         return;
     }
 #endif // DACCESS_COMPILE
@@ -476,7 +476,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContextPointers->S11 = m_MachState.ptrCalleeSavedRegisters[11];
     pRD->pCurrentContextPointers->Gp = m_MachState.ptrCalleeSavedRegisters[12];
     pRD->pCurrentContextPointers->Tp = m_MachState.ptrCalleeSavedRegisters[13];
-    pRD->pCurrentContextPointers->Ra = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContextPointers->Ra = &pRD->pCurrentContext->Ra;
 #endif
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 }
@@ -562,8 +562,6 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
     // copy the control registers
-    //pRD->pCurrentContext->Fp = pCalleeSaved->fp;//not needed for duplicated.
-    //pRD->pCurrentContext->Ra = pCalleeSaved->ra;//not needed for duplicated.
     pRD->pCurrentContext->Pc = GetReturnAddress();
     pRD->pCurrentContext->Sp = this->GetSP();
 
@@ -783,7 +781,7 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     pRD->pCurrentContextPointers->Gp = &m_Args->Gp;
     pRD->pCurrentContextPointers->Tp = &m_Args->Tp;
     pRD->pCurrentContextPointers->Fp = &m_Args->Fp;
-    pRD->pCurrentContextPointers->Ra = NULL;
+    pRD->pCurrentContextPointers->Ra = &m_Args->Ra;
     SyncRegDisplayToCurrentContext(pRD);
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
