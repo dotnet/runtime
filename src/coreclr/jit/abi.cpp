@@ -382,6 +382,8 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
                                                                                       TARGET_POINTER_SIZE));
     }
 
+    // First handle HFA/HVAs. These are allowed to be passed in more registers
+    // than other structures.
     if (varTypeIsStruct(type) && !m_info.IsVarArgs)
     {
         var_types hfaType = comp->GetHfaType(structLayout->GetClassHandle());
@@ -444,9 +446,9 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
     ABIPassingInformation info;
     if (m_info.IsVarArgs && (slots == 2) && (m_intRegs.Count() == 1))
     {
-        // On varargs we split structs between register and stack in this case.
-        // Normally a struct that does not fit in registers will always be
-        // passed on stack.
+        // For varargs we split structs between register and stack in this
+        // case. Normally a struct that does not fit in registers will always
+        // be passed on stack.
         assert(compFeatureArgSplit());
         info.NumSegments = 2;
         info.Segments    = new (comp, CMK_ABI) ABIPassingSegment[2];
@@ -459,7 +461,7 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
     {
         RegisterQueue* regs = &m_intRegs;
 
-        // In varargs methods (only supported on Windows) all arguments go in
+        // In varargs methods (only supported on Windows) all parameters go in
         // integer registers.
         if (varTypeUsesFloatArgReg(type) && !m_info.IsVarArgs)
         {
