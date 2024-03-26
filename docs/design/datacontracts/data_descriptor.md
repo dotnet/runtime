@@ -101,7 +101,7 @@ In typical usage we expect to have two physical descriptors that are combined to
 * a "baseline" physical descriptor with a well-known name,
 * a "binary blob" physical descriptor that is part of the target runtime process' memory
 
-When constructing the logical descriptor, first the baseline physical desctriptor is consumed: the
+When constructing the logical descriptor, first the baseline physical descriptor is consumed: the
 types and values from the baseline are added to the logical descriptor.  Then the types of the
 binary blob are used to augment the baseline: fields are added or modified, sizes and offsets are
 overwritten.  The global values of the binary blob are used to augment the baseline: new globals are
@@ -183,9 +183,15 @@ The design of the physical binary blob descriptor is constrained by the followin
   constructible using C idioms.  If the C compiler needs to pad or align the data, the blob format
   should provide a way to iterate the blob contents without having to know anything about the target
   platform ABI or C compiler conventions.
+* It should be possible to create separate subsets of the physical descriptor (in the target runtime
+  object format) using separate toolchains (for example: in NativeAOT some of the struct layouts may
+  be described by the NativeAOT compiler, while some might be described by the C/C++ toolchain) and
+  to run a build host (not target architecture) tool to read and compose them into a single physical
+  binary blob before embedding it into the final NativeAOT runtime binary.
 
 This leads to the following overall strategy for the design:
-* The physical blob is "self-contained": using pointers would mean that the encoding of the blob
+* The physical blob is "self-contained": indirections are encoded as offsets from the beginning of
+  the blob (or other base offsets), whereas using pointers would mean that the encoding of the blob
   would have relocations applied to it, which would preclude reading the blob out of of an object
   file without understanding the object file format.
 * The physical blob must be "self-describing": If the C compiler adds padding or alignment, the blob
@@ -193,6 +199,9 @@ This leads to the following overall strategy for the design:
 * The physical blob must be constructible using "lowest common denominator" target toolchain
   tooling - the C preprocessor.  That doesn't mean that tooling _must_ use the C preprocessor to
   generate the blob, but the format must not exceed the capabilities of the C preprocessor.
+* The physical blob must be round-trippable: it should be possible to extract the blob from an
+  object file and write it back out as C source code that compiles back to a logically equivalent
+  blob.
 
 ### Summary
 
