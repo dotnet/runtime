@@ -193,6 +193,21 @@ namespace System.Reflection.Tests
             Assert.Null(s);
         }
 
+        [Fact]
+        public static void StructWithGCAndExplicitSizeIsAlignedByPtr()
+        {
+            Assert.True((Unsafe.SizeOf<StructWithGCAndExplicitSize>() % IntPtr.Size) == 0);
+        }
+
+        [StructLayout(LayoutKind.Explicit, Size = 9)]
+        private struct StructWithGCAndExplicitSize
+        {
+            [FieldOffset(0)]
+            public byte[] a;
+            [FieldOffset(8)]
+            public byte b;
+        }
+
         private class UndecoratedClass { }
 
         [StructLayout(LayoutKind.Auto, CharSet = CharSet.Ansi, Pack = 8, Size = 0)]
