@@ -390,33 +390,15 @@ void CodeGen::genMarkLabelsForCodegen()
                 break;
 
             case BBJ_COND:
-                // Check if reversing the condition will allow us to fall into the false target
-                if (block->CanRemoveJumpToTarget(block->GetTrueTarget(), compiler))
+                JITDUMP("  " FMT_BB " : branch target\n", block->GetTrueTarget()->bbNum);
+                block->GetTrueTarget()->SetFlags(BBF_HAS_LABEL);
+
+                // If we need a jump to the false target, give it a label
+                if (!block->CanRemoveJumpToTarget(block->GetFalseTarget(), compiler))
                 {
-                    compiler->gtReverseCond(block->lastNode());
-                    FlowEdge* const oldTrueEdge  = block->GetTrueEdge();
-                    FlowEdge* const oldFalseEdge = block->GetFalseEdge();
-                    block->SetTrueEdge(oldFalseEdge);
-                    block->SetFalseEdge(oldTrueEdge);
-
-                    // Only true target needs a label
-                    assert(block->CanRemoveJumpToTarget(block->GetFalseTarget(), compiler));
-                    JITDUMP("  " FMT_BB " : branch target\n", block->GetTrueTarget()->bbNum);
-                    block->GetTrueTarget()->SetFlags(BBF_HAS_LABEL);
+                    JITDUMP("  " FMT_BB " : branch target\n", block->GetFalseTarget()->bbNum);
+                    block->GetFalseTarget()->SetFlags(BBF_HAS_LABEL);
                 }
-                else
-                {
-                    JITDUMP("  " FMT_BB " : branch target\n", block->GetTrueTarget()->bbNum);
-                    block->GetTrueTarget()->SetFlags(BBF_HAS_LABEL);
-
-                    // If we need a jump to the false target, give it a label
-                    if (!block->CanRemoveJumpToTarget(block->GetFalseTarget(), compiler))
-                    {
-                        JITDUMP("  " FMT_BB " : branch target\n", block->GetFalseTarget()->bbNum);
-                        block->GetFalseTarget()->SetFlags(BBF_HAS_LABEL);
-                    }
-                }
-
                 break;
 
             case BBJ_SWITCH:
