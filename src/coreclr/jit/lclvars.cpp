@@ -1733,7 +1733,6 @@ void Compiler::lvaClassifyParameterABI()
                     dsc->SetOtherArgReg(REG_NA);
                     dsc->SetStackOffset(abiInfo.Segments[0].GetStackOffset());
                 }
-
             }
         }
     }

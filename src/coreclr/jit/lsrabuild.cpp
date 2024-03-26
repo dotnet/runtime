@@ -2290,6 +2290,25 @@ void           LinearScan::buildIntervals()
     regsInUseThisLocation                   = RBM_NONE;
     regsInUseNextLocation                   = RBM_NONE;
 
+#ifdef SWIFT_SUPPORT
+    if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
+    {
+        for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
+        {
+            const ABIPassingInformation& abiInfo = compiler->lvaParameterPassingInfo[lclNum];
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& seg = abiInfo.Segments[i];
+                if (seg.IsPassedInRegister())
+                {
+                    RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
+                    regState->rsCalleeRegArgMaskLiveIn |= genRegMask(seg.GetRegister());
+                }
+            }
+        }
+    }
+#endif
+
     for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
     {
         LclVarDsc* argDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
