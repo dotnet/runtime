@@ -121,6 +121,17 @@ bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
     return anyReg && anyStack;
 }
 
+//-----------------------------------------------------------------------------
+// FromSegment:
+//   Create ABIPassingInformation from a single segment.
+//
+// Parameters:
+//   comp    - Compiler instance
+//   segment - The single segment that represents the passing information
+//
+// Return Value:
+//   An instance of ABIPassingInformation.
+//
 ABIPassingInformation ABIPassingInformation::FromSegment(Compiler* comp, const ABIPassingSegment& segment)
 {
     ABIPassingInformation info;
@@ -129,29 +140,65 @@ ABIPassingInformation ABIPassingInformation::FromSegment(Compiler* comp, const A
     return info;
 }
 
+//-----------------------------------------------------------------------------
+// RegisterQueue::Dequeue:
+//   Dequeue a register from the queue.
+//
+// Return Value:
+//   The dequeued register.
+//
 regNumber RegisterQueue::Dequeue()
 {
     assert(Count() > 0);
     return static_cast<regNumber>(m_regs[m_index++]);
 }
 
+//-----------------------------------------------------------------------------
+// RegisterQueue::Peek:
+//   Peek at the head of the queue.
+//
+// Return Value:
+//   The head register in the queue.
+//
 regNumber RegisterQueue::Peek()
 {
     assert(Count() > 0);
     return static_cast<regNumber>(m_regs[m_index]);
 }
 
+//-----------------------------------------------------------------------------
+// RegisterQueue::Clear:
+//   Clear the register queue.
+//
 void RegisterQueue::Clear()
 {
     m_index = m_numRegs;
 }
 
+//-----------------------------------------------------------------------------
+// TypeSize:
+//   Get the size of a JIT type or struct.
+//
+// Parameters:
+//   type         - The type
+//   structLayout - The layout to get the size if type is TYP_STRUCT
+//
+// Returns:
+//   The type size.
+//
 static unsigned TypeSize(var_types type, ClassLayout* structLayout)
 {
     return type == TYP_STRUCT ? structLayout->GetSize() : genTypeSize(type);
 }
 
 #ifdef TARGET_X86
+//-----------------------------------------------------------------------------
+// X86Classifier:
+//   Construct a new instance of the x86 ABI classifier.
+//
+// Parameters:
+//   info - Info about the method being classified.
+//
 X86Classifier::X86Classifier(const ClassifierInfo& info) : m_regs(nullptr, 0)
 {
     switch (info.CallConv)
@@ -184,6 +231,20 @@ X86Classifier::X86Classifier(const ClassifierInfo& info) : m_regs(nullptr, 0)
     }
 }
 
+//-----------------------------------------------------------------------------
+// Classify:
+//   Classify a parameter for the x86 ABI.
+//
+// Parameters:
+//   comp           - Compiler instance
+//   type           - The type of the parameter
+//   structLayout   - The layout of the struct. Expected to be non-null if
+//                    varTypeIsStruct(type) is true.
+//   wellKnownParam - Well known type of the parameter (if it may affect its ABI classification)
+//
+// Returns:
+//   Classification information for the parameter.
+//
 ABIPassingInformation X86Classifier::Classify(Compiler*    comp,
                                               var_types    type,
                                               ClassLayout* structLayout,
@@ -234,11 +295,32 @@ ABIPassingInformation X86Classifier::Classify(Compiler*    comp,
 static const regNumberSmall WinX64IntArgRegs[]   = {REG_RCX, REG_RDX, REG_R8, REG_R9};
 static const regNumberSmall WinX64FloatArgRegs[] = {REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3};
 
+//-----------------------------------------------------------------------------
+// WinX64Classifier:
+//   Construct a new instance of the Windows x64 ABI classifier.
+//
+// Parameters:
+//   info - Info about the method being classified.
+//
 WinX64Classifier::WinX64Classifier(const ClassifierInfo& info)
     : m_intRegs(WinX64IntArgRegs, ArrLen(WinX64IntArgRegs)), m_floatRegs(WinX64FloatArgRegs, ArrLen(WinX64FloatArgRegs))
 {
 }
 
+//-----------------------------------------------------------------------------
+// Classify:
+//   Classify a parameter for the Windows x64 ABI.
+//
+// Parameters:
+//   comp           - Compiler instance
+//   type           - The type of the parameter
+//   structLayout   - The layout of the struct. Expected to be non-null if
+//                    varTypeIsStruct(type) is true.
+//   wellKnownParam - Well known type of the parameter (if it may affect its ABI classification)
+//
+// Returns:
+//   Classification information for the parameter.
+//
 ABIPassingInformation WinX64Classifier::Classify(Compiler*    comp,
                                                  var_types    type,
                                                  ClassLayout* structLayout,
@@ -278,13 +360,33 @@ ABIPassingInformation WinX64Classifier::Classify(Compiler*    comp,
 static const regNumberSmall SysVX64IntArgRegs[]   = {REG_EDI, REG_ESI, REG_EDX, REG_ECX, REG_R8, REG_R9};
 static const regNumberSmall SysVX64FloatArgRegs[] = {REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3,
                                                      REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7};
-
+//-----------------------------------------------------------------------------
+// SysVX64Classifier:
+//   Construct a new instance of the SysV x64 ABI classifier.
+//
+// Parameters:
+//   info - Info about the method being classified.
+//
 SysVX64Classifier::SysVX64Classifier(const ClassifierInfo& info)
     : m_intRegs(SysVX64IntArgRegs, ArrLen(SysVX64IntArgRegs))
     , m_floatRegs(SysVX64FloatArgRegs, ArrLen(SysVX64FloatArgRegs))
 {
 }
 
+//-----------------------------------------------------------------------------
+// Classify:
+//   Classify a parameter for the SysV x64 ABI.
+//
+// Parameters:
+//   comp           - Compiler instance
+//   type           - The type of the parameter
+//   structLayout   - The layout of the struct. Expected to be non-null if
+//                    varTypeIsStruct(type) is true.
+//   wellKnownParam - Well known type of the parameter (if it may affect its ABI classification)
+//
+// Returns:
+//   Classification information for the parameter.
+//
 ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
                                                   var_types    type,
                                                   ClassLayout* structLayout,
@@ -364,6 +466,13 @@ ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
 static const regNumberSmall Arm64IntArgRegs[]   = {REG_R0, REG_R1, REG_R2, REG_R3, REG_R4, REG_R5, REG_R6, REG_R7};
 static const regNumberSmall Arm64FloatArgRegs[] = {REG_V0, REG_V1, REG_V2, REG_V3, REG_V4, REG_V5, REG_V6, REG_V7};
 
+//-----------------------------------------------------------------------------
+// Arm64Classifier:
+//   Construct a new instance of the ARM64 ABI classifier.
+//
+// Parameters:
+//   info - Info about the method being classified.
+//
 Arm64Classifier::Arm64Classifier(const ClassifierInfo& info)
     : m_info(info)
     , m_intRegs(Arm64IntArgRegs, ArrLen(Arm64IntArgRegs))
@@ -371,6 +480,20 @@ Arm64Classifier::Arm64Classifier(const ClassifierInfo& info)
 {
 }
 
+//-----------------------------------------------------------------------------
+// Classify:
+//   Classify a parameter for the ARM64 ABI.
+//
+// Parameters:
+//   comp           - Compiler instance
+//   type           - The type of the parameter
+//   structLayout   - The layout of the struct. Expected to be non-null if
+//                    varTypeIsStruct(type) is true.
+//   wellKnownParam - Well known type of the parameter (if it may affect its ABI classification)
+//
+// Returns:
+//   Classification information for the parameter.
+//
 ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
                                                 var_types    type,
                                                 ClassLayout* structLayout,
@@ -518,6 +641,20 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
 #endif
 
 #ifdef SWIFT_SUPPORT
+//-----------------------------------------------------------------------------
+// Classify:
+//   Classify a parameter for the Swift ABI.
+//
+// Parameters:
+//   comp           - Compiler instance
+//   type           - The type of the parameter
+//   structLayout   - The layout of the struct. Expected to be non-null if
+//                    varTypeIsStruct(type) is true.
+//   wellKnownParam - Well known type of the parameter (if it may affect its ABI classification)
+//
+// Returns:
+//   Classification information for the parameter.
+//
 ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
                                                    var_types    type,
                                                    ClassLayout* structLayout,

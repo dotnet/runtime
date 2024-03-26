@@ -75,10 +75,10 @@ public:
 
 struct ClassifierInfo
 {
-    CorInfoCallConvExtension CallConv;
-    bool                     IsVarArgs;
-    bool                     HasThis;
-    bool                     HasRetBuff;
+    CorInfoCallConvExtension CallConv   = CorInfoCallConvExtension::Managed;
+    bool                     IsVarArgs  = false;
+    bool                     HasThis    = false;
+    bool                     HasRetBuff = false;
 };
 
 class X86Classifier

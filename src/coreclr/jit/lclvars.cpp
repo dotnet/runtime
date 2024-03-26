@@ -1633,6 +1633,16 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
 #endif // FEATURE_MULTIREG_ARGS
 }
 
+//-----------------------------------------------------------------------------
+// lvaClassifyParameterABI:
+//  Classify the ABI information for all parameters.
+//
+// Type parameters:
+//   Classifier - The type of classifier to use.
+//
+// Parameters:
+//   classifier - The classifier to use
+//
 template <typename Classifier>
 void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 {
@@ -1659,6 +1669,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
     }
 }
 
+//-----------------------------------------------------------------------------
+// lvaClassifyParameterABI:
+//  Classify the ABI information for all parameters.
+//
 void Compiler::lvaClassifyParameterABI()
 {
     if (info.compArgsCount == 0)
@@ -1687,6 +1701,7 @@ void Compiler::lvaClassifyParameterABI()
     }
 #endif
 
+#ifdef DEBUG
     if (lvaParameterPassingInfo == nullptr)
     {
         return;
@@ -1743,6 +1758,7 @@ void Compiler::lvaClassifyParameterABI()
             }
         }
     }
+#endif
 }
 
 /*****************************************************************************
