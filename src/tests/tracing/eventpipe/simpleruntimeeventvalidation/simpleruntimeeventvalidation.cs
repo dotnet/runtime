@@ -24,28 +24,37 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             var ret = IpcTraceTest.RunAndValidateEventCounts(
                 // Validation is done with _DoesTraceContainEvents
                 new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-Windows-DotNETRuntime", -1 }},
-                _eventGeneratingActionForGC, 
+                _eventGeneratingActionForGC,
                 //GCKeyword (0x1): 0b1
-                new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)}, 
+                new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)},
                 1024, _DoesTraceContainGCEvents, enableRundownProvider:false);
 
             // Run the 2nd test scenario only if the first one passes
             if(ret== 100)
             {
                 ret = IpcTraceTest.RunAndValidateEventCounts(
-                    new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-DotNETCore-EventPipe", 1 }}, 
-                    _eventGeneratingActionForExceptions, 
+                    new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-DotNETCore-EventPipe", 1 }},
+                    _eventGeneratingActionForExceptions,
                     //ExceptionKeyword (0x8000): 0b1000_0000_0000_0000
-                    new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Warning, 0b1000_0000_0000_0000)}, 
+                    new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Warning, 0b1000_0000_0000_0000)},
                     1024, _DoesTraceContainExceptionEvents, enableRundownProvider:false);
 
                 if(ret == 100)
                 {
                 ret = IpcTraceTest.RunAndValidateEventCounts(
-                    new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-Windows-DotNETRuntime", -1}}, 
-                    _eventGeneratingActionForFinalizers, 
-                    new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)}, 
+                    new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-Windows-DotNETRuntime", -1}},
+                    _eventGeneratingActionForFinalizers,
+                    new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)},
                     1024, _DoesTraceContainFinalizerEvents, enableRundownProvider:false);
+
+                    if(ret == 100)
+                    {
+                        ret = IpcTraceTest.RunAndValidateEventCounts(
+                            new Dictionary<string, ExpectedEventCount>() { { "Microsoft-Windows-DotNETRuntime", -1 } },
+                            _eventGeneratingActionForAllocations,                                                                           // AllocationSamplingKeyword
+                            new List<EventPipeProvider>() { new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000) },
+                            1024, _DoesTraceContainAllocationSampledEvents, enableRundownProvider: false);
+                    }
                 }
             }
 
@@ -55,7 +64,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                 return 100;
         }
 
-        private static Action _eventGeneratingActionForGC = () => 
+        private static Action _eventGeneratingActionForGC = () =>
         {
             for (int i = 0; i < 50; i++)
             {
@@ -67,7 +76,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             }
         };
 
-        private static Action _eventGeneratingActionForExceptions = () => 
+        private static Action _eventGeneratingActionForExceptions = () =>
         {
             for (int i = 0; i < 10; i++)
             {
@@ -97,6 +106,26 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             GC.Collect();
         };
 
+
+        // 2000 instances of 1KB byte arrays should trigger between 10 and 20 events with the default 1/100KB sampling rate
+        const int InstanceCount = 2000;
+        const int MinExpectedEvents = 15;
+
+        // allocate objects to trigger dynamic allocation sampling events
+        private static Action _eventGeneratingActionForAllocations = () =>
+        {
+            int allocatedSize = 0;
+            for (int i = 0; i < InstanceCount; i++)
+            {
+                if ((i != 0) && (i % InstanceCount/5 == 0))
+                    Logger.logger.Log($"Allocated {i* InstanceCount / 5} instances {i} times...");
+
+                byte[] bytes = new byte[1024];
+                allocatedSize += bytes.Length;
+            }
+            Logger.logger.Log($"{InstanceCount} instances allocated");
+        };
+
         private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainGCEvents = (source) =>
         {
             int GCStartEvents = 0;
@@ -107,7 +136,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             int GCRestartEEStartEvents = 0;
             int GCRestartEEStopEvents = 0;
             source.Clr.GCRestartEEStart += (eventData) => GCRestartEEStartEvents += 1;
-            source.Clr.GCRestartEEStop += (eventData) => GCRestartEEStopEvents += 1;            
+            source.Clr.GCRestartEEStop += (eventData) => GCRestartEEStopEvents += 1;
 
             int GCSuspendEEEvents = 0;
             int GCSuspendEEEndEvents = 0;
@@ -139,7 +168,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
         private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainExceptionEvents = (source) =>
         {
             int ExStartEvents = 0;
-            source.Clr.ExceptionStart += (eventData) => 
+            source.Clr.ExceptionStart += (eventData) =>
             {
                 if(eventData.ToString().IndexOf("System.ArgumentNullException")>=0)
                     ExStartEvents += 1;
@@ -165,6 +194,23 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                 Logger.logger.Log("GCFinalizersEndEvents: " + GCFinalizersEndEvents);
                 Logger.logger.Log("GCFinalizersStartEvents: " + GCFinalizersStartEvents);
                 return GCFinalizersEndEvents >= 50 && GCFinalizersStartEvents >= 50 ? 100 : -1;
+            };
+        };
+
+        private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainAllocationSampledEvents = (source) =>
+        {
+            int AllocationSampledEvents = 0;
+            source.Dynamic.All += (eventData) =>
+            {
+                if (eventData.ID == (TraceEventID)303)  // AllocationSampled is not defined in TraceEvent yet
+                {
+                    AllocationSampledEvents++;
+                }
+            };
+            return () => {
+                Logger.logger.Log("AllocationSampled counts validation");
+                Logger.logger.Log("Nb events: " + AllocationSampledEvents);
+                return (AllocationSampledEvents >= MinExpectedEvents) ? 100 : -1;
             };
         };
     }
