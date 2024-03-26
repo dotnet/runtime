@@ -243,8 +243,6 @@ void Compiler::lvaInitTypeRef()
         new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(); // call the constructor.
     }
 
-    lvaParameterPassingInfo = new (this, CMK_LvaTable) ABIPassingInformation[max(info.compArgsCount, 1)]{};
-
     //-------------------------------------------------------------------------
     // Count the arguments and initialize the respective lvaTable[] entries
     //
