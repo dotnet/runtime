@@ -105,7 +105,6 @@ G_EXTERN_C void mono_wasm_enable_debugging (int log_level);
 //JS functions imported that we use
 #ifdef DISABLE_THREADS
 void mono_wasm_execute_timer (void);
-void mono_background_exec (void);
 void mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs);
 #endif // DISABLE_THREADS
 
