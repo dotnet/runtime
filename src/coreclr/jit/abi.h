@@ -54,12 +54,12 @@ struct ABIPassingInformation
 
 class RegisterQueue
 {
-    const regNumberSmall* m_regs;
-    unsigned int          m_numRegs;
-    unsigned int          m_index = 0;
+    const regNumber* m_regs;
+    unsigned int     m_numRegs;
+    unsigned int     m_index = 0;
 
 public:
-    RegisterQueue(const regNumberSmall* regs, unsigned int numRegs) : m_regs(regs), m_numRegs(numRegs)
+    RegisterQueue(const regNumber* regs, unsigned int numRegs) : m_regs(regs), m_numRegs(numRegs)
     {
     }
 
