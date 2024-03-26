@@ -1996,16 +1996,16 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector64<byte> ShuffleUnsafeEqualHelper(Vector64<byte> vector, Vector64<byte> indices)
         {
-            var shuffle = Vector64.Shuffle(value, indices);
-            var shuffleUnsafe = Vector64.ShuffleUnsafe(value, indices);
+            var shuffle = Vector64.Shuffle(vector, indices);
+            var shuffleUnsafe = Vector64.ShuffleUnsafe(vector, indices);
             CheckVectorUnsafeEquality(shuffle, shuffleUnsafe);
             return shuffle;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector64<sbyte> ShuffleUnsafeEqualHelper(Vector64<sbyte> vector, Vector64<sbyte> indices)
         {
-            var shuffle = Vector64.Shuffle(value, indices);
-            var shuffleUnsafe = Vector64.ShuffleUnsafe(value, indices);
+            var shuffle = Vector64.Shuffle(vector, indices);
+            var shuffleUnsafe = Vector64.ShuffleUnsafe(vector, indices);
             CheckVectorUnsafeEquality(shuffle, shuffleUnsafe);
             return shuffle;
         }
