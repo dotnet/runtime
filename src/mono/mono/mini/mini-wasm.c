@@ -444,12 +444,13 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 //functions exported to be used by JS
 G_BEGIN_DECLS
-EMSCRIPTEN_KEEPALIVE void mono_wasm_execute_timer (void);
-EMSCRIPTEN_KEEPALIVE void mono_background_exec (void);
 
 //JS functions imported that we use
 #ifdef DISABLE_THREADS
+EMSCRIPTEN_KEEPALIVE void mono_wasm_execute_timer (void);
+EMSCRIPTEN_KEEPALIVE void mono_background_exec (void);
 extern void mono_wasm_schedule_timer (int shortestDueTimeMs);
+#else
 extern void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread);
 #endif // DISABLE_THREADS
 G_END_DECLS
