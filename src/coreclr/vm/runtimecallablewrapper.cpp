@@ -1790,7 +1790,7 @@ void RCW::Cleanup()
 
         // Remove the memory pressure caused by this RCW (if present)
         // If we're in a shutdown situation, we can ignore the memory pressure.
-        if ((GetThread()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) == 0 && !g_fForbidEnterEE)
+        if ((GetThread()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) == 0)
             RemoveMemoryPressure();
     }
 

@@ -52,7 +52,7 @@ namespace
         LIMITED_METHOD_CONTRACT;
         // If we are finalizing all alive objects, or after this stage, we do not allow
         // a thread to enter EE.
-        return !((g_fEEShutDown & ShutDown_Finalize2) || g_fForbidEnterEE);
+        return !(g_fEEShutDown & ShutDown_Finalize2);
     }
 }
 
