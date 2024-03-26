@@ -169,7 +169,7 @@
   <!-- SocketsHttpHandler implementation -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="System\Net\Http\HttpHandlerDefaults.cs" />
-    <Compile Include="System\Net\Http\HttpMethod.Http3.cs" />
+    <Compile Include="System\Net\Http\HttpMethod.SocketsHttpHandler.cs" />
     <Compile Include="System\Net\Http\Headers\AltSvcHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\AltSvcHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeader.Http2And3.cs" />

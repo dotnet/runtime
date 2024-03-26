@@ -1249,10 +1249,11 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WritesClosed;
                     }
-                    serverSem.Release();
-                    await clientSem.WaitAsync();
 
                     var _ = await stream.ReadAsync(new byte[0]);
+
+                    serverSem.Release();
+                    await clientSem.WaitAsync();
 
                     if (closeServer)
                     {
@@ -1281,10 +1282,11 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WritesClosed;
                     }
-                    clientSem.Release();
-                    await serverSem.WaitAsync();
 
                     var _ = await stream.ReadAsync(new byte[0]);
+
+                    clientSem.Release();
+                    await serverSem.WaitAsync();
 
                     if (!closeServer)
                     {
