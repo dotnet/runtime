@@ -195,6 +195,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/100220", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
         public static void StructWithGCAndExplicitSizeIsAlignedByPtr()
         {
             Assert.True((Unsafe.SizeOf<StructWithGCAndExplicitSize>() % IntPtr.Size) == 0);
