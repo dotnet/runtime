@@ -324,17 +324,7 @@ EXTERN_C FCDECL2(Object*, JIT_NewArr1OBJ_MP_InlineGetThread, CORINFO_CLASS_HANDL
 #endif // HOST_64BIT
 
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
-
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2Lng, double val);
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2IntSSE2, double val);
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2LngP4x87, double val);
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2LngSSE3, double val);
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2LngOvf, double val);
-
-EXTERN_C FCDECL1_V(INT32, JIT_Dbl2IntOvf, double val);
-
-EXTERN_C FCDECL2_VV(float, JIT_FltRem, float dividend, float divisor);
-EXTERN_C FCDECL2_VV(double, JIT_DblRem, double dividend, double divisor);
+EXTERN_C FCDECL1_V(INT64, JIT_Dbl2LngSse3, double val);
 
 #ifndef HOST_64BIT
 #ifdef TARGET_X86

@@ -156,6 +156,58 @@ void ECall::PopulateManagedHelpers()
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMCOPY));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_MEMCPY, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_TO_UINT64));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2ULNG, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_TO_INT32_CHECKED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2INT_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_TO_UINT32_CHECKED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2UINT_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_TO_INT64_CHECKED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2LNG_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_TO_UINT64_CHECKED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2ULNG_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_FROM_INT64));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_LNG2DBL, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__DOUBLE__CONVERT_FROM_UINT64));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_ULNG2DBL, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__FMOD));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBLREM, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATHF__FMOD));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_FLTREM, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__INT64__MULTIPLY_CHECKED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_LMUL_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__UINT64__MULTIPLY_CHECKED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_ULMUL_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__ROUND));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBLROUND, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATHF__ROUND));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_FLTROUND, pDest);
 }
 
 static CrstStatic gFCallLock;

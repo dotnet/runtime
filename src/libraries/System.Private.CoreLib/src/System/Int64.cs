@@ -180,6 +180,85 @@ namespace System
         }
 
         //
+        // Helpers, those methods are referenced from the JIT
+        //
+
+        [StackTraceHidden]
+        private static long MultiplyChecked(long left, long right)
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static uint High32Bits(ulong a)
+            {
+                return (uint)(a >> 32);
+            }
+
+#if DEBUG
+            long result = left * right;
+#endif
+
+            // Remember the sign of the result
+            int sign = (int)(High32Bits((ulong)left) ^ High32Bits((ulong)right));
+
+            // Convert to unsigned multiplication
+            if (left < 0)
+                left = -left;
+            if (right < 0)
+                right = -right;
+
+            // Get the upper 32 bits of the numbers
+            uint val1High = High32Bits((ulong)left);
+            uint val2High = High32Bits((ulong)right);
+
+            ulong valMid;
+
+            if (val1High == 0)
+            {
+                // Compute the 'middle' bits of the long multiplication
+                valMid = Math.BigMul(val2High, (uint)left);
+            }
+            else
+            {
+                if (val2High != 0)
+                    goto Overflow;
+                // Compute the 'middle' bits of the long multiplication
+                valMid = Math.BigMul(val1High, (uint)right);
+            }
+
+            // See if any bits after bit 32 are set
+            if (High32Bits(valMid) != 0)
+                goto Overflow;
+
+            long ret = (long)(Math.BigMul((uint)left, (uint)right) + (valMid << 32));
+
+            // check for overflow
+            if (High32Bits((ulong)ret) < (uint)valMid)
+                goto Overflow;
+
+            if (sign >= 0)
+            {
+                // have we spilled into the sign bit?
+                if (ret < 0)
+                    goto Overflow;
+            }
+            else
+            {
+                ret = -ret;
+                // have we spilled into the sign bit?
+                if (ret > 0)
+                    goto Overflow;
+            }
+
+#if DEBUG
+            Debug.Assert(ret == result, $"Multiply overflow got: {ret}, expected: {result}");
+#endif
+            return ret;
+
+        Overflow:
+            ThrowHelper.ThrowOverflowException();
+            return 0;
+        }
+
+        //
         // IConvertible implementation
         //
 

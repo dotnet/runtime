@@ -5,81 +5,13 @@
 #include "CommonMacros.h"
 #include "rhassert.h"
 
-//
-// Floating point and 64-bit integer math helpers.
-//
-
-FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
-{
-    const double two63  = 2147483648.0 * 4294967296.0;
-    uint64_t ret;
-    if (val < two63)
-    {
-        ret = (int64_t)(val);
-    }
-    else
-    {
-        // subtract 0x8000000000000000, do the convert then add it back again
-        ret = (int64_t)(val - two63) + I64(0x8000000000000000);
-    }
-    return ret;
-}
-FCIMPLEND
-
 #undef min
 #undef max
 #include <cmath>
 
-FCIMPL2_FF(float, RhpFltRem, float dividend, float divisor)
-{
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-
-    if (divisor==0 || !std::isfinite(dividend))
-    {
-        return -nanf("");
-    }
-    else if (!std::isfinite(divisor) && !std::isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-    return fmodf(dividend,divisor);
-}
-FCIMPLEND
-
-FCIMPL2_DD(double, RhpDblRem, double dividend, double divisor)
-{
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-    if (divisor==0 || !std::isfinite(dividend))
-    {
-        return -nan("");
-    }
-    else if (!std::isfinite(divisor) && !std::isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-    return(fmod(dividend,divisor));
-}
-FCIMPLEND
+//
+// Floating point and 64-bit integer math helpers.
+//
 
 #ifndef HOST_64BIT
 EXTERN_C int64_t QCALLTYPE RhpLDiv(int64_t i, int64_t j)
@@ -106,12 +38,6 @@ EXTERN_C uint64_t QCALLTYPE RhpULMod(uint64_t i, uint64_t j)
     return i % j;
 }
 
-FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
-{
-    return (int64_t)val;
-}
-FCIMPLEND
-
 FCIMPL1_D(int32_t, RhpDbl2Int, double val)
 {
     return (int32_t)val;
@@ -124,15 +50,9 @@ FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
 }
 FCIMPLEND
 
-FCIMPL1_L(double, RhpLng2Dbl, int64_t val)
+FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
 {
-    return (double)val;
-}
-FCIMPLEND
-
-FCIMPL1_L(double, RhpULng2Dbl, uint64_t val)
-{
-    return (double)val;
+    return (int64_t)val;
 }
 FCIMPLEND
 
@@ -361,6 +281,14 @@ FCIMPLEND
 
 FCIMPL1_F(float, tanhf, float x)
     return std::tanhf(x);
+FCIMPLEND
+
+FCIMPL2_DD(double, fmod, double x, double y)
+    return std::fmod(x, y);
+FCIMPLEND
+
+FCIMPL2_FF(float, fmodf, float x, float y)
+    return std::fmodf(x, y);
 FCIMPLEND
 
 FCIMPL3_DDD(double, fma, double x, double y, double z)

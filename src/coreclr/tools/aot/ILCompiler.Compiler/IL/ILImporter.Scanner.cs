@@ -1224,7 +1224,7 @@ namespace Internal.IL
                     break;
                 case ILOpcode.mul_ovf:
                 case ILOpcode.mul_ovf_un:
-                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    if (_compilation.TypeSystemContext.Target.PointerSize == 4)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LMulOfv), "_lmulovf");
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULMulOvf), "_ulmulovf");
@@ -1245,6 +1245,10 @@ namespace Internal.IL
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
                     }
+                    if (opcode == ILOpcode.div)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
+                    }
                     break;
                 case ILOpcode.rem:
                 case ILOpcode.rem_un:
@@ -1259,7 +1263,62 @@ namespace Internal.IL
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
                     }
+                    if (opcode == ILOpcode.rem)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
+                    }
+
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.DblRem), "rem");
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.FltRem), "rem");
                     break;
+            }
+        }
+
+        private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
+        {
+            switch (wellKnownType)
+            {
+                case WellKnownType.Byte:
+                case WellKnownType.UInt16:
+                case WellKnownType.SByte:
+                case WellKnownType.Int16:
+                case WellKnownType.Int32:
+                    if (checkOverflow)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2IntOvf), "conv_i4_ovf");
+                    }
+                    break;
+                case WellKnownType.Int64:
+                    if (checkOverflow)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2LngOvf), "conv_i8_ovf");
+                    }
+                    break;
+                case WellKnownType.UInt32:
+                    if (checkOverflow)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2UIntOvf), "conv_u4_ovf");
+                    }
+                    break;
+                case WellKnownType.UInt64:
+                    if (checkOverflow)
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2ULngOvf), "conv_u8_ovf");
+                    }
+                    else
+                    {
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2ULng), "conv_u8");
+                    }
+                    break;
+                case WellKnownType.Single:
+                case WellKnownType.Double:
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Lng2Dbl), "conv_r");
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULng2Dbl), "conv_r");
+                    break;
+            }
+            if (checkOverflow)
+            {
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
             }
         }
 
@@ -1388,7 +1447,6 @@ namespace Internal.IL
         private static void ImportStoreIndirect(TypeDesc type) { }
         private static void ImportShiftOperation(ILOpcode opcode) { }
         private static void ImportCompareOperation(ILOpcode opcode) { }
-        private static void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned) { }
         private static void ImportUnaryOperation(ILOpcode opCode) { }
         private static void ImportCpOpj(int token) { }
         private static void ImportCkFinite() { }

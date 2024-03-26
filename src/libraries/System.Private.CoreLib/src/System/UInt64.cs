@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -174,6 +175,58 @@ namespace System
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+        }
+
+        //
+        // Helpers, those methods are referenced from the JIT
+        //
+
+        [StackTraceHidden]
+        private static ulong MultiplyChecked(ulong left, ulong right)
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static uint High32Bits(ulong a)
+            {
+                return (uint)(a >> 32);
+            }
+
+            // Get the upper 32 bits of the numbers
+            uint val1High = High32Bits(left);
+            uint val2High = High32Bits(right);
+
+            ulong valMid;
+
+            if (val1High == 0)
+            {
+                if (val2High == 0)
+                    return Math.BigMul((uint)left, (uint)right);
+                // Compute the 'middle' bits of the long multiplication
+                valMid = Math.BigMul(val2High, (uint)left);
+            }
+            else
+            {
+                if (val2High != 0)
+                    goto Overflow;
+                // Compute the 'middle' bits of the long multiplication
+                valMid = Math.BigMul(val1High, (uint)right);
+            }
+
+            // See if any bits after bit 32 are set
+            if (High32Bits(valMid) != 0)
+                goto Overflow;
+
+            ulong ret = Math.BigMul((uint)left, (uint)right) + (valMid << 32);
+
+            // check for overflow
+            if (High32Bits(ret) < (uint)valMid)
+                goto Overflow;
+
+            Debug.Assert(ret == left * right, $"Multiply overflow got: {ret}, expected: {left * right}");
+            return ret;
+
+        Overflow:
+            ThrowHelper.ThrowOverflowException();
+            return 0;
         }
 
         //
