@@ -341,7 +341,7 @@ namespace LayoutClass
         [Fact]
         public static void StructWithGCAndExplicitSizeIsAlignedByPtr()
         {
-            Assert.True((Unsafe.SizeOf<MyStruct>() % IntPtr.Size) == 0);
+            Assert.True((Unsafe.SizeOf<StructWithGCAndExplicitSize>() % IntPtr.Size) == 0);
         }
 
         [StructLayout(LayoutKind.Explicit, Size = 9)]
