@@ -402,7 +402,6 @@ public:
     FORCEINLINE bool IsFloatMaskPresent(regMaskFloat maskToCheck) const;
     // bool IsOnlyRegNumInMask(regNumber reg);
     FORCEINLINE regMaskOnlyOne GetRegMaskForType(var_types type) const;
-    FORCEINLINE regMaskOnlyOne GetMaskForRegNum(regNumber reg) const;
 
     // TODO: this might go away once we have just `regMaskTP` gpr_float field
     FORCEINLINE bool IsGprOrFloatPresent() const;

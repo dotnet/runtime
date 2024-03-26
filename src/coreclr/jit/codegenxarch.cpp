@@ -1595,7 +1595,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     // There may also be a conflict with the falseVal in case this is an AND
     // condition. Once again, after swapping there should be no conflict as
     // ensured by LSRA.
-    if ((desc.oper == GT_AND) && (falseVal->gtGetContainedRegMask().GetMaskForRegNum(dstReg) & dstReg) != 0)
+    if ((desc.oper == GT_AND) && falseVal->gtGetContainedRegMask().IsRegNumInMask(dstReg))
     {
         std::swap(trueVal, falseVal);
         cc   = GenCondition::Reverse(cc);

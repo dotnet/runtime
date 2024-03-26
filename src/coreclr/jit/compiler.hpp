@@ -5328,13 +5328,6 @@ regMaskOnlyOne AllRegsMask::GetRegMaskForType(var_types type) const
 #endif
 }
 
-regMaskOnlyOne AllRegsMask::GetMaskForRegNum(regNumber reg) const
-{
-    int         index = regIndexForRegister(reg);
-    RegBitSet32 value = _registers[index];
-    return decodeForIndex(index, value);
-}
-
 regMaskTP AllRegsMask::GetGprFloatCombinedMask() const
 {
     // TODO: NEed to revert this once we change floatRegs to 32-bits

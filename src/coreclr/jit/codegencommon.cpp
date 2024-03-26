@@ -8235,7 +8235,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
             if (targetReg != sourceReg)
             {
                 singleRegMask targetRegMask = genRegMask(targetReg);
-                assert((busyRegs.GetMaskForRegNum(targetReg) & targetRegMask) == 0);
+                assert(!busyRegs.IsRegNumInMask(targetReg));
                 busyRegs.RemoveRegNumFromMask(sourceReg);
             }
             busyRegs.AddRegNumInMask(targetReg);
