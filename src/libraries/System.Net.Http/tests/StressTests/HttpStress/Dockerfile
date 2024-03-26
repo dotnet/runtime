@@ -7,7 +7,7 @@ RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
     gem install fpm
-RUN git clone -b recv-buffer-data-loss-v2 --recursive https://github.com/rzikm/msquic
+RUN git clone --recursive https://github.com/microsoft/msquic --depth 1
 RUN cd msquic/ && \
     mkdir build && \
     cmake -B build -DCMAKE_BUILD_TYPE=Release -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off -DQUIC_TLS=openssl3  -DQUIC_ENABLE_SANITIZERS=on && \
@@ -40,10 +40,12 @@ ENV DOTNET_DbgMiniDumpName="/dumps-share/coredump.%p"
 
 EXPOSE 5001
 
+# configure adress sanitizer
+ENV ASAN_OPTIONS='detect_leaks=0'
+ENV LD_PRELOAD=/usr/bin/../lib/gcc/x86_64-linux-gnu/12/libasan.so
+
 ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION
 ENV HTTPSTRESS_ARGS=''
-ENV ASAN_OPTIONS='detect_leaks=0'
-ENV LD_PRELOAD=/usr/bin/../lib/gcc/x86_64-linux-gnu/12/libasan.so
 CMD /live-runtime-artifacts/testhost/net$VERSION-linux-$CONFIGURATION-x64/dotnet exec --roll-forward Major \
     ./bin/$CONFIGURATION/net$VERSION/HttpStress.dll $HTTPSTRESS_ARGS
