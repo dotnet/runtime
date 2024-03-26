@@ -8,6 +8,7 @@ import { VoidPtr, CharPtr } from "./types/emscripten";
 import cwraps, { I52Error } from "./cwraps";
 import { Module, mono_assert, runtimeHelpers } from "./globals";
 import { utf8ToString } from "./strings";
+import { mono_log_warn } from "./logging";
 
 const alloca_stack: Array<VoidPtr> = [];
 const alloca_buffer_size = 32 * 1024;
@@ -186,10 +187,17 @@ export function setF64(offset: MemOffset, value: number): void {
     Module.HEAPF64[<any>offset >>> 3] = value;
 }
 
+let warnDirtyBool = true;
+
 /** note: MonoBoolean is 8 bits not 32 bits when inside a structure or array */
 export function getB32(offset: MemOffset): boolean {
     receiveWorkerHeapViews();
-    return !!(Module.HEAP32[<any>offset >>> 2]);
+    const value = (Module.HEAP32[<any>offset >>> 2]);
+    if (value > 1 && warnDirtyBool) {
+        warnDirtyBool = false;
+        mono_log_warn(`getB32: value at ${offset} is not a boolean, but a number: ${value}`);
+    }
+    return !!value;
 }
 
 export function getB8(offset: MemOffset): boolean {
