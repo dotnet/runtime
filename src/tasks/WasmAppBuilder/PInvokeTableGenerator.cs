@@ -323,12 +323,13 @@ internal sealed class PInvokeTableGenerator
         // Only blittable parameter/return types are supposed.
         int cb_index = 0;
 
-        w.WriteLine("#include <mono/utils/details/mono-error-types.h>\n" +
-                    "#include <mono/metadata/assembly.h>\n" +
-                    "#include <mono/utils/mono-error.h>\n" +
-                    "#include <mono/metadata/object.h>\n" +
-                    "#include <mono/utils/details/mono-logger-types.h>\n" +
-                    "#include \"runtime.h\"\n");
+        w.Write(@"#include <mono/utils/details/mono-error-types.h>
+                #include <mono/metadata/assembly.h>
+                #include <mono/utils/mono-error.h>
+                #include <mono/metadata/object.h>
+                #include <mono/utils/details/mono-logger-types.h>
+                #include ""runtime.h""
+                ");
 
         // Arguments to interp entry functions in the runtime
         w.WriteLine($"InterpFtnDesc wasm_native_to_interp_ftndescs[{callbacks.Count}] = {{}};");
