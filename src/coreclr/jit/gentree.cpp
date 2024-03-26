@@ -24720,7 +24720,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                 uint8_t control = 1; // 0b00000001
                 cnsNode         = gtNewIconNode(control);
                 GenTree* swap   = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&op1), fgMakeMultiUse(&op1), cnsNode,
-                                                           NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
+                                                         NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
 
                 // if we have non-default shuffle mask
                 if (nonDefaultShuffleMask)
