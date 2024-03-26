@@ -306,12 +306,7 @@ export function prepareAssets() {
             convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
         }
 
-        const addAssemblyAsset = (name: string, hash: string | null, isCore: boolean) => {
-            const asset: AssetEntryInternal = {
-                name,
-                hash,
-                behavior: "assembly"
-            };
+        const addAsset = (asset: AssetEntryInternal, isCore: boolean) => {
             if (isCore) {
                 asset.isCore = true;
                 coreAssetsToLoad.push(asset);
@@ -322,41 +317,43 @@ export function prepareAssets() {
 
         if (resources.coreAssembly) {
             for (const name in resources.coreAssembly) {
-                addAssemblyAsset(name, resources.coreAssembly[name], true);
+                addAsset({
+                    name,
+                    hash: resources.coreAssembly[name],
+                    behavior: "assembly"
+                }, true);
             }
         }
 
         if (resources.assembly) {
             for (const name in resources.assembly) {
-                addAssemblyAsset(name, resources.assembly[name], false);
+                addAsset({
+                    name,
+                    hash: resources.assembly[name],
+                    behavior: "assembly"
+                }, false);
             }
         }
-
-        const addPdbAsset = (name: string, hash: string | null, isCore: boolean) => {
-            const asset: AssetEntryInternal = {
-                name,
-                hash,
-                behavior: "pdb"
-            };
-            if (isCore) {
-                asset.isCore = true;
-                coreAssetsToLoad.push(asset);
-            } else {
-                assetsToLoad.push(asset);
-            }
-        };
 
 
         if (config.debugLevel != 0 && loaderHelpers.isDebuggingSupported()) {
             if (resources.corePdb) {
                 for (const name in resources.corePdb) {
-                    addPdbAsset(name, resources.corePdb[name], false);
+                    addAsset({
+                        name,
+                        hash: resources.corePdb[name],
+                        behavior: "pdb"
+                    }, true);
                 }
             }
 
             if (resources.pdb) {
                 for (const name in resources.pdb) {
-                    addPdbAsset(name, resources.pdb[name], false);
+                    addAsset({
+                        name,
+                        hash: resources.pdb[name],
+                        behavior: "pdb"
+                    }, false);
                 }
             }
         }
@@ -374,25 +371,15 @@ export function prepareAssets() {
             }
         }
 
-        const addVfsAsset = (virtualPath: string, name: string, hash: string | null, isCore: boolean) => {
-            const asset: AssetEntryInternal = {
-                name,
-                hash,
-                behavior: "vfs",
-                virtualPath
-            };
-            if (isCore) {
-                asset.isCore = true;
-                coreAssetsToLoad.push(asset);
-            } else {
-                assetsToLoad.push(asset);
-            }
-        };
-
         if (resources.coreVfs) {
             for (const virtualPath in resources.coreVfs) {
                 for (const name in resources.coreVfs[virtualPath]) {
-                    addVfsAsset(virtualPath, name, resources.coreVfs[virtualPath][name], true);
+                    addAsset({
+                        name,
+                        hash: resources.coreVfs[virtualPath][name],
+                        behavior: "vfs",
+                        virtualPath
+                    }, true);
                 }
             }
         }
@@ -400,7 +387,12 @@ export function prepareAssets() {
         if (resources.vfs) {
             for (const virtualPath in resources.vfs) {
                 for (const name in resources.vfs[virtualPath]) {
-                    addVfsAsset(virtualPath, name, resources.vfs[virtualPath][name], false);
+                    addAsset({
+                        name,
+                        hash: resources.vfs[virtualPath][name],
+                        behavior: "vfs",
+                        virtualPath
+                    }, false);
                 }
             }
         }

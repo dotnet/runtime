@@ -208,8 +208,10 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
                 var assemblyName = Path.GetFileName(assemblyPath);
                 bool isCoreAssembly = helper.IsCoreAssembly(assemblyName);
+
                 var assemblyList = isCoreAssembly ? bootConfig.resources.coreAssembly : bootConfig.resources.assembly;
                 assemblyList[assemblyName] = Utils.ComputeIntegrity(bytes);
+
                 if (DebugLevel != 0)
                 {
                     var pdb = Path.ChangeExtension(assembly, ".pdb");
