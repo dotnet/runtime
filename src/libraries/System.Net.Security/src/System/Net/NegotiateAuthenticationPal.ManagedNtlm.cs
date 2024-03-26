@@ -262,8 +262,14 @@ namespace System.Net
                 {
                     Debug.Assert(incomingBlob.IsEmpty);
 
+                    Flags requiredFlags = s_requiredFlags;
+                    if (_protectionLevel == ProtectionLevel.EncryptAndSign)
+                    {
+                        requiredFlags |= Flags.NegotiateSeal;
+                    }
+
                     _negotiateMessage = new byte[sizeof(NegotiateMessage)];
-                    CreateNtlmNegotiateMessage(_negotiateMessage);
+                    CreateNtlmNegotiateMessage(_negotiateMessage, requiredFlags);
 
                     outgoingBlob = _negotiateMessage;
                     statusCode = NegotiateAuthenticationStatusCode.ContinueNeeded;
@@ -278,7 +284,7 @@ namespace System.Net
                 return outgoingBlob;
             }
 
-            private static unsafe void CreateNtlmNegotiateMessage(Span<byte> asBytes)
+            private static unsafe void CreateNtlmNegotiateMessage(Span<byte> asBytes, Flags requiredFlags)
             {
                 Debug.Assert(HeaderLength == NtlmHeader.Length);
                 Debug.Assert(asBytes.Length == sizeof(NegotiateMessage));
@@ -288,7 +294,7 @@ namespace System.Net
                 asBytes.Clear();
                 NtlmHeader.CopyTo(asBytes);
                 message.Header.MessageType = MessageType.Negotiate;
-                message.Flags = s_requiredFlags;
+                message.Flags = requiredFlags;
                 message.Version = s_version;
             }
 
@@ -560,6 +566,13 @@ namespace System.Net
                     return null;
                 }
 
+                // We already negotiate signing, so we only need to check sealing/encryption.
+                if ((flags & Flags.NegotiateSeal) == 0 && _protectionLevel == ProtectionLevel.EncryptAndSign)
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.QopNotSupported;
+                    return null;
+                }
+
                 ReadOnlySpan<byte> targetInfo = GetField(challengeMessage.TargetInfo, blob);
                 byte[] targetInfoBuffer = ProcessTargetInfo(targetInfo, out DateTime time, out bool hasNbNames);
 
@@ -594,7 +607,7 @@ namespace System.Net
                 NtlmHeader.CopyTo(responseAsSpan);
 
                 response.Header.MessageType = MessageType.Authenticate;
-                response.Flags = s_requiredFlags;
+                response.Flags = s_requiredFlags | (flags & Flags.NegotiateSeal);
                 response.Version = s_version;
 
                 // Calculate hash for hmac - same for lm2 and ntlm2
