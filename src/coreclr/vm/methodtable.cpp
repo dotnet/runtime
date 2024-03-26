@@ -3438,6 +3438,28 @@ _End_arg:
 #endif
 
 #if defined(TARGET_RISCV64)
+static bool HandleInlineArray(int elementTypeIndex, int nElements, CorElementType types[2], int* typeIndex)
+{
+    int nFlattenedFieldsPerElement = *typeIndex - elementTypeIndex;
+    if (nFlattenedFieldsPerElement == 0)
+        return true;
+
+    assert(nFlattenedFieldsPerElement == 1 || nFlattenedFieldsPerElement == 2);
+
+    if (nElements > 2)
+        return false;
+
+    if (nElements == 2)
+    {
+        if (*typeIndex + nFlattenedFieldsPerElement > 2)
+            return false;
+
+        assert(elementTypeIndex == 0);
+        assert(*typeIndex == 1);
+        types[(*typeIndex)++] = types[elementTypeIndex]; // duplicate the array element type
+    }
+    return true;
+}
 
 static bool GetFlattenedFieldTypes(CORINFO_CLASS_HANDLE cls, CorElementType types[2], int* typeIndex)
 {
@@ -3454,83 +3476,81 @@ static bool GetFlattenedFieldTypes(CORINFO_CLASS_HANDLE cls, CorElementType type
 
     assert(nFields == 1 || nFields == 2);
 
-    FieldDesc* fields = pMT->GetApproxFieldDescListRaw();
-    if (nFields == 2 && fields[0].GetSize() > fields[1].GetOffset()) // overlapping fields
-        return false;
-
-    int elementTypeIndex = *typeIndex;
-
-    for (int i = 0; i < nFields; ++i)
+    // TODO: templatize isManaged and use if constexpr for differences when we migrate to C++17
+    // because the logic for both branches is nearly the same.
+    if (isManaged)
     {
-        CorElementType type = fields[i].GetFieldType();
-        if (type == ELEMENT_TYPE_VALUETYPE)
+        FieldDesc* fields = pMT->GetApproxFieldDescListRaw();
+        if (nFields == 2 && fields[0].GetSize() > fields[1].GetOffset()) // overlapping fields
+            return false;
+
+        int elementTypeIndex = *typeIndex;
+        for (int i = 0; i < nFields; ++i)
         {
-            if (isManaged)
+            CorElementType type = fields[i].GetFieldType();
+            if (type == ELEMENT_TYPE_VALUETYPE)
             {
                 MethodTable* nested = fields[i].GetApproxFieldTypeHandleThrowing().GetMethodTable();
                 if (!GetFlattenedFieldTypes((CORINFO_CLASS_HANDLE)nested, types, typeIndex))
                     return false;
             }
+            else if (fields[i].GetSize() <= TARGET_POINTER_SIZE)
+            {
+                if (*typeIndex >= 2)
+                    return false;
+
+                types[(*typeIndex)++] = type;
+            }
             else
             {
-                const NativeFieldDescriptor& nativeField = pMT->GetNativeLayoutInfo()->GetNativeFieldDescriptors()[i];
-                NativeFieldCategory category = nativeField.GetCategory();
-                if (category == NativeFieldCategory::NESTED)
-                {
-                    MethodTable* nested = nativeField.GetNestedNativeMethodTable();
-                    if (!GetFlattenedFieldTypes((CORINFO_CLASS_HANDLE)nested, types, typeIndex))
-                        return false;
-                }
-                else if (fields[i].GetSize() <= TARGET_POINTER_SIZE)
-                {
-                    bool is8 = (fields[i].GetSize() == TARGET_POINTER_SIZE);
-                    if (category == NativeFieldCategory::FLOAT)
-                        type = is8 ? ELEMENT_TYPE_R8 : ELEMENT_TYPE_R4;
-                    else
-                        type = is8 ? ELEMENT_TYPE_I8 : ELEMENT_TYPE_I4;
-
-                    assert(*typeIndex < 2);
-                    types[(*typeIndex)++] = type;
-                }
-                else
-                {
-                    return false;
-                }
+                return false;
             }
         }
-        else if (fields[i].GetSize() <= TARGET_POINTER_SIZE)
+
+        if (HasImpliedRepeatedFields(pMT)) // inline array or fixed buffer
         {
-            assert(*typeIndex < 2);
-            types[(*typeIndex)++] = type;
-        }
-        else
-        {
-            return false;
+            assert(nFields == 1);
+            int nElements = pMT->GetNumInstanceFieldBytes() / pMT->GetApproxFieldDescListRaw()->GetSize();
+            if (!HandleInlineArray(elementTypeIndex, nElements, types, typeIndex))
+                return false;
         }
     }
-
-    if (HasImpliedRepeatedFields(pMT)) // inline array or fixed buffer
+    else // native layout
     {
-        assert(nFields == 1);
-
-        int nFlattenedFieldsPerElement = *typeIndex - elementTypeIndex;
-        if (nFlattenedFieldsPerElement == 0)
-            return true;
-
-        assert(nFlattenedFieldsPerElement == 1 || nFlattenedFieldsPerElement == 2);
-
-        int nElements = pMT->GetNumInstanceFieldBytes() / fields[0].GetSize();
-        if (nElements > 2)
+        const NativeFieldDescriptor* fields = pMT->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
+        if (nFields == 2 && fields[0].NativeSize() > fields[1].GetExternalOffset()) // overlapping fields
             return false;
 
-        if (nElements == 2)
+        for (int i = 0; i < nFields; ++i)
         {
-            if (*typeIndex + nFlattenedFieldsPerElement > 2)
-                return false;
+            NativeFieldCategory category = fields[i].GetCategory();
+            if (category == NativeFieldCategory::NESTED)
+            {
+                int elementTypeIndex = *typeIndex;
 
-            assert(elementTypeIndex == 0);
-            assert(*typeIndex == 1);
-            types[(*typeIndex)++] = types[elementTypeIndex]; // duplicate the array element type
+                MethodTable* nested = fields[i].GetNestedNativeMethodTable();
+                if (!GetFlattenedFieldTypes((CORINFO_CLASS_HANDLE)nested, types, typeIndex))
+                    return false;
+
+                // In native layout fixed arrays are marked as NESTED just like structs
+                int nElements = fields[i].GetNumElements();
+                if (!HandleInlineArray(elementTypeIndex, nElements, types, typeIndex))
+                    return false;
+            }
+            else if (fields[i].NativeSize() <= TARGET_POINTER_SIZE)
+            {
+                if (*typeIndex >= 2)
+                    return false;
+
+                bool is8 = (fields[i].NativeSize() == TARGET_POINTER_SIZE);
+                types[(*typeIndex)++] = (category == NativeFieldCategory::FLOAT)
+                    ? (is8 ? ELEMENT_TYPE_R8 : ELEMENT_TYPE_R4)
+                    : (is8 ? ELEMENT_TYPE_I8 : ELEMENT_TYPE_I4);
+            }
+            else
+            {
+                return false;
+            }
         }
     }
     return true;
