@@ -11010,6 +11010,12 @@ bool Compiler::fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore,
         {
             assert(fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
 
+            // OLD CODE:
+            *pFseq      = fldSeq;
+            *byteOffset = vnStore->CoercedConstantValue<ssize_t>(treeVN) - fldSeq->GetOffset() + val;
+            return true;
+
+#if 0
             // Is the offset within the field? There might be a sequence of adds on top of a constant static field
             // address due to shared constant CSE such that `treeVN` is not the static field base address.
             // Check if the entire access doesn't span across the field and any other field. This simple check is
@@ -11026,6 +11032,7 @@ bool Compiler::fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore,
                 *byteOffset = tmpByteOffset;
                 return true;
             }
+#endif // 0
         }
     }
 
