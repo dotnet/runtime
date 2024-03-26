@@ -58,12 +58,21 @@ export function _zero_region(byteOffset: VoidPtr, sizeBytes: number): void {
     localHeapViewU8().fill(0, <any>byteOffset, <any>byteOffset + sizeBytes);
 }
 
+/** note: MonoBoolean is 8 bits not 32 bits when inside a structure or array */
 export function setB32(offset: MemOffset, value: number | boolean): void {
     receiveWorkerHeapViews();
     const boolValue = !!value;
     if (typeof (value) === "number")
         assert_int_in_range(value, 0, 1);
     Module.HEAP32[<any>offset >>> 2] = boolValue ? 1 : 0;
+}
+
+export function setB8(offset: MemOffset, value: number | boolean): void {
+    const boolValue = !!value;
+    if (typeof (value) === "number")
+        assert_int_in_range(value, 0, 1);
+    receiveWorkerHeapViews();
+    Module.HEAPU8[<any>offset] = boolValue ? 1 : 0;
 }
 
 export function setU8(offset: MemOffset, value: number): void {
@@ -177,10 +186,15 @@ export function setF64(offset: MemOffset, value: number): void {
     Module.HEAPF64[<any>offset >>> 3] = value;
 }
 
-
+/** note: MonoBoolean is 8 bits not 32 bits when inside a structure or array */
 export function getB32(offset: MemOffset): boolean {
     receiveWorkerHeapViews();
     return !!(Module.HEAP32[<any>offset >>> 2]);
+}
+
+export function getB8(offset: MemOffset): boolean {
+    receiveWorkerHeapViews();
+    return !!(Module.HEAPU8[<any>offset]);
 }
 
 export function getU8(offset: MemOffset): number {
