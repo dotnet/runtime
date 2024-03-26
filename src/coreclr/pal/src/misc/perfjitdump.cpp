@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // ===========================================================================
 
-#if defined(__linux__) || defined(__APPLE__)
-#define JITDUMP_SUPPORTED
-#endif
-
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 
 #include <cstddef>
+
+#if defined(__linux__) || defined(__APPLE__)
+#define JITDUMP_SUPPORTED
+#endif
 
 #ifdef JITDUMP_SUPPORTED
 
@@ -26,6 +26,10 @@
 #include <time.h>
 #include <unistd.h>
 #include <limits.h>
+
+#if defined(__APPLE__)
+#include <mach/mach_time.h>
+#endif
 
 #include "../inc/llvm/ELF.h"
 
@@ -61,40 +65,11 @@ namespace
         JIT_CODE_LOAD = 0,
     };
 
-#if defined(__linux__)
-    static uint32_t sys_gettid()
+    static uint64_t GetTimeStampNS()
     {
-        return syscall(SYS_gettid);
-    }
-#else
-    static uint32_t sys_gettid()
-    {
-        // macOS SYS_gettid is completely unrelated to linux gettid (it returns
-        // effective uid/gid a thread is operating under)
-        // There is pthread_threadid_np(), but it returns a uint64_t.
-        // Given that we need a uint32_t, just return 0 here for now.
-        return 0;
-    }
-#endif
-
-    uint64_t GetTimeStampNS()
-    {
-#if HAVE_CLOCK_MONOTONIC
-        struct timespec ts;
-        int result = clock_gettime(CLOCK_MONOTONIC, &ts);
-
-        if (result != 0)
-        {
-            ASSERT("clock_gettime(CLOCK_MONOTONIC) failed: %d\n", result);
-            return 0;
-        }
-        else
-        {
-            return  ts.tv_sec * 1000000000ULL + ts.tv_nsec;
-        }
-#else
-    #error "The PAL jitdump requires clock_gettime(CLOCK_MONOTONIC) to be supported."
-#endif
+        LARGE_INTEGER result;
+        QueryPerformanceCounter(&result);
+        return result.QuadPart;
     }
 
     struct FileHeader
@@ -131,7 +106,7 @@ namespace
     {
         JitCodeLoadRecord() :
             pid(getpid()),
-            tid(sys_gettid())
+            tid((uint32_t)PlatformGetCurrentThreadId())
         {
             header.id = JIT_CODE_LOAD;
             header.timestamp = GetTimeStampNS();
@@ -185,6 +160,19 @@ struct PerfJitDumpState
     int Start(const char* path)
     {
         int result = 0;
+
+        // On platforms where JITDUMP is used, the PAL QueryPerformanceFrequency
+        // returns tccSecondsToNanoSeconds, meaning QueryPerformanceCounter
+        // will return a direct nanosecond value. If this isn't true,
+        // then some other method will need to be used to implement GetTimeStampNS.
+        // Validate this is true once in Start here.
+        LARGE_INTEGER freq;
+        QueryPerformanceFrequency(&freq);
+        if (freq.QuadPart != tccSecondsToNanoSeconds)
+        {
+            _ASSERTE(!"QueryPerformanceFrequency does not return tccSecondsToNanoSeconds. Implement JITDUMP GetTimeStampNS directly for this platform.\n");
+            FatalError();
+        }
 
         // Write file header
         FileHeader header;
