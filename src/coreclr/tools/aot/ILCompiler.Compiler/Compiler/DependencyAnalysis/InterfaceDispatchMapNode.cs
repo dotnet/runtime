@@ -164,12 +164,17 @@ namespace ILCompiler.DependencyAnalysis
             bool needsEntriesForInstanceInterfaceMethodImpls = !isInterface
                     || ((MetadataType)declType).IsDynamicInterfaceCastableImplementation();
 
+            int entryIndex = 0;
+
             // Resolve all the interfaces, but only emit non-static and non-default implementations
             for (int interfaceIndex = 0; interfaceIndex < declTypeRuntimeInterfaces.Length; interfaceIndex++)
             {
                 var interfaceType = declTypeRuntimeInterfaces[interfaceIndex];
                 var definitionInterfaceType = declTypeDefinitionRuntimeInterfaces[interfaceIndex];
                 Debug.Assert(interfaceType.IsInterface);
+
+                if (!factory.InterfaceUse(interfaceType.GetTypeDefinition()).Marked)
+                    continue;
 
                 IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(interfaceType).Slots;
 
@@ -210,11 +215,11 @@ namespace ILCompiler.DependencyAnalysis
                             int genericContext = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg()
                                 ? StaticVirtualMethodContextSource.ContextFromThisClass
                                 : StaticVirtualMethodContextSource.None;
-                            staticImplementations.Add((interfaceIndex, emittedInterfaceSlot, emittedImplSlot, genericContext));
+                            staticImplementations.Add((entryIndex, emittedInterfaceSlot, emittedImplSlot, genericContext));
                         }
                         else
                         {
-                            builder.EmitShort((short)checked((ushort)interfaceIndex));
+                            builder.EmitShort((short)checked((ushort)entryIndex));
                             builder.EmitShort((short)checked((ushort)emittedInterfaceSlot));
                             builder.EmitShort((short)checked((ushort)emittedImplSlot));
                             entryCount++;
@@ -271,7 +276,7 @@ namespace ILCompiler.DependencyAnalysis
                                     }
                                 }
                                 staticDefaultImplementations.Add((
-                                    interfaceIndex,
+                                    entryIndex,
                                     emittedInterfaceSlot,
                                     implSlot.Value,
                                     genericContext));
@@ -279,13 +284,15 @@ namespace ILCompiler.DependencyAnalysis
                             else
                             {
                                 defaultImplementations.Add((
-                                    interfaceIndex,
+                                    entryIndex,
                                     emittedInterfaceSlot,
                                     implSlot.Value));
                             }
                         }
                     }
                 }
+
+                entryIndex++;
             }
 
             // Now emit the default implementations

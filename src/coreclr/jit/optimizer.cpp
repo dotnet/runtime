@@ -503,14 +503,14 @@ bool Compiler::optExtractInitTestIncr(
         if (initStmt->GetRootNode()->OperIs(GT_JTRUE))
         {
             bool doGetPrev = true;
-#ifdef DEBUG
+#ifdef OPT_CONFIG
             if (opts.optRepeat)
             {
                 // Previous optimization passes may have inserted compiler-generated
                 // statements other than duplicated loop conditions.
                 doGetPrev = (initStmt->GetPrevStmt() != nullptr);
             }
-#endif // DEBUG
+#endif // OPT_CONFIG
             if (doGetPrev)
             {
                 initStmt = initStmt->GetPrevStmt();
@@ -2889,8 +2889,40 @@ BasicBlock* Compiler::optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* 
     // out of the loop, and if possible find a spot that won't break up fall-through.
     BasicBlock* bottom         = loop->GetLexicallyBottomMostBlock();
     BasicBlock* insertionPoint = bottom;
-    while (insertionPoint->bbFallsThrough() && !insertionPoint->IsLast())
+    while (!insertionPoint->IsLast())
     {
+        switch (insertionPoint->GetKind())
+        {
+            case BBJ_ALWAYS:
+                if (!insertionPoint->JumpsToNext())
+                {
+                    // Found a branch that isn't to the next block, so we won't split up any fall-through.
+                    return insertionPoint;
+                }
+                break;
+
+            case BBJ_COND:
+                if (!insertionPoint->FalseTargetIs(insertionPoint->Next()))
+                {
+                    // Found a conditional branch that doesn't have a false branch to the next block,
+                    // so we won't split up any fall-through.
+                    return insertionPoint;
+                }
+                break;
+
+            case BBJ_CALLFINALLY:
+                if (!insertionPoint->isBBCallFinallyPair())
+                {
+                    // Found a retless BBJ_CALLFINALLY block, so we won't split up any fall-through.
+                    return insertionPoint;
+                }
+                break;
+
+            default:
+                // No fall-through to split up.
+                return insertionPoint;
+        }
+
         // Keep looking for a better insertion point if we can.
         BasicBlock* newInsertionPoint = optTryAdvanceLoopCompactionInsertionPoint(loop, insertionPoint, top, bottom);
         if (newInsertionPoint == nullptr)
@@ -5154,6 +5186,21 @@ void Compiler::optHoistCandidate(GenTree*              tree,
                 loop->GetIndex(), preheader->bbTryIndex, treeBb->bbNum, treeBb->bbTryIndex);
         return;
     }
+
+#if defined(DEBUG)
+
+    // Punt if we've reached the hoisting limit.
+    int      limit   = JitConfig.JitHoistLimit();
+    unsigned current = m_totalHoistedExpressions; // this doesn't include the current candidate yet
+
+    if ((limit >= 0) && (current >= static_cast<unsigned>(limit)))
+    {
+        JITDUMP("   ... not hoisting in " FMT_LP ", hoist count %u >= JitHoistLimit %u\n", loop->GetIndex(), current,
+                static_cast<unsigned>(limit));
+        return;
+    }
+
+#endif // defined(DEBUG)
 
     // Expression can be hoisted
     optPerformHoistExpr(tree, treeBb, loop);

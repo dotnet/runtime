@@ -50,6 +50,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "codegeninterface.h"
 #include "regset.h"
+#include "abi.h"
 #include "jitgcinfo.h"
 
 #if DUMP_GC_TABLES && defined(JIT32_GCENCODER)
@@ -456,13 +457,14 @@ enum class DoNotEnregisterReason
 #endif
     LclAddrNode, // the local is accessed with LCL_ADDR_VAR/FLD.
     CastTakesAddr,
-    StoreBlkSrc,          // the local is used as STORE_BLK source.
-    SwizzleArg,           // the local is passed using LCL_FLD as another type.
-    BlockOpRet,           // the struct is returned and it promoted or there is a cast.
-    ReturnSpCheck,        // the local is used to do SP check on return from function
-    CallSpCheck,          // the local is used to do SP check on every call
-    SimdUserForcesDep,    // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
-    HiddenBufferStructArg // the argument is a hidden return buffer passed to a method.
+    StoreBlkSrc,           // the local is used as STORE_BLK source.
+    SwizzleArg,            // the local is passed using LCL_FLD as another type.
+    BlockOpRet,            // the struct is returned and it promoted or there is a cast.
+    ReturnSpCheck,         // the local is used to do SP check on return from function
+    CallSpCheck,           // the local is used to do SP check on every call
+    SimdUserForcesDep,     // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
+    HiddenBufferStructArg, // the argument is a hidden return buffer passed to a method.
+    NonStandardParameter,  // local is a parameter that is passed in a register unhandled by genFnPrologCalleeRegArgs
 };
 
 enum class AddressExposedReason
@@ -489,7 +491,6 @@ public:
     // The constructor. Most things can just be zero'ed.
     //
     // Initialize the ArgRegs to REG_STK.
-    // Morph will update if this local is passed in a register.
     LclVarDsc()
         : _lvArgReg(REG_STK)
 #if FEATURE_MULTIREG_ARGS
@@ -3464,6 +3465,11 @@ public:
 
     GenTreeIndir* gtNewMethodTableLookup(GenTree* obj);
 
+#if defined(TARGET_ARM64)
+    GenTree* gtNewSimdConvertVectorToMaskNode(var_types type, GenTree* node, CorInfoType simdBaseJitType, unsigned simdSize);
+    GenTree* gtNewSimdConvertMaskToVectorNode(GenTreeHWIntrinsic* node, var_types type);
+#endif
+
     //------------------------------------------------------------------------
     // Other GenTree functions
 
@@ -3778,6 +3784,8 @@ public:
     LclVarDsc* lvaTable;    // variable descriptor table
     unsigned   lvaTableCnt; // lvaTable size (>= lvaCount)
 
+    ABIPassingInformation* lvaParameterPassingInfo;
+
     unsigned lvaTrackedCount;             // actual # of locals being tracked
     unsigned lvaTrackedCountInSizeTUnits; // min # of size_t's sufficient to hold a bit for all the locals being tracked
 
@@ -3859,6 +3867,10 @@ public:
     // mechanism passes the address of the return address to a runtime helper
     // where it is used to detect tail-call chains.
     unsigned lvaRetAddrVar;
+
+#ifdef SWIFT_SUPPORT
+    unsigned lvaSwiftSelfArg;
+#endif
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
 
@@ -3981,6 +3993,8 @@ public:
                        CORINFO_CLASS_HANDLE    typeHnd,
                        CORINFO_ARG_LIST_HANDLE varList,
                        CORINFO_SIG_INFO*       varSig);
+
+    bool lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd);
 
     var_types lvaGetActualType(unsigned lclNum);
     var_types lvaGetRealType(unsigned lclNum);
@@ -4573,11 +4587,6 @@ protected:
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
-
-#if defined(TARGET_ARM64)
-    GenTree* convertHWIntrinsicToMask(var_types type, GenTree* node, CorInfoType simdBaseJitType, unsigned simdSize);
-    GenTree* convertHWIntrinsicFromMask(GenTreeHWIntrinsic* node, var_types type);
-#endif
 
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
@@ -7077,6 +7086,9 @@ protected:
         return (enckey & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
     }
 
+    static bool optSharedConstantCSEEnabled();
+    static bool optConstantCSEEnabled();
+
 /**************************************************************************
  *                   Value Number based CSEs
  *************************************************************************/
@@ -8127,7 +8139,7 @@ public:
     var_types eeGetArgType(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig, bool* isPinned);
     CORINFO_CLASS_HANDLE eeGetArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE list);
     CORINFO_CLASS_HANDLE eeGetClassFromContext(CORINFO_CONTEXT_HANDLE context);
-    unsigned eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig);
+    unsigned eeGetArgSize(CorInfoType corInfoType, CORINFO_CLASS_HANDLE typeHnd);
     static unsigned eeGetArgSizeAlignment(var_types type, bool isFloatHfa);
 
     // VOM info, method sigs
@@ -9852,7 +9864,8 @@ public:
         bool altJit;     // True if we are an altjit and are compiling this method
 
 #ifdef OPT_CONFIG
-        bool optRepeat; // Repeat optimizer phases k times
+        bool optRepeat;      // Repeat optimizer phases k times
+        int  optRepeatCount; // How many times to repeat. By default, comes from JitConfig.JitOptRepeatCount().
 #endif
 
         bool disAsm;       // Display native code as it is generated
@@ -10097,13 +10110,14 @@ public:
         STRESS_MODE(PHYSICAL_PROMOTION) /* Use physical promotion */                            \
         STRESS_MODE(PHYSICAL_PROMOTION_COST)                                                    \
         STRESS_MODE(UNWIND) /* stress unwind info; e.g., create function fragments */           \
+        STRESS_MODE(OPT_REPEAT) /* stress JitOptRepeat */                                       \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
         STRESS_MODE(COUNT_VARN)                                                                 \
                                                                                                 \
         /* "Check" stress areas that can be exhaustively used if we */                          \
-        /*  dont care about performance at all */                                               \
+        /*  don't care about performance at all */                                              \
                                                                                                 \
         STRESS_MODE(FORCE_INLINE) /* Treat every method as AggressiveInlining */                \
         STRESS_MODE(CHK_FLOW_UPDATE)                                                            \
@@ -10636,6 +10650,7 @@ public:
         unsigned m_returnSpCheck;
         unsigned m_callSpCheck;
         unsigned m_simdUserForcesDep;
+        unsigned m_nonStandardParameter;
         unsigned m_liveInOutHndlr;
         unsigned m_depField;
         unsigned m_noRegVars;

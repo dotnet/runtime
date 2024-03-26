@@ -21,8 +21,8 @@ export function normalizeLocale (locale: string | null) {
         }
         const canonicalLocales = (Intl as any).getCanonicalLocales(locale.replace("_", "-"));
         return canonicalLocales.length > 0 ? canonicalLocales[0] : undefined;
-    } catch(ex: any) {
-        throw new Error(`Get culture info failed for culture = ${locale} with error: ${ex}`);
+    } catch {
+        return undefined;
     }
 }
 
@@ -35,7 +35,7 @@ export function normalizeSpaces (pattern: string) {
 }
 
 
-export function isSurrogate (str: string, startIdx: number) : boolean {
+export function isSurrogate (str: string, startIdx: number): boolean {
     return SURROGATE_HIGHER_START <= str[startIdx] &&
         str[startIdx] <= SURROGATE_HIGHER_END &&
         startIdx + 1 < str.length &&

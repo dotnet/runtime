@@ -86,6 +86,7 @@ export function http_wasm_abort_request (controller: HttpController): void {
 export function http_wasm_abort_response (controller: HttpController): void {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     try {
+        controller.isAborted = true;
         if (controller.streamReader) {
             controller.streamReader.cancel().catch((err) => {
                 if (err && err.name !== "AbortError") {
@@ -249,6 +250,9 @@ export function http_wasm_get_streamed_response_bytes (controller: HttpControlle
             controller.currentBufferOffset = 0;
         }
         if (controller.currentStreamReaderChunk.done) {
+            if (controller.isAborted) {
+                throw new Error("OperationCanceledException");
+            }
             return 0;
         }
 
@@ -269,6 +273,7 @@ export function http_wasm_get_streamed_response_bytes (controller: HttpControlle
 
 interface HttpController {
     abortController: AbortController
+    isAborted?: boolean
 
     // streaming request
     streamReader?: ReadableStreamDefaultReader<Uint8Array>
