@@ -1640,8 +1640,8 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->bIsReflection = pModule->IsReflection();
     ModuleData->bIsPEFile = pModule->IsPEFile();
     ModuleData->Assembly = HOST_CDADDR(pModule->GetAssembly());
-    ModuleData->dwModuleID = pModule->GetModuleID();
-    ModuleData->dwModuleIndex = pModule->GetModuleIndex().m_dwIndex;
+    ModuleData->dwModuleID = 0; // CoreCLR no longer has this concept
+    ModuleData->dwModuleIndex = 0; // CoreCLR no longer has this concept
     ModuleData->dwTransientFlags = pModule->m_dwTransientFlags;
     ModuleData->LoaderAllocator = HOST_CDADDR(pModule->m_loaderAllocator);
     ModuleData->ThunkHeap = HOST_CDADDR(pModule->m_pThunkHeap);
@@ -3171,47 +3171,16 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
 HRESULT
 ClrDataAccess::GetDomainLocalModuleData(CLRDATA_ADDRESS addr, struct DacpDomainLocalModuleData *pLocalModuleData)
 {
-    if (addr == 0 || pLocalModuleData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    DomainLocalModule* pLocalModule = PTR_DomainLocalModule(TO_TADDR(addr));
-
-    pLocalModuleData->pGCStaticDataStart    = TO_CDADDR(PTR_TO_TADDR(pLocalModule->GetPrecomputedGCStaticsBasePointer()));
-    pLocalModuleData->pNonGCStaticDataStart = TO_CDADDR(pLocalModule->GetPrecomputedNonGCStaticsBasePointer());
-    pLocalModuleData->pDynamicClassTable    = PTR_CDADDR(pLocalModule->m_pDynamicClassTable.Load());
-    pLocalModuleData->pClassData            = (TADDR) (PTR_HOST_MEMBER_TADDR(DomainLocalModule, pLocalModule, m_pDataBlob));
-
-    SOSDacLeave();
-    return hr;
+    // CoreCLR does not use domain local modules anymore
+    return E_NOTIMPL;
 }
 
 
 HRESULT
 ClrDataAccess::GetDomainLocalModuleDataFromModule(CLRDATA_ADDRESS addr, struct DacpDomainLocalModuleData *pLocalModuleData)
 {
-    if (addr == 0 || pLocalModuleData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    Module* pModule = PTR_Module(TO_TADDR(addr));
-    DomainLocalModule* pLocalModule = PTR_DomainLocalModule(pModule->GetDomainLocalModule());
-    if (!pLocalModule)
-    {
-        hr = E_INVALIDARG;
-    }
-    else
-    {
-        pLocalModuleData->pGCStaticDataStart    = TO_CDADDR(PTR_TO_TADDR(pLocalModule->GetPrecomputedGCStaticsBasePointer()));
-        pLocalModuleData->pNonGCStaticDataStart = TO_CDADDR(pLocalModule->GetPrecomputedNonGCStaticsBasePointer());
-        pLocalModuleData->pDynamicClassTable    = PTR_CDADDR(pLocalModule->m_pDynamicClassTable.Load());
-        pLocalModuleData->pClassData            = (TADDR) (PTR_HOST_MEMBER_TADDR(DomainLocalModule, pLocalModule, m_pDataBlob));
-    }
-
-    SOSDacLeave();
-    return hr;
+    // CoreCLR does not use domain local modules anymore
+    return E_NOTIMPL;
 }
 
 HRESULT
@@ -3224,31 +3193,8 @@ ClrDataAccess::GetDomainLocalModuleDataFromAppDomain(CLRDATA_ADDRESS appDomainAd
 HRESULT
 ClrDataAccess::GetThreadLocalModuleData(CLRDATA_ADDRESS thread, unsigned int index, struct DacpThreadLocalModuleData *pLocalModuleData)
 {
-    if (pLocalModuleData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    pLocalModuleData->threadAddr = thread;
-    pLocalModuleData->ModuleIndex = index;
-
-    PTR_Thread pThread = PTR_Thread(TO_TADDR(thread));
-    PTR_ThreadLocalBlock pLocalBlock = ThreadStatics::GetCurrentTLB(pThread);
-    PTR_ThreadLocalModule pLocalModule = pLocalBlock->GetTLMIfExists(ModuleIndex(index));
-    if (!pLocalModule)
-    {
-        hr = E_INVALIDARG;
-    }
-    else
-    {
-        pLocalModuleData->pGCStaticDataStart    = TO_CDADDR(PTR_TO_TADDR(pLocalModule->GetPrecomputedGCStaticsBasePointer()));
-        pLocalModuleData->pNonGCStaticDataStart = TO_CDADDR(pLocalModule->GetPrecomputedNonGCStaticsBasePointer());
-        pLocalModuleData->pDynamicClassTable    = PTR_CDADDR(pLocalModule->m_pDynamicClassTable);
-        pLocalModuleData->pClassData            = (TADDR) (PTR_HOST_MEMBER_TADDR(ThreadLocalModule, pLocalModule, m_pDataBlob));
-    }
-
-    SOSDacLeave();
-    return hr;
+    // CoreCLR does not use thread local modules anymore
+    return E_NOTIMPL;
 }
 
 
@@ -5397,6 +5343,116 @@ HRESULT ClrDataAccess::LockedFlush()
     SOSDacEnter();
 
     Flush();
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT STDMETHODCALLTYPE ClrDataAccess::GetStaticBaseAddress(CLRDATA_ADDRESS methodTable, BOOL isGCStaticBase, CLRDATA_ADDRESS *address)
+{
+    if (!address)
+        return E_POINTER;
+    
+    if (!methodTable)
+        return E_INVALIDARG;
+    
+    SOSDacEnter();
+
+    PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(methodTable));
+
+    BOOL bIsFree = FALSE;
+    if (!DacValidateMethodTable(mTable, bIsFree))
+    {
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        if (!mTable->IsDynamicStatics())
+        {
+            *address = 0;
+        }
+        if (isGCStaticBase)
+        {
+            *address = PTR_CDADDR(mTable->GetGCStaticsBasePointer());
+        }
+        else
+        {
+            *address = PTR_CDADDR(mTable->GetNonGCStaticsBasePointer());
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+
+HRESULT STDMETHODCALLTYPE ClrDataAccess::GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS threadPtr, BOOL isGCStaticBase, CLRDATA_ADDRESS *address)
+{
+    if (!address)
+        return E_POINTER;
+    
+    if (!methodTable)
+        return E_INVALIDARG;
+
+    if (!threadPtr)
+        return E_INVALIDARG;
+    
+    SOSDacEnter();
+
+    PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(methodTable));
+    PTR_Thread thread = PTR_Thread(TO_TADDR(threadPtr));
+
+
+    BOOL bIsFree = FALSE;
+    if (!DacValidateMethodTable(mTable, bIsFree))
+    {
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        if (mTable->GetClass()->GetNumThreadStaticFields() == 0)
+        {
+            *address = 0;
+        }
+        if (isGCStaticBase)
+        {
+            *address = PTR_CDADDR(mTable->GetGCThreadStaticsBasePointer(thread));
+        }
+        else
+        {
+            *address = PTR_CDADDR(mTable->GetNonGCThreadStaticsBasePointer(thread));
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT STDMETHODCALLTYPE ClrDataAccess::GetMethodTableInitializationFlags(CLRDATA_ADDRESS methodTable, MethodTableInitializationFlags *initializationStatus)
+{
+    if (!methodTable)
+        return E_INVALIDARG;
+
+    if (!initializationStatus)
+        return E_POINTER;
+
+    SOSDacEnter();
+
+    *initializationStatus = (MethodTableInitializationFlags)0;
+    PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(methodTable));
+    BOOL bIsFree = FALSE;
+    if (!DacValidateMethodTable(mTable, bIsFree))
+    {
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        *initializationStatus = mTable->IsClassInited() ? MethodTableInitialized : (MethodTableInitializationFlags)0;
+        if (mTable->GetAuxiliaryData()->IsInitError())
+        {
+            *initializationStatus = (MethodTableInitializationFlags)(*initializationStatus | MethodTableInitializationFailed);
+        }
+    }
 
     SOSDacLeave();
     return hr;

@@ -143,10 +143,6 @@ struct    LockEntry;
 class     PrepareCodeConfig;
 class     NativeCodeVersion;
 
-struct    ThreadLocalBlock;
-typedef DPTR(struct ThreadLocalBlock) PTR_ThreadLocalBlock;
-typedef DPTR(PTR_ThreadLocalBlock) PTR_PTR_ThreadLocalBlock;
-
 typedef void(*ADCallBackFcnType)(LPVOID);
 
 #include "stackwalktypes.h"
@@ -162,72 +158,9 @@ typedef void(*ADCallBackFcnType)(LPVOID);
 #include "eventpipeadaptertypes.h"
 #endif // FEATURE_PERFTRACING
 
-struct TLMTableEntry;
+#include "threadstatics.h"
 
-typedef DPTR(struct TLMTableEntry) PTR_TLMTableEntry;
-typedef DPTR(struct ThreadLocalModule) PTR_ThreadLocalModule;
-
-class ThreadStaticHandleTable;
-struct ThreadLocalModule;
 class Module;
-
-struct ThreadLocalBlock
-{
-    friend class ClrDataAccess;
-
-private:
-    PTR_TLMTableEntry   m_pTLMTable;     // Table of ThreadLocalModules
-    SIZE_T              m_TLMTableSize;  // Current size of table
-    SpinLock            m_TLMTableLock;  // Spinlock used to synchronize growing the table and freeing TLM by other threads
-
-    // Each ThreadLocalBlock has its own ThreadStaticHandleTable. The ThreadStaticHandleTable works
-    // by allocating Object arrays on the GC heap and keeping them alive with pinning handles.
-    //
-    // We use the ThreadStaticHandleTable to allocate space for GC thread statics. A GC thread
-    // static is thread static that is either a reference type or a value type whose layout
-    // contains a pointer to a reference type.
-
-    ThreadStaticHandleTable * m_pThreadStaticHandleTable;
-
-public:
-
-#ifndef DACCESS_COMPILE
-    void AllocateThreadStaticHandles(Module * pModule, ThreadLocalModule * pThreadLocalModule);
-    OBJECTHANDLE AllocateStaticFieldObjRefPtrs(int nRequested, OBJECTHANDLE* ppLazyAllocate = NULL);
-    void InitThreadStaticHandleTable();
-
-    void AllocateThreadStaticBoxes(MethodTable* pMT);
-#endif
-
-public: // used by code generators
-    static SIZE_T GetOffsetOfModuleSlotsPointer() { return offsetof(ThreadLocalBlock, m_pTLMTable); }
-
-public:
-
-#ifndef DACCESS_COMPILE
-    ThreadLocalBlock()
-      : m_pTLMTable(NULL), m_TLMTableSize(0), m_pThreadStaticHandleTable(NULL)
-    {
-        m_TLMTableLock.Init(LOCK_TYPE_DEFAULT);
-    }
-
-    void    FreeTLM(SIZE_T i, BOOL isThreadShuttingDown);
-
-    void    FreeTable();
-
-    void    EnsureModuleIndex(ModuleIndex index);
-
-#endif
-
-    void SetModuleSlot(ModuleIndex index, PTR_ThreadLocalModule pLocalModule);
-
-    PTR_ThreadLocalModule GetTLMIfExists(ModuleIndex index);
-    PTR_ThreadLocalModule GetTLMIfExists(MethodTable* pMT);
-
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif
-};
 
 // TailCallArgBuffer states
 #define TAILCALLARGBUFFER_ACTIVE       0
@@ -3439,11 +3372,9 @@ public:
     }
 #endif //DACCESS_COMPILE
 
-    ThreadLocalBlock m_ThreadLocalBlock;
-
-    // Called during AssemblyLoadContext teardown to clean up all structures
-    // associated with thread statics for the specific Module
-    void DeleteThreadStaticData(ModuleIndex index);
+    ThreadLocalData m_ThreadLocalDataThreadObjectCopy;
+    SpinLock m_TlsSpinLock;
+    ThreadLocalData* GetThreadLocalDataPtr() { LIMITED_METHOD_DAC_CONTRACT; return &m_ThreadLocalDataThreadObjectCopy; }
 
 private:
 

@@ -134,7 +134,8 @@ enum LOCK_TYPE
 #endif
     LOCK_REFLECTCACHE = 5,
     LOCK_CORMAP = 7,
-    LOCK_TYPE_DEFAULT  = 8
+    LOCK_TLSDATA = 8,
+    LOCK_TYPE_DEFAULT = 9
 };
 
 //----------------------------------------------------------------------------

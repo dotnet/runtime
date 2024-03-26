@@ -180,9 +180,7 @@ inline BOOL IsClassOfMethodTableInited(MethodTable * pMethodTable)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return ((pMethodTable->GetModuleForStatics() != NULL) &&
-        (pMethodTable->GetDomainLocalModule() != NULL) &&
-        pMethodTable->IsClassInited());
+    return pMethodTable->IsClassInited();
 }
 
 

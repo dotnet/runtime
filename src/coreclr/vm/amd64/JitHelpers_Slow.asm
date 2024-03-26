@@ -55,9 +55,6 @@ extern g_pStringClass:QWORD
 extern FramedAllocateString:proc
 extern JIT_NewArr1:proc
 
-extern JIT_GetSharedNonGCStaticBase_Helper:proc
-extern JIT_GetSharedGCStaticBase_Helper:proc
-
 extern JIT_InternalThrow:proc
 
 ifdef _DEBUG
