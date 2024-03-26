@@ -470,27 +470,27 @@
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>2106e0604f52119b7d49577476ece7d51a23a40d</Sha>
     </Dependency>
-    <Dependency Nme="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.win-x64" Version="9.0.0-preview.4.24175.6">
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.win-x64" Version="9.0.0-preview.4.24175.6">
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>2106e0604f52119b7d49577476ece7d51a23a40d</Sha>
     </Dependency>
-    <Dependency Nme="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.win-arm64" Version="9.0.0-preview.4.24175.6">
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.win-arm64" Version="9.0.0-preview.4.24175.6">
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>2106e0604f52119b7d49577476ece7d51a23a40d</Sha>
     </Dependency>
-    <Dependency Nme="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.linux-x64" Version="9.0.0-preview.4.24175.6">
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.linux-x64" Version="9.0.0-preview.4.24175.6">
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>2106e0604f52119b7d49577476ece7d51a23a40d</Sha>
     </Dependency>
-    <Dependency Nme="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.linux-arm64" Version="9.0.0-preview.4.24175.6">
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.linux-arm64" Version="9.0.0-preview.4.24175.6">
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>2106e0604f52119b7d49577476ece7d51a23a40d</Sha>
     </Dependency>
-    <Dependency Nme="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.osx-x64" Version="9.0.0-preview.4.24175.6">
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.osx-x64" Version="9.0.0-preview.4.24175.6">
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>2106e0604f52119b7d49577476ece7d51a23a40d</Sha>
     </Dependency>
-    <Dependency Nme="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.osx-arm64" Version="9.0.0-preview.4.24175.6">
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Cache.osx-arm64" Version="9.0.0-preview.4.24175.6">
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>2106e0604f52119b7d49577476ece7d51a23a40d</Sha>
     </Dependency>
