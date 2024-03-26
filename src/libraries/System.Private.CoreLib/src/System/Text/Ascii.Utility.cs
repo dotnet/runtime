@@ -2200,11 +2200,7 @@ namespace System.Text
         private static unsafe bool HasMatch<TVectorByte>(TVectorByte vector)
             where TVectorByte : unmanaged, ISimdVector<TVectorByte, byte>
         {
-            if (AdvSimd.IsSupported && typeof(TVectorByte) == typeof(Vector128<byte>))
-            {
-                return VectorContainsNonAsciiChar((Vector128<byte>)(object)vector);
-            }
-            return ((vector & TVectorByte.Create((byte)0b1000_0000)) != TVectorByte.Zero);
+            return !(vector & TVectorByte.Create((byte)0x80)).Equals(TVectorByte.Zero);
         }
 
 
