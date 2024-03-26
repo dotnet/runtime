@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -138,13 +139,54 @@ namespace Microsoft.Win32
 
         private static ComVariant ToOAVariant(object input)
         {
-
+            return input switch
+            {
+                string str => ComVariant.Create(str),
+                char ch => ComVariant.Create(ch.ToString()), // We should override the VTtoVT default of VT_UI2 for this case.
+                DateTime dateTime => ComVariant.Create(dateTime),
+                bool b => ComVariant.Create(b),
+                decimal d => ComVariant.Create(d),
+                sbyte i1 => ComVariant.Create(i1),
+                byte u1 => ComVariant.Create(u1),
+                short i2 => ComVariant.Create(i2),
+                ushort u2 => ComVariant.Create(u2),
+                int i4 => ComVariant.Create(i4),
+                uint u4 => ComVariant.Create(u4),
+                long i8 => ComVariant.Create(i8),
+                ulong u8 => ComVariant.Create(u8),
+                float r4 => ComVariant.Create(r4),
+                double r8 => ComVariant.Create(r8),
+                null => default,
+                Missing missing => ComVariant.Create(missing),
+                DBNull => ComVariant.Null,
+                _ when Variant.IsSystemDrawingColor(RuntimeHelpers.GetMethodTable(input))
+                    => ComVariant.Create(Variant.ConvertSystemColorToOleColor(ObjectHandleOnStack.Create(ref input))),
+                _ => throw new NotImplementedException() // Convert the object to an IDispatch/IUnknown pointer.
+            };
         }
 
-        private static object FromOAVariant(ComVariant input)
-        {
-
-        }
+        private static object FromOAVariant(ComVariant input) =>
+            input.VarType switch
+            {
+                VarEnum.VT_BSTR => input.As<string>()!,
+                VarEnum.VT_DATE => input.As<DateTime>()!,
+                VarEnum.VT_BOOL => input.As<bool>()!,
+                VarEnum.VT_DECIMAL => input.As<decimal>()!,
+                VarEnum.VT_I1 => input.As<sbyte>()!,
+                VarEnum.VT_UI1 => input.As<byte>()!,
+                VarEnum.VT_I2 => input.As<short>()!,
+                VarEnum.VT_UI2 => input.As<ushort>()!,
+                VarEnum.VT_I4 => input.As<int>()!,
+                VarEnum.VT_UI4 => input.As<uint>()!,
+                VarEnum.VT_I8 => input.As<long>()!,
+                VarEnum.VT_UI8 => input.As<ulong>()!,
+                VarEnum.VT_R4 => input.As<float>()!,
+                VarEnum.VT_R8 => input.As<double>()!,
+                VarEnum.VT_EMPTY => null!,
+                VarEnum.VT_NULL => DBNull.Value,
+                VarEnum.VT_UNKNOWN or VarEnum.VT_DISPATCH => throw new NotImplementedException(), // Convert the IUnknown pointer to an OBJECTREF.
+                _ => throw new NotSupportedException(SR.NotSupported_ChangeType),
+            };
 
         private static VarEnum GetVTFromClass(Type type)
         {

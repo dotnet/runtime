@@ -85,7 +85,7 @@ namespace System
         internal static extern unsafe bool IsSystemDrawingColor(MethodTable* pMT);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertSystemColorToOleColor")]
-        private static partial uint ConvertSystemColorToOleColor(ObjectHandleOnStack obj);
+        internal static partial uint ConvertSystemColorToOleColor(ObjectHandleOnStack obj);
 
         internal unsafe void SetFieldsObject(object val)
         {
