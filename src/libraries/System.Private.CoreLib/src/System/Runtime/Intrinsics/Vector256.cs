@@ -2376,6 +2376,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].</remarks>
         [Intrinsic]
+        [CLSCompliant(false)]
         [CompExactlyDependsOn(typeof(Avx2))]
         [CompExactlyDependsOn(typeof(Avx512Vbmi.VL))]
         public static Vector256<sbyte> ShuffleUnsafe(Vector256<sbyte> vector, Vector256<sbyte> indices)
