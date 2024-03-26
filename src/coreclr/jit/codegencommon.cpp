@@ -4980,6 +4980,11 @@ void CodeGen::genHomeSwiftStructParameters(regNumber initReg, bool* initRegZeroe
 {
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
+        if (lclNum == compiler->lvaSwiftSelfArg)
+        {
+            continue;
+        }
+
         LclVarDsc* dsc = compiler->lvaGetDesc(lclNum);
         if ((dsc->TypeGet() != TYP_STRUCT) || compiler->lvaIsImplicitByRefLocal(lclNum))
         {

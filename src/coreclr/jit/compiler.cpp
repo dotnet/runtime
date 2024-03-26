@@ -604,10 +604,10 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
 //        If there are two or more elements in the HFA type then the this method's
 //         return value is TYP_STRUCT and *wbPassStruct is SPK_ByValueAsHfa
 //
-var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
-                                        structPassingKind*   wbPassStruct,
-                                        bool                 isVarArg,
-                                        unsigned             structSize)
+var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
+                                        structPassingKind*       wbPassStruct,
+                                        bool                     isVarArg,
+                                        unsigned                 structSize)
 {
     var_types         useType         = TYP_UNKNOWN;
     structPassingKind howToPassStruct = SPK_Unknown; // We must change this before we return

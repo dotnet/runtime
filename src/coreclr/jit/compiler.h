@@ -5795,10 +5795,10 @@ public:
     // isVarArg is passed for use on Windows Arm64 to change the decision returned regarding
     // hfa types.
     //
-    var_types getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
-                                  structPassingKind*   wbPassStruct,
-                                  bool                 isVarArg,
-                                  unsigned             structSize);
+    var_types getArgTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
+                                  structPassingKind*       wbPassStruct,
+                                  bool                     isVarArg,
+                                  unsigned                 structSize);
 
     // Get the type that is used to return values of the given struct type.
     // If the size is unknown, pass 0 and it will be determined from 'clsHnd'.

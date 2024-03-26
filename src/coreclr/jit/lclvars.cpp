@@ -1696,6 +1696,40 @@ void Compiler::lvaClassifyParameterABI()
     {
         SwiftABIClassifier classifier(cInfo);
         lvaClassifyParameterABI(classifier);
+
+        // The calling convention details computed by the old ABI classifier
+        // are wrong due to Swift structs. Grab them from the new ABI
+        // information.
+        for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+        {
+            LclVarDsc* dsc = lvaGetDesc(lclNum);
+            const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+
+            if (dsc->TypeGet() != TYP_STRUCT)
+            {
+                assert(abiInfo.NumSegments == 1);
+                if (abiInfo.Segments[0].IsPassedInRegister())
+                {
+                    dsc->lvIsRegArg = true;
+                    dsc->SetArgReg(abiInfo.Segments[0].GetRegister());
+                    dsc->SetOtherArgReg(REG_NA);
+                }
+                else
+                {
+                    dsc->lvIsRegArg = false;
+                    dsc->SetArgReg(REG_STK);
+                    dsc->SetOtherArgReg(REG_NA);
+                    dsc->SetStackOffset(abiInfo.Segments[0].GetStackOffset());
+                }
+            }
+            else
+            {
+#if FEATURE_IMPLICIT_BYREFS
+                const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(dsc->GetLayout()->GetClassHandle());
+                dsc->lvIsImplicitByRef = lowering->byReference;
+#endif
+            }
+        }
     }
     else
 #endif
@@ -1718,6 +1752,11 @@ void Compiler::lvaClassifyParameterABI()
         const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
 
         assert(abiInfo.NumSegments > 0);
+
+        if ((dsc->TypeGet() == TYP_STRUCT) && info.compCallConv == CorInfoCallConvExtension::Swift)
+        {
+            continue;
+        }
 
         unsigned numSegmentsToCompare = abiInfo.NumSegments;
         if (dsc->lvIsHfa())
@@ -3132,7 +3171,7 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
             if (varDsc->lvIsParam && !varDsc->lvIsStructField)
             {
                 structPassingKind howToReturnStruct;
-                getArgTypeForStruct(layout->GetClassHandle(), &howToReturnStruct, this->info.compIsVarArgs,
+                getArgTypeForStruct(layout->GetClassHandle(), &howToReturnStruct, info.compIsVarArgs,
                                     varDsc->lvExactSize());
 
                 if (howToReturnStruct == SPK_ByReference)

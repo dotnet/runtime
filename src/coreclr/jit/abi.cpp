@@ -149,6 +149,44 @@ ABIPassingSegment ABIPassingSegment::OnStack(unsigned stackOffset, unsigned offs
 }
 
 //-----------------------------------------------------------------------------
+// HasAnyRegisterSegment:
+//   Check if any part of this value is passed in a register.
+//
+// Return Value:
+//   True if so.
+//
+bool ABIPassingInformation::HasAnyRegisterSegment() const
+{
+    for (unsigned i = 0; i < NumSegments; i++)
+    {
+        if (Segments[i].IsPassedInRegister())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+//-----------------------------------------------------------------------------
+// HasAnyStackSegment:
+//   Check if any part of this value is passed on the stack.
+//
+// Return Value:
+//   True if so.
+//
+bool ABIPassingInformation::HasAnyStackSegment() const
+{
+    for (unsigned i = 0; i < NumSegments; i++)
+    {
+        if (Segments[i].IsPassedOnStack())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+//-----------------------------------------------------------------------------
 // IsSplitAcrossRegistersAndStack:
 //   Check if this ABIPassingInformation represents passing a value in both
 //   registers and on stack.

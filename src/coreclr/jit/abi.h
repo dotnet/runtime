@@ -49,6 +49,8 @@ struct ABIPassingInformation
     unsigned           NumSegments = 0;
     ABIPassingSegment* Segments    = nullptr;
 
+    bool HasAnyRegisterSegment() const;
+    bool HasAnyStackSegment() const;
     bool IsSplitAcrossRegistersAndStack() const;
 
     static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
