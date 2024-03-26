@@ -67,6 +67,7 @@ PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex inde
     }
     CONTRACTL_END;
 
+    // TODO, if and when we get array indices, we should be pickier.
     return g_pThreadStaticTypeIndices->LookupTlsIndexKnownToBeAllocated(index);
 }
 
@@ -81,6 +82,7 @@ PTR_MethodTable LookupMethodTableAndFlagForThreadStatic(TLSIndex index, bool *pI
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
+    // TODO, if and when we get array indices, we should be pickier.
     PTR_MethodTable retVal = g_pThreadStaticTypeIndices->Lookup(index, pIsGCStatic, pIsCollectible);
     return retVal;
 }
