@@ -1276,7 +1276,7 @@ TADDR Module::GetDynamicIL(mdToken token)
     CrstHolder ch(m_debuggerSpecificData.m_pDynamicILCrst);
 #endif
 
-    // The hash tables is lazily allocated, so if it is NULL
+    // The hash table is lazily allocated, so if it is NULL
     // then we have no IL blobs
 
     if (m_debuggerSpecificData.m_pDynamicILBlobTable == NULL)
