@@ -55,6 +55,53 @@ unsigned ABIPassingSegment::GetStackOffset() const
 }
 
 //-----------------------------------------------------------------------------
+// GetRegisterStoreType:
+//   Return a type that can be used to store from the register this segment is
+//   in, taking the segment's size into account.
+//
+// Return Value:
+//   A type that matches ABIPassingSegment::Size and the register type.
+//
+var_types ABIPassingSegment::GetRegisterStoreType() const
+{
+    assert(IsPassedInRegister());
+    if (genIsValidFloatReg(m_register))
+    {
+        switch (Size)
+        {
+        case 4:
+            return TYP_FLOAT;
+        case 8:
+            return TYP_DOUBLE;
+#ifdef FEATURE_SIMD
+        case 16:
+            return TYP_SIMD16;
+        default:
+            return TYP_UNDEF;
+#endif
+        }
+    }
+    else
+    {
+        switch (Size)
+        {
+        case 1:
+            return TYP_UBYTE;
+        case 2:
+            return TYP_USHORT;
+        case 4:
+            return TYP_INT;
+#ifdef TARGET_64BIT
+        case 8:
+            return TYP_LONG;
+#endif
+        default:
+            return TYP_UNDEF;
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
 // InRegister:
 //   Create an ABIPassingSegment representing that a segment is passed in a
 //   register.
@@ -140,6 +187,39 @@ ABIPassingInformation ABIPassingInformation::FromSegment(Compiler* comp, const A
     return info;
 }
 
+#ifdef DEBUG
+//-----------------------------------------------------------------------------
+// Dump:
+//   Dump the ABIPassingInformation to stdout.
+//
+void ABIPassingInformation::Dump() const
+{
+    if (NumSegments != 1)
+    {
+        printf("%u segments\n", NumSegments);
+    }
+
+    for (unsigned i = 0; i < NumSegments; i++)
+    {
+        if (NumSegments > 1)
+        {
+            printf("  [%u] ", i);
+        }
+
+        const ABIPassingSegment& seg = Segments[i];
+
+        if (Segments[i].IsPassedInRegister())
+        {
+            printf("[%02u..%02u) reg %s\n", seg.Offset, seg.Offset + seg.Size, getRegName(seg.GetRegister()));
+        }
+        else
+        {
+            printf("[%02u..%02u) stack @ +%02u\n", seg.Offset, seg.Offset + seg.Size, seg.GetStackOffset());
+        }
+    }
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // RegisterQueue::Dequeue:
 //   Dequeue a register from the queue.
@@ -207,6 +287,39 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
     {
         return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_SWIFT_SELF, 0,
                                                                                       TARGET_POINTER_SIZE));
+    }
+
+    if (type == TYP_STRUCT)
+    {
+        const CORINFO_SWIFT_LOWERING* lowering = comp->GetSwiftLowering(structLayout->GetClassHandle());
+        if (lowering->byReference)
+        {
+            return m_classifier.Classify(comp, TYP_I_IMPL, nullptr, WellKnownArg::None);
+        }
+
+        ArrayStack<ABIPassingSegment> segments(comp->getAllocator(CMK_ABI));
+        for (unsigned i = 0; i < lowering->numLoweredElements; i++)
+        {
+            var_types elemType = JITtype2varType(lowering->loweredElements[i]);
+            ABIPassingInformation elemInfo = m_classifier.Classify(comp, elemType, nullptr, WellKnownArg::None);
+
+            for (unsigned j = 0; j < elemInfo.NumSegments; j++)
+            {
+                ABIPassingSegment newSegment = elemInfo.Segments[j];
+                newSegment.Offset += lowering->offsets[i];
+                segments.Push(newSegment);
+            }
+        }
+
+        ABIPassingInformation result;
+        result.NumSegments = static_cast<unsigned>(segments.Height());
+        result.Segments = new (comp, CMK_ABI) ABIPassingSegment[result.NumSegments];
+        for (int i = 0; i < segments.Height(); i++)
+        {
+            result.Segments[i] = segments.Bottom(i);
+        }
+
+        return result;
     }
 
     return m_classifier.Classify(comp, type, structLayout, wellKnownParam);

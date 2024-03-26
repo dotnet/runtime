@@ -661,10 +661,26 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         varDsc->lvOnFrame = true;
 
 #ifdef SWIFT_SUPPORT
-        if ((info.compCallConv == CorInfoCallConvExtension::Swift) &&
-            lvaInitSpecialSwiftParam(varDscInfo, strip(corInfoType), typeHnd))
+        if (info.compCallConv == CorInfoCallConvExtension::Swift)
         {
-            continue;
+            if (varTypeIsSIMD(varDsc))
+            {
+                IMPL_LIMITATION("SIMD types are currently unsupported in Swift reverse pinvokes");
+            }
+
+            if (lvaInitSpecialSwiftParam(varDscInfo, strip(corInfoType), typeHnd))
+            {
+                continue;
+            }
+
+            if (varDsc->TypeGet() == TYP_STRUCT)
+            {
+                // Struct parameters are lowered to separate primitives in the
+                // Swift calling convention. We cannot handle these patterns
+                // efficiently, so we always DNER them and home them to stack
+                // in the prolog.
+                lvaSetVarDoNotEnregister(varDscInfo->varNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+            }
         }
 #endif
 
@@ -1647,6 +1663,14 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 #endif
 
         lvaParameterPassingInfo[i] = classifier.Classify(this, dsc->TypeGet(), structLayout, wellKnownArg);
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("Parameter #%u ABI info: ", i);
+            lvaParameterPassingInfo[i].Dump();
+        }
+#endif
     }
 }
 

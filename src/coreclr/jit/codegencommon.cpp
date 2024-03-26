@@ -4975,6 +4975,77 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
     }
 }
 
+#ifdef SWIFT_SUPPORT
+void CodeGen::genHomeSwiftStructParameters(regNumber initReg, bool *initRegZeroed)
+{
+    for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
+    {
+        LclVarDsc* dsc = compiler->lvaGetDesc(lclNum);
+        if ((dsc->TypeGet() != TYP_STRUCT) || dsc->lvIsImplicitByRef)
+        {
+            continue;
+        }
+
+        JITDUMP("Homing Swift parameter V%02u: ", lclNum);
+        const ABIPassingInformation& abiInfo = compiler->lvaParameterPassingInfo[lclNum];
+        DBEXEC(VERBOSE, abiInfo.Dump());
+
+        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+        {
+            const ABIPassingSegment& seg = abiInfo.Segments[i];
+            if (seg.IsPassedInRegister())
+            {
+                var_types storeType = seg.GetRegisterStoreType();
+                assert(storeType != TYP_UNDEF);
+                GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), seg.GetRegister(), lclNum, seg.Offset);
+            }
+            else
+            {
+                var_types loadType = TYP_UNDEF;
+                switch (seg.Size)
+                {
+                case 1:
+                    loadType = TYP_UBYTE;
+                    break;
+                case 2:
+                    loadType = TYP_USHORT;
+                    break;
+                case 4:
+                    loadType = TYP_INT;
+                    break;
+                case 8:
+                    loadType = TYP_LONG;
+                    break;
+                default:
+                    assert(!"Unexpected segment size for struct parameter not passed implicitly by ref");
+                    continue;
+                }
+
+                ssize_t offset;
+                if (isFramePointerUsed())
+                {
+                    offset = -genCallerSPtoFPdelta();
+                }
+                else
+                {
+                    offset = -genCallerSPtoInitialSPdelta();
+                }
+
+#ifdef TARGET_XARCH
+                offset += TARGET_POINTER_SIZE; // Return address
+#endif
+
+                offset += (ssize_t)seg.GetStackOffset();
+                genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), initReg, genFramePointerReg(), offset, initReg);
+                *initRegZeroed = false;
+
+                GetEmitter()->emitIns_S_R(ins_Store(loadType), emitTypeSize(loadType), initReg, lclNum, seg.Offset);
+            }
+        }
+    }
+}
+#endif
+
 /*-----------------------------------------------------------------------------
  *
  *  Save the generic context argument.
@@ -6148,14 +6219,6 @@ void CodeGen::genFnProlog()
         intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SECRET_STUB_PARAM;
     }
 
-#ifdef SWIFT_SUPPORT
-    if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) && ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
-    {
-        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
-        intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
-    }
-#endif
-
     //
     // Zero out the frame as needed
     //
@@ -6246,6 +6309,16 @@ void CodeGen::genFnProlog()
     /*-----------------------------------------------------------------------------
      * Take care of register arguments first
      */
+
+#ifdef SWIFT_SUPPORT
+    if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) && ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
+    {
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
+        intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
+    }
+
+    genHomeSwiftStructParameters(initReg, &initRegZeroed);
+#endif
 
     // Home incoming arguments and generate any required inits.
     // OSR handles this by moving the values from the original frame.

@@ -29,6 +29,8 @@ public:
     // offset, relative to the first stack argument's offset.
     unsigned GetStackOffset() const;
 
+    var_types GetRegisterStoreType() const;
+
     static ABIPassingSegment InRegister(regNumber reg, unsigned offset, unsigned size);
     static ABIPassingSegment OnStack(unsigned stackOffset, unsigned offset, unsigned size);
 };
@@ -50,6 +52,10 @@ struct ABIPassingInformation
     bool IsSplitAcrossRegistersAndStack() const;
 
     static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
+
+#ifdef DEBUG
+    void Dump() const;
+#endif
 };
 
 class RegisterQueue

@@ -276,6 +276,9 @@ protected:
 #else
     void genEnregisterOSRArgsAndLocals();
 #endif
+
+    void genHomeSwiftStructParameters(regNumber initReg, bool *initRegZeroed);
+
     void genCheckUseBlockInit();
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
     void genClearStackVec3ArgUpperBits();
