@@ -71,6 +71,8 @@ void Compiler::lvaInit()
 
 #ifdef SWIFT_SUPPORT
     lvaSwiftSelfArg = BAD_VAR_NUM;
+    lvaSwiftErrorArg = BAD_VAR_NUM;
+    lvaSwiftErrorLocal = BAD_VAR_NUM;
 #endif
 
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
@@ -654,7 +656,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #ifdef SWIFT_SUPPORT
         if ((info.compCallConv == CorInfoCallConvExtension::Swift) &&
-            lvaInitSpecialSwiftParam(varDscInfo, strip(corInfoType), typeHnd))
+            lvaInitSpecialSwiftParam(argLst, varDscInfo, strip(corInfoType), typeHnd))
         {
             continue;
         }
@@ -1361,13 +1363,16 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 // Remarks:
 //   Handles SwiftSelf.
 //
-bool Compiler::lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd)
+bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd, InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd)
 {
     const bool argIsByrefOrPtr = (type == CORINFO_TYPE_BYREF) || (type == CORINFO_TYPE_PTR);
 
     if (argIsByrefOrPtr)
     {
-        type = info.compCompHnd->getChildType(typeHnd, &typeHnd);
+        // For primitive types, we don't expect to be passed a CORINFO_CLASS_HANDLE; look up the actual handle
+        assert(typeHnd == nullptr);
+        CORINFO_CLASS_HANDLE clsHnd = info.compCompHnd->getArgClass(&info.compMethodInfo->args, argHnd);
+        type = info.compCompHnd->getChildType(clsHnd, &typeHnd);
     }
 
     if (type != CORINFO_TYPE_VALUECLASS)
@@ -1386,10 +1391,12 @@ bool Compiler::lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType 
     {
         // TODO: Should we do error handling with BADCODE here?
         assert(!argIsByrefOrPtr);
+        
+        // TODO: Should we do error handling for duplicate SwiftSelf args?
 
-        LclVarDsc* varDsc = varDscInfo->varDsc;
+        LclVarDsc* const varDsc = varDscInfo->varDsc;
         varDsc->SetArgReg(REG_SWIFT_SELF);
-        varDsc->SetOtherArgReg(REG_NA);
+        // varDsc->SetOtherArgReg(REG_NA);
         varDsc->lvIsRegArg = true;
         lvaSwiftSelfArg    = varDscInfo->varNum;
         lvaSetVarDoNotEnregister(lvaSwiftSelfArg DEBUGARG(DoNotEnregisterReason::NonStandardParameter));
@@ -1399,7 +1406,13 @@ bool Compiler::lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType 
     {
         // TODO: Should we do error handling with BADCODE here?
         assert(argIsByrefOrPtr);
-        assert(false);
+        
+        // TODO: Should we do error handling for duplicate SwiftError* args?
+
+        lvaSwiftErrorArg = varDscInfo->varNum;
+        lvaSwiftErrorLocal = lvaGrabTemp(false DEBUGARG("SwiftError pseudolocal"));
+        lvaSetStruct(lvaSwiftErrorLocal, typeHnd, false);
+        lvaSetVarAddrExposed(lvaSwiftErrorLocal DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
     }
 
     return false;

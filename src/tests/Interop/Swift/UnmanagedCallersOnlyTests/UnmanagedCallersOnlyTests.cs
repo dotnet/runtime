@@ -20,6 +20,7 @@ public class UnmanagedCallersOnlyTests
         int value = *(int*)self.Value;
         Console.WriteLine ("ProxyMethod: {0}", value);
         *error = new SwiftError(self.Value);
+        Console.WriteLine("Error: {0}", *((int*)error->Value));
     }
 
     [Fact]
