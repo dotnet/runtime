@@ -1581,21 +1581,26 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
     *pRD->pCurrentContextPointers = *pOtherRD->pCurrentContextPointers;
     SetIP(pRD->pCurrentContext, GetIP(pOtherRD->pCurrentContext));
     SetSP(pRD->pCurrentContext, GetSP(pOtherRD->pCurrentContext));
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *pRD->pCurrentContextPointers->regname;
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = (pRD->pCurrentContextPointers->regname == NULL) ? pOtherRD->pCurrentContext->regname : *pRD->pCurrentContextPointers->regname;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
+
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = pOtherRD->pCurrentContext->regname;
     ENUM_FP_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
+
     pRD->IsCallerContextValid = pOtherRD->IsCallerContextValid;
     if (pRD->IsCallerContextValid)
     {
         *pRD->pCallerContextPointers = *pOtherRD->pCallerContextPointers;
         SetIP(pRD->pCallerContext, GetIP(pOtherRD->pCallerContext));
         SetSP(pRD->pCallerContext, GetSP(pOtherRD->pCallerContext));
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = *pRD->pCallerContextPointers->regname;
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = (pRD->pCallerContextPointers->regname == NULL) ? pOtherRD->pCallerContext->regname : *pRD->pCallerContextPointers->regname;
         ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
+
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = pOtherRD->pCallerContext->regname;
         ENUM_FP_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
