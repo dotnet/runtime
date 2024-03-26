@@ -9,7 +9,7 @@ const SURROGATE_LOWER_END = "\uDFFF";
 export const OUTER_SEPARATOR = "##";
 export const INNER_SEPARATOR = "||";
 
-export function normalizeLocale (locale: string | null) {
+export function normalizeLocale(locale: string | null) {
     if (!locale)
         return undefined;
     try {
@@ -26,7 +26,7 @@ export function normalizeLocale (locale: string | null) {
     }
 }
 
-export function normalizeSpaces (pattern: string) {
+export function normalizeSpaces(pattern: string) {
     if (!pattern.includes("\u202F"))
         return pattern;
 
@@ -35,7 +35,7 @@ export function normalizeSpaces (pattern: string) {
 }
 
 
-export function isSurrogate (str: string, startIdx: number): boolean {
+export function isSurrogate(str: string, startIdx: number): boolean {
     return SURROGATE_HIGHER_START <= str[startIdx] &&
         str[startIdx] <= SURROGATE_HIGHER_END &&
         startIdx + 1 < str.length &&

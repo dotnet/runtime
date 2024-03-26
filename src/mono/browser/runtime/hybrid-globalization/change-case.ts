@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import {mono_wasm_new_external_root} from "../roots";
-import {monoStringToString, utf16ToStringLoop, stringToUTF16} from "../strings";
-import {MonoObject, MonoObjectRef, MonoString, MonoStringRef} from "../types/internal";
-import {Int32Ptr} from "../types/emscripten";
-import {wrap_error_root, wrap_no_error_root} from "../invoke-js";
-import {localHeapViewU16, setU16_local} from "../memory";
-import {isSurrogate} from "./helpers";
+import { mono_wasm_new_external_root } from "../roots";
+import { monoStringToString, utf16ToStringLoop, stringToUTF16 } from "../strings";
+import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
+import { Int32Ptr } from "../types/emscripten";
+import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
+import { localHeapViewU16, setU16_local } from "../memory";
+import { isSurrogate } from "./helpers";
 
-export function mono_wasm_change_case_invariant (src: number, srcLength: number, dst: number, dstLength: number, toUpper: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): void {
+export function mono_wasm_change_case_invariant(src: number, srcLength: number, dst: number, dstLength: number, toUpper: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): void {
     const exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
         const input = utf16ToStringLoop(src, src + 2 * srcLength);
@@ -67,7 +67,7 @@ export function mono_wasm_change_case_invariant (src: number, srcLength: number,
     }
 }
 
-export function mono_wasm_change_case (culture: MonoStringRef, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): void {
+export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): void {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
@@ -128,7 +128,7 @@ export function mono_wasm_change_case (culture: MonoStringRef, src: number, srcL
     }
 }
 
-function appendSurrogateToMemory (heapI16: Uint16Array, dst: number, surrogate: string, idx: number) {
+function appendSurrogateToMemory(heapI16: Uint16Array, dst: number, surrogate: string, idx: number) {
     setU16_local(heapI16, dst + idx * 2, surrogate.charCodeAt(0));
     setU16_local(heapI16, dst + (idx + 1) * 2, surrogate.charCodeAt(1));
 }

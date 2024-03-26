@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type {MonoConfig} from "../types";
-import type {AssetEntryInternal} from "../types/internal";
-import {ENVIRONMENT_IS_WEB, loaderHelpers} from "./globals";
+import type { MonoConfig } from "../types";
+import type { AssetEntryInternal } from "../types/internal";
+import { ENVIRONMENT_IS_WEB, loaderHelpers } from "./globals";
 
 const usedCacheKeys: { [key: string]: boolean } = {};
 const networkLoads: { [name: string]: LoadLogEntry } = {};
 const cacheLoads: { [name: string]: LoadLogEntry } = {};
 let cacheIfUsed: Cache | null;
 
-export function logDownloadStatsToConsole (): void {
+export function logDownloadStatsToConsole(): void {
     const cacheLoadsEntries = Object.values(cacheLoads);
     const networkLoadsEntries = Object.values(networkLoads);
     const cacheResponseBytes = countTotalBytes(cacheLoadsEntries);
@@ -51,7 +51,7 @@ export function logDownloadStatsToConsole (): void {
     console.groupEnd();
 }
 
-export async function purgeUnusedCacheEntriesAsync (): Promise<void> {
+export async function purgeUnusedCacheEntriesAsync(): Promise<void> {
     // We want to keep the cache small because, even though the browser will evict entries if it
     // gets too big, we don't want to be considered problematic by the end user viewing storage stats
     const cache = cacheIfUsed;
@@ -67,7 +67,7 @@ export async function purgeUnusedCacheEntriesAsync (): Promise<void> {
     }
 }
 
-export async function findCachedResponse (asset: AssetEntryInternal): Promise<Response | undefined> {
+export async function findCachedResponse(asset: AssetEntryInternal): Promise<Response | undefined> {
     const cache = cacheIfUsed;
     if (!cache || asset.noCache || !asset.hash || asset.hash.length === 0) {
         return undefined;
@@ -90,11 +90,11 @@ export async function findCachedResponse (asset: AssetEntryInternal): Promise<Re
 
     // It's in the cache.
     const responseBytes = parseInt(cachedResponse.headers.get("content-length") || "0");
-    cacheLoads[asset.name] = {responseBytes};
+    cacheLoads[asset.name] = { responseBytes };
     return cachedResponse;
 }
 
-export function addCachedReponse (asset: AssetEntryInternal, networkResponse: Response): void {
+export function addCachedReponse(asset: AssetEntryInternal, networkResponse: Response): void {
     const cache = cacheIfUsed;
     if (!cache || asset.noCache || !asset.hash || asset.hash.length === 0) {
         return;
@@ -108,11 +108,11 @@ export function addCachedReponse (asset: AssetEntryInternal, networkResponse: Re
     }, 0);
 }
 
-function getCacheKey (asset: AssetEntryInternal) {
+function getCacheKey(asset: AssetEntryInternal) {
     return `${asset.resolvedUrl}.${asset.hash}`;
 }
 
-async function addToCacheAsync (cache: Cache, name: string, cacheKey: string, clonedResponse: Response) {
+async function addToCacheAsync(cache: Cache, name: string, cacheKey: string, clonedResponse: Response) {
     // We have to clone in order to put this in the cache *and* not prevent other code from
     // reading the original response stream.
     const responseData = await clonedResponse.arrayBuffer();
@@ -123,7 +123,7 @@ async function addToCacheAsync (cache: Cache, name: string, cacheKey: string, cl
     // properties may be blanked out if it was a CORS request.
     const performanceEntry = getPerformanceEntry(clonedResponse.url);
     const responseBytes = (performanceEntry && performanceEntry.encodedBodySize) || undefined;
-    networkLoads[name] = {responseBytes};
+    networkLoads[name] = { responseBytes };
 
     // Add to cache as a custom response object so we can track extra data such as responseBytes
     // We can't rely on the server sending content-length (ASP.NET Core doesn't by default)
@@ -142,11 +142,11 @@ async function addToCacheAsync (cache: Cache, name: string, cacheKey: string, cl
     }
 }
 
-export async function initCacheToUseIfEnabled (): Promise<void> {
+export async function initCacheToUseIfEnabled(): Promise<void> {
     cacheIfUsed = await getCacheToUseIfEnabled(loaderHelpers.config);
 }
 
-async function getCacheToUseIfEnabled (config: MonoConfig): Promise<Cache | null> {
+async function getCacheToUseIfEnabled(config: MonoConfig): Promise<Cache | null> {
     // caches will be undefined if we're running on an insecure origin (secure means https or localhost)
     if (!config.cacheBootResources || typeof globalThis.caches === "undefined" || typeof globalThis.document === "undefined") {
         return null;
@@ -180,15 +180,15 @@ async function getCacheToUseIfEnabled (config: MonoConfig): Promise<Cache | null
     }
 }
 
-function countTotalBytes (loads: LoadLogEntry[]) {
+function countTotalBytes(loads: LoadLogEntry[]) {
     return loads.reduce((prev, item) => prev + (item.responseBytes || 0), 0);
 }
 
-function toDataSizeString (byteCount: number) {
+function toDataSizeString(byteCount: number) {
     return `${(byteCount / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-function getPerformanceEntry (url: string): PerformanceResourceTiming | undefined {
+function getPerformanceEntry(url: string): PerformanceResourceTiming | undefined {
     if (typeof performance !== "undefined") {
         return performance.getEntriesByName(url)[0] as PerformanceResourceTiming;
     }

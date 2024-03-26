@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type {RemoveCommandSetAndId, EventPipeCommandCollectTracing2, EventPipeCommandStopTracing} from "../server_pthread/protocol-client-commands";
-import type {FilterPredicate, MockEnvironment} from "./types";
+import type { RemoveCommandSetAndId, EventPipeCommandCollectTracing2, EventPipeCommandStopTracing } from "../server_pthread/protocol-client-commands";
+import type { FilterPredicate, MockEnvironment } from "./types";
 import Serializer from "../server_pthread/ipc-protocol/base-serializer";
-import {CommandSetId, EventPipeCommandId, ProcessCommandId} from "../server_pthread/ipc-protocol/types";
-import {assertNever} from "../../types/internal";
-import {pthread_self} from "../../pthreads";
-import {createPromiseController, mono_assert} from "../../globals";
+import { CommandSetId, EventPipeCommandId, ProcessCommandId } from "../server_pthread/ipc-protocol/types";
+import { assertNever } from "../../types/internal";
+import { pthread_self } from "../../pthreads";
+import { createPromiseController, mono_assert } from "../../globals";
 
 
-function expectAdvertise (data: ArrayBuffer): boolean {
+function expectAdvertise(data: ArrayBuffer): boolean {
     if (typeof (data) === "string") {
         assertNever(data);
     } else {
@@ -21,7 +21,7 @@ function expectAdvertise (data: ArrayBuffer): boolean {
     }
 }
 
-function expectOk (payloadLength?: number): FilterPredicate {
+function expectOk(payloadLength?: number): FilterPredicate {
     return (data) => {
         if (typeof (data) === "string") {
             assertNever(data);
@@ -33,7 +33,7 @@ function expectOk (payloadLength?: number): FilterPredicate {
     };
 }
 
-function extractOkSessionID (data: ArrayBuffer): number {
+function extractOkSessionID(data: ArrayBuffer): number {
     if (typeof (data) === "string") {
         assertNever(data);
     } else {
@@ -45,13 +45,13 @@ function extractOkSessionID (data: ArrayBuffer): number {
     }
 }
 
-function computeStringByteLength (s: string | null): number {
+function computeStringByteLength(s: string | null): number {
     if (s === undefined || s === null || s === "")
         return 4; // just length of zero
     return 4 + 2 * s.length + 2; // length + UTF16 + null
 }
 
-function computeCollectTracing2PayloadByteLength (payload: RemoveCommandSetAndId<EventPipeCommandCollectTracing2>): number {
+function computeCollectTracing2PayloadByteLength(payload: RemoveCommandSetAndId<EventPipeCommandCollectTracing2>): number {
     let len = 0;
     len += 4; // circularBufferMB
     len += 4; // format
@@ -66,11 +66,11 @@ function computeCollectTracing2PayloadByteLength (payload: RemoveCommandSetAndId
     return len;
 }
 
-function makeEventPipeCollectTracing2 (payload: RemoveCommandSetAndId<EventPipeCommandCollectTracing2>): Uint8Array {
+function makeEventPipeCollectTracing2(payload: RemoveCommandSetAndId<EventPipeCommandCollectTracing2>): Uint8Array {
     const payloadLength = computeCollectTracing2PayloadByteLength(payload);
     const messageLength = Serializer.computeMessageByteLength(payloadLength);
     const buffer = new Uint8Array(messageLength);
-    const pos = {pos: 0};
+    const pos = { pos: 0 };
     Serializer.serializeHeader(buffer, pos, CommandSetId.EventPipe, EventPipeCommandId.CollectTracing2, messageLength);
     Serializer.serializeUint32(buffer, pos, payload.circularBufferMB);
     Serializer.serializeUint32(buffer, pos, payload.format);
@@ -85,40 +85,40 @@ function makeEventPipeCollectTracing2 (payload: RemoveCommandSetAndId<EventPipeC
     return buffer;
 }
 
-function makeEventPipeStopTracing (payload: RemoveCommandSetAndId<EventPipeCommandStopTracing>): Uint8Array {
+function makeEventPipeStopTracing(payload: RemoveCommandSetAndId<EventPipeCommandStopTracing>): Uint8Array {
     const payloadLength = 8;
     const messageLength = Serializer.computeMessageByteLength(payloadLength);
     const buffer = new Uint8Array(messageLength);
-    const pos = {pos: 0};
+    const pos = { pos: 0 };
     Serializer.serializeHeader(buffer, pos, CommandSetId.EventPipe, EventPipeCommandId.StopTracing, messageLength);
     Serializer.serializeUint32(buffer, pos, payload.sessionID);
     Serializer.serializeUint32(buffer, pos, 0);
     return buffer;
 }
 
-function makeProcessResumeRuntime (): Uint8Array {
+function makeProcessResumeRuntime(): Uint8Array {
     const payloadLength = 0;
     const messageLength = Serializer.computeMessageByteLength(payloadLength);
     const buffer = new Uint8Array(messageLength);
-    const pos = {pos: 0};
+    const pos = { pos: 0 };
     Serializer.serializeHeader(buffer, pos, CommandSetId.Process, ProcessCommandId.ResumeRuntime, messageLength);
     return buffer;
 }
 
-function postMessageToBrowser (message: any, transferable?: Transferable[]): void {
+function postMessageToBrowser(message: any, transferable?: Transferable[]): void {
     pthread_self.postMessageToBrowser({
         type: "diagnostic_server_mock",
         ...message
     }, transferable);
 }
 
-function addEventListenerFromBrowser (cmd: string, listener: (data: any) => void) {
+function addEventListenerFromBrowser(cmd: string, listener: (data: any) => void) {
     pthread_self.addEventListenerFromBrowser((event) => {
         if (event.data.cmd === cmd) listener(event.data);
     });
 }
 
-export function createMockEnvironment (): MockEnvironment {
+export function createMockEnvironment(): MockEnvironment {
     const command = {
         makeEventPipeCollectTracing2,
         makeEventPipeStopTracing,

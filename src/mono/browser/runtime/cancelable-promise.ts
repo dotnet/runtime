@@ -3,44 +3,44 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import {_lookup_js_owned_object, teardown_managed_proxy, upgrade_managed_proxy_to_strong_ref} from "./gc-handles";
-import {createPromiseController, loaderHelpers, mono_assert} from "./globals";
-import {ControllablePromise, GCHandle, MarshalerToCs} from "./types/internal";
-import {ManagedObject} from "./marshal";
-import {compareExchangeI32, forceThreadMemoryViewRefresh} from "./memory";
-import {mono_log_debug} from "./logging";
-import {complete_task} from "./managed-exports";
-import {marshal_cs_object_to_cs} from "./marshal-to-cs";
-import {invoke_later_when_on_ui_thread_async} from "./invoke-js";
+import { _lookup_js_owned_object, teardown_managed_proxy, upgrade_managed_proxy_to_strong_ref } from "./gc-handles";
+import { createPromiseController, loaderHelpers, mono_assert } from "./globals";
+import { ControllablePromise, GCHandle, MarshalerToCs } from "./types/internal";
+import { ManagedObject } from "./marshal";
+import { compareExchangeI32, forceThreadMemoryViewRefresh } from "./memory";
+import { mono_log_debug } from "./logging";
+import { complete_task } from "./managed-exports";
+import { marshal_cs_object_to_cs } from "./marshal-to-cs";
+import { invoke_later_when_on_ui_thread_async } from "./invoke-js";
 
 export const _are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 
-export function isThenable (js_obj: any): boolean {
+export function isThenable(js_obj: any): boolean {
     // When using an external Promise library like Bluebird the Promise.resolve may not be sufficient
     // to identify the object as a Promise.
     return Promise.resolve(js_obj) === js_obj ||
         ((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function");
 }
 
-export function wrap_as_cancelable_promise<T> (fn: () => Promise<T>): ControllablePromise<T> {
-    const {promise, promise_control} = createPromiseController<T>();
+export function wrap_as_cancelable_promise<T>(fn: () => Promise<T>): ControllablePromise<T> {
+    const { promise, promise_control } = createPromiseController<T>();
     const inner = fn();
     inner.then((data) => promise_control.resolve(data)).catch((reason) => promise_control.reject(reason));
     return promise;
 }
 
-export function wrap_as_cancelable<T> (inner: Promise<T>): ControllablePromise<T> {
-    const {promise, promise_control} = createPromiseController<T>();
+export function wrap_as_cancelable<T>(inner: Promise<T>): ControllablePromise<T> {
+    const { promise, promise_control } = createPromiseController<T>();
     inner.then((data) => promise_control.resolve(data)).catch((reason) => promise_control.reject(reason));
     return promise;
 }
 
-export function mono_wasm_cancel_promise (task_holder_gc_handle: GCHandle): void {
+export function mono_wasm_cancel_promise(task_holder_gc_handle: GCHandle): void {
     // cancelation should not arrive earlier than the promise created by marshaling in mono_wasm_invoke_jsimport_MT
     invoke_later_when_on_ui_thread_async(() => mono_wasm_cancel_promise_impl(task_holder_gc_handle));
 }
 
-export function mono_wasm_cancel_promise_impl (task_holder_gc_handle: GCHandle): void {
+export function mono_wasm_cancel_promise_impl(task_holder_gc_handle: GCHandle): void {
     if (!loaderHelpers.is_runtime_running()) {
         mono_log_debug("This promise can't be canceled, mono runtime already exited.");
         return;
@@ -63,7 +63,7 @@ export class PromiseHolder extends ManagedObject {
     public isPostponed = false;
     public data: any = null;
     public reason: any = undefined;
-    public constructor (public promise: Promise<any>,
+    public constructor(public promise: Promise<any>,
         private gc_handle: GCHandle,
         private promiseHolderPtr: number, // could be null for GCV_handle
         private res_converter?: MarshalerToCs) {
@@ -71,7 +71,7 @@ export class PromiseHolder extends ManagedObject {
     }
 
     // returns false if the promise is being canceled by another thread in managed code
-    setIsResolving (): boolean {
+    setIsResolving(): boolean {
         if (!WasmEnableThreads || this.promiseHolderPtr === 0) {
             return true;
         }
@@ -82,7 +82,7 @@ export class PromiseHolder extends ManagedObject {
         return false;
     }
 
-    resolve (data: any) {
+    resolve(data: any) {
         if (!loaderHelpers.is_runtime_running()) {
             mono_log_debug("This promise resolution can't be propagated to managed code, mono runtime already exited.");
             return;
@@ -106,7 +106,7 @@ export class PromiseHolder extends ManagedObject {
         this.complete_task_wrapper(data, null);
     }
 
-    reject (reason: any) {
+    reject(reason: any) {
         if (!loaderHelpers.is_runtime_running()) {
             mono_log_debug("This promise rejection can't be propagated to managed code, mono runtime already exited.");
             return;
@@ -131,7 +131,7 @@ export class PromiseHolder extends ManagedObject {
         this.complete_task_wrapper(null, reason);
     }
 
-    cancel () {
+    cancel() {
         if (!loaderHelpers.is_runtime_running()) {
             mono_log_debug("This promise cancelation can't be propagated to managed code, mono runtime already exited.");
             return;
@@ -162,7 +162,7 @@ export class PromiseHolder extends ManagedObject {
     }
 
     // we can do this just once, because it will be dispose the GCHandle
-    complete_task_wrapper (data: any, reason: any) {
+    complete_task_wrapper(data: any, reason: any) {
         try {
             mono_assert(!this.isPosted, "Promise is already posted to managed.");
             this.isPosted = true;

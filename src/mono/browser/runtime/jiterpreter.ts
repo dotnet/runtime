@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import {MonoMethod} from "./types/internal";
-import {NativePointer} from "./types/emscripten";
-import {Module, mono_assert, runtimeHelpers} from "./globals";
-import {getU16} from "./memory";
-import {WasmValtype, WasmOpcode, getOpcodeName} from "./jiterpreter-opcodes";
-import {MintOpcode} from "./mintops";
+import { MonoMethod } from "./types/internal";
+import { NativePointer } from "./types/emscripten";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
+import { getU16 } from "./memory";
+import { WasmValtype, WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
+import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmBuilder, addWasmFunctionPointer,
@@ -22,10 +22,10 @@ import {
 import {
     generateWasmBody, generateBackwardBranchTable
 } from "./jiterpreter-trace-generator";
-import {mono_jiterp_free_method_data_interp_entry} from "./jiterpreter-interp-entry";
-import {mono_jiterp_free_method_data_jit_call} from "./jiterpreter-jit-call";
-import {mono_log_error, mono_log_info, mono_log_warn} from "./logging";
-import {utf8ToString} from "./strings";
+import { mono_jiterp_free_method_data_interp_entry } from "./jiterpreter-interp-entry";
+import { mono_jiterp_free_method_data_jit_call } from "./jiterpreter-jit-call";
+import { mono_log_error, mono_log_info, mono_log_warn } from "./logging";
+import { utf8ToString } from "./strings";
 
 // Controls miscellaneous diagnostic output.
 export const trace = 0;
@@ -98,7 +98,7 @@ export class InstrumentedTraceState {
     operand1: number | undefined;
     operand2: number | undefined;
 
-    constructor (name: string) {
+    constructor(name: string) {
         this.name = name;
         this.eip = <any>0;
     }
@@ -114,13 +114,13 @@ export class TraceInfo {
     bailoutCount: number | undefined;
     isVerbose: boolean;
 
-    constructor (ip: MintOpcodePtr, index: number, isVerbose: number) {
+    constructor(ip: MintOpcodePtr, index: number, isVerbose: number) {
         this.ip = ip;
         this.index = index;
         this.isVerbose = !!isVerbose;
     }
 
-    get hitCount () {
+    get hitCount() {
         return cwraps.mono_jiterp_get_trace_hit_count(this.index);
     }
 }
@@ -225,7 +225,7 @@ const mathOps1d =
         "powf",
     ];
 
-function recordBailout (ip: number, traceIndex: number, reason: BailoutReason) {
+function recordBailout(ip: number, traceIndex: number, reason: BailoutReason) {
     cwraps.mono_jiterp_trace_bailout(reason);
     // Counting these is not meaningful and messes up the end of run statistics
     if (reason === BailoutReason.Return)
@@ -251,7 +251,7 @@ function recordBailout (ip: number, traceIndex: number, reason: BailoutReason) {
     return ip;
 }
 
-function getTraceImports () {
+function getTraceImports() {
     if (traceImports)
         return traceImports;
 
@@ -313,7 +313,7 @@ function getTraceImports () {
     return traceImports;
 }
 
-function initialize_builder (builder: WasmBuilder) {
+function initialize_builder(builder: WasmBuilder) {
     // Function type for compiled traces
     builder.defineType(
         "trace",
@@ -694,7 +694,7 @@ function initialize_builder (builder: WasmBuilder) {
     }
 }
 
-function assert_not_null (
+function assert_not_null(
     value: number, expectedValue: number, traceIndex: number, ip: MintOpcodePtr
 ) {
     if (value && (value === expectedValue))
@@ -704,7 +704,7 @@ function assert_not_null (
 }
 
 // returns function id
-function generate_wasm (
+function generate_wasm(
     frame: NativePointer, methodName: string, ip: MintOpcodePtr,
     startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr,
     traceIndex: number, methodFullName: string | undefined,
@@ -948,7 +948,7 @@ function generate_wasm (
     }
 }
 
-export function trace_current_ip (traceId: number, eip: MintOpcodePtr) {
+export function trace_current_ip(traceId: number, eip: MintOpcodePtr) {
     const tup = instrumentedTraces[traceId];
     if (!tup)
         throw new Error(`Unrecognized instrumented trace id ${traceId}`);
@@ -956,14 +956,14 @@ export function trace_current_ip (traceId: number, eip: MintOpcodePtr) {
     mostRecentTrace = tup;
 }
 
-export function trace_operands (a: number, b: number) {
+export function trace_operands(a: number, b: number) {
     if (!mostRecentTrace)
         throw new Error("No trace active");
     mostRecentTrace.operand1 = a >>> 0;
     mostRecentTrace.operand2 = b >>> 0;
 }
 
-export function record_abort (traceIndex: number, ip: MintOpcodePtr, traceName: string, reason: string | MintOpcode) {
+export function record_abort(traceIndex: number, ip: MintOpcodePtr, traceName: string, reason: string | MintOpcode) {
     if (typeof (reason) === "number") {
         cwraps.mono_jiterp_adjust_abort_count(reason, 1);
         reason = getOpcodeName(reason);
@@ -986,7 +986,7 @@ export function record_abort (traceIndex: number, ip: MintOpcodePtr, traceName: 
 const JITERPRETER_TRAINING = 0;
 const JITERPRETER_NOT_JITTED = 1;
 
-export function mono_interp_tier_prepare_jiterpreter (
+export function mono_interp_tier_prepare_jiterpreter(
     frame: NativePointer, method: MonoMethod, ip: MintOpcodePtr, index: number,
     startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr, isVerbose: number,
     presetFunctionPointer: number
@@ -1061,7 +1061,7 @@ export function mono_interp_tier_prepare_jiterpreter (
 
 // NOTE: This will potentially be called once for every trace entry point
 //  in a given method, not just once per method
-export function mono_jiterp_free_method_data_js (
+export function mono_jiterp_free_method_data_js(
     method: MonoMethod, imethod: number, traceIndex: number
 ) {
     // TODO: Uninstall the trace function pointer from the function pointer table,
@@ -1073,7 +1073,7 @@ export function mono_jiterp_free_method_data_js (
     mono_jiterp_free_method_data_jit_call(method);
 }
 
-export function jiterpreter_dump_stats (concise?: boolean): void {
+export function jiterpreter_dump_stats(concise?: boolean): void {
     if (!runtimeHelpers.runtimeReady) {
         return;
     }

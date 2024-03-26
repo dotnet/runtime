@@ -1,6 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-import {MockRemoteSocket} from "../mock";
+import { MockRemoteSocket } from "../mock";
 
 // the common bits that we depend on from a real WebSocket or a MockRemoteSocket used for testing
 export interface CommonSocket {
@@ -17,7 +17,7 @@ export interface CommonSocket {
 
 type AssignableTo<T, Q> = Q extends T ? true : false;
 
-function static_assert<Cond extends boolean> (x: Cond): asserts x is Cond { /*empty*/ }
+function static_assert<Cond extends boolean>(x: Cond): asserts x is Cond { /*empty*/ }
 
 {
     static_assert<AssignableTo<CommonSocket, WebSocket>>(true);

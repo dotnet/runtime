@@ -4,13 +4,13 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
-import {mono_log_error, mono_log_info} from "../logging";
-import {monoThreadInfo, postMessageToMain, update_thread_info} from "./shared";
-import {Module, loaderHelpers, runtimeHelpers} from "../globals";
-import {start_runtime} from "../startup";
-import {WorkerToMainMessageType} from "../types/internal";
+import { mono_log_error, mono_log_info } from "../logging";
+import { monoThreadInfo, postMessageToMain, update_thread_info } from "./shared";
+import { Module, loaderHelpers, runtimeHelpers } from "../globals";
+import { start_runtime } from "../startup";
+import { WorkerToMainMessageType } from "../types/internal";
 
-export function mono_wasm_start_deputy_thread_async () {
+export function mono_wasm_start_deputy_thread_async() {
     if (!WasmEnableThreads) return;
 
     if (BuildConfiguration === "Debug" && globalThis.setInterval) globalThis.setInterval(() => {
@@ -26,7 +26,7 @@ export function mono_wasm_start_deputy_thread_async () {
             info: monoThreadInfo,
         });
         Module.runtimeKeepalivePush();
-        Module.safeSetTimeout(async () => {
+        Module.safeSetTimeout(async() => {
             try {
 
                 await start_runtime();

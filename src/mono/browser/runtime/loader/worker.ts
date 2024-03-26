@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import {MonoConfigInternal, PThreadInfo, WorkerToMainMessageType, monoMessageSymbol} from "../types/internal";
-import {MonoConfig} from "../types";
-import {deep_merge_config, normalizeConfig} from "./config";
-import {ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers} from "./globals";
-import {mono_log_debug} from "./logging";
+import { MonoConfigInternal, PThreadInfo, WorkerToMainMessageType, monoMessageSymbol } from "../types/internal";
+import { MonoConfig } from "../types";
+import { deep_merge_config, normalizeConfig } from "./config";
+import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
+import { mono_log_debug } from "./logging";
 
-export function setupPreloadChannelToMainThread () {
+export function setupPreloadChannelToMainThread() {
     const channel = new MessageChannel();
     const workerPort = channel.port1;
     const mainPort = channel.port2;
@@ -17,7 +17,7 @@ export function setupPreloadChannelToMainThread () {
         onMonoConfigReceived(config, monoThreadInfo);
         workerPort.close();
         mainPort.close();
-    }, {once: true});
+    }, { once: true });
     workerPort.start();
     // ask for config even before WASM is loaded
     self.postMessage({
@@ -31,7 +31,7 @@ export function setupPreloadChannelToMainThread () {
 let workerMonoConfigReceived = false;
 
 // called when the main thread sends us the mono config
-function onMonoConfigReceived (config: MonoConfigInternal, monoThreadInfo: PThreadInfo): void {
+function onMonoConfigReceived(config: MonoConfigInternal, monoThreadInfo: PThreadInfo): void {
     if (workerMonoConfigReceived) {
         mono_log_debug("mono config already received");
         return;

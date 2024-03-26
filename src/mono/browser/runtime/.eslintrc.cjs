@@ -55,9 +55,9 @@ module.exports = {
         "space-before-blocks": ["error"],
         "semi-spacing": ["error", { "before": false, "after": true }],
         "no-trailing-spaces": ["error"],
-        "object-curly-spacing": ["error"],
+        "object-curly-spacing": ["error", "always"],
         "array-bracket-spacing": ["error"],
         "space-infix-ops": ["error"],
-        "space-before-function-paren": ["error"],
+        "space-before-function-paren": ["error", "never"],
     }
 };

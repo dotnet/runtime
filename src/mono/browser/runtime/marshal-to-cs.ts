@@ -5,10 +5,10 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 
-import {PromiseHolder, isThenable} from "./cancelable-promise";
+import { PromiseHolder, isThenable } from "./cancelable-promise";
 import cwraps from "./cwraps";
-import {alloc_gcv_handle, assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy} from "./gc-handles";
-import {Module, mono_assert, runtimeHelpers} from "./globals";
+import { alloc_gcv_handle, assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy } from "./gc-handles";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import {
     ManagedError,
     set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_bool, set_arg_date,
@@ -17,16 +17,16 @@ import {
     get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, set_arg_i64_big, set_arg_intptr,
     set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol, get_arg_gc_handle, get_arg_type, set_arg_proxy_context, get_arg_intptr
 } from "./marshal";
-import {get_marshaler_to_js_by_type} from "./marshal-to-js";
-import {_zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8} from "./memory";
-import {stringToMonoStringRoot, stringToUTF16} from "./strings";
-import {JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType} from "./types/internal";
-import {TypedArray} from "./types/emscripten";
-import {gc_locked} from "./gc-lock";
+import { get_marshaler_to_js_by_type } from "./marshal-to-js";
+import { _zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
+import { stringToMonoStringRoot, stringToUTF16 } from "./strings";
+import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
+import { TypedArray } from "./types/emscripten";
+import { gc_locked } from "./gc-lock";
 
 export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
 
-export function initialize_marshalers_to_cs (): void {
+export function initialize_marshalers_to_cs(): void {
     if (js_to_cs_marshalers.size == 0) {
         js_to_cs_marshalers.set(MarshalerType.Array, marshal_array_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Span, _marshal_span_to_cs);
@@ -60,7 +60,7 @@ export function initialize_marshalers_to_cs (): void {
     }
 }
 
-export function bind_arg_marshal_to_cs (sig: JSMarshalerType, marshaler_type: MarshalerType, index: number): BoundMarshalerToCs | undefined {
+export function bind_arg_marshal_to_cs(sig: JSMarshalerType, marshaler_type: MarshalerType, index: number): BoundMarshalerToCs | undefined {
     if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void || marshaler_type === MarshalerType.Discard || marshaler_type === MarshalerType.DiscardNoWait) {
         return undefined;
     }
@@ -87,7 +87,7 @@ export function bind_arg_marshal_to_cs (sig: JSMarshalerType, marshaler_type: Ma
     };
 }
 
-export function get_marshaler_to_cs_by_type (marshaler_type: MarshalerType): MarshalerToCs | undefined {
+export function get_marshaler_to_cs_by_type(marshaler_type: MarshalerType): MarshalerToCs | undefined {
     if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void) {
         return undefined;
     }
@@ -96,7 +96,7 @@ export function get_marshaler_to_cs_by_type (marshaler_type: MarshalerType): Mar
     return converter;
 }
 
-export function marshal_bool_to_cs (arg: JSMarshalerArgument, value: any): void {
+export function marshal_bool_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else {
@@ -105,7 +105,7 @@ export function marshal_bool_to_cs (arg: JSMarshalerArgument, value: any): void 
     }
 }
 
-function _marshal_byte_to_cs (arg: JSMarshalerArgument, value: any): void {
+function _marshal_byte_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else {
@@ -114,7 +114,7 @@ function _marshal_byte_to_cs (arg: JSMarshalerArgument, value: any): void {
     }
 }
 
-function _marshal_char_to_cs (arg: JSMarshalerArgument, value: any): void {
+function _marshal_char_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else {
@@ -123,7 +123,7 @@ function _marshal_char_to_cs (arg: JSMarshalerArgument, value: any): void {
     }
 }
 
-function _marshal_int16_to_cs (arg: JSMarshalerArgument, value: any): void {
+function _marshal_int16_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else {
@@ -132,7 +132,7 @@ function _marshal_int16_to_cs (arg: JSMarshalerArgument, value: any): void {
     }
 }
 
-function _marshal_int32_to_cs (arg: JSMarshalerArgument, value: any): void {
+function _marshal_int32_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else {
@@ -141,7 +141,7 @@ function _marshal_int32_to_cs (arg: JSMarshalerArgument, value: any): void {
     }
 }
 
-function _marshal_int52_to_cs (arg: JSMarshalerArgument, value: any): void {
+function _marshal_int52_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else {
@@ -150,7 +150,7 @@ function _marshal_int52_to_cs (arg: JSMarshalerArgument, value: any): void {
     }
 }
 
-function _marshal_bigint64_to_cs (arg: JSMarshalerArgument, value: any): void {
+function _marshal_bigint64_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else {
@@ -159,7 +159,7 @@ function _marshal_bigint64_to_cs (arg: JSMarshalerArgument, value: any): void {
     }
 }
 
-function _marshal_double_to_cs (arg: JSMarshalerArgument, value: any): void {
+function _marshal_double_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else {
@@ -168,7 +168,7 @@ function _marshal_double_to_cs (arg: JSMarshalerArgument, value: any): void {
     }
 }
 
-function _marshal_float_to_cs (arg: JSMarshalerArgument, value: any): void {
+function _marshal_float_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else {
@@ -177,7 +177,7 @@ function _marshal_float_to_cs (arg: JSMarshalerArgument, value: any): void {
     }
 }
 
-export function marshal_intptr_to_cs (arg: JSMarshalerArgument, value: any): void {
+export function marshal_intptr_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else {
@@ -186,7 +186,7 @@ export function marshal_intptr_to_cs (arg: JSMarshalerArgument, value: any): voi
     }
 }
 
-function _marshal_date_time_to_cs (arg: JSMarshalerArgument, value: Date): void {
+function _marshal_date_time_to_cs(arg: JSMarshalerArgument, value: Date): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else {
@@ -196,7 +196,7 @@ function _marshal_date_time_to_cs (arg: JSMarshalerArgument, value: Date): void 
     }
 }
 
-function _marshal_date_time_offset_to_cs (arg: JSMarshalerArgument, value: Date): void {
+function _marshal_date_time_offset_to_cs(arg: JSMarshalerArgument, value: Date): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else {
@@ -206,7 +206,7 @@ function _marshal_date_time_offset_to_cs (arg: JSMarshalerArgument, value: Date)
     }
 }
 
-export function marshal_string_to_cs (arg: JSMarshalerArgument, value: string) {
+export function marshal_string_to_cs(arg: JSMarshalerArgument, value: string) {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else {
@@ -216,7 +216,7 @@ export function marshal_string_to_cs (arg: JSMarshalerArgument, value: string) {
     }
 }
 
-function _marshal_string_to_cs_impl (arg: JSMarshalerArgument, value: string) {
+function _marshal_string_to_cs_impl(arg: JSMarshalerArgument, value: string) {
     if (WasmEnableJsInteropByValue) {
         const bufferLen = value.length * 2;
         const buffer = Module._malloc(bufferLen);// together with Marshal.FreeHGlobal
@@ -233,11 +233,11 @@ function _marshal_string_to_cs_impl (arg: JSMarshalerArgument, value: string) {
     }
 }
 
-function _marshal_null_to_cs (arg: JSMarshalerArgument) {
+function _marshal_null_to_cs(arg: JSMarshalerArgument) {
     set_arg_type(arg, MarshalerType.None);
 }
 
-function _marshal_function_to_cs (arg: JSMarshalerArgument, value: Function, _?: MarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs, arg3_converter?: MarshalerToJs): void {
+function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: MarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs, arg3_converter?: MarshalerToJs): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
         return;
@@ -245,7 +245,7 @@ function _marshal_function_to_cs (arg: JSMarshalerArgument, value: Function, _?:
     mono_check(value && value instanceof Function, "Value is not a Function");
 
     // TODO: we could try to cache value -> existing JSHandle
-    const wrapper: any = function delegate_wrapper (args: JSMarshalerArguments) {
+    const wrapper: any = function delegate_wrapper(args: JSMarshalerArguments) {
         const exc = get_arg(args, 0);
         const res = get_arg(args, 1);
         const arg1 = get_arg(args, 2);
@@ -295,7 +295,7 @@ function _marshal_function_to_cs (arg: JSMarshalerArgument, value: Function, _?:
 }
 
 
-function _marshal_task_to_cs (arg: JSMarshalerArgument, value: Promise<any>, _?: MarshalerType, res_converter?: MarshalerToCs) {
+function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: MarshalerType, res_converter?: MarshalerToCs) {
     const handleIsPreallocated = get_arg_type(arg) == MarshalerType.TaskPreCreated;
     if (value === null || value === undefined) {
         if (WasmEnableThreads && handleIsPreallocated) {
@@ -329,7 +329,7 @@ function _marshal_task_to_cs (arg: JSMarshalerArgument, value: Promise<any>, _?:
     value.then(data => holder.resolve(data), reason => holder.reject(reason));
 }
 
-export function marshal_exception_to_cs (arg: JSMarshalerArgument, value: any): void {
+export function marshal_exception_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else if (value instanceof ManagedError) {
@@ -355,7 +355,7 @@ export function marshal_exception_to_cs (arg: JSMarshalerArgument, value: any): 
     }
 }
 
-export function marshal_js_object_to_cs (arg: JSMarshalerArgument, value: any): void {
+export function marshal_js_object_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === undefined || value === null) {
         set_arg_type(arg, MarshalerType.None);
         set_arg_proxy_context(arg);
@@ -373,7 +373,7 @@ export function marshal_js_object_to_cs (arg: JSMarshalerArgument, value: any): 
     }
 }
 
-export function marshal_cs_object_to_cs (arg: JSMarshalerArgument, value: any): void {
+export function marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === undefined || value === null) {
         set_arg_type(arg, MarshalerType.None);
         set_arg_proxy_context(arg);
@@ -445,12 +445,12 @@ export function marshal_cs_object_to_cs (arg: JSMarshalerArgument, value: any): 
     }
 }
 
-export function marshal_array_to_cs (arg: JSMarshalerArgument, value: Array<any> | TypedArray | undefined | null, element_type?: MarshalerType): void {
+export function marshal_array_to_cs(arg: JSMarshalerArgument, value: Array<any> | TypedArray | undefined | null, element_type?: MarshalerType): void {
     mono_assert(!!element_type, "Expected valid element_type parameter");
     marshal_array_to_cs_impl(arg, value, element_type);
 }
 
-export function marshal_array_to_cs_impl (arg: JSMarshalerArgument, value: Array<any> | TypedArray | undefined | null, element_type: MarshalerType): void {
+export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<any> | TypedArray | undefined | null, element_type: MarshalerType): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     } else {
@@ -510,7 +510,7 @@ export function marshal_array_to_cs_impl (arg: JSMarshalerArgument, value: Array
     }
 }
 
-function _marshal_span_to_cs (arg: JSMarshalerArgument, value: Span, element_type?: MarshalerType): void {
+function _marshal_span_to_cs(arg: JSMarshalerArgument, value: Span, element_type?: MarshalerType): void {
     mono_assert(!!element_type, "Expected valid element_type parameter");
     mono_check(!value.isDisposed, "ObjectDisposedException");
     checkViewType(element_type, value._viewType);
@@ -521,7 +521,7 @@ function _marshal_span_to_cs (arg: JSMarshalerArgument, value: Span, element_typ
 }
 
 // this only supports round-trip
-function _marshal_array_segment_to_cs (arg: JSMarshalerArgument, value: ArraySegment, element_type?: MarshalerType): void {
+function _marshal_array_segment_to_cs(arg: JSMarshalerArgument, value: ArraySegment, element_type?: MarshalerType): void {
     mono_assert(!!element_type, "Expected valid element_type parameter");
     const gc_handle = assert_not_disposed(value);
     mono_assert(gc_handle, "Only roundtrip of ArraySegment instance created by C#");
@@ -532,7 +532,7 @@ function _marshal_array_segment_to_cs (arg: JSMarshalerArgument, value: ArraySeg
     set_gc_handle(arg, gc_handle);
 }
 
-function checkViewType (element_type: MarshalerType, viewType: MemoryViewType) {
+function checkViewType(element_type: MarshalerType, viewType: MemoryViewType) {
     if (element_type == MarshalerType.Byte) {
         mono_check(MemoryViewType.Byte == viewType, "Expected MemoryViewType.Byte");
     } else if (element_type == MarshalerType.Int32) {

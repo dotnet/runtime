@@ -7,8 +7,8 @@
  * https://github.com/formatjs/formatjs/blob/58d6a7b398d776ca3d2726d72ae1573b65cc3bef/packages/intl-segmenter/src/segmentation-utils.ts
  */
 
-import {mono_assert} from "../globals";
-import {isSurrogate} from "./helpers";
+import { mono_assert } from "../globals";
+import { isSurrogate } from "./helpers";
 
 type SegmentationRule = {
     breaks: boolean
@@ -29,7 +29,7 @@ type SegmentationTypeRaw = {
 
 let segmentationRules: Record<string, SegmentationRule>;
 
-function replaceVariables (variables: Record<string, string>, input: string): string {
+function replaceVariables(variables: Record<string, string>, input: string): string {
     const findVarRegex = /\$[A-Za-z0-9_]+/gm;
     return input.replaceAll(findVarRegex, match => {
         if (!(match in variables)) {
@@ -39,15 +39,15 @@ function replaceVariables (variables: Record<string, string>, input: string): st
     });
 }
 
-function generateRegexRule (rule: string, variables: Record<string, string>, after: boolean): RegExp {
+function generateRegexRule(rule: string, variables: Record<string, string>, after: boolean): RegExp {
     return new RegExp(`${after ? "^" : ""}${replaceVariables(variables, rule)}${after ? "" : "$"}`);
 }
 
-function isSegmentationTypeRaw (obj: any): obj is SegmentationTypeRaw {
+function isSegmentationTypeRaw(obj: any): obj is SegmentationTypeRaw {
     return obj.variables != null && obj.rules != null;
 }
 
-export function setSegmentationRulesFromJson (json: string) {
+export function setSegmentationRulesFromJson(json: string) {
     mono_assert(isSegmentationTypeRaw(json), "Provided grapheme segmentation rules are not valid");
     segmentationRules = GraphemeSegmenter.prepareSegmentationRules(json);
 }
@@ -56,7 +56,7 @@ export class GraphemeSegmenter {
     private readonly rules: Record<string, SegmentationRule>;
     private readonly ruleSortedKeys: string[];
 
-    public constructor () {
+    public constructor() {
         this.rules = segmentationRules;
         this.ruleSortedKeys = Object.keys(this.rules).sort((a, b) => Number(a) - Number(b));
     }
@@ -67,7 +67,7 @@ export class GraphemeSegmenter {
      * @param startIndex - The starting index.
      * @returns The next grapheme.
      */
-    public nextGrapheme (str: string, startIndex: number): string {
+    public nextGrapheme(str: string, startIndex: number): string {
         const breakIdx = this.nextGraphemeBreak(str, startIndex);
         return str.substring(startIndex, breakIdx);
     }
@@ -79,7 +79,7 @@ export class GraphemeSegmenter {
      * @param startIndex - The index to start searching from.
      * @returns The index of the next grapheme break.
      */
-    public nextGraphemeBreak (str: string, startIndex: number): number {
+    public nextGraphemeBreak(str: string, startIndex: number): number {
         if (startIndex < 0)
             return 0;
 
@@ -103,9 +103,9 @@ export class GraphemeSegmenter {
         return str.length;
     }
 
-    private isGraphemeBreak (previous: string, current: string): boolean {
+    private isGraphemeBreak(previous: string, current: string): boolean {
         for (const key of this.ruleSortedKeys) {
-            const {before, after, breaks} = this.rules[key];
+            const { before, after, breaks } = this.rules[key];
             // match before and after rules
             if (before && !before.test(previous)) {
                 continue;
@@ -121,12 +121,12 @@ export class GraphemeSegmenter {
         return true;
     }
 
-    public static prepareSegmentationRules (segmentationRules: SegmentationTypeRaw): Record<string, SegmentationRule> {
+    public static prepareSegmentationRules(segmentationRules: SegmentationTypeRaw): Record<string, SegmentationRule> {
         const preparedRules: Record<string, SegmentationRule> = {};
 
         for (const key of Object.keys(segmentationRules.rules)) {
             const ruleValue = segmentationRules.rules[key];
-            const preparedRule: SegmentationRule = {breaks: ruleValue.breaks,};
+            const preparedRule: SegmentationRule = { breaks: ruleValue.breaks, };
 
             if ("before" in ruleValue && ruleValue.before) {
                 preparedRule.before = generateRegexRule(ruleValue.before, segmentationRules.variables, false);

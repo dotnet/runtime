@@ -3,35 +3,35 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import {mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint, mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause} from "./debug";
-import {mono_wasm_release_cs_owned_object} from "./gc-handles";
-import {mono_wasm_bind_js_import, mono_wasm_invoke_js_function, mono_wasm_invoke_jsimport_MT, mono_wasm_invoke_jsimport_ST} from "./invoke-js";
-import {mono_interp_tier_prepare_jiterpreter, mono_jiterp_free_method_data_js} from "./jiterpreter";
-import {mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry} from "./jiterpreter-interp-entry";
-import {mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue} from "./jiterpreter-jit-call";
-import {mono_wasm_resolve_or_reject_promise} from "./marshal-to-js";
-import {mono_wasm_schedule_timer, schedule_background_exec} from "./scheduling";
-import {mono_wasm_asm_loaded} from "./startup";
-import {mono_wasm_diagnostic_server_on_server_thread_created} from "./diagnostics/server_pthread";
-import {mono_wasm_diagnostic_server_on_runtime_server_init, mono_wasm_event_pipe_early_startup_callback} from "./diagnostics";
-import {mono_wasm_diagnostic_server_stream_signal_work_available} from "./diagnostics/server_pthread/stream-queue";
-import {mono_log_warn, mono_wasm_console_clear, mono_wasm_trace_logger} from "./logging";
-import {mono_wasm_profiler_leave, mono_wasm_profiler_enter} from "./profiler";
-import {mono_wasm_change_case, mono_wasm_change_case_invariant} from "./hybrid-globalization/change-case";
-import {mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, mono_wasm_index_of} from "./hybrid-globalization/collations";
-import {mono_wasm_get_calendar_info} from "./hybrid-globalization/calendar";
+import { mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint, mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause } from "./debug";
+import { mono_wasm_release_cs_owned_object } from "./gc-handles";
+import { mono_wasm_bind_js_import, mono_wasm_invoke_js_function, mono_wasm_invoke_jsimport_MT, mono_wasm_invoke_jsimport_ST } from "./invoke-js";
+import { mono_interp_tier_prepare_jiterpreter, mono_jiterp_free_method_data_js } from "./jiterpreter";
+import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
+import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
+import { mono_wasm_resolve_or_reject_promise } from "./marshal-to-js";
+import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
+import { mono_wasm_asm_loaded } from "./startup";
+import { mono_wasm_diagnostic_server_on_server_thread_created } from "./diagnostics/server_pthread";
+import { mono_wasm_diagnostic_server_on_runtime_server_init, mono_wasm_event_pipe_early_startup_callback } from "./diagnostics";
+import { mono_wasm_diagnostic_server_stream_signal_work_available } from "./diagnostics/server_pthread/stream-queue";
+import { mono_log_warn, mono_wasm_console_clear, mono_wasm_trace_logger } from "./logging";
+import { mono_wasm_profiler_leave, mono_wasm_profiler_enter } from "./profiler";
+import { mono_wasm_change_case, mono_wasm_change_case_invariant } from "./hybrid-globalization/change-case";
+import { mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, mono_wasm_index_of } from "./hybrid-globalization/collations";
+import { mono_wasm_get_calendar_info } from "./hybrid-globalization/calendar";
 
-import {mono_wasm_get_culture_info} from "./hybrid-globalization/culture-info";
-import {mono_wasm_get_locale_info, mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year} from "./hybrid-globalization/locales";
-import {mono_wasm_browser_entropy} from "./crypto";
-import {mono_wasm_cancel_promise} from "./cancelable-promise";
+import { mono_wasm_get_culture_info } from "./hybrid-globalization/culture-info";
+import { mono_wasm_get_locale_info, mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
+import { mono_wasm_browser_entropy } from "./crypto";
+import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
 import {
     mono_wasm_start_deputy_thread_async,
     mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered,
     mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop, mono_wasm_start_io_thread_async
 } from "./pthreads";
-import {mono_wasm_dump_threads} from "./pthreads/ui-thread";
+import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
 
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
@@ -118,7 +118,7 @@ const wasmImports: Function[] = [
     ...mono_wasm_threads_imports,
 ];
 
-export function replace_linker_placeholders (imports: WebAssembly.Imports) {
+export function replace_linker_placeholders(imports: WebAssembly.Imports) {
     // the output from emcc contains wrappers for these linker imports which add overhead,
     //  but now we have what we need to replace them with the actual functions
     // By default the imports all live inside of 'env', but emscripten minification could rename it to 'a'.
@@ -136,7 +136,7 @@ export function replace_linker_placeholders (imports: WebAssembly.Imports) {
         const stub_fn = env[shortName] as Function;
         if (typeof stub_fn === "function" && stub_fn.toString().indexOf("runtime_idx") !== -1) {
             try {
-                const {runtime_idx} = stub_fn();
+                const { runtime_idx } = stub_fn();
                 if (indexToNameMap[runtime_idx] !== undefined) throw new Error(`Duplicate runtime_idx ${runtime_idx}`);
                 indexToNameMap[runtime_idx] = shortName;
             } catch {

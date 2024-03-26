@@ -4,22 +4,22 @@
 import BuildConfiguration from "consts:configuration";
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import {MainThreadingMode, type DotnetModuleInternal, type MonoConfigInternal, JSThreadBlockingMode, JSThreadInteropMode} from "../types/internal";
-import type {DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList} from "../types";
-import {exportedRuntimeAPI, loaderHelpers, runtimeHelpers} from "./globals";
-import {mono_log_error, mono_log_debug} from "./logging";
-import {importLibraryInitializers, invokeLibraryInitializers} from "./libraryInitializers";
-import {mono_exit} from "./exit";
-import {makeURLAbsoluteWithApplicationBase} from "./polyfills";
-import {appendUniqueQuery} from "./assets";
-import {mono_log_warn} from "./logging";
+import { MainThreadingMode, type DotnetModuleInternal, type MonoConfigInternal, JSThreadBlockingMode, JSThreadInteropMode } from "../types/internal";
+import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
+import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
+import { mono_log_error, mono_log_debug } from "./logging";
+import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
+import { mono_exit } from "./exit";
+import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
+import { appendUniqueQuery } from "./assets";
+import { mono_log_warn } from "./logging";
 
-export function deep_merge_config (target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
+export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     // no need to merge the same object
     if (target === source) return target;
 
     // If source has collection fields set to null (produced by boot config for example), we should maintain the target values
-    const providedConfig: MonoConfigInternal = {...source};
+    const providedConfig: MonoConfigInternal = { ...source };
     if (providedConfig.assets !== undefined && providedConfig.assets !== target.assets) {
         providedConfig.assets = [...(target.assets || []), ...(providedConfig.assets || [])];
     }
@@ -32,7 +32,7 @@ export function deep_merge_config (target: MonoConfigInternal, source: MonoConfi
         }, providedConfig.resources);
     }
     if (providedConfig.environmentVariables !== undefined) {
-        providedConfig.environmentVariables = {...(target.environmentVariables || {}), ...(providedConfig.environmentVariables || {})};
+        providedConfig.environmentVariables = { ...(target.environmentVariables || {}), ...(providedConfig.environmentVariables || {}) };
     }
     if (providedConfig.runtimeOptions !== undefined && providedConfig.runtimeOptions !== target.runtimeOptions) {
         providedConfig.runtimeOptions = [...(target.runtimeOptions || []), ...(providedConfig.runtimeOptions || [])];
@@ -40,11 +40,11 @@ export function deep_merge_config (target: MonoConfigInternal, source: MonoConfi
     return Object.assign(target, providedConfig);
 }
 
-export function deep_merge_module (target: DotnetModuleInternal, source: DotnetModuleConfig): DotnetModuleInternal {
+export function deep_merge_module(target: DotnetModuleInternal, source: DotnetModuleConfig): DotnetModuleInternal {
     // no need to merge the same object
     if (target === source) return target;
 
-    const providedConfig: DotnetModuleConfig = {...source};
+    const providedConfig: DotnetModuleConfig = { ...source };
     if (providedConfig.config) {
         if (!target.config) target.config = {};
         providedConfig.config = deep_merge_config(target.config, providedConfig.config);
@@ -52,49 +52,49 @@ export function deep_merge_module (target: DotnetModuleInternal, source: DotnetM
     return Object.assign(target, providedConfig);
 }
 
-function deep_merge_resources (target: ResourceGroups, source: ResourceGroups): ResourceGroups {
+function deep_merge_resources(target: ResourceGroups, source: ResourceGroups): ResourceGroups {
     // no need to merge the same object
     if (target === source) return target;
 
-    const providedResources: ResourceGroups = {...source};
+    const providedResources: ResourceGroups = { ...source };
     if (providedResources.assembly !== undefined) {
-        providedResources.assembly = {...(target.assembly || {}), ...(providedResources.assembly || {})};
+        providedResources.assembly = { ...(target.assembly || {}), ...(providedResources.assembly || {}) };
     }
     if (providedResources.lazyAssembly !== undefined) {
-        providedResources.lazyAssembly = {...(target.lazyAssembly || {}), ...(providedResources.lazyAssembly || {})};
+        providedResources.lazyAssembly = { ...(target.lazyAssembly || {}), ...(providedResources.lazyAssembly || {}) };
     }
     if (providedResources.pdb !== undefined) {
-        providedResources.pdb = {...(target.pdb || {}), ...(providedResources.pdb || {})};
+        providedResources.pdb = { ...(target.pdb || {}), ...(providedResources.pdb || {}) };
     }
     if (providedResources.jsModuleWorker !== undefined) {
-        providedResources.jsModuleWorker = {...(target.jsModuleWorker || {}), ...(providedResources.jsModuleWorker || {})};
+        providedResources.jsModuleWorker = { ...(target.jsModuleWorker || {}), ...(providedResources.jsModuleWorker || {}) };
     }
     if (providedResources.jsModuleNative !== undefined) {
-        providedResources.jsModuleNative = {...(target.jsModuleNative || {}), ...(providedResources.jsModuleNative || {})};
+        providedResources.jsModuleNative = { ...(target.jsModuleNative || {}), ...(providedResources.jsModuleNative || {}) };
     }
     if (providedResources.jsModuleRuntime !== undefined) {
-        providedResources.jsModuleRuntime = {...(target.jsModuleRuntime || {}), ...(providedResources.jsModuleRuntime || {})};
+        providedResources.jsModuleRuntime = { ...(target.jsModuleRuntime || {}), ...(providedResources.jsModuleRuntime || {}) };
     }
     if (providedResources.wasmSymbols !== undefined) {
-        providedResources.wasmSymbols = {...(target.wasmSymbols || {}), ...(providedResources.wasmSymbols || {})};
+        providedResources.wasmSymbols = { ...(target.wasmSymbols || {}), ...(providedResources.wasmSymbols || {}) };
     }
     if (providedResources.wasmNative !== undefined) {
-        providedResources.wasmNative = {...(target.wasmNative || {}), ...(providedResources.wasmNative || {})};
+        providedResources.wasmNative = { ...(target.wasmNative || {}), ...(providedResources.wasmNative || {}) };
     }
     if (providedResources.icu !== undefined) {
-        providedResources.icu = {...(target.icu || {}), ...(providedResources.icu || {})};
+        providedResources.icu = { ...(target.icu || {}), ...(providedResources.icu || {}) };
     }
     if (providedResources.satelliteResources !== undefined) {
         providedResources.satelliteResources = deep_merge_dict(target.satelliteResources || {}, providedResources.satelliteResources || {});
     }
     if (providedResources.modulesAfterConfigLoaded !== undefined) {
-        providedResources.modulesAfterConfigLoaded = {...(target.modulesAfterConfigLoaded || {}), ...(providedResources.modulesAfterConfigLoaded || {})};
+        providedResources.modulesAfterConfigLoaded = { ...(target.modulesAfterConfigLoaded || {}), ...(providedResources.modulesAfterConfigLoaded || {}) };
     }
     if (providedResources.modulesAfterRuntimeReady !== undefined) {
-        providedResources.modulesAfterRuntimeReady = {...(target.modulesAfterRuntimeReady || {}), ...(providedResources.modulesAfterRuntimeReady || {})};
+        providedResources.modulesAfterRuntimeReady = { ...(target.modulesAfterRuntimeReady || {}), ...(providedResources.modulesAfterRuntimeReady || {}) };
     }
     if (providedResources.extensions !== undefined) {
-        providedResources.extensions = {...(target.extensions || {}), ...(providedResources.extensions || {})};
+        providedResources.extensions = { ...(target.extensions || {}), ...(providedResources.extensions || {}) };
     }
     if (providedResources.vfs !== undefined) {
         providedResources.vfs = deep_merge_dict(target.vfs || {}, providedResources.vfs || {});
@@ -102,18 +102,18 @@ function deep_merge_resources (target: ResourceGroups, source: ResourceGroups): 
     return Object.assign(target, providedResources);
 }
 
-function deep_merge_dict (target: { [key: string]: ResourceList }, source: { [key: string]: ResourceList }) {
+function deep_merge_dict(target: { [key: string]: ResourceList }, source: { [key: string]: ResourceList }) {
     // no need to merge the same object
     if (target === source) return target;
 
     for (const key in source) {
-        target[key] = {...target[key], ...source[key]};
+        target[key] = { ...target[key], ...source[key] };
     }
     return target;
 }
 
 // NOTE: this is called before setRuntimeGlobals
-export function normalizeConfig () {
+export function normalizeConfig() {
     // normalize
     const config = loaderHelpers.config;
 
@@ -259,7 +259,7 @@ export function normalizeConfig () {
 }
 
 let configLoaded = false;
-export async function mono_wasm_load_config (module: DotnetModuleInternal): Promise<void> {
+export async function mono_wasm_load_config(module: DotnetModuleInternal): Promise<void> {
     const configFilePath = module.configSrc;
     if (configLoaded) {
         await loaderHelpers.afterConfigLoaded.promise;
@@ -291,13 +291,13 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
         normalizeConfig();
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;
-        loaderHelpers.config = module.config = Object.assign(loaderHelpers.config, {message: errMessage, error: err, isError: true});
+        loaderHelpers.config = module.config = Object.assign(loaderHelpers.config, { message: errMessage, error: err, isError: true });
         mono_exit(1, new Error(errMessage));
         throw err;
     }
 }
 
-export function isDebuggingSupported (): boolean {
+export function isDebuggingSupported(): boolean {
     // Copied from blazor MonoDebugger.ts/attachDebuggerHotkey
     if (!globalThis.navigator) {
         return false;
@@ -306,7 +306,7 @@ export function isDebuggingSupported (): boolean {
     return loaderHelpers.isChromium || loaderHelpers.isFirefox;
 }
 
-async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
+async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
     const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
 
     const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
@@ -326,7 +326,7 @@ async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
     const loadedConfig: MonoConfig = await readBootConfigResponse(loadConfigResponse);
     deep_merge_config(loaderHelpers.config, loadedConfig);
 
-    function defaultLoadBootConfig (url: string): Promise<Response> {
+    function defaultLoadBootConfig(url: string): Promise<Response> {
         return loaderHelpers.fetch_like(url, {
             method: "GET",
             credentials: "include",
@@ -335,7 +335,7 @@ async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
     }
 }
 
-async function readBootConfigResponse (loadConfigResponse: Response): Promise<MonoConfig> {
+async function readBootConfigResponse(loadConfigResponse: Response): Promise<MonoConfig> {
     const config = loaderHelpers.config;
     const loadedConfig: MonoConfig = await loadConfigResponse.json();
 

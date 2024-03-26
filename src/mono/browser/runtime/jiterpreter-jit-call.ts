@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import {MonoType, MonoMethod} from "./types/internal";
-import {NativePointer, VoidPtr} from "./types/emscripten";
-import {Module, mono_assert, runtimeHelpers} from "./globals";
+import { MonoType, MonoMethod } from "./types/internal";
+import { NativePointer, VoidPtr } from "./types/emscripten";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import {
     getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews
 } from "./memory";
-import {WasmOpcode, WasmValtype} from "./jiterpreter-opcodes";
+import { WasmOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import {
     WasmBuilder, addWasmFunctionPointer,
     _now, getWasmFunctionTable, applyOptions,
@@ -15,10 +15,10 @@ import {
     getCounter, modifyCounter,
     getRawCwrap
 } from "./jiterpreter-support";
-import {JiterpreterTable, JiterpCounter, JitQueue} from "./jiterpreter-enums";
+import { JiterpreterTable, JiterpCounter, JitQueue } from "./jiterpreter-enums";
 import cwraps from "./cwraps";
-import {mono_log_error, mono_log_info} from "./logging";
-import {utf8ToString} from "./strings";
+import { mono_log_error, mono_log_info } from "./logging";
+import { utf8ToString } from "./strings";
 
 // Controls miscellaneous diagnostic output.
 const trace = 0;
@@ -95,7 +95,7 @@ class TrampolineInfo {
     wasmNativeSignature: WasmValtype[];
     enableDirect: boolean;
 
-    constructor (
+    constructor(
         method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
         arg_offsets: VoidPtr, catch_exceptions: boolean
     ) {
@@ -166,7 +166,7 @@ class TrampolineInfo {
 // this is cached replacements for Module.getWasmTableEntry();
 // we could add <EmccExportedLibraryFunction Include="$getWasmTableEntry" /> and <EmccExportedRuntimeMethod Include="getWasmTableEntry" />
 // if we need to export the original
-function getWasmTableEntry (index: number) {
+function getWasmTableEntry(index: number) {
     let result = fnCache[index];
     if (!result) {
         if (index >= fnCache.length)
@@ -179,7 +179,7 @@ function getWasmTableEntry (index: number) {
     return result;
 }
 
-export function mono_interp_invoke_wasm_jit_call_trampoline (
+export function mono_interp_invoke_wasm_jit_call_trampoline(
     thunkIndex: number, ret_sp: number, sp: number, ftndesc: number, thrown: NativePointer
 ) {
     const thunk = <Function>getWasmTableEntry(thunkIndex);
@@ -218,7 +218,7 @@ export function mono_interp_invoke_wasm_jit_call_trampoline (
 // If a method is freed we need to remove its info (just in case another one gets
 //  allocated at that exact memory offset later) and more importantly, ensure it is
 //  not waiting in the jit queue
-export function mono_jiterp_free_method_data_jit_call (method: MonoMethod) {
+export function mono_jiterp_free_method_data_jit_call(method: MonoMethod) {
     // FIXME
     const infoArray = infosByMethod[<any>method];
     if (!infoArray)
@@ -230,7 +230,7 @@ export function mono_jiterp_free_method_data_jit_call (method: MonoMethod) {
     delete infosByMethod[<any>method];
 }
 
-export function mono_interp_jit_wasm_jit_call_trampoline (
+export function mono_interp_jit_wasm_jit_call_trampoline(
     method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
     arg_offsets: VoidPtr, catch_exceptions: number
 ): void {
@@ -276,7 +276,7 @@ export function mono_interp_jit_wasm_jit_call_trampoline (
         mono_interp_flush_jitcall_queue();
 }
 
-function getIsWasmEhSupported (): boolean {
+function getIsWasmEhSupported(): boolean {
     if (wasmEhSupported !== undefined)
         return wasmEhSupported;
 
@@ -288,7 +288,7 @@ function getIsWasmEhSupported (): boolean {
     return wasmEhSupported;
 }
 
-export function mono_interp_flush_jitcall_queue (): void {
+export function mono_interp_flush_jitcall_queue(): void {
     const jitQueue: TrampolineInfo[] = [];
     let methodPtr = <MonoMethod><any>0;
     while ((methodPtr = <any>cwraps.mono_jiterp_tlqueue_next(JitQueue.JitCall)) != 0) {
@@ -338,7 +338,7 @@ export function mono_interp_flush_jitcall_queue (): void {
     if (builder.options.enableWasmEh) {
         if (!getIsWasmEhSupported()) {
             // The user requested to enable wasm EH but it's not supported, so turn the option back off
-            applyOptions(<any>{enableWasmEh: false});
+            applyOptions(<any>{ enableWasmEh: false });
             builder.options.enableWasmEh = false;
         }
     }
@@ -432,7 +432,7 @@ export function mono_interp_flush_jitcall_queue (): void {
         builder.appendULeb(jitQueue.length);
         for (let i = 0; i < jitQueue.length; i++) {
             const info = jitQueue[i];
-            builder.beginFunction("trampoline", {"old_sp": WasmValtype.i32});
+            builder.beginFunction("trampoline", { "old_sp": WasmValtype.i32 });
 
             const ok = generate_wasm_body(builder, info);
             // FIXME
@@ -624,19 +624,19 @@ const wasmOpcodeFromCilOpcode = {
     [CilOpcodes.STIND_I]: WasmOpcode.i32_store,
 };
 
-function append_ldloc (builder: WasmBuilder, offsetBytes: number, opcode: WasmOpcode) {
+function append_ldloc(builder: WasmBuilder, offsetBytes: number, opcode: WasmOpcode) {
     builder.local("sp");
     builder.appendU8(opcode);
     builder.appendMemarg(offsetBytes, 0);
 }
 
-function append_ldloca (builder: WasmBuilder, offsetBytes: number) {
+function append_ldloca(builder: WasmBuilder, offsetBytes: number) {
     builder.local("sp");
     builder.i32_const(offsetBytes);
     builder.appendU8(WasmOpcode.i32_add);
 }
 
-function generate_wasm_body (
+function generate_wasm_body(
     builder: WasmBuilder, info: TrampolineInfo
 ): boolean {
     let stack_index = 0;

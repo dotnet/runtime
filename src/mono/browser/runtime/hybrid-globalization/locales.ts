@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import {wrap_error_root, wrap_no_error_root} from "../invoke-js";
-import {mono_wasm_new_external_root} from "../roots";
-import {monoStringToString, stringToUTF16} from "../strings";
-import {Int32Ptr} from "../types/emscripten";
-import {MonoObject, MonoObjectRef, MonoString, MonoStringRef} from "../types/internal";
-import {OUTER_SEPARATOR, normalizeLocale} from "./helpers";
+import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
+import { mono_wasm_new_external_root } from "../roots";
+import { monoStringToString, stringToUTF16 } from "../strings";
+import { Int32Ptr } from "../types/emscripten";
+import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
+import { OUTER_SEPARATOR, normalizeLocale } from "./helpers";
 
-export function mono_wasm_get_locale_info (culture: MonoStringRef, locale: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number {
+export function mono_wasm_get_locale_info(culture: MonoStringRef, locale: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number {
     const localeRoot = mono_wasm_new_external_root<MonoString>(locale),
         cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
@@ -37,14 +37,14 @@ export function mono_wasm_get_locale_info (culture: MonoStringRef, locale: MonoS
         try {
             const region = localeParts.length > 1 ? localeParts.pop() : undefined;
             // this line might fail if form 4 from the comment above is used:
-            regionName = region ? new Intl.DisplayNames([cultureName], {type: "region"}).of(region) : undefined;
+            regionName = region ? new Intl.DisplayNames([cultureName], { type: "region" }).of(region) : undefined;
             const language = localeParts.join("-");
-            languageName = new Intl.DisplayNames([cultureName], {type: "language"}).of(language);
+            languageName = new Intl.DisplayNames([cultureName], { type: "language" }).of(language);
         } catch (error) {
             if (error instanceof RangeError && error.message === "invalid_argument") {
                 // if it failed from this reason then cultureName is in a form "language-script", without region
                 try {
-                    languageName = new Intl.DisplayNames([cultureName], {type: "language"}).of(localeName);
+                    languageName = new Intl.DisplayNames([cultureName], { type: "language" }).of(localeName);
                 } catch (error) {
                     if (error instanceof RangeError && error.message === "invalid_argument" && localeNameOriginal) {
                         // handle non-standard or malformed locales by forwarding the locale code, e.g. "xx-u-xx"
@@ -82,7 +82,7 @@ export function mono_wasm_get_locale_info (culture: MonoStringRef, locale: MonoS
     }
 }
 
-export function mono_wasm_get_first_day_of_week (culture: MonoStringRef, isException: Int32Ptr, exAddress: MonoObjectRef): number {
+export function mono_wasm_get_first_day_of_week(culture: MonoStringRef, isException: Int32Ptr, exAddress: MonoObjectRef): number {
 
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
@@ -100,7 +100,7 @@ export function mono_wasm_get_first_day_of_week (culture: MonoStringRef, isExcep
     }
 }
 
-export function mono_wasm_get_first_week_of_year (culture: MonoStringRef, isException: Int32Ptr, exAddress: MonoObjectRef): number {
+export function mono_wasm_get_first_week_of_year(culture: MonoStringRef, isException: Int32Ptr, exAddress: MonoObjectRef): number {
 
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
@@ -118,7 +118,7 @@ export function mono_wasm_get_first_week_of_year (culture: MonoStringRef, isExce
     }
 }
 
-function getFirstDayOfWeek (locale: string) {
+function getFirstDayOfWeek(locale: string) {
     const weekInfo = getWeekInfo(locale);
     if (weekInfo) {
         // JS's Sunday == 7 while dotnet's Sunday == 0
@@ -139,7 +139,7 @@ function getFirstDayOfWeek (locale: string) {
     return 1;
 }
 
-function getFirstWeekOfYear (locale: string) {
+function getFirstWeekOfYear(locale: string) {
     const weekInfo = getWeekInfo(locale);
     if (weekInfo) {
         // enum CalendarWeekRule
@@ -160,7 +160,7 @@ function getFirstWeekOfYear (locale: string) {
     return 0;
 }
 
-function getWeekInfo (locale: string) {
+function getWeekInfo(locale: string) {
     try {
         // most tools have it implemented as property
         return (new Intl.Locale(locale) as any).weekInfo;

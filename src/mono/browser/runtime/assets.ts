@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type {AssetEntryInternal} from "./types/internal";
+import type { AssetEntryInternal } from "./types/internal";
 
 import cwraps from "./cwraps";
-import {mono_wasm_load_icu_data} from "./icu";
-import {Module, loaderHelpers, mono_assert, runtimeHelpers} from "./globals";
-import {mono_log_info, mono_log_debug, parseSymbolMapFile} from "./logging";
-import {mono_wasm_load_bytes_into_heap} from "./memory";
-import {endMeasure, MeasuredBlock, startMeasure} from "./profiler";
-import {AssetEntry} from "./types";
-import {VoidPtr} from "./types/emscripten";
-import {setSegmentationRulesFromJson} from "./hybrid-globalization/grapheme-segmenter";
+import { mono_wasm_load_icu_data } from "./icu";
+import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { mono_log_info, mono_log_debug, parseSymbolMapFile } from "./logging";
+import { mono_wasm_load_bytes_into_heap } from "./memory";
+import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
+import { AssetEntry } from "./types";
+import { VoidPtr } from "./types/emscripten";
+import { setSegmentationRulesFromJson } from "./hybrid-globalization/grapheme-segmenter";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
-export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8Array): void {
+export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array): void {
     mono_log_debug(`Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
     const mark = startMeasure();
 
@@ -33,7 +33,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
         case "resource":
         case "assembly":
         case "pdb":
-            loaderHelpers._loaded_files.push({url: url, file: virtualName});
+            loaderHelpers._loaded_files.push({ url: url, file: virtualName });
         // falls through
         case "heap":
         case "icu":
@@ -94,7 +94,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
     ++loaderHelpers.actual_instantiated_assets_count;
 }
 
-export async function instantiate_symbols_asset (pendingAsset: AssetEntryInternal): Promise<void> {
+export async function instantiate_symbols_asset(pendingAsset: AssetEntryInternal): Promise<void> {
     try {
         const response = await pendingAsset.pendingDownloadInternal!.response;
         const text = await response.text();
@@ -104,7 +104,7 @@ export async function instantiate_symbols_asset (pendingAsset: AssetEntryInterna
     }
 }
 
-export async function instantiate_segmentation_rules_asset (pendingAsset: AssetEntryInternal): Promise<void> {
+export async function instantiate_segmentation_rules_asset(pendingAsset: AssetEntryInternal): Promise<void> {
     try {
         const response = await pendingAsset.pendingDownloadInternal!.response;
         const json = await response.json();
@@ -114,7 +114,7 @@ export async function instantiate_segmentation_rules_asset (pendingAsset: AssetE
     }
 }
 
-export async function wait_for_all_assets () {
+export async function wait_for_all_assets() {
     // wait for all assets in memory
     await runtimeHelpers.allAssetsInMemory.promise;
     if (runtimeHelpers.config.assets) {
@@ -126,6 +126,6 @@ export async function wait_for_all_assets () {
 }
 
 // Used by the debugger to enumerate loaded dlls and pdbs
-export function mono_wasm_get_loaded_files (): string[] {
+export function mono_wasm_get_loaded_files(): string[] {
     return loaderHelpers.loadedFiles;
 }

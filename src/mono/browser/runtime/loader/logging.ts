@@ -5,7 +5,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import {ENVIRONMENT_IS_WORKER, loaderHelpers} from "./globals";
+import { ENVIRONMENT_IS_WORKER, loaderHelpers } from "./globals";
 
 const methods = ["debug", "log", "trace", "warn", "info", "error"];
 const prefix = "MONO_WASM: ";
@@ -14,29 +14,29 @@ let theConsoleApi: any;
 let originalConsoleMethods: any;
 let threadNamePrefix: string;
 
-export function set_thread_prefix (threadPrefix: string) {
+export function set_thread_prefix(threadPrefix: string) {
     threadNamePrefix = threadPrefix;
 }
 
-export function mono_log_debug (msg: string, ...data: any[]) {
+export function mono_log_debug(msg: string, ...data: any[]) {
     if (loaderHelpers.diagnosticTracing) {
         console.debug(prefix + msg, ...data);
     }
 }
 
-export function mono_log_info (msg: string, ...data: any) {
+export function mono_log_info(msg: string, ...data: any) {
     console.info(prefix + msg, ...data);
 }
 
-export function mono_log_info_no_prefix (msg: string, ...data: any) {
+export function mono_log_info_no_prefix(msg: string, ...data: any) {
     console.info(msg, ...data);
 }
 
-export function mono_log_warn (msg: string, ...data: any) {
+export function mono_log_warn(msg: string, ...data: any) {
     console.warn(prefix + msg, ...data);
 }
 
-export function mono_log_error (msg: string, ...data: any) {
+export function mono_log_error(msg: string, ...data: any) {
     if (data && data.length > 0 && data[0] && typeof data[0] === "object") {
         // don't log silent errors
         if (data[0].silent) {
@@ -54,8 +54,8 @@ export function mono_log_error (msg: string, ...data: any) {
 }
 let tick = "";
 let last = new Date().valueOf();
-function proxyConsoleMethod (prefix: string, func: any, asJson: boolean) {
-    return function (...args: any[]) {
+function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
+    return function(...args: any[]) {
         try {
             let payload = args[0];
             if (payload === undefined) payload = "undefined";
@@ -101,7 +101,7 @@ function proxyConsoleMethod (prefix: string, func: any, asJson: boolean) {
     };
 }
 
-export function setup_proxy_console (id: string, console: Console, origin: string): void {
+export function setup_proxy_console(id: string, console: Console, origin: string): void {
     theConsoleApi = console as any;
     threadNamePrefix = id;
     originalConsoleMethods = {
@@ -117,7 +117,7 @@ export function setup_proxy_console (id: string, console: Console, origin: strin
     setupWS();
 }
 
-export function teardown_proxy_console (message?: string) {
+export function teardown_proxy_console(message?: string) {
     const stop_when_ws_buffer_empty = () => {
         if (!consoleWebSocket) {
             if (message && originalConsoleMethods) {
@@ -142,7 +142,7 @@ export function teardown_proxy_console (message?: string) {
     stop_when_ws_buffer_empty();
 }
 
-function send (msg: string) {
+function send(msg: string) {
     if (consoleWebSocket && consoleWebSocket.readyState === WebSocket.OPEN) {
         consoleWebSocket.send(msg);
     } else {
@@ -150,21 +150,21 @@ function send (msg: string) {
     }
 }
 
-function logWSError (event: Event) {
+function logWSError(event: Event) {
     originalConsoleMethods.error(`[${threadNamePrefix}] proxy console websocket error: ${event}`, event);
 }
 
-function logWSClose (event: Event) {
+function logWSClose(event: Event) {
     originalConsoleMethods.debug(`[${threadNamePrefix}] proxy console websocket closed: ${event}`, event);
 }
 
-function setupWS () {
+function setupWS() {
     for (const m of methods) {
         theConsoleApi[m] = proxyConsoleMethod(`console.${m}`, send, true);
     }
 }
 
-function setupOriginal () {
+function setupOriginal() {
     for (const m of methods) {
         theConsoleApi[m] = proxyConsoleMethod(`console.${m}`, originalConsoleMethods.log, false);
     }

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
-import {PThreadSelf} from "./shared";
+import { PThreadSelf } from "./shared";
 
 export const dotnetPthreadCreated = "dotnet:pthread:created" as const;
 export const dotnetPthreadAttached = "dotnet:pthread:attached" as const;
@@ -35,7 +35,7 @@ export const makeWorkerThreadEvent: (type: keyof WorkerThreadEventMap, pthread_s
     })
     : ((type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => {
         if (!WorkerThreadEventClassConstructor) WorkerThreadEventClassConstructor = class WorkerThreadEventImpl extends Event implements WorkerThreadEvent {
-            constructor (type: keyof WorkerThreadEventMap, readonly pthread_self: PThreadSelf) {
+            constructor(type: keyof WorkerThreadEventMap, readonly pthread_self: PThreadSelf) {
                 super(type);
             }
         };

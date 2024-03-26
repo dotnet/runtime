@@ -5,19 +5,19 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
 
-import {PromiseAndController, assertNever} from "../../types/internal";
-import {pthread_self} from "../../pthreads";
-import {createPromiseController, mono_assert} from "../../globals";
-import {threads_c_functions as cwraps} from "../../cwraps";
-import {EventPipeSessionIDImpl} from "../shared/types";
-import {CharPtr} from "../../types/emscripten";
+import { PromiseAndController, assertNever } from "../../types/internal";
+import { pthread_self } from "../../pthreads";
+import { createPromiseController, mono_assert } from "../../globals";
+import { threads_c_functions as cwraps } from "../../cwraps";
+import { EventPipeSessionIDImpl } from "../shared/types";
+import { CharPtr } from "../../types/emscripten";
 import {
     DiagnosticServerControlCommand,
     isDiagnosticMessage
 } from "../shared/controller-commands";
 
-import {importAndInstantiateMock} from "./mock-remote";
-import type {Mock, MockRemoteSocket} from "../mock";
+import { importAndInstantiateMock } from "./mock-remote";
+import type { Mock, MockRemoteSocket } from "../mock";
 import {
     isEventPipeCommand,
     isProcessCommand,
@@ -29,8 +29,8 @@ import {
     isProcessCommandResumeRuntime,
     EventPipeCommandCollectTracing2,
 } from "./protocol-client-commands";
-import {makeEventPipeStreamingSession} from "./streaming-session";
-import {CommonSocket} from "./common-socket";
+import { makeEventPipeStreamingSession } from "./streaming-session";
+import { CommonSocket } from "./common-socket";
 import {
     createProtocolSocket, dotnetDiagnosticsServerProtocolCommandEvent,
     ProtocolCommandEvent,
@@ -47,24 +47,24 @@ import {
     createAdvertise,
     createBinaryCommandOKReply,
 } from "./ipc-protocol/serializer";
-import {mono_log_error, mono_log_info, mono_log_debug, mono_log_warn} from "../../logging";
-import {utf8ToString} from "../../strings";
+import { mono_log_error, mono_log_info, mono_log_debug, mono_log_warn } from "../../logging";
+import { utf8ToString } from "../../strings";
 
-function addOneShotProtocolCommandEventListener (src: EventTarget): Promise<ProtocolCommandEvent> {
+function addOneShotProtocolCommandEventListener(src: EventTarget): Promise<ProtocolCommandEvent> {
     return new Promise((resolve) => {
         const listener = (event: Event) => {
             resolve(event as ProtocolCommandEvent);
         };
-        src.addEventListener(dotnetDiagnosticsServerProtocolCommandEvent, listener, {once: true});
+        src.addEventListener(dotnetDiagnosticsServerProtocolCommandEvent, listener, { once: true });
     });
 }
 
-function addOneShotOpenEventListenr (src: EventTarget): Promise<Event> {
+function addOneShotOpenEventListenr(src: EventTarget): Promise<Event> {
     return new Promise((resolve) => {
         const listener = (event: Event) => {
             resolve(event);
         };
-        src.addEventListener("open", listener, {once: true});
+        src.addEventListener("open", listener, { once: true });
     });
 }
 
@@ -77,7 +77,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     readonly mocked: Promise<Mock> | undefined;
     runtimeResumed = false;
 
-    constructor (websocketUrl: string, mockPromise?: Promise<Mock>) {
+    constructor(websocketUrl: string, mockPromise?: Promise<Mock>) {
         this.websocketUrl = websocketUrl;
         pthread_self.addEventListenerFromBrowser(this.onMessageFromMainThread.bind(this));
         this.mocked = monoDiagnosticsMock ? mockPromise : undefined;
@@ -89,21 +89,21 @@ class DiagnosticServerImpl implements DiagnosticServer {
 
     private attachToRuntimeController = createPromiseController<void>().promise_control;
 
-    start (): void {
+    start(): void {
         mono_log_info(`starting diagnostic server with url: ${this.websocketUrl}`);
         this.startRequestedController.resolve();
     }
-    stop (): void {
+    stop(): void {
         this.stopRequested = true;
         this.stopRequestedController.resolve();
     }
 
-    attachToRuntime (): void {
+    attachToRuntime(): void {
         cwraps.mono_wasm_diagnostic_server_thread_attach_to_runtime();
         this.attachToRuntimeController.resolve();
     }
 
-    async serverLoop (this: DiagnosticServerImpl): Promise<void> {
+    async serverLoop(this: DiagnosticServerImpl): Promise<void> {
         await this.startRequestedController.promise;
         await this.attachToRuntimeController.promise; // can't start tracing until we've attached to the runtime
         while (!this.stopRequested) {
@@ -123,7 +123,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         }
     }
 
-    async openSocket (): Promise<CommonSocket> {
+    async openSocket(): Promise<CommonSocket> {
         if (monoDiagnosticsMock && this.mocked) {
             return (await this.mocked).open();
         } else {
@@ -136,7 +136,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
 
     private openCount = 0;
 
-    async advertiseAndWaitForClient (): Promise<void> {
+    async advertiseAndWaitForClient(): Promise<void> {
         try {
             const connNum = this.openCount++;
             mono_log_debug("opening websocket and sending ADVR_V1", connNum);
@@ -152,7 +152,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         }
     }
 
-    async parseAndDispatchMessage (ws: CommonSocket, connNum: number, message: ProtocolCommandEvent): Promise<void> {
+    async parseAndDispatchMessage(ws: CommonSocket, connNum: number, message: ProtocolCommandEvent): Promise<void> {
         try {
             const cmd = this.parseCommand(message, connNum);
             if (cmd === null) {
@@ -171,7 +171,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         }
     }
 
-    sendAdvertise (ws: CommonSocket) {
+    sendAdvertise(ws: CommonSocket) {
         /* FIXME: don't use const fake guid and fake process id. In dotnet-dsrouter the pid is used
          * as a dictionary key,so if we ever supprt multiple runtimes, this might need to change.
         */
@@ -182,7 +182,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         ws.send(buf);
     }
 
-    parseCommand (message: ProtocolCommandEvent, connNum: number): ProtocolClientCommandBase | null {
+    parseCommand(message: ProtocolCommandEvent, connNum: number): ProtocolClientCommandBase | null {
         mono_log_debug("parsing byte command: ", message.data, connNum);
         const result = parseProtocolCommand(message.data);
         mono_log_debug("parsed byte command: ", result, connNum);
@@ -194,7 +194,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         }
     }
 
-    onMessageFromMainThread (this: DiagnosticServerImpl, event: MessageEvent<unknown>): void {
+    onMessageFromMainThread(this: DiagnosticServerImpl, event: MessageEvent<unknown>): void {
         const d = event.data;
         if (d && isDiagnosticMessage(d)) {
             this.controlCommandReceived(d as DiagnosticServerControlCommand);
@@ -202,7 +202,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     /// dispatch commands received from the main thread
-    controlCommandReceived (cmd: DiagnosticServerControlCommand): void {
+    controlCommandReceived(cmd: DiagnosticServerControlCommand): void {
         switch (cmd.cmd) {
             case "start":
                 this.start();
@@ -220,7 +220,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     // dispatch EventPipe commands received from the diagnostic client
-    async dispatchEventPipeCommand (ws: CommonSocket, cmd: EventPipeClientCommandBase): Promise<void> {
+    async dispatchEventPipeCommand(ws: CommonSocket, cmd: EventPipeClientCommandBase): Promise<void> {
         if (isEventPipeCommandCollectTracing2(cmd)) {
             await this.collectTracingEventPipe(ws, cmd);
         } else if (isEventPipeCommandStopTracing(cmd)) {
@@ -230,12 +230,12 @@ class DiagnosticServerImpl implements DiagnosticServer {
         }
     }
 
-    postClientReplyOK (ws: CommonSocket, payload?: Uint8Array): void {
+    postClientReplyOK(ws: CommonSocket, payload?: Uint8Array): void {
         // FIXME: send a binary response for non-mock sessions!
         ws.send(createBinaryCommandOKReply(payload));
     }
 
-    async stopEventPipe (ws: WebSocket | MockRemoteSocket, sessionID: EventPipeSessionIDImpl): Promise<void> {
+    async stopEventPipe(ws: WebSocket | MockRemoteSocket, sessionID: EventPipeSessionIDImpl): Promise<void> {
         mono_log_debug("stopEventPipe", sessionID);
         cwraps.mono_wasm_event_pipe_session_disable(sessionID);
         // we might send OK before the session is actually stopped since the websocket is async
@@ -243,7 +243,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         this.postClientReplyOK(ws);
     }
 
-    async collectTracingEventPipe (ws: WebSocket | MockRemoteSocket, cmd: EventPipeCommandCollectTracing2): Promise<void> {
+    async collectTracingEventPipe(ws: WebSocket | MockRemoteSocket, cmd: EventPipeCommandCollectTracing2): Promise<void> {
         const session = await makeEventPipeStreamingSession(ws, cmd);
         const sessionIDbuf = new Uint8Array(8); // 64 bit
         sessionIDbuf[0] = session.sessionID & 0xFF;
@@ -257,7 +257,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     // dispatch Process commands received from the diagnostic client
-    async dispatchProcessCommand (ws: WebSocket | MockRemoteSocket, cmd: ProcessClientCommandBase): Promise<void> {
+    async dispatchProcessCommand(ws: WebSocket | MockRemoteSocket, cmd: ProcessClientCommandBase): Promise<void> {
         if (isProcessCommandResumeRuntime(cmd)) {
             this.processResumeRuntime(ws);
         } else {
@@ -265,12 +265,12 @@ class DiagnosticServerImpl implements DiagnosticServer {
         }
     }
 
-    processResumeRuntime (ws: WebSocket | MockRemoteSocket): void {
+    processResumeRuntime(ws: WebSocket | MockRemoteSocket): void {
         this.postClientReplyOK(ws);
         this.resumeRuntime();
     }
 
-    resumeRuntime (): void {
+    resumeRuntime(): void {
         if (!this.runtimeResumed) {
             mono_log_debug("resuming runtime startup");
             cwraps.mono_wasm_diagnostic_server_post_resume_runtime();
@@ -279,7 +279,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 }
 
-function parseProtocolCommand (data: ArrayBuffer | BinaryProtocolCommand): ParseClientCommandResult<ProtocolClientCommandBase> {
+function parseProtocolCommand(data: ArrayBuffer | BinaryProtocolCommand): ParseClientCommandResult<ProtocolClientCommandBase> {
     if (isBinaryProtocolCommand(data)) {
         return parseBinaryProtocolCommand(data);
     } else {
@@ -288,14 +288,14 @@ function parseProtocolCommand (data: ArrayBuffer | BinaryProtocolCommand): Parse
 }
 
 /// Called by the runtime  to initialize the diagnostic server workers
-export function mono_wasm_diagnostic_server_on_server_thread_created (websocketUrlPtr: CharPtr): void {
+export function mono_wasm_diagnostic_server_on_server_thread_created(websocketUrlPtr: CharPtr): void {
     mono_assert(WasmEnableThreads, "The diagnostic server requires threads to be enabled during build time.");
     const websocketUrl = utf8ToString(websocketUrlPtr);
     mono_log_debug(`mono_wasm_diagnostic_server_on_server_thread_created, url ${websocketUrl}`);
     let mock: PromiseAndController<Mock> | undefined = undefined;
     if (monoDiagnosticsMock && websocketUrl.startsWith("mock:")) {
         mock = createPromiseController<Mock>();
-        queueMicrotask(async () => {
+        queueMicrotask(async() => {
             const m = await importAndInstantiateMock(websocketUrl);
             mock!.promise_control.resolve(m);
             m.run();
