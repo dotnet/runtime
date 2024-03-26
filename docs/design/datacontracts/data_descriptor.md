@@ -11,7 +11,7 @@ manifestations.
 
 The first physical format is used to publish well-known data descriptors in the `dotnet/runtime`
 repository.  It is supposed to be machine- and human-readable.  This format is not meant to be
-particularly consise and may be used for visualization, diagnostics, etc.  Typically data
+particularly concise and may be used for visualization, diagnostics, etc.  Typically data
 descriptors in this form may be written by hand or with the aid of tooling.
 
 The second physical format is used to embed a data descriptor blob within a particularly instance of
@@ -35,12 +35,12 @@ The data descriptor consists of:
 
 ## Data descriptor specification version
 
-This is the version of the phsyical data descriptor.
+This is the version of the physical data descriptor.
 
 ## Types
 
 The types (both primitive types and structures described by structure descriptors) are classified as
-having either determinate or indeterminate type.  Determinate sizes may be used for pointer
+having either determinate or indeterminate size.  Determinate sizes may be used for pointer
 arithmetic.  Types with indeterminate size may not be.  Note that some sizes may be determinate, but
 /target specific/.  For example pointer types have a fixed size that varies by architecture.
 
@@ -73,7 +73,7 @@ The name of a field descriptor must be unique within the definition of a structu
 
 The offset may be negative.
 
-Two or more fields may have the same offets or imply that the underlying fields overlap.  The field
+Two or more fields may have the same offsets or imply that the underlying fields overlap.  The field
 offsets need not be aligned using any sort of target-specific alignment rules.
 
 Each field's type may refer to one of the primitive types or to any other type defined in the logical descriptor.
@@ -99,12 +99,12 @@ The name of each global value must be unique within the logical descriptor.
 The type must be one of the determinate-size primitive types.
 
 The value must be a integral constant within the range of its type.  Signed values are two's
-complement.  Pointer values need not be aligned and need not point to adressable target memory.
+complement.  Pointer values need not be aligned and need not point to addressable target memory.
 
 
 ## Physical descriptors
 
-The phsyical descriptors are meant to describe /subsets/ of a logical descriptor and to compose.
+The physical descriptors are meant to describe /subsets/ of a logical descriptor and to compose.
 Each physical descriptor can name an ordered sequence of zero or more "baseline" descriptor which is then
 considered to comprise a piece of the overall logical descriptor.
 
