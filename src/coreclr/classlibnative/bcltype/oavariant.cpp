@@ -38,6 +38,7 @@ extern "C" void* QCALLTYPE OAVariant_GetObjectRefFromComIP(QCall::ObjectHandleOn
     GCX_COOP();
     OBJECTREF objectRef = NULL;
     GetObjectRefFromComIP(&objectRef, pUnk);
+    objRet.Set(objectRef);
 
     END_QCALL;
 }
