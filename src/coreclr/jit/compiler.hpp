@@ -5067,26 +5067,31 @@ FORCEINLINE int regIndexForType(T vt)
 
 void AllRegsMask::operator|=(const AllRegsMask& other)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     // TODO: Can we optimize to reintrepret_cast<unsigned long long>
     //  Something like https://godbolt.org/z/1KevT8Edh
     _float_gpr |= other._float_gpr;
-#ifdef HAS_PREDICATE_REGS
     _predicateRegs |= other._predicateRegs;
+#else
+    _allRegisters |= other._allRegisters;
 #endif
 }
 
 void AllRegsMask::operator&=(const AllRegsMask& other)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     // TODO: Can we optimize to reintrepret_cast<unsigned long long>
     //  Something like https://godbolt.org/z/1KevT8Edh
     _float_gpr &= other._float_gpr;
-#ifdef HAS_PREDICATE_REGS
     _predicateRegs &= other._predicateRegs;
+#else
+    _allRegisters &= other._allRegisters;
 #endif
 }
 
 void AllRegsMask::operator|=(const regNumber reg)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     int         index = regIndexForRegister(reg);
     RegBitSet64 value = genRegMask(reg);
     _registers[index] |= encodeForIndex(index, value);
@@ -5100,32 +5105,42 @@ void AllRegsMask::operator|=(const regNumber reg)
     //{
     //     float_gpr = value;
     // }
+#else
+    _allRegisters |= genRegMask(reg);
+#endif
 }
 
 void AllRegsMask::operator^=(const regNumber reg)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     int         index = regIndexForRegister(reg);
     RegBitSet64 value = genRegMask(reg);
     _registers[index] ^= encodeForIndex(index, value);
+#else
+    _allRegisters ^= genRegMask(reg);
+#endif
 }
 
 AllRegsMask AllRegsMask::operator~()
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     AllRegsMask result;
     result._float_gpr = ~_float_gpr;
-#ifdef HAS_PREDICATE_REGS
     result._predicateRegs = ~_predicateRegs;
-#endif
     return result;
+#else
+    return ~_allRegisters;
+#endif
 }
 
 bool AllRegsMask::operator==(const AllRegsMask& other)
 {
-    bool result = (_float_gpr == other._float_gpr);
-#ifdef HAS_PREDICATE_REGS
-    result &= (_predicateRegs == other._predicateRegs);
-#endif
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    bool result = (_float_gpr == other._float_gpr) &= (_predicateRegs == other._predicateRegs);
     return result;
+#else
+    return _allRegisters == other._allRegisters;
+#endif
 }
 
 bool AllRegsMask::operator!=(const AllRegsMask& other)
@@ -5135,67 +5150,77 @@ bool AllRegsMask::operator!=(const AllRegsMask& other)
 
 AllRegsMask AllRegsMask::operator&(const AllRegsMask& other) const
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     AllRegsMask result;
     result._float_gpr = _float_gpr & other._float_gpr;
-#ifdef HAS_PREDICATE_REGS
     result._predicateRegs = _predicateRegs & other._predicateRegs;
-#endif
     return result;
+#else
+    return _allRegisters & other._allRegisters;
+#endif
 }
 
 AllRegsMask AllRegsMask::operator|(const AllRegsMask& other) const
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     AllRegsMask result;
     result._float_gpr = _float_gpr | other._float_gpr;
-#ifdef HAS_PREDICATE_REGS
     result._predicateRegs = _predicateRegs | other._predicateRegs;
-#endif
     return result;
+#else
+    return _allRegisters | other._allRegisters;
+#endif
 }
 
 AllRegsMask AllRegsMask::operator&(const regNumber reg) const
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     AllRegsMask result = *this;
     int         index  = regIndexForRegister(reg);
     RegBitSet64 value  = genRegMask(reg);
     result[index] &= encodeForIndex(index, value);
     return result;
+#else
+    return _allRegisters & genRegMask(reg);
+#endif
 }
 
 void AllRegsMask::Clear()
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     _float_gpr = RBM_NONE;
-#ifdef HAS_PREDICATE_REGS
     _predicateRegs = RBM_NONE;
+#else
+    _allRegisters = RBM_NONE;
 #endif
 }
 
 bool AllRegsMask::IsEmpty()
 {
-    return (_float_gpr
-#ifdef HAS_PREDICATE_REGS
-            | _predicateRegs
-#endif // HAS_PREDICATE_REGS
-                ) == RBM_NONE;
+#if HAS_MORE_THAN_64_REGISTERS
+    return ((_float_gpr | _predicateRegs) == RBM_NONE);
+#else
+    return _allRegisters == RBM_NONE;
+#endif
 }
 
 unsigned AllRegsMask::Count()
 {
-    return genCountBits(_float_gpr)
-#ifdef HAS_PREDICATE_REGS
-           + genCountBits(_predicateRegs)
-#endif // HAS_PREDICATE_REGS
-        ;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    return genCountBits(_float_gpr) + genCountBits(_predicateRegs);
+#else
+    return genCountBits(_allRegisters);
+#endif
 }
 
 regMaskOnlyOne AllRegsMask::operator[](int index) const
 {
-#ifdef HAS_PREDICATE_REGS
+#ifdef HAS_MORE_THAN_64_REGISTERS
     assert(index <= REGISTER_TYPE_COUNT);
     RegBitSet32 value = _registers[index];
     return decodeForIndex(index, value);
 #else
-    return _float_gpr;
+    return _allRegisters;
 #endif
 }
 
@@ -5207,27 +5232,31 @@ regMaskOnlyOne AllRegsMask::operator[](int index) const
 
 void AllRegsMask::AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type)
 {
-#ifdef HAS_PREDICATE_REGS
+#ifdef HAS_MORE_THAN_64_REGISTERS
     int         index = regIndexForType(type);
-    _registers[regIndexForType(type)] |= encodeForIndex(index, maskToAdd);
+    _registers[index] |= encodeForIndex(index, maskToAdd);
 #else
-    _float_gpr |= maskToAdd;
+    _allRegisters |= maskToAdd;
 #endif
 }
 
 void AllRegsMask::AddGprRegMask(regMaskOnlyOne maskToAdd)
 {
-#ifdef HAS_PREDICATE_REGS
+#ifdef HAS_MORE_THAN_64_REGISTERS
     _registers[0] |= maskToAdd;
 #else
-    _float_gpr |= maskToAdd;
+    _allRegisters |= maskToAdd;
 #endif
 }
 
 void AllRegsMask::AddFloatRegMask(regMaskOnlyOne maskToAdd)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     // TODO: Add assert that maskToAdd has low-32 bit set to 0
     _float_gpr |= maskToAdd;
+#else
+    _allRegisters |= maskToAdd;
+#endif
 }
 
 // Adds reg only if it is gpr register
@@ -5239,23 +5268,35 @@ void AllRegsMask::AddGprRegInMask(regNumber reg)
 #ifdef TARGET_ARM
 void AllRegsMask::AddRegNumInMask(regNumber reg)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     int         index = regIndexForRegister(reg);
     RegBitSet64 value = genRegMask(reg);
     _registers[index] |= encodeForIndex(index, value);
+#else
+    _allRegisters |= genRegMask(reg);
+#endif
 }
 
 void AllRegsMask::RemoveRegNumFromMask(regNumber reg)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     int index = regIndexForRegister(reg);
     RegBitSet64 regMaskToRemove = genRegMask(reg);
     _registers[index] &= ~encodeForIndex(index, regMaskToRemove);
+#else
+    _allRegisters &= ~genRegMask(reg);
+#endif
 }
 
 bool AllRegsMask::IsRegNumInMask(regNumber reg)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     int index = regIndexForRegister(reg);
     RegBitSet64 regMaskToCheck = genRegMask(reg);
     return (_float_gpr & regMaskToCheck) != RBM_NONE;
+#else
+    return (_allRegisters & genRegMask(reg)) != RBM_NONE;
+#endif
 }
 #endif
 
@@ -5265,46 +5306,45 @@ bool AllRegsMask::IsRegNumInMask(regNumber reg)
 //
 void AllRegsMask::AddRegNumInMask(regNumber reg ARM_ARG(var_types type))
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     RegBitSet64 value = genRegMask(reg ARM_ARG(type));
-#ifdef HAS_PREDICATE_REGS
     int         index = regIndexForRegister(reg);    
     _registers[index] |= encodeForIndex(index, value);
 #else
-    _float_gpr |= value;
+    _allRegisters |= genRegMask(reg ARM_ARG(type));
 #endif
-
 }
 
 void AllRegsMask::RemoveRegNumFromMask(regNumber reg ARM_ARG(var_types type))
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     RegBitSet64 regMaskToRemove = genRegMask(reg ARM_ARG(type));
-#ifdef HAS_PREDICATE_REGS
     int index = regIndexForRegister(reg); 
     _registers[index] &= ~encodeForIndex(index, regMaskToRemove);
 #else
-    _float_gpr &= ~regMaskToRemove;
+    _allRegisters &= ~genRegMask(reg ARM_ARG(type));
 #endif
 }
 
 void AllRegsMask::RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type)
 {
-#ifdef HAS_PREDICATE_REGS
+#ifdef HAS_MORE_THAN_64_REGISTERS
     int         index           = regIndexForType(type);
     _registers[index] &= ~encodeForIndex(index, regMaskToRemove);
 #else
-    _float_gpr &= ~regMaskToRemove;
+    _allRegisters &= ~regMaskToRemove;
 #endif
 }
 
 bool AllRegsMask::IsRegNumInMask(regNumber reg ARM_ARG(var_types type))
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     int         index          = regIndexForRegister(reg);
     RegBitSet64 regMaskToCheck = genRegMask(reg ARM_ARG(type));
-    return ((_float_gpr & regMaskToCheck)
-#ifdef HAS_PREDICATE_REGS
-            | (_predicateRegs & regMaskToCheck)
+    return (_registers[index] & encodeForIndex(index, regMaskToCheck)) != RBM_NONE;
+#else
+    return (_allRegisters & genRegMask(reg ARM_ARG(type))) != RBM_NONE;
 #endif // HAS_PREDICATE_REGS
-                ) != RBM_NONE;
 }
 
 bool AllRegsMask::IsGprMaskPresent(regMaskGpr maskToCheck) const
@@ -5319,17 +5359,18 @@ bool AllRegsMask::IsFloatMaskPresent(regMaskFloat maskToCheck) const
 
 regMaskOnlyOne AllRegsMask::GetRegMaskForType(var_types type) const
 {
-#ifdef HAS_PREDICATE_REGS
+#ifdef HAS_MORE_THAN_64_REGISTERS
     int index = regIndexForType(type);
     RegBitSet32 value = _registers[index];
     return decodeForIndex(index, value);
 #else
-    return _float_gpr;
+    return _allRegisters;
 #endif
 }
 
 regMaskTP AllRegsMask::GetGprFloatCombinedMask() const
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
     // TODO: NEed to revert this once we change floatRegs to 32-bits
     // #ifdef TARGET_64BIT
     //    return ((regMaskTP)floatRegs() << 32) | gprRegs();
@@ -5343,6 +5384,9 @@ regMaskTP AllRegsMask::GetGprFloatCombinedMask() const
     //regMaskTP gprMask = (1ULL << REG_INT_COUNT) - 1;
     //return (floatRegs() & ~gprMask) | (gprRegs() & gprMask);
     return _float_gpr;
+#else
+    return _allRegisters;
+#endif
 }
 
 bool AllRegsMask::IsGprOrFloatPresent() const

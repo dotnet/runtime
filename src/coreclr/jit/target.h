@@ -273,27 +273,27 @@ typedef unsigned char   regNumberSmall;
 typedef struct _regMaskAll
 {
 private:
+#ifdef HAS_MORE_THAN_64_REGISTERS
     union
     {
         RegBitSet32 _registers[REGISTER_TYPE_COUNT];
         struct
         {
             RegBitSet64 _float_gpr;
-#ifdef HAS_PREDICATE_REGS
             RegBitSet32 _predicateRegs;
-#endif
         };
         struct
         {
             RegBitSet32 _gprRegs;
             RegBitSet32 _floatRegs;
-#ifdef HAS_PREDICATE_REGS
             RegBitSet32 _predicateRegs;
-#endif
         };
     };
-    
-    regMaskOnlyOne operator[](int index) const;
+#else
+    RegBitSet64 _allRegisters;
+#endif
+
+    regMaskOnlyOne  operator[](int index) const;
     regMaskOnlyOne& operator[](int index);
     // This method shifts the high-32 bits of float to low-32 bits and return.
     // For gpr and predicate registers, it returns the same value.
@@ -312,48 +312,80 @@ private:
 public:
     inline regMaskGpr gprRegs() const
     {
-        return _gprRegs;
+#ifdef TARGET_AMD64
+        return _allRegisters & 0xFFFF;
+#elif TARGET_ARM64
+        return _allRegisters & 0xFFFFFFFF;
+#else
+        // TODO: Fix this for ARM and x86
+        return _allRegisters;
+#endif
     }
     inline regMaskFloat floatRegs() const
     {
+#ifdef HAS_MORE_THAN_64_REGISTERS
         return _float_gpr & 0xFFFFFFFF00000000;
+#else
+#ifdef TARGET_AMD64
+        return _allRegisters & 0xFFFFFFFF0000;
+#else
+        //TODO: Fix this for ARM and x86
+        return _allRegisters;
+#endif // TARGET_AMD64
+#endif // HAS_MORE_THAN_64_REGISTERS
+
     }
+
 #ifdef HAS_PREDICATE_REGS
     inline regMaskPredicate predicateRegs() const
     {
         static_assert((REGISTER_TYPE_COUNT == 3), "There should be 3 types of registers");
+#ifdef HAS_MORE_THAN_64_REGISTERS
         return _predicateRegs;
-    }
-
-    // TODO: See if we can avoid the '|' operation here.
-    _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask, RegBitSet64 predicateRegMask)
-        : _float_gpr(floatRegMask | gprRegMask), _predicateRegs((RegBitSet32)predicateRegMask)
-    {
-    }
-
-    _regMaskAll(RegBitSet64 gprRegMask) : _float_gpr(gprRegMask), _predicateRegs(RBM_NONE)
-    {
-    }
-
 #else
-    _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask, RegBitSet64 predicateRegMask)
-        : _float_gpr(floatRegMask | gprRegMask)
-    {
-    }
-
-    _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask)
-        : _float_gpr(floatRegMask | gprRegMask)
-    {
-    }
-
-    _regMaskAll(RegBitSet64 gprRegMask) : _float_gpr(gprRegMask)
-    {
+#ifdef TARGET_AMD64
+        return _allRegisters & 0xFF000000000000;
+#else
+        // TODO: Fix this for ARM and x86
+        return _allRegisters;
+#endif // TARGET_AMD64
+#endif // HAS_MORE_THAN_64_REGISTERS
     }
 #endif
 
-    _regMaskAll() : _float_gpr(RBM_NONE)
-#ifdef HAS_PREDICATE_REGS
-                    , _predicateRegs(RBM_NONE)
+    _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask)
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        : _float_gpr(floatRegMask | gprRegMask), _predicateRegs(RBM_NONE)
+#else
+        : _allRegisters(floatRegMask | gprRegMask)
+#endif
+    {
+    }
+
+    // TODO: See if we can avoid the '|' operation here.
+    _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask, RegBitSet64 predicateRegs)
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        : _float_gpr(floatRegMask | gprRegMask), _predicateRegs(predicateRegs)
+#else
+        : _allRegisters(predicateRegs | floatRegMask | gprRegMask)
+#endif
+    {
+    }
+
+    _regMaskAll()
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        : _float_gpr(RBM_NONE), _predicateRegs(RBM_NONE)
+#else
+        : _allRegisters(RBM_NONE)
+#endif
+    {
+    }
+
+    _regMaskAll(RegBitSet64 allRegistersMask)
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        : _float_gpr(allRegistersMask), _predicateRegs(RBM_NONE)
+#else
+        : _allRegisters(allRegistersMask)
 #endif
     {
     }
