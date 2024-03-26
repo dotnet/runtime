@@ -24421,12 +24421,12 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         // swap the operands to match the encoding requirements
         retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_VL_PermuteVar32x8, simdBaseJitType, simdSize);
     }
-    else if (elementSize == 2 && compOpportunisticallyDependsOn(InstructionSet_AVX512BW))
+    else if (elementSize == 2 && compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL))
     {
         assert(simdSize == 16 || simdSize == 32);
 
         // swap the operands to match the encoding requirements
-        NamedIntrinsic intrinsic = simdSize == 16 ? NI_AVX512BW_PermuteVar8x16 : NI_AVX512BW_PermuteVar16x16;
+        NamedIntrinsic intrinsic = simdSize == 16 ? NI_AVX512BW_VL_PermuteVar8x16 : NI_AVX512BW_VL_PermuteVar16x16;
         retNode                  = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseJitType, simdSize);
     }
     else if (elementSize == 4 && (simdSize == 32 || compOpportunisticallyDependsOn(InstructionSet_AVX)))
@@ -24477,7 +24477,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
                 // shuffle with a pattern like 0 0 2 2 4 4 6 6 ... 0 0 2 2 ...
 
                 simd_t shufCns = {};
-                for (size_t index; index < elementCount; index++)
+                for (size_t index = 0; index < elementCount; index++)
                 {
                     for (size_t i = 0; i < elementSize; i++)
                     {
@@ -24494,12 +24494,12 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
                 // shift all indices to the left by 1, then or every second index with 1
 
                 cnsNode = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(1, TYP_INT), simdBaseJitType, simdSize);
-                op2     = gtNewSimdBinOpNode(GT_LSH, retType, op2, cnsNode, simdBaseJitType, simdSize);
+                op2     = gtNewSimdBinOpNode(GT_LSH, type, op2, cnsNode, simdBaseJitType, simdSize);
 
                 simd_t orCns = {};
-                for (size_t index; index < simdSize; index++)
+                for (size_t index = 0; index < simdSize; index++)
                 {
-                    shufCns.u8 = static_cast<uint8_t>(index & 1);
+                    shufCns.u8[index] = static_cast<uint8_t>(index & 1);
                 }
 
                 cnsNode                        = gtNewVconNode(type);
@@ -24555,7 +24555,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         }
         else
         {
-            compIsaSupportedDebugOnly(InstructionSet_SSSE3);
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSSE3));
             assert(simdSize == 16);
             assert(elementSize > 1);
 
@@ -24563,7 +24563,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             // shuffle with a pattern like 0 0 2 2 4 4 6 6 ... (for short, and similar for larger)
 
             simd_t shufCns = {};
-            for (size_t index; index < elementCount; index++)
+            for (size_t index = 0; index < elementCount; index++)
             {
                 for (size_t i = 0; i < elementSize; i++)
                 {
@@ -24578,14 +24578,14 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
             // shift all indices to the left by tzcnt(elementSize), then or the relevant bits
 
-            int shift = BitOperations::TrailingZeroCount(elementSize);
+            int shift = BitOperations::TrailingZeroCount(static_cast<uint64_t>(elementSize));
             cnsNode = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(shift, TYP_INT), simdBaseJitType, simdSize);
-            op2     = gtNewSimdBinOpNode(GT_LSH, retType, op2, cnsNode, simdBaseJitType, simdSize);
+            op2     = gtNewSimdBinOpNode(GT_LSH, type, op2, cnsNode, simdBaseJitType, simdSize);
 
             simd_t orCns = {};
-            for (size_t index; index < simdSize; index++)
+            for (size_t index = 0; index < simdSize; index++)
             {
-                shufCns.u8 = static_cast<uint8_t>(index & (elementSize - 1));
+                shufCns.u8[index] = static_cast<uint8_t>(index & (elementSize - 1));
             }
 
             cnsNode                        = gtNewVconNode(type);
@@ -24626,7 +24626,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         }
 
         simd_t shufCns = {};
-        for (size_t index; index < elementCount; index++)
+        for (size_t index = 0; index < elementCount; index++)
         {
             for (size_t i = 0; i < elementSize; i++)
             {
@@ -24639,12 +24639,12 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
         op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, lookupIntrinsic, simdBaseJitType, simdSize);
 
-        int shift = BitOperations::TrailingZeroCount(elementSize);
+        int shift = BitOperations::TrailingZeroCount(static_cast<uint64_t>(elementSize));
         cnsNode   = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(shift, TYP_INT), simdBaseJitType, simdSize);
-        op2       = gtNewSimdBinOpNode(GT_LSH, retType, op2, cnsNode, simdBaseJitType, simdSize);
+        op2       = gtNewSimdBinOpNode(GT_LSH, type, op2, cnsNode, simdBaseJitType, simdSize);
 
         simd_t orCns = {};
-        for (size_t index; index < elementCount; index++)
+        for (size_t index = 0; index < elementCount; index++)
         {
             for (size_t i = 0; i < elementSize; i++)
             {
