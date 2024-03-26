@@ -518,7 +518,7 @@ jobs:
       targetRid: browser-wasm
       platform: browser_wasm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: linux_x64
+      container: browser-wasm
       jobParameters:
         hostedOs: linux
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
