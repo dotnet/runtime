@@ -1329,9 +1329,6 @@ part2:
             {
                 g_fEEShutDown |= ShutDown_Phase2;
 
-                // Shutdown finalizer before we suspend all background threads. Otherwise we
-                // never get to finalize anything.
-
                 // <TODO>@TODO: This does things which shouldn't occur in part 2.  Namely,
                 // calling managed dll main callbacks (AppDomain::SignalProcessDetach), and
                 // RemoveAppDomainFromIPC.
