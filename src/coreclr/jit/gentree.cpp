@@ -24496,11 +24496,11 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
                 simd_t orCns = {};
                 for (size_t index = 0; index < simdSize; index++)
                 {
-                    shufCns.u8[index] = static_cast<uint8_t>(index & 1);
+                    orCns.u8[index] = static_cast<uint8_t>(index & 1);
                 }
 
                 cnsNode                        = gtNewVconNode(type);
-                cnsNode->AsVecCon()->gtSimdVal = shufCns;
+                cnsNode->AsVecCon()->gtSimdVal = orCns;
 
                 op2 = gtNewSimdBinOpNode(GT_OR, type, op2, cnsNode, simdBaseJitType, simdSize);
             }
@@ -24582,11 +24582,11 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             simd_t orCns = {};
             for (size_t index = 0; index < simdSize; index++)
             {
-                shufCns.u8[index] = static_cast<uint8_t>(index & (elementSize - 1));
+                orCns.u8[index] = static_cast<uint8_t>(index & (elementSize - 1));
             }
 
             cnsNode                        = gtNewVconNode(type);
-            cnsNode->AsVecCon()->gtSimdVal = shufCns;
+            cnsNode->AsVecCon()->gtSimdVal = orCns;
 
             op2 = gtNewSimdBinOpNode(GT_OR, type, op2, cnsNode, simdBaseJitType, simdSize);
 
@@ -24617,8 +24617,6 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     {
         if (simdSize == 16)
         {
-            lookupIntrinsic = NI_AdvSimd_Arm64_VectorTableLookup;
-
             op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_Vector64_ToVector128, simdBaseJitType, simdSize);
         }
 
@@ -24627,7 +24625,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         {
             for (size_t i = 0; i < elementSize; i++)
             {
-                shufCns.u8[(index * elementSize) + i] = static_cast<uint8_t>(index * elementCount);
+                shufCns.u8[(index * elementSize) + i] = static_cast<uint8_t>(index * elementSize);
             }
         }
 
@@ -24641,16 +24639,13 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         op2       = gtNewSimdBinOpNode(GT_LSH, type, op2, cnsNode, simdBaseJitType, simdSize);
 
         simd_t orCns = {};
-        for (size_t index = 0; index < elementCount; index++)
+        for (size_t index = 0; index < simdSize; index++)
         {
-            for (size_t i = 0; i < elementSize; i++)
-            {
-                shufCns.u8[(index * elementSize) + i] = static_cast<uint8_t>(i);
-            }
+            orCns.u8[index] = static_cast<uint8_t>(index & (elementSize - 1));
         }
 
         cnsNode                        = gtNewVconNode(type);
-        cnsNode->AsVecCon()->gtSimdVal = shufCns;
+        cnsNode->AsVecCon()->gtSimdVal = orCns;
 
         op2 = gtNewSimdBinOpNode(GT_OR, type, op2, cnsNode, simdBaseJitType, simdSize);
     }
