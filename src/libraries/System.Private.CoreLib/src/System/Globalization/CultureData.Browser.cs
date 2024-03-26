@@ -12,31 +12,31 @@ namespace System.Globalization
         private const int CULTURE_INFO_BUFFER_LEN = 50;
         private const int LOCALE_INFO_BUFFER_LEN = 80;
 
-        private static CultureData JSInitLocaleInfo(string? localeName, CultureData culture)
+        private void JSInitLocaleInfo()
         {
+            string? localeName = _sName;
             if (string.IsNullOrEmpty(localeName))
             {
-                culture._sEnglishLanguage = "Invariant Language";
-                culture._sNativeLanguage = culture._sEnglishLanguage;
-                culture._sEnglishCountry = "Invariant Country";
-                culture._sNativeCountry = culture._sEnglishCountry;
-                culture._sEnglishDisplayName = $"{culture._sEnglishLanguage} ({culture._sEnglishCountry})";
-                culture._sNativeDisplayName = culture._sEnglishDisplayName;
+                _sEnglishLanguage = "Invariant Language";
+                _sNativeLanguage = _sEnglishLanguage;
+                _sEnglishCountry = "Invariant Country";
+                _sNativeCountry = _sEnglishCountry;
+                _sEnglishDisplayName = $"{_sEnglishLanguage} ({_sEnglishCountry})";
+                _sNativeDisplayName = _sEnglishDisplayName;
             }
             else
             {
                 // English locale info
-                (culture._sEnglishLanguage, culture._sEnglishCountry) = culture.JSGetLocaleInfo("en-US", localeName);
-                culture._sEnglishDisplayName = string.IsNullOrEmpty(culture._sEnglishCountry) ?
-                    culture._sEnglishLanguage :
-                    $"{culture._sEnglishLanguage} ({culture._sEnglishCountry})";
+                (_sEnglishLanguage, _sEnglishCountry) = JSGetLocaleInfo("en-US", localeName);
+                _sEnglishDisplayName = string.IsNullOrEmpty(_sEnglishCountry) ?
+                    _sEnglishLanguage :
+                    $"{_sEnglishLanguage} ({_sEnglishCountry})";
                 // Native locale info
-                (culture._sNativeLanguage, culture._sNativeCountry) = culture.JSGetLocaleInfo(localeName, localeName);
-                culture._sNativeDisplayName = string.IsNullOrEmpty(culture._sNativeCountry) ?
-                    culture._sNativeLanguage :
-                    $"{culture._sNativeLanguage} ({culture._sNativeCountry})";
+                (_sNativeLanguage, _sNativeCountry) = JSGetLocaleInfo(localeName, localeName);
+                _sNativeDisplayName = string.IsNullOrEmpty(_sNativeCountry) ?
+                    _sNativeLanguage :
+                    $"{_sNativeLanguage} ({_sNativeCountry})";
             }
-            return culture;
         }
 
         private unsafe (string, string) JSGetLocaleInfo(string cultureName, string localeName)

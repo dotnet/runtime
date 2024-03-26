@@ -822,7 +822,7 @@ namespace System.Globalization
             {
                 culture = JSLoadCultureInfoFromBrowser(culture._sName, culture);
             }
-            culture = JSInitLocaleInfo(culture._sName, culture);
+            culture.JSInitLocaleInfo();
 #endif
 
             // We need _sWindowsName to be initialized to know if we're using overrides.
