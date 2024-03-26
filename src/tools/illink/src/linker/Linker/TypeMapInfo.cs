@@ -130,7 +130,7 @@ namespace Mono.Linker
 				MapType (nested);
 		}
 
-		internal List<(TypeReference, List<InterfaceImplementation>)>? GetRecursiveInterfaces(TypeDefinition type)
+		internal List<(TypeReference, List<InterfaceImplementation>)>? GetRecursiveInterfaces (TypeDefinition type)
 		{
 			if (interfaces.TryGetValue (type, out var value))
 				return value;
@@ -158,7 +158,7 @@ namespace Mono.Linker
 					if (directlyImplementedType is null) {
 						continue;
 					}
-					if (!firstImplementationChain.Any (i => InterfaceTypeEquals(i.Item1, directlyImplementedType, Context))) {
+					if (!firstImplementationChain.Any (i => InterfaceTypeEquals (i.Item1, directlyImplementedType, Context))) {
 						firstImplementationChain.Add ((directlyImplementedType, pathToType.Append (directIface).ToList ()));
 					}
 				}
@@ -166,7 +166,7 @@ namespace Mono.Linker
 				// Recursive interfaces next to preserve Inherit/Implement tree order
 				foreach (var directIface in type.Interfaces) {
 					// If we can't resolve the interface type we can't find recursive interfaces
-					var ifaceDirectlyOnType = directIface.InterfaceType.TryInflateFrom(typeRef, Context);
+					var ifaceDirectlyOnType = directIface.InterfaceType.TryInflateFrom (typeRef, Context);
 					if (ifaceDirectlyOnType is null) {
 						continue;
 					}

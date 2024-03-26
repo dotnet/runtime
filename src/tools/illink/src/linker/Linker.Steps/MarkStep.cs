@@ -3825,13 +3825,13 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-
 		void MarkInterfaceImplementationList (List<InterfaceImplementation> ifaces, MessageOrigin? origin = null, DependencyInfo? reason = null)
 		{
 			foreach (var iface in ifaces) {
 				MarkInterfaceImplementation (iface, origin, reason);
 			}
 		}
+
 		protected internal virtual void MarkInterfaceImplementation (InterfaceImplementation iface, MessageOrigin? origin = null, DependencyInfo? reason = null)
 		{
 			if (Annotations.IsMarked (iface))
