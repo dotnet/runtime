@@ -25,7 +25,6 @@ namespace System.Globalization
             }
             else
             {
-                // ToDo: make sure we do not re-ask for it
                 // English locale info
                 (culture._sEnglishLanguage, culture._sEnglishCountry) = culture.JSGetLocaleInfo("en-US", localeName);
                 culture._sEnglishDisplayName = string.IsNullOrEmpty(culture._sEnglishCountry) ?

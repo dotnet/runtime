@@ -136,7 +136,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new RegionInfo(name).NativeName);
         }
 
-        public static IEnumerable<object[]> EnglishName_TestData() // this might be failing, in that case - fix it or block it
+        public static IEnumerable<object[]> EnglishName_TestData()
         {
             if (SupportFullGlobalizationData)
             {

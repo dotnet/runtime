@@ -48,7 +48,7 @@ export function mono_wasm_get_locale_info(culture: MonoStringRef, locale: MonoSt
         {
             if (error instanceof RangeError && error.message === "invalid_argument")
             {
-                // it failed from this reason then cultureName is in a form "language-script", without region
+                // if it failed from this reason then cultureName is in a form "language-script", without region
                 try
                 {
                     languageName = new Intl.DisplayNames([cultureName], {type: "language"}).of(localeName);
