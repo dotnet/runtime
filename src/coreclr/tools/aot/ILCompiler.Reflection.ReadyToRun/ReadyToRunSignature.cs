@@ -1586,416 +1586,428 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             uint helperType = ReadUIntAndEmitInlineSignatureBinary(builder);
 
-            switch ((ReadyToRunHelper)helperType)
+            bool retiredHelperFound = false;
+            if (r2rReader.MajorVersion <= 9)
             {
-                case ReadyToRunHelper.Invalid:
-                    builder.Append("INVALID");
-                    break;
-
-                // Not a real helper - handle to current module passed to delay load helpers.
-                case ReadyToRunHelper.Module:
-                    builder.Append("MODULE");
-                    break;
-
-                case ReadyToRunHelper.GSCookie:
-                    builder.Append("GC_COOKIE");
-                    break;
-
-                case ReadyToRunHelper.IndirectTrapThreads:
-                    builder.Append("INDIRECT_TRAP_THREADS");
-                    break;
-
-                //
-                // Delay load helpers
-                //
-
-                // All delay load helpers use custom calling convention:
-                // - scratch register - address of indirection cell. 0 = address is inferred from callsite.
-                // - stack - section index, module handle
-                case ReadyToRunHelper.DelayLoad_MethodCall:
-                    builder.Append("DELAYLOAD_METHODCALL");
-                    break;
-
-                case ReadyToRunHelper.DelayLoad_Helper:
-                    builder.Append("DELAYLOAD_HELPER");
-                    break;
-
-                case ReadyToRunHelper.DelayLoad_Helper_Obj:
-                    builder.Append("DELAYLOAD_HELPER_OBJ");
-                    break;
-
-                case ReadyToRunHelper.DelayLoad_Helper_ObjObj:
-                    builder.Append("DELAYLOAD_HELPER_OBJ_OBJ");
-                    break;
-
-                // JIT helpers
-
-                // Exception handling helpers
-                case ReadyToRunHelper.Throw:
-                    builder.Append("THROW");
-                    break;
-
-                case ReadyToRunHelper.Rethrow:
-                    builder.Append("RETHROW");
-                    break;
-
-                case ReadyToRunHelper.Overflow:
-                    builder.Append("OVERFLOW");
-                    break;
-
-                case ReadyToRunHelper.RngChkFail:
-                    builder.Append("RNG_CHK_FAIL");
-                    break;
-
-                case ReadyToRunHelper.FailFast:
-                    builder.Append("FAIL_FAST");
-                    break;
-
-                case ReadyToRunHelper.ThrowNullRef:
-                    builder.Append("THROW_NULL_REF");
-                    break;
-
-                case ReadyToRunHelper.ThrowDivZero:
-                    builder.Append("THROW_DIV_ZERO");
-                    break;
-
-                // Write barriers
-                case ReadyToRunHelper.WriteBarrier:
-                    builder.Append("WRITE_BARRIER");
-                    break;
-
-                case ReadyToRunHelper.CheckedWriteBarrier:
-                    builder.Append("CHECKED_WRITE_BARRIER");
-                    break;
-
-                case ReadyToRunHelper.ByRefWriteBarrier:
-                    builder.Append("BYREF_WRITE_BARRIER");
-                    break;
-
-                // Array helpers
-                case ReadyToRunHelper.Stelem_Ref:
-                    builder.Append("STELEM_REF");
-                    break;
-
-                case ReadyToRunHelper.Ldelema_Ref:
-                    builder.Append("LDELEMA_REF");
-                    break;
-
-                case ReadyToRunHelper.MemSet:
-                    builder.Append("MEM_SET");
-                    break;
-
-                case ReadyToRunHelper.MemZero:
-                    builder.Append("MEM_ZERO");
-                    break;
-
-                case ReadyToRunHelper.MemCpy:
-                    builder.Append("MEM_CPY");
-                    break;
-
-                case ReadyToRunHelper.NativeMemSet:
-                    builder.Append("NATIVE_MEM_SET");
-                    break;
-
-                // PInvoke helpers
-                case ReadyToRunHelper.PInvokeBegin:
-                    builder.Append("PINVOKE_BEGIN");
-                    break;
-
-                case ReadyToRunHelper.PInvokeEnd:
-                    builder.Append("PINVOKE_END");
-                    break;
-
-                case ReadyToRunHelper.GCPoll:
-                    builder.Append("GCPOLL");
-                    break;
-
-                case ReadyToRunHelper.GetCurrentManagedThreadId:
-                    builder.Append("GET_CURRENT_MANAGED_THREAD_ID");
-                    break;
-
-                case ReadyToRunHelper.ReversePInvokeEnter:
-                    builder.Append("REVERSE_PINVOKE_ENTER");
-                    break;
-
-                case ReadyToRunHelper.ReversePInvokeExit:
-                    builder.Append("REVERSE_PINVOKE_EXIT");
-                    break;
-
-                // Get string handle lazily
-                case ReadyToRunHelper.GetString:
-                    builder.Append("GET_STRING");
-                    break;
-
-                // Used by /Tuning for Profile optimizations
-                case ReadyToRunHelper.LogMethodEnter:
-                    builder.Append("LOG_METHOD_ENTER");
-                    break;
-
-                // Reflection helpers
-                case ReadyToRunHelper.GetRuntimeTypeHandle:
-                    builder.Append("GET_RUNTIME_TYPE_HANDLE");
-                    break;
-
-                case ReadyToRunHelper.GetRuntimeMethodHandle:
-                    builder.Append("GET_RUNTIME_METHOD_HANDLE");
-                    break;
-
-                case ReadyToRunHelper.GetRuntimeFieldHandle:
-                    builder.Append("GET_RUNTIME_FIELD_HANDLE");
-                    break;
-
-                case ReadyToRunHelper.Box:
-                    builder.Append("BOX");
-                    break;
-
-                case ReadyToRunHelper.Box_Nullable:
-                    builder.Append("BOX_NULLABLE");
-                    break;
-
-                case ReadyToRunHelper.Unbox:
-                    builder.Append("UNBOX");
-                    break;
-
-                case ReadyToRunHelper.Unbox_Nullable:
-                    builder.Append("UNBOX_NULLABLE");
-                    break;
-
-                case ReadyToRunHelper.NewMultiDimArr:
-                    builder.Append("NEW_MULTI_DIM_ARR");
-                    break;
-
-                case ReadyToRunHelper.MonitorEnter:
-                    builder.Append("MONITOR_ENTER");
-                    break;
-
-                case ReadyToRunHelper.MonitorExit:
-                    builder.Append("MONITOR_EXIT");
-                    break;
-
-                // Helpers used with generic handle lookup cases
-                case ReadyToRunHelper.NewObject:
-                    builder.Append("NEW_OBJECT");
-                    break;
-
-                case ReadyToRunHelper.NewArray:
-                    builder.Append("NEW_ARRAY");
-                    break;
-
-                case ReadyToRunHelper.NewMaybeFrozenArray:
-                    builder.Append("NEW_MAYBEFROZEN_ARRAY");
-                    break;
-
-                case ReadyToRunHelper.NewMaybeFrozenObject:
-                    builder.Append("NEW_MAYBEFROZEN_OBJECT");
-                    break;
-
-                case ReadyToRunHelper.CheckCastAny:
-                    builder.Append("CHECK_CAST_ANY");
-                    break;
-
-                case ReadyToRunHelper.CheckInstanceAny:
-                    builder.Append("CHECK_INSTANCE_ANY");
-                    break;
-
-                case ReadyToRunHelper.IsInstanceOfException:
-                    builder.Append("SIMPLE_ISINSTANCE_OF");
-                    break;
-
-                case ReadyToRunHelper.GenericGcStaticBase:
-                    builder.Append("GENERIC_GC_STATIC_BASE");
-                    break;
-
-                case ReadyToRunHelper.GenericNonGcStaticBase:
-                    builder.Append("GENERIC_NON_GC_STATIC_BASE");
-                    break;
-
-                case ReadyToRunHelper.GenericGcTlsBase:
-                    builder.Append("GENERIC_GC_TLS_BASE");
-                    break;
-
-                case ReadyToRunHelper.GenericNonGcTlsBase:
-                    builder.Append("GENERIC_NON_GC_TLS_BASE");
-                    break;
-
-                case ReadyToRunHelper.VirtualFuncPtr:
-                    builder.Append("VIRTUAL_FUNC_PTR");
-                    break;
-
-                // Long mul/div/shift ops
-                case ReadyToRunHelper.LMul:
-                    builder.Append("LMUL");
-                    break;
-
-                case ReadyToRunHelper.LMulOfv:
-                    builder.Append("LMUL_OFV");
-                    break;
-
-                case ReadyToRunHelper.ULMulOvf:
-                    builder.Append("ULMUL_OVF");
-                    break;
-
-                case ReadyToRunHelper.LDiv:
-                    builder.Append("LDIV");
-                    break;
-
-                case ReadyToRunHelper.LMod:
-                    builder.Append("LMOD");
-                    break;
-
-                case ReadyToRunHelper.ULDiv:
-                    builder.Append("ULDIV");
-                    break;
-
-                case ReadyToRunHelper.ULMod:
-                    builder.Append("ULMOD");
-                    break;
-
-                case ReadyToRunHelper.LLsh:
-                    builder.Append("LLSH");
-                    break;
-
-                case ReadyToRunHelper.LRsh:
-                    builder.Append("LRSH");
-                    break;
-
-                case ReadyToRunHelper.LRsz:
-                    builder.Append("LRSZ");
-                    break;
-
-                case ReadyToRunHelper.Lng2Dbl:
-                    builder.Append("LNG2DBL");
-                    break;
-
-                case ReadyToRunHelper.ULng2Dbl:
-                    builder.Append("ULNG2DBL");
-                    break;
-
-                // 32-bit division helpers
-                case ReadyToRunHelper.Div:
-                    builder.Append("DIV");
-                    break;
-
-                case ReadyToRunHelper.Mod:
-                    builder.Append("MOD");
-                    break;
-
-                case ReadyToRunHelper.UDiv:
-                    builder.Append("UDIV");
-                    break;
-
-                case ReadyToRunHelper.UMod:
-                    builder.Append("UMOD");
-                    break;
-
-                // Floating point conversions
-                case ReadyToRunHelper.Dbl2Int:
-                    builder.Append("DBL2INT");
-                    break;
-
-                case ReadyToRunHelper.Dbl2IntOvf:
-                    builder.Append("DBL2INTOVF");
-                    break;
-
-                case ReadyToRunHelper.Dbl2Lng:
-                    builder.Append("DBL2LNG");
-                    break;
-
-                case ReadyToRunHelper.Dbl2LngOvf:
-                    builder.Append("DBL2LNGOVF");
-                    break;
-
-                case ReadyToRunHelper.Dbl2UInt:
-                    builder.Append("DBL2UINT");
-                    break;
-
-                case ReadyToRunHelper.Dbl2UIntOvf:
-                    builder.Append("DBL2UINTOVF");
-                    break;
-
-                case ReadyToRunHelper.Dbl2ULng:
-                    builder.Append("DBL2ULNG");
-                    break;
-
-                case ReadyToRunHelper.Dbl2ULngOvf:
-                    builder.Append("DBL2ULNGOVF");
-                    break;
-
-                // Floating point ops
-                case ReadyToRunHelper.DblRem:
-                    builder.Append("DBL_REM");
-                    break;
-                case ReadyToRunHelper.FltRem:
-                    builder.Append("FLT_REM");
-                    break;
-                case ReadyToRunHelper.DblRound:
+                if (helperType == 0xE2)
+                {
+                    retiredHelperFound = true;
                     builder.Append("DBL_ROUND");
-                    break;
-                case ReadyToRunHelper.FltRound:
+                }
+                else if (helperType == 0xE3)
+                {
+                    retiredHelperFound = true;
                     builder.Append("FLT_ROUND");
-                    break;
+                }
+            }
 
-                // Personality routines
-                case ReadyToRunHelper.PersonalityRoutine:
-                    builder.Append("PERSONALITY_ROUTINE");
-                    break;
-                case ReadyToRunHelper.PersonalityRoutineFilterFunclet:
-                    builder.Append("PERSONALITY_ROUTINE_FILTER_FUNCLET");
-                    break;
+            if (!retiredHelperFound)
+                {
+                switch ((ReadyToRunHelper)helperType)
+                {
+                    case ReadyToRunHelper.Invalid:
+                        builder.Append("INVALID");
+                        break;
 
-                //
-                // Deprecated/legacy
-                //
+                    // Not a real helper - handle to current module passed to delay load helpers.
+                    case ReadyToRunHelper.Module:
+                        builder.Append("MODULE");
+                        break;
 
-                // JIT32 x86-specific write barriers
-                case ReadyToRunHelper.WriteBarrier_EAX:
-                    builder.Append("WRITE_BARRIER_EAX");
-                    break;
-                case ReadyToRunHelper.WriteBarrier_EBX:
-                    builder.Append("WRITE_BARRIER_EBX");
-                    break;
-                case ReadyToRunHelper.WriteBarrier_ECX:
-                    builder.Append("WRITE_BARRIER_ECX");
-                    break;
-                case ReadyToRunHelper.WriteBarrier_ESI:
-                    builder.Append("WRITE_BARRIER_ESI");
-                    break;
-                case ReadyToRunHelper.WriteBarrier_EDI:
-                    builder.Append("WRITE_BARRIER_EDI");
-                    break;
-                case ReadyToRunHelper.WriteBarrier_EBP:
-                    builder.Append("WRITE_BARRIER_EBP");
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_EAX:
-                    builder.Append("CHECKED_WRITE_BARRIER_EAX");
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_EBX:
-                    builder.Append("CHECKED_WRITE_BARRIER_EBX");
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_ECX:
-                    builder.Append("CHECKED_WRITE_BARRIER_ECX");
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_ESI:
-                    builder.Append("CHECKED_WRITE_BARRIER_ESI");
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_EDI:
-                    builder.Append("CHECKED_WRITE_BARRIER_EDI");
-                    break;
-                case ReadyToRunHelper.CheckedWriteBarrier_EBP:
-                    builder.Append("CHECKED_WRITE_BARRIER_EBP");
-                    break;
+                    case ReadyToRunHelper.GSCookie:
+                        builder.Append("GC_COOKIE");
+                        break;
 
-                // JIT32 x86-specific exception handling
-                case ReadyToRunHelper.EndCatch:
-                    builder.Append("END_CATCH");
-                    break;
+                    case ReadyToRunHelper.IndirectTrapThreads:
+                        builder.Append("INDIRECT_TRAP_THREADS");
+                        break;
 
-                case ReadyToRunHelper.StackProbe:
-                    builder.Append("STACK_PROBE");
-                    break;
+                    //
+                    // Delay load helpers
+                    //
 
-                default:
-                    throw new BadImageFormatException();
+                    // All delay load helpers use custom calling convention:
+                    // - scratch register - address of indirection cell. 0 = address is inferred from callsite.
+                    // - stack - section index, module handle
+                    case ReadyToRunHelper.DelayLoad_MethodCall:
+                        builder.Append("DELAYLOAD_METHODCALL");
+                        break;
+
+                    case ReadyToRunHelper.DelayLoad_Helper:
+                        builder.Append("DELAYLOAD_HELPER");
+                        break;
+
+                    case ReadyToRunHelper.DelayLoad_Helper_Obj:
+                        builder.Append("DELAYLOAD_HELPER_OBJ");
+                        break;
+
+                    case ReadyToRunHelper.DelayLoad_Helper_ObjObj:
+                        builder.Append("DELAYLOAD_HELPER_OBJ_OBJ");
+                        break;
+
+                    // JIT helpers
+
+                    // Exception handling helpers
+                    case ReadyToRunHelper.Throw:
+                        builder.Append("THROW");
+                        break;
+
+                    case ReadyToRunHelper.Rethrow:
+                        builder.Append("RETHROW");
+                        break;
+
+                    case ReadyToRunHelper.Overflow:
+                        builder.Append("OVERFLOW");
+                        break;
+
+                    case ReadyToRunHelper.RngChkFail:
+                        builder.Append("RNG_CHK_FAIL");
+                        break;
+
+                    case ReadyToRunHelper.FailFast:
+                        builder.Append("FAIL_FAST");
+                        break;
+
+                    case ReadyToRunHelper.ThrowNullRef:
+                        builder.Append("THROW_NULL_REF");
+                        break;
+
+                    case ReadyToRunHelper.ThrowDivZero:
+                        builder.Append("THROW_DIV_ZERO");
+                        break;
+
+                    // Write barriers
+                    case ReadyToRunHelper.WriteBarrier:
+                        builder.Append("WRITE_BARRIER");
+                        break;
+
+                    case ReadyToRunHelper.CheckedWriteBarrier:
+                        builder.Append("CHECKED_WRITE_BARRIER");
+                        break;
+
+                    case ReadyToRunHelper.ByRefWriteBarrier:
+                        builder.Append("BYREF_WRITE_BARRIER");
+                        break;
+
+                    // Array helpers
+                    case ReadyToRunHelper.Stelem_Ref:
+                        builder.Append("STELEM_REF");
+                        break;
+
+                    case ReadyToRunHelper.Ldelema_Ref:
+                        builder.Append("LDELEMA_REF");
+                        break;
+
+                    case ReadyToRunHelper.MemSet:
+                        builder.Append("MEM_SET");
+                        break;
+
+                    case ReadyToRunHelper.MemZero:
+                        builder.Append("MEM_ZERO");
+                        break;
+
+                    case ReadyToRunHelper.MemCpy:
+                        builder.Append("MEM_CPY");
+                        break;
+
+                    case ReadyToRunHelper.NativeMemSet:
+                        builder.Append("NATIVE_MEM_SET");
+                        break;
+
+                    // PInvoke helpers
+                    case ReadyToRunHelper.PInvokeBegin:
+                        builder.Append("PINVOKE_BEGIN");
+                        break;
+
+                    case ReadyToRunHelper.PInvokeEnd:
+                        builder.Append("PINVOKE_END");
+                        break;
+
+                    case ReadyToRunHelper.GCPoll:
+                        builder.Append("GCPOLL");
+                        break;
+
+                    case ReadyToRunHelper.GetCurrentManagedThreadId:
+                        builder.Append("GET_CURRENT_MANAGED_THREAD_ID");
+                        break;
+
+                    case ReadyToRunHelper.ReversePInvokeEnter:
+                        builder.Append("REVERSE_PINVOKE_ENTER");
+                        break;
+
+                    case ReadyToRunHelper.ReversePInvokeExit:
+                        builder.Append("REVERSE_PINVOKE_EXIT");
+                        break;
+
+                    // Get string handle lazily
+                    case ReadyToRunHelper.GetString:
+                        builder.Append("GET_STRING");
+                        break;
+
+                    // Used by /Tuning for Profile optimizations
+                    case ReadyToRunHelper.LogMethodEnter:
+                        builder.Append("LOG_METHOD_ENTER");
+                        break;
+
+                    // Reflection helpers
+                    case ReadyToRunHelper.GetRuntimeTypeHandle:
+                        builder.Append("GET_RUNTIME_TYPE_HANDLE");
+                        break;
+
+                    case ReadyToRunHelper.GetRuntimeMethodHandle:
+                        builder.Append("GET_RUNTIME_METHOD_HANDLE");
+                        break;
+
+                    case ReadyToRunHelper.GetRuntimeFieldHandle:
+                        builder.Append("GET_RUNTIME_FIELD_HANDLE");
+                        break;
+
+                    case ReadyToRunHelper.Box:
+                        builder.Append("BOX");
+                        break;
+
+                    case ReadyToRunHelper.Box_Nullable:
+                        builder.Append("BOX_NULLABLE");
+                        break;
+
+                    case ReadyToRunHelper.Unbox:
+                        builder.Append("UNBOX");
+                        break;
+
+                    case ReadyToRunHelper.Unbox_Nullable:
+                        builder.Append("UNBOX_NULLABLE");
+                        break;
+
+                    case ReadyToRunHelper.NewMultiDimArr:
+                        builder.Append("NEW_MULTI_DIM_ARR");
+                        break;
+
+                    case ReadyToRunHelper.MonitorEnter:
+                        builder.Append("MONITOR_ENTER");
+                        break;
+
+                    case ReadyToRunHelper.MonitorExit:
+                        builder.Append("MONITOR_EXIT");
+                        break;
+
+                    // Helpers used with generic handle lookup cases
+                    case ReadyToRunHelper.NewObject:
+                        builder.Append("NEW_OBJECT");
+                        break;
+
+                    case ReadyToRunHelper.NewArray:
+                        builder.Append("NEW_ARRAY");
+                        break;
+
+                    case ReadyToRunHelper.NewMaybeFrozenArray:
+                        builder.Append("NEW_MAYBEFROZEN_ARRAY");
+                        break;
+
+                    case ReadyToRunHelper.NewMaybeFrozenObject:
+                        builder.Append("NEW_MAYBEFROZEN_OBJECT");
+                        break;
+
+                    case ReadyToRunHelper.CheckCastAny:
+                        builder.Append("CHECK_CAST_ANY");
+                        break;
+
+                    case ReadyToRunHelper.CheckInstanceAny:
+                        builder.Append("CHECK_INSTANCE_ANY");
+                        break;
+
+                    case ReadyToRunHelper.IsInstanceOfException:
+                        builder.Append("SIMPLE_ISINSTANCE_OF");
+                        break;
+
+                    case ReadyToRunHelper.GenericGcStaticBase:
+                        builder.Append("GENERIC_GC_STATIC_BASE");
+                        break;
+
+                    case ReadyToRunHelper.GenericNonGcStaticBase:
+                        builder.Append("GENERIC_NON_GC_STATIC_BASE");
+                        break;
+
+                    case ReadyToRunHelper.GenericGcTlsBase:
+                        builder.Append("GENERIC_GC_TLS_BASE");
+                        break;
+
+                    case ReadyToRunHelper.GenericNonGcTlsBase:
+                        builder.Append("GENERIC_NON_GC_TLS_BASE");
+                        break;
+
+                    case ReadyToRunHelper.VirtualFuncPtr:
+                        builder.Append("VIRTUAL_FUNC_PTR");
+                        break;
+
+                    // Long mul/div/shift ops
+                    case ReadyToRunHelper.LMul:
+                        builder.Append("LMUL");
+                        break;
+
+                    case ReadyToRunHelper.LMulOfv:
+                        builder.Append("LMUL_OFV");
+                        break;
+
+                    case ReadyToRunHelper.ULMulOvf:
+                        builder.Append("ULMUL_OVF");
+                        break;
+
+                    case ReadyToRunHelper.LDiv:
+                        builder.Append("LDIV");
+                        break;
+
+                    case ReadyToRunHelper.LMod:
+                        builder.Append("LMOD");
+                        break;
+
+                    case ReadyToRunHelper.ULDiv:
+                        builder.Append("ULDIV");
+                        break;
+
+                    case ReadyToRunHelper.ULMod:
+                        builder.Append("ULMOD");
+                        break;
+
+                    case ReadyToRunHelper.LLsh:
+                        builder.Append("LLSH");
+                        break;
+
+                    case ReadyToRunHelper.LRsh:
+                        builder.Append("LRSH");
+                        break;
+
+                    case ReadyToRunHelper.LRsz:
+                        builder.Append("LRSZ");
+                        break;
+
+                    case ReadyToRunHelper.Lng2Dbl:
+                        builder.Append("LNG2DBL");
+                        break;
+
+                    case ReadyToRunHelper.ULng2Dbl:
+                        builder.Append("ULNG2DBL");
+                        break;
+
+                    // 32-bit division helpers
+                    case ReadyToRunHelper.Div:
+                        builder.Append("DIV");
+                        break;
+
+                    case ReadyToRunHelper.Mod:
+                        builder.Append("MOD");
+                        break;
+
+                    case ReadyToRunHelper.UDiv:
+                        builder.Append("UDIV");
+                        break;
+
+                    case ReadyToRunHelper.UMod:
+                        builder.Append("UMOD");
+                        break;
+
+                    // Floating point conversions
+                    case ReadyToRunHelper.Dbl2Int:
+                        builder.Append("DBL2INT");
+                        break;
+
+                    case ReadyToRunHelper.Dbl2IntOvf:
+                        builder.Append("DBL2INTOVF");
+                        break;
+
+                    case ReadyToRunHelper.Dbl2Lng:
+                        builder.Append("DBL2LNG");
+                        break;
+
+                    case ReadyToRunHelper.Dbl2LngOvf:
+                        builder.Append("DBL2LNGOVF");
+                        break;
+
+                    case ReadyToRunHelper.Dbl2UInt:
+                        builder.Append("DBL2UINT");
+                        break;
+
+                    case ReadyToRunHelper.Dbl2UIntOvf:
+                        builder.Append("DBL2UINTOVF");
+                        break;
+
+                    case ReadyToRunHelper.Dbl2ULng:
+                        builder.Append("DBL2ULNG");
+                        break;
+
+                    case ReadyToRunHelper.Dbl2ULngOvf:
+                        builder.Append("DBL2ULNGOVF");
+                        break;
+
+                    // Floating point ops
+                    case ReadyToRunHelper.DblRem:
+                        builder.Append("DBL_REM");
+                        break;
+                    case ReadyToRunHelper.FltRem:
+                        builder.Append("FLT_REM");
+                        break;
+
+                    // Personality routines
+                    case ReadyToRunHelper.PersonalityRoutine:
+                        builder.Append("PERSONALITY_ROUTINE");
+                        break;
+                    case ReadyToRunHelper.PersonalityRoutineFilterFunclet:
+                        builder.Append("PERSONALITY_ROUTINE_FILTER_FUNCLET");
+                        break;
+
+                    //
+                    // Deprecated/legacy
+                    //
+
+                    // JIT32 x86-specific write barriers
+                    case ReadyToRunHelper.WriteBarrier_EAX:
+                        builder.Append("WRITE_BARRIER_EAX");
+                        break;
+                    case ReadyToRunHelper.WriteBarrier_EBX:
+                        builder.Append("WRITE_BARRIER_EBX");
+                        break;
+                    case ReadyToRunHelper.WriteBarrier_ECX:
+                        builder.Append("WRITE_BARRIER_ECX");
+                        break;
+                    case ReadyToRunHelper.WriteBarrier_ESI:
+                        builder.Append("WRITE_BARRIER_ESI");
+                        break;
+                    case ReadyToRunHelper.WriteBarrier_EDI:
+                        builder.Append("WRITE_BARRIER_EDI");
+                        break;
+                    case ReadyToRunHelper.WriteBarrier_EBP:
+                        builder.Append("WRITE_BARRIER_EBP");
+                        break;
+                    case ReadyToRunHelper.CheckedWriteBarrier_EAX:
+                        builder.Append("CHECKED_WRITE_BARRIER_EAX");
+                        break;
+                    case ReadyToRunHelper.CheckedWriteBarrier_EBX:
+                        builder.Append("CHECKED_WRITE_BARRIER_EBX");
+                        break;
+                    case ReadyToRunHelper.CheckedWriteBarrier_ECX:
+                        builder.Append("CHECKED_WRITE_BARRIER_ECX");
+                        break;
+                    case ReadyToRunHelper.CheckedWriteBarrier_ESI:
+                        builder.Append("CHECKED_WRITE_BARRIER_ESI");
+                        break;
+                    case ReadyToRunHelper.CheckedWriteBarrier_EDI:
+                        builder.Append("CHECKED_WRITE_BARRIER_EDI");
+                        break;
+                    case ReadyToRunHelper.CheckedWriteBarrier_EBP:
+                        builder.Append("CHECKED_WRITE_BARRIER_EBP");
+                        break;
+
+                    // JIT32 x86-specific exception handling
+                    case ReadyToRunHelper.EndCatch:
+                        builder.Append("END_CATCH");
+                        break;
+
+                    case ReadyToRunHelper.StackProbe:
+                        builder.Append("STACK_PROBE");
+                        break;
+
+                    default:
+                        throw new BadImageFormatException();
+                }
             }
         }
 
