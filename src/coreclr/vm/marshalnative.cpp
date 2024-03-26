@@ -34,6 +34,7 @@
 #include "comdelegate.h"
 #include "typestring.h"
 #include "appdomain.inl"
+#include "stubhelpers.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
