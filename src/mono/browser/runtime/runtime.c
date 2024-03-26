@@ -369,11 +369,11 @@ mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* nsp
 {
 	MonoError error;
 	mono_error_init (&error);
-    MonoAssembly* assembly = mono_wasm_assembly_load (assemblyName);
+	MonoAssembly* assembly = mono_wasm_assembly_load (assemblyName);
 	assert (assembly);
-    MonoClass* class = mono_wasm_assembly_find_class (assembly, nspace, typeName);
+	MonoClass* class = mono_wasm_assembly_find_class (assembly, nspace, typeName);
 	assert (class);
-    MonoMethod* method = mono_wasm_assembly_find_method (class, methodName, num_params);
+	MonoMethod* method = mono_wasm_assembly_find_method (class, methodName, num_params);
 	assert (method);
 	MonoMethod *managedWrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, &error);
 	assert (managedWrapper);

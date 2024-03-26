@@ -12,7 +12,6 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/debug-helpers.h>
-#include <mono/utils/details/mono-logger-types.h>
 
 extern int mono_wasm_enable_gc;
 
