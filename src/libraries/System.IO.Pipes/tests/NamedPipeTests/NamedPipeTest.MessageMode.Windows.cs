@@ -73,22 +73,20 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.Out, PipeTransmissionMode.Byte, PipeOptions.Asynchronous)]
         [InlineData(PipeDirection.InOut, PipeTransmissionMode.Byte, PipeOptions.None)]
         [InlineData(PipeDirection.InOut, PipeTransmissionMode.Byte, PipeOptions.Asynchronous)]
-        public async Task ServerByteMode_ClientReadModeMessage_Throws(PipeDirection serverDirection, PipeTransmissionMode serverMode, PipeOptions options)
+        public void ServerByteMode_ClientReadModeMessage_Throws(PipeDirection serverDirection, PipeTransmissionMode serverMode, PipeOptions options)
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
 
             using NamedPipeServerStream server = new NamedPipeServerStream(pipeName, serverDirection, 1, serverMode, options);
             using NamedPipeClientStream client = CreateClientStream(pipeName, options);
 
-            Task serverConnected = server.WaitForConnectionAsync();
-            client.Connect();
-            await serverConnected;
+            Task.WaitAll(server.WaitForConnectionAsync(), client.ConnectAsync());
 
             Assert.Throws<IOException>(() => client.ReadMode = PipeTransmissionMode.Message);
         }
 
         [Fact]
-        public async Task PipeAccessRights_Without_WriteAttributes_ClientReadModeMessage_Throws()
+        public void PipeAccessRights_Without_WriteAttributes_ClientReadModeMessage_Throws()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
             PipeAccessRights rights = MinimumMessageAccessRights & ~PipeAccessRights.WriteAttributes;
@@ -96,9 +94,7 @@ namespace System.IO.Pipes.Tests
             using NamedPipeServerStream server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Message);
             using NamedPipeClientStream client = new NamedPipeClientStream(".", pipeName, rights, PipeOptions.None, Security.Principal.TokenImpersonationLevel.None, HandleInheritability.None);
 
-            Task serverConnected = server.WaitForConnectionAsync();
-            client.Connect();
-            await serverConnected;
+            Task.WaitAll(server.WaitForConnectionAsync(), client.ConnectAsync());
 
             Assert.Throws<UnauthorizedAccessException>(() => client.ReadMode = PipeTransmissionMode.Message);
         }
