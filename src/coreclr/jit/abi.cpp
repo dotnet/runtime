@@ -269,6 +269,7 @@ ABIPassingInformation X86Classifier::Classify(Compiler*    comp,
                 break;
             case TYP_STRUCT:
                 canEnreg = comp->isTrivialPointerSizedStruct(structLayout->GetClassHandle());
+                break;
             default:
                 break;
         }
