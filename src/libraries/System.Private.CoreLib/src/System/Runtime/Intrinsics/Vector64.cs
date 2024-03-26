@@ -2300,13 +2300,13 @@ namespace System.Runtime.Intrinsics
             for (int index = 0; index < Vector64<byte>.Count; index++)
             {
                 byte selectedIndex = (byte)indices.GetElementUnsafe(index);
-                byte selectedValue = 0;
+                sbyte selectedValue = 0;
 
                 if (selectedIndex < Vector64<byte>.Count)
                 {
                     selectedValue = vector.GetElementUnsafe(selectedIndex);
                 }
-                result.SetElementUnsafe(index, (sbyte)selectedValue);
+                result.SetElementUnsafe(index, selectedValue);
             }
 
             return result;
