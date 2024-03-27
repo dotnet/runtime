@@ -351,8 +351,12 @@ private:
     void TryRetypingFloatingPointStoreToIntegerStore(GenTree* store);
 
     GenTree* LowerSwitch(GenTree* node);
-    bool TryLowerSwitchToBitTest(
-        FlowEdge* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue);
+    bool TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
+                                 unsigned    jumpCount,
+                                 unsigned    targetCount,
+                                 BasicBlock* bbSwitch,
+                                 GenTree*    switchValue,
+                                 weight_t    defaultLikelihood);
 
     void LowerCast(GenTree* node);
 

@@ -22,10 +22,13 @@ extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
     stages:
-    - stage: Build
-      jobs:
-
-      - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+    # Don't run if the JIT-EE GUID has changed,
+    # since there won't be any SuperPMI collections with the new GUID until the collection
+    # pipeline completes after this PR is merged.
+    - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+      - stage: EvaluatePaths
+        displayName: Evaluate Paths
+        jobs:
         - template: /eng/pipelines/common/evaluate-paths-job.yml
           parameters:
             paths:
@@ -33,16 +36,29 @@ extends:
               include:
               - src/coreclr/inc/jiteeversionguid.h
 
+    - stage: Build
+      jobs:
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
           - windows_x64
           - windows_x86
           jobParameters:
-            uploadAs: 'pipelineArtifacts'
-            condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
+            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  tarCompression: $(tarCompression)
+                  archiveExtension: $(archiveExtension)
+                  artifactName: CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)
+                  displayName: JIT and SuperPMI Assets
+            condition: not(eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -54,4 +70,4 @@ extends:
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
-            condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
+            condition: not(eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))

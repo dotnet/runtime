@@ -41,6 +41,7 @@ EXTERN _NDirectImportWorker@4:PROC
 
 EXTERN _VarargPInvokeStubWorker@12:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
+EXTERN _CallCopyConstructorsWorker@4:PROC
 
 EXTERN _PreStubWorker@8:PROC
 EXTERN _TheUMEntryPrestubWorker@4:PROC
@@ -1061,6 +1062,29 @@ GoCallCalliWorker:
     jmp _GenericPInvokeCalliHelper@0
 
 _GenericPInvokeCalliHelper@0 endp
+
+;==========================================================================
+; This is small stub whose purpose is to record current stack pointer and
+; call CallCopyConstructorsWorker to invoke copy constructors and destructors
+; as appropriate. This stub operates on arguments already pushed to the
+; stack by JITted IL stub and must not create a new frame, i.e. it must tail
+; call to the target for it to see the arguments that copy ctors have been
+; called on.
+;
+_CopyConstructorCallStub@0 proc public
+    ; there may be an argument in ecx - save it
+    push    ecx
+    
+    ; push pointer to arguments
+    lea     edx, [esp + 8]
+    push    edx
+    
+    call    _CallCopyConstructorsWorker@4
+
+    ; restore ecx and tail call to the target
+    pop     ecx
+    jmp     eax
+_CopyConstructorCallStub@0 endp
 
 ifdef FEATURE_COMINTEROP
 

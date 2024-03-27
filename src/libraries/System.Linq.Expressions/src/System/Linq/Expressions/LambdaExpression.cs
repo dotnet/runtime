@@ -25,7 +25,7 @@ namespace System.Linq.Expressions
 
         private readonly Expression _body;
 
-        // This can be flipped to false using feature switches at publishing time
+        [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
         public static bool CanCompileToIL => RuntimeFeature.IsDynamicCodeSupported;
 
         // This could be flipped to false using feature switches at publishing time
@@ -138,10 +138,7 @@ namespace System.Linq.Expressions
         {
             if (CanCompileToIL)
             {
-#pragma warning disable IL3050
-                // Analyzer doesn't yet understand feature switches
                 return Compiler.LambdaCompiler.Compile(this);
-#pragma warning restore IL3050
             }
             else
             {
@@ -221,10 +218,7 @@ namespace System.Linq.Expressions
         {
             if (CanCompileToIL)
             {
-#pragma warning disable IL3050
-                // Analyzer doesn't yet understand feature switches
                 return (TDelegate)(object)Compiler.LambdaCompiler.Compile(this);
-#pragma warning restore IL3050
             }
             else
             {
@@ -629,10 +623,7 @@ namespace System.Linq.Expressions
                 MethodInfo create;
                 if (LambdaExpression.CanCompileToIL)
                 {
-#pragma warning disable IL3050
-                    // Analyzer doesn't yet understand feature switches
                     create = typeof(Expression<>).MakeGenericType(delegateType).GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic)!;
-#pragma warning restore IL3050
                 }
                 else
                 {

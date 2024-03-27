@@ -105,6 +105,9 @@ enum ICodeManagerFlags
                                 // any untracked slots
 
     LightUnwind     =   0x0100, // Unwind just enough to get return addresses
+    ReportFPBasedSlotsOnly
+                    =   0x0200, // EnumGCRefs/EnumerateLiveSlots should only include
+                                // slots that are based on the frame pointer
 };
 
 //*****************************************************************************

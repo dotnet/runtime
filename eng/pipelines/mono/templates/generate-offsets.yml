@@ -12,7 +12,7 @@ parameters:
 
 ### Product build
 jobs:
-- template: xplat-pipeline-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     osGroup: ${{ parameters.osGroup }}
@@ -21,7 +21,6 @@ jobs:
     enableMicrobuild: true
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Compute job name from template parameters
     name: ${{ format('mono_{0}{1}_offsets', parameters.osGroup, parameters.osSubGroup) }}

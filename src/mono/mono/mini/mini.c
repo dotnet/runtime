@@ -4322,6 +4322,7 @@ mini_handle_call_res_devirt (MonoMethod *cmethod)
 
 		inst = mono_class_inflate_generic_class_checked (mono_class_get_iequatable_class (), &ctx, error);
 		mono_error_assert_ok (error);
+		g_assert (inst);
 
 		// EqualityComparer<T>.Default returns specific types depending on T
 		// FIXME: Special case more types: byte, string, nullable, enum ?

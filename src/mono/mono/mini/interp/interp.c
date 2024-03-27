@@ -3478,9 +3478,6 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		return (gpointer)no_llvmonly_interp_method_pointer;
 	}
 
-	if (method->wrapper_type && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
-		return imethod;
-
 #ifndef MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE
 	/*
 	 * Interp in wrappers get the argument in the rgctx register. If
@@ -3862,11 +3859,6 @@ max_d (double lhs, double rhs)
 	else
 		return fmax (lhs, rhs);
 }
-
-#if HOST_BROWSER
-// Dummy call info used outside of monitoring phase. We don't care what's in it
-static JiterpreterCallInfo jiterpreter_call_info = { 0 };
-#endif
 
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
@@ -6426,6 +6418,13 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MonoVTable *vtable = (MonoVTable*)frame->imethod->data_items [ip [3]];
 			MonoClass *c = vtable->klass;
 
+			if (G_UNLIKELY (m_class_is_byreflike (c))) {
+				char *str = g_strdup_printf ("Cannot box IsByRefLike type '%s.%s'", m_class_get_name_space (c), m_class_get_name (c));
+				MonoException *ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", str);
+				g_free (str);
+				THROW_EX (ex, ip);
+			}
+
 			// FIXME push/pop LMF
 			MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (c));
 			SET_TEMP_POINTER(o);
@@ -7865,7 +7864,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 						// now execute the trace
 						// this isn't important for performance, but it makes it easier to use the
 						//  jiterpreter early in automated tests where code only runs once
-						offset = prepare_result (frame, locals, &jiterpreter_call_info, ip);
+						offset = prepare_result (frame, locals, NULL, ip);
 						ip = (guint16*) (((guint8*)ip) + offset);
 						break;
 				}
@@ -7888,7 +7887,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER) {
 			// The fn ptr is encoded in a guint16 relative to the index of the first trace fn ptr, so compute the actual ptr
 			JiterpreterThunk thunk = (JiterpreterThunk)(void *)(((JiterpreterOpcode *)ip)->relative_fn_ptr + mono_jiterp_first_trace_fn_ptr);
-			ptrdiff_t offset = thunk (frame, locals, &jiterpreter_call_info, ip);
+			ptrdiff_t offset = thunk (frame, locals, NULL, ip);
 			ip = (guint16*) (((guint8*)ip) + offset);
 			MINT_IN_BREAK;
 		}

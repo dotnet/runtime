@@ -101,7 +101,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 CancelablePromise.CancelPromise((Task<JSObject>)s!);
             }, jsTask))
             {
-                return await jsTask.ConfigureAwait(true);
+                return await jsTask.ConfigureAwait(false);
             }
         }
 
@@ -333,7 +333,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var nameSpace = "";
             var shortClassName = className;
-            var idx = fqn.LastIndexOf(".");
+            var idx = fqn.LastIndexOf('.');
             if (idx != -1)
             {
                 nameSpace = fqn.Substring(0, idx);

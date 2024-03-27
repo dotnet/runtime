@@ -257,7 +257,7 @@ static void FillIgnoreWidthRules(UChar* completeRules, int32_t* fillIndex, int32
         for (UChar ch = 0xFF21; ch <= 0xFF3A; ch++)
         {
             completeRules[*fillIndex] = '&';
-            completeRules[(*fillIndex) + 1] = ch + UpperCaseToLowerCaseOffset;
+            completeRules[(*fillIndex) + 1] = (UChar)(ch + UpperCaseToLowerCaseOffset);
             completeRules[(*fillIndex) + 2] = '=';
             completeRules[(*fillIndex) + 3] = ch;
             (*fillIndex) += 4;

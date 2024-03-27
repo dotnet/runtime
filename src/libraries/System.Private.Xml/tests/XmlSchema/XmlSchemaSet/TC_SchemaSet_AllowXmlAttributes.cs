@@ -273,7 +273,7 @@ namespace System.Xml.XmlSchemaTests
             if (xsdFile != null)
                 xss.Add(null, Path.Combine(testData, xsdFile));
 
-            XmlReader vr = CreateReader(Path.Combine(testData, xmlFile), xss, allowXmlAttributes);
+            using XmlReader vr = CreateReader(Path.Combine(testData, xmlFile), xss, allowXmlAttributes);
             while (vr.Read()) ;
 
             Assert.Equal(warningCount, expectedWarningCount);

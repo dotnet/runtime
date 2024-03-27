@@ -170,6 +170,7 @@ public sealed partial class QuicStream
                 &handle),
                 "StreamOpen failed");
             _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Stream, connectionHandle);
+            _handle.Disposable = _sendBuffers;
         }
         catch
         {
@@ -201,6 +202,7 @@ public sealed partial class QuicStream
         try
         {
             _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Stream, connectionHandle);
+            _handle.Disposable = _sendBuffers;
             delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void*, QUIC_STREAM_EVENT*, int> nativeCallback = &NativeCallback;
             MsQuicApi.Api.SetCallbackHandler(
                 _handle,
@@ -714,9 +716,6 @@ public sealed partial class QuicStream
         }
         Debug.Assert(_startedTcs.IsCompleted);
         _handle.Dispose();
-
-        // TODO: memory leak if not disposed
-        _sendBuffers.Dispose();
 
         unsafe void StreamShutdown(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
         {

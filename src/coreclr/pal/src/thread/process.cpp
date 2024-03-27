@@ -1271,7 +1271,7 @@ RaiseFailFastException(
     ENTRY("RaiseFailFastException");
 
     TerminateCurrentProcessNoExit(TRUE);
-    PROCAbort();
+    for (;;) PROCAbort();
 
     LOGEXIT("RaiseFailFastException");
     PERF_EXIT(RaiseFailFastException);
@@ -2541,7 +2541,9 @@ Parameters:
 
   Does not return
 --*/
+#if !defined(HOST_ARM)
 PAL_NORETURN
+#endif
 VOID
 PROCAbort(int signal, siginfo_t* siginfo)
 {

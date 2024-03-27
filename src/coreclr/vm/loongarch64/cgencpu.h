@@ -448,11 +448,18 @@ struct DECLSPEC_ALIGN(16) UMEntryThunkCode
 
 struct HijackArgs
 {
+    DWORD64 Fp; // frame pointer
+    union
+    {
+        DWORD64 Ra;
+        size_t ReturnAddress;
+    };
+    DWORD64 S0, S1, S2, S3, S4, S5, S6, S7, S8, Tp;
     union
     {
         struct {
-             DWORD64 V0;
-             DWORD64 V1;
+             DWORD64 A0;
+             DWORD64 A1;
          };
         size_t ReturnValue[2];
     };
@@ -463,13 +470,6 @@ struct HijackArgs
              DWORD64 F1;
          };
         size_t FPReturnValue[2];
-    };
-    DWORD64 S0, S1, S2, S3, S4, S5, S6, S7, S8, Tp;
-    DWORD64 Fp; // frame pointer
-    union
-    {
-        DWORD64 Ra;
-        size_t ReturnAddress;
     };
 };
 

@@ -382,7 +382,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         FlowEdge* const newEdge = fgAddRefPred(block, fallbackBb);
         fallbackBb->SetTargetEdge(newEdge);
         assert(fallbackBb->JumpsToNext());
-        fallbackBb->SetFlags(BBF_NONE_QUIRK);
     }
 
     if (needsSizeCheck)
@@ -1465,7 +1464,6 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     // Redirect prevBb from block to isInitedBb
     fgRedirectTargetEdge(prevBb, isInitedBb);
-    prevBb->SetFlags(BBF_NONE_QUIRK);
     assert(prevBb->JumpsToNext());
 
     {
@@ -1473,7 +1471,6 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
         FlowEdge* const newEdge = fgAddRefPred(block, helperCallBb);
         helperCallBb->SetTargetEdge(newEdge);
         assert(helperCallBb->JumpsToNext());
-        helperCallBb->SetFlags(BBF_NONE_QUIRK);
     }
 
     {
@@ -1506,6 +1503,10 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     // Clear gtInitClsHnd as a mark that we've already visited this call
     call->gtInitClsHnd = NO_CLASS_HANDLE;
+
+    // The blocks and statements have been modified enough to make the ending offset invalid.
+    block->bbCodeOffsEnd = BAD_IL_OFFSET;
+
     return true;
 }
 
@@ -1790,7 +1791,6 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     //
     // Redirect prevBb to lengthCheckBb
     fgRedirectTargetEdge(prevBb, lengthCheckBb);
-    prevBb->SetFlags(BBF_NONE_QUIRK);
     assert(prevBb->JumpsToNext());
 
     {
@@ -1810,7 +1810,6 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         FlowEdge* const newEdge = fgAddRefPred(block, fastpathBb);
         fastpathBb->SetTargetEdge(newEdge);
         assert(fastpathBb->JumpsToNext());
-        fastpathBb->SetFlags(BBF_NONE_QUIRK);
     }
 
     //
@@ -2473,12 +2472,47 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         // No-op because tmp was already assigned to obj
         typeCheckSucceedTree = gtNewNothingNode();
     }
-    BasicBlock* typeCheckSucceedBb =
-        typeCheckNotNeeded ? nullptr : fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo);
 
     //
     // Wire up the blocks
     //
+
+    // We assume obj is 50%/50% null/not-null (TODO-InlineCast: rely on PGO)
+    // and rely on profile for the slow path.
+    //
+    // Alternatively we could profile nulls in the reservoir sample and
+    // treat that as another "option".
+    //
+    // True out of the null check means obj is null.
+    //
+    const weight_t nullcheckTrueLikelihood  = 0.5;
+    const weight_t nullcheckFalseLikelihood = 0.5;
+    BasicBlock*    typeCheckSucceedBb;
+
+    {
+        FlowEdge* const trueEdge = fgAddRefPred(lastBb, nullcheckBb);
+        nullcheckBb->SetTrueEdge(trueEdge);
+        trueEdge->setLikelihood(nullcheckTrueLikelihood);
+    }
+
+    if (typeCheckNotNeeded)
+    {
+        FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, nullcheckBb);
+        nullcheckBb->SetFalseEdge(falseEdge);
+        falseEdge->setLikelihood(nullcheckFalseLikelihood);
+
+        typeCheckSucceedBb = nullptr;
+    }
+    else
+    {
+        FlowEdge* const falseEdge = fgAddRefPred(typeChecksBbs[0], nullcheckBb);
+        nullcheckBb->SetFalseEdge(falseEdge);
+        falseEdge->setLikelihood(nullcheckFalseLikelihood);
+
+        typeCheckSucceedBb      = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo);
+        FlowEdge* const newEdge = fgAddRefPred(lastBb, typeCheckSucceedBb);
+        typeCheckSucceedBb->SetTargetEdge(newEdge);
+    }
 
     // Tricky case - wire up multiple type check blocks (in most cases there is only one)
     for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
@@ -2505,39 +2539,6 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     }
 
     fgRedirectTargetEdge(firstBb, nullcheckBb);
-
-    // We assume obj is 50%/50% null/not-null (TODO-InlineCast: rely on PGO)
-    // and rely on profile for the slow path.
-    //
-    // Alternatively we could profile nulls in the reservoir sample and
-    // treat that as another "option".
-    //
-    // True out of the null check means obj is null.
-    //
-    const weight_t nullcheckTrueLikelihood  = 0.5;
-    const weight_t nullcheckFalseLikelihood = 0.5;
-
-    {
-        FlowEdge* const trueEdge = fgAddRefPred(lastBb, nullcheckBb);
-        nullcheckBb->SetTrueEdge(trueEdge);
-        trueEdge->setLikelihood(nullcheckTrueLikelihood);
-    }
-
-    if (typeCheckNotNeeded)
-    {
-        FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, nullcheckBb);
-        nullcheckBb->SetFalseEdge(falseEdge);
-        falseEdge->setLikelihood(nullcheckFalseLikelihood);
-    }
-    else
-    {
-        FlowEdge* const falseEdge = fgAddRefPred(typeChecksBbs[0], nullcheckBb);
-        nullcheckBb->SetFalseEdge(falseEdge);
-        falseEdge->setLikelihood(nullcheckFalseLikelihood);
-
-        FlowEdge* const newEdge = fgAddRefPred(lastBb, typeCheckSucceedBb);
-        typeCheckSucceedBb->SetTargetEdge(newEdge);
-    }
 
     //
     // Re-distribute weights and set edge likelihoods.

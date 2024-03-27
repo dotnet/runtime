@@ -423,6 +423,9 @@ namespace Dynamic
 
             obj.String_Property = null;
             Assert.Equal(string.Empty, obj.String_Property);
+
+            obj.Dispatch_Property = new DispatchWrapper(null);
+            Assert.Null(obj.Dispatch_Property);
         }
 
         private void StringWrapper(string toWrap, string expected)

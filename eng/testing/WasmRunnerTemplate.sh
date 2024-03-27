@@ -58,6 +58,10 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 			fi
 		fi
 	fi
+else
+	if [[ -z "$JS_ENGINE_ARGS" ]]; then
+		JS_ENGINE_ARGS="--browser-arg=--js-flags=--stack-trace-limit=1000"
+	fi
 fi
 
 if [[ -z "$XHARNESS_ARGS" ]]; then

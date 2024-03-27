@@ -107,7 +107,6 @@ struct EE_ILEXCEPTION_CLAUSE;
 
 void InitializeExceptionHandling();
 void CLRAddVectoredHandlers(void);
-void CLRRemoveVectoredHandlers(void);
 void TerminateExceptionHandling();
 
 // Prototypes
@@ -518,7 +517,7 @@ EXCEPTION_HANDLER_DECL(COMPlusFrameHandlerRevCom);
 #endif // FEATURE_COMINTEROP
 
 // Pop off any SEH handlers we have registered below pTargetSP
-VOID __cdecl PopSEHRecords(LPVOID pTargetSP);
+VOID PopSEHRecords(LPVOID pTargetSP);
 
 #ifdef DEBUGGING_SUPPORTED
 VOID UnwindExceptionTrackerAndResumeInInterceptionFrame(ExInfo* pExInfo, EHContext* context);

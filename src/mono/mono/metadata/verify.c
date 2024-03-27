@@ -87,6 +87,9 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 				return FALSE;
 		}
 
+		if (m_class_is_byreflike (paramClass) && (param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_ACCEPT_BYREFLIKE_CONSTRAINTS) == 0)
+			return FALSE;
+
 		if (!param_info->constraints && !(param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK))
 			continue;
 

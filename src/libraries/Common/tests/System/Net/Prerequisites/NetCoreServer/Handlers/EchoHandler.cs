@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace NetCoreServer
 {
@@ -30,6 +31,24 @@ namespace NetCoreServer
 
             byte[] bytes = Encoding.UTF8.GetBytes(echoJson);
 
+            var delay = 0;
+            if (context.Request.QueryString.HasValue)
+            {
+                if (context.Request.QueryString.Value.Contains("delay1sec"))
+                {
+                    delay = 1000;
+                }
+                else if (context.Request.QueryString.Value.Contains("delay10sec"))
+                {
+                    delay = 10000;
+                }
+            }
+
+            if (delay > 0)
+            {
+                context.Features.Get<IHttpResponseBodyFeature>().DisableBuffering();
+            }
+
             // Compute MD5 hash so that clients can verify the received data.
             using (MD5 md5 = MD5.Create())
             {
@@ -41,20 +60,19 @@ namespace NetCoreServer
                 context.Response.ContentLength = bytes.Length;
             }
 
-            if (context.Request.QueryString.HasValue && context.Request.QueryString.Value.Contains("delay10sec"))
+            if (delay > 0)
             {
                 await context.Response.StartAsync(CancellationToken.None);
+                await context.Response.Body.WriteAsync(bytes, 0, 10);
                 await context.Response.Body.FlushAsync();
-
-                await Task.Delay(10000);
+                await Task.Delay(delay);
+                await context.Response.Body.WriteAsync(bytes, 10, bytes.Length-10);
+                await context.Response.Body.FlushAsync();
             }
-            else if (context.Request.QueryString.HasValue && context.Request.QueryString.Value.Contains("delay1sec"))
+            else
             {
-                await context.Response.StartAsync(CancellationToken.None);
-                await Task.Delay(1000);
+                await context.Response.Body.WriteAsync(bytes, 0, bytes.Length);
             }
-            
-            await context.Response.Body.WriteAsync(bytes, 0, bytes.Length);
         }
     }
 }

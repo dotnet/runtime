@@ -326,14 +326,6 @@ EXTERN_C CODE_LOCATION RhpCheckedAssignRefESIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEDIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
 #endif
-EXTERN_C CODE_LOCATION RhpCheckedLockCmpXchgAVLocation;
-EXTERN_C CODE_LOCATION RhpCheckedXchgAVLocation;
-#if !defined(HOST_AMD64) && !defined(HOST_ARM64)
-EXTERN_C CODE_LOCATION RhpLockCmpXchg8AVLocation;
-EXTERN_C CODE_LOCATION RhpLockCmpXchg16AVLocation;
-EXTERN_C CODE_LOCATION RhpLockCmpXchg32AVLocation;
-EXTERN_C CODE_LOCATION RhpLockCmpXchg64AVLocation;
-#endif
 EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
 
 #if !defined(HOST_ARM64)
@@ -368,23 +360,9 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
         (uintptr_t)&RhpCheckedAssignRefEDIAVLocation,
         (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
 #endif
-        (uintptr_t)&RhpCheckedLockCmpXchgAVLocation,
-        (uintptr_t)&RhpCheckedXchgAVLocation,
-#if !defined(HOST_AMD64) && !defined(HOST_ARM64)
-#if !defined(HOST_X86)
-        (uintptr_t)&RhpLockCmpXchg8AVLocation,
-        (uintptr_t)&RhpLockCmpXchg16AVLocation,
-        (uintptr_t)&RhpLockCmpXchg32AVLocation,
-#endif
-        (uintptr_t)&RhpLockCmpXchg64AVLocation,
-#endif
         (uintptr_t)&RhpByRefAssignRefAVLocation1,
 #if !defined(HOST_ARM64)
         (uintptr_t)&RhpByRefAssignRefAVLocation2,
-#endif
-#if defined(HOST_ARM64) && !defined(LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
-        (uintptr_t)&RhpCheckedLockCmpXchgAVLocation2,
-        (uintptr_t)&RhpCheckedXchgAVLocation2,
 #endif
     };
 

@@ -1270,6 +1270,7 @@ LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/100224", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsArmOrArm64Process))]
         public static void BuildChainForSelfSignedCertificate_WithSha256RsaSignature()
         {
             using (ChainHolder chainHolder = new ChainHolder())
@@ -1288,6 +1289,7 @@ LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/100224", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsArmOrArm64Process))]
         public static void BuildChainForSelfSignedCertificate_WithUnknownOidSignature()
         {
             using (ChainHolder chainHolder = new ChainHolder())

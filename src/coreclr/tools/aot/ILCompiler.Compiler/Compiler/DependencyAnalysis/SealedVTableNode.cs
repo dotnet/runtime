@@ -14,6 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private readonly TypeDesc _type;
         private List<SealedVTableEntry> _sealedVTableEntries;
+        private DependencyList _nonRelocationDependencies;
 
         public SealedVTableNode(TypeDesc type)
         {
@@ -126,7 +127,10 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc implMethod = declType.FindVirtualFunctionTargetMethodOnObjectType(virtualSlots[i]);
 
                 if (implMethod.CanMethodBeInSealedVTable(factory))
-                    _sealedVTableEntries.Add(SealedVTableEntry.FromVirtualMethod(implMethod));
+                {
+                    IMethodNode node = factory.MethodEntrypoint(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific), unboxingStub: !implMethod.Signature.IsStatic && declType.IsValueType);
+                    _sealedVTableEntries.Add(SealedVTableEntry.FromVirtualMethod(implMethod, node));
+                }
             }
 
             TypeDesc declTypeDefinition = declType.GetTypeDefinition();
@@ -173,7 +177,10 @@ namespace ILCompiler.DependencyAnalysis
                                 targetMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(implMethod.GetTypicalMethodDefinition(), (InstantiatedType)implType);
 
                             if (targetMethod.CanMethodBeInSealedVTable(factory) || implMethod.Signature.IsStatic)
-                                _sealedVTableEntries.Add(SealedVTableEntry.FromVirtualMethod(targetMethod));
+                            {
+                                IMethodNode node = factory.MethodEntrypoint(targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific), unboxingStub: !targetMethod.Signature.IsStatic && declType.IsValueType);
+                                _sealedVTableEntries.Add(SealedVTableEntry.FromVirtualMethod(targetMethod, node));
+                            }
                         }
                     }
                     else
@@ -185,7 +192,24 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             DefType providingInterfaceDefinitionType = (DefType)implMethod.OwningType;
                             implMethod = implMethod.InstantiateSignature(declType.Instantiation, Instantiation.Empty);
-                            _sealedVTableEntries.Add(SealedVTableEntry.FromDefaultInterfaceMethod(implMethod, providingInterfaceDefinitionType));
+
+                            MethodDesc canonImplMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                            if (canonImplMethod.IsCanonicalMethod(CanonicalFormKind.Any) && !canonImplMethod.Signature.IsStatic)
+                            {
+                                // Canonical instance default interface methods need to go through a thunk that acquires the generic context from `this`.
+                                // Static methods have their generic context passed explicitly.
+                                canonImplMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(canonImplMethod, declType.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType);
+
+                                // The above thunk will index into interface list to find the right context. Make sure to keep all interfaces prior to this one
+                                for (int i = 0; i < interfaceIndex; i++)
+                                {
+                                    _nonRelocationDependencies ??= new DependencyList();
+                                    _nonRelocationDependencies.Add(factory.InterfaceUse(declTypeRuntimeInterfaces[i].GetTypeDefinition()), "Interface with shared default methods folows this");
+                                }
+                            }
+                            IMethodNode node = factory.MethodEntrypoint(canonImplMethod, unboxingStub: implMethod.OwningType.IsValueType && !implMethod.Signature.IsStatic);
+
+                            _sealedVTableEntries.Add(SealedVTableEntry.FromDefaultInterfaceMethod(implMethod, providingInterfaceDefinitionType, node));
                         }
                     }
                 }
@@ -196,7 +220,9 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            var result = new DependencyList();
+            BuildSealedVTableSlots(factory, relocsOnly: true);
+
+            var result = new DependencyList(_nonRelocationDependencies ?? []);
 
             // When building the sealed vtable, we consult the vtable layout of these types
             TypeDesc declType = _type.GetClosestDefType();
@@ -216,11 +242,9 @@ namespace ILCompiler.DependencyAnalysis
 
             if (BuildSealedVTableSlots(factory, relocsOnly))
             {
-                DefType defType = _type.GetClosestDefType();
-
                 for (int i = 0; i < _sealedVTableEntries.Count; i++)
                 {
-                    IMethodNode relocTarget = _sealedVTableEntries[i].GetTarget(factory, defType);
+                    IMethodNode relocTarget = _sealedVTableEntries[i].Target;
 
                     if (factory.Target.SupportsRelativePointers)
                         objData.EmitReloc(relocTarget, RelocType.IMAGE_REL_BASED_RELPTR32);
@@ -242,31 +266,19 @@ namespace ILCompiler.DependencyAnalysis
         {
             private readonly MethodDesc _method;
             private readonly DefType _interfaceDefinition;
+            public readonly IMethodNode Target;
 
-            private SealedVTableEntry(MethodDesc method, DefType interfaceDefinition)
+            private SealedVTableEntry(MethodDesc method, DefType interfaceDefinition, IMethodNode target)
             {
                 Debug.Assert(interfaceDefinition == null || method.GetTypicalMethodDefinition().OwningType == interfaceDefinition.GetTypeDefinition());
-                (_method, _interfaceDefinition) = (method, interfaceDefinition);
+                (_method, _interfaceDefinition, Target) = (method, interfaceDefinition, target);
             }
 
-            public static SealedVTableEntry FromVirtualMethod(MethodDesc method)
-                => new SealedVTableEntry(method, null);
+            public static SealedVTableEntry FromVirtualMethod(MethodDesc method, IMethodNode target)
+                => new SealedVTableEntry(method, null, target);
 
-            public static SealedVTableEntry FromDefaultInterfaceMethod(MethodDesc method, DefType interfaceOnDefinition)
-                => new SealedVTableEntry(method, interfaceOnDefinition);
-
-            public IMethodNode GetTarget(NodeFactory factory, TypeDesc implementingClass)
-            {
-                bool isStaticVirtualMethod = _method.Signature.IsStatic;
-                MethodDesc implMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                if (_interfaceDefinition != null && !isStaticVirtualMethod && implMethod.IsCanonicalMethod(CanonicalFormKind.Any))
-                {
-                    // Canonical instance default interface methods need to go through a thunk that acquires the generic context from `this`.
-                    // Static methods have their generic context passed explicitly.
-                    implMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(implMethod, implementingClass.ConvertToCanonForm(CanonicalFormKind.Specific), _interfaceDefinition);
-                }
-                return factory.MethodEntrypoint(implMethod, unboxingStub: !isStaticVirtualMethod && _method.OwningType.IsValueType);
-            }
+            public static SealedVTableEntry FromDefaultInterfaceMethod(MethodDesc method, DefType interfaceOnDefinition, IMethodNode target)
+                => new SealedVTableEntry(method, interfaceOnDefinition, target);
 
             public bool Matches(MethodDesc method)
             {

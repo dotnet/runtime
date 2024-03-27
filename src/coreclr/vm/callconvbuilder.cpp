@@ -298,15 +298,12 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        TypeHandle type;
-        MethodDesc* pMD;
-        FieldDesc* pFD;
+        ResolvedToken resolved{};
+        pResolver->ResolveToken(token, &resolved);
 
-        pResolver->ResolveToken(token, &type, &pMD, &pFD);
+        _ASSERTE(!resolved.TypeHandle.IsNull());
 
-        _ASSERTE(!type.IsNull());
-
-        *nameOut = type.GetMethodTable()->GetFullyQualifiedNameInfo(namespaceOut);
+        *nameOut = resolved.TypeHandle.GetMethodTable()->GetFullyQualifiedNameInfo(namespaceOut);
 
         return S_OK;
     }
@@ -456,7 +453,7 @@ HRESULT CallConv::TryGetCallingConventionFromUnmanagedCallConv(
 
     InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
     DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
-    IfFailThrow(Attribute::ParseAttributeArgumentValues(
+    IfFailThrow(Attribute::ParseArgumentValues(
         pData,
         cData,
         &caValueArrayFactory,
@@ -531,7 +528,7 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
 
     InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
     DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
-    IfFailThrow(Attribute::ParseAttributeArgumentValues(
+    IfFailThrow(Attribute::ParseArgumentValues(
         pData,
         cData,
         &caValueArrayFactory,

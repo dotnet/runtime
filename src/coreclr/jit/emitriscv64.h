@@ -141,10 +141,10 @@ BYTE* emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, in
 BYTE* emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* ig, size_t* size);
 
-static unsigned TrimSignedToImm12(int imm12);
-static unsigned TrimSignedToImm13(int imm13);
-static unsigned TrimSignedToImm20(int imm20);
-static unsigned TrimSignedToImm21(int imm21);
+static unsigned TrimSignedToImm12(ssize_t imm12);
+static unsigned TrimSignedToImm13(ssize_t imm13);
+static unsigned TrimSignedToImm20(ssize_t imm20);
+static unsigned TrimSignedToImm21(ssize_t imm21);
 
 /************************************************************************/
 /*           Public inline informational methods                        */

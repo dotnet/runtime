@@ -4,6 +4,7 @@
     <AssemblyName>ILCompiler.Compiler</AssemblyName>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CA1866;CA1867</NoWarn>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -422,6 +423,7 @@
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodImplNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InlineableStringsResourceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\InterfaceUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleInitializerListNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NotReadOnlyFieldNode.cs" />
@@ -608,7 +610,6 @@
     <Compile Include="Compiler\ObjectWriter\Eabi\EabiAttributesBuilder.cs" />
     <Compile Include="Compiler\ObjectWriter\Eabi\EabiNative.cs" />
     <Compile Include="Compiler\ObjectWriter\Eabi\EabiUnwindConverter.cs" />
-    <Compile Include="Compiler\ObjectWriter\LegacyObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWritingOptions.cs" />
     <Compile Include="Compiler\ObjectWriter\MachNative.cs" />

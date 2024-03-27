@@ -4564,6 +4564,7 @@ ves_icall_System_Reflection_RuntimeAssembly_GetInfo (MonoQCallAssemblyHandle ass
 		else
 			absolute = g_build_filename (assembly->basedir, filename, (const char*)NULL);
 
+		g_assert (absolute);
 		mono_icall_make_platform_path (absolute);
 
 		const gchar *prepend = mono_icall_get_file_path_prefix (absolute);

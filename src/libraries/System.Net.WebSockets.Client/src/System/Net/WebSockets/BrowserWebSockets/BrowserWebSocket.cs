@@ -135,9 +135,10 @@ namespace System.Net.WebSockets
 
         internal Task ConnectAsync(Uri uri, List<string>? requestedSubProtocols, CancellationToken cancellationToken)
         {
+            AbortIfCancelationRequested(cancellationToken);
+
             lock (_lockObject)
             {
-                cancellationToken.ThrowIfCancellationRequested();
                 ThrowIfDisposed();
 
                 if (FastState != WebSocketState.None)
@@ -184,7 +185,6 @@ namespace System.Net.WebSockets
             // this validation should be synchronous
             WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
 
-            cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
             return CloseAsyncCore(closeStatus, statusDescription, false, cancellationToken);
@@ -195,7 +195,6 @@ namespace System.Net.WebSockets
             // this validation should be synchronous
             WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
 
-            cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
             return CloseAsyncCore(closeStatus, statusDescription, true, cancellationToken);
@@ -284,6 +283,17 @@ namespace System.Net.WebSockets
             } // lock
         }
 
+        private void AbortIfCancelationRequested(CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                lock (_lockObject)
+                {
+                    Abort();
+                } // lock
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+        }
 
         private void CreateCore(Uri uri, List<string>? requestedSubProtocols)
         {
@@ -366,7 +376,6 @@ namespace System.Net.WebSockets
             {
                 lock (_lockObject)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
                     ThrowIfDisposed();
 
                     previousState = FastState;
@@ -374,6 +383,7 @@ namespace System.Net.WebSockets
                     {
                         throw new InvalidOperationException(SR.net_WebSockets_NotConnected);
                     }
+                    AbortIfCancelationRequested(cancellationToken);
 
                     if (buffer.Count == 0)
                     {
@@ -416,7 +426,6 @@ namespace System.Net.WebSockets
             {
                 lock (_lockObject)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
                     ThrowIfDisposed();
 
                     previousState = FastState;
@@ -424,6 +433,7 @@ namespace System.Net.WebSockets
                     {
                         throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, previousState, "Open, CloseSent"));
                     }
+                    AbortIfCancelationRequested(cancellationToken);
 
                     Memory<byte> bufferMemory = buffer.AsMemory();
                     pinBuffer = bufferMemory.Pin();
@@ -502,21 +512,21 @@ namespace System.Net.WebSockets
             WebSocketState previousState;
             lock (_lockObject)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
                 previousState = FastState;
                 if (_aborted)
                 {
                     return;
                 }
+                if (previousState == WebSocketState.None || previousState == WebSocketState.Closed)
+                {
+                    throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, previousState, "Connecting, Open, CloseSent, CloseReceived, Aborted"));
+                }
+                AbortIfCancelationRequested(cancellationToken);
+
                 if (!_closeReceived)
                 {
                     _closeStatus = closeStatus;
                     _closeStatusDescription = statusDescription;
-                }
-                if (previousState == WebSocketState.None || previousState == WebSocketState.Closed)
-                {
-                    throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, previousState, "Connecting, Open, CloseSent, Aborted"));
                 }
 
                 _closeSent = true;
@@ -544,7 +554,6 @@ namespace System.Net.WebSockets
         {
             try
             {
-                cancellationToken.ThrowIfCancellationRequested();
                 if (promise.IsCompletedSuccessfully)
                 {
                     disposable?.Dispose();
@@ -556,6 +565,7 @@ namespace System.Net.WebSockets
                     await promise.ConfigureAwait(false);
                     return;
                 }
+                AbortIfCancelationRequested(cancellationToken);
 
                 using (var receiveRegistration = cancellationToken.Register(static s =>
                 {

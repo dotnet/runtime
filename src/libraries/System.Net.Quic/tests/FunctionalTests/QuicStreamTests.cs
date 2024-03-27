@@ -1249,6 +1249,9 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WritesClosed;
                     }
+
+                    var _ = await stream.ReadAsync(new byte[0]);
+
                     serverSem.Release();
                     await clientSem.WaitAsync();
 
@@ -1279,6 +1282,9 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WritesClosed;
                     }
+
+                    var _ = await stream.ReadAsync(new byte[0]);
+
                     clientSem.Release();
                     await serverSem.WaitAsync();
 

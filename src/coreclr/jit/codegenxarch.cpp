@@ -121,7 +121,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
             for (unsigned i = 0; i < regCount; ++i)
             {
-                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i), retTypeDesc.GetReturnRegType(i));
+                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
+                                       retTypeDesc.GetReturnRegType(i));
             }
         }
     }
@@ -1318,8 +1319,8 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
     // This is a case of operand is in a single reg and needs to be
     // returned in multiple ABI return registers.
     regNumber opReg = src->GetRegNum();
-    regNumber reg0  = retTypeDesc->GetABIReturnReg(0);
-    regNumber reg1  = retTypeDesc->GetABIReturnReg(1);
+    regNumber reg0  = retTypeDesc->GetABIReturnReg(0, compiler->info.compCallConv);
+    regNumber reg1  = retTypeDesc->GetABIReturnReg(1, compiler->info.compCallConv);
 
     assert((reg0 != REG_NA) && (reg1 != REG_NA) && (opReg != REG_NA));
 
@@ -2170,7 +2171,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif // !FEATURE_EH_FUNCLETS
 
         case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & ~fullIntArgRegMask()) == 0);
+            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
+                          ~fullIntArgRegMask(compiler->info.compCallConv)) == 0);
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
             // the runtime side requires the codegen here to be consistent
@@ -2247,7 +2249,6 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     // This case is always a call (AsCall() will assert if it is not).
     GenTreeCall*          call        = actualOp1->AsCall();
     const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-    assert(retTypeDesc->GetReturnRegCount() == MAX_RET_REG_COUNT);
 
     assert(regCount == 2);
     regNumber targetReg = lclNode->GetRegNum();
@@ -6063,7 +6064,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 for (unsigned i = 0; i < regCount; ++i)
                 {
                     var_types regType      = retTypeDesc->GetReturnRegType(i);
-                    returnReg              = retTypeDesc->GetABIReturnReg(i);
+                    returnReg              = retTypeDesc->GetABIReturnReg(i, call->GetUnmanagedCallConv());
                     regNumber allocatedReg = call->GetRegNumByIdx(i);
                     inst_Mov(regType, allocatedReg, returnReg, /* canSkip */ true);
                 }
@@ -6074,7 +6075,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 // the native compiler doesn't guarantee it.
                 if (call->IsUnmanaged() && (returnType == TYP_SIMD12))
                 {
-                    returnReg = retTypeDesc->GetABIReturnReg(1);
+                    returnReg = retTypeDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv());
                     genSimd12UpperClear(returnReg);
                 }
 #endif // FEATURE_SIMD

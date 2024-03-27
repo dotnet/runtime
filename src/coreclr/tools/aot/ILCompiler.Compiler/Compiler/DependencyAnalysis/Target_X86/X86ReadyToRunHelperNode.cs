@@ -188,7 +188,28 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     {
-                        encoder.EmitINT3();
+                        MethodDesc targetMethod = (MethodDesc)Target;
+                        if (targetMethod.OwningType.IsInterface)
+                        {
+                            encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
+                            encoder.EmitJMP(factory.ExternSymbol("RhpResolveInterfaceMethod"));
+                        }
+                        else
+                        {
+                            if (relocsOnly)
+                                break;
+
+                            AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int32);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
+
+                            Debug.Assert(!targetMethod.CanMethodBeInSealedVTable(factory));
+
+                            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
+                            Debug.Assert(slot != -1);
+                            AddrMode loadFromSlot = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize), 0, AddrModeSize.Int32);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromSlot);
+                            encoder.EmitRET();
+                        }
                     }
                     break;
 

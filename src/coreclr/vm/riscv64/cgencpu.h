@@ -423,6 +423,13 @@ struct DECLSPEC_ALIGN(16) UMEntryThunkCode
 
 struct HijackArgs
 {
+    DWORD64 Fp; // frame pointer
+    union
+    {
+        DWORD64 Ra;
+        size_t ReturnAddress;
+    };
+    DWORD64 S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, Gp, Tp;
     union
     {
         struct {
@@ -439,14 +446,7 @@ struct HijackArgs
          };
         size_t FPReturnValue[2];
     };
-    DWORD64 Fp; // frame pointer
-    DWORD64 Gp, Tp, S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11;
-    union
-    {
-        DWORD64 Ra;
-        size_t ReturnAddress;
-    };
- };
+};
 
 // Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
 struct ThisPtrRetBufPrecode {

@@ -2126,14 +2126,14 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
 
     if ((argDsc->GetArgReg() != REG_STK) && (argDsc->GetArgReg() != REG_NA))
     {
-        if (genRegMask(argDsc->GetArgReg()) & (RBM_ALLFLOAT))
+        if ((genRegMask(argDsc->GetArgReg()) & RBM_ALLFLOAT) != RBM_NONE)
         {
-            assert(genRegMask(argDsc->GetArgReg()) & (RBM_FLTARG_REGS));
+            assert((genRegMask(argDsc->GetArgReg()) & RBM_FLTARG_REGS) != RBM_NONE);
             floatRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetArgReg());
         }
         else
         {
-            assert(genRegMask(argDsc->GetArgReg()) & (RBM_ARG_REGS));
+            assert((genRegMask(argDsc->GetArgReg()) & fullIntArgRegMask(compiler->info.compCallConv)) != RBM_NONE);
             intRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetArgReg());
         }
     }
@@ -2147,7 +2147,7 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
         }
         else
         {
-            assert(genRegMask(argDsc->GetOtherArgReg()) & (RBM_ARG_REGS));
+            assert((genRegMask(argDsc->GetOtherArgReg()) & fullIntArgRegMask(compiler->info.compCallConv)) != RBM_NONE);
             intRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetOtherArgReg());
         }
     }
@@ -3058,7 +3058,8 @@ void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
             // For all other cases of multi-reg definitions, the registers must be in sequential order.
             if (retTypeDesc != nullptr)
             {
-                thisDstCandidates = genRegMask(tree->AsCall()->GetReturnTypeDesc()->GetABIReturnReg(i));
+                thisDstCandidates = genRegMask(
+                    tree->AsCall()->GetReturnTypeDesc()->GetABIReturnReg(i, tree->AsCall()->GetUnmanagedCallConv()));
                 assert((dstCandidates & thisDstCandidates) != RBM_NONE);
             }
             else
@@ -4003,7 +4004,8 @@ int LinearScan::BuildReturn(GenTree* tree)
                         if (srcType != dstType)
                         {
                             hasMismatchedRegTypes = true;
-                            regMaskTP dstRegMask  = genRegMask(retTypeDesc.GetABIReturnReg(i));
+                            regMaskTP dstRegMask =
+                                genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv));
 
                             if (varTypeUsesIntReg(dstType))
                             {
@@ -4030,7 +4032,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                     if (!hasMismatchedRegTypes || (regType(op1->AsLclVar()->GetFieldTypeByIndex(compiler, i)) ==
                                                    regType(retTypeDesc.GetReturnRegType(i))))
                     {
-                        BuildUse(op1, genRegMask(retTypeDesc.GetABIReturnReg(i)), i);
+                        BuildUse(op1, genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv)), i);
                     }
                     else
                     {
