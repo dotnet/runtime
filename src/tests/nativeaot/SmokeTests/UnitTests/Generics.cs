@@ -55,6 +55,7 @@ class Generics
         TestRecursionThroughGenericLookups.Run();
         TestRecursionInFields.Run();
         TestGvmLookupDependency.Run();
+        Test99198Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
         TestNullableCasting.Run();
@@ -3477,6 +3478,48 @@ class Generics
         {
             CatConcepts<Technique, int>();
             CatConcepts<Technique, object>();
+        }
+    }
+
+    class Test99198Regression
+    {
+        delegate void Set<T>(ref T t);
+
+        interface IFoo
+        {
+            void Do<T>();
+        }
+
+        struct Foo<T> : IFoo
+        {
+            public nint Cookie1;
+            public nint Cookie2;
+
+            public void Do<T1>()
+            {
+                Cookie1 = 42;
+            }
+        }
+
+        class C<T> where T : IFoo
+        {
+            public static void Set(ref T t)
+            {
+                t.Do<T>();
+            }
+        }
+
+        public static void Run()
+        {
+            new C<Foo<string>>().ToString();
+
+            static Type GetObject() => typeof(Foo<object>);
+            var s = typeof(C<>).MakeGenericType(GetObject()).GetMethod("Set").CreateDelegate<Set<Foo<object>>>();
+
+            Foo<object> ob = default;
+            s(ref ob);
+            if (ob.Cookie1 != 42 || ob.Cookie2 != 0)
+                throw new Exception();
         }
     }
 

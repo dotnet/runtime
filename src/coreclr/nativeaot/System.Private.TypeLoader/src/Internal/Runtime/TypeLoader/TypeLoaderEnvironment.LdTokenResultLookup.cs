@@ -388,10 +388,10 @@ namespace Internal.Runtime.TypeLoader
             if (genericMethodArgs != null)
             {
                 Instantiation methodInst = context.ResolveRuntimeTypeHandles(genericMethodArgs);
-                return context.ResolveGenericMethodInstantiation(unboxingStub: false, type, nameAndSignature, methodInst, default, default);
+                return context.ResolveGenericMethodInstantiation(unboxingStub: false, type, nameAndSignature, methodInst);
             }
 
-            return context.ResolveRuntimeMethod(unboxingStub: false, type, nameAndSignature, default, default);
+            return context.ResolveRuntimeMethod(unboxingStub: false, type, nameAndSignature);
         }
 
         private unsafe bool TryGetStaticRuntimeMethodHandleComponents(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgs)
