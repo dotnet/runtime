@@ -611,6 +611,12 @@ HRESULT GetITypeLibForAssembly(_In_ Assembly *pAssembly, _Outptr_ ITypeLib **ppT
     return S_OK;
 } // HRESULT GetITypeLibForAssembly()
 
+// .NET Frameworks' mscorlib TLB GUID.
+static const GUID s_MscorlibGuid = { 0xBED7F4EA, 0x1A96, 0x11D2, { 0x8F, 0x08, 0x00, 0xA0, 0xC9, 0xA6, 0x18, 0x6D } };
+
+// Hard-coded GUID for System.Guid.
+static const GUID s_GuidForSystemGuid = { 0x9C5923E9, 0xDE52, 0x33EA, { 0x88, 0xDE, 0x7E, 0xBC, 0x86, 0x33, 0xB9, 0xCC } };
+
 // There are types that are helpful to provide that facilitate porting from
 // .NET Framework to .NET 8+. This function is used to acquire their ITypeInfo.
 // This should be used narrowly. Types at a minimum should be blittable.
@@ -627,23 +633,15 @@ static bool TryDeferToMscorlib(MethodTable* pClass, ITypeInfo** ppTI)
     }
     CONTRACTL_END;
 
-    StackSString className;
-    pClass->_GetFullyQualifiedNameForClass(className);
-
     // Marshalling of a System.Guid is such a common scenario, let's see if we can load
     // the .NET Framework's TLB. This is a niche scenario, but one that impacts many teams
     // porting code to .NET 8+.
-    if (strcmp(className.GetUTF8(), g_GuidClassName) == 0)
+    if (pClass == CoreLibBinder::GetClass(CLASS__GUID))
     {
         SafeComHolder<ITypeLib> pMscorlibTypeLib = NULL;
-
-        // .NET Frameworks' mscorlib TLB GUID.
-        const GUID mscorlib = { 0xBED7F4EA, 0x1A96, 0x11D2, { 0x8F, 0x08, 0x00, 0xA0, 0xC9, 0xA6, 0x18, 0x6D } };
-        if (SUCCEEDED(::LoadRegTypeLib(mscorlib, 2, 4, 0, &pMscorlibTypeLib)))
+        if (SUCCEEDED(::LoadRegTypeLib(s_MscorlibGuid, 2, 4, 0, &pMscorlibTypeLib)))
         {
-            // Hard-coded GUID for System.Guid.
-            const GUID guidForSystemGuid = { 0x9C5923E9, 0xDE52, 0x33EA, { 0x88, 0xDE, 0x7E, 0xBC, 0x86, 0x33, 0xB9, 0xCC } };
-            if (SUCCEEDED(pMscorlibTypeLib->GetTypeInfoOfGuid(guidForSystemGuid, ppTI)))
+            if (SUCCEEDED(pMscorlibTypeLib->GetTypeInfoOfGuid(s_GuidForSystemGuid, ppTI)))
                 return true;
         }
     }
@@ -822,6 +820,59 @@ ErrExit:
 ReturnHR:
     return hr;
 } // HRESULT GetITypeInfoForEEClass()
+
+MethodTable* GetMethodTableForRecordInfo(IRecordInfo* recInfo)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(recInfo != NULL);
+    }
+    CONTRACTL_END;
+
+    HRESULT hr;
+
+    //
+    // Only a narrow set of types are supported.
+    // See TryDeferToMscorlib() above.
+    //
+
+    // Verify the associated TypeLib attribute
+    SafeComHolder<ITypeInfo> typeInfo;
+    hr = recInfo->GetTypeInfo(&typeInfo);
+    if (FAILED(hr))
+        return NULL;
+
+    SafeComHolder<ITypeLib> typeLib;
+    UINT index;
+    hr = typeInfo->GetContainingTypeLib(&typeLib, &index);
+    if (FAILED(hr))
+        return NULL;
+
+    TLIBATTR* attrs;
+    hr = typeLib->GetLibAttr(&attrs);
+    if (FAILED(hr))
+        return NULL;
+
+    GUID libGuid = attrs->guid;
+    typeLib->ReleaseTLibAttr(attrs);
+    if (s_MscorlibGuid != libGuid)
+        return NULL;
+
+    // Verify the Guid of the associated type
+    GUID typeGuid;
+    hr = recInfo->GetGuid(&typeGuid);
+    if (FAILED(hr))
+        return NULL;
+
+    // Check for supported types.
+    if (s_GuidForSystemGuid == typeGuid)
+        return CoreLibBinder::GetClass(CLASS__GUID);
+
+    return NULL;
+}
 
 // Returns a NON-ADDREF'd ITypeInfo.
 HRESULT GetITypeInfoForMT(ComMethodTable *pMT, ITypeInfo **ppTI)

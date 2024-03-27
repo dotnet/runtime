@@ -2573,9 +2573,20 @@ void OleVariant::MarshalRecordVariantOleToCom(VARIANT *pOleVariant,
         LPVOID pvRecord = V_RECORD(pOleVariant);
         if (pvRecord)
         {
-            // This value type should have been registered through
-            // a TLB. CoreCLR doesn't support dynamic type mapping.
-            COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
+            MethodTable* pValueClass = GetMethodTableForRecordInfo(pRecInfo);
+            if (pValueClass == NULL)
+            {
+                // This value type should have been registered through
+                // a TLB. CoreCLR doesn't support dynamic type mapping.
+                COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
+            }
+
+            _ASSERTE(pValueClass->IsBlittable());
+
+            // Now that we have a blittable value class, allocate an instance of the
+            // boxed value class and copy the contents of the record into it.
+            BoxedValueClass = AllocateObject(pValueClass);
+            memcpyNoGCRefs(BoxedValueClass->GetData(), (BYTE*)pvRecord, pValueClass->GetNativeSize());
         }
 
         pComVariant->SetObjRef(BoxedValueClass);
