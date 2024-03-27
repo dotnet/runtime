@@ -5435,6 +5435,7 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, Stat
             {
                 parent->ReplaceOperand(useEdge, newTree);
 
+#if 0
                 // If the parent is a GT_IND and we replaced the child with a handle constant, we might need
                 // to mark the GT_IND as invariant. This is the same as what gtNewIndOfIconHandleNode() does.
                 // Review: should some kind of more general morphing take care of this?
@@ -5453,6 +5454,7 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, Stat
                         }
                     }
                 }
+#endif // 0
             }
             else
             {
