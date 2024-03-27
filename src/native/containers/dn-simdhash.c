@@ -15,7 +15,7 @@
 #error Unsupported architecture for dn_simdhash
 #endif
 
-dn_simdhash_suffixes
+DN_FORCEINLINE(dn_simdhash_suffixes)
 dn_simdhash_build_search_vector (uint8_t needle)
 {
     // this produces a splat and then .const, .and in wasm, and the other architectures are fine too
@@ -32,7 +32,7 @@ dn_simdhash_build_search_vector (uint8_t needle)
     return result;
 }
 
-int
+DN_FORCEINLINE(int)
 dn_simdhash_find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
     dn_simdhash_suffixes match_vector;
