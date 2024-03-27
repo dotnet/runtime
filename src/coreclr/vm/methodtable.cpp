@@ -3438,9 +3438,9 @@ _End_arg:
 #endif
 
 #if defined(TARGET_RISCV64)
-static bool HandleInlineArray(int elementTypeIndex, int nElements, int types[2], int* typeIndex)
+static bool HandleInlineArray(int elementTypeIndex, int nElements, StructFloatFieldInfoFlags types[2], int& typeIndex)
 {
-    int nFlattenedFieldsPerElement = *typeIndex - elementTypeIndex;
+    int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
     if (nFlattenedFieldsPerElement == 0)
         return true;
 
@@ -3451,17 +3451,17 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, int types[2],
 
     if (nElements == 2)
     {
-        if (*typeIndex + nFlattenedFieldsPerElement > 2)
+        if (typeIndex + nFlattenedFieldsPerElement > 2)
             return false;
 
         assert(elementTypeIndex == 0);
-        assert(*typeIndex == 1);
-        types[(*typeIndex)++] = types[elementTypeIndex]; // duplicate the array element type
+        assert(typeIndex == 1);
+        types[typeIndex] = types[elementTypeIndex]; // duplicate the array element type
     }
     return true;
 }
 
-static bool GetFlattenedFieldTypes(CORINFO_CLASS_HANDLE cls, int types[2], int* typeIndex)
+static bool FlattenFieldTypes(CORINFO_CLASS_HANDLE cls, StructFloatFieldInfoFlags types[2], int& typeIndex)
 {
     TypeHandle th(cls);
     bool isManaged = !th.IsTypeDesc();
@@ -3475,7 +3475,7 @@ static bool GetFlattenedFieldTypes(CORINFO_CLASS_HANDLE cls, int types[2], int* 
     if (isManaged)
     {
         FieldDesc* fields = pMT->GetApproxFieldDescListRaw();
-        int elementTypeIndex = *typeIndex;
+        int elementTypeIndex = typeIndex;
         for (int i = 0; i < nFields; ++i)
         {
             if (i > 0 && fields[i-1].GetOffset() + fields[i-1].GetSize() > fields[i].GetOffset())
@@ -3485,18 +3485,19 @@ static bool GetFlattenedFieldTypes(CORINFO_CLASS_HANDLE cls, int types[2], int* 
             if (type == ELEMENT_TYPE_VALUETYPE)
             {
                 MethodTable* nested = fields[i].GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                if (!GetFlattenedFieldTypes((CORINFO_CLASS_HANDLE)nested, types, typeIndex))
+                if (!FlattenFieldTypes((CORINFO_CLASS_HANDLE)nested, types, typeIndex))
                     return false;
             }
             else if (fields[i].GetSize() <= TARGET_POINTER_SIZE)
             {
-                if (*typeIndex >= 2)
+                if (typeIndex >= 2)
                     return false;
 
-                int retType = (CorTypeInfo::IsFloat_NoThrow(type) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
-                    (CorTypeInfo::Size_NoThrow(type) == TARGET_POINTER_SIZE ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0);
+                StructFloatFieldInfoFlags retType = StructFloatFieldInfoFlags(
+                    (CorTypeInfo::IsFloat_NoThrow(type) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
+                    (CorTypeInfo::Size_NoThrow(type) == TARGET_POINTER_SIZE ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0));
 
-                types[(*typeIndex)++] = retType;
+                types[typeIndex++] = retType;
             }
             else
             {
@@ -3507,7 +3508,7 @@ static bool GetFlattenedFieldTypes(CORINFO_CLASS_HANDLE cls, int types[2], int* 
         if (HasImpliedRepeatedFields(pMT)) // inline array or fixed buffer
         {
             assert(nFields == 1);
-            int nElements = pMT->GetNumInstanceFieldBytes() / pMT->GetApproxFieldDescListRaw()->GetSize();
+            int nElements = pMT->GetNumInstanceFieldBytes() / fields[0].GetSize();
             if (!HandleInlineArray(elementTypeIndex, nElements, types, typeIndex))
                 return false;
         }
@@ -3523,10 +3524,10 @@ static bool GetFlattenedFieldTypes(CORINFO_CLASS_HANDLE cls, int types[2], int* 
             NativeFieldCategory category = fields[i].GetCategory();
             if (category == NativeFieldCategory::NESTED)
             {
-                int elementTypeIndex = *typeIndex;
+                int elementTypeIndex = typeIndex;
 
                 MethodTable* nested = fields[i].GetNestedNativeMethodTable();
-                if (!GetFlattenedFieldTypes((CORINFO_CLASS_HANDLE)nested, types, typeIndex))
+                if (!FlattenFieldTypes((CORINFO_CLASS_HANDLE)nested, types, typeIndex))
                     return false;
 
                 // In native layout fixed arrays are marked as NESTED just like structs
@@ -3536,13 +3537,14 @@ static bool GetFlattenedFieldTypes(CORINFO_CLASS_HANDLE cls, int types[2], int* 
             }
             else if (fields[i].NativeSize() <= TARGET_POINTER_SIZE)
             {
-                if (*typeIndex >= 2)
+                if (typeIndex >= 2)
                     return false;
 
-                int type = (category == NativeFieldCategory::FLOAT ? STRUCT_FLOAT_FIELD_FIRST : 0) |
-                    (fields[i].NativeSize() == TARGET_POINTER_SIZE ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0);
+                StructFloatFieldInfoFlags type = StructFloatFieldInfoFlags(
+                    (category == NativeFieldCategory::FLOAT ? STRUCT_FLOAT_FIELD_FIRST : 0) |
+                    (fields[i].NativeSize() == TARGET_POINTER_SIZE ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0));
 
-                types[(*typeIndex)++] = type;
+                types[typeIndex++] = type;
             }
             else
             {
@@ -3560,9 +3562,9 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
     if (th.GetSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
         return STRUCT_NO_FLOAT_FIELD;
 
-    int types[2] = {STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD};
+    StructFloatFieldInfoFlags types[2] = {STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD};
     int nFields = 0;
-    if (!GetFlattenedFieldTypes(cls, types, &nFields) || nFields == 0)
+    if (!FlattenFieldTypes(cls, types, nFields) || nFields == 0)
         return STRUCT_NO_FLOAT_FIELD;
 
     assert(nFields == 1 || nFields == 2);
