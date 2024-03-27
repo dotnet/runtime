@@ -91,9 +91,9 @@ namespace System.ServiceModel
             _stream.ReadExactly(_buffer);
 #else
             int totalRead = 0;
-            while (totalRead < _stream.Length)
+            while (totalRead < _buffer.Length)
             {
-                int bytesRead = _stream.Read(_buffer, totalRead, _stream.Length - totalRead);
+                int bytesRead = _stream.Read(_buffer, totalRead, _buffer.Length - totalRead);
                 if (bytesRead <= 0)
                 {
                     throw new EndOfStreamException();
