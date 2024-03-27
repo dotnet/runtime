@@ -1033,7 +1033,7 @@ BOOL MethodDesc::IsVarArg()
 }
 
 //*******************************************************************************
-COR_ILMETHOD* MethodDesc::GetILHeader(BOOL fAllowOverrides /*=FALSE*/)
+COR_ILMETHOD* MethodDesc::GetILHeader()
 {
     CONTRACTL
     {
@@ -1046,9 +1046,8 @@ COR_ILMETHOD* MethodDesc::GetILHeader(BOOL fAllowOverrides /*=FALSE*/)
 
     Module *pModule = GetModule();
 
-    // Always pickup 'permanent' overrides like reflection emit, EnC, etc.
-    // but only grab temporary overrides (like profiler rewrites) if asked to
-    TADDR pIL = pModule->GetDynamicIL(GetMemberDef(), fAllowOverrides);
+    // Always pickup overrides like reflection emit, EnC, etc.
+    TADDR pIL = pModule->GetDynamicIL(GetMemberDef());
 
     if (pIL == NULL)
     {
