@@ -52,9 +52,17 @@ namespace System.Text.Json.Serialization.Metadata
                 WriteStack state = default;
                 state.Initialize(this, rootValueBoxed);
 
-                bool success = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
-                Debug.Assert(success);
-                writer.Flush();
+                try
+                {
+                    bool success = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
+                    Debug.Assert(success);
+                    writer.Flush();
+                }
+                catch
+                {
+                    state.DisposePendingDisposablesOnException();
+                    throw;
+                }
             }
         }
 
@@ -244,18 +252,26 @@ namespace System.Text.Json.Serialization.Metadata
                 using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
                 using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
 
-                do
+                try
                 {
-                    state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
+                    do
+                    {
+                        state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
 
-                    isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
-                    writer.Flush();
+                        isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
+                        writer.Flush();
 
-                    bufferWriter.WriteToStream(utf8Json);
-                    bufferWriter.Clear();
+                        bufferWriter.WriteToStream(utf8Json);
+                        bufferWriter.Clear();
 
-                    Debug.Assert(state.PendingTask == null);
-                } while (!isFinalBlock);
+                        Debug.Assert(state.PendingTask == null);
+                    } while (!isFinalBlock);
+                }
+                catch
+                {
+                    state.DisposePendingDisposablesOnException();
+                    throw;
+                }
 
                 if (CanUseSerializeHandler)
                 {
