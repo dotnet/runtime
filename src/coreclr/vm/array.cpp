@@ -314,7 +314,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
     // ArrayClass already includes one void*
     LoaderAllocator* pAllocator= this->GetLoaderAllocator();
-    BYTE* pMemory = (BYTE *)pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbArrayClass) +
+    BYTE* pMemory = (BYTE *)pamTracker->Track(pAllocator->GetHighFrequencyMethodTableHeap()->AllocMem(S_SIZE_T(cbArrayClass) +
                                                                                             S_SIZE_T(cbMT)));
 
     // Note: Memory allocated on loader heap is zero filled
@@ -334,7 +334,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     MethodTable* pMT = (MethodTable *) pMTHead;
 
     // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    pMT->AllocateAuxiliaryData(pAllocator, this, pamTracker, false, static_cast<WORD>(numNonVirtualSlots));
+    pMT->AllocateAuxiliaryData(pAllocator->GetHighFrequencyMethodTableHeap(), this, pamTracker, false, static_cast<WORD>(numNonVirtualSlots));
     pMT->SetLoaderAllocator(pAllocator);
     pMT->SetModule(elemTypeHnd.GetModule());
 

@@ -772,6 +772,9 @@ HRESULT EEConfig::sync()
 #if defined(FEATURE_GDBJIT_FRAME)
     fGDBJitEmitDebugFrame = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GDBJitEmitDebugFrame) != 0;
 #endif
+
+    maxMethodsToContributeToGenericDictionary = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxMethodsToContributeToGenericDictionary);
+    methodsWhichContributeFullyToGenericDictionary = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MethodsWhichContributeFullyToGenericDictionary);
     return hr;
 }
 

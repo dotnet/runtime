@@ -27,6 +27,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_InitialReservedMemForLoaderHeaps = NULL;
     m_pLowFrequencyHeap = NULL;
     m_pHighFrequencyHeap = NULL;
+    m_pHighFrequencyMethodTableHeap = NULL;
     m_pStubHeap = NULL;
     m_pPrecodeHeap = NULL;
     m_pExecutableHeap = NULL;
@@ -1078,12 +1079,14 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     DWORD dwLowFrequencyHeapReserveSize;
     DWORD dwHighFrequencyHeapReserveSize;
+    DWORD dwHighFrequencyMethodTableHeapReserveSize;
     DWORD dwStubHeapReserveSize;
     DWORD dwExecutableHeapReserveSize;
     DWORD dwCodeHeapReserveSize;
     DWORD dwVSDHeapReserveSize;
 
     dwExecutableHeapReserveSize = 0;
+    bool disableHighFrequencyMethodTableHeap = false;
 
     if (IsCollectible())
     {
@@ -1092,12 +1095,21 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
         dwStubHeapReserveSize          = COLLECTIBLE_STUB_HEAP_SIZE;
         dwCodeHeapReserveSize          = COLLECTIBLE_CODEHEAP_SIZE;
         dwVSDHeapReserveSize           = COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE;
+        dwHighFrequencyMethodTableHeapReserveSize = 0;
     }
     else
     {
-        dwLowFrequencyHeapReserveSize  = LOW_FREQUENCY_HEAP_RESERVE_SIZE;
-        dwHighFrequencyHeapReserveSize = HIGH_FREQUENCY_HEAP_RESERVE_SIZE;
-        dwStubHeapReserveSize          = STUB_HEAP_RESERVE_SIZE;
+        dwLowFrequencyHeapReserveSize  = LOW_FREQUENCY_HEAP_INITIAL_RESERVE_SIZE;
+        dwHighFrequencyHeapReserveSize = HIGH_FREQUENCY_HEAP_INITIAL_RESERVE_SIZE;
+        dwStubHeapReserveSize          = STUB_HEAP_INITIAL_RESERVE_SIZE;
+        dwHighFrequencyMethodTableHeapReserveSize = HIGH_FREQUENCY_METHODTABLE_HEAP_INITIAL_RESERVE_SIZE - dwStubHeapReserveSize;
+
+        disableHighFrequencyMethodTableHeap = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_UseHighFrequencyMethodTableHeap) == 0);
+        if (disableHighFrequencyMethodTableHeap)
+        {
+            dwHighFrequencyHeapReserveSize += dwHighFrequencyMethodTableHeapReserveSize;
+            dwHighFrequencyMethodTableHeapReserveSize = 0;
+        }
 
         // Non-collectible assemblies do not reserve space for these heaps.
         dwCodeHeapReserveSize = 0;
@@ -1119,7 +1131,8 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
                                 + dwStubHeapReserveSize
                                 + dwCodeHeapReserveSize
                                 + dwVSDHeapReserveSize
-                                + dwExecutableHeapReserveSize;
+                                + dwExecutableHeapReserveSize
+                                + dwHighFrequencyMethodTableHeapReserveSize;
 
     dwTotalReserveMemSize = (DWORD) ALIGN_UP(dwTotalReserveMemSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
@@ -1175,7 +1188,25 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
     initReservedMem += dwHighFrequencyHeapReserveSize;
 
     if (IsCollectible())
+    {
         m_pLowFrequencyHeap = m_pHighFrequencyHeap;
+        m_pHighFrequencyMethodTableHeap = m_pHighFrequencyHeap;
+    }
+    else
+    {
+        if (disableHighFrequencyMethodTableHeap)
+        {
+            m_pHighFrequencyMethodTableHeap = m_pHighFrequencyHeap;
+        }
+        else
+        {
+            m_pHighFrequencyMethodTableHeap = new (&m_HighFreqMethodTableHeapInstance) LoaderHeap(HIGH_FREQUENCY_METHODTABLE_HEAP_RESERVE_SIZE,
+                                                                                                  HIGH_FREQUENCY_METHODTABLE_HEAP_COMMIT_SIZE,
+                                                                                                  initReservedMem,
+                                                                                                  dwHighFrequencyMethodTableHeapReserveSize);
+            initReservedMem += dwHighFrequencyMethodTableHeapReserveSize;
+        }
+    }
 
 #if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
     m_pHighFrequencyHeap->m_fPermitStubsWithUnwindInfo = TRUE;

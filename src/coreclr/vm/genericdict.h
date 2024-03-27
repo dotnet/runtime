@@ -120,7 +120,10 @@ private:
                                 CORINFO_RUNTIME_LOOKUP*             pResult,
                                 WORD*                               pSlotOut,
                                 DWORD                               scanFromSlot,
-                                BOOL                                useEmptySlotIfFound);
+                                BOOL                                useEmptySlotIfFound,
+                                MethodTable*                        pMT,
+                                MethodDesc*                         pMD
+                                );
 
 
     static DictionaryLayout* ExpandDictionaryLayout(LoaderAllocator*                pAllocator,
