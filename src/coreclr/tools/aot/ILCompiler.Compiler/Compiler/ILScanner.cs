@@ -273,7 +273,7 @@ namespace ILCompiler
                     var vtableSliceNode = node as VTableSliceNode;
                     if (vtableSliceNode != null)
                     {
-                        var usedSlots = default(ArrayBuilder<MethodDesc>);
+                        ArrayBuilder<MethodDesc> usedSlots = default;
 
                         for (int i = 0; i < vtableSliceNode.Slots.Count; i++)
                         {
