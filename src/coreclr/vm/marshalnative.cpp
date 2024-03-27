@@ -516,6 +516,33 @@ extern "C" IDispatch* QCALLTYPE MarshalNative_GetIDispatchForObject(QCall::Objec
 }
 
 //====================================================================
+// return the IUnknown* or IDispatch* for an Object.
+//====================================================================
+extern "C" void* QCALLTYPE MarshalNative_GetIUnknownOrIDispatchForObject(QCall::ObjectHandleOnStack o, BOOL* isIDispatch)
+{
+    QCALL_CONTRACT;
+
+    void* retVal = NULL;
+
+    BEGIN_QCALL;
+
+    // Ensure COM is started up.
+    EnsureComStarted();
+
+    GCX_COOP();
+
+    OBJECTREF oref = o.Get();
+    GCPROTECT_BEGIN(oref);
+    ComIpType fetchedIpType = {};
+    retVal = GetComIPFromObjectRef(&oref, ComIpType_Both, &fetchedIpType);
+    *isIDispatch = fetchedIpType == ComIpType_Dispatch;
+    GCPROTECT_END();
+
+    END_QCALL;
+    return retVal;
+}
+
+//====================================================================
 // return the IUnknown* representing the interface for the Object
 // Object o should support Type T
 //====================================================================

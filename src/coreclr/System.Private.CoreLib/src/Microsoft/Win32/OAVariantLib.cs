@@ -21,6 +21,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
+#pragma warning disable CA1416 // COM interop is only supported on Windows
+
 namespace Microsoft.Win32
 {
     internal static unsafe partial class OAVariantLib
@@ -163,9 +165,12 @@ namespace Microsoft.Win32
 
         private static ComVariant GetComIPFromObjectRef(object obj)
         {
-            IntPtr pUnk = GetComIPFromObjectRef(ObjectHandleOnStack.Create(ref obj), ComIpType.ComIpType_Both, out ComIpType FetchedIpType);
-            return ComVariant.CreateRaw(FetchedIpType == ComIpType.ComIpType_Dispatch ? VarEnum.VT_DISPATCH : VarEnum.VT_UNKNOWN, pUnk);
+            IntPtr pUnk = GetIUnknownOrIDispatchForObject(ObjectHandleOnStack.Create(ref obj), out bool isIDispatch);
+            return ComVariant.CreateRaw(isIDispatch ? VarEnum.VT_DISPATCH : VarEnum.VT_UNKNOWN, pUnk);
         }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIUnknownOrIDispatchForObject")]
+        private static partial IntPtr GetIUnknownOrIDispatchForObject(ObjectHandleOnStack o, [MarshalAs(UnmanagedType.Bool)] out bool isIDispatch);
 
         private static object FromOAVariant(ComVariant input) =>
             input.VarType switch
@@ -186,17 +191,9 @@ namespace Microsoft.Win32
                 VarEnum.VT_R8 => input.As<double>()!,
                 VarEnum.VT_EMPTY => null!,
                 VarEnum.VT_NULL => DBNull.Value,
-                VarEnum.VT_UNKNOWN or VarEnum.VT_DISPATCH => GetObjectRefFromComIP(input), // Convert the IUnknown pointer to an OBJECTREF.
+                VarEnum.VT_UNKNOWN or VarEnum.VT_DISPATCH => Marshal.GetObjectForIUnknown(input.GetRawDataRef<IntPtr>()), // Convert the IUnknown pointer to an OBJECTREF.
                 _ => throw new NotSupportedException(SR.NotSupported_ChangeType),
             };
-
-        private static object GetObjectRefFromComIP(ComVariant variant)
-        {
-            object? ret = null;
-            GetObjectRefFromComIP(ObjectHandleOnStack.Create(ref ret), variant.GetRawDataRef<IntPtr>());
-            Debug.Assert(ret != null);
-            return ret;
-        }
 
         private static VarEnum GetVTFromClass(Type type)
         {
@@ -206,21 +203,6 @@ namespace Microsoft.Win32
             throw new NotSupportedException(SR.NotSupported_ChangeType);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "OAVariant_GetComIPFromObjectRef")]
-        private static partial IntPtr GetComIPFromObjectRef(ObjectHandleOnStack obj, ComIpType reqIPType, out ComIpType fetchedIpType);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "OAVariant_GetObjectRefFromComIP")]
-        private static partial void GetObjectRefFromComIP(ObjectHandleOnStack objRet, IntPtr pUnk);
-
         #endregion
-    }
-
-    internal enum ComIpType : int
-    {
-        ComIpType_None = 0x0,
-        ComIpType_Unknown = 0x1,
-        ComIpType_Dispatch = 0x2,
-        ComIpType_Both = 0x3,
-        ComIpType_OuterUnknown = 0x5,
     }
 }
