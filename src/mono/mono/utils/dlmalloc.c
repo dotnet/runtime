@@ -19,24 +19,13 @@
  * - the defines below
  */
 
-#include <config.h>
 #include "mono-mmap.h"
 
 #define USE_DL_PREFIX 1
 #define USE_LOCKS 1
-
-#ifdef HOST_WASM
-#pragma clang diagnostic ignored "-Wunused-variable"
-/* Use sbrk to allocate memory, and never release pages since emscripten mmap is fake */
-#define HAVE_MORECORE 1
-#define NO_MALLINFO 1
-#undef HAVE_MMAP
-#define HAVE_MMAP 0
-#else
 /* Use mmap for allocating memory */
 #define HAVE_MORECORE 0
 #define NO_MALLINFO 1
-#endif // HOST_WASM
 #include <mono/utils/dlmalloc.h>
 
 /*
