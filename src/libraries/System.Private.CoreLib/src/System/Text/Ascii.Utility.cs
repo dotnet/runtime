@@ -2151,9 +2151,9 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void WidenAsciiToUtf1_Vector<TVectorByte, TVectorUShort>(byte* pAsciiBuffer, char* pUtf16Buffer, ref nuint currentOffset, nuint elementCount)
+        private static unsafe void WidenAsciiToUtf1_Vector<TVectorByte, TVectorUInt16>(byte* pAsciiBuffer, char* pUtf16Buffer, ref nuint currentOffset, nuint elementCount)
             where TVectorByte : unmanaged, ISimdVector<TVectorByte, byte>
-            where TVectorUShort : unmanaged, ISimdVector<TVectorUShort, ushort>
+            where TVectorUInt16 : unmanaged, ISimdVector<TVectorUInt16, ushort>
         {
             ushort* pCurrentWriteAddress = (ushort*)pUtf16Buffer;
             // Calculating the destination address outside the loop results in significant
@@ -2163,14 +2163,14 @@ namespace System.Text
             TVectorByte asciiVector = TVectorByte.Load(pAsciiBuffer + currentOffset);
             if (!HasMatch<TVectorByte>(asciiVector))
             {
-                (TVectorUShort utf16LowVector, TVectorUShort utf16HighVector) = Widen<TVectorByte, TVectorUShort>(asciiVector);
+                (TVectorUInt16 utf16LowVector, TVectorUInt16 utf16HighVector) = Widen<TVectorByte, TVectorUInt16>(asciiVector);
                 utf16LowVector.Store(pCurrentWriteAddress);
-                utf16HighVector.Store(pCurrentWriteAddress + TVectorUShort.Count);
-                pCurrentWriteAddress += (nuint)(TVectorUShort.Count * 2);
-                if (((int)pCurrentWriteAddress & 1) == 0)
+                utf16HighVector.Store(pCurrentWriteAddress + TVectorUInt16.Count);
+                pCurrentWriteAddress += (nuint)(TVectorUInt16.Count * 2);
+                if (((nuint)pCurrentWriteAddress % sizeof(char)) == 0)
                 {
                     // Bump write buffer up to the next aligned boundary
-                    pCurrentWriteAddress = (ushort*)((nuint)pCurrentWriteAddress & ~(nuint)(TVectorUShort.Alignment - 1));
+                    pCurrentWriteAddress = (ushort*)((nuint)pCurrentWriteAddress & ~(nuint)(TVectorUInt16.Alignment - 1));
                     nuint numBytesWritten = (nuint)pCurrentWriteAddress - (nuint)pUtf16Buffer;
                     currentOffset += (nuint)numBytesWritten / 2;
                 }
@@ -2186,11 +2186,12 @@ namespace System.Text
                     {
                         break;
                     }
-                    (utf16LowVector, utf16HighVector) = Widen<TVectorByte, TVectorUShort>(asciiVector);
-                    utf16LowVector.StoreAligned(pCurrentWriteAddress);
-                    utf16HighVector.StoreAligned(pCurrentWriteAddress + TVectorUShort.Count);
+                    (utf16LowVector, utf16HighVector) = Widen<TVectorByte, TVectorUInt16>(asciiVector);
+                    utf16LowVector.Store(pCurrentWriteAddress);
+                    utf16HighVector.Store(pCurrentWriteAddress + TVectorUInt16.Count);
+
                     currentOffset += (nuint)TVectorByte.Count;
-                    pCurrentWriteAddress += (nuint)(TVectorUShort.Count * 2);
+                    pCurrentWriteAddress += (nuint)(TVectorUInt16.Count * 2);
                 }
             }
             return;
@@ -2205,22 +2206,26 @@ namespace System.Text
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe (TVectorUShort Lower, TVectorUShort Upper) Widen<TVectorByte, TVectorUShort>(TVectorByte vector)
+        private static unsafe (TVectorUInt16 Lower, TVectorUInt16 Upper) Widen<TVectorByte, TVectorUInt16>(TVectorByte vector)
             where TVectorByte : unmanaged, ISimdVector<TVectorByte, byte>
-            where TVectorUShort : unmanaged, ISimdVector<TVectorUShort, ushort>
+            where TVectorUInt16 : unmanaged, ISimdVector<TVectorUInt16, ushort>
         {
             if (typeof(TVectorByte) == typeof(Vector256<byte>))
             {
                 (Vector256<ushort> Lower256, Vector256<ushort> Upper256) = Vector256.Widen((Vector256<byte>)(object)vector);
-                return ((TVectorUShort)(object)Lower256, (TVectorUShort)(object)Upper256);
+                return ((TVectorUInt16)(object)Lower256, (TVectorUInt16)(object)Upper256);
             }
             else if (typeof(TVectorByte) == typeof(Vector512<byte>))
             {
                 (Vector512<ushort> Lower512, Vector512<ushort> Upper512) = Vector512.Widen((Vector512<byte>)(object)vector);
-                return ((TVectorUShort)(object)Lower512, (TVectorUShort)(object)Upper512);
+                return ((TVectorUInt16)(object)Lower512, (TVectorUInt16)(object)Upper512);
             }
-            (Vector128<ushort> Lower128, Vector128<ushort> Upper128) = Vector128.Widen((Vector128<byte>)(object)vector);
-            return ((TVectorUShort)(object)Lower128, (TVectorUShort)(object)Upper128);
+            else
+            {
+                Debug.Assert(typeof(TVectorByte) == typeof(Vector128<byte>));
+                (Vector128<ushort> Lower128, Vector128<ushort> Upper128) = Vector128.Widen((Vector128<byte>)(object)vector);
+                return ((TVectorUInt16)(object)Lower128, (TVectorUInt16)(object)Upper128);
+            }
         }
 
 
