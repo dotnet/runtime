@@ -107,6 +107,36 @@ namespace System.Tests
             Assert.Equal(expected, i1.Equals(obj));
         }
 
+        [Fact]
+        public static void CheckedConvertToInt64Overflow()
+        {
+            Assert.Throws<OverflowException>(() => checked((long)new Int128(ulong.MaxValue, 42)));
+        }
+
+        [Fact]
+        public static void CheckedConvertToInt32Overflow()
+        {
+            Assert.Throws<OverflowException>(() => checked((int)new Int128(ulong.MaxValue, 42)));
+        }
+
+        [Fact]
+        public static void CheckedConvertToInt16Overflow()
+        {
+            Assert.Throws<OverflowException>(() => checked((short)new Int128(ulong.MaxValue, 42)));
+        }
+
+        [Fact]
+        public static void CheckedConvertToSByteOverflow()
+        {
+            Assert.Throws<OverflowException>(() => checked((sbyte)new Int128(ulong.MaxValue, 42)));
+        }
+
+        [Fact]
+        public static void CheckedConvertToIntPtrOverflow()
+        {
+            Assert.Throws<OverflowException>(() => checked((nint)new Int128(ulong.MaxValue, 42)));
+        }
+
         public static IEnumerable<object[]> ToString_TestData()
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
