@@ -90,7 +90,8 @@ namespace Microsoft.Win32
                 }
             }
 
-            VarEnum vt = GetVTFromClass(targetClass);
+            if (!ClassTypes.TryGetValue(targetClass, out VarEnum vt))
+                throw new NotSupportedException(SR.NotSupported_ChangeType);
 
             ComVariant vOp = ToOAVariant(source);
             ComVariant ret = default;
@@ -154,16 +155,24 @@ namespace Microsoft.Win32
                 ulong u8 => ComVariant.Create(u8),
                 float r4 => ComVariant.Create(r4),
                 double r8 => ComVariant.Create(r8),
+                TimeSpan => throw new NotSupportedException(SR.NotSupported_ChangeType),
+                Enum => throw new NotSupportedException(SR.NotSupported_ChangeType),
                 null => default,
                 Missing missing => ComVariant.Create(missing),
                 DBNull => ComVariant.Null,
+                UnknownWrapper wrapper => GetComIPFromObjectRef(wrapper.WrappedObject),
+                DispatchWrapper wrapper => GetComIPFromObjectRef(wrapper.WrappedObject),
+#pragma warning disable 0618 // CurrencyWrapper is obsolete
+                CurrencyWrapper wrapper => GetComIPFromObjectRef(wrapper.WrappedObject),
+#pragma warning restore 0618
+                BStrWrapper wrapper => GetComIPFromObjectRef(wrapper.WrappedObject),
                 _ when Variant.IsSystemDrawingColor(input.GetType())
                     => ComVariant.Create(Variant.SystemColorTranslatorAccess.ConvertSystemColorToOleColor(input)),
                 _ => GetComIPFromObjectRef(input) // Convert the object to an IDispatch/IUnknown pointer.
             };
         }
 
-        private static ComVariant GetComIPFromObjectRef(object obj)
+        private static ComVariant GetComIPFromObjectRef(object? obj)
         {
             IntPtr pUnk = GetIUnknownOrIDispatchForObject(ObjectHandleOnStack.Create(ref obj), out bool isIDispatch);
             return ComVariant.CreateRaw(isIDispatch ? VarEnum.VT_DISPATCH : VarEnum.VT_UNKNOWN, pUnk);
@@ -194,14 +203,6 @@ namespace Microsoft.Win32
                 VarEnum.VT_UNKNOWN or VarEnum.VT_DISPATCH => Marshal.GetObjectForIUnknown(input.GetRawDataRef<IntPtr>()), // Convert the IUnknown pointer to an OBJECTREF.
                 _ => throw new NotSupportedException(SR.NotSupported_ChangeType),
             };
-
-        private static VarEnum GetVTFromClass(Type type)
-        {
-            if (ClassTypes.TryGetValue(type, out VarEnum vt))
-                return vt;
-
-            throw new NotSupportedException(SR.NotSupported_ChangeType);
-        }
 
         #endregion
     }
