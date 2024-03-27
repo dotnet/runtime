@@ -1559,8 +1559,6 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
     // after the copy.
     ExInfo* pPrevExInfo = GetNextExInfo();
     REGDISPLAY *pRD = m_crawl.GetRegisterSet();
-    GSCookie *pCurGSCookie = m_crawl.pCurGSCookie;
-    GSCookie *pFirstGSCookie = m_crawl.pFirstGSCookie;
     Frame *pStartFrame = m_pStartFrame;
 #ifdef _DEBUG
     Frame *pRealStartFrame = m_pRealStartFrame;
@@ -1570,8 +1568,6 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
 
     m_pNextExInfo = pPrevExInfo;
     m_crawl.pRD = pRD;
-    m_crawl.pCurGSCookie = pCurGSCookie;
-    m_crawl.pFirstGSCookie = pFirstGSCookie;
     m_pStartFrame = pStartFrame;
 #ifdef _DEBUG
     m_pRealStartFrame = pRealStartFrame;
