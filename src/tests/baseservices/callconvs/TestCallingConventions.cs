@@ -167,6 +167,9 @@ public unsafe class Program
     [Fact]
     public static int TestEntryPoint()
     {
+        if (string.IsNullOrEmpty(typeof(object).Assembly.Location))
+            return 3989374;
+
         try
         {
             BlittableFunctionPointers();
