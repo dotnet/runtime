@@ -4,7 +4,7 @@ This directory contains a build configuration for WASI support, plus a basic sam
 
 ## Try it out
 
-Before diving into how to build latest bits from runtime repository, here is a quick overview of how consime produced artifacts. Assuming .NET SDK is already installed
+Before diving into how to build latest bits from runtime repository, here is a quick overview of how to consume published artifacts. Assuming .NET SDK is already installed
 
 ```
 dotnet workload install wasi-experimental
@@ -12,7 +12,7 @@ dotnet workload install wasi-experimental
 
 This will install workload for building .NET based WASI apps + basic template. For the time being, you will need to separately download a WASI SDK from https://github.com/WebAssembly/wasi-sdk and point an environment variable to a location where you extract it
 
-```
+```pwsh
 $env:WASI_SDK="LOCATION_OF_WASI_SDK"
 ```
 
