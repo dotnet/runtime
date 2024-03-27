@@ -321,7 +321,7 @@ DWORD TP_GetFullPathName(LPWSTR fileName, DWORD nBufferLength, LPWSTR lpBuffer)
     return GetFullPathNameW(fileName, nBufferLength, lpBuffer, NULL);
 #else
     char nativeFullPath[MAX_PATH];
-    (void)realpath(HackyConvertToSTR(fileName), nativeFullPath);
+    (void)!realpath(HackyConvertToSTR(fileName), nativeFullPath);
     LPWSTR fullPathForCLR = HackyConvertToWSTR(nativeFullPath);
     TP_scpy_s(lpBuffer, MAX_PATH, fullPathForCLR);
     return TP_slen(lpBuffer);
