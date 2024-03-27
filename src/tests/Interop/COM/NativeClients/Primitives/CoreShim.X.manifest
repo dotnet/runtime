@@ -19,6 +19,10 @@
   <comClass
     clsid="{C73C83E8-51A2-47F8-9B5C-4284458E47A6}"
     threadingModel="Both" />
+  <!-- MiscTypesTesting -->
+  <comClass
+    clsid="{CCFF894B-A27C-45E0-9B30-6C88D722E843}"
+    threadingModel="Both" />
   <!-- ErrorMarshalTesting -->
   <comClass
     clsid="{71CF5C45-106C-4B32-B418-43A463C6041F}"
