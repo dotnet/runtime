@@ -1741,6 +1741,19 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     fgNewStmtNearEnd(genReturnBB, tree);
 
+#ifdef SWIFT_SUPPORT
+    if (lvaSwiftErrorArg != BAD_VAR_NUM)
+    {
+        assert(info.compCallConv == CorInfoCallConvExtension::Swift);
+        assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
+        GenTreeLclFld* const swiftErrorLocal = gtNewLclFldNode(lvaSwiftErrorLocal, TYP_LONG, 0);
+        GenTree* const swiftReturn = gtNewOperNode(GT_SWIFT_RETURN, TYP_I_IMPL, swiftErrorLocal);
+        swiftReturn->SetHasOrderingSideEffect();
+        swiftReturn->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
+        fgNewStmtNearEnd(genReturnBB, swiftReturn);
+    }
+#endif // SWIFT_SUPPORT
+
 #ifdef DEBUG
     if (verbose)
     {

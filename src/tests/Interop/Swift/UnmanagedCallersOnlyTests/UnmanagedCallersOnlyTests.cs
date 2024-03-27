@@ -13,27 +13,26 @@ public class UnmanagedCallersOnlyTests
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s25UnmanagedCallersOnlyTests26nativeFunctionWithCallbackyyyyXEF")]
-    public static extern unsafe IntPtr NativeFunctionWithCallback(delegate* unmanaged[Swift]<SwiftSelf, SwiftError*, void> callback, SwiftSelf self, SwiftError* error);
+    public static extern unsafe IntPtr NativeFunctionWithCallback(delegate* unmanaged[Swift]<SwiftError*, void> callback, SwiftError* error);
 
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    private static unsafe void ProxyMethod(SwiftSelf self, SwiftError* error) {
-        int value = *(int*)self.Value;
-        Console.WriteLine ("ProxyMethod: {0}", value);
-        *error = new SwiftError(self.Value);
-        Console.WriteLine("Error: {0}", *((int*)error->Value));
+    private static unsafe void ProxyMethod(SwiftError* error) {
+        IntPtr addr = 42;
+        *error = new SwiftError((void*)addr);
+        Assert.True((IntPtr)error->Value == 42, "ProxyMethod: Mismatch");
     }
 
     [Fact]
     public static unsafe void TestUnmanagedCallersOnly()
     {
         int expectedValue = 42;
-        SwiftSelf self = new SwiftSelf(&expectedValue);
         SwiftError error;
 
-        NativeFunctionWithCallback(&ProxyMethod, self, &error);
+        NativeFunctionWithCallback(&ProxyMethod, &error);
 
-        Assert.True(error.Value == self.Value, "error.Value and self.Value don't match!");
-        int value = *(int*)error.Value;
-        Assert.True(value == expectedValue, string.Format("The value retrieved does not match the expected value. Expected: {0}, Actual: {1}", expectedValue, value));
+        Console.WriteLine("error.Value: {0}", (IntPtr)error.Value);
+        Assert.True((IntPtr)error.Value == 42, "TestUnmanagedCallersOnly: Mismatch");
+        // int value = *(int*)error.Value;
+        // Assert.True(value == expectedValue, string.Format("The value retrieved does not match the expected value. Expected: {0}, Actual: {1}", expectedValue, value));
     }
 }

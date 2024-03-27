@@ -6737,6 +6737,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_BSWAP16:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_RETURN:
+#endif // SWIFT_SUPPORT
             if (operand == this->AsUnOp()->gtOp1)
             {
                 *pUse = &this->AsUnOp()->gtOp1;
@@ -7035,6 +7038,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
 
 #ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR:
+        case GT_SWIFT_RETURN:
             return true;
 #endif // SWIFT_SUPPORT
 
@@ -7393,6 +7397,7 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_CATCH_ARG:
 #ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR:
+        case GT_SWIFT_RETURN:
 #endif // SWIFT_SUPPORT
             return true;
         default:
@@ -10307,6 +10312,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
         case GT_RETURNTRAP:
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_RETURN:
+#endif // SWIFT_SUPPORT
             m_edge = &m_node->AsUnOp()->gtOp1;
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::Terminate;

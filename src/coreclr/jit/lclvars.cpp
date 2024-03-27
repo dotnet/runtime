@@ -1409,10 +1409,9 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd, InitVarD
         // TODO: Should we do error handling for duplicate SwiftError* args?
 
         lvaSwiftErrorArg = varDscInfo->varNum;
-        const unsigned lvaSwiftErrorLocal = lvaGrabTemp(false DEBUGARG("SwiftError pseudolocal"));
+        lvaSwiftErrorLocal = lvaGrabTemp(false DEBUGARG("SwiftError pseudolocal"));
         lvaSetStruct(lvaSwiftErrorLocal, typeHnd, false);
         lvaSetVarAddrExposed(lvaSwiftErrorLocal DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
-        swiftErrorLocal = gtNewLclVarNode(lvaSwiftErrorLocal, TYP_STRUCT);
 
         // LclVarDsc* const varDsc = lvaGetDesc(lvaSwiftErrorLocal);
         // varDsc->SetArgReg(REG_SWIFT_ERROR);

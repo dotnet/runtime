@@ -7842,6 +7842,19 @@ void CodeGen::genReturn(GenTree* treeNode)
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 }
 
+#ifdef SWIFT_SUPPORT
+void CodeGen::genSwiftReturn(GenTreeUnOp* treeNode)
+{
+    assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
+    assert(compiler->lvaSwiftErrorArg != BAD_VAR_NUM);
+
+    GenTree* op = treeNode->gtGetOp1();
+
+    const regNumber reg = genConsumeReg(op);
+    inst_Mov(op->TypeGet(), REG_SWIFT_ERROR, reg, true, EA_PTRSIZE);
+}
+#endif // SWIFT_SUPPORT
+
 //------------------------------------------------------------------------
 // isStructReturn: Returns whether the 'treeNode' is returning a struct.
 //

@@ -10523,8 +10523,8 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
         else if (lclNum == lvaSwiftErrorArg)
         {
             assert(info.compCallConv == CorInfoCallConvExtension::Swift);
-            assert(swiftErrorLocal != nullptr);
-            impPushOnStack(gtNewLclVarAddrNode(swiftErrorLocal->GetLclNum(), TYP_BYREF), typeInfo(TYP_BYREF));
+            assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
+            impPushOnStack(gtNewLclVarAddrNode(lvaSwiftErrorLocal, TYP_BYREF), typeInfo(TYP_BYREF));
             JITDUMP("Created GT_LCL_ADDR of SwiftError pseudolocal\n");
             return;
         }

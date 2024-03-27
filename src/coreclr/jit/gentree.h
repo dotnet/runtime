@@ -3029,8 +3029,13 @@ struct GenTreeOp : public GenTreeUnOp
     GenTreeOp(genTreeOps oper, var_types type DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type DEBUGARG(largeNode)), gtOp2(nullptr)
     {
-        // Unary operators with optional arguments:
-        assert(oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper));
+#ifdef SWIFT_SUPPORT
+        if (oper != GT_SWIFT_RETURN)
+#endif // SWIFT_SUPPORT
+        {
+            // Unary operators with optional arguments:
+            assert(oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper));
+        }
     }
 
     // returns true if we will use the division by constant optimization for this node.

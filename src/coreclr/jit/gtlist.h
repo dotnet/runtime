@@ -291,6 +291,10 @@ GTNODE(RETFILT          , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE) // End f
 GTNODE(END_LFIN         , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // End locally-invoked finally.
 #endif // !FEATURE_EH_FUNCLETS
 
+#ifdef SWIFT_SUPPORT
+GTNODE(SWIFT_RETURN     , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE) // Return value and error register value for Swift reverse P/Invokes.
+#endif // SWIFT_SUPPORT
+
 //-----------------------------------------------------------------------------
 //  Nodes used by Lower to generate a closer CPU representation of other nodes
 //-----------------------------------------------------------------------------
