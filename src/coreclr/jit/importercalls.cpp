@@ -1393,7 +1393,7 @@ DONE_CALL:
                 if (origCall->IsVirtual() && (origCall->gtCallType != CT_INDIRECT) && (exactContextHnd != nullptr) &&
                     (origCall->gtHandleHistogramProfileCandidateInfo == nullptr))
                 {
-                    JITDUMP("\nSaving context %p for call [%06u]\n", exactContextHnd, dspTreeID(origCall));
+                    JITDUMP("\nSaving context %p for call [%06u]\n", dspPtr(exactContextHnd), dspTreeID(origCall));
                     origCall->gtCallMoreFlags |= GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
                     LateDevirtualizationInfo* const info = new (this, CMK_Inlining) LateDevirtualizationInfo;
                     info->exactContextHnd                = exactContextHnd;
@@ -1406,11 +1406,19 @@ DONE_CALL:
                     // Such form allows to find statements with fat calls without walking through whole trees
                     // and removes problems with cutting trees.
                     assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
-                    if (call->OperGet() != GT_LCL_VAR) // can be already converted by impFixupCallStructReturn.
+                    if (!call->OperIs(GT_LCL_VAR)) // can be already converted by impFixupCallStructReturn.
                     {
                         unsigned   calliSlot = lvaGrabTemp(true DEBUGARG("calli"));
                         LclVarDsc* varDsc    = lvaGetDesc(calliSlot);
+                        // Keep the information about small typedness to avoid
+                        // inserting unnecessary casts around normalization.
+                        if (call->IsCall() && varTypeIsSmall(call->AsCall()->gtReturnType))
+                        {
+                            assert(call->AsCall()->NormalizesSmallTypesOnReturn());
+                            varDsc->lvType = call->AsCall()->gtReturnType;
+                        }
 
+                        // TODO-Bug: CHECK_SPILL_NONE here looks wrong.
                         impStoreTemp(calliSlot, call, CHECK_SPILL_NONE);
                         // impStoreTemp can change src arg list and return type for call that returns struct.
                         var_types type = genActualType(lvaTable[calliSlot].TypeGet());
@@ -1765,12 +1773,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     assert(returnType == TYP_STRUCT);
     assert((howToReturnStruct == SPK_ByValueAsHfa) || (howToReturnStruct == SPK_ByValue));
 
-#ifdef UNIX_AMD64_ABI
-    // must be a struct returned in two registers
-    assert(retRegCount == 2);
-#else  // not UNIX_AMD64_ABI
     assert(retRegCount >= 2);
-#endif // not UNIX_AMD64_ABI
 
     if (!call->CanTailCall() && !call->IsInlineCandidate())
     {
@@ -1967,6 +1970,33 @@ void Compiler::impRetypeUnmanagedCallArgs(GenTreeCall* call)
 #ifdef SWIFT_SUPPORT
 
 //------------------------------------------------------------------------
+// GetSwiftLowering: Get the CORINFO_SWIFT_LOWERING associated with a struct.
+//
+// Arguments:
+//   call - The class
+//
+// Return Value:
+//   Pointer to lowering
+//
+const CORINFO_SWIFT_LOWERING* Compiler::GetSwiftLowering(CORINFO_CLASS_HANDLE hClass)
+{
+    if (m_swiftLoweringCache == nullptr)
+    {
+        m_swiftLoweringCache = new (this, CMK_CallArgs) SwiftLoweringMap(getAllocator(CMK_CallArgs));
+    }
+
+    CORINFO_SWIFT_LOWERING* lowering;
+    if (!m_swiftLoweringCache->Lookup(hClass, &lowering))
+    {
+        lowering = new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING;
+        info.compCompHnd->getSwiftLowering(hClass, lowering);
+        m_swiftLoweringCache->Set(hClass, lowering);
+    }
+
+    return lowering;
+}
+
+//------------------------------------------------------------------------
 // impPopArgsForSwiftCall: Pop arguments from IL stack to a Swift pinvoke node.
 //
 // Arguments:
@@ -1987,9 +2017,6 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
 
     // Check the signature of the Swift call for the special types
     CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
-
-    CORINFO_SWIFT_LOWERING** lowerings =
-        sig->numArgs == 0 ? nullptr : (new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING*[sig->numArgs]{});
 
     for (unsigned short argIndex = 0; argIndex < sig->numArgs;
          sigArg                  = info.compCompHnd->getArgNext(sigArg), argIndex++)
@@ -2061,24 +2088,6 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         {
             // This is a struct type. Check if it needs to be lowered.
             // TODO-Bug: SIMD types are not handled correctly by this.
-            CORINFO_SWIFT_LOWERING* lowering = new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING;
-            lowerings[argIndex]              = lowering;
-            info.compCompHnd->getSwiftLowering(argClass, lowering);
-            if (lowering->byReference)
-            {
-                JITDUMP("  Argument %d of type %s must be passed by reference\n", argIndex,
-                        typGetObjLayout(argClass)->GetClassName());
-            }
-            else
-            {
-                JITDUMP("  Argument %d of type %s must be passed as %d primitive(s)\n", argIndex,
-                        typGetObjLayout(argClass)->GetClassName(), lowering->numLoweredElements);
-                for (size_t i = 0; i < lowering->numLoweredElements; i++)
-                {
-                    JITDUMP("    [%zu] @ +%02u: %s\n", i, lowering->offsets[i],
-                            varTypeName(JitType2PreciseVarType(lowering->loweredElements[i])));
-                }
-            }
         }
 
         // We must spill this struct to a local to be able to expand it into primitives.
@@ -2144,8 +2153,22 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         }
         else
         {
-            CORINFO_SWIFT_LOWERING* lowering = lowerings[argIndex];
-            assert(lowering != nullptr);
+            const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(arg->GetSignatureClassHandle());
+            if (lowering->byReference)
+            {
+                JITDUMP("  Argument %d of type %s must be passed by reference\n", argIndex,
+                        typGetObjLayout(arg->GetSignatureClassHandle())->GetClassName());
+            }
+            else
+            {
+                JITDUMP("  Argument %d of type %s must be passed as %d primitive(s)\n", argIndex,
+                        typGetObjLayout(arg->GetSignatureClassHandle())->GetClassName(), lowering->numLoweredElements);
+                for (size_t i = 0; i < lowering->numLoweredElements; i++)
+                {
+                    JITDUMP("    [%zu] @ +%02u: %s\n", i, lowering->offsets[i],
+                            varTypeName(JitType2PreciseVarType(lowering->loweredElements[i])));
+                }
+            }
 
             if (lowering->byReference)
             {
@@ -2237,6 +2260,27 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         call->gtArgs.Remove(arg);
         arg = insertAfter->GetNext();
     }
+
+#ifdef DEBUG
+    if (verbose && call->TypeIs(TYP_STRUCT) && (sig->retTypeClass != NO_CLASS_HANDLE))
+    {
+        const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(sig->retTypeClass);
+        if (lowering->byReference)
+        {
+            printf("  Call returns %s by reference\n", typGetObjLayout(sig->retTypeClass)->GetClassName());
+        }
+        else
+        {
+            printf("  Call returns %s as %d primitive(s) in registers\n",
+                   typGetObjLayout(sig->retTypeClass)->GetClassName(), lowering->numLoweredElements);
+            for (size_t i = 0; i < lowering->numLoweredElements; i++)
+            {
+                printf("    [%zu] @ +%02u: %s\n", i, lowering->offsets[i],
+                       varTypeName(JitType2PreciseVarType(lowering->loweredElements[i])));
+            }
+        }
+    }
+#endif
 
     JITDUMP("Final result after Swift call lowering:\n");
     DISPTREE(call);
@@ -3989,7 +4033,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Cosh:
             case NI_System_Math_Exp:
             case NI_System_Math_Floor:
-            case NI_System_Math_FMod:
             case NI_System_Math_ILogB:
             case NI_System_Math_Log:
             case NI_System_Math_Log2:
@@ -6552,7 +6595,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         {
             JITDUMP("No exact classes implementing %s\n", eeGetClassName(baseClass))
         }
-        else if (numExactClasses > maxTypeChecks)
+        else if (numExactClasses < 0 || numExactClasses > maxTypeChecks)
         {
             JITDUMP("Too many exact classes implementing %s (%d > %d)\n", eeGetClassName(baseClass), numExactClasses,
                     maxTypeChecks)
@@ -7325,7 +7368,6 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Cosh:
         case NI_System_Math_Exp:
         case NI_System_Math_Floor:
-        case NI_System_Math_FMod:
         case NI_System_Math_FusedMultiplyAdd:
         case NI_System_Math_ILogB:
         case NI_System_Math_Log:
@@ -8405,8 +8447,9 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 return;
             }
 #endif
+
             JITDUMP("\nCheckCanInline: fetching method info for inline candidate %s -- context %p\n",
-                    compiler->eeGetMethodName(ftn), pParam->exactContextHnd);
+                    compiler->eeGetMethodName(ftn), compiler->dspPtr(pParam->exactContextHnd));
 
             if (pParam->exactContextHnd == METHOD_BEING_COMPILED_CONTEXT())
             {
@@ -10038,10 +10081,6 @@ NamedIntrinsic Compiler::lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDL
             if (strcmp(methodName, "Floor") == 0)
             {
                 result = NI_System_Math_Floor;
-            }
-            else if (strcmp(methodName, "FMod") == 0)
-            {
-                result = NI_System_Math_FMod;
             }
             else if (strcmp(methodName, "FusedMultiplyAdd") == 0)
             {

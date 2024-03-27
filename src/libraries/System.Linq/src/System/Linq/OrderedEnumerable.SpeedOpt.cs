@@ -15,7 +15,7 @@ namespace System.Linq
             public override TElement[] ToArray()
             {
                 TElement[] buffer = _source.ToArray();
-                if (buffer.Length == 0)
+                if (buffer.Length <= 1)
                 {
                     return buffer;
                 }
@@ -29,10 +29,14 @@ namespace System.Linq
             {
                 TElement[] buffer = _source.ToArray();
 
-                List<TElement> list = new();
-                if (buffer.Length > 0)
+                List<TElement> list = new(buffer.Length);
+                if (buffer.Length >= 2)
                 {
                     Fill(buffer, SetCountAndGetSpan(list, buffer.Length));
+                }
+                else if (buffer.Length == 1)
+                {
+                    list.Add(buffer[0]);
                 }
 
                 return list;
@@ -475,7 +479,7 @@ namespace System.Linq
                 }
                 else if (state == 1)
                 {
-                    TElement[] buffer = _source.ToArray();
+                    TElement[] buffer = _source._source.ToArray();
                     int count = buffer.Length;
                     if (count > _minIndexInclusive)
                     {

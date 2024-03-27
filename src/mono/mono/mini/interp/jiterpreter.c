@@ -1179,7 +1179,9 @@ enum {
 	JITERP_MEMBER_VTABLE_KLASS,
 	JITERP_MEMBER_CLASS_RANK,
 	JITERP_MEMBER_CLASS_ELEMENT_CLASS,
-	JITERP_MEMBER_BOXED_VALUE_DATA
+	JITERP_MEMBER_BOXED_VALUE_DATA,
+	JITERP_MEMBER_BACKWARD_BRANCH_TAKEN,
+	JITERP_MEMBER_BAILOUT_OPCODE_COUNT,
 };
 
 
@@ -1222,6 +1224,10 @@ mono_jiterp_get_member_offset (int member) {
 		// see mono_object_get_data
 		case JITERP_MEMBER_BOXED_VALUE_DATA:
 			return MONO_ABI_SIZEOF (MonoObject);
+		case JITERP_MEMBER_BACKWARD_BRANCH_TAKEN:
+			return offsetof (JiterpreterCallInfo, backward_branch_taken);
+		case JITERP_MEMBER_BAILOUT_OPCODE_COUNT:
+			return offsetof (JiterpreterCallInfo, bailout_opcode_count);
 		default:
 			g_assert_not_reached();
 	}

@@ -5,9 +5,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/DynamicMethodGCStress/DynamicMethodGCStress/*">
             <Issue>timeout</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_22888/test22888/*">
-            <Issue>https://github.com/dotnet/runtime/issues/13703</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128Test/*">
             <Issue>https://github.com/dotnet/runtime/issues/74209</Issue>
         </ExcludeList>
@@ -1412,6 +1409,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/MultipleALCs/**">
             <Issue>https://github.com/dotnet/runtime/issues/34072</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_22888/test22888/*">
+            <Issue>https://github.com/dotnet/runtime/issues/34072</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/Primitives/ICustomMarshaler_TargetUnix/**">
             <Issue>https://github.com/dotnet/runtime/issues/34374</Issue>
         </ExcludeList>
@@ -1875,6 +1875,12 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftAbiStress/**">
             <Issue>https://github.com/dotnet/runtime/issues/93631: Swift frozen struct support is not implemented on Mono yet</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftRetAbiStress/**">
+            <Issue>https://github.com/dotnet/runtime/issues/93631: Swift frozen struct support is not implemented on Mono yet</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftCallbackAbiStress/**">
+            <Issue>https://github.com/dotnet/runtime/issues/93631: Swift reverse pinvokes are not implemented on Mono yet</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -3115,6 +3121,13 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_90219/Runtime_90219/*">
             <Issue>Loads an assembly from file</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Apple mobile NativeAOT -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsAppleMobile)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">
+        <ExcludeList Include = "$(XunitTestBinBase)/nativeaot/SmokeTests/TrimmingBehaviors/**">
+            <Issue>https://github.com/dotnet/runtime/issues/100226</Issue>
         </ExcludeList>
     </ItemGroup>
 

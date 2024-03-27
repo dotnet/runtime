@@ -22,6 +22,8 @@ namespace System.Runtime
     //
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [StackTraceHidden]
+    [DebuggerStepThrough]
     [EagerStaticClassConstruction]
     internal static class TypeCast
     {
@@ -146,12 +148,17 @@ namespace System.Runtime
                         interfaceMap++;
                         interfaceCount--;
                     } while (interfaceCount > 0);
+                }
 
-                extra:
-                    if (mt->IsIDynamicInterfaceCastable)
-                    {
-                        goto slowPath;
-                    }
+            extra:
+                // NOTE: this check is outside the `if (interfaceCount != 0)` check because
+                // we could have devirtualized and inlined all uses of IDynamicInterfaceCastable
+                // (and optimized the interface MethodTable away) and still have a type that
+                // is legitimately marked IDynamicInterfaceCastable (without having the MethodTable
+                // of IDynamicInterfaceCastable in the interface list).
+                if (mt->IsIDynamicInterfaceCastable)
+                {
+                    goto slowPath;
                 }
 
                 obj = null;
@@ -737,23 +744,69 @@ namespace System.Runtime
             throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
         }
 
-        internal struct ArrayElement
+        private static unsafe void ThrowIndexOutOfRangeException(object?[] array)
         {
-            public object Value;
+            // Throw the index out of range exception defined by the classlib, using the input array's MethodTable*
+            // to find the correct classlib.
+            throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.IndexOutOfRange);
+        }
+
+        private static unsafe void ThrowArrayMismatchException(object?[] array)
+        {
+            // Throw the array type mismatch exception defined by the classlib, using the input array's MethodTable*
+            // to find the correct classlib.
+            throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
         }
 
         //
         // Array stelem/ldelema helpers with RyuJIT conventions
         //
-        [RuntimeExport("RhpStelemRef")]
-        public static unsafe void StelemRef(Array array, nint index, object obj)
+
+        [RuntimeExport("RhpLdelemaRef")]
+        public static unsafe ref object? LdelemaRef(object?[] array, nint index, MethodTable* elementType)
         {
-            // This is supported only on arrays
-            Debug.Assert(array.GetMethodTable()->IsArray, "first argument must be an array");
+            Debug.Assert(array is null || array.GetMethodTable()->IsArray, "first argument must be an array");
 
 #if INPLACE_RUNTIME
-            // this will throw appropriate exceptions if array is null or access is out of range.
-            ref object element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
+            // This will throw NullReferenceException if obj is null.
+            if ((nuint)index >= (uint)array.Length)
+                ThrowIndexOutOfRangeException(array);
+
+            Debug.Assert(index >= 0);
+            ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
+#else
+            if (array is null)
+            {
+                throw elementType->GetClasslibException(ExceptionIDs.NullReference);
+            }
+            if ((nuint)index >= (uint)array.Length)
+            {
+                throw elementType->GetClasslibException(ExceptionIDs.IndexOutOfRange);
+            }
+            ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
+            ref object element = ref Unsafe.Add(ref rawData, index);
+#endif
+            MethodTable* arrayElemType = array.GetMethodTable()->RelatedParameterType;
+
+            if (elementType != arrayElemType)
+                ThrowArrayMismatchException(array);
+
+            return ref element;
+        }
+
+        [RuntimeExport("RhpStelemRef")]
+        public static unsafe void StelemRef(object?[] array, nint index, object? obj)
+        {
+            // This is supported only on arrays
+            Debug.Assert(array is null || array.GetMethodTable()->IsArray, "first argument must be an array");
+
+#if INPLACE_RUNTIME
+            // This will throw NullReferenceException if obj is null.
+            if ((nuint)index >= (uint)array.Length)
+                ThrowIndexOutOfRangeException(array);
+
+            Debug.Assert(index >= 0);
+            ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
 #else
             if (array is null)
             {
@@ -796,7 +849,7 @@ namespace System.Runtime
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void StelemRef_Helper(ref object element, MethodTable* elementType, object obj)
+        private static unsafe void StelemRef_Helper(ref object? element, MethodTable* elementType, object obj)
         {
             CastResult result = s_castCache.TryGet((nuint)obj.GetMethodTable() + (int)AssignmentVariation.BoxedSource, (nuint)elementType);
             if (result == CastResult.CanCast)
@@ -808,58 +861,17 @@ namespace System.Runtime
             StelemRef_Helper_NoCacheLookup(ref element, elementType, obj);
         }
 
-        private static unsafe void StelemRef_Helper_NoCacheLookup(ref object element, MethodTable* elementType, object obj)
+        private static unsafe void StelemRef_Helper_NoCacheLookup(ref object? element, MethodTable* elementType, object obj)
         {
             object? castedObj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
-            if (castedObj != null)
+            if (castedObj == null)
             {
-                InternalCalls.RhpAssignRef(ref element, obj);
-                return;
+                // Throw the array type mismatch exception defined by the classlib, using the input array's
+                // MethodTable* to find the correct classlib.
+                throw elementType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
             }
 
-            // Throw the array type mismatch exception defined by the classlib, using the input array's
-            // MethodTable* to find the correct classlib.
-            throw elementType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
-        }
-
-        [RuntimeExport("RhpLdelemaRef")]
-        public static unsafe ref object LdelemaRef(Array array, nint index, IntPtr elementType)
-        {
-            Debug.Assert(array is null || array.GetMethodTable()->IsArray, "first argument must be an array");
-
-#if INPLACE_RUNTIME
-            // this will throw appropriate exceptions if array is null or access is out of range.
-            ref object element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
-#else
-            if (array is null)
-            {
-                throw ((MethodTable*)elementType)->GetClasslibException(ExceptionIDs.NullReference);
-            }
-            if ((uint)index >= (uint)array.Length)
-            {
-                throw ((MethodTable*)elementType)->GetClasslibException(ExceptionIDs.IndexOutOfRange);
-            }
-            ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
-            ref object element = ref Unsafe.Add(ref rawData, index);
-#endif
-
-            MethodTable* elemType = (MethodTable*)elementType;
-            MethodTable* arrayElemType = array.GetMethodTable()->RelatedParameterType;
-
-            if (elemType == arrayElemType)
-            {
-                return ref element;
-            }
-
-            return ref ThrowArrayMismatchException(array);
-        }
-
-        // This weird structure is for parity with CoreCLR - allows potentially to be tailcalled
-        private static unsafe ref object ThrowArrayMismatchException(Array array)
-        {
-            // Throw the array type mismatch exception defined by the classlib, using the input array's MethodTable*
-            // to find the correct classlib.
-            throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
+            InternalCalls.RhpAssignRef(ref element, obj);
         }
 
         private static unsafe object IsInstanceOfArray(MethodTable* pTargetType, object obj)
