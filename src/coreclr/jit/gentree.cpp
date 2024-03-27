@@ -18408,13 +18408,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
     // Bail out if the tree is not a ref type.
     if (!tree->TypeIs(TYP_REF))
     {
-        return nullptr;
+        return NO_CLASS_HANDLE;
     }
 
     // Tunnel through commas.
     GenTree*             obj      = tree->gtEffectiveVal();
     const genTreeOps     objOp    = obj->OperGet();
-    CORINFO_CLASS_HANDLE objClass = nullptr;
+    CORINFO_CLASS_HANDLE objClass = NO_CLASS_HANDLE;
 
     switch (objOp)
     {

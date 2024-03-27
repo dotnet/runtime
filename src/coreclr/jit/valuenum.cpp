@@ -11009,23 +11009,9 @@ bool Compiler::fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore,
         if (fldSeq != nullptr)
         {
             assert(fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
-
-            // Is the offset within the field? There might be a sequence of adds on top of a constant static field
-            // address due to shared constant CSE such that `treeVN` is not the static field base address.
-            // Check if the entire access doesn't span across the field and any other field. This simple check is
-            // just that the access starts within the field.
-            CORINFO_FIELD_HANDLE fieldHandle = fldSeq->GetFieldHandle();
-            CORINFO_CLASS_HANDLE fieldClsHnd;
-            var_types            fieldType = eeGetFieldType(fieldHandle, &fieldClsHnd);
-            ssize_t              fieldSize = (fieldType == TYP_STRUCT) ? info.compCompHnd->getClassSize(fieldClsHnd)
-                                                          : (ssize_t)genTypeSize(fieldType);
-            ssize_t tmpByteOffset = vnStore->CoercedConstantValue<ssize_t>(treeVN) - fldSeq->GetOffset() + val;
-            if ((0 <= tmpByteOffset) && (tmpByteOffset < fieldSize))
-            {
-                *pFseq      = fldSeq;
-                *byteOffset = tmpByteOffset;
-                return true;
-            }
+            *pFseq      = fldSeq;
+            *byteOffset = vnStore->CoercedConstantValue<ssize_t>(treeVN) - fldSeq->GetOffset() + val;
+            return true;
         }
     }
 
