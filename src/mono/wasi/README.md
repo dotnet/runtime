@@ -2,6 +2,30 @@
 
 This directory contains a build configuration for WASI support, plus a basic sample. This is not intended for production use, nor is it currently supported. This is a step towards possible future support.
 
+## Try it out
+
+Before diving into how to build latest bits from runtime repository, here is a quick overview of how consime produced artifacts. Assuming .NET SDK is already installed
+
+```
+dotnet workload install wasi-experimental
+```
+
+This will install workload for building .NET based WASI apps + basic template. For the time being, you will need to separately download a WASI SDK from https://github.com/WebAssembly/wasi-sdk and point an environment variable to a location where you extract it
+
+```
+$env:WASI_SDK="LOCATION_OF_WASI_SDK"
+```
+
+With the environment setup, you can create a new .NET application that targets WASI
+
+```
+dotnet new wasiconsole
+```
+
+### Optional build flags 
+
+TBD
+
 ## How it works
 
 The mechanism for executing .NET code in a WASI runtime environment is equivalent to how `dotnet.wasm` executes .NET code in a browser environment. That is, it runs the Mono interpreter to execute .NET bytecode that has been built in the normal way. It should also work with AOT but this is not yet attempted.
