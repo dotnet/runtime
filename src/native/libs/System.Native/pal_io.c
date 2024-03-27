@@ -1868,6 +1868,20 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
     return (int32_t)count;
 }
 
+int64_t SystemNative_ReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    int64_t count = 0;
+    int fileDescriptor = ToFileDescriptor(fd);
+
+    while ((count = readv(fileDescriptor, (struct iovec*)vectors, (int)vectorCount)) < 0 && errno == EINTR);
+
+    assert(count >= -1);
+    return count;
+}
+
 int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
 {
     assert(vectors != NULL);
@@ -1903,6 +1917,20 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
         }
     }
 #endif
+
+    assert(count >= -1);
+    return count;
+}
+
+int64_t SystemNative_WriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    int64_t count = 0;
+    int fileDescriptor = ToFileDescriptor(fd);
+
+    while ((count = writev(fileDescriptor, (struct iovec*)vectors, (int)vectorCount)) < 0 && errno == EINTR);
 
     assert(count >= -1);
     return count;
