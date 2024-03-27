@@ -120,7 +120,7 @@ const wasmImports: Function[] = [
     ...mono_wasm_threads_imports,
 ];
 
-export function replace_linker_placeholders(imports: WebAssembly.Imports) {
+export function replace_linker_placeholders (imports: WebAssembly.Imports) {
     // the output from emcc contains wrappers for these linker imports which add overhead,
     //  but now we have what we need to replace them with the actual functions
     // By default the imports all live inside of 'env', but emscripten minification could rename it to 'a'.

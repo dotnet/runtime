@@ -285,7 +285,7 @@ export const enum I52Error {
 
 const fastCwrapTypes = ["void", "number", null];
 
-function cwrap(name: string, returnType: string | null, argTypes: string[] | undefined, opts: any): Function {
+function cwrap (name: string, returnType: string | null, argTypes: string[] | undefined, opts: any): Function {
     // Attempt to bypass emscripten's generated wrapper if it is safe to do so
     let fce =
         // Special cwrap options disable the fast path
@@ -316,7 +316,7 @@ function cwrap(name: string, returnType: string | null, argTypes: string[] | und
     return fce;
 }
 
-export function init_c_exports(): void {
+export function init_c_exports (): void {
     const fns = [...fn_signatures];
     for (const sig of fns) {
         const wf: any = wrapped_c_functions;
