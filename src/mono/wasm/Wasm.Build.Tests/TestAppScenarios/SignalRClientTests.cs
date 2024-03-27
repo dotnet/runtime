@@ -64,7 +64,8 @@ public class SignalRClientTests : AppTestBase
 
                 if (msg.Text.Contains("Finished GetQueryParameters"))
                 {
-                    await Task.Delay(500); // make sure OnAfterRender returned
+                    // first click after render - make sure buttons are available
+                    await page.WaitForSelectorAsync("button#connectButton");
                     await page.ClickAsync("button#connectButton");
                 }
 
