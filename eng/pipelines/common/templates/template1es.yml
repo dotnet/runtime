@@ -3,7 +3,6 @@
 parameters:
   - name: templatePath
     type: string
-    default: no
   - name: stages
     type: stageList
   - name: containers
@@ -22,7 +21,7 @@ extends:
   parameters:
     pool:
       name: netcore1espool-internal
-      image: 1es-windows-2022-pt
+      image: 1es-windows-2022
       os: windows
 
     containers:
