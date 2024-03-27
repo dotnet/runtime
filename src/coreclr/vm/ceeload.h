@@ -1476,8 +1476,8 @@ public:
     void   StartUnload();
 
 public:
-    void SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverride);
-    TADDR GetDynamicIL(mdToken token, BOOL fAllowTemporary);
+    void SetDynamicIL(mdToken token, TADDR blobAddress);
+    TADDR GetDynamicIL(mdToken token);
 
     // store and retrieve the instrumented IL offset mapping for a particular method
 #if !defined(DACCESS_COMPILE)
@@ -1671,10 +1671,6 @@ private:
                                                 // maps tokens for EnC/dynamics/reflection emit to their corresponding IL blobs
                                                 // this map *always* overrides the Metadata RVA
         PTR_DynamicILBlobTable   m_pDynamicILBlobTable;
-
-                                                // maps tokens for to their corresponding overridden IL blobs
-                                                // this map conditionally overrides the Metadata RVA and the DynamicILBlobTable
-        PTR_DynamicILBlobTable   m_pTemporaryILBlobTable;
 
         // hash table storing any profiler-provided instrumented IL offset mapping
         PTR_ILOffsetMappingTable m_pILOffsetMappingTable;

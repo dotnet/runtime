@@ -262,6 +262,12 @@ DEFINE_METHOD(DELEGATE,             GET_INVOKE_METHOD,      GetInvokeMethod,    
 DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)
 
+DEFINE_CLASS(MATH,                  System,                 Math)
+DEFINE_METHOD(MATH,                 ROUND,                  Round,                      SM_Dbl_RetDbl)
+
+DEFINE_CLASS(MATHF,                 System,                 MathF)
+DEFINE_METHOD(MATHF,                ROUND,                  Round,                      SM_Flt_RetFlt)
+
 DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
 
 DEFINE_CLASS(DYNAMICRESOLVER,       ReflectionEmit,         DynamicResolver)
@@ -1040,6 +1046,21 @@ DEFINE_METHOD(HANDLE_MARSHALER,          CONVERT_SAFEHANDLE_TO_NATIVE,ConvertSaf
 DEFINE_METHOD(HANDLE_MARSHALER,          THROW_SAFEHANDLE_FIELD_CHANGED, ThrowSafeHandleFieldChanged, SM_RetVoid)
 DEFINE_METHOD(HANDLE_MARSHALER,          THROW_CRITICALHANDLE_FIELD_CHANGED, ThrowCriticalHandleFieldChanged, SM_RetVoid)
 
+#ifdef TARGET_WINDOWS
+#ifdef TARGET_X86
+DEFINE_CLASS(COPY_CONSTRUCTOR_CHAIN, StubHelpers,                 CopyConstructorChain)
+DEFINE_METHOD(COPY_CONSTRUCTOR_CHAIN, EXECUTE_CURRENT_COPIES_AND_GET_TARGET, ExecuteCurrentCopiesAndGetTarget, SM_PtrVoid_RetPtrVoid)
+DEFINE_METHOD(COPY_CONSTRUCTOR_CHAIN, INSTALL,                    Install,               IM_PtrVoid_RetVoid)
+DEFINE_METHOD(COPY_CONSTRUCTOR_CHAIN, ADD,                        Add,                   IM_PtrCopyConstructorCookie_RetVoid)
+
+DEFINE_CLASS(COPY_CONSTRUCTOR_COOKIE, StubHelpers, CopyConstructorCookie)
+DEFINE_FIELD(COPY_CONSTRUCTOR_COOKIE, SOURCE, m_source)
+DEFINE_FIELD(COPY_CONSTRUCTOR_COOKIE, DESTINATION_OFFSET, m_destinationOffset)
+DEFINE_FIELD(COPY_CONSTRUCTOR_COOKIE, COPY_CONSTRUCTOR, m_copyConstructor)
+DEFINE_FIELD(COPY_CONSTRUCTOR_COOKIE, DESTRUCTOR, m_destructor)
+#endif // TARGET_X86
+#endif // TARGET_WINDOWS
+
 DEFINE_CLASS(COMVARIANT,            Marshalling,            ComVariant)
 
 DEFINE_CLASS(SZARRAYHELPER,         System,                        SZArrayHelper)
@@ -1151,8 +1172,8 @@ DEFINE_METHOD(CASTHELPERS, CHKCASTINTERFACE, ChkCastInterface,            SM_Ptr
 DEFINE_METHOD(CASTHELPERS, CHKCASTCLASS,     ChkCastClass,                SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       SM_PtrVoid_Obj_RetRefByte)
-DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_Array_IntPtr_Obj_RetVoid)
-DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_Array_IntPtr_PtrVoid_RetRefObj)
+DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_ArrObject_IntPtr_Obj_RetVoid)
+DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_ArrObject_IntPtr_PtrVoid_RetRefObj)
 
 #ifdef FEATURE_EH_FUNCLETS
 DEFINE_CLASS(EH, Runtime, EH)

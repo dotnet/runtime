@@ -603,8 +603,7 @@ private:
                 assert(prevCheckBlock->KindIs(BBJ_ALWAYS));
                 assert(prevCheckBlock->JumpsToNext());
                 FlowEdge* const prevCheckThenEdge = prevCheckBlock->GetTargetEdge();
-                assert(prevCheckThenEdge->hasLikelihood());
-                weight_t checkLikelihood = max(0.0, 1.0 - prevCheckThenEdge->getLikelihood());
+                weight_t        checkLikelihood   = max(0.0, 1.0 - prevCheckThenEdge->getLikelihood());
 
                 JITDUMP("Level %u Check block " FMT_BB " success likelihood " FMT_WT "\n", checkIdx, checkBlock->bbNum,
                         checkLikelihood);
@@ -1086,9 +1085,8 @@ private:
             // just use that to figure out the "else" likelihood.
             //
             assert(checkBlock->KindIs(BBJ_ALWAYS));
-            FlowEdge* const checkThenEdge = checkBlock->GetTargetEdge();
-            assert(checkThenEdge->hasLikelihood());
-            weight_t elseLikelihood = max(0.0, 1.0 - checkThenEdge->getLikelihood());
+            FlowEdge* const checkThenEdge  = checkBlock->GetTargetEdge();
+            weight_t        elseLikelihood = max(0.0, 1.0 - checkThenEdge->getLikelihood());
 
             // CheckBlock flows into elseBlock unless we deal with the case
             // where we know the last check is always true (in case of "exact" GDV)

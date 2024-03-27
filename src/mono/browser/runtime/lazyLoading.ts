@@ -5,7 +5,7 @@ import { loaderHelpers } from "./globals";
 import { load_lazy_assembly } from "./managed-exports";
 import { AssetEntry } from "./types";
 
-export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<boolean> {
+export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boolean> {
     const resources = loaderHelpers.config.resources!;
     const lazyAssemblies = resources.lazyAssembly;
     if (!lazyAssemblies) {
@@ -56,7 +56,7 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
     return true;
 }
 
-function changeExtension(filename: string, newExtensionWithLeadingDot: string) {
+function changeExtension (filename: string, newExtensionWithLeadingDot: string) {
     const lastDotIndex = filename.lastIndexOf(".");
     if (lastDotIndex < 0) {
         throw new Error(`No extension to replace in '${filename}'`);

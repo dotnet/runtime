@@ -37,7 +37,7 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 # Run net48 tests on win-x64
@@ -62,7 +62,7 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #### MONO LEGS
@@ -81,9 +81,9 @@ jobs:
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
     jobParameters:
       testScope: innerloop
       nameSuffix: AllSubsets_Mono
@@ -92,9 +92,9 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       postBuildSteps:
@@ -136,8 +136,8 @@ jobs:
 
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
@@ -207,8 +207,8 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
@@ -244,8 +244,8 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
