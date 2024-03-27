@@ -24,13 +24,6 @@ const singleAssets: Map<string, AssetEntryInternal> = new Map();
 // A duplicate in pthreads/shared.ts
 const worker_empty_prefix = "          -    ";
 
-// assemblies necessary to start Mono VM
-const coreAssemblyNames: string[] = [
-    "System.Private.CoreLib",
-    "System.Collections",
-    "System.Runtime.InteropServices.JavaScript",
-];
-
 const jsRuntimeModulesAssetTypes: {
     [k: string]: boolean
 } = {
@@ -263,15 +256,6 @@ export async function mono_download_assets(): Promise<void> {
     }
 }
 
-const noExtRx = /\.[^/.]+$/;
-function isCoreAssembly(asset: AssetEntryInternal): boolean {
-    if (asset.behavior !== "assembly" && asset.behavior !== "pdb") {
-        return false;
-    }
-    const nameWithoutExtension = asset.name.replace(noExtRx, "");
-    return coreAssemblyNames.includes(nameWithoutExtension);
-}
-
 export function prepareAssets() {
     const config = loaderHelpers.config;
     const modulesAssets: AssetEntryInternal[] = [];
@@ -285,7 +269,7 @@ export function prepareAssets() {
             mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
-            if (isCoreAssembly(asset)) {
+            if (asset.isCore) {
                 coreAssetsToLoad.push(asset);
             } else {
                 assetsToLoad.push(asset);

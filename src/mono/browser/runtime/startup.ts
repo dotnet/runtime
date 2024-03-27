@@ -253,11 +253,16 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         if (runtimeHelpers.config.virtualWorkingDirectory) {
             const FS = Module.FS;
             const cwd = runtimeHelpers.config.virtualWorkingDirectory;
-            const wds = FS.stat(cwd);
-            if (!wds) {
+            try {
+                const wds = FS.stat(cwd);
+                if (!wds) {
+                    Module.FS_createPath("/", cwd, true, true);
+                } else {
+                    mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
+                }
+            } catch (e) {
                 Module.FS_createPath("/", cwd, true, true);
             }
-            mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
             FS.chdir(cwd);
         }
 
