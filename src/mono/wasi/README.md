@@ -32,7 +32,7 @@ dotnet run
 
 - `WasmSingleFileBundle` - bundle all assets into the `.wasm`. The output file name will match the project name
 - `InvariantGlobalization` - remove globalization support
-- More properties defined in https://github.com/dotnet/runtime/blob/main/src/mono/wasm/build/WasmApp.Common.targets
+- More details can be found in https://github.com/dotnet/runtime/blob/main/src/mono/wasm/build/WasmApp.Common.targets
 
 ## How it works
 
