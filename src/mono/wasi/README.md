@@ -22,6 +22,12 @@ With the environment setup, you can create a new .NET application that targets W
 dotnet new wasiconsole
 ```
 
+And run it with
+
+```
+dotnet run
+```
+
 ### Optional build flags 
 
 TBD
