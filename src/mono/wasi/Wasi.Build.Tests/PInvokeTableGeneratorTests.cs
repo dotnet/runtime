@@ -29,7 +29,7 @@ public class PInvokeTableGeneratorTests : BuildTestBase
 
         var buildArgs = new BuildArgs(projectName, config, AOT: true, ProjectFileContents: id, ExtraBuildArgs: null);
         buildArgs = ExpandBuildArgs(buildArgs);
-        AddItemsPropertiesToProject(projectFile, "<NativeFileReference Include="local.c" />");
+        AddItemsPropertiesToProject(projectFile, "<NativeFileReference Include=\"local.c\" />");
 
         BuildProject(buildArgs,
                     id: id,
