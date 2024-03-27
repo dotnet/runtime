@@ -63,7 +63,7 @@ export function wrap_error_root (is_exception: Int32Ptr | null, ex: any, result:
     stringToMonoStringRoot(res, <any>result);
 }
 
-// TODO replace it with replace it with UTF8 char*, no GC root needed
+// TODO replace it with replace it with UTF16 char*, no GC root needed
 // https://github.com/dotnet/runtime/issues/98365
 export function wrap_no_error_root (is_exception: Int32Ptr | null, result?: WasmRoot<MonoObject>): void {
     if (is_exception) {
