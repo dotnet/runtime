@@ -70,16 +70,20 @@ typedef struct {
     // sizes of current allocations in items (not bytes)
     // so values_length should == (buckets_length * bucket_capacity)
     uint32_t buckets_length, values_length;
-    void *buckets;
-    void *values;
+    uint8_t *buckets;
+    uint8_t *values;
     dn_allocator_t *allocator;
 } dn_simdhash_buffers_t;
 
 typedef struct {
     // type metadata for generic implementation
     uint32_t bucket_capacity, bucket_size_bytes, key_size, value_size;
+} dn_simdhash_meta_t;
+
+typedef struct {
     // internal state
     uint32_t count;
+    dn_simdhash_meta_t meta;
     dn_simdhash_buffers_t buffers;
 } dn_simdhash_t;
 
@@ -110,10 +114,37 @@ dn_simdhash_bucket_set_cascaded (dn_simdhash_suffixes bucket, uint8_t value)
     bucket.values[DN_SIMDHASH_CASCADED_SLOT] = value;
 }
 
-dn_simdhash_suffixes
+static DN_FORCEINLINE(uint8_t)
+dn_simdhash_select_suffix (uint32_t key_hash)
+{
+    // Extract top 8 bits, then trash the highest one.
+    // The lowest bits of the hash are used to select the bucket index.
+    return (key_hash >> 24) | DN_SIMDHASH_SUFFIX_SALT;
+}
+
+static DN_FORCEINLINE(uint32_t)
+dn_simdhash_select_bucket_index (dn_simdhash_buffers_t buffers, uint32_t key_hash)
+{
+    // This relies on bucket count being a power of two.
+    return key_hash & (buffers.buckets_length - 1);
+}
+
+static DN_FORCEINLINE(void *)
+dn_simdhash_address_of_bucket (dn_simdhash_meta_t meta, dn_simdhash_buffers_t buffers, uint32_t bucket_index)
+{
+    return buffers.buckets + (bucket_index * meta.bucket_size_bytes);
+}
+
+static DN_FORCEINLINE(void *)
+dn_simdhash_address_of_value_slot (dn_simdhash_meta_t meta, dn_simdhash_buffers_t buffers, uint32_t slot_index)
+{
+    return buffers.values + (slot_index * meta.value_size);
+}
+
+DN_FORCEINLINE(dn_simdhash_suffixes)
 dn_simdhash_build_search_vector (uint8_t needle);
 
-int
+DN_FORCEINLINE(int)
 dn_simdhash_find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack);
 
 dn_simdhash_t *
