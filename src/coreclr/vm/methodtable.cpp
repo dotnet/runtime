@@ -3467,26 +3467,20 @@ static bool GetFlattenedFieldTypes(CORINFO_CLASS_HANDLE cls, int types[2], int* 
     bool isManaged = !th.IsTypeDesc();
     MethodTable* pMT = isManaged ? th.AsMethodTable() : th.AsNativeValueType();
     int nFields = isManaged ? pMT->GetNumIntroducedInstanceFields() : pMT->GetNativeLayoutInfo()->GetNumFields();
-
-    if (*typeIndex + nFields > 2)
-        return false;
-
     if (nFields == 0)
         return true;
-
-    assert(nFields == 1 || nFields == 2);
 
     // TODO: templatize isManaged and use if constexpr for differences when we migrate to C++17
     // because the logic for both branches is nearly the same.
     if (isManaged)
     {
         FieldDesc* fields = pMT->GetApproxFieldDescListRaw();
-        if (nFields == 2 && fields[0].GetSize() > fields[1].GetOffset()) // overlapping fields
-            return false;
-
         int elementTypeIndex = *typeIndex;
         for (int i = 0; i < nFields; ++i)
         {
+            if (i > 0 && fields[i-1].GetOffset() + fields[i-1].GetSize() > fields[i].GetOffset())
+                return false; // overlapping fields
+
             CorElementType type = fields[i].GetFieldType();
             if (type == ELEMENT_TYPE_VALUETYPE)
             {
@@ -3521,11 +3515,11 @@ static bool GetFlattenedFieldTypes(CORINFO_CLASS_HANDLE cls, int types[2], int* 
     else // native layout
     {
         const NativeFieldDescriptor* fields = pMT->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
-        if (nFields == 2 && fields[0].NativeSize() > fields[1].GetExternalOffset()) // overlapping fields
-            return false;
-
         for (int i = 0; i < nFields; ++i)
         {
+            if (i > 0 && fields[i-1].GetExternalOffset() + fields[i-1].NativeSize() > fields[i].GetExternalOffset())
+                return false; // overlapping fields
+
             NativeFieldCategory category = fields[i].GetCategory();
             if (category == NativeFieldCategory::NESTED)
             {
