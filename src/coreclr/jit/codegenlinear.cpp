@@ -386,6 +386,12 @@ void CodeGen::genCodeForBBlist()
         compiler->compCurStmt     = nullptr;
         compiler->compCurLifeTree = nullptr;
 
+        if (compiler->lvaHasAnySwiftStackParamToReassemble())
+        {
+            bool clobbered = false;
+            genHomeSwiftStructParameters(/* handleStack */ true, REG_SCRATCH, &clobbered);
+        }
+
         // Emit poisoning into scratch BB that comes right after prolog.
         // We cannot emit this code in the prolog as it might make the prolog too large.
         if (compiler->compShouldPoisonFrame() && compiler->fgBBisScratch(block))

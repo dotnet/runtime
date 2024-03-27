@@ -4976,7 +4976,18 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 }
 
 #ifdef SWIFT_SUPPORT
-void CodeGen::genHomeSwiftStructParameters(regNumber initReg, bool* initRegZeroed)
+
+//-----------------------------------------------------------------------------
+// genHomeSwiftStructParameters:
+//  Reassemble Swift struct parameters if necessary.
+//
+// Parameters:
+//   handleStack         - If true, reassemble the segments that were passed on the stack.
+//                         If false, reassemble the segments that were passed in registers.
+//   scratchReg          - A scratch register to use
+//   scratchRegClobbered - [out] if scratchReg is used, this will be set to true. Otherwise will not be set.
+//
+void CodeGen::genHomeSwiftStructParameters(bool handleStack, regNumber scratchReg, bool* scratchRegClobbered)
 {
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
@@ -4998,6 +5009,11 @@ void CodeGen::genHomeSwiftStructParameters(regNumber initReg, bool* initRegZeroe
         for (unsigned i = 0; i < abiInfo.NumSegments; i++)
         {
             const ABIPassingSegment& seg = abiInfo.Segments[i];
+            if (seg.IsPassedOnStack() != handleStack)
+            {
+                continue;
+            }
+
             if (seg.IsPassedInRegister())
             {
                 var_types storeType = seg.GetRegisterStoreType();
@@ -5051,14 +5067,14 @@ void CodeGen::genHomeSwiftStructParameters(regNumber initReg, bool* initRegZeroe
 
 #ifdef TARGET_XARCH
                 offset += TARGET_POINTER_SIZE; // Return address
-                GetEmitter()->emitIns_R_AR(ins_Load(loadType), emitTypeSize(loadType), initReg, genFramePointerReg(), offset);
+                GetEmitter()->emitIns_R_AR(ins_Load(loadType), emitTypeSize(loadType), scratchReg, genFramePointerReg(), offset);
 #else
-                genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), initReg, genFramePointerReg(), offset,
-                                     initReg);
+                genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), scratchReg, genFramePointerReg(), offset,
+                                     scratchReg);
 #endif
-                *initRegZeroed = false;
+                *scratchRegClobbered = true;
 
-                GetEmitter()->emitIns_S_R(ins_Store(loadType), emitTypeSize(loadType), initReg, lclNum, seg.Offset);
+                GetEmitter()->emitIns_S_R(ins_Store(loadType), emitTypeSize(loadType), scratchReg, lclNum, seg.Offset);
             }
         }
     }
@@ -6338,7 +6354,12 @@ void CodeGen::genFnProlog()
             intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
         }
 
-        genHomeSwiftStructParameters(initReg, &initRegZeroed);
+        bool clobbered = false;
+        genHomeSwiftStructParameters(/* handleStack */ false, initReg, &clobbered);
+        if (clobbered)
+        {
+            initRegZeroed = false;
+        }
     }
 #endif
 

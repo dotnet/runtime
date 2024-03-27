@@ -1825,6 +1825,35 @@ void Compiler::lvaClassifyParameterABI()
 #endif
 }
 
+//--------------------------------------------------------------------------------------------
+// lvaHaveSwiftStructStackParamsToReassemble:
+//   Check if this compilation has any Swift parameters that are passed on the
+//   stack and that need to be reassembled on the local stack frame.
+//
+// Return value:
+//   True if so.
+//
+bool Compiler::lvaHasAnySwiftStackParamToReassemble()
+{
+#ifdef SWIFT_SUPPORT
+    if (info.compCallConv != CorInfoCallConvExtension::Swift)
+    {
+        return false;
+    }
+
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+        if (abiInfo.HasAnyStackSegment() && !abiInfo.HasExactlyOneStackSegment())
+        {
+            return true;
+        }
+    }
+#endif
+
+    return false;
+}
+
 /*****************************************************************************
  * Returns our internal varNum for a given IL variable.
  * Asserts assume it is called after lvaTable[] has been set up.
