@@ -357,6 +357,52 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expectedResult, value);
         }
 
+        [Theory]
+        [InlineData("URLValue", "URLValue")]
+        [InlineData("URL", "URL")]
+        [InlineData("Url", "Url")]
+        [InlineData("Id", "id")]
+        [InlineData("ID", "iD")]
+        [InlineData("I", "I")]
+        [InlineData("", "")]
+        [InlineData("😀葛🀄", "😀葛🀄")] // Surrogate pairs
+        [InlineData("ΆλφαΒήταΓάμμα", "άλφαΒήταΓάμμα")] // Non-ascii letters
+        [InlineData("𐐀𐐨𐐨𐐀𐐨𐐨", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters don't normalize
+        [InlineData("\ude00\ud83d", "\ude00\ud83d")] // Unpaired surrogates
+        [InlineData("Person", "person")]
+        [InlineData("IPhone", "iPhone")]
+        [InlineData("IPhone", "IPhone")]
+        [InlineData("I Phone", "I Phone")]
+        [InlineData("I Phone", "i Phone")]
+        [InlineData("I  Phone", "I  Phone")]
+        [InlineData("I  Phone", "i  Phone")]
+        [InlineData(" IPhone", " IPhone")]
+        [InlineData(" IPhone ", " IPhone ")]
+        [InlineData("IsCIA", "isCIA")]
+        [InlineData("VmQ", "vmQ")]
+        [InlineData("Xml2Json", "xml2Json")]
+        [InlineData("SnAkEcAsE", "snAkEcAsE")]
+        [InlineData("SnA__kEcAsE", "snA__kEcAsE")]
+        [InlineData("SnA__ kEcAsE", "snA__ kEcAsE")]
+        [InlineData("Already_snake_case_ ", "already_snake_case_ ")]
+        [InlineData("IsJSONProperty", "isJSONProperty")]
+        [InlineData("SHOUTING_CASE", "SHOUTING_CASE")]
+        [InlineData("9999-12-31T23:59:59.9999999Z", "9999-12-31T23:59:59.9999999Z")]
+        [InlineData("Hi!! This is text. Time to test.", "hi!! This is text. Time to test.")]
+        [InlineData("BUILDING", "BUILDING")]
+        [InlineData("Building", "building")]
+        [InlineData("BUILDING Property", "BUILDING Property")]
+        [InlineData("Building Property", "building Property")]
+        [InlineData("BUILDING PROPERTY", "BUILDING PROPERTY")]
+        public static void ToPascalCaseTest(string expectedResult, string name)
+        {
+            JsonNamingPolicy policy = JsonNamingPolicy.PascalCase;
+
+            string value = policy.ConvertName(name);
+
+            Assert.Equal(expectedResult, value);
+        }
+
         public static IEnumerable<object[]> GetValidMemberNames()
             => typeof(PropertyNameTestsDynamic).Assembly.GetTypes()
                 .SelectMany(t => t.GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
