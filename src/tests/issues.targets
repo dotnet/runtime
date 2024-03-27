@@ -17,9 +17,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/SSA/MemorySsa/**">
             <Issue>https://github.com/dotnet/runtime/issues/86112</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/API/NoGCRegion/Callback_Svr/**">
-            <Issue>https://github.com/dotnet/runtime/issues/100149</Issue>
-        </ExcludeList>    
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->
@@ -3124,6 +3121,13 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_90219/Runtime_90219/*">
             <Issue>Loads an assembly from file</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Apple mobile NativeAOT -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsAppleMobile)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">
+        <ExcludeList Include = "$(XunitTestBinBase)/nativeaot/SmokeTests/TrimmingBehaviors/**">
+            <Issue>https://github.com/dotnet/runtime/issues/100226</Issue>
         </ExcludeList>
     </ItemGroup>
 
