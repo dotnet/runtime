@@ -866,13 +866,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                         printf("Exact Type MT(0x%p %s)", dspPtr(iconVal),
                                eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
                     }
-
-                    // We might want to assert:
-                    //      assert(curAssertion->op2.HasIconFlag());
-                    // However, if we run CSE with shared constant mode, we may end up with an expression instead
-                    // of the original handle value. If we then use JitOptRepeat to re-build value numbers, we lose
-                    // knowledge that the constant was ever a handle, as the expression creating the original value
-                    // was not (and can't be) assigned a handle flag.
+                    assert(curAssertion->op2.HasIconFlag());
                 }
                 else if (curAssertion->op1.kind == O1K_SUBTYPE)
                 {
@@ -1883,6 +1877,7 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
             {
                 case O1K_EXACT_TYPE:
                 case O1K_SUBTYPE:
+                    assert(assertion->op2.HasIconFlag());
                     break;
                 case O1K_LCLVAR:
                     assert((lvaGetDesc(assertion->op1.lcl.lclNum)->lvType != TYP_REF) ||
