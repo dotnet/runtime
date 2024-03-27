@@ -3930,7 +3930,6 @@ public:
     void lvaUpdateArgWithInitialReg(LclVarDsc* varDsc);
     void lvaUpdateArgsWithInitialReg();
     void lvaAssignVirtualFrameOffsetsToArgs();
-    void lvaAssignVirtualFrameOffsetsToSwiftFuncArgs();
 #ifdef UNIX_AMD64_ABI
     int lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs, int* callerArgOffset);
 #else  // !UNIX_AMD64_ABI

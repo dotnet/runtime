@@ -5992,14 +5992,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 #endif // USER_ARGS_COME_LAST
 }
 
-//------------------------------------------------------------------------
-// lvaAssignVirtualFrameOffsetsToSwiftFuncArgs:
-//   Assign stack frame offsets for the arguments to a CallConvSwift function.
-//
-void Compiler::lvaAssignVirtualFrameOffsetsToSwiftFuncArgs()
-{
-}
-
 #ifdef UNIX_AMD64_ABI
 //
 //  lvaAssignVirtualFrameOffsetToArg() : Assign virtual stack offsets to an
