@@ -1146,7 +1146,8 @@ init_last_ins_call (TransformData *td)
 static guint32
 get_data_item_wide_index (TransformData *td, void *ptr, gboolean *new_slot)
 {
-	gpointer p = g_hash_table_lookup (td->data_hash, ptr);
+	gpointer p = NULL;
+	guint8 found = dn_simdhash_ptr_ptr_try_get_value (td->data_hash, ptr, (void **)&p);
 	guint32 index;
 	if (p != NULL) {
 		if (new_slot)
@@ -1160,7 +1161,10 @@ get_data_item_wide_index (TransformData *td, void *ptr, gboolean *new_slot)
 	index = td->n_data_items;
 	td->data_items [index] = ptr;
 	++td->n_data_items;
-	g_hash_table_insert (td->data_hash, ptr, GUINT_TO_POINTER (index + 1));
+	if (found)
+		dn_simdhash_ptr_ptr_try_replace_value (td->data_hash, ptr, GUINT_TO_POINTER (index + 1));
+	else
+		dn_simdhash_ptr_ptr_try_add (td->data_hash, ptr, GUINT_TO_POINTER (index + 1));
 	if (new_slot)
 		*new_slot = TRUE;
 	return index;
@@ -2995,7 +2999,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 
 		/* Remove any newly added items */
 		for (i = prev_n_data_items; i < td->n_data_items; i++) {
-			g_hash_table_remove (td->data_hash, td->data_items [i]);
+			dn_simdhash_ptr_ptr_try_remove (td->data_hash, td->data_items [i]);
 		}
 		td->n_data_items = prev_n_data_items;
 		/* Also remove any added indexes from the imethod list */
@@ -3867,7 +3871,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			if (MINT_IS_PATCHABLE_CALL (td->last_ins->opcode)) {
 				g_assert (!calli && !is_virtual);
 				td->last_ins->flags |= INTERP_INST_FLAG_RECORD_CALL_PATCH;
-				g_hash_table_insert (td->patchsite_hash, td->last_ins, target_method);
+				if (!dn_simdhash_ptr_ptr_try_add (td->patchsite_hash, td->last_ins, target_method))
+					dn_simdhash_ptr_ptr_try_replace (td->patchsite_hash, td->last_ins, target_method);
 			}
 #endif
 		}
@@ -8814,9 +8819,10 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		g_assert (MINT_IS_PATCHABLE_CALL (opcode));
 
 		/* TODO: could `ins` be removed by any interp optimization? */
-		MonoMethod *target_method = (MonoMethod *) g_hash_table_lookup (td->patchsite_hash, ins);
+		MonoMethod *target_method = NULL;
+		dn_simdhash_ptr_ptr_try_get_value (td->patchsite_hash, ins, (void **)&target_method);
 		g_assert (target_method);
-		g_hash_table_remove (td->patchsite_hash, ins);
+		dn_simdhash_ptr_ptr_try_remove (td->patchsite_hash, ins);
 
 		mini_tiered_record_callsite (start_ip, target_method, TIERED_PATCH_KIND_INTERP);
 
@@ -9106,9 +9112,9 @@ retry:
 	td->dummy_var = -1;
 	td->ref_handle_var = -1;
 	td->data_items = NULL;
-	td->data_hash = g_hash_table_new (NULL, NULL);
+	td->data_hash = dn_simdhash_ptr_ptr_new (0, NULL);
 #ifdef ENABLE_EXPERIMENT_TIERED
-	td->patchsite_hash = g_hash_table_new (NULL, NULL);
+	td->patchsite_hash = dn_simdhash_ptr_ptr_new (0, NULL);
 #endif
 	td->gen_seq_points = !mini_debug_options.no_seq_points_compact_data || mini_debug_options.gen_sdb_seq_points;
 	td->gen_sdb_seq_points = mini_debug_options.gen_sdb_seq_points;
@@ -9327,9 +9333,9 @@ exit:
 	g_free (td->stack);
 	g_free (td->vars);
 	g_free (td->local_ref_count);
-	g_hash_table_destroy (td->data_hash);
+	dn_simdhash_free (td->data_hash);
 #ifdef ENABLE_EXPERIMENT_TIERED
-	g_hash_table_destroy (td->patchsite_hash);
+	dn_simdhash_free (td->patchsite_hash);
 #endif
 	g_ptr_array_free (td->seq_points, TRUE);
 	if (td->line_numbers)
@@ -9510,9 +9516,10 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 		// FIXME Publishing of seq points seems to be racy with tiereing. We can have both tiered and untiered method
 		// running at the same time. We could therefore get the optimized imethod seq points for the unoptimized method.
-		gpointer seq_points = g_hash_table_lookup (jit_mm->seq_points, imethod->method);
+		gpointer seq_points = NULL;
+		dn_simdhash_ght_try_get_value (jit_mm->seq_points, imethod->method, (void **)&seq_points);
 		if (!seq_points || seq_points != imethod->jinfo->seq_points)
-			g_hash_table_replace (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
+			dn_simdhash_ght_replace (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
 	}
 	jit_mm_unlock (jit_mm);
 

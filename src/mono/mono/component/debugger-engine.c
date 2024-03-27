@@ -364,29 +364,42 @@ typedef struct {
 	GPtrArray *methods;
 	GPtrArray *method_domains;
 	GPtrArray *method_seq_points;
+
+	MonoDomain *domain;
 } CollectDomainData;
+
+static void
+collect_domain_bp_inner (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoMethod *m = (MonoMethod *)key;
+	MonoSeqPointInfo *seq_points = (MonoSeqPointInfo *)value;
+	CollectDomainData *ud = (CollectDomainData*)user_data;
+
+	if (!bp_matches_method (ud->bp, m))
+		return;
+
+	/* Save the info locally to simplify the code inside the domain lock */
+	g_ptr_array_add (ud->methods, m);
+	g_ptr_array_add (ud->method_domains, ud->domain);
+	g_ptr_array_add (ud->method_seq_points, seq_points);
+}
+
+// HACK: Address some sort of linker problem on arm64
+void
+mono_jit_memory_manager_foreach_seq_point (dn_simdhash_ght_t *seq_points, dn_simdhash_ght_foreach_func func, gpointer user_data);
 
 static void
 collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
 {
-	GHashTableIter iter;
-	MonoSeqPointInfo *seq_points;
-	MonoDomain *domain = (MonoDomain*)key;
 	CollectDomainData *ud = (CollectDomainData*)user_data;
-	MonoMethod *m;
+	ud->domain = (MonoDomain*)key;
 
 	// FIXME:
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 	jit_mm_lock (jit_mm);
-	g_hash_table_iter_init (&iter, jit_mm->seq_points);
-	while (g_hash_table_iter_next (&iter, (void**)&m, (void**)&seq_points)) {
-		if (bp_matches_method (ud->bp, m)) {
-			/* Save the info locally to simplify the code inside the domain lock */
-			g_ptr_array_add (ud->methods, m);
-			g_ptr_array_add (ud->method_domains, domain);
-			g_ptr_array_add (ud->method_seq_points, seq_points);
-		}
-	}
+	// FIXME: This previously used an iterator instead of foreach, so introducing
+	//  an iterator API to simdhash might make it faster.
+	mono_jit_memory_manager_foreach_seq_point (jit_mm->seq_points, collect_domain_bp_inner, ud);
 	jit_mm_unlock (jit_mm);
 }
 

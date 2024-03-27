@@ -165,7 +165,7 @@ transform_method (MonoDomain *domain, MonoImage *image, TestItem *ti)
 	td->rtm = rtm;
 	td->clause_indexes = (int*)g_malloc (header->code_size * sizeof (int));
 	td->data_items = NULL;
-	td->data_hash = g_hash_table_new (NULL, NULL);
+	td->data_hash = dn_simdhash_ptr_ptr_new (0, NULL);
 	/* TODO: init more fields of `td` */
 
 	mono_test_interp_method_compute_offsets (td, rtm, signature, header);

@@ -37,7 +37,7 @@ typedef struct {
 	MonoConcurrentHashTable *runtime_invoke_hash;
 	/* Maps MonoMethod to a GPtrArray containing sequence point locations */
 	/* Protected by the domain lock */
-	GHashTable *seq_points;
+	dn_simdhash_ght_t *seq_points;
 	/* Debugger agent data */
 	gpointer agent_info;
 	/* Maps MonoMethod to an arch-specific structure */
@@ -659,6 +659,9 @@ mono_is_addr_implicit_null_check (void *addr);
 
 gboolean
 mono_jit_call_can_be_supported_by_interp (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only);
+
+MONO_COMPONENT_API void
+mono_jit_memory_manager_foreach_seq_point (dn_simdhash_ght_t *seq_points, dn_simdhash_ght_foreach_func func, gpointer user_data);
 
 /*
  * Signal handling

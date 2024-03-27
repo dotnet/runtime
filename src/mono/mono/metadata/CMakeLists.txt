@@ -45,7 +45,10 @@ endif()
 set(imported_native_sources
     ../../../native/containers/dn-simdhash.c
     ../../../native/containers/dn-simdhash-string-ptr.c
-    ../../../native/containers/dn-simdhash-u32-ptr.c)
+    ../../../native/containers/dn-simdhash-u32-ptr.c
+    ../../../native/containers/dn-simdhash-u32-ptr.c
+    ../../../native/containers/dn-simdhash-ptr-ptr.c
+    ../../../native/containers/dn-simdhash-ght-compatible.c)
 
 set(metadata_common_sources
     appdomain.c
