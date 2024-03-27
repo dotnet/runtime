@@ -1458,16 +1458,6 @@ protected:
             assert(!idIsSmallDsc());
             idAddr()->_idRegBit = val ? 1 : 0;
         }
-        bool idOptionalShift() const
-        {
-            assert(!idIsSmallDsc());
-            return (idAddr()->_idRegBit == 1);
-        }
-        void idOptionalShift(bool val)
-        {
-            assert(!idIsSmallDsc());
-            idAddr()->_idRegBit = val ? 1 : 0;
-        }
         insSvePattern idSvePattern() const
         {
             assert(!idIsSmallDsc());
@@ -1487,6 +1477,17 @@ protected:
         {
             assert(!idIsSmallDsc());
             idAddr()->_idReg4 = (regNumber)idSvePrfop;
+        }
+        bool idHasShift() const
+        {
+            return !idIsSmallDsc() && (idAddr()->_idRegBit == 1);
+        }
+        void idHasShift(bool val)
+        {
+            if (!idIsSmallDsc())
+            {
+                idAddr()->_idRegBit = val ? 1 : 0;
+            }
         }
 #endif // TARGET_ARM64
 
@@ -2505,6 +2506,7 @@ private:
 #if defined(TARGET_XARCH)
     CORINFO_FIELD_HANDLE emitSimd32Const(simd32_t constValue);
     CORINFO_FIELD_HANDLE emitSimd64Const(simd64_t constValue);
+    CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue);
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
@@ -3101,8 +3103,8 @@ public:
 #ifdef DEBUG
 #ifndef TARGET_LOONGARCH64
     void emitInsSanityCheck(instrDesc* id);
-#endif
-#endif
+#endif // TARGET_LOONGARCH64
+#endif // DEBUG
 
 #ifdef TARGET_ARMARCH
     // Returns true if instruction "id->idIns()" writes to a register that might be used to contain a GC

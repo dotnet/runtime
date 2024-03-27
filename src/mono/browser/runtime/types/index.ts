@@ -416,6 +416,13 @@ export type APIType = {
      */
     runMainAndExit: (mainAssemblyName?: string, args?: string[]) => Promise<number>;
     /**
+     * Exits the runtime.
+     * Note: after the runtime exits, it would reject all further calls to the API.
+     * @param code "process" exit code.
+     * @param reason could be a string or an Error object.
+     */
+    exit: (code: number, reason?: any) => void;
+    /**
      * Sets the environment variable for the "process"
      * @param name
      * @param value
@@ -445,6 +452,10 @@ export type APIType = {
      * Writes to the WASM linear memory
      */
     setHeapB32: (offset: NativePointer, value: number | boolean) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
+    setHeapB8: (offset: NativePointer, value: number | boolean) => void;
     /**
      * Writes to the WASM linear memory
      */
@@ -493,6 +504,10 @@ export type APIType = {
      * Reads from the WASM linear memory
      */
     getHeapB32: (offset: NativePointer) => boolean;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapB8: (offset: NativePointer) => boolean;
     /**
      * Reads from the WASM linear memory
      */

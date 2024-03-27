@@ -121,10 +121,10 @@ void ExInfo::Init()
 
     m_pTopMostHandlerDuringSO = NULL;
 
-#if defined(TARGET_X86) && defined(DEBUGGING_SUPPORTED)
+#ifdef DEBUGGING_SUPPORTED
     m_InterceptionContext.Init();
     m_ValidInterceptionContext = FALSE;
-#endif //TARGET_X86 && DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED
 }
 
 ExInfo::ExInfo()
@@ -326,7 +326,8 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     m_propagateExceptionContext(NULL),
 #endif // HOST_UNIX
     m_CurrentClause({}),
-    m_pMDToReportFunctionLeave(NULL)
+    m_pMDToReportFunctionLeave(NULL),
+    m_lastReportedFunclet({0, 0, 0})
 {
     m_StackTraceInfo.AllocateStackTrace();
     pThread->GetExceptionState()->m_pCurrentTracker = this;

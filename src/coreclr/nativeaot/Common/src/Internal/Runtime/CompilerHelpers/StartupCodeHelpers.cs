@@ -27,7 +27,7 @@ namespace Internal.Runtime.CompilerHelpers
         /// </summary>
         private static IntPtr s_moduleGCStaticsSpines;
 
-        [UnmanagedCallersOnly(EntryPoint = "InitializeModules", CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallersOnly(EntryPoint = "InitializeModules")]
         internal static unsafe void InitializeModules(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
             RuntimeImports.RhpRegisterOsModule(osModule);

@@ -649,8 +649,7 @@ int LinearScan::BuildNode(GenTree* tree)
     } // end switch (tree->OperGet())
 
     // We need to be sure that we've set srcCount and dstCount appropriately.
-    // Not that for XARCH, the maximum number of registers defined is 2.
-    assert((dstCount < 2) || ((dstCount == 2) && tree->IsMultiRegNode()));
+    assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsValue() || (dstCount != 0));
     assert(dstCount == tree->GetRegisterDstCount(compiler));
@@ -1185,7 +1184,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         if (hasMultiRegRetVal)
     {
         assert(retTypeDesc != nullptr);
-        dstCandidates = retTypeDesc->GetABIReturnRegs();
+        dstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
         assert((int)genCountBits(dstCandidates) == dstCount);
     }
     else if (varTypeUsesFloatReg(registerType))
@@ -1371,10 +1370,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
     BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
 
 #ifdef SWIFT_SUPPORT
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
+    if (call->HasSwiftErrorHandling())
     {
         // Tree is a Swift call with error handling; error register should have been killed
-        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
         assert((killMask & RBM_SWIFT_ERROR) != 0);
 
         // After a Swift call that might throw returns, we expect the error register to be consumed

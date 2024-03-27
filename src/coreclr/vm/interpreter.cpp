@@ -1846,7 +1846,7 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
             else
             {
                 COR_ILMETHOD_DECODER::DecoderStatus status;
-                pDecoder = new COR_ILMETHOD_DECODER(md->GetILHeader(TRUE),
+                pDecoder = new COR_ILMETHOD_DECODER(md->GetILHeader(),
                                                     md->GetMDImport(),
                                                     &status);
             }

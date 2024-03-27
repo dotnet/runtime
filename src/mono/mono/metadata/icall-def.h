@@ -243,7 +243,6 @@ NOHANDLES_FLAGS(ICALL(MATH_21, "Ceiling", ves_icall_System_Math_Ceiling), MONO_I
 NOHANDLES_FLAGS(ICALL(MATH_5, "Cos", ves_icall_System_Math_Cos), MONO_ICALL_FLAGS_NO_EXCEPTION)
 NOHANDLES_FLAGS(ICALL(MATH_6, "Cosh", ves_icall_System_Math_Cosh), MONO_ICALL_FLAGS_NO_EXCEPTION)
 NOHANDLES_FLAGS(ICALL(MATH_7, "Exp", ves_icall_System_Math_Exp), MONO_ICALL_FLAGS_NO_EXCEPTION)
-NOHANDLES_FLAGS(ICALL(MATH_7a, "FMod", ves_icall_System_Math_FMod), MONO_ICALL_FLAGS_NO_EXCEPTION)
 NOHANDLES_FLAGS(ICALL(MATH_8, "Floor", ves_icall_System_Math_Floor), MONO_ICALL_FLAGS_NO_EXCEPTION)
 NOHANDLES_FLAGS(ICALL(MATH_22, "FusedMultiplyAdd", ves_icall_System_Math_FusedMultiplyAdd), MONO_ICALL_FLAGS_NO_EXCEPTION)
 NOHANDLES_FLAGS(ICALL(MATH_9, "Log", ves_icall_System_Math_Log), MONO_ICALL_FLAGS_NO_EXCEPTION)
@@ -271,7 +270,6 @@ NOHANDLES_FLAGS(ICALL(MATHF_9, "Ceiling", ves_icall_System_MathF_Ceiling), MONO_
 NOHANDLES_FLAGS(ICALL(MATHF_10, "Cos", ves_icall_System_MathF_Cos), MONO_ICALL_FLAGS_NO_EXCEPTION)
 NOHANDLES_FLAGS(ICALL(MATHF_11, "Cosh", ves_icall_System_MathF_Cosh), MONO_ICALL_FLAGS_NO_EXCEPTION)
 NOHANDLES_FLAGS(ICALL(MATHF_12, "Exp", ves_icall_System_MathF_Exp), MONO_ICALL_FLAGS_NO_EXCEPTION)
-NOHANDLES_FLAGS(ICALL(MATHF_22, "FMod", ves_icall_System_MathF_FMod), MONO_ICALL_FLAGS_NO_EXCEPTION)
 NOHANDLES_FLAGS(ICALL(MATHF_13, "Floor", ves_icall_System_MathF_Floor), MONO_ICALL_FLAGS_NO_EXCEPTION)
 NOHANDLES_FLAGS(ICALL(MATHF_24, "FusedMultiplyAdd", ves_icall_System_MathF_FusedMultiplyAdd), MONO_ICALL_FLAGS_NO_EXCEPTION)
 NOHANDLES_FLAGS(ICALL(MATHF_14, "Log", ves_icall_System_MathF_Log), MONO_ICALL_FLAGS_NO_EXCEPTION)
@@ -556,33 +554,19 @@ HANDLES(STRING_11, "InternalIsInterned", ves_icall_System_String_InternalIsInter
 ICALL_TYPE(ILOCK, "System.Threading.Interlocked", ILOCK_1)
 NOHANDLES(ICALL(ILOCK_1, "Add(int&,int)", ves_icall_System_Threading_Interlocked_Add_Int))
 NOHANDLES(ICALL(ILOCK_2, "Add(long&,long)", ves_icall_System_Threading_Interlocked_Add_Long))
-NOHANDLES(ICALL(ILOCK_24, "CompareExchange(byte&,byte,byte)", ves_icall_System_Threading_Interlocked_CompareExchange_Byte))
 NOHANDLES(ICALL(ILOCK_5, "CompareExchange(int&,int,int)", ves_icall_System_Threading_Interlocked_CompareExchange_Int))
 NOHANDLES(ICALL(ILOCK_6, "CompareExchange(int&,int,int,bool&)", ves_icall_System_Threading_Interlocked_CompareExchange_Int_Success))
-NOHANDLES(ICALL(ILOCK_25, "CompareExchange(int16&,int16,int16)", ves_icall_System_Threading_Interlocked_CompareExchange_Short))
 NOHANDLES(ICALL(ILOCK_8, "CompareExchange(long&,long,long)", ves_icall_System_Threading_Interlocked_CompareExchange_Long))
 NOHANDLES(ICALL(ILOCK_9, "CompareExchange(object&,object&,object&,object&)", ves_icall_System_Threading_Interlocked_CompareExchange_Object))
 NOHANDLES(ICALL(ILOCK_11, "Decrement(int&)", ves_icall_System_Threading_Interlocked_Decrement_Int))
 NOHANDLES(ICALL(ILOCK_12, "Decrement(long&)", ves_icall_System_Threading_Interlocked_Decrement_Long))
-NOHANDLES(ICALL(ILOCK_26, "Exchange(byte&,byte)", ves_icall_System_Threading_Interlocked_Exchange_Byte))
 NOHANDLES(ICALL(ILOCK_15, "Exchange(int&,int)", ves_icall_System_Threading_Interlocked_Exchange_Int))
-NOHANDLES(ICALL(ILOCK_27, "Exchange(int16&,int16)", ves_icall_System_Threading_Interlocked_Exchange_Short))
 NOHANDLES(ICALL(ILOCK_17, "Exchange(long&,long)", ves_icall_System_Threading_Interlocked_Exchange_Long))
 NOHANDLES(ICALL(ILOCK_18, "Exchange(object&,object&,object&)", ves_icall_System_Threading_Interlocked_Exchange_Object))
 NOHANDLES(ICALL(ILOCK_20, "Increment(int&)", ves_icall_System_Threading_Interlocked_Increment_Int))
 NOHANDLES(ICALL(ILOCK_21, "Increment(long&)", ves_icall_System_Threading_Interlocked_Increment_Long))
 NOHANDLES(ICALL(ILOCK_22, "MemoryBarrierProcessWide", ves_icall_System_Threading_Interlocked_MemoryBarrierProcessWide))
 NOHANDLES(ICALL(ILOCK_23, "Read(long&)", ves_icall_System_Threading_Interlocked_Read_Long))
-
-/* include these icalls if we're in the threaded wasm runtime, or if we're building a wasm-targeting cross compiler and we need to support --print-icall-table */
-#if (defined(HOST_BROWSER) && !defined(DISABLE_THREADS)) || (defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP))
-ICALL_TYPE(LIFOASYNCSEM, "System.Threading.LowLevelLifoAsyncWaitSemaphore", LIFOASYNCSEM_1)
-NOHANDLES(ICALL(LIFOASYNCSEM_1, "DeleteInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal))
-NOHANDLES(ICALL(LIFOASYNCSEM_2, "InitInternal", ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal))
-NOHANDLES(ICALL(LIFOASYNCSEM_3, "PrepareAsyncWaitInternal", ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal))
-NOHANDLES(ICALL(LIFOASYNCSEM_4, "ReleaseInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal))
-#endif
-
 
 ICALL_TYPE(LIFOSEM, "System.Threading.LowLevelLifoSemaphore", LIFOSEM_1)
 NOHANDLES(ICALL(LIFOSEM_1, "DeleteInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal))
@@ -614,14 +598,6 @@ HANDLES(THREAD_9, "SetPriority", ves_icall_System_Threading_Thread_SetPriority, 
 HANDLES(THREAD_10, "SetState", ves_icall_System_Threading_Thread_SetState, void, 2, (MonoInternalThread, guint32))
 HANDLES(THREAD_13, "StartInternal", ves_icall_System_Threading_Thread_StartInternal, void, 2, (MonoThreadObject, gint32))
 NOHANDLES(ICALL(THREAD_14, "YieldInternal", ves_icall_System_Threading_Thread_YieldInternal))
-
-/* include these icalls if we're in the threaded wasm runtime, or if we're building a wasm-targeting cross compiler and we need to support --print-icall-table */
-#if (defined(HOST_BROWSER) && !defined(DISABLE_THREADS)) || (defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP))
-ICALL_TYPE(WEBWORKERLOOP, "System.Threading.WebWorkerEventLoop", WEBWORKERLOOP_1)
-NOHANDLES(ICALL(WEBWORKERLOOP_1, "HasUnsettledInteropPromisesNative", ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative))
-NOHANDLES(ICALL(WEBWORKERLOOP_2, "KeepalivePopInternal", ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal))
-NOHANDLES(ICALL(WEBWORKERLOOP_3, "KeepalivePushInternal", ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal))
-#endif
 
 ICALL_TYPE(TYPE, "System.Type", TYPE_1)
 HANDLES(TYPE_1, "internal_from_handle", ves_icall_System_Type_internal_from_handle, MonoReflectionType, 1, (MonoType_ref))
