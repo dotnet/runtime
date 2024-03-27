@@ -5066,7 +5066,6 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack, regNumber scratchRe
                 offset += (int)seg.GetStackOffset();
 
 #ifdef TARGET_XARCH
-                offset += TARGET_POINTER_SIZE; // Return address
                 GetEmitter()->emitIns_R_AR(ins_Load(loadType), emitTypeSize(loadType), scratchReg, genFramePointerReg(), offset);
 #else
                 genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), scratchReg, genFramePointerReg(), offset,
