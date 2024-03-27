@@ -22,7 +22,7 @@ import { mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, m
 import { mono_wasm_get_calendar_info } from "./hybrid-globalization/calendar";
 
 import { mono_wasm_get_culture_info } from "./hybrid-globalization/culture-info";
-import { mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
+import { mono_wasm_get_locale_info, mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
 import { mono_wasm_browser_entropy } from "./crypto";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
@@ -107,6 +107,7 @@ export const mono_wasm_imports = [
     mono_wasm_index_of,
     mono_wasm_get_calendar_info,
     mono_wasm_get_culture_info,
+    mono_wasm_get_locale_info,
     mono_wasm_get_first_day_of_week,
     mono_wasm_get_first_week_of_year,
 ];
