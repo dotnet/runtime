@@ -187,6 +187,18 @@ bool ABIPassingInformation::HasAnyStackSegment() const
 }
 
 //-----------------------------------------------------------------------------
+// HasExactlyOneStackSegment:
+//   Check if this value is passed as a single stack segment.
+//
+// Return Value:
+//   True if so.
+//
+bool ABIPassingInformation::HasExactlyOneStackSegment() const
+{
+    return (NumSegments == 1) && Segments[0].IsPassedOnStack();
+}
+
+//-----------------------------------------------------------------------------
 // IsSplitAcrossRegistersAndStack:
 //   Check if this ABIPassingInformation represents passing a value in both
 //   registers and on stack.

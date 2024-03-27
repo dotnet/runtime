@@ -51,6 +51,7 @@ struct ABIPassingInformation
 
     bool HasAnyRegisterSegment() const;
     bool HasAnyStackSegment() const;
+    bool HasExactlyOneStackSegment() const;
     bool IsSplitAcrossRegistersAndStack() const;
 
     static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);

@@ -1715,7 +1715,7 @@ void Compiler::lvaClassifyParameterABI()
             }
 #endif
 
-            if ((dsc->TypeGet() == TYP_STRUCT) && !lvaIsImplicitByRefLocal(lclNum))
+            if ((dsc->TypeGet() == TYP_STRUCT) && !lvaIsImplicitByRefLocal(lclNum) && !abiInfo.HasExactlyOneStackSegment())
             {
                 dsc->lvIsRegArg = false;
             }
@@ -5770,9 +5770,19 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     if (info.compCallConv == CorInfoCallConvExtension::Swift)
     {
         // We already assigned argument offsets in lvaClassifyParameterABI.
-        // TODO-Cleanup: We actually assign the stack offsets in the front
-        // always, even outside the Swift calling convention, so likely this
-        // entire function can be deleted.
+        // Just get them from there.
+        // TODO-Cleanup: We can use similar logic for all backends once we have
+        // the new ABI info for all targets.
+        for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+        {
+            LclVarDsc* dsc = lvaGetDesc(lclNum);
+            const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+
+            if (abiInfo.HasExactlyOneStackSegment())
+            {
+                dsc->SetStackOffset(abiInfo.Segments[0].GetStackOffset());
+            }
+        }
         return;
     }
 #endif
@@ -7062,10 +7072,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
             // Reserve the stack space for this variable
             stkOffs = lvaAllocLocalAndSetVirtualOffset(lclNum, lvaLclSize(lclNum), stkOffs);
-
-            // Propagate the stack allocation to the fields for a dependently
-            // promoted struct.
-            if (lvaGetPromotionType(lclNum) == PROMOTION_TYPE_DEPENDENT)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            // If we have an incoming register argument that has a promoted field then we
+            // need to copy the lvStkOff (the stack home) from the reg arg to the field lclvar
+            //
+            if (varDsc->lvIsRegArg && varDsc->lvPromoted)
             {
                 unsigned firstFieldNum = varDsc->lvFieldLclStart;
                 for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
@@ -7074,6 +7085,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                     fieldVarDsc->SetStackOffset(varDsc->GetStackOffset() + fieldVarDsc->lvFldOffset);
                 }
             }
+#endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         }
     }
 
@@ -7248,10 +7260,13 @@ bool Compiler::lvaParamShouldHaveLocalStackSpace(unsigned lclNum)
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
 #ifdef SWIFT_SUPPORT
-    // In Swift functions, struct parameters that are not passed implicitly by
-    // reference are always reassembled on the local stack frame since they are
-    // passed in a way that does not match their full layout.
-    if ((info.compCallConv == CorInfoCallConvExtension::Swift) && (varDsc->TypeGet() == TYP_STRUCT) && !lvaIsImplicitByRefLocal(lclNum))
+    // In Swift functions, struct parameters that aren't passed in a single
+    // stack segment are always reassembled on the local stack frame since they
+    // are passed in a way that does not match their full layout.
+    if ((info.compCallConv == CorInfoCallConvExtension::Swift) &&
+        (varDsc->TypeGet() == TYP_STRUCT) &&
+        !lvaIsImplicitByRefLocal(lclNum) &&
+        !lvaParameterPassingInfo[lclNum].HasExactlyOneStackSegment())
     {
         return true;
     }
@@ -7568,9 +7583,9 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         //
         const bool mustProcessParams = true;
 #else
-        // OSR must also assign offsets here.
+        // OSR/Swift must also assign offsets here.
         //
-        const bool mustProcessParams = opts.IsOSR();
+        const bool mustProcessParams = opts.IsOSR() || (info.compCallConv == CorInfoCallConvExtension::Swift);
 #endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86)
 
         if (varDsc->lvIsStructField && (!varDsc->lvIsParam || mustProcessParams))
