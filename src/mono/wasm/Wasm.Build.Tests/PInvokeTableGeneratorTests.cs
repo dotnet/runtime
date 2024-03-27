@@ -884,5 +884,45 @@ namespace Wasm.Build.Tests
         [BuildAndRun(host: RunHost.Chrome, aot: false)]
         public void EnsureWasmAbiRulesAreFollowedInInterpreter(BuildArgs buildArgs, RunHost host, string id) =>
             EnsureWasmAbiRulesAreFollowed(buildArgs, host, id);
+
+        [Theory]
+        [BuildAndRun(host: RunHost.Chrome)]
+        public void InteropSupportForUnmanagedEntryPointWithoutDelegate(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string code =
+                """
+                using System;
+                using System.Runtime.InteropServices;
+                public unsafe class Test
+                {
+                    [UnmanagedCallersOnly(EntryPoint = "ManagedFunc")]
+                    public static int MyExport(int number)
+                    {
+                        // called from MyImport aka UnmanagedFunc
+                        Console.WriteLine($"MyExport({number}) -> 42");
+                        return 42;
+                    }
+
+                    [DllImport("*", EntryPoint = "UnmanagedFunc")]
+                    public static extern void MyImport(); // calls ManagedFunc aka MyExport
+
+                    public unsafe static int Main(string[] args)
+                    {
+                        Console.WriteLine($"main: {args.Length}");
+                        MyImport();
+                        return 0;
+                    }
+                }
+                """;
+
+            (buildArgs, string output) = BuildForVariadicFunctionTests(
+                code,
+                buildArgs with { ProjectName = $"unmanaged_entry_point{buildArgs.Config}" },
+                id
+            );
+
+            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0, host: host, id: id);
+            Assert.Contains("MyExport(123) -> 42", output);
+        }
     }
 }

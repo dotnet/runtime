@@ -386,7 +386,7 @@ internal sealed class PInvokeTableGenerator
             var typeName = cb.Method.DeclaringType == null  || cb.Method.DeclaringType.FullName == null ? "" : cb.Method.DeclaringType.FullName;
             var methodName = cb.Method.Name;
             int numParams = method.GetParameters().Length;
-            sb.Append($"   mono_wasm_marshal_get_managed_wrapper (\"{assemblyName}\", \"{string.Empty}\", \"{typeName}\", \"{methodName}\", {numParams});\n");
+            sb.Append($"   mono_wasm_marshal_get_managed_wrapper (\"{assemblyName}\", \"{typeName}\", \"{methodName}\", {numParams});\n");
             sb.Append($"  }}\n");
 
             sb.Append($"  ((WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) (");
