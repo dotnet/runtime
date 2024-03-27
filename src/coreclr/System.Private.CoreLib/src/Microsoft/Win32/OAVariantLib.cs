@@ -82,7 +82,7 @@ namespace Microsoft.Win32
                 {
                     uint sourceData = source.GetType() == typeof(int) ? (uint)(int)source : (uint)source;
                     // Int32/UInt32 can be converted to System.Drawing.Color
-                    ConvertOleColorToSystemColor(ObjectHandleOnStack.Create(ref result), sourceData, targetClass.TypeHandle.Value);
+                    result = Variant.SystemColorTranslatorAccess.ConvertOleColorToSystemColor(sourceData);
                     Debug.Assert(result != null);
                     return result;
                 }
@@ -156,7 +156,7 @@ namespace Microsoft.Win32
                 Missing missing => ComVariant.Create(missing),
                 DBNull => ComVariant.Null,
                 _ when Variant.IsSystemDrawingColor(input.GetType())
-                    => ComVariant.Create(Variant.ConvertSystemColorToOleColor(ObjectHandleOnStack.Create(ref input))),
+                    => ComVariant.Create(Variant.SystemColorTranslatorAccess.ConvertSystemColorToOleColor(input)),
                 _ => GetComIPFromObjectRef(input) // Convert the object to an IDispatch/IUnknown pointer.
             };
         }
@@ -205,9 +205,6 @@ namespace Microsoft.Win32
 
             throw new NotSupportedException(SR.NotSupported_ChangeType);
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertOleColorToSystemColor")]
-        private static partial void ConvertOleColorToSystemColor(ObjectHandleOnStack objret, uint value, IntPtr pMT);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "OAVariant_GetComIPFromObjectRef")]
         private static partial IntPtr GetComIPFromObjectRef(ObjectHandleOnStack obj, ComIpType reqIPType, out ComIpType fetchedIpType);
