@@ -1748,7 +1748,7 @@ void Compiler::lvaClassifyParameterABI()
         }
 
         // genFnPrologCalleeRegArgs expect these to be the counts of registers it knows how to handle.
-        codeGen->intRegState.rsCalleeRegArgCount = genCountBits(argRegs & (RBM_ARG_REGS | theFixedRetBuffMask(CorInfoCallConvExtension::Swift)));
+        codeGen->intRegState.rsCalleeRegArgCount = genCountBits(argRegs & RBM_ARG_REGS);
         codeGen->floatRegState.rsCalleeRegArgCount = genCountBits(argRegs & RBM_FLTARG_REGS);
     }
     else
