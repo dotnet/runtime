@@ -6,7 +6,7 @@ import { MonoString, MonoStringNull, WasmRoot, WasmRootBuffer } from "./types/in
 import { Module } from "./globals";
 import cwraps from "./cwraps";
 import { isSharedArrayBuffer, localHeapViewU8, getU32_local, setU16_local, localHeapViewU32, getU16_local, localHeapViewU16, _zero_region } from "./memory";
-import { NativePointer, CharPtr } from "./types/emscripten";
+import { NativePointer, CharPtr, VoidPtr } from "./types/emscripten";
 
 export const interned_js_string_table = new Map<string, MonoString>();
 export const mono_wasm_empty_string = "";
@@ -106,6 +106,15 @@ export function stringToUTF16 (dstPtr: number, endPtr: number, text: string) {
         dstPtr += 2;
         if (dstPtr >= endPtr) break;
     }
+}
+
+export function stringToUTF16Ptr (str: string): VoidPtr {
+    const bytes = (str.length + 1) * 2;
+    const ptr = Module._malloc(bytes) as any;
+    _zero_region(ptr, str.length * 2);
+    stringToUTF16(ptr, ptr + bytes, str);
+    return ptr;
+
 }
 
 export function monoStringToString (root: WasmRoot<MonoString>): string | null {

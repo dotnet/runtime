@@ -6,7 +6,7 @@ import { mono_wasm_new_external_root } from "../roots";
 import { monoStringToString, stringToUTF16 } from "../strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
-import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
+import { wrap_error_root, wrap_no_error_root } from "./helpers";
 import { INNER_SEPARATOR, OUTER_SEPARATOR, normalizeSpaces } from "./helpers";
 
 const MONTH_CODE = "MMMM";
