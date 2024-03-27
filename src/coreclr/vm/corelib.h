@@ -262,6 +262,12 @@ DEFINE_METHOD(DELEGATE,             GET_INVOKE_METHOD,      GetInvokeMethod,    
 DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)
 
+DEFINE_CLASS(MATH,                  System,                 Math)
+DEFINE_METHOD(MATH,                 ROUND,                  Round,                      SM_Dbl_RetDbl)
+
+DEFINE_CLASS(MATHF,                 System,                 MathF)
+DEFINE_METHOD(MATHF,                ROUND,                  Round,                      SM_Flt_RetFlt)
+
 DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
 
 DEFINE_CLASS(DYNAMICRESOLVER,       ReflectionEmit,         DynamicResolver)

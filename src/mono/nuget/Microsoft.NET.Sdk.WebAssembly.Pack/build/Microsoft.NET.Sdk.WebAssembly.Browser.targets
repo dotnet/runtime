@@ -73,10 +73,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PreserveCompilationReferences>false</PreserveCompilationReferences>
     <IsWebConfigTransformDisabled>true</IsWebConfigTransformDisabled>
 
-    <!-- JS Modules -->
-    <!-- We disable the manifest generation because we are going to inline the modules in the blazor.boot.json manifest -->
-    <GenerateJSModuleManifest>false</GenerateJSModuleManifest>
-
     <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>
     <WasmNestedPublishAppDependsOn>_GatherWasmFilesToPublish;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
     <_WasmNestedPublishAppPreTarget>ComputeFilesToPublish</_WasmNestedPublishAppPreTarget>

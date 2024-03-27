@@ -4033,7 +4033,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Cosh:
             case NI_System_Math_Exp:
             case NI_System_Math_Floor:
-            case NI_System_Math_FMod:
             case NI_System_Math_ILogB:
             case NI_System_Math_Log:
             case NI_System_Math_Log2:
@@ -7369,7 +7368,6 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Cosh:
         case NI_System_Math_Exp:
         case NI_System_Math_Floor:
-        case NI_System_Math_FMod:
         case NI_System_Math_FusedMultiplyAdd:
         case NI_System_Math_ILogB:
         case NI_System_Math_Log:
@@ -10083,10 +10081,6 @@ NamedIntrinsic Compiler::lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDL
             if (strcmp(methodName, "Floor") == 0)
             {
                 result = NI_System_Math_Floor;
-            }
-            else if (strcmp(methodName, "FMod") == 0)
-            {
-                result = NI_System_Math_FMod;
             }
             else if (strcmp(methodName, "FusedMultiplyAdd") == 0)
             {

@@ -414,16 +414,11 @@ namespace System.Net.Http
                 // Some headers such as User-Agent and Server use space as a separator (see: ProductInfoHeaderParser)
                 if (headerValuesCount > 1)
                 {
-                    HttpHeaderParser? parser = header.Key.Parser;
-                    string separator = HttpHeaderParser.DefaultSeparator;
-                    if (parser != null && parser.SupportsMultipleValues)
-                    {
-                        separator = parser.Separator!;
-                    }
+                    byte[] separator = header.Key.SeparatorBytes;
 
                     for (int i = 1; i < headerValuesCount; i++)
                     {
-                        WriteAsciiString(separator);
+                        WriteBytes(separator);
                         WriteString(headerValues[i], valueEncoding);
                     }
                 }

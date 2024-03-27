@@ -8,8 +8,9 @@ class LclVarDsc;
 
 struct InitVarDscInfo
 {
-    LclVarDsc* varDsc;
-    unsigned   varNum;
+    LclVarDsc*             varDsc;
+    unsigned               varNum;
+    ABIPassingInformation* abiInfo;
 
     unsigned intRegArgNum;
     unsigned floatRegArgNum;
@@ -29,18 +30,21 @@ struct InitVarDscInfo
     bool hasSplitParam;
 #endif // TARGET_ARM || TARGET_RISCV64
 
-#if FEATURE_FASTTAILCALL
-    // It is used to calculate argument stack size information in byte
+    // Bytes passed on the stack (including things like padding after structs)
     unsigned stackArgSize;
-#endif // FEATURE_FASTTAILCALL
 
 public:
     // set to initial values
-    void Init(LclVarDsc* lvaTable, bool _hasRetBufArg, unsigned _maxIntRegArgNum, unsigned _maxFloatRegArgNum)
+    void Init(LclVarDsc*             lvaTable,
+              ABIPassingInformation* abiInfoTable,
+              bool                   _hasRetBufArg,
+              unsigned               _maxIntRegArgNum,
+              unsigned               _maxFloatRegArgNum)
     {
         hasRetBufArg      = _hasRetBufArg;
-        varDsc            = &lvaTable[0]; // the first argument LclVar 0
-        varNum            = 0;            // the first argument varNum 0
+        varDsc            = lvaTable; // the first argument LclVar 0
+        varNum            = 0;        // the first argument varNum 0
+        this->abiInfo     = abiInfoTable;
         intRegArgNum      = 0;
         floatRegArgNum    = 0;
         maxIntRegArgNum   = _maxIntRegArgNum;
@@ -55,9 +59,7 @@ public:
         hasSplitParam = false;
 #endif // TARGET_ARM || TARGET_RISCV64
 
-#if FEATURE_FASTTAILCALL
         stackArgSize = 0;
-#endif // FEATURE_FASTTAILCALL
     }
 
     // return ref to current register arg for this type
@@ -110,6 +112,13 @@ public:
     }
 
 #endif // TARGET_ARM
+
+    void nextParam()
+    {
+        varDsc++;
+        varNum++;
+        abiInfo++;
+    }
 
 private:
     // return max register arg for this type

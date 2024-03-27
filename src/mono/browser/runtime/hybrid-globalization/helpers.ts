@@ -25,9 +25,9 @@ export function normalizeLocale(locale: string | null)
         const canonicalLocales = (Intl as any).getCanonicalLocales(locale.replace("_", "-"));
         return canonicalLocales.length > 0 ? canonicalLocales[0] : undefined;
     }
-    catch(ex: any)
+    catch
     {
-        throw new Error(`Get culture info failed for culture = ${locale} with error: ${ex}`);
+        return undefined;
     }
 }
 

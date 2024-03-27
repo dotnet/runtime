@@ -8743,14 +8743,6 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_FMod:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    double arg1Val = GetConstantDouble(arg1VN);
-                    res            = fmod(arg0Val, arg1Val);
-                    break;
-                }
-
                 case NI_System_Math_Pow:
                 {
                     assert(typ == TypeOfVN(arg1VN));
@@ -8848,14 +8840,6 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_FMod:
-                {
-                    assert(typ == TypeOfVN(arg1VN));
-                    float arg1Val = GetConstantSingle(arg1VN);
-                    res           = fmodf(arg0Val, arg1Val);
-                    break;
-                }
-
                 case NI_System_Math_Max:
                 {
                     assert(typ == TypeOfVN(arg1VN));
@@ -8944,10 +8928,6 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
         {
             case NI_System_Math_Atan2:
                 vnf = VNF_Atan2;
-                break;
-
-            case NI_System_Math_FMod:
-                vnf = VNF_FMod;
                 break;
 
             case NI_System_Math_Max:

@@ -26,61 +26,6 @@ FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
 }
 FCIMPLEND
 
-#undef min
-#undef max
-#include <cmath>
-
-FCIMPL2_FF(float, RhpFltRem, float dividend, float divisor)
-{
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-
-    if (divisor==0 || !std::isfinite(dividend))
-    {
-        return -nanf("");
-    }
-    else if (!std::isfinite(divisor) && !std::isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-    return fmodf(dividend,divisor);
-}
-FCIMPLEND
-
-FCIMPL2_DD(double, RhpDblRem, double dividend, double divisor)
-{
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-    if (divisor==0 || !std::isfinite(dividend))
-    {
-        return -nan("");
-    }
-    else if (!std::isfinite(divisor) && !std::isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-    return(fmod(dividend,divisor));
-}
-FCIMPLEND
-
 #ifndef HOST_64BIT
 EXTERN_C int64_t QCALLTYPE RhpLDiv(int64_t i, int64_t j)
 {
@@ -186,6 +131,10 @@ EXTERN_C int64_t F_CALL_CONV RhpLLsh(int64_t i, int32_t j)
 #endif // HOST_ARM
 
 #ifdef HOST_X86
+
+#undef min
+#undef max
+#include <cmath>
 
 FCIMPL1_D(double, acos, double x)
     return std::acos(x);
@@ -361,6 +310,14 @@ FCIMPLEND
 
 FCIMPL1_F(float, tanhf, float x)
     return std::tanhf(x);
+FCIMPLEND
+
+FCIMPL2_DD(double, fmod, double x, double y)
+    return std::fmod(x, y);
+FCIMPLEND
+
+FCIMPL2_FF(float, fmodf, float x, float y)
+    return std::fmodf(x, y);
 FCIMPLEND
 
 FCIMPL3_DDD(double, fma, double x, double y, double z)
