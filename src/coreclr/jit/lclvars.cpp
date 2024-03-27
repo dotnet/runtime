@@ -72,7 +72,6 @@ void Compiler::lvaInit()
 #ifdef SWIFT_SUPPORT
     lvaSwiftSelfArg = BAD_VAR_NUM;
     lvaSwiftErrorArg = BAD_VAR_NUM;
-    lvaSwiftErrorLocal = BAD_VAR_NUM;
 #endif
 
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
@@ -1410,9 +1409,14 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd, InitVarD
         // TODO: Should we do error handling for duplicate SwiftError* args?
 
         lvaSwiftErrorArg = varDscInfo->varNum;
-        lvaSwiftErrorLocal = lvaGrabTemp(false DEBUGARG("SwiftError pseudolocal"));
+        const unsigned lvaSwiftErrorLocal = lvaGrabTemp(false DEBUGARG("SwiftError pseudolocal"));
         lvaSetStruct(lvaSwiftErrorLocal, typeHnd, false);
         lvaSetVarAddrExposed(lvaSwiftErrorLocal DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+        swiftErrorLocal = gtNewLclVarNode(lvaSwiftErrorLocal, TYP_STRUCT);
+
+        // LclVarDsc* const varDsc = lvaGetDesc(lvaSwiftErrorLocal);
+        // varDsc->SetArgReg(REG_SWIFT_ERROR);
+        // varDsc->lvIsRegArg = true;
     }
 
     return false;

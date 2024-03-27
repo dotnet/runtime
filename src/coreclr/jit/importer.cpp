@@ -10475,7 +10475,6 @@ GenTreeLclVar* Compiler::impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET o
 // lclNum is an index into lvaTable *NOT* the arg/lcl index in the IL
 void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset)
 {
-    assert(lclNum != lvaSwiftErrorArg);
     impPushOnStack(impCreateLocalNode(lclNum DEBUGARG(offset)), verMakeTypeInfoForLocal(lclNum));
 }
 
@@ -10524,8 +10523,8 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
         else if (lclNum == lvaSwiftErrorArg)
         {
             assert(info.compCallConv == CorInfoCallConvExtension::Swift);
-            assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
-            impPushOnStack(gtNewLclVarAddrNode(lvaSwiftErrorLocal, TYP_BYREF), typeInfo(TYP_BYREF));
+            assert(swiftErrorLocal != nullptr);
+            impPushOnStack(gtNewLclVarAddrNode(swiftErrorLocal->GetLclNum(), TYP_BYREF), typeInfo(TYP_BYREF));
             JITDUMP("Created GT_LCL_ADDR of SwiftError pseudolocal\n");
             return;
         }

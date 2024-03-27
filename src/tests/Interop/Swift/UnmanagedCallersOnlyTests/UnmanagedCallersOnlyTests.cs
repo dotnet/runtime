@@ -32,7 +32,7 @@ public class UnmanagedCallersOnlyTests
 
         NativeFunctionWithCallback(&ProxyMethod, self, &error);
 
-        Assert.True((IntPtr)error.Value != 0, "error.Value is zero!");
+        Assert.True(error.Value == self.Value, "error.Value and self.Value don't match!");
         int value = *(int*)error.Value;
         Assert.True(value == expectedValue, string.Format("The value retrieved does not match the expected value. Expected: {0}, Actual: {1}", expectedValue, value));
     }

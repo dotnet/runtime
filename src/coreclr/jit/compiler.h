@@ -3868,7 +3868,7 @@ public:
 #ifdef SWIFT_SUPPORT
     unsigned lvaSwiftSelfArg;
     unsigned lvaSwiftErrorArg;
-    unsigned lvaSwiftErrorLocal;
+    GenTreeLclVar* swiftErrorLocal;
 #endif
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
