@@ -1405,29 +1405,15 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport* pIM
     TypeHandle * pInstDest = (TypeHandle *) IMD_GetMethodDictionary();
     _ASSERTE(pInstDest != NULL);
 
+    for (unsigned int i = 0; i < numTyPars; i++)
     {
-        // Protect multi-threaded access to Module.m_GenericParamToDescMap. Other threads may be loading the same type
-        // to break type recursion dead-locks
-        CrstHolder ch(&pModule->GetClassLoader()->m_AvailableTypesLock);
+        hEnumTyPars.EnumNext(&tkTyPar);
 
-        for (unsigned int i = 0; i < numTyPars; i++)
-        {
-            hEnumTyPars.EnumNext(&tkTyPar);
-
-            // code:Module.m_GenericParamToDescMap maps generic parameter RIDs to TypeVarTypeDesc
-            // instances so that we do not leak by allocating them all over again, if the declaring
-            // type repeatedly fails to load.
-            TypeVarTypeDesc* pTypeVarTypeDesc = pModule->LookupGenericParam(tkTyPar);
-            if (pTypeVarTypeDesc == NULL)
-            {
-                // Do NOT use pamTracker for this memory as we need it stay allocated even if the load fails.
-                void* mem = (void*)pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TypeVarTypeDesc)));
-                pTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, tok, i, tkTyPar);
-
-                pModule->StoreGenericParamThrowing(tkTyPar, pTypeVarTypeDesc);
-            }
-            pInstDest[i] = TypeHandle(pTypeVarTypeDesc);
-        }
+        // code:Module.m_GenericParamToDescMap maps generic parameter RIDs to TypeVarTypeDesc
+        // instances so that we do not leak by allocating them all over again, if the declaring
+        // type repeatedly fails to load.
+        TypeVarTypeDesc* pTypeVarTypeDesc = pModule->LookupGenericParam(pModule, tok, i, tkTyPar);
+        pInstDest[i] = TypeHandle(pTypeVarTypeDesc);
     }
     LOG((LF_JIT, LL_INFO10000, "IMD::SGMD: Initialized typical MethodDesc. type handles: %u\n",
         numTyPars));

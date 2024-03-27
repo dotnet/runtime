@@ -764,9 +764,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case CorElementType.ELEMENT_TYPE_PINNED:
                     return _provider.GetPinnedType(ParseType());
 
-                case CorElementType.ELEMENT_TYPE_VAR_ZAPSIG:
-                    throw new BadImageFormatException("var_zapsig");
-
                 case CorElementType.ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
                     throw new BadImageFormatException("native_valuetype_zapsig");
 

@@ -40,9 +40,6 @@ HRESULT SigParser::SkipExactlyOne()
             case ELEMENT_TYPE_MVAR:
                 IfFailRet(GetData(NULL));      // Skip variable number
                 break;
-            case ELEMENT_TYPE_VAR_ZAPSIG:
-                IfFailRet(GetData(NULL));      // Skip RID
-                break;
             case ELEMENT_TYPE_OBJECT:
             case ELEMENT_TYPE_STRING:
             case ELEMENT_TYPE_TYPEDBYREF:

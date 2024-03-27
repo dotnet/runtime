@@ -1237,50 +1237,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             break;
         }
 
-        case ELEMENT_TYPE_VAR_ZAPSIG:
-        {
-#ifndef DACCESS_COMPILE
-            RID rid;
-            IfFailThrowBF(psig.GetData(&rid), BFA_BAD_SIGNATURE, pModule);
-
-            mdGenericParam tkTyPar = TokenFromRid(rid, mdtGenericParam);
-
-            if (!pModule->IsFullModule())
-                THROW_BAD_FORMAT(BFA_BAD_COMPLUS_SIG, pOrigModule);
-
-            Module *pNormalModule = static_cast<Module*>(pModule);
-
-            TypeVarTypeDesc *pTypeVarTypeDesc = pNormalModule->LookupGenericParam(tkTyPar);
-            if (pTypeVarTypeDesc == NULL && (fLoadTypes == ClassLoader::LoadTypes))
-            {
-                mdToken tkOwner;
-                IfFailThrow(pNormalModule->GetMDImport()->GetGenericParamProps(tkTyPar, NULL, NULL, &tkOwner, NULL, NULL));
-
-                if (TypeFromToken(tkOwner) == mdtMethodDef)
-                {
-                    MemberLoader::GetMethodDescFromMethodDef(pNormalModule, tkOwner, FALSE);
-                }
-                else
-                {
-                    ClassLoader::LoadTypeDefThrowing(pNormalModule, tkOwner,
-                        ClassLoader::ThrowIfNotFound,
-                        ClassLoader::PermitUninstDefOrRef);
-                }
-
-                pTypeVarTypeDesc = pNormalModule->LookupGenericParam(tkTyPar);
-                if (pTypeVarTypeDesc == NULL)
-                {
-                    THROW_BAD_FORMAT(BFA_BAD_COMPLUS_SIG, pOrigModule);
-                }
-            }
-            thRet = TypeHandle(pTypeVarTypeDesc);
-#else
-            DacNotImpl();
-            thRet = TypeHandle();
-#endif
-            break;
-        }
-
         case ELEMENT_TYPE_VAR:
         {
             if ((pSubst != NULL) && !pSubst->GetInst().IsNull())

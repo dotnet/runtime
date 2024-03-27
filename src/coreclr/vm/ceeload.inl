@@ -155,7 +155,6 @@ void LookupMap<TYPE>::AddElement(ModuleBase * pModule, DWORD rid, TYPE value, TA
     }
 }
 
-
 // Ensures that the map has space for this element
 template<typename TYPE>
 inline
