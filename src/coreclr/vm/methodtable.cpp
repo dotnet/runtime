@@ -366,7 +366,6 @@ BOOL MethodTable::ValidateWithPossibleAV()
         (pEEClass && (pEEClass->GetMethodTableWithPossibleAV()->GetClassWithPossibleAV() == pEEClass))));
 }
 
-#ifndef DACCESS_COMPILE
 
 //==========================================================================================
 BOOL  MethodTable::IsClassInited()
@@ -379,7 +378,7 @@ BOOL  MethodTable::IsClassInited()
     if (IsSharedByGenericInstantiations())
         return FALSE;
 
-    DomainLocalModule *pLocalModule = GetDomainLocalModule();
+    PTR_DomainLocalModule pLocalModule = GetDomainLocalModule();
 
     _ASSERTE(pLocalModule != NULL);
 
@@ -391,12 +390,13 @@ BOOL  MethodTable::IsInitError()
 {
     WRAPPER_NO_CONTRACT;
 
-    DomainLocalModule *pLocalModule = GetDomainLocalModule();
+    PTR_DomainLocalModule pLocalModule = GetDomainLocalModule();
     _ASSERTE(pLocalModule != NULL);
 
     return pLocalModule->IsClassInitError(this);
 }
 
+#ifndef DACCESS_COMPILE
 //==========================================================================================
 // mark the class as having its .cctor run
 void MethodTable::SetClassInited()
