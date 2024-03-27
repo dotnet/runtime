@@ -11,11 +11,10 @@ using System.Reflection.Emit;
 namespace System.Text.Json.Serialization.Metadata
 {
     [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+    [RequiresUnreferencedCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
-        public override Func<object>? CreateParameterlessConstructor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
-            ConstructorInfo? constructorInfo)
+        public override Func<object>? CreateParameterlessConstructor(Type type, ConstructorInfo? constructorInfo)
         {
             Debug.Assert(type != null);
             Debug.Assert(constructorInfo is null || constructorInfo.GetParameters().Length == 0);
@@ -176,13 +175,10 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
-        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>() =>
             CreateDelegate<Func<IEnumerable<TElement>, TCollection>>(
                 CreateImmutableEnumerableCreateRangeDelegate(typeof(TCollection), typeof(TElement), typeof(IEnumerable<TElement>)));
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         private static DynamicMethod CreateImmutableEnumerableCreateRangeDelegate(Type collectionType, Type elementType, Type enumerableType)
         {
             MethodInfo realMethod = collectionType.GetImmutableEnumerableCreateRangeMethod(elementType);
@@ -203,8 +199,6 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
-        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>() =>
             CreateDelegate<Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>>(
                 CreateImmutableDictionaryCreateRangeDelegate(typeof(TCollection), typeof(TKey), typeof(TValue), typeof(IEnumerable<KeyValuePair<TKey, TValue>>)));

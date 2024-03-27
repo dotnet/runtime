@@ -8,11 +8,11 @@ using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+    [RequiresUnreferencedCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class ReflectionMemberAccessor : MemberAccessor
     {
-        public override Func<object>? CreateParameterlessConstructor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
-            ConstructorInfo? ctorInfo)
+        public override Func<object>? CreateParameterlessConstructor(Type type, ConstructorInfo? ctorInfo)
         {
             Debug.Assert(type != null);
             Debug.Assert(ctorInfo is null || ctorInfo.GetParameters().Length == 0);
@@ -122,8 +122,6 @@ namespace System.Text.Json.Serialization.Metadata
             };
         }
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
-        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>()
         {
             MethodInfo createRange = typeof(TCollection).GetImmutableEnumerableCreateRangeMethod(typeof(TElement));
@@ -131,8 +129,6 @@ namespace System.Text.Json.Serialization.Metadata
                 typeof(Func<IEnumerable<TElement>, TCollection>));
         }
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
-        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>()
         {
             MethodInfo createRange = typeof(TCollection).GetImmutableDictionaryCreateRangeMethod(typeof(TKey), typeof(TValue));

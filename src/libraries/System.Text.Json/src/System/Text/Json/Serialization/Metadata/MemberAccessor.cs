@@ -9,9 +9,7 @@ namespace System.Text.Json.Serialization.Metadata
 {
     internal abstract class MemberAccessor
     {
-        public abstract Func<object>? CreateParameterlessConstructor(
-             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
-             ConstructorInfo? constructorInfo);
+        public abstract Func<object>? CreateParameterlessConstructor(Type type, ConstructorInfo? constructorInfo);
 
         public abstract Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor);
 
@@ -20,12 +18,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         public abstract Action<TCollection, object?> CreateAddMethodDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TCollection>();
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
-        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public abstract Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>();
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
-        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public abstract Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>();
 
         public abstract Func<object, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo);
@@ -35,5 +29,7 @@ namespace System.Text.Json.Serialization.Metadata
         public abstract Func<object, TProperty> CreateFieldGetter<TProperty>(FieldInfo fieldInfo);
 
         public abstract Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo);
+
+        public virtual void Clear() { }
     }
 }
