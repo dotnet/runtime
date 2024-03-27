@@ -370,7 +370,7 @@ namespace ObjectiveCMarshalAPI
         {
             // Not yet implemented For NativeAOT.
             // https://github.com/dotnet/runtime/issues/80985
-            if (!TestLibrary.Utilities.IsNativeAot)
+            // if (!TestLibrary.Utilities.IsNativeAot)
             {
                 var lastMethod = (MethodInfo)MethodBase.GetMethodFromHandle(lastMethodHandle);
                 Assert.True(lastMethod != null);
