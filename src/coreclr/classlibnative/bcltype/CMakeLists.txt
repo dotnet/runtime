@@ -5,6 +5,7 @@ set(BCLTYPE_SOURCES
     objectnative.cpp
     system.cpp
     varargsnative.cpp
+    variant.cpp
 )
 
 add_library_clr(bcltype OBJECT ${BCLTYPE_SOURCES})

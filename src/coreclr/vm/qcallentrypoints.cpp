@@ -42,6 +42,7 @@
 #include "mlinfo.h"
 
 #ifdef FEATURE_COMINTEROP
+#include "variant.h"
 #include "mngstdinterfaces.h"
 #endif // FEATURE_COMINTEROP
 
@@ -314,6 +315,8 @@ static const Entry s_QCall[] =
     DllImportEntry(MngdSafeArrayMarshaler_ConvertSpaceToManaged)
     DllImportEntry(MngdSafeArrayMarshaler_ConvertContentsToManaged)
     DllImportEntry(MngdSafeArrayMarshaler_ClearNative)
+    DllImportEntry(Variant_ConvertSystemColorToOleColor)
+    DllImportEntry(Variant_ConvertOleColorToSystemColor)
 #endif // FEATURE_COMINTEROP
     DllImportEntry(NativeLibrary_LoadFromPath)
     DllImportEntry(NativeLibrary_LoadByName)

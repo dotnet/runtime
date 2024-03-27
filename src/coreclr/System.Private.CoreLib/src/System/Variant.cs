@@ -83,6 +83,9 @@ namespace System
 
         internal static bool IsSystemDrawingColor(Type type) => type.Name == "System.Drawing.Color"; // Matches the behavior of IsTypeRefOrDef
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertSystemColorToOleColor")]
+        internal static partial uint ConvertSystemColorToOleColor(ObjectHandleOnStack obj);
+
         internal unsafe void SetFieldsObject(object val)
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(val);
@@ -96,7 +99,8 @@ namespace System
             else if (IsSystemDrawingColor(val.GetType()))
             {
                 // System.Drawing.Color is converted to UInt32
-                _data = SystemColorTranslatorAccess.ConvertSystemColorToOleColor(val);
+                object obj = val;
+                _data = ConvertSystemColorToOleColor(ObjectHandleOnStack.Create(ref obj));
                 _flags = CV_U4;
             }
             else
@@ -544,29 +548,6 @@ namespace System
                     _ => throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant),
                 };
             }
-        }
-
-        internal static class SystemColorTranslatorAccess
-        {
-            private static readonly MethodInfo s_toOleMethod;
-            private static readonly MethodInfo s_fromOleMethod;
-
-#pragma warning disable CA1810 // Initialize reference type static fields inline
-            static SystemColorTranslatorAccess()
-#pragma warning restore CA1810
-            {
-                // Reflection pattern recognized by trimmer
-                Type? colorTranslatorType = Type.GetType("System.Drawing.ColorTranslator, System.Drawing");
-                Debug.Assert(colorTranslatorType != null);
-                s_toOleMethod = colorTranslatorType.GetMethod("ToOle", BindingFlags.Public | BindingFlags.Static)!;
-                s_fromOleMethod = colorTranslatorType.GetMethod("FromOle", BindingFlags.Public | BindingFlags.Static)!;
-            }
-
-            public static uint ConvertSystemColorToOleColor(object colorObj)
-                => (uint)(int)s_toOleMethod.Invoke(null, [colorObj])!;
-
-            public static object ConvertOleColorToSystemColor(uint oleColor)
-                => s_fromOleMethod.Invoke(null, [(int)oleColor])!;
         }
     }
 }
