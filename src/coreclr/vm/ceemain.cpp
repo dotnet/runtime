@@ -163,7 +163,7 @@
 #include "jithost.h"
 #include "pgo.h"
 #include "pendingload.h"
-#include "yieldprocessornormalized.h"
+// #include "yieldprocessornormalized.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -782,7 +782,7 @@ void EEStartupHelper()
 
         // Perform some measurements before garbage collector is initialized
         // so GC initialization and the first few GCs can use the normalized yield
-        YieldProcessorNormalization::PerformMeasurement();
+        // YieldProcessorNormalization::PerformMeasurement();
 
         InitializeGarbageCollector();
 
