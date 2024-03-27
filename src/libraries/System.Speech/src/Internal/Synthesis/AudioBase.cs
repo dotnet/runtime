@@ -121,7 +121,22 @@ namespace System.Speech.Internal.Synthesis
                     try
                     {
                         byte[] data = new byte[(int)audio._stream.Length];
+
+#if NET7_0_OR_GREATER
                         audio._stream.ReadExactly(data);
+#else
+                        int totalRead = 0;
+                        while (totalRead < audio._stream.Length)
+                        {
+                            int bytesRead = audio._stream.Read(data, totalRead, audio._stream.Length - totalRead);
+                            if (bytesRead <= 0)
+                            {
+                                throw new EndOfStreamException();
+                            }
+                            totalRead += bytesRead;
+                        }
+#endif
+
                         Play(data);
                     }
                     finally
