@@ -964,7 +964,7 @@ namespace System.IO.Ports
             }
 
 #if NET7_0_OR_GREATER
-            _internalSerialStream.ReadExactly(bytesReceived, CachedBytesToRead, bytesReceived.Length - (CachedBytesToRead));    // get everything
+            _internalSerialStream.ReadExactly(bytesReceived, CachedBytesToRead, bytesReceived.Length - CachedBytesToRead);    // get everything
 #else
             int readCount = bytesReceived.Length - CachedBytesToRead;
             int totalRead = 0;
