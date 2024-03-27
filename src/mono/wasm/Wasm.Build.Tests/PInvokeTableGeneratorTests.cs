@@ -910,7 +910,7 @@ namespace Wasm.Build.Tests
                     {
                         Console.WriteLine($"main: {args.Length}");
                         MyImport();
-                        return 0;
+                        return 42;
                     }
                 }
                 """;
@@ -921,7 +921,7 @@ namespace Wasm.Build.Tests
                 id
             );
 
-            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0, host: host, id: id);
+            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("MyExport(123) -> 42", output);
         }
     }
