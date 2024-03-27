@@ -1698,8 +1698,8 @@ void Compiler::lvaClassifyParameterABI()
         lvaClassifyParameterABI(classifier);
 
         // The calling convention details computed by the old ABI classifier
-        // are wrong due to Swift structs. Grab them from the new ABI
-        // information.
+        // are wrong since it does not handle the Swift ABI for structs
+        // appropriately. Grab them from the new ABI information.
         for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
         {
             LclVarDsc* dsc = lvaGetDesc(lclNum);
@@ -5751,6 +5751,17 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     // Update the arg initial register locations.
     lvaUpdateArgsWithInitialReg();
 
+#ifdef SWIFT_SUPPORT
+    if (info.compCallConv == CorInfoCallConvExtension::Swift)
+    {
+        // We already assigned argument offsets in lvaClassifyParameterABI.
+        // TODO-Cleanup: We actually assign the stack offsets in the front
+        // always, even outside the Swift calling convention, so likely this
+        // entire function can be deleted.
+        return;
+    }
+#endif
+
     /* Is there a "this" argument? */
 
     if (!info.compIsStatic)
@@ -5926,6 +5937,15 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     }
 
 #endif // USER_ARGS_COME_LAST
+}
+
+//------------------------------------------------------------------------
+// lvaAssignVirtualFrameOffsetsToSwiftFuncArgs: 
+//   Assign stack frame offsets for the arguments to a CallConvSwift function.
+//
+void Compiler::lvaAssignVirtualFrameOffsetsToSwiftFuncArgs()
+{
+
 }
 
 #ifdef UNIX_AMD64_ABI
@@ -6932,22 +6952,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
             if (varDsc->lvIsParam)
             {
-#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
-
-                // On Windows AMD64 we can use the caller-reserved stack area that is already setup
-                assert(varDsc->GetStackOffset() != BAD_STK_OFFS);
-                continue;
-
-#else // !TARGET_AMD64
-
-                //  A register argument that is not enregistered ends up as
-                //  a local variable which will need stack frame space.
-                //
-                if (!varDsc->lvIsRegArg)
-                {
-                    continue;
-                }
-
 #ifdef TARGET_ARM64
                 if (info.compIsVarArgs && (varDsc->GetArgReg() != theFixedRetBuffReg(info.compCallConv)))
                 {
@@ -6956,21 +6960,12 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                     varDsc->SetStackOffset(-initialStkOffs + regArgNum * REGSIZE_BYTES);
                     continue;
                 }
-
 #endif
 
-#ifdef TARGET_ARM
-                // On ARM we spill the registers in codeGen->regSet.rsMaskPreSpillRegArg
-                // in the prolog, thus they don't need stack frame space.
-                //
-                if ((codeGen->regSet.rsMaskPreSpillRegs(false) & genRegMask(varDsc->GetArgReg())) != 0)
+                if (!lvaParamShouldHaveLocalStackSpace(lclNum))
                 {
-                    assert(varDsc->GetStackOffset() != BAD_STK_OFFS);
                     continue;
                 }
-#endif
-
-#endif // !TARGET_AMD64
             }
 
             /* Make sure the type is appropriate */
@@ -7052,11 +7047,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
             // Reserve the stack space for this variable
             stkOffs = lvaAllocLocalAndSetVirtualOffset(lclNum, lvaLclSize(lclNum), stkOffs);
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // If we have an incoming register argument that has a promoted field then we
-            // need to copy the lvStkOff (the stack home) from the reg arg to the field lclvar
-            //
-            if (varDsc->lvIsRegArg && varDsc->lvPromoted)
+
+            // Propagate the stack allocation to the fields for a dependently
+            // promoted struct.
+            if (lvaGetPromotionType(lclNum) == PROMOTION_TYPE_DEPENDENT)
             {
                 unsigned firstFieldNum = varDsc->lvFieldLclStart;
                 for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
@@ -7065,7 +7059,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                     fieldVarDsc->SetStackOffset(varDsc->GetStackOffset() + fieldVarDsc->lvFldOffset);
                 }
             }
-#endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         }
     }
 
@@ -7222,6 +7215,60 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
     noway_assert(compLclFrameSize + originalFrameSize ==
                  (unsigned)-(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
+}
+
+//------------------------------------------------------------------------
+// lvaParamShouldHaveLocalStackSpace: Check if a local that represents a
+// parameter should be allocated as part of the locals space.
+//
+// Arguments:
+//   lclNum - the variable number
+//
+// Return Value:
+//   true if the local does not have reusable stack space passed by the caller
+//   already.
+//
+bool Compiler::lvaParamShouldHaveLocalStackSpace(unsigned lclNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+
+#ifdef SWIFT_SUPPORT
+    // In Swift functions, struct parameters that are no passed implicitly by
+    // reference are always reassembled on the local stack frame since their
+    // passing is decomposed.
+    if ((info.compCallConv == CorInfoCallConvExtension::Swift) && (varDsc->TypeGet() == TYP_STRUCT) && !lvaIsImplicitByRefLocal(lclNum))
+    {
+        return true;
+    }
+#endif
+
+#if defined(WINDOWS_AMD64_ABI)
+    // On Windows AMD64 we can use the caller-reserved stack area that is already setup
+    return false;
+#else // !WINDOWS_AMD64_ABI
+
+    //  A register argument that is not enregistered ends up as
+    //  a local variable which will need stack frame space.
+    //
+    if (!varDsc->lvIsRegArg)
+    {
+        return false;
+    }
+
+#ifdef TARGET_ARM
+    // On ARM we spill the registers in codeGen->regSet.rsMaskPreSpillRegArg
+    // in the prolog, thus they don't need stack frame space.
+    //
+    if ((codeGen->regSet.rsMaskPreSpillRegs(false) & genRegMask(varDsc->GetArgReg())) != 0)
+    {
+        assert(varDsc->GetStackOffset() != BAD_STK_OFFS);
+        return false;
+    }
+#endif
+
+#endif // !WINDOWS_AMD64_ABI
+
+    return true;
 }
 
 int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs)
@@ -8118,7 +8165,7 @@ unsigned Compiler::lvaFrameSize(FrameLayoutState curState)
 //
 // Return Value:
 //    The offset.
-
+//
 int Compiler::lvaGetSPRelativeOffset(unsigned varNum)
 {
     assert(!compLocallocUsed);
