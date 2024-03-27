@@ -28,9 +28,11 @@ And run it with
 dotnet run
 ```
 
-### Optional build flags 
+### Optional build flags
 
-TBD
+- `WasmSingleFileBundle` - bundle all assets into the `.wasm`. The output file name will match the project name
+- `InvariantGlobalization` - remove globalization support
+- More properties defined in https://github.com/dotnet/runtime/blob/main/src/mono/wasm/build/WasmApp.Common.targets
 
 ## How it works
 
