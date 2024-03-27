@@ -499,26 +499,11 @@ unsigned optCSEKeyToHashIndex(size_t key, size_t optCSEhashSize)
 //
 unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 {
-    size_t   key;
-    unsigned hval;
-    CSEdsc*  hashDsc;
-    bool     enableSharedConstCSE = false;
-    bool     isSharedConst        = false;
-    int      configValue          = JitConfig.JitConstCSE();
-
-#if defined(TARGET_ARMARCH)
-    // ARMARCH - allow to combine with nearby offsets, when config is not 2 or 4
-    if ((configValue != CONST_CSE_ENABLE_ARM_NO_SHARING) && (configValue != CONST_CSE_ENABLE_ALL_NO_SHARING))
-    {
-        enableSharedConstCSE = true;
-    }
-#endif // TARGET_ARMARCH
-
-    // All Platforms - also allow to combine with nearby offsets, when config is 3
-    if (configValue == CONST_CSE_ENABLE_ALL)
-    {
-        enableSharedConstCSE = true;
-    }
+    size_t     key;
+    unsigned   hval;
+    CSEdsc*    hashDsc;
+    const bool enableSharedConstCSE = optSharedConstantCSEEnabled();
+    bool       isSharedConst        = false;
 
     // We use the liberal Value numbers when building the set of CSE
     ValueNum vnLib     = tree->GetVN(VNK_Liberal);
@@ -1759,34 +1744,12 @@ void Compiler::optValnumCSE_Availability()
 //
 CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler) : m_pCompiler(pCompiler)
 {
-    m_addCSEcount = 0; /* Count of the number of LclVars for CSEs that we added */
-    sortTab       = nullptr;
-    sortSiz       = 0;
-    madeChanges   = false;
-    codeOptKind   = m_pCompiler->compCodeOpt();
-
-    enableConstCSE = true;
-
-    int configValue = JitConfig.JitConstCSE();
-
-    // all platforms - disable CSE of constant values when config is 1
-    if (configValue == CONST_CSE_DISABLE_ALL)
-    {
-        enableConstCSE = false;
-    }
-
-#if !defined(TARGET_ARM64)
-    // non-ARM64 platforms - disable by default
-    //
-    enableConstCSE = false;
-
-    // Check for the two enable cases for all platforms
-    //
-    if ((configValue == CONST_CSE_ENABLE_ALL) || (configValue == CONST_CSE_ENABLE_ALL_NO_SHARING))
-    {
-        enableConstCSE = true;
-    }
-#endif
+    m_addCSEcount  = 0; /* Count of the number of LclVars for CSEs that we added */
+    sortTab        = nullptr;
+    sortSiz        = 0;
+    madeChanges    = false;
+    codeOptKind    = m_pCompiler->compCodeOpt();
+    enableConstCSE = Compiler::optConstantCSEEnabled();
 
 #ifdef DEBUG
     // Track the order of CSEs done (candidate number)
@@ -2189,6 +2152,13 @@ void CSE_HeuristicRandom::ConsiderCandidates()
         JITDUMP("CSE Expression : \n");
         JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
         JITDUMP("\n");
+
+#ifdef DEBUG
+        if (m_pCompiler->optConfigDisableCSE2())
+        {
+            continue;
+        }
+#endif
 
         if (dsc->defExcSetPromise == ValueNumStore::NoVN)
         {
@@ -5407,7 +5377,7 @@ bool Compiler::optConfigDisableCSE2()
         {
             if (verbose)
             {
-                printf(" Disabled by jitNoCSE2 > totalCSEcount\n");
+                printf(" Disabled by jitNoCSE2 %d > totalCSEcount %d\n", jitNoCSE2, totalCSEcount);
             }
             return true;
         }
@@ -5451,6 +5421,56 @@ void Compiler::optCleanupCSEs()
             }
         }
     }
+}
+
+//---------------------------------------------------------------------------
+// optSharedConstantCSEEnabled: Returns `true` if shared constant CSE is enabled.
+//
+// Notes: see `optConstantCSEEnabled` for detecting if general constant CSE is enabled.
+//
+// static
+bool Compiler::optSharedConstantCSEEnabled()
+{
+    bool enableSharedConstCSE = false;
+    int  configValue          = JitConfig.JitConstCSE();
+
+    if (configValue == CONST_CSE_ENABLE_ALL)
+    {
+        enableSharedConstCSE = true;
+    }
+#if defined(TARGET_ARMARCH)
+    else if (configValue == CONST_CSE_ENABLE_ARM)
+    {
+        enableSharedConstCSE = true;
+    }
+#endif // TARGET_ARMARCH
+
+    return enableSharedConstCSE;
+}
+
+//---------------------------------------------------------------------------
+// optConstantCSEEnabled: Returns `true` if constant CSE is enabled.
+//
+// Notes: see `optSharedConstantCSEEnabled` for detecting if shared constant CSE is enabled.
+//
+// static
+bool Compiler::optConstantCSEEnabled()
+{
+    bool enableConstCSE = false;
+    int  configValue    = JitConfig.JitConstCSE();
+
+    if ((configValue == CONST_CSE_ENABLE_ALL) || (configValue == CONST_CSE_ENABLE_ALL_NO_SHARING))
+    {
+        enableConstCSE = true;
+    }
+#if defined(TARGET_ARMARCH)
+    else if ((configValue == CONST_CSE_ENABLE_ARM) || (configValue == CONST_CSE_ENABLE_ARM_NO_SHARING))
+    {
+        enableConstCSE = true;
+    }
+#endif
+
+    return enableConstCSE;
 }
 
 #ifdef DEBUG

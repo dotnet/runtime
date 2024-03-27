@@ -100,7 +100,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoHaveWeights = true;
     m_comp->fgPgoSource      = newSource;
     m_comp->fgPgoSynthesized = true;
-    m_comp->fgPgoConsistent  = (m_improperLoopHeaders == 0) && (m_cappedCyclicProbabilities == 0);
+    m_comp->fgPgoConsistent  = !m_approximate;
 
 #ifdef DEBUG
     if (JitConfig.JitCheckSynthesizedCounts() > 0)
@@ -889,9 +889,9 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 //
 void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
 {
-    // Determine input weight for entire method.
+    // Determine input weight for method entry
     //
-    BasicBlock* const entryBlock  = m_comp->fgFirstBB;
+    BasicBlock* const entryBlock  = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
     weight_t          entryWeight = BB_UNITY_WEIGHT;
 
     switch (option)
@@ -899,7 +899,7 @@ void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
         case ProfileSynthesisOption::BlendLikelihoods:
         case ProfileSynthesisOption::RepairLikelihoods:
         {
-            // Try and retain fgEntryBB's weight.
+            // Try and retain entryBlock's weight.
             // Easiest to do when the block has no preds.
             //
             if (entryBlock->hasProfileWeight())
@@ -934,36 +934,64 @@ void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
             break;
     }
 
-    // Determine input weight for EH regions.
+    // Reset existing weights
     //
-    const weight_t ehWeight = entryWeight * exceptionScale;
-
     for (BasicBlock* block : m_comp->Blocks())
     {
         block->setBBProfileWeight(0.0);
     }
 
+    // Set entry weight
+    //
+    JITDUMP("Synthesis: entry " FMT_BB " has input weight " FMT_WT "\n", entryBlock->bbNum, entryWeight);
     entryBlock->setBBProfileWeight(entryWeight);
 
-    if (!m_comp->compIsForInlining())
+    // Determine input weight for EH regions, if any.
+    //
+    weight_t exceptionScaleFactor = exceptionScale;
+
+#ifdef DEBUG
+    if (JitConfig.JitSynthesisExceptionScale() != nullptr)
     {
-        for (EHblkDsc* const HBtab : EHClauses(m_comp))
+        ConfigDoubleArray JitSynthesisExceptionScaleArray;
+        JitSynthesisExceptionScaleArray.EnsureInit(JitConfig.JitSynthesisExceptionScale());
+        weight_t newFactor = JitSynthesisExceptionScaleArray.GetData()[0];
+
+        if ((newFactor >= 0) && (newFactor <= 1.0))
         {
-            // Only set weights on the filter/hander entries
-            // if the associated try is reachable.
-            //
-            BasicBlock* const tryBlock = HBtab->ebdTryBeg;
-            if (!m_dfsTree->Contains(tryBlock))
-            {
-                continue;
-            }
+            exceptionScaleFactor = newFactor;
+        }
+    }
+#endif
 
-            if (HBtab->HasFilter())
-            {
-                HBtab->ebdFilter->setBBProfileWeight(ehWeight);
-            }
+    JITDUMP("Synthesis: exception scale factor " FMT_WT "\n", exceptionScaleFactor);
+    const weight_t ehWeight = entryWeight * exceptionScaleFactor;
 
-            HBtab->ebdHndBeg->setBBProfileWeight(ehWeight);
+    if (ehWeight != 0)
+    {
+        // We can't inline methods with EH, also inlinees share the parent
+        // EH tab, so we can't rely on this being empty.
+        //
+        if (!m_comp->compIsForInlining())
+        {
+            for (EHblkDsc* const HBtab : EHClauses(m_comp))
+            {
+                // Only set weights on the filter/hander entries
+                // if the associated try is reachable.
+                //
+                BasicBlock* const tryBlock = HBtab->ebdTryBeg;
+                if (!m_dfsTree->Contains(tryBlock))
+                {
+                    continue;
+                }
+
+                if (HBtab->HasFilter())
+                {
+                    HBtab->ebdFilter->setBBProfileWeight(ehWeight);
+                }
+
+                HBtab->ebdHndBeg->setBBProfileWeight(ehWeight);
+            }
         }
     }
 }
@@ -976,11 +1004,25 @@ void ProfileSynthesis::ComputeBlockWeights()
 {
     JITDUMP("Computing block weights\n");
 
+    bool useSolver = true;
+
+#ifdef DEBUG
+    useSolver = JitConfig.JitSynthesisUseSolver() > 0;
+#endif
+
+    if (useSolver)
+    {
+        GaussSeidelSolver();
+        return;
+    }
+
     for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
     {
         BasicBlock* block = m_dfsTree->GetPostOrder(i - 1);
         ComputeBlockWeight(block);
     }
+
+    m_approximate = (m_cappedCyclicProbabilities) || (m_improperLoopHeaders > 0);
 }
 
 //------------------------------------------------------------------------
@@ -1014,7 +1056,7 @@ void ProfileSynthesis::ComputeBlockWeight(BasicBlock* block)
     }
     else
     {
-        // Sum all incoming edges that aren't EH flow
+        // Sum all incoming edges that aren't EH flow.
         //
         for (FlowEdge* const edge : block->PredEdges())
         {
@@ -1043,4 +1085,264 @@ void ProfileSynthesis::ComputeBlockWeight(BasicBlock* block)
             JITDUMP("cbw%s: " FMT_BB " :: " FMT_WT "\n", kind, finallyEntry->bbNum, finallyEntry->bbWeight);
         }
     }
+}
+
+//------------------------------------------------------------------------
+// GaussSeidelSolver: solve for block weights iteratively
+//
+void ProfileSynthesis::GaussSeidelSolver()
+{
+    // The computed block weights.
+    //
+    jitstd::vector<weight_t> countVector(m_comp->fgBBNumMax + 1, 0, m_comp->getAllocator(CMK_Pgo));
+
+    // The algorithm.
+    //
+    bool                          converged        = false;
+    weight_t                      previousResidual = 0;
+    weight_t                      residual         = 0;
+    weight_t                      relResidual      = 0;
+    weight_t                      oldRelResidual   = 0;
+    weight_t                      eigenvalue       = 0;
+    weight_t const                stopResidual     = 0.005;
+    weight_t const                stopRelResidual  = 0.002;
+    BasicBlock*                   residualBlock    = nullptr;
+    BasicBlock*                   relResidualBlock = nullptr;
+    const FlowGraphDfsTree* const dfs              = m_loops->GetDfsTree();
+    unsigned const                blockCount       = dfs->GetPostOrderCount();
+
+    // Remember the entry block
+    //
+    BasicBlock* const entryBlock = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
+    JITDUMP("Synthesis solver: flow graph has %u improper loop headers\n", m_improperLoopHeaders);
+
+    // This is an iterative solver, and it may require a lot of iterations
+    // to converge. We don't have time for that, so we will give up
+    // fairly quickly.
+    //
+    // This can be mitgated somewhat by using blend mode for repairs, as that tends
+    // to shift likelihoods off of the extremes (say 0.999) can lead to high
+    // iteration counts.
+    //
+    // If we have existing inconsistent data, we might consider starting from
+    // that data, rather than from mostly 0.
+    //
+    // It is possible that a more sophisticated solver (say GMRES or BiCGStab)
+    // might be more effective and run in acceptable time.
+    //
+    unsigned const iterationLimit = (m_improperLoopHeaders > 0) ? 20 : 1;
+
+    // Push weights forward in flow, iterate until convergence.
+    //
+    unsigned i = 0;
+    for (; i < iterationLimit; i++)
+    {
+        residualBlock    = nullptr;
+        relResidualBlock = nullptr;
+        residual         = 0;
+        relResidual      = 0;
+
+        // Compute new counts based on Gauss-Seidel iteration
+        //
+        // Todo: after 1st iteration we can start at the postorder
+        // num of the first improper SCC block, as anything "above"
+        // this will no longer change.
+        //
+        // Likewise we can stop at the postorder num of the last block that is
+        // part of any improper SCC, if we knew what that was,
+        // and ony run through the tail blocks on the last iteration.
+        //
+        // (or more generally we can go SCC by SCC...)
+        //
+        for (unsigned j = m_dfsTree->GetPostOrderCount(); j != 0; j--)
+        {
+            BasicBlock* const block     = dfs->GetPostOrder(j - 1);
+            weight_t          newWeight = 0;
+
+            // Some blocks have additional profile weights that don't come from flow edges.
+            //
+            if (block == entryBlock)
+            {
+                newWeight = block->bbWeight;
+            }
+            else
+            {
+                EHblkDsc* const ehDsc = m_comp->ehGetBlockHndDsc(block);
+
+                if (ehDsc != nullptr)
+                {
+                    if (ehDsc->HasFilter() && (block == ehDsc->ebdFilter))
+                    {
+                        newWeight = block->bbWeight;
+                    }
+                    else if (block == ehDsc->ebdHndBeg)
+                    {
+                        newWeight = block->bbWeight;
+
+                        // Finallies also add in the weight of their try.
+                        //
+                        if (ehDsc->HasFinallyHandler())
+                        {
+                            newWeight += countVector[ehDsc->ebdTryBeg->bbNum];
+                        }
+                    }
+                }
+            }
+
+            // Blocks with no preds are simple to handle
+            //
+            if (block->bbPreds != nullptr)
+            {
+                // Leverage Cp for existing loop headers.
+                // This is an optimization to speed convergence.
+                //
+                FlowGraphNaturalLoop* const loop = m_loops->GetLoopByHeader(block);
+
+                if (loop != nullptr)
+                {
+                    // Sum all entry edges that aren't EH flow
+                    //
+                    for (FlowEdge* const edge : loop->EntryEdges())
+                    {
+                        BasicBlock* const predBlock = edge->getSourceBlock();
+
+                        if (BasicBlock::sameHndRegion(block, predBlock))
+                        {
+                            newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
+                        }
+                    }
+
+                    // Scale by cyclic probability
+                    //
+                    newWeight *= m_cyclicProbabilities[loop->GetIndex()];
+                }
+                else
+                {
+                    // A self-edge that's part of a bigger SCC may
+                    // not be detected as simple loop.
+                    //
+                    FlowEdge* selfEdge = nullptr;
+
+                    for (FlowEdge* const edge : block->PredEdges())
+                    {
+                        BasicBlock* const predBlock = edge->getSourceBlock();
+
+                        if (predBlock == block)
+                        {
+                            // We might see a degenerate self BBJ_COND. Hoepfully not.
+                            //
+                            assert(selfEdge == nullptr);
+                            selfEdge = edge;
+                            continue;
+                        }
+
+                        if (BasicBlock::sameHndRegion(block, predBlock))
+                        {
+                            newWeight += edge->getLikelihood() * countVector[predBlock->bbNum];
+                        }
+                    }
+
+                    if (selfEdge != nullptr)
+                    {
+                        weight_t selfLikelihood = selfEdge->getLikelihood();
+                        if (selfLikelihood > cappedLikelihood)
+                        {
+                            m_cappedCyclicProbabilities++;
+                            selfLikelihood = cappedLikelihood;
+                        }
+                        newWeight = newWeight / (1.0 - selfLikelihood);
+                    }
+                }
+            }
+
+            // Note we can't use SOR to accelerate convergence, as our coefficient matrix is an M-matrix
+            // and so it is risky to use \omega > 1 -- our dominant eigenvalue may be very close to 1.
+            // Also even if safe, SOR may over-correct and give negative results.
+            //
+            weight_t const oldWeight = countVector[block->bbNum];
+            weight_t const change    = newWeight - oldWeight;
+
+            // Hence counts will not decrease.
+            //
+            assert(change >= 0);
+
+            JITDUMP("iteration %u: " FMT_BB " :: old " FMT_WT " new " FMT_WT " change " FMT_WT "\n", i, block->bbNum,
+                    oldWeight, newWeight, change);
+            countVector[block->bbNum] = newWeight;
+
+            // Remember max absolute and relative change
+            // (note rel residual will be infinite on the first pass, that's ok)
+            //
+            // Note we are using a "point" bound here ("infinity norm") rather than say
+            // computing the l2-norm of the entire residual vector.
+            //
+            weight_t const blockRelResidual = change / oldWeight;
+
+            if ((relResidualBlock == nullptr) || ((oldWeight > 0) && (blockRelResidual > relResidual)))
+            {
+                relResidual      = blockRelResidual;
+                relResidualBlock = block;
+            }
+
+            if ((residualBlock == nullptr) || (change > residual))
+            {
+                residual      = change;
+                residualBlock = block;
+            }
+        }
+
+        // If there were no improper headers, we will have converged in one pass.
+        // (profile may still be inconsistent, if there were capped cyclic probabilities).
+        //
+        if (m_improperLoopHeaders == 0)
+        {
+            converged = true;
+            break;
+        }
+
+        JITDUMP("iteration %u: max residual is at " FMT_BB " : " FMT_WT "\n", i, residualBlock->bbNum, residual);
+        JITDUMP("iteration %u: max rel residual is at " FMT_BB " : " FMT_WT "\n", i, relResidualBlock->bbNum,
+                relResidual);
+
+        // If max residual or relative residual is sufficiently small, then stop.
+        //
+        if ((residual < stopResidual) || (relResidual < stopRelResidual))
+        {
+            converged = true;
+            break;
+        }
+
+        // If we have been iterating for a bit, estimate the dominant GS
+        // eigenvalue. (we might want to start with Jacobi iterations
+        // to get the Jacobi eigenvalue instead).
+        //
+        if ((i > 3) && (oldRelResidual > 0))
+        {
+            eigenvalue = relResidual / oldRelResidual;
+            JITDUMP(" eigenvalue " FMT_WT, eigenvalue);
+        }
+        JITDUMP("\n");
+        oldRelResidual = relResidual;
+    }
+
+    JITDUMP("%s at iteration %u rel residual " FMT_WT " eigenvalue " FMT_WT "\n",
+            converged ? "converged" : "failed to converge", i, relResidual, eigenvalue);
+
+    // TODO: computation above may be on the edge of diverging as there is
+    // nothing preventing a general cycle from having 1.0 likelihood. That
+    // is, there is nothing analogous to the capped cyclic check for more
+    // general cycles.
+    //
+    // We should track if the overall residual error (say L1 or L2 norm).
+    // If it is not decreasing, consider not using the data.
+    //
+    // Propagate the computed weights to the blocks.
+    //
+    for (unsigned j = m_dfsTree->GetPostOrderCount(); j != 0; j--)
+    {
+        BasicBlock* const block = dfs->GetPostOrder(j - 1);
+        block->setBBProfileWeight(max(0, countVector[block->bbNum]));
+    }
+
+    m_approximate = !converged || (m_cappedCyclicProbabilities > 0);
 }

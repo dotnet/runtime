@@ -87,6 +87,22 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ReadOnlySpan<TChar> PercentSymbolTChar<TChar>(this NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
+            return MemoryMarshal.Cast<char, TChar>(info.PercentSymbol);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ReadOnlySpan<TChar> PerMilleSymbolTChar<TChar>(this NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
+            return MemoryMarshal.Cast<char, TChar>(info.PerMilleSymbol);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<TChar> CurrencyDecimalSeparatorTChar<TChar>(this NumberFormatInfo info)
             where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -116,6 +132,22 @@ namespace System
         {
             Debug.Assert(typeof(TChar) == typeof(Utf16Char));
             return MemoryMarshal.Cast<char, TChar>(info.NumberGroupSeparator);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ReadOnlySpan<TChar> PercentDecimalSeparatorTChar<TChar>(this NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
+            return MemoryMarshal.Cast<char, TChar>(info.PercentDecimalSeparator);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ReadOnlySpan<TChar> PercentGroupSeparatorTChar<TChar>(this NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(Utf16Char));
+            return MemoryMarshal.Cast<char, TChar>(info.PercentGroupSeparator);
         }
     }
 }

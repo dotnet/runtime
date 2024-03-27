@@ -11,7 +11,7 @@ import { is_thread_available } from "./pthreads";
 let spread_timers_maximum = 0;
 let pump_count = 0;
 
-export function prevent_timer_throttling(): void {
+export function prevent_timer_throttling (): void {
     if (!loaderHelpers.isChromium) {
         return;
     }
@@ -29,7 +29,7 @@ export function prevent_timer_throttling(): void {
     spread_timers_maximum = desired_reach_time;
 }
 
-function prevent_timer_throttling_tick() {
+function prevent_timer_throttling_tick () {
     Module.maybeExit();
     if (!loaderHelpers.is_runtime_running()) {
         return;
@@ -42,7 +42,7 @@ function prevent_timer_throttling_tick() {
     mono_background_exec_until_done();
 }
 
-function mono_background_exec_until_done() {
+function mono_background_exec_until_done () {
     Module.maybeExit();
     if (!loaderHelpers.is_runtime_running()) {
         return;
@@ -56,10 +56,10 @@ function mono_background_exec_until_done() {
     }
 }
 
-export function schedule_background_exec(): void {
+export function schedule_background_exec (): void {
     ++pump_count;
     let max_postpone_count = 10;
-    function postpone_schedule_background() {
+    function postpone_schedule_background () {
         if (max_postpone_count < 0 || is_thread_available()) {
             Module.safeSetTimeout(mono_background_exec_until_done, 0);
         } else {
@@ -71,26 +71,25 @@ export function schedule_background_exec(): void {
     if (WasmEnableThreads && !ENVIRONMENT_IS_WORKER) {
         // give threads chance to load before we run more synchronous code on UI thread
         postpone_schedule_background();
-    }
-    else {
+    } else {
         Module.safeSetTimeout(mono_background_exec_until_done, 0);
     }
 }
 
 let lastScheduledTimeoutId: any = undefined;
-export function mono_wasm_schedule_timer(shortestDueTimeMs: number): void {
+export function mono_wasm_schedule_timer (shortestDueTimeMs: number): void {
     if (lastScheduledTimeoutId) {
         globalThis.clearTimeout(lastScheduledTimeoutId);
         lastScheduledTimeoutId = undefined;
-        // NOTE: Multi-threaded Module.safeSetTimeout() does the runtimeKeepalivePush() 
-        // and non-Multi-threaded Module.safeSetTimeout does not runtimeKeepalivePush() 
+        // NOTE: Multi-threaded Module.safeSetTimeout() does the runtimeKeepalivePush()
+        // and non-Multi-threaded Module.safeSetTimeout does not runtimeKeepalivePush()
         // but clearTimeout does not runtimeKeepalivePop() so we need to do it here in MT only.
         if (WasmEnableThreads) Module.runtimeKeepalivePop();
     }
     lastScheduledTimeoutId = Module.safeSetTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
 }
 
-function mono_wasm_schedule_timer_tick() {
+function mono_wasm_schedule_timer_tick () {
     Module.maybeExit();
     if (WasmEnableThreads) {
         forceThreadMemoryViewRefresh();

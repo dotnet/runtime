@@ -59,50 +59,50 @@ import { mono_log_error, mono_log_info } from "./logging";
 import { mono_assert, runtimeHelpers } from "./globals";
 
 // indexPlusOne so that ip[1] in the interpreter becomes getArgU16(ip, 1)
-function getArgU16(ip: MintOpcodePtr, indexPlusOne: number) {
+function getArgU16 (ip: MintOpcodePtr, indexPlusOne: number) {
     return getU16(<any>ip + (2 * indexPlusOne));
 }
 
-function getArgI16(ip: MintOpcodePtr, indexPlusOne: number) {
+function getArgI16 (ip: MintOpcodePtr, indexPlusOne: number) {
     return getI16(<any>ip + (2 * indexPlusOne));
 }
 
-function getArgI32(ip: MintOpcodePtr, indexPlusOne: number) {
+function getArgI32 (ip: MintOpcodePtr, indexPlusOne: number) {
     const src = <any>ip + (2 * indexPlusOne);
     return getI32_unaligned(src);
 }
 
-function getArgF32(ip: MintOpcodePtr, indexPlusOne: number) {
+function getArgF32 (ip: MintOpcodePtr, indexPlusOne: number) {
     const src = <any>ip + (2 * indexPlusOne);
     return getF32_unaligned(src);
 }
 
-function getArgF64(ip: MintOpcodePtr, indexPlusOne: number) {
+function getArgF64 (ip: MintOpcodePtr, indexPlusOne: number) {
     const src = <any>ip + (2 * indexPlusOne);
     return getF64_unaligned(src);
 }
 
-function get_imethod(frame: NativePointer) {
+function get_imethod (frame: NativePointer) {
     // FIXME: Encoding this data directly into the trace will prevent trace reuse
     const iMethod = getU32_unaligned(<any>frame + getMemberOffset(JiterpMember.Imethod));
     return iMethod;
 }
 
-function get_imethod_data(frame: NativePointer, index: number) {
+function get_imethod_data (frame: NativePointer, index: number) {
     // FIXME: Encoding this data directly into the trace will prevent trace reuse
     const pData = getU32_unaligned(get_imethod(frame) + getMemberOffset(JiterpMember.DataItems));
     const dataOffset = pData + (index * sizeOfDataItem);
     return getU32_unaligned(dataOffset);
 }
 
-function get_imethod_clause_data_offset(frame: NativePointer, index: number) {
+function get_imethod_clause_data_offset (frame: NativePointer, index: number) {
     // FIXME: Encoding this data directly into the trace will prevent trace reuse
     const pData = getU32_unaligned(get_imethod(frame) + getMemberOffset(JiterpMember.ClauseDataOffsets));
     const dataOffset = pData + (index * sizeOfDataItem);
     return getU32_unaligned(dataOffset);
 }
 
-function is_backward_branch_target(
+function is_backward_branch_target (
     ip: MintOpcodePtr, startOfBody: MintOpcodePtr,
     backwardBranchTable: Uint16Array | null
 ) {
@@ -119,26 +119,56 @@ function is_backward_branch_target(
     return false;
 }
 
-type KnownConstantValue = number | Uint8Array;
-const knownConstantValues = new Map<number, KnownConstantValue>();
+interface KnownConstantI32 {
+    type: "i32";
+    value: number;
+}
 
-function get_known_constant_value(builder: WasmBuilder, localOffset: number): KnownConstantValue | undefined {
+interface KnownConstantV128 {
+    type: "v128";
+    value: Uint8Array;
+}
+
+interface KnownConstantLdloca {
+    type: "ldloca";
+    offset: number;
+}
+
+type KnownConstant = KnownConstantI32 | KnownConstantV128 | KnownConstantLdloca;
+type KnownConstantValue = number | Uint8Array;
+const knownConstants = new Map<number, KnownConstant>();
+
+function get_known_constant (builder: WasmBuilder, localOffset: number): KnownConstant | undefined {
     if (isAddressTaken(builder, localOffset))
         return undefined;
 
-    return knownConstantValues.get(localOffset);
+    return knownConstants.get(localOffset);
+}
+
+function get_known_constant_value (builder: WasmBuilder, localOffset: number): KnownConstantValue | undefined {
+    const kc = get_known_constant(builder, localOffset);
+    if (kc === undefined)
+        return undefined;
+
+    switch (kc.type) {
+        case "i32":
+        case "v128":
+            return kc.value;
+    }
+
+    return undefined;
 }
 
 // Perform a quick scan through the opcodes potentially in this trace to build a table of
 //  backwards branch targets, compatible with the layout of the old one that was generated in C.
 // We do this here to match the exact way that the jiterp calculates branch targets, since
 //  there were previously corner cases where jiterp and interp disagreed.
-export function generateBackwardBranchTable(
+export function generateBackwardBranchTable (
     ip: MintOpcodePtr, startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr,
 ): Uint16Array | null {
     const endOfBody = <any>startOfBody + <any>sizeOfBody;
     // TODO: Cache this table object instance and reuse it to reduce gc pressure?
-    const table : number[] = [];
+    const table: number[] = [];
     // IP of the start of the trace in U16s, relative to startOfBody.
     const rbase16 = (<any>ip - <any>startOfBody) / 2;
 
@@ -206,7 +236,7 @@ export function generateBackwardBranchTable(
     return new Uint16Array(table);
 }
 
-export function generateWasmBody(
+export function generateWasmBody (
     frame: NativePointer, traceName: string, ip: MintOpcodePtr,
     startOfBody: MintOpcodePtr, endOfBody: MintOpcodePtr,
     builder: WasmBuilder, instrumentedTraceId: number,
@@ -553,11 +583,20 @@ export function generateWasmBody(
                 builder.local("pLocals");
                 // locals[ip[1]] = &locals[ip[2]]
                 const offset = getArgU16(ip, 2),
-                    flag = isAddressTaken(builder, offset);
+                    flag = isAddressTaken(builder, offset),
+                    destOffset = getArgU16(ip, 1);
                 if (!flag)
                     mono_log_error(`${traceName}: Expected local ${offset} to have address taken flag`);
                 append_ldloca(builder, offset);
-                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+                append_stloc_tail(builder, destOffset, WasmOpcode.i32_store);
+                // Record this ldloca as a known constant so that later uses of it turn into a lea,
+                //  and the wasm runtime can constant fold them with other constants. It's not uncommon
+                //  to have code that does '&x + c', which (if this optimization works) should
+                //  turn into '&locals + offsetof(x) + c' and get constant folded to have the same cost
+                //  as a regular ldloc
+                knownConstants.set(destOffset, { type: "ldloca", offset: offset });
+                // dreg invalidation would blow the known constant away, so disable it
+                skipDregInvalidation = true;
                 break;
             }
 
@@ -1709,29 +1748,29 @@ export function generateWasmBody(
 const notNullSince: Map<number, number> = new Map();
 let cknullOffset = -1;
 
-function eraseInferredState() {
+function eraseInferredState () {
     cknullOffset = -1;
     notNullSince.clear();
-    knownConstantValues.clear();
+    knownConstants.clear();
 }
 
-function invalidate_local(offset: number) {
+function invalidate_local (offset: number) {
     if (cknullOffset === offset)
         cknullOffset = -1;
     notNullSince.delete(offset);
-    knownConstantValues.delete(offset);
+    knownConstants.delete(offset);
 }
 
-function invalidate_local_range(start: number, bytes: number) {
+function invalidate_local_range (start: number, bytes: number) {
     for (let i = 0; i < bytes; i += 1)
         invalidate_local(start + i);
 }
 
-function append_branch_target_block(builder: WasmBuilder, ip: MintOpcodePtr, isBackBranchTarget: boolean) {
+function append_branch_target_block (builder: WasmBuilder, ip: MintOpcodePtr, isBackBranchTarget: boolean) {
     builder.cfg.startBranchBlock(ip, isBackBranchTarget);
 }
 
-function computeMemoryAlignment(offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
+function computeMemoryAlignment (offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
     // First, compute the best possible alignment
     let alignment = 0;
     if (offset % 16 === 0)
@@ -1792,7 +1831,47 @@ function computeMemoryAlignment(offset: number, opcodeOrPrefix: WasmOpcode, simd
     return alignment;
 }
 
-function append_ldloc(builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
+function try_append_ldloc_cprop (
+    builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode,
+    dryRun: boolean, requireNonzero?: boolean
+) {
+    if (builder.options.cprop && (opcodeOrPrefix === WasmOpcode.i32_load)) {
+        // It's common to ldc.i4 or ldloca immediately before using the value
+        // in these cases the known constant analysis will work consistently, and we can skip the extra
+        //  memory load to read the constant we just wrote to a local. the resulting traces should be
+        //  both smaller and faster, while still correct since the ldc still writes to memory
+        // of course, if known constant analysis is broken, this will break too, but it's better to
+        //  learn immediately whether known constant analysis has been broken this whole time
+        // at least on x86 this will enable much better native code generation for the trace, since
+        //  operations like memory stores have forms that accept an immediate as rhs
+        const knownConstant = get_known_constant(builder, offset);
+        if (knownConstant) {
+            switch (knownConstant.type) {
+                case "i32":
+                    if (requireNonzero && (knownConstant.value === 0))
+                        return false;
+                    if (!dryRun)
+                        builder.i32_const(knownConstant.value);
+                    return true;
+                case "ldloca":
+                    // FIXME: Do we need to invalidate the local again? I don't think we do, we invalidated it
+                    //  when the ldloca operation originally happened, and we're just propagating that address
+                    //  constant forward to its point of use
+                    // requireNonzero is a no-op since ldloca always produces a nonzero result
+                    if (!dryRun)
+                        append_ldloca(builder, knownConstant.offset, 0);
+                    return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+function append_ldloc (builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
+    if (try_append_ldloc_cprop(builder, offset, opcodeOrPrefix, false))
+        return;
+
     builder.local("pLocals");
     mono_assert(opcodeOrPrefix >= WasmOpcode.i32_load, () => `Expected load opcode but got ${opcodeOrPrefix}`);
     builder.appendU8(opcodeOrPrefix);
@@ -1811,7 +1890,7 @@ function append_ldloc(builder: WasmBuilder, offset: number, opcodeOrPrefix: Wasm
 //  where the offset+alignment pair is referred to as a 'memarg' by the spec.
 // The actual store operation is equivalent to `pBase[offset] = value` (alignment has no
 //  observable impact on behavior, other than causing compilation failures if out of range)
-function append_stloc_tail(builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
+function append_stloc_tail (builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
     mono_assert(opcodeOrPrefix >= WasmOpcode.i32_store, () => `Expected store opcode but got ${opcodeOrPrefix}`);
     builder.appendU8(opcodeOrPrefix);
     if (simdOpcode !== undefined) {
@@ -1828,9 +1907,7 @@ function append_stloc_tail(builder: WasmBuilder, offset: number, opcodeOrPrefix:
 
 // Pass bytesInvalidated=0 if you are reading from the local and the address will never be
 //  used for writes
-// Pass transient=true if the address will not persist after use (so it can't be used to later
-//  modify the contents of this local)
-function append_ldloca(builder: WasmBuilder, localOffset: number, bytesInvalidated?: number) {
+function append_ldloca (builder: WasmBuilder, localOffset: number, bytesInvalidated?: number) {
     if (typeof (bytesInvalidated) !== "number")
         bytesInvalidated = 512;
     // FIXME: We need to know how big this variable is so we can invalidate the whole space it occupies
@@ -1839,7 +1916,7 @@ function append_ldloca(builder: WasmBuilder, localOffset: number, bytesInvalidat
     builder.lea("pLocals", localOffset);
 }
 
-function append_memset_local(builder: WasmBuilder, localOffset: number, value: number, count: number) {
+function append_memset_local (builder: WasmBuilder, localOffset: number, value: number, count: number) {
     invalidate_local_range(localOffset, count);
 
     // spec: pop n, pop val, pop d, fill from d[0] to d[n] with value val
@@ -1851,7 +1928,7 @@ function append_memset_local(builder: WasmBuilder, localOffset: number, value: n
     append_memset_dest(builder, value, count);
 }
 
-function append_memmove_local_local(builder: WasmBuilder, destLocalOffset: number, sourceLocalOffset: number, count: number) {
+function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: number, sourceLocalOffset: number, count: number) {
     invalidate_local_range(destLocalOffset, count);
 
     if (try_append_memmove_fast(builder, destLocalOffset, sourceLocalOffset, count, false))
@@ -1863,12 +1940,12 @@ function append_memmove_local_local(builder: WasmBuilder, destLocalOffset: numbe
     append_memmove_dest_src(builder, count);
 }
 
-function isAddressTaken(builder: WasmBuilder, localOffset: number) {
+function isAddressTaken (builder: WasmBuilder, localOffset: number) {
     return cwraps.mono_jiterp_is_imethod_var_address_taken(<any>get_imethod(builder.frame), localOffset) !== 0;
 }
 
 // Loads the specified i32 value and then bails out if it is null, leaving it in the cknull_ptr local.
-function append_ldloc_cknull(builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr, leaveOnStack: boolean) {
+function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr, leaveOnStack: boolean) {
     const optimize = builder.allowNullCheckOptimization &&
         notNullSince.has(localOffset) &&
         !isAddressTaken(builder, localOffset);
@@ -1920,7 +1997,7 @@ function append_ldloc_cknull(builder: WasmBuilder, localOffset: number, ip: Mint
         cknullOffset = -1;
 }
 
-function emit_ldc(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
+function emit_ldc (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
     let storeType = WasmOpcode.i32_store;
     let value: number | undefined;
 
@@ -1985,14 +2062,14 @@ function emit_ldc(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): 
     invalidate_local(localOffset);
 
     if (typeof (value) === "number")
-        knownConstantValues.set(localOffset, value);
+        knownConstants.set(localOffset, { type: "i32", value: value });
     else
-        knownConstantValues.delete(localOffset);
+        knownConstants.delete(localOffset);
 
     return true;
 }
 
-function emit_mov(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
+function emit_mov (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
     let loadOp = WasmOpcode.i32_load, storeOp = WasmOpcode.i32_store;
     switch (opcode) {
         case MintOpcode.MINT_MOV_I4_I1:
@@ -2055,7 +2132,7 @@ function emit_mov(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): 
     return true;
 }
 
-function append_vtable_initialize(builder: WasmBuilder, pVtable: NativePointer, ip: MintOpcodePtr) {
+function append_vtable_initialize (builder: WasmBuilder, pVtable: NativePointer, ip: MintOpcodePtr) {
     // TODO: Actually initialize the vtable instead of just checking and bailing out?
     builder.block();
     // FIXME: This will prevent us from reusing traces between runs since the vtables can move
@@ -2070,7 +2147,7 @@ function append_vtable_initialize(builder: WasmBuilder, pVtable: NativePointer, 
     builder.endBlock();
 }
 
-function emit_fieldop(
+function emit_fieldop (
     builder: WasmBuilder, frame: NativePointer,
     ip: MintOpcodePtr, opcode: MintOpcode
 ): boolean {
@@ -2092,6 +2169,8 @@ function emit_fieldop(
         notNullSince.has(objectOffset) &&
         !isAddressTaken(builder, objectOffset);
 
+    // TODO: Figure out whether this is commonly used to access fields of structs that
+    //  live on the stack, and if so, whether we want to do cprop of the ldloca
     if (
         (opcode !== MintOpcode.MINT_LDFLDA_UNSAFE) &&
         (opcode !== MintOpcode.MINT_STFLD_O)
@@ -2264,7 +2343,7 @@ function emit_fieldop(
     }
 }
 
-function emit_sfieldop(
+function emit_sfieldop (
     builder: WasmBuilder, frame: NativePointer,
     ip: MintOpcodePtr, opcode: MintOpcode
 ): boolean {
@@ -2371,7 +2450,7 @@ function emit_sfieldop(
     }
 }
 
-function emit_binop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
+function emit_binop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
     // operands are popped right to left, which means you build the arg list left to right
     let lhsLoadOp: WasmOpcode, rhsLoadOp: WasmOpcode, storeOp: WasmOpcode,
         lhsVar = "math_lhs32", rhsVar = "math_rhs32",
@@ -2523,7 +2602,7 @@ function emit_binop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode)
     return true;
 }
 
-function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
+function emit_unop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
     // operands are popped right to left, which means you build the arg list left to right
     const info = unopTable[<any>opcode];
     if (!info)
@@ -2662,7 +2741,7 @@ function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode):
     return true;
 }
 
-function append_call_handler_store_ret_ip(
+function append_call_handler_store_ret_ip (
     builder: WasmBuilder, ip: MintOpcodePtr,
     frame: NativePointer, opcode: MintOpcode
 ) {
@@ -2682,14 +2761,14 @@ function append_call_handler_store_ret_ip(
     builder.callHandlerReturnAddresses.push(retIp);
 }
 
-function getBranchDisplacement(
+function getBranchDisplacement (
     ip: MintOpcodePtr, opcode: MintOpcode
-) : number | undefined {
+): number | undefined {
     const opArgType = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.OpArgType),
         payloadOffset = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs),
         payloadAddress = <any>ip + 2 + (payloadOffset * 2);
 
-    let result : number;
+    let result: number;
     switch (opArgType) {
         case MintOpArgType.MintOpBranch:
             result = getI32_unaligned(payloadAddress);
@@ -2710,7 +2789,7 @@ function getBranchDisplacement(
     return result;
 }
 
-function emit_branch(
+function emit_branch (
     builder: WasmBuilder, ip: MintOpcodePtr,
     frame: NativePointer, opcode: MintOpcode
 ): boolean {
@@ -2851,7 +2930,7 @@ function emit_branch(
     return true;
 }
 
-function emit_relop_branch(
+function emit_relop_branch (
     builder: WasmBuilder, ip: MintOpcodePtr,
     frame: NativePointer, opcode: MintOpcode
 ): boolean {
@@ -2906,7 +2985,7 @@ function emit_relop_branch(
     return emit_branch(builder, ip, frame, opcode);
 }
 
-function emit_math_intrinsic(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
+function emit_math_intrinsic (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
     let isUnary: boolean, isF32: boolean, name: string | undefined;
     let wasmOp: WasmOpcode | undefined;
     const destOffset = getArgU16(ip, 1),
@@ -2954,7 +3033,7 @@ function emit_math_intrinsic(builder: WasmBuilder, ip: MintOpcodePtr, opcode: Mi
     }
 }
 
-function emit_indirectop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
+function emit_indirectop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
     const isLoad = (opcode >= MintOpcode.MINT_LDIND_I1) &&
         (opcode <= MintOpcode.MINT_LDIND_OFFSET_ADD_MUL_IMM_I8);
     const isAddMul = (
@@ -3088,13 +3167,21 @@ function emit_indirectop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOp
             return false;
     }
 
-    append_ldloc_cknull(builder, addressVarIndex, ip, false);
+    // Check whether ldloc cprop is possible for the address var, if it is, skip doing the ldloc_cknull.
+    // We'll also skip loading cknull_ptr later.
+    const addressCprop = try_append_ldloc_cprop(builder, addressVarIndex, WasmOpcode.i32_load, true, true);
+    if (!addressCprop)
+        append_ldloc_cknull(builder, addressVarIndex, ip, false);
 
     if (isLoad) {
         // pre-load pLocals for the store operation
         builder.local("pLocals");
         // Load address
-        builder.local("cknull_ptr");
+        if (addressCprop)
+            mono_assert(try_append_ldloc_cprop(builder, addressVarIndex, WasmOpcode.i32_load, false, true), "Unknown jiterpreter cprop failure");
+        else
+            builder.local("cknull_ptr");
+
         // For ldind_offset we need to load an offset from another local
         //  and then add it to the null checked address
         if (isAddMul) {
@@ -3126,13 +3213,21 @@ function emit_indirectop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOp
         append_stloc_tail(builder, valueVarIndex, setter);
     } else if (opcode === MintOpcode.MINT_STIND_REF) {
         // Load destination address
-        builder.local("cknull_ptr");
+        if (addressCprop)
+            mono_assert(try_append_ldloc_cprop(builder, addressVarIndex, WasmOpcode.i32_load, false, true), "Unknown jiterpreter cprop failure");
+        else
+            builder.local("cknull_ptr");
+
         // Load address of value so that copy_managed_pointer can grab it
         append_ldloca(builder, valueVarIndex, 0);
         builder.callImport("copy_ptr");
     } else {
         // Pre-load address for the store operation
-        builder.local("cknull_ptr");
+        if (addressCprop)
+            mono_assert(try_append_ldloc_cprop(builder, addressVarIndex, WasmOpcode.i32_load, false, true), "Unknown jiterpreter cprop failure");
+        else
+            builder.local("cknull_ptr");
+
         // For ldind_offset we need to load an offset from another local
         //  and then add it to the null checked address
         if (isOffset && offsetVarIndex >= 0) {
@@ -3152,7 +3247,7 @@ function emit_indirectop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOp
     return true;
 }
 
-function append_getelema1(
+function append_getelema1 (
     builder: WasmBuilder, ip: MintOpcodePtr,
     objectOffset: number, indexOffset: number, elementSize: number
 ) {
@@ -3211,7 +3306,7 @@ function append_getelema1(
     // append_getelema1 leaves the address on the stack
 }
 
-function emit_arrayop(builder: WasmBuilder, frame: NativePointer, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
+function emit_arrayop (builder: WasmBuilder, frame: NativePointer, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
     const isLoad = ((opcode <= MintOpcode.MINT_LDELEMA_TC) && (opcode >= MintOpcode.MINT_LDELEM_I1)) ||
         (opcode === MintOpcode.MINT_LDLEN),
         objectOffset = getArgU16(ip, isLoad ? 2 : 1),
@@ -3375,7 +3470,7 @@ function emit_arrayop(builder: WasmBuilder, frame: NativePointer, ip: MintOpcode
 
 let wasmSimdSupported: boolean | undefined;
 
-function getIsWasmSimdSupported(): boolean {
+function getIsWasmSimdSupported (): boolean {
     if (wasmSimdSupported !== undefined)
         return wasmSimdSupported;
 
@@ -3386,7 +3481,7 @@ function getIsWasmSimdSupported(): boolean {
     return wasmSimdSupported;
 }
 
-function get_import_name(
+function get_import_name (
     builder: WasmBuilder, typeName: string,
     functionPtr: number
 ): string {
@@ -3397,7 +3492,7 @@ function get_import_name(
     return name;
 }
 
-function emit_simd(
+function emit_simd (
     builder: WasmBuilder, ip: MintOpcodePtr,
     opcode: MintOpcode, opname: string,
     argCount: number, index: number
@@ -3429,7 +3524,7 @@ function emit_simd(
                 const view = localHeapViewU8().slice(<any>ip + 4, <any>ip + 4 + sizeOfV128);
                 builder.v128_const(view);
                 append_simd_store(builder, ip);
-                knownConstantValues.set(getArgU16(ip, 1), view);
+                knownConstants.set(getArgU16(ip, 1), { type: "v128", value: view });
             } else {
                 // dest
                 append_ldloca(builder, getArgU16(ip, 1), sizeOfV128);
@@ -3498,31 +3593,31 @@ function emit_simd(
     }
 }
 
-function append_simd_store(builder: WasmBuilder, ip: MintOpcodePtr) {
+function append_simd_store (builder: WasmBuilder, ip: MintOpcodePtr) {
     append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_store);
 }
 
-function append_simd_2_load(builder: WasmBuilder, ip: MintOpcodePtr, loadOp?: WasmSimdOpcode) {
+function append_simd_2_load (builder: WasmBuilder, ip: MintOpcodePtr, loadOp?: WasmSimdOpcode) {
     builder.local("pLocals");
     // This || is harmless since v128_load is 0
     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, loadOp || WasmSimdOpcode.v128_load);
 }
 
-function append_simd_3_load(builder: WasmBuilder, ip: MintOpcodePtr) {
+function append_simd_3_load (builder: WasmBuilder, ip: MintOpcodePtr) {
     builder.local("pLocals");
     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
     // FIXME: Can rhs be a scalar? We handle shifts separately already
     append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
 }
 
-function append_simd_4_load(builder: WasmBuilder, ip: MintOpcodePtr) {
+function append_simd_4_load (builder: WasmBuilder, ip: MintOpcodePtr) {
     builder.local("pLocals");
     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
     append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
     append_ldloc(builder, getArgU16(ip, 4), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
 }
 
-function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic2): boolean {
+function emit_simd_2 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic2): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(1, index);
     if (simple >= 0) {
         if (simdLoadTable.has(index)) {
@@ -3589,7 +3684,7 @@ function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
     }
 }
 
-function emit_simd_3(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic3): boolean {
+function emit_simd_3 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic3): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(2, index);
     if (simple >= 0) {
         const isShift = simdShiftTable.has(index),
@@ -3710,7 +3805,7 @@ function emit_simd_3(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
 
 // implement i16 and i32 shuffles on top of wasm's only shuffle opcode by expanding the
 //  element shuffle indices into byte indices
-function emit_shuffle(builder: WasmBuilder, ip: MintOpcodePtr, elementCount: number): boolean {
+function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: number): boolean {
     const elementSize = 16 / elementCount,
         indicesOffset = getArgU16(ip, 3),
         constantIndices = get_known_constant_value(builder, indicesOffset);
@@ -3771,7 +3866,7 @@ function emit_shuffle(builder: WasmBuilder, ip: MintOpcodePtr, elementCount: num
     return true;
 }
 
-function emit_simd_4(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic4): boolean {
+function emit_simd_4 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic4): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(3, index);
     if (simple >= 0) {
         // [lane count, value load opcode]
