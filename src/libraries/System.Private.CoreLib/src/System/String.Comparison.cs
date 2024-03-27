@@ -866,8 +866,8 @@ namespace System
                         ptr += 1;
                     }
 
-                    uint resOnScalarPath = (((BitOperations.RotateLeft(hashed1, 5) + hashed1)) ^ hashed3) + 1566083941 * (((BitOperations.RotateLeft(hashed2, 5) + hashed2)) ^ hashed4);
-                    return (int)resOnScalarPath;
+                    uint res = (((BitOperations.RotateLeft(hashed1, 5) + hashed1)) ^ hashed3) + 1566083941 * (((BitOperations.RotateLeft(hashed2, 5) + hashed2)) ^ hashed4);
+                    return (int)res;
                 }
 
 
@@ -907,8 +907,8 @@ namespace System
                 }
             }
 
-            uint res = (((BitOperations.RotateLeft(hash1, 5) + hash1)) ^ hash3) + 1566083941 * (((BitOperations.RotateLeft(hash2, 5) + hash2)) ^ hash4);
-            return (int)res;
+            uint resOnScalarPath = (((BitOperations.RotateLeft(hash1, 5) + hash1)) ^ hash3) + 1566083941 * (((BitOperations.RotateLeft(hash2, 5) + hash2)) ^ hash4);
+            return (int)resOnScalarPath;
         }
 
         internal unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCase()
@@ -1025,8 +1025,10 @@ namespace System
                         goto NotAscii;
                     }
 
+                    length -= 2;
                     // Where length is 4n-3 (e.g. 1,5,9,13,17) this additionally consumes the null terminator
                     hash4 = (BitOperations.RotateLeft(hash4, 5) + hash4) ^ (p0 | NormalizeToLowercase);
+                    ptr += 1;
                 }
             }
 
