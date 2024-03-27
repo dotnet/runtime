@@ -90,23 +90,8 @@ namespace System
             if (!pMT->IsValueType)
             {
                 _objref = val;
-                if (val.GetType() == typeof(Missing))
-                {
-                    _flags = CV_MISSING;
-                }
-                else if (val.GetType() == typeof(DBNull))
-                {
-                    _flags = CV_NULL;
-                }
-                else if (val.GetType() == typeof(Empty))
-                {
-                    _flags = CV_EMPTY;
-                    _objref = null;
-                }
-                else
-                {
-                    _flags = CV_OBJECT;
-                }
+                // Special cases already handled by caller
+                _flags = CV_OBJECT;
             }
             else if (IsSystemDrawingColor(val.GetType()))
             {
