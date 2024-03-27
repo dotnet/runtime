@@ -1707,13 +1707,11 @@ void Compiler::lvaClassifyParameterABI()
             LclVarDsc* dsc = lvaGetDesc(lclNum);
             const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
 
-#if FEATURE_IMPLICIT_BYREFS
             if (dsc->TypeGet() == TYP_STRUCT)
             {
                 const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(dsc->GetLayout()->GetClassHandle());
                 dsc->lvIsImplicitByRef = lowering->byReference;
             }
-#endif
 
             if ((dsc->TypeGet() == TYP_STRUCT) && !lvaIsImplicitByRefLocal(lclNum) && !abiInfo.HasExactlyOneStackSegment())
             {
