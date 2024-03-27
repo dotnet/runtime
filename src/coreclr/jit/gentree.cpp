@@ -19079,6 +19079,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
     // OK, new we have to figure out if any part of the "offset" is a constant contribution to the index.
     target_ssize_t firstElemOffset = GetFirstElemOffset();
 
+#if 0
     // If we didn't parse any offset, or the offset we parsed doesn't make sense, then give up on
     // parsing the array address. (This can happen with JitOptRepeat.)
     if ((offset == 0) || (offset < firstElemOffset))
@@ -19086,6 +19087,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
         *pArr = nullptr;
         return;
     }
+#endif // 0
 
     unsigned elemSizeUn = (GetElemType() == TYP_STRUCT) ? comp->typGetObjLayout(GetElemClassHandle())->GetSize()
                                                         : genTypeSize(GetElemType());
