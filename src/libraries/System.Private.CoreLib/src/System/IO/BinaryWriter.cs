@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -350,6 +351,7 @@ namespace System.IO
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void WriteBytes<T>(T value)
             where T : unmanaged
         {
