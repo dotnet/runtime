@@ -121,7 +121,7 @@ namespace System.Speech.Internal.Synthesis
                     try
                     {
                         byte[] data = new byte[(int)audio._stream.Length];
-                        audio._stream.Read(data, 0, data.Length);
+                        audio._stream.ReadExactly(data);
                         Play(data);
                     }
                     finally

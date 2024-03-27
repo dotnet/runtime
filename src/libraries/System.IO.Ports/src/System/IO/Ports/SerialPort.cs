@@ -963,7 +963,7 @@ namespace System.IO.Ports
                 Buffer.BlockCopy(_inBuffer, _readPos, bytesReceived, 0, CachedBytesToRead);
             }
 
-            _internalSerialStream.Read(bytesReceived, CachedBytesToRead, bytesReceived.Length - (CachedBytesToRead));    // get everything
+            _internalSerialStream.ReadExactly(bytesReceived, CachedBytesToRead, bytesReceived.Length - (CachedBytesToRead));    // get everything
 
             // Read full characters and leave partial input in the buffer. Encoding.GetCharCount doesn't work because
             // it returns fallback characters on partial input, meaning that it overcounts. Instead, we use
