@@ -884,6 +884,5 @@ namespace Wasm.Build.Tests
         [BuildAndRun(host: RunHost.Chrome, aot: false)]
         public void EnsureWasmAbiRulesAreFollowedInInterpreter(BuildArgs buildArgs, RunHost host, string id) =>
             EnsureWasmAbiRulesAreFollowed(buildArgs, host, id);
-
     }
 }
