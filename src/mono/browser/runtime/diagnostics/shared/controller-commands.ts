@@ -10,7 +10,7 @@ export interface DiagnosticMessage extends MonoThreadMessage {
     cmd: string;
 }
 
-export function isDiagnosticMessage(x: unknown): x is DiagnosticMessage {
+export function isDiagnosticMessage (x: unknown): x is DiagnosticMessage {
     return isMonoThreadMessage(x) && x.type === "diagnostic_server";
 }
 
@@ -29,7 +29,7 @@ export type DiagnosticServerControlCommandStart = DiagnosticServerControlCommand
 export type DiagnosticServerControlCommandStop = DiagnosticServerControlCommandSpecific<"stop">;
 export type DiagnosticServerControlCommandAttachToRuntime = DiagnosticServerControlCommandSpecific<"attach_to_runtime">;
 
-export function makeDiagnosticServerControlCommand<T extends DiagnosticServerControlCommand["cmd"]>(cmd: T): DiagnosticServerControlCommandSpecific<T> {
+export function makeDiagnosticServerControlCommand<T extends DiagnosticServerControlCommand["cmd"]> (cmd: T): DiagnosticServerControlCommandSpecific<T> {
     return {
         type: "diagnostic_server",
         cmd: cmd,

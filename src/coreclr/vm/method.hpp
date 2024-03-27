@@ -785,7 +785,7 @@ public:
         return IsIL() && !IsUnboxingStub() && GetRVA();
     }
 
-    COR_ILMETHOD* GetILHeader(BOOL fAllowOverrides = FALSE);
+    COR_ILMETHOD* GetILHeader();
 
     BOOL HasStoredSig()
     {

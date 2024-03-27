@@ -10,7 +10,7 @@ import { mono_run_main, mono_run_main_and_exit } from "./run";
 import { mono_wasm_setenv } from "./startup";
 import { loaderHelpers, runtimeHelpers } from "./globals";
 
-export function export_api(): any {
+export function export_api (): any {
     const api: APIType = {
         runMain: mono_run_main,
         runMainAndExit: mono_run_main_and_exit,

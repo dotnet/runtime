@@ -11,7 +11,6 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Xunit;
 
 // Make sure the interop data are present even without reflection
 namespace System.Runtime.CompilerServices
@@ -24,7 +23,7 @@ namespace System.Runtime.CompilerServices
 // ensure that we can handle this (mostly an issue for C++ code generation).
 namespace PInvokeTests
 {
-    public class Program
+    internal class Program
     {
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
         private static extern int Square(int intValue);
@@ -140,12 +139,11 @@ namespace PInvokeTests
 #else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-
         static extern bool ReversePInvoke_Int_AggressiveInlining(Delegate_Int_AggressiveInlining del);
+
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet=CharSet.Ansi)]
         delegate bool Delegate_String(string s);
-
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
         static extern bool ReversePInvoke_String(Delegate_String del);
 
@@ -173,13 +171,11 @@ namespace PInvokeTests
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         delegate bool Delegate_OutString([MarshalAs(0x30)] out string s);
-
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
         static extern bool ReversePInvoke_OutString(Delegate_OutString del);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         delegate bool Delegate_Array([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] int[] array, IntPtr sz);
-
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
         static extern bool ReversePInvoke_Array(Delegate_Array del);
 
@@ -190,7 +186,6 @@ namespace PInvokeTests
         static extern bool Callback(ref Delegate_String d);
 
         delegate void Delegate_Unused();
-
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
         static extern unsafe int* ReversePInvoke_Unused(Delegate_Unused del);
 
@@ -327,8 +322,7 @@ namespace PInvokeTests
             MagicResult = 42,
         }
 
-        [Fact]
-        public static int TestEntryPoint()
+        public static int Main()
         {
             TestBlittableType();
             TestBoolean();

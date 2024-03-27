@@ -22,7 +22,7 @@ import { monoThreadInfo } from "./pthreads";
 
 export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 
-export function mono_wasm_bind_js_import(signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+export function mono_wasm_bind_js_import (signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     if (WasmEnableThreads) return;
     assert_js_interop();
     const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
@@ -37,7 +37,7 @@ export function mono_wasm_bind_js_import(signature: JSFunctionSignature, is_exce
     }
 }
 
-export function mono_wasm_invoke_jsimport_MT(signature: JSFunctionSignature, args: JSMarshalerArguments) {
+export function mono_wasm_invoke_jsimport_MT (signature: JSFunctionSignature, args: JSMarshalerArguments) {
     if (!WasmEnableThreads) return;
     assert_js_interop();
 
@@ -53,7 +53,7 @@ export function mono_wasm_invoke_jsimport_MT(signature: JSFunctionSignature, arg
     bound_fn(args);
 }
 
-export function mono_wasm_invoke_jsimport_ST(function_handle: JSFnHandle, args: JSMarshalerArguments): void {
+export function mono_wasm_invoke_jsimport_ST (function_handle: JSFnHandle, args: JSMarshalerArguments): void {
     if (WasmEnableThreads) return;
     loaderHelpers.assert_runtime_running();
     const bound_fn = js_import_wrapper_by_fn_handle[<any>function_handle];
@@ -61,7 +61,7 @@ export function mono_wasm_invoke_jsimport_ST(function_handle: JSFnHandle, args: 
     bound_fn(args);
 }
 
-function bind_js_import(signature: JSFunctionSignature): Function {
+function bind_js_import (signature: JSFunctionSignature): Function {
     assert_js_interop();
     const mark = startMeasure();
 
@@ -117,44 +117,39 @@ function bind_js_import(signature: JSFunctionSignature): Function {
     let bound_fn: WrappedJSFunction;
     if (is_async || is_discard_no_wait || has_cleanup) {
         bound_fn = bind_fn(closure);
-    }
-    else {
+    } else {
         if (args_count == 0 && !res_converter) {
             bound_fn = bind_fn_0V(closure);
-        }
-        else if (args_count == 1 && !res_converter) {
+        } else if (args_count == 1 && !res_converter) {
             bound_fn = bind_fn_1V(closure);
-        }
-        else if (args_count == 1 && res_converter) {
+        } else if (args_count == 1 && res_converter) {
             bound_fn = bind_fn_1R(closure);
-        }
-        else if (args_count == 2 && res_converter) {
+        } else if (args_count == 2 && res_converter) {
             bound_fn = bind_fn_2R(closure);
         } else {
             bound_fn = bind_fn(closure);
         }
     }
 
-    function async_bound_fn(args: JSMarshalerArguments): void {
+    function async_bound_fn (args: JSMarshalerArguments): void {
         forceThreadMemoryViewRefresh();
         bound_fn(args);
     }
-    function sync_bound_fn(args: JSMarshalerArguments): void {
+    function sync_bound_fn (args: JSMarshalerArguments): void {
         const previous = runtimeHelpers.isPendingSynchronousCall;
         try {
             forceThreadMemoryViewRefresh();
             const caller_tid = get_caller_native_tid(args);
             runtimeHelpers.isPendingSynchronousCall = runtimeHelpers.managedThreadTID === caller_tid;
             bound_fn(args);
-        }
-        finally {
+        } finally {
             runtimeHelpers.isPendingSynchronousCall = previous;
         }
     }
-    function async_bound_fn_ui(args: JSMarshalerArguments): void {
+    function async_bound_fn_ui (args: JSMarshalerArguments): void {
         invoke_later_when_on_ui_thread_async(() => async_bound_fn(args));
     }
-    function sync_bound_fn_ui(args: JSMarshalerArguments): void {
+    function sync_bound_fn_ui (args: JSMarshalerArguments): void {
         invoke_later_when_on_ui_thread_sync(() => sync_bound_fn(args), args);
     }
 
@@ -163,15 +158,13 @@ function bind_js_import(signature: JSFunctionSignature): Function {
         if (monoThreadInfo.isUI) {
             if (is_async || is_discard_no_wait) {
                 wrapped_fn = async_bound_fn_ui;
-            }
-            else {
+            } else {
                 wrapped_fn = sync_bound_fn_ui;
             }
         } else {
             if (is_async || is_discard_no_wait) {
                 wrapped_fn = async_bound_fn;
-            }
-            else {
+            } else {
                 wrapped_fn = sync_bound_fn;
             }
         }
@@ -186,8 +179,7 @@ function bind_js_import(signature: JSFunctionSignature): Function {
             const url = `//# sourceURL=https://dotnet/JSImport/${fname}`;
             const body = `return (function JSImport_${fname}(){ return fn.apply(this, arguments)});`;
             wrapped_fn = new Function("fn", url + "\r\n" + body)(wrapped_fn);
-        }
-        catch (ex) {
+        } catch (ex) {
             runtimeHelpers.cspPolicy = true;
         }
     }
@@ -201,11 +193,11 @@ function bind_js_import(signature: JSFunctionSignature): Function {
     return wrapped_fn;
 }
 
-function bind_fn_0V(closure: BindingClosure) {
+function bind_fn_0V (closure: BindingClosure) {
     const fn = closure.fn;
     const fqn = closure.fqn;
     if (!WasmEnableThreads) (<any>closure) = null;
-    return function bound_fn_0V(args: JSMarshalerArguments) {
+    return function bound_fn_0V (args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {
             mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -213,19 +205,18 @@ function bind_fn_0V(closure: BindingClosure) {
             fn();
         } catch (ex) {
             marshal_exception_to_cs(<any>args, ex);
-        }
-        finally {
+        } finally {
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
 
-function bind_fn_1V(closure: BindingClosure) {
+function bind_fn_1V (closure: BindingClosure) {
     const fn = closure.fn;
     const marshaler1 = closure.arg_marshalers[0]!;
     const fqn = closure.fqn;
     if (!WasmEnableThreads) (<any>closure) = null;
-    return function bound_fn_1V(args: JSMarshalerArguments) {
+    return function bound_fn_1V (args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {
             mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -234,20 +225,19 @@ function bind_fn_1V(closure: BindingClosure) {
             fn(arg1);
         } catch (ex) {
             marshal_exception_to_cs(<any>args, ex);
-        }
-        finally {
+        } finally {
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
 
-function bind_fn_1R(closure: BindingClosure) {
+function bind_fn_1R (closure: BindingClosure) {
     const fn = closure.fn;
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fqn;
     if (!WasmEnableThreads) (<any>closure) = null;
-    return function bound_fn_1R(args: JSMarshalerArguments) {
+    return function bound_fn_1R (args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {
             mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -257,21 +247,20 @@ function bind_fn_1R(closure: BindingClosure) {
             res_converter(args, js_result);
         } catch (ex) {
             marshal_exception_to_cs(<any>args, ex);
-        }
-        finally {
+        } finally {
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
 
-function bind_fn_2R(closure: BindingClosure) {
+function bind_fn_2R (closure: BindingClosure) {
     const fn = closure.fn;
     const marshaler1 = closure.arg_marshalers[0]!;
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fqn;
     if (!WasmEnableThreads) (<any>closure) = null;
-    return function bound_fn_2R(args: JSMarshalerArguments) {
+    return function bound_fn_2R (args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {
             mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -282,14 +271,13 @@ function bind_fn_2R(closure: BindingClosure) {
             res_converter(args, js_result);
         } catch (ex) {
             marshal_exception_to_cs(<any>args, ex);
-        }
-        finally {
+        } finally {
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
 
-function bind_fn(closure: BindingClosure) {
+function bind_fn (closure: BindingClosure) {
     const args_count = closure.args_count;
     const arg_marshalers = closure.arg_marshalers;
     const res_converter = closure.res_converter;
@@ -298,7 +286,7 @@ function bind_fn(closure: BindingClosure) {
     const fn = closure.fn;
     const fqn = closure.fqn;
     if (!WasmEnableThreads) (<any>closure) = null;
-    return function bound_fn(args: JSMarshalerArguments) {
+    return function bound_fn (args: JSMarshalerArguments) {
         const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
         const mark = startMeasure();
         try {
@@ -327,8 +315,7 @@ function bind_fn(closure: BindingClosure) {
             }
         } catch (ex) {
             marshal_exception_to_cs(<any>args, ex);
-        }
-        finally {
+        } finally {
             if (receiver_should_free) {
                 Module._free(args as any);
             }
@@ -352,23 +339,23 @@ type BindingClosure = {
     arg_cleanup: (Function | undefined)[]
 }
 
-export function mono_wasm_invoke_js_function(bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
+export function mono_wasm_invoke_js_function (bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
     invoke_later_when_on_ui_thread_sync(() => mono_wasm_invoke_js_function_impl(bound_function_js_handle, args), args);
 }
 
-export function mono_wasm_invoke_js_function_impl(bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
+export function mono_wasm_invoke_js_function_impl (bound_function_js_handle: JSHandle, args: JSMarshalerArguments): void {
     loaderHelpers.assert_runtime_running();
     const bound_fn = mono_wasm_get_jsobj_from_js_handle(bound_function_js_handle);
     mono_assert(bound_fn && typeof (bound_fn) === "function" && bound_fn[bound_js_function_symbol], () => `Bound function handle expected ${bound_function_js_handle}`);
     bound_fn(args);
 }
 
-export function mono_wasm_set_module_imports(module_name: string, moduleImports: any) {
+export function mono_wasm_set_module_imports (module_name: string, moduleImports: any) {
     importedModules.set(module_name, moduleImports);
     mono_log_debug(`added module imports '${module_name}'`);
 }
 
-function mono_wasm_lookup_js_import(function_name: string, js_module_name: string | null): Function {
+function mono_wasm_lookup_js_import (function_name: string, js_module_name: string | null): Function {
     mono_assert(function_name && typeof function_name === "string", "function_name must be string");
 
     let scope: any = {};
@@ -380,12 +367,10 @@ function mono_wasm_lookup_js_import(function_name: string, js_module_name: strin
         } else {
             mono_assert(scope, () => `ES6 module ${js_module_name} was not imported yet, please call JSHost.ImportAsync() first.`);
         }
-    }
-    else if (parts[0] === "INTERNAL") {
+    } else if (parts[0] === "INTERNAL") {
         scope = INTERNAL;
         parts.shift();
-    }
-    else if (parts[0] === "globalThis") {
+    } else if (parts[0] === "globalThis") {
         scope = globalThis;
         parts.shift();
     }
@@ -406,34 +391,34 @@ function mono_wasm_lookup_js_import(function_name: string, js_module_name: strin
     return fn.bind(scope);
 }
 
-export function set_property(self: any, name: string, value: any): void {
+export function set_property (self: any, name: string, value: any): void {
     mono_check(self, "Null reference");
     self[name] = value;
 }
 
-export function get_property(self: any, name: string): any {
+export function get_property (self: any, name: string): any {
     mono_check(self, "Null reference");
     return self[name];
 }
 
-export function has_property(self: any, name: string): boolean {
+export function has_property (self: any, name: string): boolean {
     mono_check(self, "Null reference");
     return name in self;
 }
 
-export function get_typeof_property(self: any, name: string): string {
+export function get_typeof_property (self: any, name: string): string {
     mono_check(self, "Null reference");
     return typeof self[name];
 }
 
-export function get_global_this(): any {
+export function get_global_this (): any {
     return globalThis;
 }
 
 export const importedModulesPromises: Map<string, Promise<any>> = new Map();
 export const importedModules: Map<string, Promise<any>> = new Map();
 
-export function dynamic_import(module_name: string, module_url: string): Promise<any> {
+export function dynamic_import (module_name: string, module_url: string): Promise<any> {
     assert_js_interop();
     mono_assert(module_name && typeof module_name === "string", "module_name must be string");
     mono_assert(module_url && typeof module_url === "string", "module_url must be string");
@@ -455,7 +440,7 @@ export function dynamic_import(module_name: string, module_url: string): Promise
     });
 }
 
-function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
+function _wrap_error_flag (is_exception: Int32Ptr | null, ex: any): string {
     let res = "unknown exception";
     if (ex) {
         res = ex.toString();
@@ -478,7 +463,7 @@ function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
     return res;
 }
 
-export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: WasmRoot<MonoObject>): void {
+export function wrap_error_root (is_exception: Int32Ptr | null, ex: any, result: WasmRoot<MonoObject>): void {
     const res = _wrap_error_flag(is_exception, ex);
     stringToMonoStringRoot(res, <any>result);
 }
@@ -486,7 +471,7 @@ export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: 
 // to set out parameters of icalls
 // TODO replace it with replace it with UTF8 char*, no GC root needed
 // https://github.com/dotnet/runtime/issues/98365
-export function wrap_no_error_root(is_exception: Int32Ptr | null, result?: WasmRoot<MonoObject>): void {
+export function wrap_no_error_root (is_exception: Int32Ptr | null, result?: WasmRoot<MonoObject>): void {
     if (is_exception) {
         receiveWorkerHeapViews();
         setI32_unchecked(is_exception, 0);
@@ -496,7 +481,7 @@ export function wrap_no_error_root(is_exception: Int32Ptr | null, result?: WasmR
     }
 }
 
-export function assert_js_interop(): void {
+export function assert_js_interop (): void {
     loaderHelpers.assert_runtime_running();
     if (WasmEnableThreads) {
         mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready && runtimeHelpers.proxyGCHandle, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
@@ -505,7 +490,7 @@ export function assert_js_interop(): void {
     }
 }
 
-export function assert_c_interop(): void {
+export function assert_c_interop (): void {
     loaderHelpers.assert_runtime_running();
     if (WasmEnableThreads) {
         mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
@@ -517,7 +502,7 @@ export function assert_c_interop(): void {
 // make sure we are not blocking em_task_queue_execute up the call stack
 // so that when we call back to managed, the FS calls could still be processed by the UI thread
 // see also emscripten_yield which can process the FS calls inside the spin wait
-export function invoke_later_when_on_ui_thread_sync(fn: Function, args: JSMarshalerArguments) {
+export function invoke_later_when_on_ui_thread_sync (fn: Function, args: JSMarshalerArguments) {
     if (WasmEnableThreads && monoThreadInfo.isUI) {
         Module.safeSetTimeout(() => {
             fn();
@@ -532,7 +517,7 @@ export function invoke_later_when_on_ui_thread_sync(fn: Function, args: JSMarsha
 
 // make sure we are not blocking em_task_queue_execute up the call stack
 // so that when we call back to managed, the FS calls could still be processed by the UI thread
-export function invoke_later_when_on_ui_thread_async(fn: Function) {
+export function invoke_later_when_on_ui_thread_async (fn: Function) {
     if (WasmEnableThreads && monoThreadInfo.isUI) {
         Module.safeSetTimeout(fn, 0);
     } else {

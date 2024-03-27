@@ -231,7 +231,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                     IfFailGo(E_INVALIDARG);
                 }
 
-                SetDynamicIL(token, (TADDR)(pLocalILMemory + dwMethodRVA), FALSE);
+                SetDynamicIL(token, (TADDR)(pLocalILMemory + dwMethodRVA));
 
                 // use module to resolve to method
                 MethodDesc *pMethod;

@@ -1382,7 +1382,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 
         // If a thread is Dead or Detached, abort is a NOP.
         //
-        if (m_State & (TS_Dead | TS_Detached | TS_TaskReset))
+        if (m_State & (TS_Dead | TS_Detached))
         {
             UnmarkThreadForAbort();
 
