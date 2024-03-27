@@ -611,6 +611,46 @@ HRESULT GetITypeLibForAssembly(_In_ Assembly *pAssembly, _Outptr_ ITypeLib **ppT
     return S_OK;
 } // HRESULT GetITypeLibForAssembly()
 
+// There are types that are helpful to provide that facilitate porting from
+// .NET Framework to .NET 8+. This function is used to acquire their ITypeInfo.
+// This should be used narrowly. Types at a minimum should be blittable.
+static bool TryDeferToMscorlib(MethodTable* pClass, ITypeInfo** ppTI)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(pClass != NULL);
+        PRECONDITION(pClass->IsBlittable());
+        PRECONDITION(ppTI != NULL);
+    }
+    CONTRACTL_END;
+
+    StackSString className;
+    pClass->_GetFullyQualifiedNameForClass(className);
+
+    // Marshalling of a System.Guid is such a common scenario, let's see if we can load
+    // the .NET Framework's TLB. This is a niche scenario, but one that impacts many teams
+    // porting code to .NET 8+.
+    if (strcmp(className.GetUTF8(), g_GuidClassName) == 0)
+    {
+        SafeComHolder<ITypeLib> pMscorlibTypeLib = NULL;
+
+        // .NET Frameworks' mscorlib TLB GUID.
+        const GUID mscorlib = { 0xBED7F4EA, 0x1A96, 0x11D2, { 0x8F, 0x08, 0x00, 0xA0, 0xC9, 0xA6, 0x18, 0x6D } };
+        if (SUCCEEDED(::LoadRegTypeLib(mscorlib, 2, 4, 0, &pMscorlibTypeLib)))
+        {
+            // Hard-coded GUID for System.Guid.
+            const GUID guidForSystemGuid = { 0x9C5923E9, 0xDE52, 0x33EA, { 0x88, 0xDE, 0x7E, 0xBC, 0x86, 0x33, 0xB9, 0xCC } };
+            if (SUCCEEDED(pMscorlibTypeLib->GetTypeInfoOfGuid(guidForSystemGuid, ppTI)))
+                return true;
+        }
+    }
+
+    return false;
+}
+
 HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClassInfo)
 {
     CONTRACTL
@@ -625,6 +665,7 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
     GUID clsid;
     GUID ciid;
     ComMethodTable *pComMT              = NULL;
+    MethodTable* pOriginalClass         = pClass;
     HRESULT                 hr          = S_OK;
     SafeComHolder<ITypeLib> pITLB       = NULL;
     SafeComHolder<ITypeInfo> pTI        = NULL;
@@ -770,6 +811,12 @@ ErrExit:
     {
         if (!FAILED(hr))
             hr = E_FAIL;
+
+        if (pOriginalClass->IsValueType() && pOriginalClass->IsBlittable())
+        {
+            if (TryDeferToMscorlib(pOriginalClass, ppTI))
+                hr = S_OK;
+        }
     }
 
 ReturnHR:
