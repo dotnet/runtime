@@ -45,7 +45,7 @@ export function stringToUTF8 (str: string): Uint8Array {
 }
 
 export function stringToUTF8Ptr (str: string): CharPtr {
-    const bytes = str.length * 2;
+    const bytes = (str.length + 1) * 2;
     const ptr = Module._malloc(bytes) as any;
     _zero_region(ptr, str.length * 2);
     const buffer = localHeapViewU8().subarray(ptr, ptr + bytes);
