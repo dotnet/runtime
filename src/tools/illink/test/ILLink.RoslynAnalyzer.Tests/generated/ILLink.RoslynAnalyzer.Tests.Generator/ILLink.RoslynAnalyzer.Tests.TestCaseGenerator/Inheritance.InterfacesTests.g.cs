@@ -16,12 +16,6 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance
 		}
 
 		[Fact]
-		public Task InterfaceImplementedThroughBaseInterface ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task InterfaceOnUninstantiatedTypeRemoved ()
 		{
 			return RunTest (allowMissingWarnings: true);

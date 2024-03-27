@@ -206,11 +206,13 @@ namespace System.Reflection.Context.Projection
             return _projector.Project(base.GetEvents(bindingAttr), _projector.ProjectEvent);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             return _projector.ProjectField(base.GetField(name, bindingAttr));
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo[] GetFields(BindingFlags bindingAttr)
         {
             return _projector.Project(base.GetFields(bindingAttr), _projector.ProjectField);
@@ -226,6 +228,12 @@ namespace System.Reflection.Context.Projection
             return _projector.Project(base.GetInterfaces(), _projector.ProjectType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+            DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
+            DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents |
+            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
+            DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             MethodInfo[] methods = GetMethods(bindingAttr);
@@ -264,6 +272,7 @@ namespace System.Reflection.Context.Projection
             return _projector.ProjectMethod(base.GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers));
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
             return _projector.Project(base.GetMethods(bindingAttr), _projector.ProjectMethod);
@@ -279,6 +288,7 @@ namespace System.Reflection.Context.Projection
             return _projector.Project(base.GetNestedTypes(bindingAttr), _projector.ProjectType);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
         {
             return _projector.Project(base.GetProperties(bindingAttr), _projector.ProjectProperty);
