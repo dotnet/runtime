@@ -3438,7 +3438,7 @@ _End_arg:
 #endif
 
 #if defined(TARGET_RISCV64)
-static bool HandleInlineArray(int elementTypeIndex, int nElements, CorElementType types[2], int* typeIndex)
+static bool HandleInlineArray(int elementTypeIndex, int nElements, int types[2], int* typeIndex)
 {
     int nFlattenedFieldsPerElement = *typeIndex - elementTypeIndex;
     if (nFlattenedFieldsPerElement == 0)
@@ -3461,7 +3461,7 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, CorElementTyp
     return true;
 }
 
-static bool GetFlattenedFieldTypes(CORINFO_CLASS_HANDLE cls, CorElementType types[2], int* typeIndex)
+static bool GetFlattenedFieldTypes(CORINFO_CLASS_HANDLE cls, int types[2], int* typeIndex)
 {
     TypeHandle th(cls);
     bool isManaged = !th.IsTypeDesc();
@@ -3499,7 +3499,10 @@ static bool GetFlattenedFieldTypes(CORINFO_CLASS_HANDLE cls, CorElementType type
                 if (*typeIndex >= 2)
                     return false;
 
-                types[(*typeIndex)++] = type;
+                int retType = (CorTypeInfo::IsFloat_NoThrow(type) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
+                    (CorTypeInfo::Size_NoThrow(type) == TARGET_POINTER_SIZE ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0);
+
+                types[(*typeIndex)++] = retType;
             }
             else
             {
@@ -3542,10 +3545,10 @@ static bool GetFlattenedFieldTypes(CORINFO_CLASS_HANDLE cls, CorElementType type
                 if (*typeIndex >= 2)
                     return false;
 
-                bool is8 = (fields[i].NativeSize() == TARGET_POINTER_SIZE);
-                types[(*typeIndex)++] = (category == NativeFieldCategory::FLOAT)
-                    ? (is8 ? ELEMENT_TYPE_R8 : ELEMENT_TYPE_R4)
-                    : (is8 ? ELEMENT_TYPE_I8 : ELEMENT_TYPE_I4);
+                int type = (category == NativeFieldCategory::FLOAT ? STRUCT_FLOAT_FIELD_FIRST : 0) |
+                    (fields[i].NativeSize() == TARGET_POINTER_SIZE ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0);
+
+                types[(*typeIndex)++] = type;
             }
             else
             {
@@ -3563,36 +3566,32 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
     if (th.GetSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
         return STRUCT_NO_FLOAT_FIELD;
 
-    CorElementType types[2] = {ELEMENT_TYPE_END, ELEMENT_TYPE_END};
+    int types[2] = {STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD};
     int nFields = 0;
     if (!GetFlattenedFieldTypes(cls, types, &nFields) || nFields == 0)
         return STRUCT_NO_FLOAT_FIELD;
 
     assert(nFields == 1 || nFields == 2);
-    assert(CorTypeInfo::Size_NoThrow(types[0]) <= TARGET_POINTER_SIZE);
-    assert(CorTypeInfo::Size_NoThrow(types[1]) <= TARGET_POINTER_SIZE || nFields == 1);
 
-    int flags =
-        (CorTypeInfo::IsFloat_NoThrow(types[0]) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
-        (CorTypeInfo::IsFloat_NoThrow(types[1]) ? STRUCT_FLOAT_FIELD_SECOND : 0);
+    static_assert((STRUCT_FLOAT_FIELD_SECOND | STRUCT_SECOND_FIELD_SIZE_IS8)
+        == (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FIRST_FIELD_SIZE_IS8) << 1,
+        "SECOND flags need to be FIRST shifted by 1");
+    int flags = types[0] | (types[1] << 1);
 
-    if (flags == STRUCT_NO_FLOAT_FIELD)
+    static const int bothFloat = STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND;
+    if ((flags & bothFloat) == 0)
         return STRUCT_NO_FLOAT_FIELD;
 
-    if (flags == (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND))
+    if ((flags & bothFloat) == bothFloat)
     {
         assert(nFields == 2);
-        flags = STRUCT_FLOAT_FIELD_ONLY_TWO;
+        flags ^= (bothFloat | STRUCT_FLOAT_FIELD_ONLY_TWO); // replace bothFloat with ONLY_TWO
     }
     else if (nFields == 1)
     {
-        assert(flags == STRUCT_FLOAT_FIELD_FIRST);
-        flags = STRUCT_FLOAT_FIELD_ONLY_ONE;
+        assert((flags & STRUCT_FLOAT_FIELD_FIRST) != 0);
+        flags ^= (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_ONE); // replace FIRST with ONLY_ONE
     }
-
-    flags |=
-        (CorTypeInfo::Size_NoThrow(types[0]) == TARGET_POINTER_SIZE ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
-        (CorTypeInfo::Size_NoThrow(types[1]) == TARGET_POINTER_SIZE ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
 
     return flags;
 }
