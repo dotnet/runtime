@@ -11,7 +11,7 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> ShortDatePattern_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
-            yield return new object[] { "ar-SA", PlatformDetection.IsHybridGlobalizationOnBrowser ? "d\u200f/M\u200f/yyyy" : "d MMM، yyyy g" }; // "d\u200f/M\u200f/yyyy g"
+            yield return new object[] { "ar-SA", PlatformDetection.IsHybridGlobalizationOnBrowser ? "d\u200f/M\u200f/yyyy" : "d MMM\u060c yyyy g" }; // "d\u200f/M\u200f/yyyy g"
             yield return new object[] { "am-ET", "dd/MM/yyyy" };
             yield return new object[] { "bg-BG", PlatformDetection.IsHybridGlobalizationOnBrowser ? "d.MM.yyyy г." : "d.MM.yyyy 'г'." }; // "d.MM.yyyy 'г'."
             yield return new object[] { "bn-BD", "d/M/yyyy" };
