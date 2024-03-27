@@ -176,3 +176,89 @@ The indirection array is not part of the data descriptor spec.  It is expected t
 contract descriptor will include it. (The data contract descriptor must contain: the data
 descriptor, the set of compatible algorithmic contracts, the aux array of globals).
 
+## Example
+
+This is an example of a baseline descriptor for a 64-bit architecture. Suppose it has the name `"example-64"`
+
+```jsonc
+{
+  "version": 0,
+  "types": [
+    {
+      "name": "GCHandle",
+      "size": 8,
+      "fields": [
+        { "name": "Value", "type": "pointer", "offset": 0 }
+      ]
+    },
+    {
+      "name": "Thread",
+      "size": "indeterminate",
+      "fields": [
+        { "name": "ThreadId", "type": "uint32", "offset": "unknown" },
+        { "name": "Next", "type": "pointer" }, // offset "unknown" is implied
+        { "name": "ThreadState", "type": "uint32" }
+      ]
+    },
+    {
+      "name": "ThreadStore",
+      "fields": [
+        { "name": "ThreadCount", "type": "int32" },
+        { "name": "ThreadList", "type": "pointer" }
+      ]
+    }
+  ],
+  "globals": [
+    { "name": "FEATURE_EH_FUNCLETS", "type": "uint8", "value": "0" }, // baseline defaults value to 0
+    { "name": "s_pThreadStore", "type": "pointer" } // no baseline value
+  ]
+}
+```
+
+The following is an example of an in-memory descriptor that references the above baseline:
+
+```jsonc
+{
+  "version": "0",
+  "baseline": "example-64",
+  "types": [
+    {
+      "name": "Thread",
+      "fields": [
+        { "name": "ThreadId", "offset": 32 },
+        { "name": "ThreadState", "offset": 0 },
+        { "name": "Next", "offset": 128 }
+      ]
+    },
+    {
+      "name": "ThreadStore",
+      "fields": [
+        { "name": "ThreadCount", "offset": 32 }
+        { "name": "ThreadList", "offset": 8 }
+      ]
+    }
+  ],
+  "globals": [
+    { "name": "s_pThreadStore", "value": { "indirect": 0 } }
+  ]
+}
+```
+
+If the indirect values table has the values `0x0100ffe0` in offset 0, then a possible logical descriptor with the above physical descriptors will have the following types:
+
+| Type        | Size          | Field Name  | Field Type | Field Offset |
+| ----------- | ------------- | ----------- | ---------- | ------------ |
+| GCHandle    | 8             | Value       | pointer    | 0            |
+| Thread      | indeterminate | ThreadState | uint32     | 0            |
+|             |               | ThreadId    | uint32     | 32           |
+|             |               | Next        | pointer    | 128          |
+| ThreadStore | indeterminate | ThreadList  | pointer    | 8            |
+|             |               | ThreadCount | int32      | 32           |
+
+
+And the globals will be:
+
+| Name                | Type    | Value      |
+| ------------------- | ------- | ---------- |
+| FEATURE_EH_FUNCLETS | uint8   | 0          |
+| s_pThreadStore      | pointer | 0x0100ffe0 |
