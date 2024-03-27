@@ -469,13 +469,13 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     // We have set info.compArgsCount in compCompile()
     noway_assert(varDscInfo->varNum == info.compArgsCount);
 
-    // Now we have parameters created in the right order. Figure out how they're passed.
-    lvaClassifyParameterABI();
-
     assert(varDscInfo->intRegArgNum <= MAX_REG_ARG);
 
     codeGen->intRegState.rsCalleeRegArgCount   = varDscInfo->intRegArgNum;
     codeGen->floatRegState.rsCalleeRegArgCount = varDscInfo->floatRegArgNum;
+
+    // Now we have parameters created in the right order. Figure out how they're passed.
+    lvaClassifyParameterABI();
 
 #if FEATURE_FASTTAILCALL
     // Save the stack usage information
@@ -1697,6 +1697,8 @@ void Compiler::lvaClassifyParameterABI()
         SwiftABIClassifier classifier(cInfo);
         lvaClassifyParameterABI(classifier);
 
+        regMaskTP argRegs = RBM_NONE;
+
         // The calling convention details computed by the old ABI classifier
         // are wrong since it does not handle the Swift ABI for structs
         // appropriately. Grab them from the new ABI information.
@@ -1734,7 +1736,20 @@ void Compiler::lvaClassifyParameterABI()
                     dsc->SetStackOffset(abiInfo.Segments[0].GetStackOffset());
                 }
             }
+
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& segment = abiInfo.Segments[i];
+                if (segment.IsPassedInRegister())
+                {
+                    argRegs |= genRegMask(segment.GetRegister());
+                }
+            }
         }
+
+        // genFnPrologCalleeRegArgs expect these to be the counts of registers it knows how to handle.
+        codeGen->intRegState.rsCalleeRegArgCount = genCountBits(argRegs & (RBM_ARG_REGS | theFixedRetBuffMask(CorInfoCallConvExtension::Swift)));
+        codeGen->floatRegState.rsCalleeRegArgCount = genCountBits(argRegs & RBM_FLTARG_REGS);
     }
     else
 #endif
@@ -7233,9 +7248,9 @@ bool Compiler::lvaParamShouldHaveLocalStackSpace(unsigned lclNum)
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
 #ifdef SWIFT_SUPPORT
-    // In Swift functions, struct parameters that are no passed implicitly by
-    // reference are always reassembled on the local stack frame since their
-    // passing is decomposed.
+    // In Swift functions, struct parameters that are not passed implicitly by
+    // reference are always reassembled on the local stack frame since they are
+    // passed in a way that does not match their full layout.
     if ((info.compCallConv == CorInfoCallConvExtension::Swift) && (varDsc->TypeGet() == TYP_STRUCT) && !lvaIsImplicitByRefLocal(lclNum))
     {
         return true;
