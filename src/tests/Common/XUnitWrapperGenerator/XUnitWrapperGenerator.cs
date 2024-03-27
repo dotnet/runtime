@@ -56,6 +56,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 string? testDisplayName = fileOptions.TestDisplayName();
                 if (assemblyPath is not null && testDisplayName is not null)
                 {
+                    if (string.Equals(fileOptions.TestBuildMode(), "nativeaot", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // The merged runner is placed in a `native` subdirectory
+                        assemblyPath = Path.Combine("..", assemblyPath);
+                    }
+
                     return ImmutableArray.Create<ITestInfo>(new OutOfProcessTest(testDisplayName, assemblyPath));
                 }
             }
