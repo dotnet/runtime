@@ -4264,7 +4264,9 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
         case GT_NOP:
+#ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR:
+#endif // SWIFT_SUPPORT
             return;
 
         // Unary operators with an optional operand

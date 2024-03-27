@@ -2910,7 +2910,9 @@ AGAIN:
 
             case GT_NOP:
             case GT_LABEL:
+#ifdef SWIFT_SUPPORT
             case GT_SWIFT_ERROR:
+#endif // SWIFT_SUPPORT
                 return true;
 
             default:
@@ -6697,7 +6699,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
         case GT_NOP:
+#ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR:
+#endif // SWIFT_SUPPORT
             return false;
 
         // Standard unary operators
@@ -7029,8 +7033,10 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
         case GT_KEEPALIVE:
             return true;
 
+#ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR:
             return true;
+#endif // SWIFT_SUPPORT
 
         case GT_INTRINSIC:
             return comp->IsIntrinsicImplementedByUserCall(this->AsIntrinsic()->gtIntrinsicName);
@@ -7325,7 +7331,9 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
         case GT_CMPXCHG:
         case GT_MEMORYBARRIER:
         case GT_KEEPALIVE:
+#ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR:
+#endif // SWIFT_SUPPORT
             return true;
 
         case GT_CALL:
@@ -7383,7 +7391,9 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_CMPXCHG:
         case GT_MEMORYBARRIER:
         case GT_CATCH_ARG:
+#ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR:
+#endif // SWIFT_SUPPORT
             return true;
         default:
             return false;
@@ -9433,7 +9443,9 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_NO_OP:
             case GT_NOP:
             case GT_LABEL:
+#ifdef SWIFT_SUPPORT
             case GT_SWIFT_ERROR:
+#endif // SWIFT_SUPPORT
                 copy = new (this, oper) GenTree(oper, tree->gtType);
                 goto DONE;
 
@@ -10255,7 +10267,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
         case GT_NOP:
+#ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR:
+#endif // SWIFT_SUPPORT
             m_state = -1;
             return;
 
@@ -12375,7 +12389,9 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_MEMORYBARRIER:
         case GT_PINVOKE_PROLOG:
         case GT_JMPTABLE:
+#ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR:
+#endif // SWIFT_SUPPORT
             break;
 
         case GT_RET_EXPR:

@@ -7681,16 +7681,6 @@ void CodeGen::genReturn(GenTree* treeNode)
     // result is type int32. Further, the only legal values are 0 or 1; the use of other values is "undefined".
     assert(!treeNode->OperIs(GT_RETFILT) || (targetType == TYP_VOID) || (targetType == TYP_INT));
 
-#ifdef SWIFT_SUPPORT
-    if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
-    {
-        assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
-        assert(compiler->swiftErrorLocal != nullptr);
-        const regNumber reg = genConsumeReg(compiler->swiftErrorLocal);
-        inst_Mov(TYP_LONG, REG_SWIFT_ERROR, reg, true, EA_PTRSIZE);
-    }
-#endif // SWIFT_SUPPORT
-
 #ifdef DEBUG
     if (targetType == TYP_VOID)
     {
