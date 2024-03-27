@@ -10939,6 +10939,7 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 // Return Value:
 //    true if the given tree is a static field address
 //
+/* static */
 bool Compiler::fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore,
                                              GenTree*       tree,
                                              ssize_t*       byteOffset,
