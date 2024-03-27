@@ -1704,16 +1704,17 @@ void Compiler::lvaClassifyParameterABI()
         // appropriately. Grab them from the new ABI information.
         for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
         {
-            LclVarDsc* dsc = lvaGetDesc(lclNum);
+            LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
             const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
 
             if (dsc->TypeGet() == TYP_STRUCT)
             {
                 const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(dsc->GetLayout()->GetClassHandle());
-                dsc->lvIsImplicitByRef = lowering->byReference;
+                dsc->lvIsImplicitByRef                 = lowering->byReference;
             }
 
-            if ((dsc->TypeGet() == TYP_STRUCT) && !lvaIsImplicitByRefLocal(lclNum) && !abiInfo.HasExactlyOneStackSegment())
+            if ((dsc->TypeGet() == TYP_STRUCT) && !lvaIsImplicitByRefLocal(lclNum) &&
+                !abiInfo.HasExactlyOneStackSegment())
             {
                 dsc->lvIsRegArg = false;
             }
@@ -1746,7 +1747,7 @@ void Compiler::lvaClassifyParameterABI()
         }
 
         // genFnPrologCalleeRegArgs expect these to be the counts of registers it knows how to handle.
-        codeGen->intRegState.rsCalleeRegArgCount = genCountBits(argRegs & RBM_ARG_REGS);
+        codeGen->intRegState.rsCalleeRegArgCount   = genCountBits(argRegs & RBM_ARG_REGS);
         codeGen->floatRegState.rsCalleeRegArgCount = genCountBits(argRegs & RBM_FLTARG_REGS);
     }
     else
@@ -5802,7 +5803,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
         // the new ABI info for all targets.
         for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
         {
-            LclVarDsc* dsc = lvaGetDesc(lclNum);
+            LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
             const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
 
             if (abiInfo.HasExactlyOneStackSegment())
@@ -5992,12 +5993,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 }
 
 //------------------------------------------------------------------------
-// lvaAssignVirtualFrameOffsetsToSwiftFuncArgs: 
+// lvaAssignVirtualFrameOffsetsToSwiftFuncArgs:
 //   Assign stack frame offsets for the arguments to a CallConvSwift function.
 //
 void Compiler::lvaAssignVirtualFrameOffsetsToSwiftFuncArgs()
 {
-
 }
 
 #ifdef UNIX_AMD64_ABI
@@ -7292,11 +7292,10 @@ bool Compiler::lvaParamShouldHaveLocalStackSpace(unsigned lclNum)
     // are passed in a way that does not match their full layout.
     if (info.compCallConv == CorInfoCallConvExtension::Swift)
     {
-        unsigned baseLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
-        LclVarDsc* baseDsc = lvaGetDesc(baseLclNum);
+        unsigned   baseLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
+        LclVarDsc* baseDsc    = lvaGetDesc(baseLclNum);
 
-        if ((baseDsc->TypeGet() == TYP_STRUCT) &&
-            !lvaIsImplicitByRefLocal(baseLclNum) &&
+        if ((baseDsc->TypeGet() == TYP_STRUCT) && !lvaIsImplicitByRefLocal(baseLclNum) &&
             !lvaParameterPassingInfo[baseLclNum].HasExactlyOneStackSegment())
         {
             return true;

@@ -5062,14 +5062,14 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack, regNumber scratchRe
                     offset = -genCallerSPtoInitialSPdelta();
                 }
 
-
                 offset += (int)seg.GetStackOffset();
 
 #ifdef TARGET_XARCH
-                GetEmitter()->emitIns_R_AR(ins_Load(loadType), emitTypeSize(loadType), scratchReg, genFramePointerReg(), offset);
+                GetEmitter()->emitIns_R_AR(ins_Load(loadType), emitTypeSize(loadType), scratchReg, genFramePointerReg(),
+                                           offset);
 #else
-                genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), scratchReg, genFramePointerReg(), offset,
-                                     scratchReg);
+                genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), scratchReg, genFramePointerReg(),
+                                     offset, scratchReg);
 #endif
                 *scratchRegClobbered = true;
 
@@ -6347,7 +6347,8 @@ void CodeGen::genFnProlog()
 #ifdef SWIFT_SUPPORT
     if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
     {
-        if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) && ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
+        if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) &&
+            ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
         {
             GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
             intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
