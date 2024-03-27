@@ -315,13 +315,15 @@ FCIMPL0(void, StubHelpers::SetLastError)
 }
 FCIMPLEND
 
-// GetLastError override for IJW
+#ifdef FEATURE_IJW
+// GetLastError override for C++/CLI
 DWORD STDMETHODCALLTYPE FalseGetLastError()
 {
     WRAPPER_NO_CONTRACT;
 
     return t_lastPInvokeError;
 }
+#endif // FEATURE_IJW
 
 /************************************************************************
  * Support for the GCHandle class.

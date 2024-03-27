@@ -3564,8 +3564,10 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
     const void *target = GetModule()->GetInternalPInvokeTarget(GetRVA());
     _ASSERTE(target != 0);
 
+#ifdef FEATURE_IJW
     if (HeuristicDoesThisLookLikeAGetLastErrorCall((LPBYTE)target))
         target = (BYTE*)FalseGetLastError;
+#endif
 
     // As long as we've set the NDirect target field we don't need to backpatch the import thunk glue.
     // All NDirect calls all through the NDirect target, so if it's updated, then we won't go into
