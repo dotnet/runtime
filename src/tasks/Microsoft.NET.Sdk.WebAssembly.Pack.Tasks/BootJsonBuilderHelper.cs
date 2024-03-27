@@ -14,7 +14,6 @@ namespace Microsoft.NET.Sdk.WebAssembly
     {
         private static readonly string[] coreAssemblyNames = [
             "System.Private.CoreLib",
-            "System.Collections",
             "System.Runtime.InteropServices.JavaScript",
         ];
 
@@ -35,6 +34,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             }
 
             AddDictionary(sb, bootConfig.resources.assembly);
+            AddDictionary(sb, bootConfig.resources.coreAssembly);
 
             AddDictionary(sb, bootConfig.resources.jsModuleWorker);
             AddDictionary(sb, bootConfig.resources.jsModuleNative);
@@ -54,6 +54,12 @@ namespace Microsoft.NET.Sdk.WebAssembly
             if (bootConfig.resources.vfs != null)
             {
                 foreach (var entry in bootConfig.resources.vfs)
+                    AddDictionary(sb, entry.Value);
+            }
+
+            if (bootConfig.resources.coreVfs != null)
+            {
+                foreach (var entry in bootConfig.resources.coreVfs)
                     AddDictionary(sb, entry.Value);
             }
 
