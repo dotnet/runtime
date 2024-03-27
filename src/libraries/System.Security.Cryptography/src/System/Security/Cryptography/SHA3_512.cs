@@ -29,7 +29,7 @@ namespace System.Security.Cryptography
         public const int HashSizeInBytes = HashSizeInBits / 8;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="SHA3_256" />.
+        /// Initializes a new instance of <see cref="SHA3_512" />.
         /// </summary>
         protected SHA3_512()
         {

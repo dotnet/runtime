@@ -174,8 +174,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - SamMonoRT
-            - vargaz
+            - lambdageek
+            - steveisok
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -187,8 +187,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - SamMonoRT
-            - vargaz
+            - lambdageek
+            - steveisok
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -200,8 +200,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - SamMonoRT
             - fanyang-mono
+            - steveisok
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -213,8 +213,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - SamMonoRT
-            - vargaz
+            - steveisok
             - lambdageek
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}

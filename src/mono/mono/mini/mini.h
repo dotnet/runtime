@@ -2811,12 +2811,20 @@ void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint
 void mono_cfg_set_exception (MonoCompile *cfg, MonoExceptionType type);
 void mono_cfg_set_exception_invalid_program (MonoCompile *cfg, const char *msg);
 
+#if defined(HOST_WASM)
+#define MONO_TIME_TRACK(a, phase) \
+	{ \
+		(phase) ; \
+		a = 0; \
+	}
+#else
 #define MONO_TIME_TRACK(a, phase) \
 	{ \
 		gint64 start = mono_time_track_start (); \
 		(phase) ; \
 		mono_time_track_end (&(a), start); \
 	}
+#endif // HOST_WASM
 
 gint64 mono_time_track_start (void);
 void mono_time_track_end (gint64 *time, gint64 start);
@@ -2962,7 +2970,7 @@ MonoInst*   mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, 
 MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr);
 void        mono_simd_intrinsics_init (void);
-gboolean    mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoMethod *cmethod);
+gboolean    mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoCompile *cfg, MonoMethod *cmethod);
 
 MonoMethod*
 mini_method_to_shared (MonoMethod *method); // null if not shared

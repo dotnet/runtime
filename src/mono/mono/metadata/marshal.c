@@ -3922,14 +3922,14 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	caller_class = mono_class_get_generic_type_definition (caller_class);
 	MonoImage *image = m_class_get_image (caller_class);
 	g_assert (sig->pinvoke);
-	g_assert (!sig->hasthis && ! sig->explicit_this);
+	g_assert (!sig->hasthis && !sig->explicit_this);
 	g_assert (!sig->has_type_parameters);
 
 #if 0
 	/*
 	 * Since calli sigs are already part of ECMA-335, they were already used by C++/CLI, which
 	 * allowed non-blittable types.  So the C# function pointers spec doesn't restrict this to
-	 * blittable tyhpes only.
+	 * blittable types only.
 	 */
 	g_assertf (type_is_blittable (sig->ret), "sig return type %s is not blittable\n", mono_type_full_name (sig->ret));
 

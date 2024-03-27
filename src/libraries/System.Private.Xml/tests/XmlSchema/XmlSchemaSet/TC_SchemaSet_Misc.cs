@@ -89,7 +89,7 @@ namespace System.Xml.XmlSchemaTests
                                        XmlSchemaValidationFlags.ProcessInlineSchema;
             settings.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
             settings.Schemas.Add(ss);
-            XmlReader vr = XmlReader.Create(Path.Combine(TestData._Root, "bug115049.xml"), settings);
+            using XmlReader vr = XmlReader.Create(Path.Combine(TestData._Root, "bug115049.xml"), settings);
             while (vr.Read()) ;
             CError.Compare(errorCount, 1, "Error Count mismatch!");
             return;
@@ -108,7 +108,7 @@ namespace System.Xml.XmlSchemaTests
                                        XmlSchemaValidationFlags.ProcessSchemaLocation |
                                        XmlSchemaValidationFlags.ProcessInlineSchema;
             settings.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            XmlReader vr = XmlReader.Create(new StringReader(xml), settings, (string)null);
+            using XmlReader vr = XmlReader.Create(new StringReader(xml), settings, (string)null);
             while (vr.Read()) ;
             CError.Compare(errorCount, 0, "Error Count mismatch!");
             CError.Compare(warningCount, 1, "Warning Count mismatch!");
@@ -531,7 +531,7 @@ namespace System.Xml.XmlSchemaTests
 #pragma warning disable 0618
             settings.ProhibitDtd = false;
 #pragma warning restore 0618
-            XmlReader r = XmlReader.Create(Path.Combine(TestData._Root, "XMLSchema.xsd"), settings);
+            using XmlReader r = XmlReader.Create(Path.Combine(TestData._Root, "XMLSchema.xsd"), settings);
             ss1.Add(null, r);
             ss1.Compile();
 
@@ -568,7 +568,7 @@ namespace System.Xml.XmlSchemaTests
             settings.Schemas.Add(schemaSet);
             settings.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
             settings.ValidationType = ValidationType.Schema;
-            XmlReader vr = XmlReader.Create(new StringReader(strXml), settings);
+            using XmlReader vr = XmlReader.Create(new StringReader(strXml), settings);
 
             while (vr.Read()) ;
 
@@ -742,7 +742,7 @@ namespace System.Xml.XmlSchemaTests
             XmlSchema mainSchema = set.Add(null, Path.Combine(TestData._Root, "bug382035a.xsd"));
             set.Compile();
 
-            XmlReader r = XmlReader.Create(Path.Combine(TestData._Root, "bug382035a1.xsd"));
+            using XmlReader r = XmlReader.Create(Path.Combine(TestData._Root, "bug382035a1.xsd"));
             XmlSchema reParsedInclude = XmlSchema.Read(r, new ValidationEventHandler(ValidationCallback));
 
             ((XmlSchemaExternal)mainSchema.Includes[0]).Schema = reParsedInclude;
@@ -766,7 +766,7 @@ namespace System.Xml.XmlSchemaTests
             settings.ValidationFlags |= XmlSchemaValidationFlags.ReportValidationWarnings | XmlSchemaValidationFlags.ProcessSchemaLocation;
             settings.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
             settings.ValidationType = ValidationType.Schema;
-            XmlReader vr = XmlReader.Create(new StringReader(strXml), settings);
+            using XmlReader vr = XmlReader.Create(new StringReader(strXml), settings);
 
             while (vr.Read()) ;
 
@@ -1056,7 +1056,7 @@ namespace System.Xml.XmlSchemaTests
             string xsd = Path.Combine(TestData._Root, "bug511217.xsd");
             XmlSchemaSet s = new XmlSchemaSet();
             s.XmlResolver = new XmlUrlResolver();
-            XmlReader r = XmlReader.Create(xsd);
+            using XmlReader r = XmlReader.Create(xsd);
             s.Add(null, r);
             s.Compile();
             XmlReaderSettings rs = new XmlReaderSettings();

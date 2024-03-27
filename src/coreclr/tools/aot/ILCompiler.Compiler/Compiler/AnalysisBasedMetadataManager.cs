@@ -261,6 +261,11 @@ namespace ILCompiler
                 return GeneratesMetadata(targetType);
             }
 
+            public bool GeneratesInterfaceImpl(MetadataType typeDef, MetadataType interfaceImpl)
+            {
+                return _parent.IsInterfaceUsed(interfaceImpl.GetTypeDefinition());
+            }
+
             public bool IsBlocked(MetadataType typeDef)
             {
                 return _blockingPolicy.IsBlocked(typeDef);

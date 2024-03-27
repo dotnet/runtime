@@ -2,31 +2,31 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable no-console */
-import { INTERNAL, runtimeHelpers } from "./globals";
+import { INTERNAL, runtimeHelpers, mono_assert } from "./globals";
 import { utf8ToString } from "./strings";
 import { CharPtr, VoidPtr } from "./types/emscripten";
 
 let prefix = "MONO_WASM: ";
 
-export function set_thread_prefix(threadPrefix: string) {
+export function set_thread_prefix (threadPrefix: string) {
     prefix = `[${threadPrefix}] MONO_WASM: `;
 }
 
-export function mono_log_debug(msg: string, ...data: any) {
+export function mono_log_debug (msg: string, ...data: any) {
     if (runtimeHelpers.diagnosticTracing) {
         console.debug(prefix + msg, ...data);
     }
 }
 
-export function mono_log_info(msg: string, ...data: any) {
+export function mono_log_info (msg: string, ...data: any) {
     console.info(prefix + msg, ...data);
 }
 
-export function mono_log_warn(msg: string, ...data: any) {
+export function mono_log_warn (msg: string, ...data: any) {
     console.warn(prefix + msg, ...data);
 }
 
-export function mono_log_error(msg: string, ...data: any) {
+export function mono_log_error (msg: string, ...data: any) {
     if (data && data.length > 0 && data[0] && typeof data[0] === "object" && data[0].silent) {
         // don't log silent errors
         return;
@@ -35,6 +35,7 @@ export function mono_log_error(msg: string, ...data: any) {
 }
 
 export const wasm_func_map = new Map<number, string>();
+let wasm_pending_symbol_table: string | undefined;
 const regexes: any[] = [];
 
 // V8
@@ -52,8 +53,10 @@ regexes.push(/(?<replaceSection>[a-z]+:\/\/[^ )]*:wasm-function\[(?<funcNum>\d+)
 //# <?>.wasm-function[8962]
 regexes.push(/(?<replaceSection><[^ >]+>[.:]wasm-function\[(?<funcNum>[0-9]+)\])/);
 
-export function mono_wasm_symbolicate_string(message: string): string {
+export function mono_wasm_symbolicate_string (message: string): string {
     try {
+        performDeferredSymbolMapParsing();
+
         if (wasm_func_map.size == 0)
             return message;
 
@@ -89,12 +92,11 @@ export function mono_wasm_symbolicate_string(message: string): string {
     }
 }
 
-export function mono_wasm_stringify_as_error_with_stack(reason: any): string {
+export function mono_wasm_stringify_as_error_with_stack (reason: any): string {
     let stack: string;
     if (typeof reason === "string") {
         stack = reason;
-    }
-    else if (reason === undefined || reason === null || reason.stack === undefined) {
+    } else if (reason === undefined || reason === null || reason.stack === undefined) {
         stack = new Error().stack + "";
     } else {
         stack = reason.stack + "";
@@ -104,7 +106,7 @@ export function mono_wasm_stringify_as_error_with_stack(reason: any): string {
     return mono_wasm_symbolicate_string(stack);
 }
 
-export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: CharPtr, message_ptr: CharPtr, fatal: number, user_data: VoidPtr): void {
+export function mono_wasm_trace_logger (log_domain_ptr: CharPtr, log_level_ptr: CharPtr, message_ptr: CharPtr, fatal: number, user_data: VoidPtr): void {
     const origMessage = utf8ToString(message_ptr);
     const isFatal = !!fatal;
     const domain = utf8ToString(log_domain_ptr);
@@ -142,23 +144,41 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
 }
 
 
-export function parseSymbolMapFile(text: string) {
-    text.split(/[\r\n]/).forEach((line: string) => {
-        const parts: string[] = line.split(/:/);
-        if (parts.length < 2)
-            return;
-
-        parts[1] = parts.splice(1).join(":");
-        wasm_func_map.set(Number(parts[0]), parts[1]);
-    });
-
-    mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
+export function parseSymbolMapFile (text: string) {
+    // Symbol map parsing is very expensive, so doing it during startup is wasteful
+    //  instead, we defer it until the first time the symbol map is needed - which
+    //  may be never
+    mono_assert(!wasm_pending_symbol_table, "Another symbol map was already loaded");
+    wasm_pending_symbol_table = text;
+    mono_log_debug(`Deferred loading of ${text.length}ch symbol map`);
 }
 
-export function mono_wasm_get_func_id_to_name_mappings() {
+function performDeferredSymbolMapParsing () {
+    if (!wasm_pending_symbol_table)
+        return;
+
+    const text = wasm_pending_symbol_table!;
+    wasm_pending_symbol_table = undefined;
+    try {
+        text.split(/[\r\n]/).forEach((line: string) => {
+            const parts: string[] = line.split(/:/);
+            if (parts.length < 2)
+                return;
+
+            parts[1] = parts.splice(1).join(":");
+            wasm_func_map.set(Number(parts[0]), parts[1]);
+        });
+        mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
+    } catch (exc) {
+        mono_log_warn(`Failed to load symbol map: ${exc}`);
+    }
+}
+
+export function mono_wasm_get_func_id_to_name_mappings () {
+    performDeferredSymbolMapParsing();
     return [...wasm_func_map.values()];
 }
 
-export function mono_wasm_console_clear() {
+export function mono_wasm_console_clear () {
     console.clear();
 }

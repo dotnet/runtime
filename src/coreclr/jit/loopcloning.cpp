@@ -859,10 +859,7 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
     // For "normal" cloning this is probably ok. For GDV cloning this
     // may be inaccurate. We should key off the type test likelihood(s).
     //
-    // TODO: this is a bit of out sync with what we do for block weights.
-    // Reconcile.
-    //
-    const weight_t fastLikelihood = 0.999;
+    const weight_t fastLikelihood = fastPathWeightScaleFactor;
 
     // Choose how to generate the conditions
     const bool generateOneConditionPerBlock = true;
@@ -1961,13 +1958,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // taking the max with the head block's weight.
     ambientWeight = max(ambientWeight, preheader->bbWeight);
 
-    // We assume that the fast path will run 99% of the time, and thus should get 99% of the block weights.
-    // The slow path will, correspondingly, get only 1% of the block weights. It could be argued that we should
-    // mark the slow path as "run rarely", since it really shouldn't execute (given the currently optimized loop
-    // conditions) except under exceptional circumstances.
-    const weight_t fastPathWeightScaleFactor = 0.99;
-    const weight_t slowPathWeightScaleFactor = 1.0 - fastPathWeightScaleFactor;
-
     // We're going to transform this loop:
     //
     // preheader --> header
@@ -1985,11 +1975,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     BasicBlock* fastPreheader = fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
     fastPreheader->bbWeight = fastPreheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-
-    if (fastPreheader->NextIs(loop->GetHeader()))
-    {
-        fastPreheader->SetFlags(BBF_NONE_QUIRK);
-    }
 
     assert(preheader->KindIs(BBJ_ALWAYS));
     assert(preheader->TargetIs(loop->GetHeader()));
@@ -2023,18 +2008,18 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, newPred->bbNum);
     slowPreheader->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    slowPreheader->scaleBBWeight(slowPathWeightScaleFactor);
+    slowPreheader->scaleBBWeight(LoopCloneContext::slowPathWeightScaleFactor);
     newPred = slowPreheader;
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
 
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
 
-    loop->Duplicate(&newPred, blockMap, slowPathWeightScaleFactor);
+    loop->Duplicate(&newPred, blockMap, LoopCloneContext::slowPathWeightScaleFactor);
 
     // Scale old blocks to the fast path weight.
     loop->VisitLoopBlocks([=](BasicBlock* block) {
-        block->scaleBBWeight(fastPathWeightScaleFactor);
+        block->scaleBBWeight(LoopCloneContext::fastPathWeightScaleFactor);
         return BasicBlockVisit::Continue;
     });
 
@@ -2082,8 +2067,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         FlowEdge* const newEdge = fgAddRefPred(preheader->Next(), preheader);
         preheader->SetTargetEdge(newEdge);
     }
-
-    preheader->SetFlags(BBF_NONE_QUIRK);
 
     // And make sure we insert a pred link for the final fallthrough into the fast preheader.
     assert(condLast->NextIs(fastPreheader));
