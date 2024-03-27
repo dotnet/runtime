@@ -74,6 +74,8 @@ private:
     void ComputeBlockWeights();
     void ComputeBlockWeight(BasicBlock* block);
 
+    void GaussSeidelSolver();
+
 private:
     Compiler* const        m_comp;
     FlowGraphDfsTree*      m_dfsTree                   = nullptr;
@@ -81,6 +83,7 @@ private:
     weight_t*              m_cyclicProbabilities       = nullptr;
     unsigned               m_improperLoopHeaders       = 0;
     unsigned               m_cappedCyclicProbabilities = 0;
+    bool                   m_approximate               = false;
 };
 
 #endif // !_FGPROFILESYNTHESIS_H_

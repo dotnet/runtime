@@ -7,14 +7,12 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
-using Xunit;
 
 using BindingFlags = System.Reflection.BindingFlags;
 
-public class Program
+internal class Program
 {
-    [Fact]
-    public static int TestEntryPoint()
+    private static int Main()
     {
 #if !MULTIMODULE_BUILD
         TestHardwareIntrinsics.Run();

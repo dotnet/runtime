@@ -1504,15 +1504,8 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     // Clear gtInitClsHnd as a mark that we've already visited this call
     call->gtInitClsHnd = NO_CLASS_HANDLE;
 
-    // Update the IL offsets of the blocks to match the split.
-
-    // prevBb->bbCodeOffs remains the same
-    block->bbCodeOffsEnd = prevBb->bbCodeOffsEnd;
-
-    IL_OFFSET splitPointILOffset = fgFindBlockILOffset(block);
-
-    prevBb->bbCodeOffsEnd = max(prevBb->bbCodeOffs, splitPointILOffset);
-    block->bbCodeOffs     = min(splitPointILOffset, block->bbCodeOffsEnd);
+    // The blocks and statements have been modified enough to make the ending offset invalid.
+    block->bbCodeOffsEnd = BAD_IL_OFFSET;
 
     return true;
 }

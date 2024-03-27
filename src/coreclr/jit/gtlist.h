@@ -150,7 +150,6 @@ GTNODE(QMARK            , GenTreeQmark       ,0,1,GTK_BINOP|GTK_EXOP|DBK_NOTLIR)
 GTNODE(COLON            , GenTreeColon       ,0,1,GTK_BINOP|DBK_NOTLIR)
 
 GTNODE(INDEX_ADDR       , GenTreeIndexAddr   ,0,0,GTK_BINOP|GTK_EXOP)   // Address of SZ-array-element.
-GTNODE(MKREFANY         , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTLIR)
 GTNODE(LEA              , GenTreeAddrMode    ,0,0,GTK_BINOP|GTK_EXOP|DBK_NOTHIR)
 
 #if !defined(TARGET_64BIT)

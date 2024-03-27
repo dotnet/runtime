@@ -64,6 +64,7 @@ CompPhaseNameMacro(PHASE_INVERT_LOOPS,               "Invert loops",            
 CompPhaseNameMacro(PHASE_HEAD_TAIL_MERGE2,           "Post-morph head and tail merge", false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_FLOW,              "Optimize control flow",          false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_LAYOUT,            "Optimize layout",                false, -1, false)
+CompPhaseNameMacro(PHASE_OPTIMIZE_POST_LAYOUT,       "Optimize post-layout",           false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_DOMINATORS,         "Compute dominators",             false, -1, false)
 CompPhaseNameMacro(PHASE_CANONICALIZE_ENTRY,         "Canonicalize entry",             false, -1, false)
 CompPhaseNameMacro(PHASE_SET_BLOCK_WEIGHTS,          "Set block weights",              false, -1, false)

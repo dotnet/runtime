@@ -52,7 +52,7 @@ extern void mono_threads_wasm_async_run_in_target_thread_vi (pthread_t target_th
 extern void mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 extern void mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer args);
 #else
-extern void mono_wasm_bind_js_import (void *signature, int *is_exception, MonoObject **result);
+extern void* mono_wasm_bind_js_import_ST (void *signature);
 extern void mono_wasm_invoke_jsimport_ST (int function_handle, void *args);
 #endif /* DISABLE_THREADS */
 
@@ -64,6 +64,7 @@ extern mono_bool mono_wasm_starts_with (MonoString **culture, const uint16_t* st
 extern mono_bool mono_wasm_ends_with (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_index_of (MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool fromBeginning, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_get_calendar_info (MonoString **culture, int32_t calendarId, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_locale_info (MonoString **locale, MonoString **culture, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_get_culture_info (MonoString **culture, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_get_first_day_of_week (MonoString **culture, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_get_first_week_of_year (MonoString **culture, int *is_exception, MonoObject** ex_result);
@@ -86,7 +87,7 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::InvokeJSFunctionSend", mono_wasm_invoke_js_function_send);
 	mono_add_internal_call ("Interop/Runtime::CancelPromisePost", mono_wasm_cancel_promise_post);
 #else
-	mono_add_internal_call ("Interop/Runtime::BindJSImport", mono_wasm_bind_js_import);
+	mono_add_internal_call ("Interop/Runtime::BindJSImportST", mono_wasm_bind_js_import_ST);
 	mono_add_internal_call ("Interop/Runtime::InvokeJSImportST", mono_wasm_invoke_jsimport_ST);
 #endif /* DISABLE_THREADS */
 
@@ -105,6 +106,7 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/JsGlobalization::EndsWith", mono_wasm_ends_with);
 	mono_add_internal_call ("Interop/JsGlobalization::IndexOf", mono_wasm_index_of);
 	mono_add_internal_call ("Interop/JsGlobalization::GetCalendarInfo", mono_wasm_get_calendar_info);
+	mono_add_internal_call ("Interop/JsGlobalization::GetLocaleInfo", mono_wasm_get_locale_info);
 	mono_add_internal_call ("Interop/JsGlobalization::GetCultureInfo", mono_wasm_get_culture_info);
 	mono_add_internal_call ("Interop/JsGlobalization::GetFirstDayOfWeek", mono_wasm_get_first_day_of_week);
 	mono_add_internal_call ("Interop/JsGlobalization::GetFirstWeekOfYear", mono_wasm_get_first_week_of_year);

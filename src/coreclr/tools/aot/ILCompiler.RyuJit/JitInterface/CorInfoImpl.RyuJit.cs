@@ -2336,12 +2336,16 @@ namespace Internal.JitInterface
 
                     if (value == null)
                     {
-                        Debug.Assert(valueOffset == 0);
-                        Debug.Assert(bufferSize == targetPtrSize);
-
-                        // Write "null" to buffer
-                        new Span<byte>(buffer, targetPtrSize).Clear();
-                        return true;
+                        if ((valueOffset == 0) && (bufferSize == targetPtrSize))
+                        {
+                            // Write "null" to buffer
+                            new Span<byte>(buffer, targetPtrSize).Clear();
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
                     }
 
                     if (value.GetRawData(_compilation.NodeFactory, out object data))
@@ -2357,13 +2361,14 @@ namespace Internal.JitInterface
                                 return false;
 
                             case FrozenObjectNode:
-                                Debug.Assert(valueOffset == 0);
-                                Debug.Assert(bufferSize == targetPtrSize);
-
-                                // save handle's value to buffer
-                                nint handle = ObjectToHandle(data);
-                                new Span<byte>(&handle, targetPtrSize).CopyTo(new Span<byte>(buffer, targetPtrSize));
-                                return true;
+                                if ((valueOffset == 0) && (bufferSize == targetPtrSize))
+                                {
+                                    // save handle's value to buffer
+                                    nint handle = ObjectToHandle(data);
+                                    new Span<byte>(&handle, targetPtrSize).CopyTo(new Span<byte>(buffer, targetPtrSize));
+                                    return true;
+                                }
+                                return false;
                         }
                     }
                 }

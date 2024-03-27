@@ -190,6 +190,7 @@ namespace System.Text.Json.Serialization.Metadata
             propertyInfo.IgnoreCondition = propertyInfoValues.IgnoreCondition;
             propertyInfo.JsonTypeInfo = propertyInfoValues.PropertyTypeInfo;
             propertyInfo.NumberHandling = propertyInfoValues.NumberHandling;
+            propertyInfo.IsSourceGenerated = true;
 
             return propertyInfo;
         }

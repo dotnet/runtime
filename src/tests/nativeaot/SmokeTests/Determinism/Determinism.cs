@@ -3,45 +3,30 @@
 
 using System;
 using System.IO;
-using Xunit;
 
-public class Program
+using var baseline = File.OpenRead("baseline.object");
+using var compare = File.OpenRead("compare.object");
+
+Console.WriteLine($"Baseline size: {baseline.Length}");
+Console.WriteLine($"Compare size: {compare.Length}");
+
+if (baseline.Length != compare.Length)
+    throw new Exception("Different sizes");
+
+long length = baseline.Length;
+for (int i = 0; i < length; i++)
 {
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        var baseline = File.OpenRead("baseline.object");
-        var compare = File.OpenRead("compare.object");
-
-        Console.WriteLine($"Baseline size: {baseline.Length}");
-        Console.WriteLine($"Compare size: {compare.Length}");
-
-        if (baseline.Length != compare.Length)
-        {
-            Console.WriteLine("Test Fail: Baseline and Compare have different sizes.");
-            return 101;
-        }
-
-        long length = baseline.Length;
-        for (int i = 0; i < length; i++)
-        {
-            if (baseline.ReadByte() != compare.ReadByte())
-            {
-                Console.WriteLine($"Test Fail: Baseline and Compare were different"
-                                  + " at byte {i}.");
-                return 101;
-            }
-        }
-
-        // We're not interested in running this, we just want some junk to compile
-        if (Environment.GetEnvironmentVariable("Never") == "Ever")
-        {
-            Delegates.Run();
-            Devirtualization.Run();
-            Generics.Run();
-            Interfaces.Run();
-        }
-
-        return 100;
-    }
+    if (baseline.ReadByte() != compare.ReadByte())
+        throw new Exception($"Different at byte {i}");
 }
+
+// We're not interested in running this, we just want some junk to compile
+if (Environment.GetEnvironmentVariable("Never") == "Ever")
+{
+    Delegates.Run();
+    Devirtualization.Run();
+    Generics.Run();
+    Interfaces.Run();
+}
+
+return 100;

@@ -449,9 +449,13 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #if !FEATURE_WASM_MANAGED_THREADS
 
-            Interop.Runtime.BindJSImport(signature.Header, out int isException, out object exceptionMessage);
-            if (isException != 0)
-                throw new JSException((string)exceptionMessage);
+            nint exceptionPtr = Interop.Runtime.BindJSImportST(signature.Header);
+            if (exceptionPtr != IntPtr.Zero)
+            {
+                var message = Marshal.PtrToStringUni(exceptionPtr)!;
+                Marshal.FreeHGlobal(exceptionPtr);
+                throw new JSException(message);
+            }
 
             JSHostImplementation.FreeMethodSignatureBuffer(signature);
 

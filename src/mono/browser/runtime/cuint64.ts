@@ -6,11 +6,11 @@
 /// and 'import type { CUInt64 } from './cuint64';
 export type CUInt64 = readonly [number, number];
 
-export function toBigInt(x: CUInt64): bigint {
+export function toBigInt (x: CUInt64): bigint {
     return BigInt(x[0]) | BigInt(x[1]) << BigInt(32);
 }
 
-export function fromBigInt(x: bigint): CUInt64 {
+export function fromBigInt (x: bigint): CUInt64 {
     if (x < BigInt(0))
         throw new Error(`${x} is not a valid 64 bit integer`);
     if (x > BigInt(0xFFFFFFFFFFFFFFFF))
@@ -20,11 +20,11 @@ export function fromBigInt(x: bigint): CUInt64 {
     return [low, high];
 }
 
-export function dangerousToNumber(x: CUInt64): number {
+export function dangerousToNumber (x: CUInt64): number {
     return x[0] | x[1] << 32;
 }
 
-export function fromNumber(x: number): CUInt64 {
+export function fromNumber (x: number): CUInt64 {
     if (x < 0)
         throw new Error(`${x} is not a valid 64 bit integer`);
     if ((x >> 32) > 0xFFFFFFFF)
@@ -34,11 +34,11 @@ export function fromNumber(x: number): CUInt64 {
     return [x & 0xFFFFFFFF, x >> 32];
 }
 
-export function pack32(lo: number, hi: number): CUInt64 {
+export function pack32 (lo: number, hi: number): CUInt64 {
     return [lo, hi];
 }
 
-export function unpack32(x: CUInt64): [number, number] {
+export function unpack32 (x: CUInt64): [number, number] {
     return [x[0], x[1]];
 }
 

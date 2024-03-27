@@ -430,7 +430,7 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
         {
             GenTree* call = expr->OperIs(GT_RET_EXPR) ? expr->AsRetExpr()->gtInlineCandidate : expr;
 
-            if (call->TypeIs(TYP_VOID) && call->AsCall()->TreatAsShouldHaveRetBufArg(this))
+            if (call->TypeIs(TYP_VOID) && call->AsCall()->TreatAsShouldHaveRetBufArg())
             {
                 GenTree* retBuf;
                 if (call->AsCall()->ShouldHaveRetBufArg())
@@ -836,7 +836,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
     if (src->IsCall())
     {
         GenTreeCall* srcCall = src->AsCall();
-        if (srcCall->TreatAsShouldHaveRetBufArg(this))
+        if (srcCall->TreatAsShouldHaveRetBufArg())
         {
             // Case of call returning a struct via hidden retbuf arg.
             // Some calls have an "out buffer" that is not actually a ret buff
@@ -964,39 +964,6 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // So now we just return an empty node (pruning the GT_RET_EXPR)
             return src;
         }
-    }
-    else if (src->OperIs(GT_MKREFANY))
-    {
-        // Since we are assigning the result of a GT_MKREFANY, "destAddr" must point to a refany.
-        // TODO-CQ: we can do this without address-exposing the local on the LHS.
-        GenTreeFlags indirFlags = GTF_EMPTY;
-        GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
-        GenTree*     destAddrClone;
-        destAddr = impCloneExpr(destAddr, &destAddrClone, curLevel, pAfterStmt DEBUGARG("MKREFANY assignment"));
-
-        assert(OFFSETOF__CORINFO_TypedReference__dataPtr == 0);
-        assert(destAddr->gtType == TYP_I_IMPL || destAddr->gtType == TYP_BYREF);
-
-        // Append the store of the pointer value.
-        // TODO-Bug: the pointer value can be a byref. Use its actual type here instead of TYP_I_IMPL.
-        GenTree* ptrFieldStore = gtNewStoreIndNode(TYP_I_IMPL, destAddr, src->AsOp()->gtOp1, indirFlags);
-        if (pAfterStmt)
-        {
-            Statement* newStmt = gtNewStmt(ptrFieldStore, usedDI);
-            fgInsertStmtAfter(block, *pAfterStmt, newStmt);
-            *pAfterStmt = newStmt;
-        }
-        else
-        {
-            impAppendTree(ptrFieldStore, curLevel, usedDI);
-        }
-
-        GenTree* typeFieldOffset = gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL);
-        GenTree* typeFieldAddr   = gtNewOperNode(GT_ADD, genActualType(destAddr), destAddrClone, typeFieldOffset);
-        GenTree* typeFieldStore  = gtNewStoreIndNode(TYP_I_IMPL, typeFieldAddr, src->AsOp()->gtOp2);
-
-        // Return the store of the type value, to be appended.
-        return typeFieldStore;
     }
     else if (src->OperIs(GT_COMMA))
     {
@@ -4257,7 +4224,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
     JITDUMP("\nimpFixupStructReturnType: retyping\n");
     DISPTREE(op);
 
-    if (op->IsCall() && op->AsCall()->TreatAsShouldHaveRetBufArg(this))
+    if (op->IsCall() && op->AsCall()->TreatAsShouldHaveRetBufArg())
     {
         // This must be one of those 'special' helpers that don't really have a return buffer, but instead
         // use it as a way to keep the trees cleaner with fewer address-taken temps. Well now we have to
@@ -7911,31 +7878,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         JITDUMP("\n ... CEE_POP struct ...\n");
                         DISPTREE(op1);
-#ifdef UNIX_AMD64_ABI
-                        // Non-calls, such as obj or ret_expr, have to go through this.
-                        // Calls with large struct return value have to go through this.
-                        // Helper calls with small struct return value also have to go
-                        // through this since they do not follow Unix calling convention.
-                        if (!op1->IsCall() ||
-                            !IsMultiRegReturnedType(op1->AsCall()->gtRetClsHnd,
-                                                    op1->AsCall()->GetUnmanagedCallConv()) ||
-                            op1->IsHelperCall())
-#endif // UNIX_AMD64_ABI
+                        // If the value being produced comes from loading
+                        // via an underlying address, just null check the address.
+                        if (op1->OperIs(GT_IND, GT_BLK))
                         {
-                            // If the value being produced comes from loading
-                            // via an underlying address, just null check the address.
-                            if (op1->OperIs(GT_IND, GT_BLK))
-                            {
-                                gtChangeOperToNullCheck(op1, block);
-                            }
-                            else
-                            {
-                                op1 = impGetNodeAddr(op1, CHECK_SPILL_ALL, nullptr);
-                            }
-
-                            JITDUMP("\n ... optimized to ...\n");
-                            DISPTREE(op1);
+                            gtChangeOperToNullCheck(op1, block);
                         }
+                        else
+                        {
+                            op1 = impGetNodeAddr(op1, CHECK_SPILL_ALL, nullptr);
+                        }
+
+                        JITDUMP("\n ... optimized to ...\n");
+                        DISPTREE(op1);
                     }
 
                     // If op1 is non-overflow cast, throw it away since it is useless.
@@ -9613,31 +9568,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 op1 = impPopStack().val;
 
-                if (op1->OperIs(GT_MKREFANY))
-                {
-                    // The pointer may have side-effects
-                    if (op1->AsOp()->gtOp1->gtFlags & GTF_SIDE_EFFECT)
-                    {
-                        impAppendTree(op1->AsOp()->gtOp1, CHECK_SPILL_ALL, impCurStmtDI);
-#ifdef DEBUG
-                        impNoteLastILoffs();
-#endif
-                    }
+                // Get the address of the refany
+                GenTreeFlags indirFlags = GTF_EMPTY;
+                op1                     = impGetNodeAddr(op1, CHECK_SPILL_ALL, &indirFlags);
 
-                    // We already have the class handle
-                    op1 = op1->AsOp()->gtOp2;
-                }
-                else
-                {
-                    // Get the address of the refany
-                    GenTreeFlags indirFlags = GTF_EMPTY;
-                    op1                     = impGetNodeAddr(op1, CHECK_SPILL_ALL, &indirFlags);
-
-                    // Fetch the type from the correct slot
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                        gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
-                    op1 = gtNewIndir(TYP_BYREF, op1, indirFlags);
-                }
+                // Fetch the type from the correct slot
+                op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
+                                    gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
+                op1 = gtNewIndir(TYP_BYREF, op1, indirFlags);
 
                 // Convert native TypeHandle to RuntimeTypeHandle.
                 op1 = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, TYP_STRUCT, op1);
@@ -10321,16 +10259,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             }
 
             case CEE_MKREFANY:
-
+            {
                 assert(!compIsForInlining());
 
-                // Being lazy here. Refanys are tricky in terms of gc tracking.
-                // Since it is uncommon, just don't perform struct promotion in any method that contains mkrefany.
-
-                JITDUMP("disabling struct promotion because of mkrefany\n");
-                fgNoStructPromotion = true;
-
-                oper = GT_MKREFANY;
                 assertImp(sz == sizeof(unsigned));
 
                 _impResolveToken(CORINFO_TOKENKIND_Class);
@@ -10351,13 +10282,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // @SPECVIOLATION: TYP_INT should not be allowed here by a strict reading of the spec.
                 // But JIT32 allowed it, so we continue to allow it.
-                assertImp(op1->TypeGet() == TYP_BYREF || op1->TypeGet() == TYP_I_IMPL || op1->TypeGet() == TYP_INT);
+                assertImp(op1->TypeIs(TYP_BYREF, TYP_I_IMPL, TYP_INT));
 
-                // MKREFANY returns a struct.  op2 is the class token.
-                op1 = gtNewOperNode(oper, TYP_STRUCT, op1, op2);
+                unsigned refAnyLcl = lvaGrabTemp(false DEBUGARG("mkrefany temp"));
+                lvaSetStruct(refAnyLcl, impGetRefAnyClass(), false);
 
-                impPushOnStack(op1, verMakeTypeInfo(impGetRefAnyClass()));
+                GenTree* storeData =
+                    gtNewStoreLclFldNode(refAnyLcl, op1->TypeGet(), OFFSETOF__CORINFO_TypedReference__dataPtr, op1);
+                GenTree* storeType =
+                    gtNewStoreLclFldNode(refAnyLcl, op2->TypeGet(), OFFSETOF__CORINFO_TypedReference__type, op2);
+                impAppendTree(storeData, CHECK_SPILL_ALL, impCurStmtDI);
+                impAppendTree(storeType, CHECK_SPILL_ALL, impCurStmtDI);
+
+                impPushOnStack(gtNewLclVarNode(refAnyLcl, TYP_STRUCT), verMakeTypeInfo(impGetRefAnyClass()));
                 break;
+            }
 
             case CEE_LDOBJ:
             {
@@ -12650,12 +12589,6 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     GenTree* curArgVal = arg->GetNode();
 
     assert(!curArgVal->OperIs(GT_RET_EXPR));
-
-    if (curArgVal->gtOper == GT_MKREFANY)
-    {
-        inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_IS_MKREFANY);
-        return;
-    }
 
     GenTree*   lclVarTree;
     const bool isAddressInLocal = impIsAddressInLocal(curArgVal, &lclVarTree);
