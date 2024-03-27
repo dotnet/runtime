@@ -265,6 +265,10 @@ namespace System
             if (~value._upper == 0)
             {
                 long lower = (long)value._lower;
+                if (lower >= 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
                 return checked((short)lower);
             }
 
@@ -289,6 +293,10 @@ namespace System
             if (~value._upper == 0)
             {
                 long lower = (long)value._lower;
+                if (lower >= 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
                 return checked((int)lower);
             }
 
@@ -313,6 +321,10 @@ namespace System
             if (~value._upper == 0)
             {
                 long lower = (long)value._lower;
+                if (lower >= 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
                 return lower;
             }
 
@@ -337,6 +349,10 @@ namespace System
             if (~value._upper == 0)
             {
                 long lower = (long)value._lower;
+                if (lower >= 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
                 return checked((nint)lower);
             }
 
@@ -363,6 +379,10 @@ namespace System
             if (~value._upper == 0)
             {
                 long lower = (long)value._lower;
+                if (lower >= 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
                 return checked((sbyte)lower);
             }
 
