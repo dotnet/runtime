@@ -9,7 +9,7 @@ using Mono.Cecil;
 namespace Mono.Linker
 {
 	[SuppressMessage ("ApiDesign", "RS0030:Do not used banned APIs", Justification = "This class provides wrapper methods around the banned Parameters property")]
-	public static class MethodDefinitionExtensions
+	internal static class MethodDefinitionExtensions
 	{
 		public static bool IsDefaultConstructor (this MethodDefinition method)
 		{

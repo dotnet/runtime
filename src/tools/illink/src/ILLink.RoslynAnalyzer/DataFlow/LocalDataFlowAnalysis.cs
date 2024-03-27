@@ -16,7 +16,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	// It substitutes type arguments into the generic forward dataflow analysis,
 	// creating a simpler abstraction that can track the values of local variables using Roslyn APIs.
 	// The kinds of values tracked are still left as unspecified generic parameters TValue and TLattice.
-	public abstract class LocalDataFlowAnalysis<TValue, TContext, TLattice, TContextLattice, TTransfer, TConditionValue>
+	internal abstract class LocalDataFlowAnalysis<TValue, TContext, TLattice, TContextLattice, TTransfer, TConditionValue>
 		: ForwardDataFlowAnalysis<
 			LocalStateAndContext<TValue, TContext>,
 			LocalDataFlowState<TValue, TContext, TLattice, TContextLattice>,

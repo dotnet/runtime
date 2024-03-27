@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class TestDependencyRecorder : IDependencyRecorder
+	internal class TestDependencyRecorder : IDependencyRecorder
 	{
 		public record struct Dependency
 		{

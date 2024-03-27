@@ -51,11 +51,11 @@ namespace Mono.Linker.Steps
 			get { return Context.Annotations; }
 		}
 
-		public Tracer Tracer {
+		internal Tracer Tracer {
 			get { return Context.Tracer; }
 		}
 
-		public MarkingHelpers MarkingHelpers => Context.MarkingHelpers;
+		internal MarkingHelpers MarkingHelpers => Context.MarkingHelpers;
 
 		public void Process (LinkContext context)
 		{

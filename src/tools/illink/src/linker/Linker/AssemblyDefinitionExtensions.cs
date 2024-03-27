@@ -5,7 +5,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public static class AssemblyDefinitionExtensions
+	internal static class AssemblyDefinitionExtensions
 	{
 		public static EmbeddedResource? FindEmbeddedResource (this AssemblyDefinition assembly, string name)
 		{

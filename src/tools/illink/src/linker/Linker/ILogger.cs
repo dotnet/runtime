@@ -3,7 +3,7 @@
 
 namespace Mono.Linker
 {
-	public interface ILogger
+	internal interface ILogger
 	{
 		void LogMessage (MessageContainer message);
 	}

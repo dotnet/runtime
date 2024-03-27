@@ -8,14 +8,14 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class CheckSuppressionsDispatcher : SubStepsDispatcher
+	internal sealed class CheckSuppressionsDispatcher : SubStepsDispatcher
 	{
 		public CheckSuppressionsDispatcher () : base (new List<ISubStep> { new CheckSuppressionsStep () })
 		{
 
 		}
 
-		public override void Process (LinkContext context)
+		internal override void Process (LinkContext context)
 		{
 			base.Process (context);
 			var redundantSuppressions = context.Suppressions.GetUnusedSuppressions ();

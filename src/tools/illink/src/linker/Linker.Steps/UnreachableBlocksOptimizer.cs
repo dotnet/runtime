@@ -19,7 +19,7 @@ namespace Mono.Linker.Steps
 	// then uses this information to remove unreachable conditional blocks and
 	// inline collected constants.
 	//
-	public class UnreachableBlocksOptimizer
+	internal sealed class UnreachableBlocksOptimizer
 	{
 		readonly LinkContext _context;
 		readonly Dictionary<MethodDefinition, MethodResult?> _cache_method_results = new (2048);

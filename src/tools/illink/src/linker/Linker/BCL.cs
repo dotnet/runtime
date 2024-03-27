@@ -6,9 +6,9 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public static class BCL
+	internal static class BCL
 	{
-		public static class EventTracingForWindows
+		internal static class EventTracingForWindows
 		{
 			public static bool IsEventSourceImplementation (TypeDefinition type, LinkContext context)
 			{

@@ -11,7 +11,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public static class TypeReferenceExtensions
+	internal static class TypeReferenceExtensions
 	{
 		public static string GetDisplayName (this TypeReference type)
 		{

@@ -6,7 +6,7 @@ using ILLink.Shared.DataFlow;
 
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
-	public class LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice>
+	internal sealed class LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice>
 		: IDataFlowState<LocalStateAndContext<TValue, TContext>, LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice>>
 		where TValue : struct, IEquatable<TValue>
 		where TContext : struct, IEquatable<TContext>

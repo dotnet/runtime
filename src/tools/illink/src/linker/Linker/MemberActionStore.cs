@@ -9,7 +9,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public class MemberActionStore
+	internal sealed class MemberActionStore
 	{
 		public SubstitutionInfo PrimarySubstitutionInfo { get; }
 		private readonly Dictionary<AssemblyDefinition, SubstitutionInfo?> _embeddedXmlInfos;

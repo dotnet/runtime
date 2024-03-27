@@ -9,7 +9,7 @@ namespace Mono.Linker
 	/// <summary>
 	/// Class which implements IDependencyRecorder and writes the dependencies into an DGML file.
 	/// </summary>
-	public class DependencyRecorderHelper
+	internal static class DependencyRecorderHelper
 	{
 		static bool IsAssemblyBound (TypeDefinition td)
 		{

@@ -6,7 +6,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public class SubstitutionInfo
+	internal sealed class SubstitutionInfo
 	{
 		public Dictionary<MethodDefinition, MethodAction> MethodActions { get; }
 		public Dictionary<MethodDefinition, object?> MethodStubValues { get; }

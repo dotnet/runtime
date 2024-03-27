@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
-	public struct FeatureContext : IEquatable<FeatureContext>, IDeepCopyValue<FeatureContext>
+	internal struct FeatureContext : IEquatable<FeatureContext>, IDeepCopyValue<FeatureContext>
 	{
 		// The set of features known to be enabled in this context.
 		// Unknown represents "all possible features".
@@ -54,7 +54,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		}
 	}
 
-	public readonly struct FeatureContextLattice : ILattice<FeatureContext>
+	internal readonly struct FeatureContextLattice : ILattice<FeatureContext>
 	{
 		public FeatureContextLattice () { }
 

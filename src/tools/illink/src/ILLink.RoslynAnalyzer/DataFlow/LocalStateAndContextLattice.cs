@@ -8,7 +8,7 @@ using ILLink.Shared.DataFlow;
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
 	// A lattice value that holds both a local state, and a context
-	public struct LocalStateAndContext<TValue, TContext> : IEquatable<LocalStateAndContext<TValue, TContext>>
+	internal struct LocalStateAndContext<TValue, TContext> : IEquatable<LocalStateAndContext<TValue, TContext>>
 		where TValue : IEquatable<TValue>
 		where TContext : IEquatable<TContext>
 	{
@@ -28,7 +28,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public override int GetHashCode () => HashUtils.Combine (LocalState, Context);
 	}
 
-	public readonly struct LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> : ILattice<LocalStateAndContext<TValue, TContext>>
+	internal readonly struct LocalStateAndContextLattice<TValue, TContext, TValueLattice, TContextLattice> : ILattice<LocalStateAndContext<TValue, TContext>>
 		where TValue : struct, IEquatable<TValue>
 		where TContext : struct, IEquatable<TContext>
 		where TValueLattice : ILattice<TValue>

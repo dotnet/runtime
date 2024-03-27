@@ -7,7 +7,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class MarkStepContext : MarkContext
+	internal sealed class MarkStepContext : MarkContext
 	{
 
 		public List<Action<AssemblyDefinition>> MarkAssemblyActions { get; }

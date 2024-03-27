@@ -13,7 +13,7 @@ using Mono.Linker.Steps;
 
 namespace ILLink.Tasks.Tests
 {
-	public class MockTask : ILLink
+	internal class MockTask : ILLink
 	{
 
 		public List<(MessageImportance Importance, string Line)> Messages { get; } = new List<(MessageImportance Importance, string Line)> ();
@@ -82,7 +82,7 @@ namespace ILLink.Tasks.Tests
 		public string ProjectFileOfTaskNode => null;
 	}
 
-	public class MockDriver : Driver
+	internal class MockDriver : Driver
 	{
 		public class CustomLogger : Mono.Linker.ILogger
 		{
@@ -183,7 +183,7 @@ namespace ILLink.Tasks.Tests
 		}
 	}
 
-	public class MockXmlDependencyRecorder : IDependencyRecorder
+	internal class MockXmlDependencyRecorder : IDependencyRecorder
 	{
 		public static MockXmlDependencyRecorder Singleton { get; } = new MockXmlDependencyRecorder ();
 		public void RecordDependency (object source, object arget, bool marked) { }
@@ -191,7 +191,7 @@ namespace ILLink.Tasks.Tests
 		public void FinishRecording () { }
 	}
 
-	public class MockDgmlDependencyRecorder : IDependencyRecorder
+	internal class MockDgmlDependencyRecorder : IDependencyRecorder
 	{
 		public static MockXmlDependencyRecorder Singleton { get; } = new MockXmlDependencyRecorder ();
 		public void RecordDependency (object source, object arget, bool marked) { }

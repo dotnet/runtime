@@ -7,7 +7,7 @@ using ILLink.Shared;
 
 namespace Mono.Linker.Steps
 {
-	public class ProcessReferencesStep : BaseStep
+	internal sealed class ProcessReferencesStep : BaseStep
 	{
 		protected override void Process ()
 		{

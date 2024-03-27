@@ -16,7 +16,7 @@ namespace Mono.Linker
 	{
 		readonly LinkContext _context;
 
-		public readonly record struct TypeResolutionRecord (AssemblyDefinition ReferringAssembly, TypeDefinition ResolvedType);
+		internal readonly record struct TypeResolutionRecord (AssemblyDefinition ReferringAssembly, TypeDefinition ResolvedType);
 
 		public TypeNameResolver (LinkContext context)
 		{

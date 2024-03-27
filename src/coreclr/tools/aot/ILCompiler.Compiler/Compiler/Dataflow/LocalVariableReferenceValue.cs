@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-    public partial record LocalVariableReferenceValue : ReferenceValue
+    internal sealed partial record LocalVariableReferenceValue : ReferenceValue
     {
         public int LocalIndex { get; }
 

@@ -37,7 +37,7 @@ namespace Mono.Linker
 	/// <summary>
 	/// Class which implements IDependencyRecorder and writes the dependencies into an XML file.
 	/// </summary>
-	public class XmlDependencyRecorder : IDependencyRecorder, IDisposable
+	internal sealed class XmlDependencyRecorder : IDependencyRecorder, IDisposable
 	{
 		public const string DefaultDependenciesFileName = "linker-dependencies.xml";
 

@@ -8,7 +8,7 @@ using Mono.Collections.Generic;
 
 namespace Mono.Linker.Steps
 {
-	public class SealerStep : BaseStep
+	internal sealed class SealerStep : BaseStep
 	{
 		HashSet<TypeDefinition>? referencedBaseTypeCache;
 
@@ -113,12 +113,12 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected virtual void SealType (TypeDefinition type)
+		static void SealType (TypeDefinition type)
 		{
 			type.IsSealed = true;
 		}
 
-		protected virtual void SealMethod (MethodDefinition method)
+		static void SealMethod (MethodDefinition method)
 		{
 			method.IsFinal = true;
 		}

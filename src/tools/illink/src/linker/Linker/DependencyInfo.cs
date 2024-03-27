@@ -5,7 +5,7 @@ using System;
 
 namespace Mono.Linker
 {
-	public enum DependencyKind
+	internal enum DependencyKind
 	{
 		// For tracking any other kinds of dependencies in extensions to the core logic
 		Custom = -1, // the source is reserved to carry any dependency information tracked by the extender
@@ -147,7 +147,7 @@ namespace Mono.Linker
 		UnsafeAccessorTarget = 89, // the member is referenced via UnsafeAccessor attribute
 	}
 
-	public readonly struct DependencyInfo : IEquatable<DependencyInfo>
+	internal readonly struct DependencyInfo : IEquatable<DependencyInfo>
 	{
 		public DependencyKind Kind { get; }
 		public object? Source { get; }

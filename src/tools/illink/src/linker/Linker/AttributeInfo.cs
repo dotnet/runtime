@@ -9,7 +9,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public class AttributeInfo
+	internal sealed class AttributeInfo
 	{
 		public Dictionary<ICustomAttributeProvider, CustomAttribute[]> CustomAttributes { get; }
 

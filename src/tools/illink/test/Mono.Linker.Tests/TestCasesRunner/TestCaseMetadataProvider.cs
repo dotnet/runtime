@@ -13,7 +13,7 @@ using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class TestCaseMetadataProvider : BaseMetadataProvider
+	internal class TestCaseMetadataProvider : BaseMetadataProvider
 	{
 		public TestCaseMetadataProvider (TestCase testCase, AssemblyDefinition fullTestCaseAssemblyDefinition)
 			: base (testCase, fullTestCaseAssemblyDefinition)

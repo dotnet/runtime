@@ -3,7 +3,7 @@
 
 namespace Mono.Linker
 {
-	public static class PlatformAssemblies
+	internal static class PlatformAssemblies
 	{
 		public const string CoreLib = "System.Private.CoreLib";
 	}

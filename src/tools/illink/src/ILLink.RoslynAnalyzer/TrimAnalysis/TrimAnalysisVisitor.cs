@@ -25,7 +25,7 @@ using StateValue = ILLink.RoslynAnalyzer.DataFlow.LocalDataFlowState<
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public class TrimAnalysisVisitor : LocalDataFlowVisitor<
+	internal sealed class TrimAnalysisVisitor : LocalDataFlowVisitor<
 		MultiValue,
 		FeatureContext,
 		ValueSetLattice<SingleValue>,

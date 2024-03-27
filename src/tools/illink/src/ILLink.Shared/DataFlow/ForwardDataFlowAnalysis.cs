@@ -13,7 +13,7 @@ namespace ILLink.Shared.DataFlow
 	// A generic implementation of a forward dataflow analysis. Forward means that it flows facts
 	// across code in the order of execution, starting from the beginning of a method,
 	// and merging values from predecessors.
-	public abstract class ForwardDataFlowAnalysis<TValue, TState, TLattice, TBlock, TRegion, TControlFlowGraph, TTransfer, TConditionValue>
+	internal abstract class ForwardDataFlowAnalysis<TValue, TState, TLattice, TBlock, TRegion, TControlFlowGraph, TTransfer, TConditionValue>
 		where TValue : struct, IEquatable<TValue>
 		where TState : class, IDataFlowState<TValue, TLattice>, new()
 		where TLattice : ILattice<TValue>

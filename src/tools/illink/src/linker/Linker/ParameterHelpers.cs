@@ -8,7 +8,7 @@ using Mono.Cecil.Cil;
 
 namespace Mono.Linker
 {
-	public static class ParameterHelpers
+	internal static class ParameterHelpers
 	{
 		public static ParameterIndex GetParameterIndex (MethodDefinition thisMethod, Instruction operation)
 		{

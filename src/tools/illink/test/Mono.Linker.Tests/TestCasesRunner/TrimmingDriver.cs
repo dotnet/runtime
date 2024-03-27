@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class TrimmingDriver
+	internal class TrimmingDriver
 	{
 		protected class TestDriver : Driver
 		{

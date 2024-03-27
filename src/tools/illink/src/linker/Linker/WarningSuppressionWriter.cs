@@ -11,7 +11,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public class WarningSuppressionWriter
+	internal sealed class WarningSuppressionWriter
 	{
 		private readonly Dictionary<AssemblyNameDefinition, HashSet<(int Code, IMemberDefinition Member)>> _warnings;
 		private readonly FileOutputKind _fileOutputKind;
@@ -120,7 +120,7 @@ namespace Mono.Linker
 			return "member";
 		}
 
-		public enum FileOutputKind
+		internal enum FileOutputKind
 		{
 			CSharp,
 			Xml

@@ -20,7 +20,7 @@ using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class ResultChecker
+	internal class ResultChecker
 	{
 		readonly BaseAssemblyResolver _originalsResolver;
 		readonly BaseAssemblyResolver _linkedResolver;

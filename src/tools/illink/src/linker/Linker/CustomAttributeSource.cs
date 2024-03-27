@@ -8,7 +8,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public class CustomAttributeSource
+	internal sealed class CustomAttributeSource
 	{
 		public AttributeInfo PrimaryAttributeInfo { get; }
 		private readonly Dictionary<AssemblyDefinition, AttributeInfo?> _embeddedXmlInfos;

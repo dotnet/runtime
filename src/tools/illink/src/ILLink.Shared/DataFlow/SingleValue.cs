@@ -12,7 +12,7 @@ namespace ILLink.Shared.DataFlow
 	// - known strings
 	// - known integers
 
-	public abstract record SingleValue : IDeepCopyValue<SingleValue>
+	internal abstract record SingleValue : IDeepCopyValue<SingleValue>
 	{
 		// All values must explicitely declare their ability to deep copy itself.
 		// If the value is immutable, it can "return this" as an optimization.

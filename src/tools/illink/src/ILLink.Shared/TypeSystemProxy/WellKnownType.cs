@@ -9,7 +9,7 @@ using StaticCs;
 namespace ILLink.Shared.TypeSystemProxy
 {
 	[Closed]
-	public enum WellKnownType
+	internal enum WellKnownType
 	{
 		System_String,
 		System_Nullable_T,
@@ -23,7 +23,7 @@ namespace ILLink.Shared.TypeSystemProxy
 		System_Void
 	}
 
-	public static partial class WellKnownTypeExtensions
+	internal static partial class WellKnownTypeExtensions
 	{
 		public static (string Namespace, string Name) GetNamespaceAndName (this WellKnownType type)
 		{

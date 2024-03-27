@@ -12,7 +12,7 @@ using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public partial class TestRunner
+	internal partial class TestRunner
 	{
 		private readonly ObjectFactory _factory;
 
