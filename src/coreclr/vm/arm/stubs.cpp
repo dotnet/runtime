@@ -718,7 +718,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContextPointers->R9 = m_MachState._R4_R11[5];
     pRD->pCurrentContextPointers->R10 = m_MachState._R4_R11[6];
     pRD->pCurrentContextPointers->R11 = m_MachState._R4_R11[7];
-    pRD->pCurrentContextPointers->Lr = &pRD->pCurrentContext->Lr;
+    pRD->pCurrentContextPointers->Lr = NULL;
 }
 
 #ifndef DACCESS_COMPILE
@@ -1505,7 +1505,7 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pRD->pCurrentContextPointers->R9 = (PDWORD)&pRegs->r9;
     pRD->pCurrentContextPointers->R10 = (PDWORD)&pRegs->r10;
     pRD->pCurrentContextPointers->R11 = (PDWORD)&pRegs->r11;
-    pRD->pCurrentContextPointers->Lr = (PDWORD)&pRegs->r14;
+    pRD->pCurrentContextPointers->Lr = NULL;
 }
 
 void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
@@ -1565,7 +1565,7 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
     pRD->pCurrentContextPointers->R9 = (PDWORD)&m_ctx.R9;
     pRD->pCurrentContextPointers->R10 = (PDWORD)&m_ctx.R10;
     pRD->pCurrentContextPointers->R11 = (PDWORD)&m_ctx.R11;
-    pRD->pCurrentContextPointers->Lr = (PDWORD)&m_ctx.Lr;
+    pRD->pCurrentContextPointers->Lr = NULL;
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
@@ -1706,7 +1706,7 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
      pRD->pCurrentContextPointers->R9 = &m_Args->R9;
      pRD->pCurrentContextPointers->R10 = &m_Args->R10;
      pRD->pCurrentContextPointers->R11 = &m_Args->R11;
-     pRD->pCurrentContextPointers->Lr = &m_Args->Lr;
+     pRD->pCurrentContextPointers->Lr = NULL;
 
      SyncRegDisplayToCurrentContext(pRD);
 }

@@ -545,7 +545,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContextPointers->X27 = m_MachState.ptrX19_X29[8];
     pRD->pCurrentContextPointers->X28 = m_MachState.ptrX19_X29[9];
     pRD->pCurrentContextPointers->Fp = m_MachState.ptrX19_X29[10];
-    pRD->pCurrentContextPointers->Lr = &pRD->pCurrentContext->Lr;
+    pRD->pCurrentContextPointers->Lr = NULL; // Unwind again to get Caller's PC
 #endif
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
@@ -629,6 +629,8 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
     // copy the control registers
+    pRD->pCurrentContext->Fp = pCalleeSaved->x29;
+    pRD->pCurrentContext->Lr = pCalleeSaved->x30;
     pRD->pCurrentContext->Pc = GetReturnAddress();
     pRD->pCurrentContext->Sp = this->GetSP();
 
@@ -823,7 +825,7 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
      pRD->pCurrentContextPointers->X27 = &m_Args->X27;
      pRD->pCurrentContextPointers->X28 = &m_Args->X28;
      pRD->pCurrentContextPointers->Fp = &m_Args->X29;
-     pRD->pCurrentContextPointers->Lr = &m_Args->Lr;
+     pRD->pCurrentContextPointers->Lr = NULL;
 
      SyncRegDisplayToCurrentContext(pRD);
 
