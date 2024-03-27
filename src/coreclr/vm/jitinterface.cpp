@@ -11778,7 +11778,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
         if (field->IsObjRef())
         {
             // there is no point in returning a chunk of a gc handle
-            if ((valueOffset == 0) && (field->GetSize() <= (UINT)bufferSize) && !field->IsRVA())
+            if ((valueOffset == 0) && (sizeof(CORINFO_OBJECT_HANDLE) <= (UINT)bufferSize) && !field->IsRVA())
             {
                 GCX_COOP();
 
