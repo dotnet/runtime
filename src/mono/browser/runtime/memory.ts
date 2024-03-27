@@ -304,7 +304,8 @@ export function withStackAlloc<T1, T2, T3, TResult>(bytesWanted: number, f: (ptr
 // @bytes must be a typed array. space is allocated for it in the native heap
 //  and it is copied to that location. returns the address of the allocation.
 export function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr {
-    const memoryOffset = Module._malloc(bytes.length);
+    // pad sizes by 16 bytes for simd
+    const memoryOffset = Module._malloc(bytes.length + 16);
     const heapBytes = new Uint8Array(localHeapViewU8().buffer, <any>memoryOffset, bytes.length);
     heapBytes.set(bytes);
     return memoryOffset;
@@ -426,8 +427,8 @@ export function isSharedArrayBuffer(buffer: any): buffer is SharedArrayBuffer {
 }
 
 /*
-Problem: When WebWorker is suspended in the browser, the other running threads could `grow` the linear memory in the meantime. 
-After the thread is un-suspended C code may to try to de-reference pointer which is beyond it's known view. 
+Problem: When WebWorker is suspended in the browser, the other running threads could `grow` the linear memory in the meantime.
+After the thread is un-suspended C code may to try to de-reference pointer which is beyond it's known view.
 This is likely V8 bug. We don't have direct evidence, just failed debugger unit tests with MT runtime.
 */
 export function forceThreadMemoryViewRefresh() {
@@ -437,12 +438,12 @@ export function forceThreadMemoryViewRefresh() {
     const wasmMemory = runtimeHelpers.getMemory();
 
     /*
-    Normally when wasm memory grows in v8, this size change is broadcast to other web workers via an 'interrupt', which works by setting a thread-local flag that needs to be checked. 
-    It's possible that at this point in execution the flag has not been checked yet (because this worker was suspended by the debugger in an unknown location), 
-    which means the size change has not taken effect in this worker. 
-    wasmMemory.grow's implementation in v8 checks to see whether other workers have already grown the buffer, 
-    and will update the current worker's knowledge of the buffer's size. 
-    After that we should be able to safely updateMemoryViews and get a correctly sized view. 
+    Normally when wasm memory grows in v8, this size change is broadcast to other web workers via an 'interrupt', which works by setting a thread-local flag that needs to be checked.
+    It's possible that at this point in execution the flag has not been checked yet (because this worker was suspended by the debugger in an unknown location),
+    which means the size change has not taken effect in this worker.
+    wasmMemory.grow's implementation in v8 checks to see whether other workers have already grown the buffer,
+    and will update the current worker's knowledge of the buffer's size.
+    After that we should be able to safely updateMemoryViews and get a correctly sized view.
     This only works because their implementation does not skip doing work even when you ask to grow by 0 pages.
     */
     wasmMemory.grow(0);

@@ -1502,6 +1502,134 @@ mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
 	return 0;
 }
 
+// This will inline into mono_metadata_decode_value_simd on targets that can't use
+//  the simd version of the algorithm.
+MONO_ALWAYS_INLINE static guint32
+decode_value_scalar (const guint8 *ptr, const guint8 **new_ptr)
+{
+	guint32 result;
+	guint8 b = *ptr;
+
+	if ((b & 0x80) == 0){
+		result = b;
+		++ptr;
+	} else if ((b & 0x40) == 0){
+		result = ((b & 0x3f) << 8 | ptr [1]);
+		ptr += 2;
+	} else if (b != 0xff) {
+		result = ((b & 0x1f) << 24) |
+			(ptr [1] << 16) |
+			(ptr [2] << 8) |
+			ptr [3];
+		ptr += 4;
+	}
+	else {
+		result = (ptr [1] << 24) | (ptr [2] << 16) | (ptr [3] << 8) | ptr [4];
+		ptr += 5;
+	}
+
+	if (new_ptr)
+		*new_ptr = ptr;
+
+	return result;
+}
+
+// This is meant to be wrapped by our existing decode_value functions, and inline into them.
+MONO_ALWAYS_INLINE guint32
+mono_metadata_decode_value_simd (const guint8 *ptr, const guint8 **new_ptr)
+{
+#if defined(__clang__) && __LITTLE_ENDIAN__
+	guint32 result;
+
+	typedef guint8 v64_u1 __attribute__ ((vector_size (8)));
+	typedef guint32 v64_u4 __attribute__ ((vector_size (8)));
+
+	// this will generate vectorized code on x64 and wasm as long as SIMD is enabled at build time.
+	// if simd isn't enabled, it generates fairly adequate scalar code.
+	// *(bytes *)ptr and *(guint32 *)ptr by themselves don't force an i32 load of
+	//  ptr in either x64 or wasm clang, so this is the only way to prefetch all the bytes
+	// without doing this, decode_value will do 5 conditional single-byte memory loads,
+	//  and each individual load is potentially bounds-checked. we produce one wide load
+	// we could overrun the source buffer by up to 7 bytes, but doing that on wasm is
+	//  safe unless we're decoding from the absolute end of memory.
+	// we pad all buffers by 16 bytes in mono_wasm_load_bytes_into_heap, so we're fine
+	// clang happily upsizes these 8-byte vectors into 16-byte ones for wasm, and uses 8-byte-wide
+	//  insns on x64 as appropriate. armv8 looks fine too, albeit a little weird
+	union {
+		v64_u1 b;
+		v64_u4 i;
+	} v;
+	// ideally we would load 5 bytes, but it won't use a vector load then
+	// memcpy instead of a regular pointer dereference, to say 'this is unaligned'
+	memcpy(&v, ptr, sizeof(v));
+	// mask and shift two bits so we can have a 4-element jump table in wasm
+	guint8 flags = (v.b[0] & (0x80u | 0x40u)) >> 6;
+	switch (flags) {
+		case 0b00u:
+		case 0b01u:
+			// if (b & 0x80) == 0
+			result = v.b[0] & 0x7Fu;
+			++ptr;
+			break;
+		case 0b10u:
+			// (b * 0x80) != 0, and (b & 0x40) == 0
+			// v.b = { ptr[1], ptr[0], ptr[0], ptr[0] }
+			v.b = __builtin_shufflevector(
+				v.b, v.b,
+				1, 0, -1, -1, -1, -1, -1, -1
+			);
+			// result = v.b[0..3] where v.b[1..2] = 0 and v.b[0] &= 0x3F
+			result = v.i[0] & 0x3FFFu;
+			ptr += 2;
+			break;
+		case 0b11u:
+		// i don't know why the default case is necessary here, but without it the jump table has 5 entries.
+		default:
+			// (b * 0x80) != 0, and (b & 0x40) != 0
+			// for some reason on wasm the 'v.b[0]' load generates an '& 255',
+			//  even if we cache it in a guint8 local
+			if (v.b[0] == 0xFFu) {
+				// v.b = { ptr[4], ptr[3], ptr[2], ptr[1] }
+				// on x64 this generates kind of gross code, i.e.
+				// pshufd, pshufhw, pshufd, pshuflw, packuswb
+				// but on wasm it's fine
+				v.b = __builtin_shufflevector(
+					v.b, v.b,
+					4, 3, 2, 1, -1, -1, -1, -1
+				);
+				// result = v.b[0..3];
+				result = v.i[0];
+				ptr += 5;
+			} else {
+				// v.b = { ptr[3], ptr[2], ptr[1], ptr[0] }
+#ifdef USE_BSWAP
+				// generates much smaller x64 assembly, but terrible wasm
+				// interestingly, clang for arm automatically does this to the shuffle below
+				result = __builtin_bswap32(v.i[0]) & 0x1FFFFFFFu;
+#else
+				// on x64 unlike the above this generates a single pshuflw + pack
+				v.b = __builtin_shufflevector(
+					v.b, v.b,
+					3, 2, 1, 0, -1, -1, -1, -1
+				);
+				// result = v.b[0..3] where v.b[0] &= 0x1F
+				result = v.i[0] & 0x1FFFFFFFu;
+#endif
+				ptr += 4;
+			}
+			break;
+	}
+
+	if (new_ptr)
+		*new_ptr = ptr;
+
+	return result;
+#else
+	return decode_value_scalar (ptr, new_ptr);
+#endif
+}
+
+
 /**
  * mono_metadata_decode_blob_size:
  * \param ptr pointer to a blob object
@@ -1514,25 +1642,7 @@ mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
 guint32
 mono_metadata_decode_blob_size (const char *xptr, const char **rptr)
 {
-	const unsigned char *ptr = (const unsigned char *)xptr;
-	guint32 size;
-
-	if ((*ptr & 0x80) == 0){
-		size = ptr [0] & 0x7f;
-		ptr++;
-	} else if ((*ptr & 0x40) == 0){
-		size = ((ptr [0] & 0x3f) << 8) + ptr [1];
-		ptr += 2;
-	} else {
-		size = ((ptr [0] & 0x1f) << 24) +
-			(ptr [1] << 16) +
-			(ptr [2] << 8) +
-			ptr [3];
-		ptr += 4;
-	}
-	if (rptr)
-		*rptr = (char*)ptr;
-	return size;
+	return mono_metadata_decode_value_simd ((const guint8 *)xptr, (const guint8 **)rptr);
 }
 
 /**
@@ -1548,27 +1658,7 @@ mono_metadata_decode_blob_size (const char *xptr, const char **rptr)
 guint32
 mono_metadata_decode_value (const char *_ptr, const char **rptr)
 {
-	const unsigned char *ptr = (const unsigned char *) _ptr;
-	unsigned char b = *ptr;
-	guint32 len;
-
-	if ((b & 0x80) == 0){
-		len = b;
-		++ptr;
-	} else if ((b & 0x40) == 0){
-		len = ((b & 0x3f) << 8 | ptr [1]);
-		ptr += 2;
-	} else {
-		len = ((b & 0x1f) << 24) |
-			(ptr [1] << 16) |
-			(ptr [2] << 8) |
-			ptr [3];
-		ptr += 4;
-	}
-	if (rptr)
-		*rptr = (char*)ptr;
-
-	return len;
+	return mono_metadata_decode_value_simd ((const guint8 *)_ptr, (const guint8 **)rptr);
 }
 
 /**
