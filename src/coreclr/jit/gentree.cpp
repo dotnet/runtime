@@ -1806,11 +1806,7 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
         case WellKnownArg::RetBuffer:
             if (hasFixedRetBuffReg(cc))
             {
-                // Windows does not use fixed ret buff arg for instance calls, but does otherwise.
-                if (!TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(cc))
-                {
-                    return theFixedRetBuffReg(cc);
-                }
+                return theFixedRetBuffReg(cc);
             }
 
             break;
@@ -5615,7 +5611,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Cosh:
                         case NI_System_Math_Exp:
                         case NI_System_Math_Floor:
-                        case NI_System_Math_FMod:
                         case NI_System_Math_FusedMultiplyAdd:
                         case NI_System_Math_ILogB:
                         case NI_System_Math_Log:
@@ -12756,9 +12751,6 @@ void Compiler::gtDispTree(GenTree*     tree,
                     break;
                 case NI_System_Math_Floor:
                     printf(" floor");
-                    break;
-                case NI_System_Math_FMod:
-                    printf(" fmod");
                     break;
                 case NI_System_Math_FusedMultiplyAdd:
                     printf(" fma");

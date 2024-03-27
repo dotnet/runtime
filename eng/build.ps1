@@ -138,7 +138,7 @@ if (-not $PSBoundParameters.ContainsKey("subset") -and $properties.Length -gt 0 
 }
 
 if ($subset -eq 'help') {
-  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary"
+  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary /tl:false"
   exit 0
 }
 

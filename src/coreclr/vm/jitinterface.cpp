@@ -7596,7 +7596,7 @@ bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
 
     // Replace the body with implementation that just returns "default"
     MethodDesc* createDefaultInstance = CoreLibBinder::GetMethod(METHOD__ACTIVATOR__CREATE_DEFAULT_INSTANCE_OF_T);
-    COR_ILMETHOD_DECODER header(createDefaultInstance->GetILHeader(FALSE), createDefaultInstance->GetMDImport(), NULL);
+    COR_ILMETHOD_DECODER header(createDefaultInstance->GetILHeader(), createDefaultInstance->GetMDImport(), NULL);
     getMethodInfoILMethodHeaderHelper(&header, methInfo);
     *pSig = SigPointer(header.LocalVarSig, header.cbLocalVarSig);
 
@@ -7879,7 +7879,7 @@ CEEInfo::getMethodInfo(
     }
     else if (!ftn->IsWrapperStub() && ftn->HasILHeader())
     {
-        COR_ILMETHOD_DECODER header(ftn->GetILHeader(TRUE), ftn->GetMDImport(), NULL);
+        COR_ILMETHOD_DECODER header(ftn->GetILHeader(), ftn->GetMDImport(), NULL);
         cxt.Header = &header;
         getMethodInfoHelper(cxt, methInfo, context);
         result = true;
@@ -8564,7 +8564,7 @@ void CEEInfo::getEHinfo(
     }
     else
     {
-        COR_ILMETHOD_DECODER header(ftn->GetILHeader(TRUE), ftn->GetMDImport(), NULL);
+        COR_ILMETHOD_DECODER header(ftn->GetILHeader(), ftn->GetMDImport(), NULL);
         getEHinfoHelper(ftnHnd, EHnumber, clause, &header);
     }
 
@@ -10677,7 +10677,8 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         {
             _ASSERTE(ppIndirection != NULL);
             *ppIndirection = &hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
-            return NULL;
+            result = NULL;
+            goto exit;
         }
 #endif
 
@@ -10686,7 +10687,8 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         LPVOID finalTierAddr = hlpFinalTierAddrTable[dynamicFtnNum];
         if (finalTierAddr != NULL)
         {
-            return finalTierAddr;
+            result = finalTierAddr;
+            goto exit;
         }
 
         if (dynamicFtnNum == DYNAMIC_CORINFO_HELP_ISINSTANCEOFINTERFACE ||
@@ -10737,13 +10739,15 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
                     {
                         // Cache it for future uses to avoid taking the lock again.
                         hlpFinalTierAddrTable[dynamicFtnNum] = finalTierAddr;
-                        return finalTierAddr;
+                        result = finalTierAddr;
+                        goto exit;
                     }
                 }
             }
 
             *ppIndirection = ((FixupPrecode*)pPrecode)->GetTargetSlot();
-            return NULL;
+            result = NULL;
+            goto exit;
         }
 
         pfnHelper = hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
@@ -10757,8 +10761,8 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
 
     result = (LPVOID)GetEEFuncEntryPoint(pfnHelper);
 
+exit: ;
     EE_TO_JIT_TRANSITION_LEAF();
-
     return result;
 }
 

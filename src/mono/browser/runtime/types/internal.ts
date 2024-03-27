@@ -64,7 +64,7 @@ export const CharPtrNull: CharPtr = <CharPtr><any>0;
 export const NativePointerNull: NativePointer = <NativePointer><any>0;
 export const PThreadPtrNull: PThreadPtr = <PThreadPtr><any>0;
 
-export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | null | undefined): T {
+export function coerceNull<T extends ManagedPointer | NativePointer> (ptr: T | null | undefined): T {
     if ((ptr === null) || (ptr === undefined))
         return (0 as any) as T;
     else
@@ -252,7 +252,7 @@ export type DotnetModuleInternal = EmscriptenModule & DotnetModuleConfig & Emscr
 
 // Evaluates whether a value is nullish (same definition used as the ?? operator,
 //  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
-export function is_nullish<T>(value: T | null | undefined): value is null | undefined {
+export function is_nullish<T> (value: T | null | undefined): value is null | undefined {
     return (value === undefined) || (value === null);
 }
 
@@ -297,14 +297,14 @@ export interface ExitStatusError {
 
 /// Always throws. Used to handle unreachable switch branches when TypeScript refines the type of a variable
 /// to 'never' after you handle all the cases it knows about.
-export function assertNever(x: never): never {
+export function assertNever (x: never): never {
     throw new Error("Unexpected value: " + x);
 }
 
 /// returns true if the given value is not Thenable
 ///
 /// Useful if some function returns a value or a promise of a value.
-export function notThenable<T>(x: T | PromiseLike<T>): x is T {
+export function notThenable<T> (x: T | PromiseLike<T>): x is T {
     return typeof x !== "object" || typeof ((<PromiseLike<T>>x).then) !== "function";
 }
 
@@ -597,7 +597,7 @@ export const enum JSThreadBlockingMode {
      * .Wait on Promise/Task chains could lead to deadlock because JS event loop is not processed and it can't resolve JS promises.
      * This mode is dangerous and not supported.
      * Allows synchronous JSExport to be called from JavaScript code also in Main thread.
-     * Inside of that call nested call back to synchronous JSImport throws PNSE (because it would deadlock otherwise in 100% cases). 
+     * Inside of that call nested call back to synchronous JSImport throws PNSE (because it would deadlock otherwise in 100% cases).
      */
     DangerousAllowBlockingWait = 100,
 }

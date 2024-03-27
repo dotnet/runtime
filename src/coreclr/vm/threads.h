@@ -638,7 +638,7 @@ public:
         TS_ReportDead             = 0x00010000,    // in WaitForOtherThreads()
         TS_FullyInitialized       = 0x00020000,    // Thread is fully initialized and we are ready to broadcast its existence to external clients
 
-        TS_TaskReset              = 0x00040000,    // The task is reset
+        // unused                 = 0x00040000,
 
         TS_SyncSuspended          = 0x00080000,    // Suspended via WaitSuspendEvent
         TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync
@@ -753,7 +753,7 @@ public:
     void InternalReset (BOOL fNotFinalizerThread=FALSE, BOOL fThreadObjectResetNeeded=TRUE, BOOL fResetAbort=TRUE);
     INT32 ResetManagedThreadObject(INT32 nPriority);
     INT32 ResetManagedThreadObjectInCoopMode(INT32 nPriority);
-    BOOL  IsRealThreadPoolResetNeeded();
+
 public:
     HRESULT DetachThread(BOOL fDLLThreadDetach);
 
@@ -2453,18 +2453,6 @@ public:
     // can't figure out how to expand the ThreadList template type without
     // making m_Link public.
     SLink       m_Link;
-
-    // For N/Direct calls with the "setLastError" bit, this field stores
-    // the errorcode from that call.
-    DWORD       m_dwLastError;
-
-#ifdef FEATURE_INTERPRETER
-    // When we're interpreting IL stubs for N/Direct calls with the "setLastError" bit,
-    // the interpretation will trash the last error before we get to the call to "SetLastError".
-    // Therefore, we record it here immediately after the calli, and treat "SetLastError" as an
-    // intrinsic that transfers the value stored here into the field above.
-    DWORD       m_dwLastErrorInterp;
-#endif
 
     // Debugger per-thread flag for enabling notification on "manual"
     // method calls,  for stepping logic

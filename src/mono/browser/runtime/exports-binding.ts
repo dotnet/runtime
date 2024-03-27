@@ -22,7 +22,7 @@ import { mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, m
 import { mono_wasm_get_calendar_info } from "./hybrid-globalization/calendar";
 
 import { mono_wasm_get_culture_info } from "./hybrid-globalization/culture-info";
-import { mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
+import { mono_wasm_get_locale_info, mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
 import { mono_wasm_browser_entropy } from "./crypto";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
@@ -107,6 +107,7 @@ export const mono_wasm_imports = [
     mono_wasm_index_of,
     mono_wasm_get_calendar_info,
     mono_wasm_get_culture_info,
+    mono_wasm_get_locale_info,
     mono_wasm_get_first_day_of_week,
     mono_wasm_get_first_week_of_year,
 ];
@@ -117,7 +118,7 @@ const wasmImports: Function[] = [
     ...mono_wasm_threads_imports,
 ];
 
-export function replace_linker_placeholders(imports: WebAssembly.Imports) {
+export function replace_linker_placeholders (imports: WebAssembly.Imports) {
     // the output from emcc contains wrappers for these linker imports which add overhead,
     //  but now we have what we need to replace them with the actual functions
     // By default the imports all live inside of 'env', but emscripten minification could rename it to 'a'.
