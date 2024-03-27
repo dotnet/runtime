@@ -4657,7 +4657,7 @@ HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDe
         pILData->rejitID = static_cast<ULONG>(pCodeVersionManager->GetActiveILCodeVersion(pMD).GetVersionId());
     }
 
-    TADDR pDynamicIL = pMD->GetModule()->GetDynamicIL(pMD->GetMemberDef(), TRUE);
+    TADDR pDynamicIL = pMD->GetModule()->GetDynamicIL(pMD->GetMemberDef());
     if (pDynamicIL != NULL)
     {
         pILData->type = DacpProfilerILData::ILModified;
@@ -4699,7 +4699,7 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
             {
                 PTR_MethodDesc pMD = dac_cast<PTR_MethodDesc>(itMethods.GetMethodDesc());
 
-                TADDR pDynamicIL = pModule->GetDynamicIL(pMD->GetMemberDef(), TRUE);
+                TADDR pDynamicIL = pModule->GetDynamicIL(pMD->GetMemberDef());
                 ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
                 if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL() || pDynamicIL != NULL)
                 {
