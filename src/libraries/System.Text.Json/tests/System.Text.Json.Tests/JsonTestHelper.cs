@@ -751,7 +751,7 @@ namespace System.Text.Json
                 return matchingEx;
             }
 
-            throw ex is null ? new ThrowsException(typeof(TException)) : new ThrowsException(typeof(TException), ex);
+            throw ex is null ? ThrowsException.ForNoException(typeof(TException)) : ThrowsException.ForIncorrectExceptionType(typeof(TException), ex);
         }
 
 #if NETCOREAPP

@@ -1,7 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
   <ItemGroup>
     <CMakeProjectReference Include="Primitives/CMakeLists.txt" />
     <ProjectReference Include="../NETServer/NETServer.csproj" />

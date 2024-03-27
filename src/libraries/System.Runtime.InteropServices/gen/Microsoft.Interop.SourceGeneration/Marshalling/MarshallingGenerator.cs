@@ -8,18 +8,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Microsoft.Interop
 {
     /// <summary>
-    /// Target framework identifier
-    /// </summary>
-    public enum TargetFramework
-    {
-        Unknown,
-        Framework,
-        Core,
-        Standard,
-        Net
-    }
-
-    /// <summary>
     /// An enumeration describing how a <see cref="TypePositionInfo"/> should be represented in its corresponding native signature element (parameter, field, or return value).
     /// </summary>
     public enum SignatureBehavior
@@ -94,14 +82,6 @@ namespace Microsoft.Interop
     /// </summary>
     public interface IMarshallingGenerator
     {
-        /// <summary>
-        /// Determine if the generator is supported for the supplied version of the framework.
-        /// </summary>
-        /// <param name="target">The framework to target.</param>
-        /// <param name="version">The version of the framework.</param>
-        /// <returns>True if the marshaller is supported, otherwise false.</returns>
-        bool IsSupported(TargetFramework target, Version version);
-
         /// <summary>
         /// Get the native type syntax for <paramref name="info"/>
         /// </summary>

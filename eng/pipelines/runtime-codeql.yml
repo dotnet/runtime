@@ -16,8 +16,6 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
-  - name: Codeql.Enabled
-    value: True
   - name: Codeql.Cadence
     value: 0
   - name: Codeql.TSAEnabled

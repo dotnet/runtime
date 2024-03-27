@@ -8,7 +8,7 @@ using System.IO;
 
 namespace Microsoft.Extensions.DependencyModel.Resolution
 {
-    public class ReferenceAssemblyPathResolver: ICompilationAssemblyResolver
+    public class ReferenceAssemblyPathResolver : ICompilationAssemblyResolver
     {
         private readonly IFileSystem _fileSystem;
         private readonly string? _defaultReferenceAssembliesPath;

@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.Caching.Hosting;
-using System.Runtime.Caching.Resources;
 using System.Collections;
 using System.IO;
-using System.Security;
+using System.Runtime.Caching.Hosting;
+using System.Runtime.Caching.Resources;
 using System.Runtime.Versioning;
+using System.Security;
 
 namespace System.Runtime.Caching
 {

@@ -956,6 +956,7 @@ public:
 private:
 
 #if defined(_LIBUNWIND_ARM_EHABI)
+public:
   bool getInfoFromEHABISection(pint_t pc, const UnwindInfoSections &sects);
 
   int stepWithEHABI() {

@@ -9,6 +9,7 @@ using System.Diagnostics.Tracing;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Xunit;
 
 namespace BasicEventSourceTests
 {
@@ -150,7 +151,8 @@ namespace BasicEventSourceTests
             return successCountCalled;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // Create an EventListener.
             using (SimpleEventListener myListener = new SimpleEventListener("SimpleEventSource", EventLevel.Verbose))

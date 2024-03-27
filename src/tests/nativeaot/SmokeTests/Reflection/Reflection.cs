@@ -13,13 +13,15 @@ using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection;
+using Xunit;
 
 [assembly: TestAssembly]
 [module: TestModule]
 
-internal static class ReflectionTest
+public static class ReflectionTest
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Things I would like to test, but we don't fully support yet:
         // * Interface method is reflectable if we statically called it through a constrained call
@@ -40,7 +42,9 @@ internal static class ReflectionTest
         TestByRefLikeTypeMethod.Run();
 #endif
         TestILScanner.Run();
+        TestTypeGetType.Run();
         TestUnreferencedEnum.Run();
+        TestTypesInMethodSignatures.Run();
 
         TestAttributeInheritance.Run();
         TestStringConstructor.Run();
@@ -67,6 +71,8 @@ internal static class ReflectionTest
         TestByRefTypeLoad.Run();
         TestGenericLdtoken.Run();
         TestAbstractGenericLdtoken.Run();
+        TestTypeHandlesVisibleFromIDynamicInterfaceCastable.Run();
+        TestCompilerGeneratedCode.Run();
 
         //
         // Mostly functionality tests
@@ -84,7 +90,7 @@ internal static class ReflectionTest
         TestByRefReturnInvoke.Run();
         TestAssemblyLoad.Run();
         TestBaseOnlyUsedFromCode.Run();
-        TestEntryPoint.Run();
+        TestStartPoint.Run();
 
         return 100;
     }
@@ -1034,6 +1040,37 @@ internal static class ReflectionTest
         }
     }
 
+    class TestTypesInMethodSignatures
+    {
+        interface IUnreferenced { }
+
+        interface IReferenced { }
+
+        class UnreferencedBaseType : IUnreferenced, IReferenced { }
+        class UnreferencedMidType : UnreferencedBaseType { }
+        class ReferencedDerivedType : UnreferencedMidType { }
+
+        static void DoSomething(ReferencedDerivedType d) { }
+
+        public static void Run()
+        {
+            var mi = typeof(TestTypesInMethodSignatures).GetMethod(nameof(DoSomething), BindingFlags.Static | BindingFlags.NonPublic);
+            Type t = mi.GetParameters()[0].ParameterType;
+            int count = 0;
+            while (t != typeof(object))
+            {
+                t = t.BaseType;
+                count++;
+            }
+
+            Assert.Equal(count, 3);
+
+            // We expect to see only IReferenced but not IUnreferenced
+            Assert.Equal(1, mi.GetParameters()[0].ParameterType.GetInterfaces().Length);
+            Assert.Equal(typeof(IReferenced), mi.GetParameters()[0].ParameterType.GetInterfaces()[0]);
+        }
+    }
+
     class TestAttributeInheritance
     {
         class BaseAttribute : Attribute
@@ -1470,6 +1507,22 @@ internal static class ReflectionTest
         }
     }
 
+    class TestTypeGetType
+    {
+        public static void Run()
+        {
+            try
+            {
+                Type.GetType("System.Span`1[[System.Byte, System.Runtime]][], System.Runtime");
+                Type.GetType("System.Collections.Generic.Dictionary`2[System.String]");
+            }
+            catch { }
+
+            if (Type.GetType("MyClassOnlyReferencedFromTypeGetType") == null)
+                throw new Exception();
+        }
+    }
+
     class TestILScanner
     {
         class MyGenericUnusedClass<T>
@@ -1776,9 +1829,10 @@ internal static class ReflectionTest
                 typeof(GenericType<>).MakeGenericType(typeof(object)).GetMethod("Gimme");
             }
 
-            var t = (Type)s_type.MakeGenericType(typeof(double)).GetMethod("Gimme").Invoke(null, Array.Empty<object>());
+            var t = (Type)s_type.MakeGenericType(GetDouble()).GetMethod("Gimme").Invoke(null, Array.Empty<object>());
             if (t != typeof(double))
                 throw new Exception();
+            static Type GetDouble() => typeof(double);
         }
     }
 
@@ -2384,9 +2438,10 @@ internal static class ReflectionTest
 
         public static void Run()
         {
-            var mi = typeof(TestMdArrayLoad).GetMethod(nameof(MakeMdArray)).MakeGenericMethod(typeof(Atom));
+            var mi = typeof(TestMdArrayLoad).GetMethod(nameof(MakeMdArray)).MakeGenericMethod(GetAtom());
             if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(Atom[,,]))
                 throw new Exception();
+            static Type GetAtom() => typeof(Atom);
         }
     }
 
@@ -2398,9 +2453,10 @@ internal static class ReflectionTest
 
         public static void Run()
         {
-            var mi = typeof(TestByRefTypeLoad).GetMethod(nameof(MakeFnPtrType)).MakeGenericMethod(typeof(Atom));
+            var mi = typeof(TestByRefTypeLoad).GetMethod(nameof(MakeFnPtrType)).MakeGenericMethod(GetAtom());
             if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(delegate*<ref Atom>))
                 throw new Exception();
+            static Type GetAtom() => typeof(Atom);
         }
     }
 
@@ -2457,13 +2513,98 @@ internal static class ReflectionTest
         }
     }
 
-    class TestEntryPoint
+    class TestTypeHandlesVisibleFromIDynamicInterfaceCastable
+    {
+        class MyAttribute : Attribute { }
+
+        [My]
+        interface IUnusedInterface { }
+
+        class Foo : IDynamicInterfaceCastable
+        {
+            public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => throw new NotImplementedException();
+
+            public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
+            {
+                Type t = Type.GetTypeFromHandle(interfaceType);
+                if (t.GetCustomAttribute<MyAttribute>() == null)
+                    throw new Exception();
+
+                return true;
+            }
+        }
+
+        public static void Run()
+        {
+            object myObject = new Foo();
+            if (myObject is not IUnusedInterface)
+                throw new Exception();
+        }
+    }
+
+    class TestStartPoint
     {
         public static void Run()
         {
-            Console.WriteLine(nameof(TestEntryPoint));
+            Console.WriteLine(nameof(TestStartPoint));
             if (Assembly.GetEntryAssembly().EntryPoint == null)
                 throw new Exception();
+        }
+    }
+
+    class TestCompilerGeneratedCode
+    {
+        class Canary1 { }
+        class Canary2 { }
+        class Canary3 { }
+        class Canary4 { }
+
+        private static void ReflectionInLambda()
+        {
+            var func = () => {
+                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary1));
+                Assert.NotNull(helpersType);
+            };
+
+            func();
+        }
+
+        private static void ReflectionInLocalFunction()
+        {
+            func();
+
+            void func()
+            {
+                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary2));
+                Assert.NotNull(helpersType);
+            };
+        }
+
+        private static async void ReflectionInAsync()
+        {
+            await System.Threading.Tasks.Task.Delay(100);
+            Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary3));
+            Assert.NotNull(helpersType);
+        }
+
+        private static async void ReflectionInLambdaAsync()
+        {
+            await System.Threading.Tasks.Task.Delay(100);
+
+            var func = () => {
+                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary4));
+                Assert.NotNull(helpersType);
+            };
+
+            func();
+        }
+
+        public static void Run()
+        {
+            ReflectionInLambda();
+            ReflectionInLocalFunction();
+            ReflectionInAsync();
+            ReflectionInLambdaAsync();
         }
     }
 
@@ -2581,3 +2722,4 @@ class MyUnusedClass
     public static void TotallyUnreferencedMethod() { }
     public static void GenericMethod<T>() { }
 }
+class MyClassOnlyReferencedFromTypeGetType { }

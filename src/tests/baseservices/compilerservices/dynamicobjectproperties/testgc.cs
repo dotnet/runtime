@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class TestGC
 {
@@ -235,7 +236,8 @@ public class TestGC
         GC.KeepAlive(tbl);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -1154,7 +1154,7 @@ void GetHRMsg(HRESULT hr, SString &result, BOOL bNoGeekStuff/* = FALSE*/)
     }
     CONTRACTL_END;
 
-    result = W("");     // Make sure this routine isn't an inadvertent data-leak exploit!
+    result.Set(W(""));     // Make sure this routine isn't an inadvertent data-leak exploit!
 
     SString strDescr;
     BOOL    fHaveDescr = FALSE;
@@ -1220,7 +1220,7 @@ void GenerateTopLevelHRExceptionMessage(HRESULT hresult, SString &result)
     }
     CONTRACTL_END;
 
-    result = W("");     // Make sure this routine isn't an inadvertent data-leak exploit!
+    result.Set(W(""));     // Make sure this routine isn't an inadvertent data-leak exploit!
 
     GetHRMsg(hresult, result);
 }

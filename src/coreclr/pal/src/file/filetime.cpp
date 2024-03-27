@@ -188,35 +188,6 @@ GetSystemTimeAsFileTime(
 }
 
 
-#ifdef __APPLE__
-/*++
-Function:
-  FILECFAbsoluteTimeToFileTime
-
-Convert a CFAbsoluteTime value to a win32 FILETIME structure, as described
-in MSDN documentation. CFAbsoluteTime is the number of seconds elapsed since
-00:00 01 January 2001 UTC (Mac OS X epoch), while FILETIME represents a
-64-bit number of 100-nanosecond intervals that have passed since 00:00
-01 January 1601 UTC (win32 epoch).
---*/
-FILETIME FILECFAbsoluteTimeToFileTime( CFAbsoluteTime sec )
-{
-    __int64 Result;
-    FILETIME Ret;
-
-    Result = ((__int64)sec + SECS_BETWEEN_1601_AND_2001_EPOCHS) * SECS_TO_100NS;
-
-    Ret.dwLowDateTime = (DWORD)Result;
-    Ret.dwHighDateTime = (DWORD)(Result >> 32);
-
-    TRACE("CFAbsoluteTime = [%9f] converts to Win32 FILETIME = [%#x:%#x]\n",
-          sec, Ret.dwHighDateTime, Ret.dwLowDateTime);
-
-    return Ret;
-}
-#endif // __APPLE__
-
-
 /*++
 Function:
   FILEUnixTimeToFileTime
@@ -292,7 +263,13 @@ BOOL PALAPI FileTimeToSystemTime( CONST FILETIME * lpFileTime,
 #else   /* HAVE_GMTIME_R */
         UnixSystemTime = gmtime( &UnixFileTime );
 #endif  /* HAVE_GMTIME_R */
-
+        if (!UnixSystemTime)
+        {
+	       ERROR( "gmtime failed.\n" );
+	       SetLastError(ERROR_INVALID_PARAMETER);
+	       return FALSE;
+	    }
+        
         /* Convert unix system time to Windows system time. */
         lpSystemTime->wDay      = (WORD)UnixSystemTime->tm_mday;
 

@@ -12,9 +12,6 @@
 #include "holder.h"
 #include "Crst.h"
 #include "Range.h"
-#ifdef FEATURE_RWX_MEMORY
-#include "memaccessmgr.h"
-#endif
 #include "allocheap.h"
 
 #include "CommonMacros.inl"
@@ -25,12 +22,6 @@ using namespace rh::util;
 //-------------------------------------------------------------------------------------------------
 AllocHeap::AllocHeap()
     : m_blockList(),
-      m_rwProtectType(PAGE_READWRITE),
-      m_roProtectType(PAGE_READWRITE),
-#ifdef FEATURE_RWX_MEMORY
-      m_pAccessMgr(NULL),
-      m_hCurPageRW(),
-#endif // FEATURE_RWX_MEMORY
       m_pNextFree(NULL),
       m_pFreeCommitEnd(NULL),
       m_pFreeReserveEnd(NULL),
@@ -39,31 +30,7 @@ AllocHeap::AllocHeap()
       m_lock(CrstAllocHeap)
       COMMA_INDEBUG(m_fIsInit(false))
 {
-    ASSERT(!_UseAccessManager());
 }
-
-#ifdef FEATURE_RWX_MEMORY
-//-------------------------------------------------------------------------------------------------
-AllocHeap::AllocHeap(
-    uint32_t rwProtectType,
-    uint32_t roProtectType,
-    MemAccessMgr* pAccessMgr)
-    : m_blockList(),
-      m_rwProtectType(rwProtectType),
-      m_roProtectType(roProtectType == 0 ? rwProtectType : roProtectType),
-      m_pAccessMgr(pAccessMgr),
-      m_hCurPageRW(),
-      m_pNextFree(NULL),
-      m_pFreeCommitEnd(NULL),
-      m_pFreeReserveEnd(NULL),
-      m_pbInitialMem(NULL),
-      m_fShouldFreeInitialMem(false),
-      m_lock(CrstAllocHeap)
-      COMMA_INDEBUG(m_fIsInit(false))
-{
-    ASSERT(!_UseAccessManager() || (m_rwProtectType != m_roProtectType && m_pAccessMgr != NULL));
-}
-#endif // FEATURE_RWX_MEMORY
 
 //-------------------------------------------------------------------------------------------------
 bool AllocHeap::Init()
@@ -85,14 +52,6 @@ bool AllocHeap::Init(
     bool       fShouldFreeInitialMem)
 {
     ASSERT(!m_fIsInit);
-
-#ifdef FEATURE_RWX_MEMORY
-    // Manage the committed portion of memory
-    if (_UseAccessManager())
-    {
-        m_pAccessMgr->ManageMemoryRange(MemRange(pbInitialMem, cbInitialMemCommit), true);
-    }
-#endif // FEATURE_RWX_MEMORY
 
     BlockListElem *pBlock = new (nothrow) BlockListElem(pbInitialMem, cbInitialMemReserve);
     if (pBlock == NULL)
@@ -120,7 +79,7 @@ AllocHeap::~AllocHeap()
     {
         BlockListElem *pCur = m_blockList.PopHead();
         if (pCur->GetStart() != m_pbInitialMem || m_fShouldFreeInitialMem)
-            PalVirtualFree(pCur->GetStart(), pCur->GetLength(), MEM_RELEASE);
+            PalVirtualFree(pCur->GetStart(), pCur->GetLength());
         delete pCur;
     }
 }
@@ -129,24 +88,14 @@ AllocHeap::~AllocHeap()
 uint8_t * AllocHeap::_Alloc(
     uintptr_t cbMem,
     uintptr_t alignment
-    WRITE_ACCESS_HOLDER_ARG
     )
 {
-#ifndef FEATURE_RWX_MEMORY
-    const void* pRWAccessHolder = NULL;
-#endif // FEATURE_RWX_MEMORY
-
     ASSERT((alignment & (alignment - 1)) == 0); // Power of 2 only.
     ASSERT((int32_t)alignment <= OS_PAGE_SIZE);          // Can't handle this right now.
-    ASSERT((m_rwProtectType == m_roProtectType) == (pRWAccessHolder == NULL));
-    ASSERT(!_UseAccessManager() || pRWAccessHolder != NULL);
-
-    if (_UseAccessManager() && pRWAccessHolder == NULL)
-        return NULL;
 
     CrstHolder lock(&m_lock);
 
-    uint8_t * pbMem = _AllocFromCurBlock(cbMem, alignment PASS_WRITE_ACCESS_HOLDER_ARG);
+    uint8_t * pbMem = _AllocFromCurBlock(cbMem, alignment);
     if (pbMem != NULL)
         return pbMem;
 
@@ -154,7 +103,7 @@ uint8_t * AllocHeap::_Alloc(
     if (!_AllocNewBlock(cbMem))
         return NULL;
 
-    pbMem = _AllocFromCurBlock(cbMem, alignment PASS_WRITE_ACCESS_HOLDER_ARG);
+    pbMem = _AllocFromCurBlock(cbMem, alignment);
     ASSERT_MSG(pbMem != NULL, "AllocHeap::Alloc: failed to alloc mem after new block alloc");
 
     return pbMem;
@@ -162,19 +111,17 @@ uint8_t * AllocHeap::_Alloc(
 
 //-------------------------------------------------------------------------------------------------
 uint8_t * AllocHeap::Alloc(
-    uintptr_t cbMem
-    WRITE_ACCESS_HOLDER_ARG)
+    uintptr_t cbMem)
 {
-    return _Alloc(cbMem, 1 PASS_WRITE_ACCESS_HOLDER_ARG);
+    return _Alloc(cbMem, 1);
 }
 
 //-------------------------------------------------------------------------------------------------
 uint8_t * AllocHeap::AllocAligned(
     uintptr_t cbMem,
-    uintptr_t alignment
-    WRITE_ACCESS_HOLDER_ARG)
+    uintptr_t alignment)
 {
-    return _Alloc(cbMem, alignment PASS_WRITE_ACCESS_HOLDER_ARG);
+    return _Alloc(cbMem, alignment);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -191,69 +138,12 @@ bool AllocHeap::Contains(void* pvMem, uintptr_t cbMem)
     return false;
 }
 
-#ifdef FEATURE_RWX_MEMORY
-//-------------------------------------------------------------------------------------------------
-bool AllocHeap::_AcquireWriteAccess(
-    uint8_t* pvMem,
-    uintptr_t cbMem,
-    WriteAccessHolder* pHolder)
-{
-    ASSERT(!_UseAccessManager() || m_pAccessMgr != NULL);
-
-    if (_UseAccessManager())
-        return m_pAccessMgr->AcquireWriteAccess(MemRange(pvMem, cbMem), m_hCurPageRW, pHolder);
-    else
-        return true;
-}
-
-//-------------------------------------------------------------------------------------------------
-bool AllocHeap::AcquireWriteAccess(
-    void* pvMem,
-    uintptr_t cbMem,
-    WriteAccessHolder* pHolder)
-{
-    return _AcquireWriteAccess(static_cast<uint8_t*>(pvMem), cbMem, pHolder);
-}
-#endif // FEATURE_RWX_MEMORY
-
 //-------------------------------------------------------------------------------------------------
 bool AllocHeap::_UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd, uint8_t* pFreeReserveEnd)
 {
     ASSERT(MemRange(pNextFree, pFreeReserveEnd).Contains(MemRange(pNextFree, pFreeCommitEnd)));
     ASSERT(ALIGN_DOWN(pFreeCommitEnd, OS_PAGE_SIZE) == pFreeCommitEnd);
     ASSERT(ALIGN_DOWN(pFreeReserveEnd, OS_PAGE_SIZE) == pFreeReserveEnd);
-
-#ifdef FEATURE_RWX_MEMORY
-    // See if we need to update current allocation holder or protect committed pages.
-    if (_UseAccessManager())
-    {
-        if (pFreeCommitEnd - pNextFree > 0)
-        {
-#ifndef STRESS_MEMACCESSMGR
-            // Create or update the alloc cache, used to speed up new allocations.
-            // If there is available committed memory and either m_pNextFree is
-            // being updated past a page boundary or the current cache is empty,
-            // then update the cache.
-            if (ALIGN_DOWN(m_pNextFree, OS_PAGE_SIZE) != ALIGN_DOWN(pNextFree, OS_PAGE_SIZE) ||
-                m_hCurPageRW.GetRange().GetLength() == 0)
-            {
-                // Update current alloc page write access holder.
-                if (!_AcquireWriteAccess(ALIGN_DOWN(pNextFree, OS_PAGE_SIZE),
-                                         OS_PAGE_SIZE,
-                                         &m_hCurPageRW))
-                {
-                    return false;
-                }
-            }
-#endif // STRESS_MEMACCESSMGR
-
-        }
-        else
-        {   // No available committed memory. Release the cache.
-            m_hCurPageRW.Release();
-        }
-    }
-#endif // FEATURE_RWX_MEMORY
 
     m_pNextFree = pNextFree;
     m_pFreeCommitEnd = pFreeCommitEnd;
@@ -279,7 +169,7 @@ bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
     cbMem = ALIGN_UP(cbMem, OS_PAGE_SIZE);
 
     uint8_t * pbMem = reinterpret_cast<uint8_t*>
-        (PalVirtualAlloc(NULL, cbMem, MEM_COMMIT, m_roProtectType));
+        (PalVirtualAlloc(cbMem, PAGE_READWRITE));
 
     if (pbMem == NULL)
         return false;
@@ -287,7 +177,7 @@ bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
     BlockListElem *pBlockListElem = new (nothrow) BlockListElem(pbMem, cbMem);
     if (pBlockListElem == NULL)
     {
-        PalVirtualFree(pbMem, 0, MEM_RELEASE);
+        PalVirtualFree(pbMem, cbMem);
         return false;
     }
 
@@ -302,8 +192,7 @@ bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
 //-------------------------------------------------------------------------------------------------
 uint8_t * AllocHeap::_AllocFromCurBlock(
     uintptr_t cbMem,
-    uintptr_t alignment
-    WRITE_ACCESS_HOLDER_ARG)
+    uintptr_t alignment)
 {
     uint8_t * pbMem = NULL;
 
@@ -313,13 +202,7 @@ uint8_t * AllocHeap::_AllocFromCurBlock(
         _CommitFromCurBlock(cbMem))
     {
         ASSERT(cbMem + m_pNextFree <= m_pFreeCommitEnd);
-#ifdef FEATURE_RWX_MEMORY
-        if (pRWAccessHolder != NULL)
-        {
-            if (!_AcquireWriteAccess(m_pNextFree, cbMem, pRWAccessHolder))
-                return NULL;
-        }
-#endif // FEATURE_RWX_MEMORY
+
         pbMem = ALIGN_UP(m_pNextFree, alignment);
 
         if (!_UpdateMemPtrs(m_pNextFree + cbMem))
@@ -337,21 +220,6 @@ bool AllocHeap::_CommitFromCurBlock(uintptr_t cbMem)
     if (m_pNextFree + cbMem <= m_pFreeReserveEnd)
     {
         uintptr_t cbMemToCommit = ALIGN_UP(cbMem, OS_PAGE_SIZE);
-
-#ifdef FEATURE_RWX_MEMORY
-        if (_UseAccessManager())
-        {
-            if (!m_pAccessMgr->ManageMemoryRange(MemRange(m_pFreeCommitEnd, cbMemToCommit), false))
-                return false;
-        }
-        else
-        {
-            uint32_t oldProtectType;
-            if (!PalVirtualProtect(m_pFreeCommitEnd, cbMemToCommit, m_roProtectType, &oldProtectType))
-                return false;
-        }
-#endif // FEATURE_RWX_MEMORY
-
         return _UpdateMemPtrs(m_pNextFree, m_pFreeCommitEnd + cbMemToCommit);
     }
 

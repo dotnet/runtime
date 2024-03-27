@@ -4,9 +4,9 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Net;
 
 namespace System.DirectoryServices.AccountManagement
 {

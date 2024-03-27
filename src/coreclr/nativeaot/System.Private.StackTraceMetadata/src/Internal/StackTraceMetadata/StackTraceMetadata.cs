@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection.Runtime.General;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
@@ -11,8 +12,8 @@ using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
 
-using ReflectionExecution = Internal.Reflection.Execution.ReflectionExecution;
 using Debug = System.Diagnostics.Debug;
+using ReflectionExecution = Internal.Reflection.Execution.ReflectionExecution;
 
 namespace Internal.StackTraceMetadata
 {
@@ -26,7 +27,7 @@ namespace Internal.StackTraceMetadata
         /// <summary>
         /// Module address-keyed map of per-module method name resolvers.
         /// </summary>
-        static PerModuleMethodNameResolverHashtable _perModuleMethodNameResolverHashtable;
+        private static PerModuleMethodNameResolverHashtable _perModuleMethodNameResolverHashtable;
 
         /// <summary>
         /// Eager startup initialization of stack trace metadata support creates
@@ -42,7 +43,7 @@ namespace Internal.StackTraceMetadata
         /// <summary>
         /// Locate the containing module for a method and try to resolve its name based on start address.
         /// </summary>
-        public static unsafe string GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress)
+        public static unsafe string GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress, out bool isStackTraceHidden)
         {
             IntPtr moduleStartAddress = RuntimeAugments.GetOSModuleFromPointer(methodStartAddress);
             int rva = (int)((byte*)methodStartAddress - (byte*)moduleStartAddress);
@@ -50,11 +51,13 @@ namespace Internal.StackTraceMetadata
             {
                 if (moduleInfo.Handle.OsModuleBase == moduleStartAddress)
                 {
-                    string name = _perModuleMethodNameResolverHashtable.GetOrCreateValue(moduleInfo.Handle.GetIntPtrUNSAFE()).GetMethodNameFromRvaIfAvailable(rva);
-                    if (name != null)
+                    string name = _perModuleMethodNameResolverHashtable.GetOrCreateValue(moduleInfo.Handle.GetIntPtrUNSAFE()).GetMethodNameFromRvaIfAvailable(rva, out isStackTraceHidden);
+                    if (name != null || isStackTraceHidden)
                         return name;
                 }
             }
+
+            isStackTraceHidden = false;
 
             // We haven't found information in the stack trace metadata tables, but maybe reflection will have this
             if (IsReflectionExecutionAvailable() && ReflectionExecution.TryGetMethodMetadataFromStartAddress(methodStartAddress,
@@ -62,6 +65,24 @@ namespace Internal.StackTraceMetadata
                 out TypeDefinitionHandle typeHandle,
                 out MethodHandle methodHandle))
             {
+                foreach (CustomAttributeHandle cah in reader.GetTypeDefinition(typeHandle).CustomAttributes)
+                {
+                    if (cah.IsCustomAttributeOfType(reader, ["System", "Diagnostics"], "StackTraceHiddenAttribute"))
+                    {
+                        isStackTraceHidden = true;
+                        break;
+                    }
+                }
+
+                foreach (CustomAttributeHandle cah in reader.GetMethod(methodHandle).CustomAttributes)
+                {
+                    if (cah.IsCustomAttributeOfType(reader, ["System", "Diagnostics"], "StackTraceHiddenAttribute"))
+                    {
+                        isStackTraceHidden = true;
+                        break;
+                    }
+                }
+
                 return MethodNameFormatter.FormatMethodName(reader, typeHandle, methodHandle);
             }
 
@@ -127,9 +148,9 @@ namespace Internal.StackTraceMetadata
         /// </summary>
         private sealed class StackTraceMetadataCallbacksImpl : StackTraceMetadataCallbacks
         {
-            public override string TryGetMethodNameFromStartAddress(IntPtr methodStartAddress)
+            public override string TryGetMethodNameFromStartAddress(IntPtr methodStartAddress, out bool isStackTraceHidden)
             {
-                return GetMethodNameFromStartAddressIfAvailable(methodStartAddress);
+                return GetMethodNameFromStartAddressIfAvailable(methodStartAddress, out isStackTraceHidden);
             }
         }
 
@@ -256,6 +277,7 @@ namespace Internal.StackTraceMetadata
                     _stacktraceDatas[current++] = new StackTraceData
                     {
                         Rva = methodRva,
+                        IsHidden = (command & StackTraceDataCommand.IsStackTraceHidden) != 0,
                         OwningType = currentOwningType,
                         Name = currentName,
                         Signature = currentSignature,
@@ -274,8 +296,10 @@ namespace Internal.StackTraceMetadata
             /// <summary>
             /// Try to resolve method name based on its address using the stack trace metadata
             /// </summary>
-            public string GetMethodNameFromRvaIfAvailable(int rva)
+            public string GetMethodNameFromRvaIfAvailable(int rva, out bool isStackTraceHidden)
             {
+                isStackTraceHidden = false;
+
                 if (_stacktraceDatas == null)
                 {
                     // No stack trace metadata for this module
@@ -290,12 +314,43 @@ namespace Internal.StackTraceMetadata
                 }
 
                 StackTraceData data = _stacktraceDatas[index];
+
+                isStackTraceHidden = data.IsHidden;
+
+                if (data.OwningType.IsNull(_metadataReader))
+                {
+                    Debug.Assert(data.Name.IsNull(_metadataReader) && data.Signature.IsNull(_metadataReader));
+                    Debug.Assert(isStackTraceHidden);
+                    return null;
+                }
+
                 return MethodNameFormatter.FormatMethodName(_metadataReader, data.OwningType, data.Name, data.Signature, data.GenericArguments);
             }
 
             private struct StackTraceData : IComparable<StackTraceData>
             {
-                public int Rva { get; init; }
+                private const int IsHiddenFlag = 0x2;
+
+                private readonly int _rvaAndIsHiddenBit;
+
+                public int Rva
+                {
+                    get => _rvaAndIsHiddenBit & ~IsHiddenFlag;
+                    init
+                    {
+                        Debug.Assert((value & IsHiddenFlag) == 0);
+                        _rvaAndIsHiddenBit = value | (_rvaAndIsHiddenBit & IsHiddenFlag);
+                    }
+                }
+                public bool IsHidden
+                {
+                    get => (_rvaAndIsHiddenBit & IsHiddenFlag) != 0;
+                    init
+                    {
+                        if (value)
+                            _rvaAndIsHiddenBit |= IsHiddenFlag;
+                    }
+                }
                 public Handle OwningType { get; init; }
                 public ConstantStringValueHandle Name { get; init; }
                 public MethodSignatureHandle Signature { get; init; }

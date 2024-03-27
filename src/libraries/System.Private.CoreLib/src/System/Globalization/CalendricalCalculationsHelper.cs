@@ -21,16 +21,16 @@ namespace System.Globalization
         private static readonly long s_startOf1810 = GetNumberOfDays(new DateTime(1810, 1, 1));
         private static readonly long s_startOf1900Century = GetNumberOfDays(new DateTime(1900, 1, 1));
 
-        private static ReadOnlySpan<double> Coefficients1900to1987 => new double[] { -0.00002, 0.000297, 0.025184, -0.181133, 0.553040, -0.861938, 0.677066, -0.212591 };
-        private static ReadOnlySpan<double> Coefficients1800to1899 => new double[] { -0.000009, 0.003844, 0.083563, 0.865736, 4.867575, 15.845535, 31.332267, 38.291999, 28.316289, 11.636204, 2.043794 };
-        private static ReadOnlySpan<double> Coefficients1700to1799 => new double[] { 8.118780842, -0.005092142, 0.003336121, -0.0000266484 };
-        private static ReadOnlySpan<double> Coefficients1620to1699 => new double[] { 196.58333, -4.0675, 0.0219167 };
-        private static ReadOnlySpan<double> LambdaCoefficients => new double[] { 280.46645, 36000.76983, 0.0003032 };
-        private static ReadOnlySpan<double> AnomalyCoefficients => new double[] { 357.52910, 35999.05030, -0.0001559, -0.00000048 };
-        private static ReadOnlySpan<double> EccentricityCoefficients => new double[] { 0.016708617, -0.000042037, -0.0000001236 };
-        private static ReadOnlySpan<double> CoefficientsA => new double[] { 124.90, -1934.134, 0.002063 };
-        private static ReadOnlySpan<double> CoefficientsB => new double[] { 201.11, 72001.5377, 0.00057 };
-        private static ReadOnlySpan<double> Coefficients => new double[4] { 23.43929111111111, -0.013004166666666667, -1.638888888888889E-07, 5.03611111111111E-07 };
+        private static ReadOnlySpan<double> Coefficients1900to1987 => [-0.00002, 0.000297, 0.025184, -0.181133, 0.553040, -0.861938, 0.677066, -0.212591];
+        private static ReadOnlySpan<double> Coefficients1800to1899 => [-0.000009, 0.003844, 0.083563, 0.865736, 4.867575, 15.845535, 31.332267, 38.291999, 28.316289, 11.636204, 2.043794];
+        private static ReadOnlySpan<double> Coefficients1700to1799 => [8.118780842, -0.005092142, 0.003336121, -0.0000266484];
+        private static ReadOnlySpan<double> Coefficients1620to1699 => [196.58333, -4.0675, 0.0219167];
+        private static ReadOnlySpan<double> LambdaCoefficients => [280.46645, 36000.76983, 0.0003032];
+        private static ReadOnlySpan<double> AnomalyCoefficients => [357.52910, 35999.05030, -0.0001559, -0.00000048];
+        private static ReadOnlySpan<double> EccentricityCoefficients => [0.016708617, -0.000042037, -0.0000001236];
+        private static ReadOnlySpan<double> CoefficientsA => [124.90, -1934.134, 0.002063];
+        private static ReadOnlySpan<double> CoefficientsB => [201.11, 72001.5377, 0.00057];
+        private static ReadOnlySpan<double> Coefficients => [23.43929111111111, -0.013004166666666667, -1.638888888888889E-07, 5.03611111111111E-07];
 
         private static double RadiansFromDegrees(double degree)
         {

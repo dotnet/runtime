@@ -77,22 +77,6 @@ flush_cache:
 	.globl flush_cache
 flush_cache:
 	bx    lr
-#elif defined(__tilegx__)
-        .text
-        .globl flush_cache
-flush_cache:
-
-        andi r0, r0, -64
-1:      {
-         flush r0 ;
-         addi  r0, r0, 64
-        }
-        {
-         bgtz r1, 1b ;
-         addi r1, r1, -64
-        }
-        jrp   lr
-#else
 # error Need flush_cache code for this architecture.
 #endif
 

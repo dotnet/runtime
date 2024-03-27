@@ -125,6 +125,20 @@
 #define NOT_LOONGARCH64_ARG(x)    , x
 #endif
 
+#ifdef TARGET_RISCV64
+#define RISCV64_FIRST_ARG(x)  x ,
+#define RISCV64_ARG(x)        , x
+#define RISCV64_ONLY(x)       x
+#define NOT_RISCV64(x)
+#define NOT_RISCV64_ARG(x)
+#else
+#define RISCV64_FIRST_ARG(x)
+#define RISCV64_ARG(x)
+#define RISCV64_ONLY(x)
+#define NOT_RISCV64(x)        x
+#define NOT_RISCV64_ARG(x)    , x
+#endif
+
 #ifdef TARGET_64BIT
 #define LOG2_PTRSIZE 3
 #else

@@ -19,7 +19,7 @@
   extends [mscorlib]System.Object
   implements I1
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void .ctor() cil managed
   {
     ldarg.0
@@ -37,7 +37,7 @@
   extends [mscorlib]System.Object
   implements I1
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void .ctor() cil managed
   {
     ldarg.0
@@ -60,7 +60,7 @@
   }
 }
 
-.method private hidebysig static void CallClass() cil managed
+.method public hidebysig static void CallClass() cil managed
 {
   newobj instance void C2::.ctor()
   ldc.i4.0
@@ -69,7 +69,7 @@
   ret
 }
 
-.method private hidebysig static void CallInterface() cil managed
+.method public hidebysig static void CallInterface() cil managed
 {
   newobj instance void C2::.ctor()
   ldc.i4.0
@@ -78,43 +78,47 @@
   ret
 }
 
-.method private hidebysig static int32 Main() cil managed
+.class public auto ansi abstract sealed beforefieldinit abstractcalls
+    extends [mscorlib]System.Object
 {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
-  .entrypoint
-
-  .try
+  .method public hidebysig static int32 Main() cil managed
   {
-    call void CallClass()
-    leave Fail
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .entrypoint
+
+    .try
+    {
+      call void CallClass()
+      leave Fail
+    }
+    catch [mscorlib]System.BadImageFormatException
+    {
+      pop
+      leave AbstractClassOK
+    }
+
+  AbstractClassOK:
+
+    .try
+    {
+      call void CallInterface()
+      leave Fail
+    }
+    catch [mscorlib]System.BadImageFormatException
+    {
+      pop
+      leave AbstractInterfaceOK
+    }
+
+  AbstractInterfaceOK:
+
+    ldc.i4 100
+    ret
+
+  Fail:
+    ldc.i4.m1
+    ret
   }
-  catch [mscorlib]System.BadImageFormatException
-  {
-    pop
-    leave AbstractClassOK
-  }
-
-AbstractClassOK:
-
-  .try
-  {
-    call void CallInterface()
-    leave Fail
-  }
-  catch [mscorlib]System.BadImageFormatException
-  {
-    pop
-    leave AbstractInterfaceOK
-  }
-
-AbstractInterfaceOK:
-
-  ldc.i4 100
-  ret
-
-Fail:
-  ldc.i4.m1
-  ret
 }

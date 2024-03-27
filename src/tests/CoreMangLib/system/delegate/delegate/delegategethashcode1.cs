@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using Xunit;
 //test case for delegate GetHashCode method.
 namespace DelegateTest
 {
@@ -14,7 +15,8 @@ namespace DelegateTest
     {
 
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             DelegateGetHashCode DelegateGetHashCode = new DelegateGetHashCode();
 

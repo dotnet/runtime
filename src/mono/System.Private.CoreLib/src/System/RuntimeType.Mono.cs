@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
-using System.Globalization;
-using System.Threading;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System
 {
@@ -419,7 +419,7 @@ namespace System
             #region If argumentTypes supplied
             if (argumentTypes != null)
             {
-                ParameterInfo[] parameterInfos = methodBase.GetParametersNoCopy();
+                ReadOnlySpan<ParameterInfo> parameterInfos = methodBase.GetParametersAsSpan();
 
                 if (argumentTypes.Length != parameterInfos.Length)
                 {
@@ -820,9 +820,7 @@ namespace System
             if (types.Length == 0 && candidates.Count == 1)
             {
                 ConstructorInfo firstCandidate = candidates[0];
-
-                ParameterInfo[] parameters = firstCandidate.GetParametersNoCopy();
-                if (parameters == null || parameters.Length == 0)
+                if (firstCandidate.GetParametersAsSpan().Length == 0)
                 {
                     return firstCandidate;
                 }
@@ -1264,8 +1262,8 @@ namespace System
                 return cache.CorElementType;
 
             var type = this;
-            cache.CorElementType = RuntimeTypeHandle.GetCorElementType (new QCallTypeHandle(ref type));
-            Interlocked.MemoryBarrier ();
+            cache.CorElementType = RuntimeTypeHandle.GetCorElementType(new QCallTypeHandle(ref type));
+            Interlocked.MemoryBarrier();
             UpdateCached(TypeCacheEntries.CorElementType);
             return cache.CorElementType;
         }
@@ -1278,7 +1276,7 @@ namespace System
 
             var type = this;
             cache.TypeAttributes = RuntimeTypeHandle.GetAttributes(new QCallTypeHandle(ref type));
-            Interlocked.MemoryBarrier ();
+            Interlocked.MemoryBarrier();
             UpdateCached(TypeCacheEntries.TypeAttributes);
             return cache.TypeAttributes;
         }
@@ -1310,10 +1308,13 @@ namespace System
             return res;
         }
 
+        // Returns true for actual value types only, ignoring generic parameter constraints.
+        internal bool IsActualValueType => RuntimeTypeHandle.IsValueType(this);
+
         // Returns true for generic parameters with the Enum constraint.
         public override bool IsEnum => GetBaseType() == EnumType;
 
-        // Returns true for actual enum types only.
+        // Returns true for actual enum types only, ignoring generic parameter constraints.
         internal bool IsActualEnum
         {
             get
@@ -1326,6 +1327,8 @@ namespace System
                 return res;
             }
         }
+
+        public override bool IsByRefLike => RuntimeTypeHandle.IsByRefLike(this);
 
         public override bool IsConstructedGenericType => IsGenericType && !IsGenericTypeDefinition;
 
@@ -1557,7 +1560,7 @@ namespace System
                             throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName));
                         }
 
-                        if (invokeMethod.GetParametersNoCopy().Length == 0)
+                        if (invokeMethod.GetParametersAsSpan().Length == 0)
                         {
                             if (args.Length != 0)
                             {
@@ -1691,7 +1694,7 @@ namespace System
 
             if (ctors.Count == 1)
                 cache.default_ctor = ctor = (RuntimeConstructorInfo)ctors[0];
-            Interlocked.MemoryBarrier ();
+            Interlocked.MemoryBarrier();
 
             // Note down even if we found no constructors
             UpdateCached(TypeCacheEntries.DefaultCtor);
@@ -2464,7 +2467,7 @@ namespace System
                     for (int i = 1; i < typeNum + 1; i++)
                     {
                         var typeHandle = new RuntimeTypeHandle(arrayOfTypeHandles[i]);
-                        fPtrReturnAndParameterTypes[i-1] = (RuntimeType)GetTypeFromHandle(typeHandle)!;
+                        fPtrReturnAndParameterTypes[i - 1] = (RuntimeType)GetTypeFromHandle(typeHandle)!;
                     }
                 }
                 return fPtrReturnAndParameterTypes;

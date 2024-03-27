@@ -314,7 +314,7 @@ namespace ILLink.Tasks
 						continue;
 
 					// <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="true" featuredefault="true">
-					XmlNode featureAssemblyNode = doc.CreateElement ("assembly");
+					XmlElement featureAssemblyNode = doc.CreateElement ("assembly");
 					XmlAttribute featureAssemblyFullName = doc.CreateAttribute ("fullname");
 					featureAssemblyFullName.Value = "System.Private.CoreLib";
 					featureAssemblyNode.Attributes.Append (featureAssemblyFullName);
@@ -369,7 +369,7 @@ namespace ILLink.Tasks
 
 				if (!members.keepAllFields && (members.fields != null)) {
 					foreach (string field in members.fields) {
-						XmlNode fieldNode = doc.CreateElement ("field");
+						XmlElement fieldNode = doc.CreateElement ("field");
 						XmlAttribute fieldName = doc.CreateAttribute ("name");
 						fieldName.Value = field;
 						fieldNode.Attributes.Append (fieldName);
@@ -379,7 +379,7 @@ namespace ILLink.Tasks
 
 				if (members.methods != null) {
 					foreach (string method in members.methods) {
-						XmlNode methodNode = doc.CreateElement ("method");
+						XmlElement methodNode = doc.CreateElement ("method");
 						XmlAttribute methodName = doc.CreateAttribute ("name");
 						methodName.Value = method;
 						methodNode.Attributes.Append (methodName);

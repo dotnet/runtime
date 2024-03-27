@@ -93,6 +93,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_MksTemps)
     DllImportEntry(SystemNative_MMap)
     DllImportEntry(SystemNative_MUnmap)
+    DllImportEntry(SystemNative_MProtect)
     DllImportEntry(SystemNative_MAdvise)
     DllImportEntry(SystemNative_MSync)
     DllImportEntry(SystemNative_SysConf)
@@ -227,6 +228,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_SetDelayedSigChildConsoleConfigurationHandler)
     DllImportEntry(SystemNative_SetTerminalInvalidationHandler)
     DllImportEntry(SystemNative_SNPrintF)
+    DllImportEntry(SystemNative_SNPrintF_1S)
+    DllImportEntry(SystemNative_SNPrintF_1I)
     DllImportEntry(SystemNative_Sysctl)
     DllImportEntry(SystemNative_MapTcpState)
     DllImportEntry(SystemNative_LowLevelMonitor_Create)
@@ -275,6 +278,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetEnviron)
     DllImportEntry(SystemNative_FreeEnviron)
     DllImportEntry(SystemNative_GetGroupName)
+    DllImportEntry(SystemNative_GetUInt64OSThreadId)
+    DllImportEntry(SystemNative_TryGetUInt32OSThreadId)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

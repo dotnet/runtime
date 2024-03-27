@@ -12,6 +12,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 8:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern xunit.assert
 {
   .publickeytoken = (8D 05 B1 BB 7A 6F DB 6C )                         // ....zo.l
@@ -42,7 +43,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit VirtualStaticMethodReabstraction
+.class public auto ansi beforefieldinit VirtualStaticMethodReabstraction
        extends [System.Runtime]System.Object
 {
   .class interface abstract auto ansi nested private IFoo
@@ -328,9 +329,12 @@
     .field public static class [System.Runtime]System.Action '<0>__Frob'
   } // end of class '<GetAction>O__4_0`2'
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       452 (0x1c4)
     .maxstack  2

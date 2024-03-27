@@ -1,13 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <!-- Shared CoreCLR -->
   <ItemGroup>
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Runtime" />
   </ItemGroup>
+
 </Project>

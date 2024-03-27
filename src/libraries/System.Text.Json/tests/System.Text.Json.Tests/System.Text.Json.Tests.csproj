@@ -18,8 +18,8 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
-    <WasmXHarnessMonoArgs>--setenv=XHARNESS_LOG_TEST_START=true --no-memory-snapshot</WasmXHarnessMonoArgs>
-    <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-wasm.targets -->
+    <XunitShowProgress>true</XunitShowProgress>
+    <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
   </PropertyGroup>
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
@@ -213,6 +213,7 @@
     <Compile Include="Serialization\Stream.DeserializeAsyncEnumerable.cs" />
     <Compile Include="Serialization\Stream.ReadTests.cs" />
     <Compile Include="Serialization\Stream.WriteTests.cs" />
+    <Compile Include="Serialization\StreamTests.ChunkedReaderStream.cs" />
     <Compile Include="Serialization\TypeInfoResolverFunctionalTests.cs" />
     <Compile Include="Serialization\UnmappedMemberHandlingTests.cs" />
     <Compile Include="Serialization\UnsupportedTypesTests.cs" />
@@ -249,6 +250,21 @@
     <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.String.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.StringArray.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.WeatherForecastWithPOCOs.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80RegressionTests.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.ClassWithCustomConverter.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.DateTimeOffset.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.DictionaryStringHighLowTemps.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.GetJsonTypeInfo.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.HighLowTemps.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.Int32.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.ListDateTimeOffset.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.MyLinkedList.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.PropertyNames.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.String.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.StringArray.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net80\Net80GeneratedContext.WeatherForecastWithPOCOs.g.cs" />
     <Compile Include="TestCaseType.cs" />
     <Compile Include="Utf8JsonReaderTests.cs" />
     <Compile Include="Utf8JsonReaderTests.MultiSegment.cs" />

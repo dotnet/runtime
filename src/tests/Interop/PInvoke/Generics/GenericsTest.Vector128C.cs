@@ -36,36 +36,38 @@ unsafe partial class GenericsNative
     public static extern Vector128<char> AddVector128Cs(in Vector128<char> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestVector128C()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void TestVector128C()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128C('0', '1', '2', '3', '4', '5', '6', '7'));
 
         Vector128<char> value2;
         GenericsNative.GetVector128COut('0', '1', '2', '3', '4', '5', '6', '7', &value2);
         Vector128<short> tValue2 = *(Vector128<short>*)&value2;
-        Assert.Equal(tValue2.GetElement(0), (short)'0');
-        Assert.Equal(tValue2.GetElement(1), (short)'1');
-        Assert.Equal(tValue2.GetElement(2), (short)'2');
-        Assert.Equal(tValue2.GetElement(3), (short)'3');
-        Assert.Equal(tValue2.GetElement(4), (short)'4');
-        Assert.Equal(tValue2.GetElement(5), (short)'5');
-        Assert.Equal(tValue2.GetElement(6), (short)'6');
-        Assert.Equal(tValue2.GetElement(7), (short)'7');
+        Assert.Equal((short)'0', tValue2.GetElement(0));
+        Assert.Equal((short)'1', tValue2.GetElement(1));
+        Assert.Equal((short)'2', tValue2.GetElement(2));
+        Assert.Equal((short)'3', tValue2.GetElement(3));
+        Assert.Equal((short)'4', tValue2.GetElement(4));
+        Assert.Equal((short)'5', tValue2.GetElement(5));
+        Assert.Equal((short)'6', tValue2.GetElement(6));
+        Assert.Equal((short)'7', tValue2.GetElement(7));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128COut('0', '1', '2', '3', '4', '5', '6', '7', out Vector128<char> value3));
 
         Vector128<char>* value4 = GenericsNative.GetVector128CPtr('0', '1', '2', '3', '4', '5', '6', '7');
         Vector128<short>* tValue4 = (Vector128<short>*)value4;
-        Assert.Equal(tValue4->GetElement(0), (short)'0');
-        Assert.Equal(tValue4->GetElement(1), (short)'1');
-        Assert.Equal(tValue4->GetElement(2), (short)'2');
-        Assert.Equal(tValue4->GetElement(3), (short)'3');
-        Assert.Equal(tValue4->GetElement(4), (short)'4');
-        Assert.Equal(tValue4->GetElement(5), (short)'5');
-        Assert.Equal(tValue4->GetElement(6), (short)'6');
-        Assert.Equal(tValue4->GetElement(7), (short)'7');
+        Assert.Equal((short)'0', tValue4->GetElement(0));
+        Assert.Equal((short)'1', tValue4->GetElement(1));
+        Assert.Equal((short)'2', tValue4->GetElement(2));
+        Assert.Equal((short)'3', tValue4->GetElement(3));
+        Assert.Equal((short)'4', tValue4->GetElement(4));
+        Assert.Equal((short)'5', tValue4->GetElement(5));
+        Assert.Equal((short)'6', tValue4->GetElement(6));
+        Assert.Equal((short)'7', tValue4->GetElement(7));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128CRef('0', '1', '2', '3', '4', '5', '6', '7'));
 

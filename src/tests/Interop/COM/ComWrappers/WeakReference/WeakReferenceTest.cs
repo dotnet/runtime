@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace ComWrappersTests
 {
@@ -121,7 +122,7 @@ namespace ComWrappersTests
         public static readonly TestComWrappers MarshallingInstance = new TestComWrappers(WrapperRegistration.Marshalling);
     }
 
-    class Program
+    public class Program
     {
 
         private static void ValidateWeakReferenceState(WeakReference<WeakReferenceableWrapper> wr, bool expectedIsAlive, TestComWrappers sourceWrappers = null)
@@ -277,7 +278,8 @@ namespace ComWrappersTests
             Assert.False(weakRef.TryGetTarget(out _));
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {
@@ -305,4 +307,3 @@ namespace ComWrappersTests
         }
     }
 }
-

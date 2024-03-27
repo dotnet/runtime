@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
-using System.Text.Json;
 using System.Linq;
+using System.Net;
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
@@ -110,17 +112,41 @@ namespace Microsoft.Extensions
 
         public record RecordWhereParametersHaveDefaultValue(string Name, string Address, int Age = 42);
 
-        public record ClassWhereParametersHaveDefaultValue
+        public class ClassWhereParametersHaveDefaultValue
         {
             public string? Name { get; }
             public string Address { get; }
             public int Age { get; }
+            public float F { get; }
+            public double D { get; }
+            public decimal M { get; }
+            public StringComparison SC { get; }
+            public char C { get; }
+            public int? NAge { get; }
+            public float? NF { get; }
+            public double? ND { get; }
+            public decimal? NM { get; }
+            public StringComparison? NSC { get; }
+            public char? NC { get; }
 
-            public ClassWhereParametersHaveDefaultValue(string? name, string address, int age = 42)
+            public ClassWhereParametersHaveDefaultValue(string? name = "John Doe", string address = "1 Microsoft Way",
+                int age = 42, float f = 42.0f, double d = 3.14159, decimal m = 3.1415926535897932384626433M, StringComparison sc = StringComparison.Ordinal, char c = 'q',
+                int? nage = 42, float? nf = 42.0f, double? nd = 3.14159, decimal? nm = 3.1415926535897932384626433M, StringComparison? nsc = StringComparison.Ordinal, char? nc = 'q')
             {
                 Name = name;
                 Address = address;
                 Age = age;
+                F = f;
+                D = d;
+                M = m;
+                SC = sc;
+                C = c;
+                NAge = nage;
+                NF = nf;
+                ND = nd;
+                NM = nm;
+                NSC = nsc;
+                NC = nc;
             }
         }
 
@@ -130,6 +156,13 @@ namespace Microsoft.Extensions
             public int Length { get; } = length;
         }
 
+        public class ClassWithPrimaryCtorDefaultValues(string color = "blue", int length = 15, decimal height = 5.946238490567943927384M, EditorBrowsableState eb = EditorBrowsableState.Never)
+        {
+            public string Color { get; } = color;
+            public int Length { get; } = length;
+            public decimal Height { get; } = height;
+            public EditorBrowsableState EB { get;} = eb;
+        }
         public record RecordTypeOptions(string Color, int Length);
 
         public record Line(string Color, int Length, int Thickness);
@@ -441,6 +474,10 @@ namespace Microsoft.Extensions
         public class OptionWithCollectionProperties
         {
             private int _otherCode;
+            private int _otherCodeNullable;
+            private string _otherCodeString = "default";
+            private object _otherCodeNull;
+            private Uri _otherCodeUri;
             private ICollection<string> blacklist = new HashSet<string>();
 
             public ICollection<string> Blacklist
@@ -458,11 +495,36 @@ namespace Microsoft.Extensions
             // ParsedBlacklist initialized using the setter of Blacklist.
             public ICollection<string> ParsedBlacklist { get; private set; } = new HashSet<string>();
 
-            // This property not having any match in the configuration. Still the setter need to be called during the binding.
+            // This does not have a match in the configuration, however the setter should be called during the binding:
             public int OtherCode
             {
                 get => _otherCode;
                 set => _otherCode = value == 0 ? 2 : value;
+            }
+
+            // These do not have any match in the configuration, and the setters should not be called during the binding:
+            public int? OtherCodeNullable
+            {
+                get => _otherCodeNullable;
+                set => _otherCodeNullable = !value.HasValue ? 3 : value.Value;
+            }
+
+            public string OtherCodeString
+            {
+                get => _otherCodeString;
+                set => _otherCodeString = value;
+            }
+
+            public object? OtherCodeNull
+            {
+                get => _otherCodeNull;
+                set => _otherCodeNull = value is null ? 4 : value;
+            }
+
+            public Uri OtherCodeUri
+            {
+                get => _otherCodeUri;
+                set => _otherCodeUri = value is null ? new Uri("hello") : value;
             }
         }
 
@@ -540,6 +602,47 @@ namespace Microsoft.Extensions
             {
                 public int Int32 { get; set; }
                 public bool Boolean { get; set; }
+            }
+        }
+
+        public struct StructWithNestedStructAndSetterLogic
+        {
+            private string _string;
+            private int _int32;
+
+            public string String
+            {
+                get => _string;
+                // Setter should not be called for missing values.
+                set { _string = string.IsNullOrEmpty(value) ? "Hello" : value; }
+            }
+
+            public int Int32
+            {
+                get => _int32;
+                set { _int32 = value == 0 ? 42 : value; }
+            }
+
+            public Nested NestedStruct;
+            public Nested[] NestedStructs;
+
+            public struct Nested
+            {
+                private string _string;
+                private int _int32;
+
+                public string String
+                {
+                    get => _string;
+                    // Setter should not be called for missing values.
+                    set { _string = string.IsNullOrEmpty(value) ? "Hello2" : value; }
+                }
+
+                public int Int32
+                {
+                    get => _int32;
+                    set { _int32 = value == 0 ? 43 : value; }
+                }
             }
         }
 
@@ -730,5 +833,102 @@ namespace Microsoft.Extensions
         {
             public string? Authority { get; set; }
         }
+
+        public class AClass
+        {
+            public EndPointCollection EndPoints { get; init; } = new EndPointCollection();
+
+            public bool Property { get; set; } = false;
+        }
+
+        public sealed class EndPointCollection : Collection<EndPoint>, IEnumerable<EndPoint>
+        {
+            public EndPointCollection() { }
+
+            public void Add(string hostAndPort)
+            {
+                EndPoint? endpoint;
+
+                if (IPAddress.TryParse(hostAndPort, out IPAddress? address))
+                {
+                    endpoint = new IPEndPoint(address, 0);
+                }
+                else
+                {
+                    endpoint = new DnsEndPoint(hostAndPort, 0);
+                }
+
+                Add(endpoint);
+            }
+        }
+
+        internal abstract class AbstractBase
+        {
+            public int Value { get; set; }
+        }
+
+        internal sealed class Derived : AbstractBase { }
+
+        internal sealed class DerivedWithAnotherProp : AbstractBase
+        {
+            public int Value2 { get; set; }
+        }
+        
+        internal class ClassWithAbstractProp
+        {
+            public AbstractBase AbstractProp { get; set; }
+        }
+
+        internal class ClassWithAbstractCtorParam
+        {
+            public AbstractBase AbstractProp { get; }
+
+            public ClassWithAbstractCtorParam(AbstractBase abstractProp) => AbstractProp = abstractProp;
+        }
+
+        internal class ClassWithOptionalAbstractCtorParam
+        {
+            public AbstractBase AbstractProp { get; }
+
+            public ClassWithOptionalAbstractCtorParam(AbstractBase? abstractProp = null) => AbstractProp = abstractProp;
+        }
+
+        internal class ClassWith_DirectlyAssignable_CtorParams
+        {
+            public IConfigurationSection MySection { get; }
+            public object MyObject { get; }
+            public string MyString { get; }
+
+            public ClassWith_DirectlyAssignable_CtorParams(IConfigurationSection mySection, object myObject, string myString) =>
+                (MySection, MyObject, MyString) = (mySection, myObject, myString);
+        }
+
+        public class SharedChildInstance_Class
+        {
+            public string? ConnectionString { get; set; }
+        }
+
+        public class ClassThatThrowsOnSetters
+        {
+            private int _myIntProperty;
+
+            public ClassThatThrowsOnSetters()
+            {
+                _myIntProperty = 42;
+            }
+
+            public int MyIntProperty
+            {
+                get => _myIntProperty;
+                set => throw new InvalidOperationException("Not expected");
+            }
+        }
+
+        public class SimplePoco
+        {
+            public string A { get; set; }
+            public string B { get; set; }
+        }
+
     }
 }

@@ -9,34 +9,7 @@
 
 // Flowgraph Profile Synthesis
 
-typedef jitstd::vector<FlowEdge*> EdgeVector;
-typedef jitstd::vector<weight_t>  WeightVector;
-
-struct SimpleLoop
-{
-    SimpleLoop(BasicBlock* head, CompAllocator allocator)
-        : m_head(head)
-        , m_parent(nullptr)
-        , m_blocks(BlockSetOps::UninitVal())
-        , m_entryEdges(allocator)
-        , m_backEdges(allocator)
-        , m_exitEdges(allocator)
-        , m_cyclicProbability(0)
-        , m_depth(0)
-    {
-    }
-
-    BasicBlock* m_head;
-    SimpleLoop* m_parent;
-    BlockSet    m_blocks;
-    EdgeVector  m_entryEdges;
-    EdgeVector  m_backEdges;
-    EdgeVector  m_exitEdges;
-    weight_t    m_cyclicProbability;
-    unsigned    m_depth;
-};
-
-typedef jitstd::vector<SimpleLoop*> LoopVector;
+typedef jitstd::vector<weight_t> WeightVector;
 
 //------------------------------------------------------------------------
 // ProfileSynthesisOption: specify behavior of profile synthesis
@@ -67,12 +40,7 @@ public:
     static constexpr weight_t epsilon = 0.001;
 
 private:
-    ProfileSynthesis(Compiler* compiler)
-        : m_comp(compiler)
-        , m_loops(nullptr)
-        , m_bbNumToBlockMap(nullptr)
-        , m_improperLoopHeaders(0)
-        , m_cappedCyclicProbabilities(0)
+    ProfileSynthesis(Compiler* compiler) : m_comp(compiler)
     {
     }
 
@@ -86,18 +54,9 @@ private:
 
     void Run(ProfileSynthesisOption option);
 
-    void        BuildReversePostorder();
-    static bool IsDfsAncestor(BasicBlock* x, BasicBlock* y);
-    bool IsLoopBackEdge(FlowEdge* edge);
-    bool IsLoopExitEdge(FlowEdge* edge);
-
-    void        FindLoops();
-    SimpleLoop* GetLoopFromHeader(BasicBlock* block);
-
     weight_t SumOutgoingLikelihoods(BasicBlock* block, WeightVector* likelihoods = nullptr);
 
     void AssignLikelihoods();
-    void AssignLikelihoodNext(BasicBlock* block);
     void AssignLikelihoodJump(BasicBlock* block);
     void AssignLikelihoodCond(BasicBlock* block);
     void AssignLikelihoodSwitch(BasicBlock* block);
@@ -108,20 +67,23 @@ private:
     void RandomizeLikelihoods();
 
     void ComputeCyclicProbabilities();
-    void ComputeCyclicProbabilities(SimpleLoop* loop);
+    void ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop);
 
     void AssignInputWeights(ProfileSynthesisOption option);
 
     void ComputeBlockWeights();
-    void ComputeBlockWeightsSubgraph(BasicBlock* block);
     void ComputeBlockWeight(BasicBlock* block);
 
+    void GaussSeidelSolver();
+
 private:
-    Compiler* const m_comp;
-    LoopVector*     m_loops;
-    BasicBlock**    m_bbNumToBlockMap;
-    unsigned        m_improperLoopHeaders;
-    unsigned        m_cappedCyclicProbabilities;
+    Compiler* const        m_comp;
+    FlowGraphDfsTree*      m_dfsTree                   = nullptr;
+    FlowGraphNaturalLoops* m_loops                     = nullptr;
+    weight_t*              m_cyclicProbabilities       = nullptr;
+    unsigned               m_improperLoopHeaders       = 0;
+    unsigned               m_cappedCyclicProbabilities = 0;
+    bool                   m_approximate               = false;
 };
 
 #endif // !_FGPROFILESYNTHESIS_H_

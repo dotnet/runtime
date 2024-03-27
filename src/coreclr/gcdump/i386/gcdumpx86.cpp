@@ -154,7 +154,8 @@ size_t            GCDump::DumpInfoHdr (PTR_CBYTE      gcInfoBlock,
                                 gcPrintf("    GuardStack cookie  = [%s%u]\n",
                                           header->ebpFrame ? "EBP-" : "ESP+", header->gsCookieOffset);
     if (header->syncStartOffset != INVALID_SYNC_OFFSET)
-                                gcPrintf("    Sync region = [%u,%u]\n",
+                                gcPrintf("    Sync region = [%u,%u] ([0x%x,0x%x])\n",
+                                          header->syncStartOffset, header->syncEndOffset,
                                           header->syncStartOffset, header->syncEndOffset);
 
     if  (header->epilogCount > 1 || (header->epilogCount != 0 &&

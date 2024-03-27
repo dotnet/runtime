@@ -1429,6 +1429,60 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
+        [ConditionalTheory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void SignHash_NullSignature_Fails(bool usePss)
+        {
+            if (!SupportsPss)
+            {
+                throw new SkipTestException("Platform does not support PSS");
+            }
+
+            RSASignaturePadding padding = usePss ? RSASignaturePadding.Pss : RSASignaturePadding.Pkcs1;
+
+            using (RSA rsa = RSA.Create())
+            {
+                byte[] hash = RandomNumberGenerator.GetBytes(SHA256.HashSizeInBytes);
+
+                AssertExtensions.Throws<ArgumentException>("destination", () =>
+                    rsa.SignHash(hash, (Span<byte>)null, HashAlgorithmName.SHA256, padding));
+
+                bool result = rsa.TrySignHash(
+                    hash,
+                    (Span<byte>)null,
+                    HashAlgorithmName.SHA256,
+                    padding,
+                    out int bytesWritten);
+
+                Assert.False(result);
+                Assert.Equal(0, bytesWritten);
+            }
+        }
+
+        [ConditionalTheory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void SignData_NullSignature_Fails(bool usePss)
+        {
+            if (!SupportsPss)
+            {
+                throw new SkipTestException("Platform does not support PSS");
+            }
+
+            RSASignaturePadding padding = usePss ? RSASignaturePadding.Pss : RSASignaturePadding.Pkcs1;
+
+            using (RSA rsa = RSA.Create())
+            {
+                AssertExtensions.Throws<ArgumentException>("destination", () =>
+                    rsa.SignData("hello"u8, (Span<byte>)null, HashAlgorithmName.SHA256, padding));
+
+                bool result = rsa.TrySignData("hello"u8, (Span<byte>)null, HashAlgorithmName.SHA256, padding, out int bytesWritten);
+                Assert.False(result);
+                Assert.Equal(0, bytesWritten);
+            }
+        }
+
         private void ExpectSignature(
             byte[] expectedSignature,
             byte[] data,

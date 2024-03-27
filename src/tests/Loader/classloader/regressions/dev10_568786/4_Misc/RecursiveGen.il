@@ -203,10 +203,10 @@
 
 } // end of class Conversion2`3
 
-.class private auto ansi beforefieldinit Test_RecursiveGen
+.class public auto ansi beforefieldinit Test_RecursiveGen
        extends [mscorlib]System.Object
 {
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

@@ -90,20 +90,28 @@ namespace System.MemoryTests
         [Fact]
         public static void ToEnumerableChars()
         {
-            ReadOnlyMemory<char>[] memories = new[]
-            {
-                new char[] { 'a', 'b', 'c' }.AsMemory(), // array
-                "abc".AsMemory(), // string
-                new WrapperMemoryManager<char>(new char[] { 'a', 'b', 'c' }.AsMemory()).Memory // memory manager
-            };
+            char[] charArray = ['a', 'b', 'c']; // array
+            ReadOnlyMemory<char> memory = charArray.AsMemory();
 
-            foreach (ReadOnlyMemory<char> memory in memories)
-            {
-                Assert.Equal(new char[] { 'a', 'b', 'c' }, MemoryMarshal.ToEnumerable(memory));
-                Assert.Equal(new char[] { 'a', 'b' }, MemoryMarshal.ToEnumerable(memory.Slice(0, 2)));
-                Assert.Equal(new char[] { 'b', 'c' }, MemoryMarshal.ToEnumerable(memory.Slice(1)));
-                Assert.Same(Array.Empty<char>(), MemoryMarshal.ToEnumerable(memory.Slice(3)));
-            }
+            Assert.Equal(charArray, MemoryMarshal.ToEnumerable(memory));
+            Assert.Equal(charArray[..2], MemoryMarshal.ToEnumerable(memory[..2]));
+            Assert.Equal(charArray[1..], MemoryMarshal.ToEnumerable(memory[1..]));
+            Assert.Same(Array.Empty<char>(), MemoryMarshal.ToEnumerable(memory[3..]));
+
+            string str = "abc"; // string
+            memory = str.AsMemory();
+
+            Assert.Equal(str, MemoryMarshal.ToEnumerable(memory));
+            Assert.Equal(charArray[..2], MemoryMarshal.ToEnumerable(memory[..2]));
+            Assert.Equal(charArray[1..], MemoryMarshal.ToEnumerable(memory[1..]));
+            Assert.Same(Array.Empty<char>(), MemoryMarshal.ToEnumerable(memory[3..]));
+
+            memory = new WrapperMemoryManager<char>(new char[] { 'a', 'b', 'c' }.AsMemory()).Memory; // memory manager
+
+            Assert.Equal(charArray, MemoryMarshal.ToEnumerable(memory));
+            Assert.Equal(charArray[..2], MemoryMarshal.ToEnumerable(memory[..2]));
+            Assert.Equal(charArray[1..], MemoryMarshal.ToEnumerable(memory[1..]));
+            Assert.Same(Array.Empty<char>(), MemoryMarshal.ToEnumerable(memory[3..]));
         }
 
         private sealed class WrapperMemoryManager<T>(Memory<T> memory) : MemoryManager<T>

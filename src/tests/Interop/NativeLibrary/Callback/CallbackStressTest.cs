@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 [assembly: DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
 public class CallbackStressTest
@@ -125,7 +126,8 @@ public class CallbackStressTest
 #endif
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         for(int i = 0; i < s_LoopCounter; i++)
         {

@@ -453,24 +453,6 @@ namespace System.Runtime.Loader.Tests
             test.CheckContextUnloaded1();
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15142", TestRuntimes.Mono)]
-        public static void Unsupported_FixedAddressValueType()
-        {
-            var asmName = new AssemblyName(TestAssemblyNotSupported);
-            var alc = new ResourceAssemblyLoadContext(true) { LoadBy = LoadBy.Path };
-            Assembly asm = alc.LoadFromAssemblyName(asmName);
-
-            Assert.NotNull(asm);
-
-            ReflectionTypeLoadException exception = Assert.Throws<ReflectionTypeLoadException>(() => asm.DefinedTypes);
-
-            // Expecting two exceptions:
-            //  Collectible type 'System.Runtime.Loader.Tests.TestClassNotSupported_FixedAddressValueType' has unsupported FixedAddressValueTypeAttribute applied to a field
-            Assert.Equal(1, exception.LoaderExceptions.Length);
-            Assert.True(exception.LoaderExceptions.All(exp => exp is TypeLoadException));
-        }
-
         private class CollectibleChecker
         {
             private readonly int _expectedCount;

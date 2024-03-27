@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Reflection.Runtime.General;
 using System.Runtime.CompilerServices;
 
@@ -57,7 +57,7 @@ namespace Internal.Reflection.Core.Execution
                 throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
 
             if (!RuntimeAugments.IsAssignable(thisObject, declaringTypeHandle))
-                throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
+                throw new TargetException(SR.Format(SR.RFLCT_Targ_ITargMismatch_WithType, declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle(), thisObject.GetType()));
         }
     }
 }

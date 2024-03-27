@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Metadata;
+using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Logging;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
@@ -121,12 +124,13 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodBody)
+        public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodBody, out List<INodeWithRuntimeDeterminedDependencies> runtimeDependencies)
         {
             var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger, new MessageOrigin(methodBody.OwningMethod));
 
             scanner.InterproceduralScan(methodBody);
 
+            runtimeDependencies = scanner._reflectionMarker.RuntimeDeterminedDependencies;
             return scanner._reflectionMarker.Dependencies;
         }
 
@@ -357,8 +361,6 @@ namespace ILCompiler.Dataflow
                 case IntrinsicId.Type_GetConstructor:
                 case IntrinsicId.MethodBase_GetMethodFromHandle:
                 case IntrinsicId.MethodBase_get_MethodHandle:
-                case IntrinsicId.Type_MakeGenericType:
-                case IntrinsicId.MethodInfo_MakeGenericMethod:
                 case IntrinsicId.Expression_Call:
                 case IntrinsicId.Expression_New:
                 case IntrinsicId.Type_GetType:
@@ -371,18 +373,124 @@ namespace ILCompiler.Dataflow
                 case IntrinsicId.AppDomain_CreateInstanceFromAndUnwrap:
                 case IntrinsicId.Assembly_CreateInstance:
                     {
-                        bool result = handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
+                        return handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
+                    }
 
-                        // Special case some intrinsics for AOT handling (on top of the trimming handling done in the HandleCallAction)
-                        switch (intrinsicId)
+            case IntrinsicId.Type_MakeGenericType:
+                    {
+                        bool triggersWarning = false;
+
+                        if (!instanceValue.IsEmpty() && !argumentValues[0].IsEmpty())
                         {
-                            case IntrinsicId.Type_MakeGenericType:
-                            case IntrinsicId.MethodInfo_MakeGenericMethod:
-                                CheckAndReportRequires(diagnosticContext, calledMethod, DiagnosticUtilities.RequiresDynamicCodeAttribute);
-                                break;
+                            foreach (var value in instanceValue.AsEnumerable())
+                            {
+                                if (value is SystemTypeValue typeValue)
+                                {
+                                    TypeDesc typeInstantiated = typeValue.RepresentedType.Type;
+                                    if (!typeInstantiated.IsGenericDefinition)
+                                    {
+                                        // Nothing to do, will fail at runtime
+                                    }
+                                    else if (TryGetMakeGenericInstantiation(callingMethodDefinition, argumentValues[0], out Instantiation inst, out bool isExact))
+                                    {
+                                        if (inst.Length == typeInstantiated.Instantiation.Length)
+                                        {
+                                            typeInstantiated = ((MetadataType)typeInstantiated).MakeInstantiatedType(inst);
+
+                                            if (isExact)
+                                            {
+                                                reflectionMarker.MarkType(diagnosticContext.Origin, typeInstantiated, "MakeGenericType");
+                                            }
+                                            else
+                                            {
+                                                reflectionMarker.RuntimeDeterminedDependencies.Add(new MakeGenericTypeSite(typeInstantiated));
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        triggersWarning = true;
+                                    }
+
+                                }
+                                else if (value == NullValue.Instance)
+                                {
+                                    // Nothing to do
+                                }
+                                else
+                                {
+                                    // We don't know what type the `MakeGenericType` was called on
+                                    triggersWarning = true;
+                                }
+                            }
                         }
 
-                        return result;
+                        if (triggersWarning)
+                        {
+                            CheckAndReportRequires(diagnosticContext, calledMethod, DiagnosticUtilities.RequiresDynamicCodeAttribute);
+                        }
+
+                        // This intrinsic is relevant to both trimming and AOT - call into trimming logic as well.
+                        return handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
+                    }
+
+                case IntrinsicId.MethodInfo_MakeGenericMethod:
+                    {
+                        bool triggersWarning = false;
+
+                        if (!instanceValue.IsEmpty())
+                        {
+                            foreach (var methodValue in instanceValue.AsEnumerable())
+                            {
+                                if (methodValue is SystemReflectionMethodBaseValue methodBaseValue)
+                                {
+                                    MethodDesc methodInstantiated = methodBaseValue.RepresentedMethod.Method;
+                                    if (!methodInstantiated.IsGenericMethodDefinition)
+                                    {
+                                        // Nothing to do, will fail at runtime
+                                    }
+                                    else if (!methodInstantiated.OwningType.IsGenericDefinition
+                                        && TryGetMakeGenericInstantiation(callingMethodDefinition, argumentValues[0], out Instantiation inst, out bool isExact))
+                                    {
+                                        if (inst.Length == methodInstantiated.Instantiation.Length)
+                                        {
+                                            methodInstantiated = methodInstantiated.MakeInstantiatedMethod(inst);
+
+                                            if (isExact)
+                                            {
+                                                reflectionMarker.MarkMethod(diagnosticContext.Origin, methodInstantiated, "MakeGenericMethod");
+                                            }
+                                            else
+                                            {
+                                                reflectionMarker.RuntimeDeterminedDependencies.Add(new MakeGenericMethodSite(methodInstantiated));
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // If the owning type is a generic definition, we can't help much.
+                                        triggersWarning = true;
+                                    }
+                                }
+                                else if (methodValue == NullValue.Instance)
+                                {
+                                    // Nothing to do
+                                }
+                                else
+                                {
+                                    // We don't know what method the `MakeGenericMethod` was called on
+                                    triggersWarning = true;
+                                }
+                            }
+                        }
+
+                        if (triggersWarning)
+                        {
+                            CheckAndReportRequires(diagnosticContext, calledMethod, DiagnosticUtilities.RequiresDynamicCodeAttribute);
+                        }
+
+                        // This intrinsic is relevant to both trimming and AOT - call into trimming logic as well.
+                        return handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
                     }
 
                 case IntrinsicId.None:
@@ -431,7 +539,7 @@ namespace ILCompiler.Dataflow
                         // type instead).
                         //
                         // At least until we have shared enum code, this needs extra handling to get it right.
-                        foreach (var value in argumentValues[0])
+                        foreach (var value in argumentValues[0].AsEnumerable ())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -466,7 +574,7 @@ namespace ILCompiler.Dataflow
                             ? 0 : 1;
 
                         // We need the data to do struct marshalling.
-                        foreach (var value in argumentValues[paramIndex])
+                        foreach (var value in argumentValues[paramIndex].AsEnumerable ())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -497,7 +605,7 @@ namespace ILCompiler.Dataflow
                 case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
                     {
                         // We need the data to do delegate marshalling.
-                        foreach (var value in argumentValues[1])
+                        foreach (var value in argumentValues[1].AsEnumerable ())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -515,13 +623,53 @@ namespace ILCompiler.Dataflow
                     break;
 
                 //
+                // System.Delegate
+                //
+                // get_Method ()
+                //
+                // System.Reflection.RuntimeReflectionExtensions
+                //
+                // GetMethodInfo (System.Delegate)
+                //
+                case IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo:
+                case IntrinsicId.Delegate_get_Method:
+                    {
+                        // Find the parameter: first is an instance method, second is an extension method.
+                        MultiValue param = intrinsicId == IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo
+                            ? argumentValues[0] : instanceValue;
+
+                        // If this is Delegate.Method accessed from RuntimeReflectionExtensions.GetMethodInfo, ignore
+                        // because we handle the callsites to that one here as well.
+                        if (Intrinsics.GetIntrinsicIdForMethod(callingMethodDefinition) == IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo)
+                            break;
+
+                        foreach (var valueNode in param.AsEnumerable())
+                        {
+                            TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
+                            if (staticType is null || !staticType.IsDelegate)
+                            {
+                                // The static type is unknown or something useless like Delegate or MulticastDelegate.
+                                reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedDelegate(null), "Delegate.Method access on unknown delegate type");
+                            }
+                            else
+                            {
+                                if (staticType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
+                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedDelegate(staticType.GetTypeDefinition()), "Delegate.Method access (on inexact type)");
+                                else
+                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedDelegate(staticType.ConvertToCanonForm(CanonicalFormKind.Specific)), "Delegate.Method access");
+                            }
+                        }
+                    }
+                    break;
+
+                //
                 // System.Object
                 //
                 // GetType()
                 //
                 case IntrinsicId.Object_GetType:
                     {
-                        foreach (var valueNode in instanceValue)
+                        foreach (var valueNode in instanceValue.AsEnumerable ())
                         {
                             // Note that valueNode can be statically typed in IL as some generic argument type.
                             // For example:
@@ -538,7 +686,7 @@ namespace ILCompiler.Dataflow
                             // In this case to get correct results, trimmer would have to mark all public methods on Derived. Which
                             // currently it won't do.
 
-                            TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType;
+                            TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
                             if (staticType is null || (!staticType.IsDefType && !staticType.IsArray))
                             {
                                 // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
@@ -619,7 +767,7 @@ namespace ILCompiler.Dataflow
             // Validate that the return value has the correct annotations as per the method return value annotations
             if (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes != 0)
             {
-                foreach (var uniqueValue in methodReturnValue)
+                foreach (var uniqueValue in methodReturnValue.AsEnumerable ())
                 {
                     if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes)
                     {
@@ -644,6 +792,105 @@ namespace ILCompiler.Dataflow
             {
                 maybeMethodReturnValue = (maybeMethodReturnValue is null) ? value : MultiValueLattice.Meet((MultiValue)maybeMethodReturnValue, value);
             }
+        }
+
+        private static bool TryGetMakeGenericInstantiation(
+            MethodDesc contextMethod,
+            in MultiValue genericParametersArray,
+            out Instantiation inst,
+            out bool isExact)
+        {
+            // We support calling MakeGeneric APIs with a very concrete instantiation array.
+            // Only the form of `new Type[] { typeof(Foo), typeof(T), typeof(Foo<T>) }` is supported.
+
+            inst = default;
+            isExact = true;
+            Debug.Assert(contextMethod.GetTypicalMethodDefinition() == contextMethod);
+
+            var typesValue = genericParametersArray.AsSingleValue();
+            if (typesValue is NullValue)
+            {
+                // This will fail at runtime but no warning needed
+                inst = Instantiation.Empty;
+                return true;
+            }
+
+            // Is this an array we model?
+            if (typesValue is not ArrayValue array)
+            {
+                return false;
+            }
+
+            int? size = array.Size.AsConstInt();
+            if (size == null)
+            {
+                return false;
+            }
+
+            TypeDesc[]? sigInst = null;
+            TypeDesc[]? defInst = null;
+
+            ArrayBuilder<TypeDesc> result = default;
+            for (int i = 0; i < size.Value; i++)
+            {
+                // Go over each element of the array. If the value is unknown, bail.
+                if (!array.TryGetValueByIndex(i, out MultiValue value))
+                {
+                    return false;
+                }
+
+                var singleValue = value.AsSingleValue();
+
+                TypeDesc? type = singleValue switch
+                {
+                    SystemTypeValue systemType => systemType.RepresentedType.Type,
+                    GenericParameterValue genericParamType => genericParamType.GenericParameter.GenericParameter,
+                    NullableSystemTypeValue nullableSystemType => nullableSystemType.NullableType.Type,
+                    _ => null
+                };
+
+                if (type is null)
+                {
+                    return false;
+                }
+
+                // type is now some type.
+                // Because dataflow analysis oddly operates on method bodies instantiated over
+                // generic parameters (as opposed to instantiated over signature variables)
+                // We need to swap generic parameters (T, U,...) for signature variables (!0, !!1,...).
+                // We need to do this for both generic parameters of the owning type, and generic
+                // parameters of the owning method.
+                if (type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
+                {
+                    if (sigInst == null)
+                    {
+                        TypeDesc contextType = contextMethod.OwningType;
+                        sigInst = new TypeDesc[contextType.Instantiation.Length + contextMethod.Instantiation.Length];
+                        defInst = new TypeDesc[contextType.Instantiation.Length + contextMethod.Instantiation.Length];
+                        TypeSystemContext context = type.Context;
+                        for (int j = 0; j < contextType.Instantiation.Length; j++)
+                        {
+                            sigInst[j] = context.GetSignatureVariable(j, method: false);
+                            defInst[j] = contextType.Instantiation[j];
+                        }
+                        for (int j = 0; j < contextMethod.Instantiation.Length; j++)
+                        {
+                            sigInst[j + contextType.Instantiation.Length] = context.GetSignatureVariable(j, method: true);
+                            defInst[j + contextType.Instantiation.Length] = contextMethod.Instantiation[j];
+                        }
+                    }
+
+                    isExact = false;
+
+                    // defInst is [T, U, V], sigInst is `[!0, !!0, !!1]`.
+                    type = type.ReplaceTypesInConstructionOfType(defInst, sigInst);
+                }
+
+                result.Add(type);
+            }
+
+            inst = new Instantiation(result.ToArray());
+            return true;
         }
 
         private static bool IsAotUnsafeDelegate(TypeDesc parameterType)
@@ -805,6 +1052,34 @@ namespace ILCompiler.Dataflow
             }
 
             return aotUnsafeDelegate || comDangerousMethod;
+        }
+
+        private sealed class MakeGenericMethodSite : INodeWithRuntimeDeterminedDependencies
+        {
+            private readonly MethodDesc _method;
+
+            public MakeGenericMethodSite(MethodDesc method) => _method = method;
+
+            public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+            {
+                var list = new DependencyList();
+                RootingHelpers.TryGetDependenciesForReflectedMethod(ref list, factory, _method.InstantiateSignature(typeInstantiation, methodInstantiation), "MakeGenericMethod");
+                return list;
+            }
+        }
+
+        private sealed class MakeGenericTypeSite : INodeWithRuntimeDeterminedDependencies
+        {
+            private readonly TypeDesc _type;
+
+            public MakeGenericTypeSite(TypeDesc type) => _type = type;
+
+            public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+            {
+                var list = new DependencyList();
+                RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, _type.InstantiateSignature(typeInstantiation, methodInstantiation), "MakeGenericType");
+                return list;
+            }
         }
     }
 }

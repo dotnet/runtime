@@ -110,7 +110,8 @@ namespace Wasm.Build.Tests
                                     // affect the non-wasm library project
                                     File.Move(Path.Combine(rootDir, "Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
                                     File.Move(Path.Combine(rootDir, "Directory.Build.targets"), Path.Combine(_projectDir, "Directory.Build.targets"));
-                                    File.Move(Path.Combine(rootDir, "WasmOverridePacks.targets"), Path.Combine(_projectDir, "WasmOverridePacks.targets"));
+                                    if (UseWBTOverridePackTargets)
+                                        File.Move(Path.Combine(rootDir, "WasmOverridePacks.targets"), Path.Combine(_projectDir, "WasmOverridePacks.targets"));
 
                                     CreateProgramForCultureTest(_projectDir, "LibraryWithResources.resx.words", "LibraryWithResources.Class1");
 
@@ -135,8 +136,9 @@ namespace Wasm.Build.Tests
             buildArgs = ExpandBuildArgs(buildArgs,
                                         projectTemplate: s_resourcesProjectTemplate,
                                         extraProperties: $@"
-                                            <EmccCompileOptimizationFlag>-O0</EmccCompileOptimizationFlag>
-                                            <EmccLinkOptimizationFlag>-O0</EmccLinkOptimizationFlag>",
+                                            <EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>
+                                            <EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>
+                                            <WasmDedup>false</WasmDedup>", // -O0 can cause aot-instances.dll to blow up, and fail to compile, and it is not really needed here
                                         extraItems: $"<EmbeddedResource Include=\"{BuildEnvironment.RelativeTestAssetsPath}resx\\*\" />");
 
             BuildProject(buildArgs,
@@ -166,6 +168,7 @@ namespace Wasm.Build.Tests
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
+                <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
                 <WasmMainJSPath>test-main.js</WasmMainJSPath>

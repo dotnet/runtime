@@ -89,7 +89,7 @@ namespace IlasmPortablePdbTests
                         new DocumentStub("/tmp/non_existent_source2.cs"),
                     };
                 default:
-                    Assert.False(true);
+                    Assert.Fail();
                     return null;
             }
         }
@@ -116,7 +116,7 @@ namespace IlasmPortablePdbTests
                     document2 = new DocumentStub("C:\\tmp\\TestMethodDebugInformation\\SimpleMathMethods.cs");
                     break;
                 default:
-                    Assert.False(true);
+                    Assert.Fail();
                     return null;
             }
 
@@ -239,7 +239,7 @@ namespace IlasmPortablePdbTests
                             })
                     };
                 default:
-                    Assert.False(true);
+                    Assert.Fail();
                     return null;
             }
         }

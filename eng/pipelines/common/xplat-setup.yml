@@ -18,9 +18,6 @@ jobs:
   parameters:
     shouldContinueOnError: ${{ or(eq(parameters.shouldContinueOnError, true), and(ne(parameters.shouldContinueOnError, 'forceFalse'), endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest'))) }}
 
-    # keep in sync with /eng/pipelines/common/variables.yml
-    dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'dotnet-linker-tests', 'runtime-dev-innerloop', 'runtime-coreclr superpmi-replay', 'runtime-coreclr superpmi-diffs')) }}
-
     variables:
       - template: /eng/common/templates/variables/pool-providers.yml
       # Disable component governance in our CI builds. These builds are not shipping nor
@@ -45,6 +42,15 @@ jobs:
 
       - name: _BuildConfig
         value: $(buildConfigUpper)
+
+      - name: archType
+        value: ${{ parameters.archType }}
+
+      - name: osGroup
+        value: ${{ parameters.osGroup }}
+
+      - name: osSubgroup
+        value: ${{ parameters.osSubgroup }}
 
       - name: _runSmokeTestsOnlyArg
         value: '/p:RunSmokeTestsOnly=$(isRunSmokeTestsOnly)'
@@ -108,22 +114,22 @@ jobs:
       - ${{ if eq(parameters.archType, 'wasm') }}:
         - name: wasmDarcDependenciesChanged
           value: $[ or(
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100_Transport'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_DotNet_Build_Tasks_Workloads'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_Net_Compilers_Toolset'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_CSharp'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_Analyzers'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_NetAnalyzers'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true)) ]
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-9_0_100_Transport'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_DotNet_Build_Tasks_Workloads'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_Net_Compilers_Toolset'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_CSharp'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_Analyzers'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_NetAnalyzers'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true)) ]
 
         - name: shouldRunWasmBuildTestsOnDefaultPipeline
           value: $[
             or(
               eq(variables['wasmDarcDependenciesChanged'], true),
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
             ]
 
         # needed for Wasm.Build.Tests
@@ -168,12 +174,12 @@ jobs:
         # Official Build Windows Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), ne(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals windows.vs2022.amd64
+          demands: ImageOverride -equals windows.vs2022preview.amd64
 
         # Public Windows Build Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals windows.vs2022.amd64.open
+          demands: ImageOverride -equals windows.vs2022preview.amd64.open
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:

@@ -617,13 +617,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
-                Assert.True(false, "This converter should never be used");
+                Assert.Fail("This converter should never be used");
                 return default;
             }
 
             public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
             {
-                Assert.True(false, "This converter should never be used");
+                Assert.Fail("This converter should never be used");
             }
         }
     }

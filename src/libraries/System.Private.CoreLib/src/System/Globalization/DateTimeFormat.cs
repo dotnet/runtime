@@ -69,9 +69,9 @@ namespace System
 
         "y"     "0"         two digit year (year % 100) w/o leading zero           0
         "yy"    "00"        two digit year (year % 100) with leading zero          00
-        "yyy"   "D3"        year                                  2000
-        "yyyy"  "D4"        year                                  2000
-        "yyyyy" "D5"        year                                  2000
+        "yyy"   "D3"        year with leading zeroes              2000
+        "yyyy"  "D4"        year with leading zeroes              2000
+        "yyyyy" "D5"        year with leading zeroes              02000
         ...
 
         "z"     "+0;-0"     timezone offset w/o leading zero      -8
@@ -618,7 +618,7 @@ namespace System
                         // Notes about OS behavior:
                         // y: Always print (year % 100). No leading zero.
                         // yy: Always print (year % 100) with leading zero.
-                        // yyy/yyyy/yyyyy/... : Print year value.  No leading zero.
+                        // yyy/yyyy/yyyyy/... : Print year value.  With leading zeros.
 
                         int year = cal.GetYear(dateTime);
                         tokenLen = ParseRepeatPattern(format, i, ch);
@@ -1356,7 +1356,7 @@ namespace System
                 dest[2] = TChar.CastFrom(':');
                 Number.WriteTwoDigits((uint)minute, dest + 3);
                 dest[5] = TChar.CastFrom(':');
-                Number.WriteTwoDigits((uint)second, dest +6);
+                Number.WriteTwoDigits((uint)second, dest + 6);
             }
 
             return true;

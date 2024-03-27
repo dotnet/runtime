@@ -640,10 +640,7 @@ mono_type_is_valid_generic_argument (MonoType *type)
 {
 	switch (type->type) {
 	case MONO_TYPE_VOID:
-	case MONO_TYPE_TYPEDBYREF:
 		return FALSE;
-	case MONO_TYPE_VALUETYPE:
-		return !m_class_is_byreflike (type->data.klass);
 	default:
 		return TRUE;
 	}
@@ -4100,7 +4097,7 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 			return;
 		}
 
-		if (m_class_is_array_special_interface (klass) && m_class_get_rank (oklass) == 1) {
+		if (m_class_is_array_special_interface (klass) && m_class_get_rank (oklass) == 1 && m_class_get_byval_arg (oklass)->type == MONO_TYPE_SZARRAY) {
 			if (mono_class_is_gtd (klass)) {
 				/* klass is an array special gtd like
 				 * IList`1<>, and oklass is X[] for some X.
@@ -6788,10 +6785,13 @@ retry:
 			if (mono_class_is_open_constructed_type (m_class_get_byval_arg (parent))) {
 				parent = mono_class_inflate_generic_class_checked (parent, generic_inst, error);
 				return_val_if_nok  (error, NULL);
+				g_assert (parent);
 			}
+
 			if (mono_class_is_ginst (parent)) {
 				parent_inst = mono_class_get_context (parent);
 				parent = mono_class_get_generic_class (parent)->container_class;
+				g_assert (parent);
 			}
 
 			mono_class_setup_vtable (parent);
@@ -6811,6 +6811,7 @@ retry:
 		if (mono_class_is_open_constructed_type (m_class_get_byval_arg (klass))) {
 			klass = mono_class_inflate_generic_class_checked (klass, generic_inst, error);
 			return_val_if_nok (error, NULL);
+			g_assert (klass);
 
 			generic_inst = NULL;
 		}
@@ -6824,6 +6825,7 @@ retry:
 	if (generic_inst) {
 		klass = mono_class_inflate_generic_class_checked (klass, generic_inst, error);
 		return_val_if_nok (error, NULL);
+		g_assert (klass);
 		generic_inst = NULL;
 	}
 
@@ -6912,7 +6914,7 @@ mono_class_has_default_constructor (MonoClass *klass, gboolean public_only)
  * \param klass class in which the failure was detected
  * \param fmt \c printf -style error message string.
  *
- * Sets a deferred failure in the class and prints a warning message. 
+ * Sets a deferred failure in the class and prints a warning message.
  * The deferred failure allows the runtime to attempt setting up the class layout at runtime.
  *
  * LOCKING: Acquires the loader lock.

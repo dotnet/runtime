@@ -18,7 +18,6 @@
 #include <msodwwrap.h>
 #include <werapi.h>
 #include "dbginterface.h"
-#include <winver.h>
 #include "dlwrap.h"
 #include "eventreporter.h"
 #include "utilcode.h"

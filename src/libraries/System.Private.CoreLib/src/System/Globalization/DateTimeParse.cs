@@ -84,7 +84,7 @@ namespace System
         {
             if (s.Length == 0)
             {
-                result.SetFailure(ParseFailureKind.Format_BadDateTime);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -171,13 +171,13 @@ namespace System
         {
             if (formats == null)
             {
-                result.SetFailure(ParseFailureKind.ArgumentNull_String, null, nameof(formats));
+                result.SetFailure(ParseFailureKind.ArgumentNull_String);
                 return false;
             }
 
             if (s.Length == 0)
             {
-                result.SetFailure(ParseFailureKind.Format_BadDateTime);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -2506,7 +2506,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         {
             if (s.Length == 0)
             {
-                result.SetFailure(ParseFailureKind.Format_BadDateTime);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -3352,9 +3352,9 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 {
                     // Scan the month names (note that some calendars has 13 months) and find
                     // the matching month name which has the max string length.
-                    // We need to do this because some cultures (e.g. "cs-CZ") which have
-                    // abbreviated month names with the same prefix.
-                    int monthsInYear = (dtfi.GetMonthName(13).Length == 0 ? 12 : 13);
+                    // We need to do this because some cultures which have abbreviated
+                    // month names with the same prefix (e.g. "vi-VN" culture has those conflicts "Thg1", "Thg10", "Thg11")
+                    int monthsInYear = (dtfi.GetAbbreviatedMonthName(13).Length == 0 ? 12 : 13);
                     for (int i = 1; i <= monthsInYear; i++)
                     {
                         string searchStr = dtfi.GetAbbreviatedMonthName(i);
@@ -5179,33 +5179,33 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             switch (result.failure)
             {
                 case ParseFailureKind.ArgumentNull_String:
-                    return new ArgumentNullException(result.failureArgumentName, SR.ArgumentNull_String);
+                    return new ArgumentNullException("formats", SR.ArgumentNull_String);
                 case ParseFailureKind.Format_BadDatePattern:
-                    return new FormatException(SR.Format(SR.Format_BadDatePattern, result.failureMessageFormatArgument));
+                    return new FormatException(SR.Format(SR.Format_BadDatePattern, new string(result.failureSpanArgument)));
                 case ParseFailureKind.Format_BadDateTime:
-                    return new FormatException(SR.Format(SR.Format_BadDateTime, result.failureMessageFormatArgument));
+                    return new FormatException(SR.Format(SR.Format_BadDateTime, new string(result.failureSpanArgument)));
                 case ParseFailureKind.Format_BadDateTimeCalendar:
-                    return new FormatException(SR.Format(SR.Format_BadDateTimeCalendar, new string(result.originalDateTimeString), result.calendar));
+                    return new FormatException(SR.Format(SR.Format_BadDateTimeCalendar, new string(result.failureSpanArgument), result.calendar));
                 case ParseFailureKind.Format_BadDayOfWeek:
-                    return new FormatException(SR.Format(SR.Format_BadDayOfWeek, new string(result.originalDateTimeString)));
+                    return new FormatException(SR.Format(SR.Format_BadDayOfWeek, new string(result.failureSpanArgument)));
                 case ParseFailureKind.Format_BadFormatSpecifier:
-                    return new FormatException(SR.Format(SR.Format_BadFormatSpecifier, new string(result.failedFormatSpecifier)));
+                    return new FormatException(SR.Format(SR.Format_BadFormatSpecifier, new string(result.failureSpanArgument)));
                 case ParseFailureKind.Format_BadQuote:
-                    return new FormatException(SR.Format(SR.Format_BadQuote, result.failureMessageFormatArgument));
+                    return new FormatException(SR.Format(SR.Format_BadQuote, (char)result.failureIntArgument));
                 case ParseFailureKind.Format_DateOutOfRange:
-                    return new FormatException(SR.Format(SR.Format_DateOutOfRange, new string(result.originalDateTimeString)));
+                    return new FormatException(SR.Format(SR.Format_DateOutOfRange, new string(result.failureSpanArgument)));
                 case ParseFailureKind.Format_MissingIncompleteDate:
-                    return new FormatException(SR.Format(SR.Format_MissingIncompleteDate, new string(result.originalDateTimeString)));
+                    return new FormatException(SR.Format(SR.Format_MissingIncompleteDate, new string(result.failureSpanArgument)));
                 case ParseFailureKind.Format_NoFormatSpecifier:
                     return new FormatException(SR.Format_NoFormatSpecifier);
                 case ParseFailureKind.Format_OffsetOutOfRange:
-                    return new FormatException(SR.Format(SR.Format_OffsetOutOfRange, new string(result.originalDateTimeString)));
+                    return new FormatException(SR.Format(SR.Format_OffsetOutOfRange, new string(result.failureSpanArgument)));
                 case ParseFailureKind.Format_RepeatDateTimePattern:
-                    return new FormatException(SR.Format(SR.Format_RepeatDateTimePattern, result.failureMessageFormatArgument));
+                    return new FormatException(SR.Format(SR.Format_RepeatDateTimePattern, (char)result.failureIntArgument));
                 case ParseFailureKind.Format_UnknownDateTimeWord:
-                    return new FormatException(SR.Format(SR.Format_UnknownDateTimeWord, new string(result.originalDateTimeString), result.failureMessageFormatArgument));
+                    return new FormatException(SR.Format(SR.Format_UnknownDateTimeWord, new string(result.failureSpanArgument), result.failureIntArgument));
                 case ParseFailureKind.Format_UTCOutOfRange:
-                    return new FormatException(SR.Format(SR.Format_UTCOutOfRange, new string(result.originalDateTimeString)));
+                    return new FormatException(SR.Format(SR.Format_UTCOutOfRange, new string(result.failureSpanArgument)));
                 default:
                     Debug.Fail("Unknown DateTimeParseFailure: " + result.failure.ToString());
                     return null!;
@@ -6088,14 +6088,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         internal DateTime parsedDate;
 
         internal ParseFailureKind failure;
-        internal object? failureMessageFormatArgument;
-        internal string failureArgumentName;
-        internal ReadOnlySpan<char> originalDateTimeString;
-        internal ReadOnlySpan<char> failedFormatSpecifier;
+        internal ReadOnlySpan<char> failureSpanArgument; // initially the original date time string, but may be overwritten
+        internal int failureIntArgument;
 
         internal void Init(ReadOnlySpan<char> originalDateTimeString)
         {
-            this.originalDateTimeString = originalDateTimeString;
+            this.failureSpanArgument = originalDateTimeString;
             Year = -1;
             Month = -1;
             Day = -1;
@@ -6118,32 +6116,29 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         internal void SetBadFormatSpecifierFailure(ReadOnlySpan<char> failedFormatSpecifier)
         {
             this.failure = ParseFailureKind.Format_BadFormatSpecifier;
-            this.failedFormatSpecifier = failedFormatSpecifier;
+            this.failureSpanArgument = failedFormatSpecifier;
         }
 
         internal void SetBadDateTimeFailure()
         {
             this.failure = ParseFailureKind.Format_BadDateTime;
-            this.failureMessageFormatArgument = null;
         }
 
         internal void SetFailure(ParseFailureKind failure)
         {
             this.failure = failure;
-            this.failureMessageFormatArgument = null;
         }
 
-        internal void SetFailure(ParseFailureKind failure, object? failureMessageFormatArgument)
+        internal void SetFailure(ParseFailureKind failure, string failureStringArgument)
         {
             this.failure = failure;
-            this.failureMessageFormatArgument = failureMessageFormatArgument;
+            this.failureSpanArgument = failureStringArgument;
         }
 
-        internal void SetFailure(ParseFailureKind failure, object? failureMessageFormatArgument, string failureArgumentName)
+        internal void SetFailure(ParseFailureKind failure, int failureIntArgument)
         {
             this.failure = failure;
-            this.failureMessageFormatArgument = failureMessageFormatArgument;
-            this.failureArgumentName = failureArgumentName;
+            this.failureIntArgument = failureIntArgument;
         }
     }
 

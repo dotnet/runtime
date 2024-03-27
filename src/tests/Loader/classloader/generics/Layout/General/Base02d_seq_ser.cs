@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 
 
@@ -69,7 +70,8 @@ public class Test_Base02d_seq_ser
 		new Gen<string>();
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		bool result = true;
 		try

@@ -1103,13 +1103,7 @@ VOID RCWCleanupList::CleanupAllWrappers()
 
 VOID RCWCleanupList::CleanupWrappersInCurrentCtxThread(BOOL fWait, BOOL fManualCleanupRequested, BOOL bIgnoreComObjectEagerCleanupSetting)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     if (!m_doCleanupInContexts && !fManualCleanupRequested)
         return;

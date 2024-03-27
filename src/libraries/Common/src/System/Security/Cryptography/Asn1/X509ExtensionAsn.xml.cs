@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct X509ExtensionAsn
     {
-        private static ReadOnlySpan<byte> DefaultCritical => new byte[] { 0x01, 0x01, 0x00 };
+        private static ReadOnlySpan<byte> DefaultCritical => [0x01, 0x01, 0x00];
 
         internal string ExtnId;
         internal bool Critical;
@@ -29,12 +29,12 @@ namespace System.Security.Cryptography.Asn1
         }
 #endif
 
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
 
-        internal void Encode(AsnWriter writer, Asn1Tag tag)
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
 

@@ -640,7 +640,7 @@ namespace System.Text.Json.Tests
             try
             {
                 json.ValueTextEquals(jsonString.AsSpan(1, jsonString.Length - 2));
-                Assert.True(false, $"Expected OverflowException was not thrown when calling ValueTextEquals with large lookup string");
+                Assert.Fail($"Expected OverflowException was not thrown when calling ValueTextEquals with large lookup string");
             }
             catch (OverflowException)
             { }
@@ -658,7 +658,7 @@ namespace System.Text.Json.Tests
             try
             {
                 json.ValueTextEquals(default(ReadOnlySpan<byte>));
-                Assert.True(false, $"Expected InvalidOperationException was not thrown when calling ValueTextEquals with TokenType = {json.TokenType}");
+                Assert.Fail($"Expected InvalidOperationException was not thrown when calling ValueTextEquals with TokenType = {json.TokenType}");
             }
             catch (InvalidOperationException)
             { }
@@ -666,7 +666,7 @@ namespace System.Text.Json.Tests
             try
             {
                 json.ValueTextEquals(default(ReadOnlySpan<char>));
-                Assert.True(false, $"Expected InvalidOperationException was not thrown when calling ValueTextEquals(char) with TokenType = {json.TokenType}");
+                Assert.Fail($"Expected InvalidOperationException was not thrown when calling ValueTextEquals(char) with TokenType = {json.TokenType}");
             }
             catch (InvalidOperationException)
             { }
@@ -674,7 +674,7 @@ namespace System.Text.Json.Tests
             try
             {
                 json.ValueTextEquals(default(string));
-                Assert.True(false, $"Expected InvalidOperationException was not thrown when calling ValueTextEquals(char) with TokenType = {json.TokenType}");
+                Assert.Fail($"Expected InvalidOperationException was not thrown when calling ValueTextEquals(char) with TokenType = {json.TokenType}");
             }
             catch (InvalidOperationException)
             { }
@@ -684,7 +684,7 @@ namespace System.Text.Json.Tests
                 try
                 {
                     json.ValueTextEquals(default(ReadOnlySpan<byte>));
-                    Assert.True(false, $"Expected InvalidOperationException was not thrown when calling ValueTextEquals with TokenType = {json.TokenType}");
+                    Assert.Fail($"Expected InvalidOperationException was not thrown when calling ValueTextEquals with TokenType = {json.TokenType}");
                 }
                 catch (InvalidOperationException)
                 { }
@@ -692,7 +692,7 @@ namespace System.Text.Json.Tests
                 try
                 {
                     json.ValueTextEquals(default(ReadOnlySpan<char>));
-                    Assert.True(false, $"Expected InvalidOperationException was not thrown when calling ValueTextEquals(char) with TokenType = {json.TokenType}");
+                    Assert.Fail($"Expected InvalidOperationException was not thrown when calling ValueTextEquals(char) with TokenType = {json.TokenType}");
                 }
                 catch (InvalidOperationException)
                 { }
@@ -700,7 +700,7 @@ namespace System.Text.Json.Tests
                 try
                 {
                     json.ValueTextEquals(default(string));
-                    Assert.True(false, $"Expected InvalidOperationException was not thrown when calling ValueTextEquals(char) with TokenType = {json.TokenType}");
+                    Assert.Fail($"Expected InvalidOperationException was not thrown when calling ValueTextEquals(char) with TokenType = {json.TokenType}");
                 }
                 catch (InvalidOperationException)
                 { }

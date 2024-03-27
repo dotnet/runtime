@@ -150,7 +150,7 @@ It might also be the case that you would need the latest changes in SOS, or you'
 **NOTE**: Only `lldb` is supported to use with SOS. You can also use `gdb`, `cgdb`, or other debuggers, but you might not have access to SOS.
 
 1. Perform a build of the _clr_ subset of the runtime repo.
-2. Start lldb passing `corerun`, the app to run (e.g. `HelloWorld.dll`), and any arguments this app might need: `lldb /path/to/corerun /path/to/app.dll <app args go here>`
+2. Start lldb passing `corerun`, the app to run (e.g. `HelloWorld.dll`), and any arguments this app might need: `lldb -- /path/to/corerun /path/to/app.dll <app args go here>`
 3. If you're using the installed version of SOS, you can skip this step. If you built SOS manually, you have to load it before starting the debugging session: `plugin load /path/to/built/sos/libsosplugin.so`. Note that `.so` is for Linux, and `.dylib` is for macOS. You can find more information in the diagnostics repo [private sos build doc](https://github.com/dotnet/diagnostics/blob/main/documentation/using-sos-private-build.md).
 4. Launch program: `process launch -s`
 5. To stop breaks on _SIGUSR1_ signals used by the runtime run the following command: `process handle -s false SIGUSR1`
@@ -215,7 +215,7 @@ Native C++ code is not everything in our runtime. Nowadays, there are lots of st
   * _Arguments_: Make this match whatever arguments you would have used at the command-line. For example if you would have run `dotnet.exe exec Foo.dll`, then set `arguments = "exec Foo.dll"` (**NOTE**: Make sure you use `dotnet exec` instead of `dotnet run` because the run verb command is implemented to launch the app in a child process, and the debugger won't be attached to that child process).
   * _Working Directory_: Make this match whatever you would have used on the command-line.
   * _Debugger Type_: Set this to `Managed (.NET Core, .NET 5+)`. If you're going to debug the native C++ code, then you would select `Native Only` instead.
-  * _Environment_: Add any environment variables you would have added at the command-line. You may also consider adding `DOTNET_ZapDisable=1` and `DOTNET_ReadyToRun=0`, which disable NGEN and R2R pre-compilation respectively, and allow the JIT to create debuggable code. This will give you a higher quality C# debugging experience inside the runtime framework assemblies, at the cost of somewhat lower app performance.
+  * _Environment_: Add any environment variables you would have added at the command-line. You may also consider adding `DOTNET_ReadyToRun=0`, which disables R2R pre-compilation, and allow the JIT to create debuggable code. This will give you a higher quality C# debugging experience inside the runtime framework assemblies, at the cost of somewhat lower app performance.
 * For managed debugging, there are some additional settings in _Debug -> Options_, _Debugging -> General_ that might be useful:
   * Uncheck `Just My Code`. This will allow you debug into the framework libraries.
   * Check `Enable .NET Framework Source Stepping`. This will configure the debugger to download symbols and source automatically for runtime framework binaries. If you built the framework yourself, then you can omit this step without any problems.

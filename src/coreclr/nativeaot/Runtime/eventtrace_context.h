@@ -44,5 +44,14 @@ void EventPipeEtwCallbackDotNETRuntime(
     _In_opt_ EventFilterDescriptor* FilterData,
     _Inout_opt_ PVOID CallbackContext);
 
+void EventPipeEtwCallbackDotNETRuntimePrivate(
+    _In_ GUID * SourceId,
+    _In_ ULONG ControlCode,
+    _In_ unsigned char Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ EventFilterDescriptor* FilterData,
+    _Inout_opt_ PVOID CallbackContext);
+
 #endif // FEATURE_EVENT_TRACE
 #endif // EVENTTRACE_CONTEXT_H

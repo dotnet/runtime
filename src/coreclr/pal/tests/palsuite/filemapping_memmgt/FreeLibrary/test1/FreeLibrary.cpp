@@ -34,14 +34,14 @@ PALTEST(filemapping_memmgt_FreeLibrary_test1_paltest_freelibrary_test1, "filemap
     {
         return (FAIL);
     }
-    
+
     /*Load library (DLL). */
-    hLib = LoadLibrary(LibraryName);
+    hLib = LoadLibraryExA(LibraryName, NULL, 0);
 
     if(hLib == NULL)
     {
-        Fail("ERROR:%u:Unable to load library %s\n", 
-             GetLastError(), 
+        Fail("ERROR:%u:Unable to load library %s\n",
+             GetLastError(),
              LibraryName);
     }
 
@@ -54,10 +54,10 @@ PALTEST(filemapping_memmgt_FreeLibrary_test1_paltest_freelibrary_test1, "filemap
         Fail("");
     }
 
-    /* Call the FreeLibrary API. */ 
+    /* Call the FreeLibrary API. */
     if (!FreeLibrary(hLib))
     {
-        Fail("ERROR:%u: Unable to free library \"%s\"\n", 
+        Fail("ERROR:%u: Unable to free library \"%s\"\n",
              GetLastError(),
              LibraryName);
     }
@@ -83,7 +83,7 @@ BOOL PALAPI TestDll(HMODULE hLib, int testResult)
 #else
     char    FunctName[] = "DllTest";
 #endif
-    FARPROC DllAddr;    
+    FARPROC DllAddr;
 
     /* Attempt to grab the proc address of the dll function.
      * This one should succeed.*/
@@ -92,12 +92,12 @@ BOOL PALAPI TestDll(HMODULE hLib, int testResult)
         DllAddr = GetProcAddress(hLib, FunctName);
         if(DllAddr == NULL)
         {
-            Trace("ERROR: Unable to load function \"%s\" library \"%s\"\n", 
+            Trace("ERROR: Unable to load function \"%s\" library \"%s\"\n",
                     FunctName,
                     LibraryName);
             return (FALSE);
         }
-        /* Run the function in the DLL, 
+        /* Run the function in the DLL,
          * to ensure that the DLL was loaded properly.*/
         RetVal = DllAddr();
         if (RetVal != 1)
@@ -117,8 +117,8 @@ BOOL PALAPI TestDll(HMODULE hLib, int testResult)
         if(DllAddr != NULL)
         {
             Trace("ERROR: Able to load function \"%s\" from free'd"
-                " library \"%s\"\n", 
-                FunctName, 
+                " library \"%s\"\n",
+                FunctName,
                 LibraryName);
             return (FALSE);
         }

@@ -4,8 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
-unsafe class Program
+public unsafe class Program
 {
     [StructLayout(LayoutKind.Sequential, Size = 16)]
     struct GUID
@@ -13,7 +14,8 @@ unsafe class Program
         private int align;
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Guid initialGuid = Guid.Parse("E6218D43-3C16-48BF-9C3C-8076FF5AFCD0");
         GUID g = default;

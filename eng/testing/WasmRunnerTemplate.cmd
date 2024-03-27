@@ -10,6 +10,8 @@ if [%3] NEQ [] (
     set SCENARIO=%3
 )
 
+set PATH=%PREPEND_PATH%;%PATH%
+
 if [%HELIX_WORKITEM_UPLOAD_ROOT%] == [] (
     set "XHARNESS_OUT=%EXECUTION_DIR%xharness-output"
 ) else (
@@ -56,6 +58,9 @@ if /I [%XHARNESS_COMMAND%] == [test] (
 ) else (
     if [%BROWSER_PATH%] == [] if not [%HELIX_CORRELATION_PAYLOAD%] == [] (
         set "BROWSER_PATH=--browser-path^=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe"
+    )
+    if [%JS_ENGINE_ARGS%] == [] (
+        set "JS_ENGINE_ARGS=--browser-arg^=--js-flags^=--stack-trace-limit^=1000"
     )
 )
 

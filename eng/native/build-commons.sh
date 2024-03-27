@@ -282,7 +282,7 @@ usage()
     exit 1
 }
 
-source "$__RepoRootDir/eng/native/init-os-and-arch.sh"
+source "$__RepoRootDir/eng/common/native/init-os-and-arch.sh"
 
 __TargetArch=$arch
 __TargetOS=$os
@@ -311,7 +311,7 @@ while :; do
 
     lowerI="$(echo "${1/--/-}" | tr "[:upper:]" "[:lower:]")"
     case "$lowerI" in
-        -\?|-h|--help)
+        -\?|-h|-help)
             usage
             exit 1
             ;;

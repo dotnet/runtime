@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
 namespace System.Xml
 {

@@ -298,6 +298,11 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
+            if (config is null)
+            {
+                return;
+            }
+
             var section = config as IConfigurationSection;
             string? configValue = section?.Value;
             if (configValue != null && TryConvertValue(type, configValue, section?.Path, out object? convertedValue, out Exception? error))
@@ -423,8 +428,9 @@ namespace Microsoft.Extensions.Configuration
             }
             else
             {
-                if (isParentCollection)
+                if (isParentCollection && bindingPoint.Value is null && string.IsNullOrEmpty(configValue))
                 {
+                    // If we don't have an instance, try to create one
                     bindingPoint.TrySetValue(CreateInstance(type, config, options));
                 }
             }

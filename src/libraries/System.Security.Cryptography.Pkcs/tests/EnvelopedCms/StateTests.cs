@@ -303,7 +303,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 #if NETCOREAPP
                     ecms.Decrypt(r[0], cer.GetRSAPrivateKey());
 #else
-                    Assert.True(false, "Should not run on this platform");
+                    Assert.Fail("Should not run on this platform");
 #endif
                 }
                 else
@@ -407,7 +407,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 #if NETCOREAPP
                         ecms.Decrypt(r[0], cert1.GetRSAPrivateKey());
 #else
-                        Assert.True(false, "Should not run on this platform");
+                        Assert.Fail("Should not run on this platform");
 #endif
                     }
                     else

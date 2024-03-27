@@ -63,9 +63,11 @@ unsafe partial class GenericsNative
     public static extern Vector<bool> AddVectorB256s(in Vector<bool> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestVectorB()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void TestVectorB()
     {
         if (Vector<byte>.Count == 32)
         {
@@ -73,55 +75,55 @@ unsafe partial class GenericsTest
         }
         else
         {
-            Assert.Equal(Vector<byte>.Count, 16);
+            Assert.Equal(16, Vector<byte>.Count);
             TestVectorB128();
         }
     }
 
-    private static void TestVectorB128()
+    public static void TestVectorB128()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorB128(true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false));
 
         Vector<bool> value2;
         GenericsNative.GetVectorB128Out(true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, &value2);
         Vector<byte> tValue2 = *(Vector<byte>*)&value2;
-        Assert.Equal(tValue2[0], 1);
-        Assert.Equal(tValue2[1], 0);
-        Assert.Equal(tValue2[2], 1);
-        Assert.Equal(tValue2[3], 0);
-        Assert.Equal(tValue2[4], 1);
-        Assert.Equal(tValue2[5], 0);
-        Assert.Equal(tValue2[6], 1);
-        Assert.Equal(tValue2[7], 0);
-        Assert.Equal(tValue2[8], 1);
-        Assert.Equal(tValue2[9], 0);
-        Assert.Equal(tValue2[10], 1);
-        Assert.Equal(tValue2[11], 0);
-        Assert.Equal(tValue2[12], 1);
-        Assert.Equal(tValue2[13], 0);
-        Assert.Equal(tValue2[14], 1);
-        Assert.Equal(tValue2[15], 0);
+        Assert.Equal(1, tValue2[0]);
+        Assert.Equal(0, tValue2[1]);
+        Assert.Equal(1, tValue2[2]);
+        Assert.Equal(0, tValue2[3]);
+        Assert.Equal(1, tValue2[4]);
+        Assert.Equal(0, tValue2[5]);
+        Assert.Equal(1, tValue2[6]);
+        Assert.Equal(0, tValue2[7]);
+        Assert.Equal(1, tValue2[8]);
+        Assert.Equal(0, tValue2[9]);
+        Assert.Equal(1, tValue2[10]);
+        Assert.Equal(0, tValue2[11]);
+        Assert.Equal(1, tValue2[12]);
+        Assert.Equal(0, tValue2[13]);
+        Assert.Equal(1, tValue2[14]);
+        Assert.Equal(0, tValue2[15]);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorB128Out(true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, out Vector<bool> value3));
 
         Vector<bool>* value4 = GenericsNative.GetVectorB128Ptr(true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false);
         Vector<byte>* tValue4 = (Vector<byte>*)value4;
-        Assert.Equal((*tValue4)[0], 1);
-        Assert.Equal((*tValue4)[1], 0);
-        Assert.Equal((*tValue4)[2], 1);
-        Assert.Equal((*tValue4)[3], 0);
-        Assert.Equal((*tValue4)[4], 1);
-        Assert.Equal((*tValue4)[5], 0);
-        Assert.Equal((*tValue4)[6], 1);
-        Assert.Equal((*tValue4)[7], 0);
-        Assert.Equal((*tValue4)[8], 1);
-        Assert.Equal((*tValue4)[9], 0);
-        Assert.Equal((*tValue4)[10], 1);
-        Assert.Equal((*tValue4)[11], 0);
-        Assert.Equal((*tValue4)[12], 1);
-        Assert.Equal((*tValue4)[13], 0);
-        Assert.Equal((*tValue4)[14], 1);
-        Assert.Equal((*tValue4)[15], 0);
+        Assert.Equal(1, (*tValue4)[0]);
+        Assert.Equal(0, (*tValue4)[1]);
+        Assert.Equal(1, (*tValue4)[2]);
+        Assert.Equal(0, (*tValue4)[3]);
+        Assert.Equal(1, (*tValue4)[4]);
+        Assert.Equal(0, (*tValue4)[5]);
+        Assert.Equal(1, (*tValue4)[6]);
+        Assert.Equal(0, (*tValue4)[7]);
+        Assert.Equal(1, (*tValue4)[8]);
+        Assert.Equal(0, (*tValue4)[9]);
+        Assert.Equal(1, (*tValue4)[10]);
+        Assert.Equal(0, (*tValue4)[11]);
+        Assert.Equal(1, (*tValue4)[12]);
+        Assert.Equal(0, (*tValue4)[13]);
+        Assert.Equal(1, (*tValue4)[14]);
+        Assert.Equal(0, (*tValue4)[15]);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorB128Ref(true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false));
 
@@ -147,82 +149,82 @@ unsafe partial class GenericsTest
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.AddVectorB128s(in values[0], values.Length));
     }
 
-    private static void TestVectorB256()
+    public static void TestVectorB256()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorB256(true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false));
 
         Vector<bool> value2;
         GenericsNative.GetVectorB256Out(true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, &value2);
         Vector<byte> tValue2 = *(Vector<byte>*)&value2;
-        Assert.Equal(tValue2[0], 1);
-        Assert.Equal(tValue2[1], 0);
-        Assert.Equal(tValue2[2], 1);
-        Assert.Equal(tValue2[3], 0);
-        Assert.Equal(tValue2[4], 1);
-        Assert.Equal(tValue2[5], 0);
-        Assert.Equal(tValue2[6], 1);
-        Assert.Equal(tValue2[7], 0);
-        Assert.Equal(tValue2[8], 1);
-        Assert.Equal(tValue2[9], 0);
-        Assert.Equal(tValue2[10], 1);
-        Assert.Equal(tValue2[11], 0);
-        Assert.Equal(tValue2[12], 1);
-        Assert.Equal(tValue2[13], 0);
-        Assert.Equal(tValue2[14], 1);
-        Assert.Equal(tValue2[15], 0);
-        Assert.Equal(tValue2[16], 1);
-        Assert.Equal(tValue2[17], 0);
-        Assert.Equal(tValue2[18], 1);
-        Assert.Equal(tValue2[19], 0);
-        Assert.Equal(tValue2[20], 1);
-        Assert.Equal(tValue2[21], 0);
-        Assert.Equal(tValue2[22], 1);
-        Assert.Equal(tValue2[23], 0);
-        Assert.Equal(tValue2[24], 1);
-        Assert.Equal(tValue2[25], 0);
-        Assert.Equal(tValue2[26], 1);
-        Assert.Equal(tValue2[27], 0);
-        Assert.Equal(tValue2[28], 1);
-        Assert.Equal(tValue2[29], 0);
-        Assert.Equal(tValue2[30], 1);
-        Assert.Equal(tValue2[31], 0);
+        Assert.Equal(1, tValue2[0]);
+        Assert.Equal(0, tValue2[1]);
+        Assert.Equal(1, tValue2[2]);
+        Assert.Equal(0, tValue2[3]);
+        Assert.Equal(1, tValue2[4]);
+        Assert.Equal(0, tValue2[5]);
+        Assert.Equal(1, tValue2[6]);
+        Assert.Equal(0, tValue2[7]);
+        Assert.Equal(1, tValue2[8]);
+        Assert.Equal(0, tValue2[9]);
+        Assert.Equal(1, tValue2[10]);
+        Assert.Equal(0, tValue2[11]);
+        Assert.Equal(1, tValue2[12]);
+        Assert.Equal(0, tValue2[13]);
+        Assert.Equal(1, tValue2[14]);
+        Assert.Equal(0, tValue2[15]);
+        Assert.Equal(1, tValue2[16]);
+        Assert.Equal(0, tValue2[17]);
+        Assert.Equal(1, tValue2[18]);
+        Assert.Equal(0, tValue2[19]);
+        Assert.Equal(1, tValue2[20]);
+        Assert.Equal(0, tValue2[21]);
+        Assert.Equal(1, tValue2[22]);
+        Assert.Equal(0, tValue2[23]);
+        Assert.Equal(1, tValue2[24]);
+        Assert.Equal(0, tValue2[25]);
+        Assert.Equal(1, tValue2[26]);
+        Assert.Equal(0, tValue2[27]);
+        Assert.Equal(1, tValue2[28]);
+        Assert.Equal(0, tValue2[29]);
+        Assert.Equal(1, tValue2[30]);
+        Assert.Equal(0, tValue2[31]);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorB256Out(true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, out Vector<bool> value3));
 
         Vector<bool>* value4 = GenericsNative.GetVectorB256Ptr(true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false);
         Vector<byte>* tValue4 = (Vector<byte>*)value4;
-        Assert.Equal((*tValue4)[0], 1);
-        Assert.Equal((*tValue4)[1], 0);
-        Assert.Equal((*tValue4)[2], 1);
-        Assert.Equal((*tValue4)[3], 0);
-        Assert.Equal((*tValue4)[4], 1);
-        Assert.Equal((*tValue4)[5], 0);
-        Assert.Equal((*tValue4)[6], 1);
-        Assert.Equal((*tValue4)[7], 0);
-        Assert.Equal((*tValue4)[8], 1);
-        Assert.Equal((*tValue4)[9], 0);
-        Assert.Equal((*tValue4)[10], 1);
-        Assert.Equal((*tValue4)[11], 0);
-        Assert.Equal((*tValue4)[12], 1);
-        Assert.Equal((*tValue4)[13], 0);
-        Assert.Equal((*tValue4)[14], 1);
-        Assert.Equal((*tValue4)[15], 0);
-        Assert.Equal((*tValue4)[16], 1);
-        Assert.Equal((*tValue4)[17], 0);
-        Assert.Equal((*tValue4)[18], 1);
-        Assert.Equal((*tValue4)[19], 0);
-        Assert.Equal((*tValue4)[20], 1);
-        Assert.Equal((*tValue4)[21], 0);
-        Assert.Equal((*tValue4)[22], 1);
-        Assert.Equal((*tValue4)[23], 0);
-        Assert.Equal((*tValue4)[24], 1);
-        Assert.Equal((*tValue4)[25], 0);
-        Assert.Equal((*tValue4)[26], 1);
-        Assert.Equal((*tValue4)[27], 0);
-        Assert.Equal((*tValue4)[28], 1);
-        Assert.Equal((*tValue4)[29], 0);
-        Assert.Equal((*tValue4)[30], 1);
-        Assert.Equal((*tValue4)[31], 0);
+        Assert.Equal(1, (*tValue4)[0]);
+        Assert.Equal(0, (*tValue4)[1]);
+        Assert.Equal(1, (*tValue4)[2]);
+        Assert.Equal(0, (*tValue4)[3]);
+        Assert.Equal(1, (*tValue4)[4]);
+        Assert.Equal(0, (*tValue4)[5]);
+        Assert.Equal(1, (*tValue4)[6]);
+        Assert.Equal(0, (*tValue4)[7]);
+        Assert.Equal(1, (*tValue4)[8]);
+        Assert.Equal(0, (*tValue4)[9]);
+        Assert.Equal(1, (*tValue4)[10]);
+        Assert.Equal(0, (*tValue4)[11]);
+        Assert.Equal(1, (*tValue4)[12]);
+        Assert.Equal(0, (*tValue4)[13]);
+        Assert.Equal(1, (*tValue4)[14]);
+        Assert.Equal(0, (*tValue4)[15]);
+        Assert.Equal(1, (*tValue4)[16]);
+        Assert.Equal(0, (*tValue4)[17]);
+        Assert.Equal(1, (*tValue4)[18]);
+        Assert.Equal(0, (*tValue4)[19]);
+        Assert.Equal(1, (*tValue4)[20]);
+        Assert.Equal(0, (*tValue4)[21]);
+        Assert.Equal(1, (*tValue4)[22]);
+        Assert.Equal(0, (*tValue4)[23]);
+        Assert.Equal(1, (*tValue4)[24]);
+        Assert.Equal(0, (*tValue4)[25]);
+        Assert.Equal(1, (*tValue4)[26]);
+        Assert.Equal(0, (*tValue4)[27]);
+        Assert.Equal(1, (*tValue4)[28]);
+        Assert.Equal(0, (*tValue4)[29]);
+        Assert.Equal(1, (*tValue4)[30]);
+        Assert.Equal(0, (*tValue4)[31]);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorB256Ref(true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false));
 

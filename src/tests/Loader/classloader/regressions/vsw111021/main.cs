@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 public class CMain{
     public static int Count = 0;
-    public static int Main(){
+    [Fact]
+    public static int TestEntryPoint(){
         String s;
         s = Gen<String>.x;
         // we expect the Gen<T>.cctor to fire only once!

@@ -929,7 +929,6 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
         case 0x45:
         case 0x46:
         case 0x47:
-            done = true;
             break;
 
         // REX register extension prefixes with W
@@ -942,7 +941,6 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
         case 0x4e:
         case 0x4f:
             W = true;
-            done = true;
             break;
 
         default:

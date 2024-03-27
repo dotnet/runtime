@@ -5,8 +5,8 @@ using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Principal;
 using System.Security.Authentication.ExtendedProtection;
+using System.Security.Principal;
 
 namespace System.Net.Security
 {
@@ -353,24 +353,27 @@ namespace System.Net.Security
         }
 
         /// <summary>
-        /// Computes the message integrity check of a given message.
+        /// Computes the integrity check of a given message.
         /// </summary>
         /// <param name="message">Input message for MIC calculation.</param>
-        /// <param name="signature">Buffer writer where the MIC is written.</param>
+        /// <param name="signatureWriter">Buffer writer where the MIC is written.</param>
         /// <remarks>
+        /// Implements the GSSAPI GetMIC operation.
+        ///
         /// The method modifies the internal state and may update sequence numbers depending on the
         /// selected algorithm. Two successive invocations thus don't produce the same result and
         /// it's important to carefully pair GetMIC and VerifyMIC calls on the both sides of the
         /// authenticated session.
         /// </remarks>
-        internal void GetMIC(ReadOnlySpan<byte> message, IBufferWriter<byte> signature)
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
+        public void ComputeIntegrityCheck(ReadOnlySpan<byte> message, IBufferWriter<byte> signatureWriter)
         {
             if (!IsAuthenticated || _isDisposed)
             {
                 throw new InvalidOperationException(SR.net_auth_noauth);
             }
 
-            _pal.GetMIC(message, signature);
+            _pal.GetMIC(message, signatureWriter);
         }
 
         /// <summary>
@@ -380,12 +383,15 @@ namespace System.Net.Security
         /// <param name="signature">MIC to be verified.</param>
         /// <returns>For successfully verified MIC, the method returns true.</returns>
         /// <remarks>
+        /// Implements the GSSAPI VerifyMIC operation.
+        ///
         /// The method modifies the internal state and may update sequence numbers depending on the
         /// selected algorithm. Two successive invocations thus don't produce the same result and
         /// it's important to carefully pair GetMIC and VerifyMIC calls on the both sides of the
         /// authenticated session.
         /// </remarks>
-        internal bool VerifyMIC(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
+        public bool VerifyIntegrityCheck(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
         {
             if (!IsAuthenticated || _isDisposed)
             {
@@ -411,7 +417,7 @@ namespace System.Net.Security
                 return true;
             }
 
-            if (_isSecureConnection &&  _extendedProtectionPolicy.ProtectionScenario == ProtectionScenario.TransportSelected)
+            if (_isSecureConnection && _extendedProtectionPolicy.ProtectionScenario == ProtectionScenario.TransportSelected)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_spn_cbt);
                 return true;

@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Buffers;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
@@ -464,10 +464,10 @@ namespace System.IO
         private static void SetFileTime(
             string fullPath,
             bool asDirectory,
-            long creationTime = -1,
-            long lastAccessTime = -1,
-            long lastWriteTime = -1,
-            long changeTime = -1,
+            long creationTime = 0,
+            long lastAccessTime = 0,
+            long lastWriteTime = 0,
+            long changeTime = 0,
             uint fileAttributes = 0)
         {
             using SafeFileHandle handle = OpenHandleToWriteAttributes(fullPath, asDirectory);
@@ -477,10 +477,10 @@ namespace System.IO
         private static unsafe void SetFileTime(
             SafeFileHandle fileHandle,
             string? fullPath = null,
-            long creationTime = -1,
-            long lastAccessTime = -1,
-            long lastWriteTime = -1,
-            long changeTime = -1,
+            long creationTime = 0,
+            long lastAccessTime = 0,
+            long lastWriteTime = 0,
+            long changeTime = 0,
             uint fileAttributes = 0)
         {
             var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO

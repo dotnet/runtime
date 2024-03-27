@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+***********************************************************************************************
+Microsoft.NET.Sdk.IL.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+Copyright (c) .NET Foundation. All rights reserved.
+***********************************************************************************************
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <DefaultLanguageSourceExtension>.il</DefaultLanguageSourceExtension>
+    <Language>IL</Language>
+    <TargetRuntime>Managed</TargetRuntime>
+    <DefaultProjectTypeGuid Condition="'$(DefaultProjectTypeGuid)' == ''">{9A19103F-16F7-4668-BE54-9A1E7A4F7556}</DefaultProjectTypeGuid>
+    <AppDesignerFolder Condition="'$(AppDesignerFolder)' == ''">Properties</AppDesignerFolder>
+    <AlwaysUseNumericalSuffixInItemNames>true</AlwaysUseNumericalSuffixInItemNames>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectCapability Include="Managed" />
+    <ProjectCapability Include="ReferencesFolder" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(NETCoreSdkPortableRuntimeIdentifier)</MicrosoftNetCoreIlasmPackageRuntimeId>
+    <MicrosoftNETCoreILAsmVersion Condition="'$(MicrosoftNETCoreILAsmVersion)' == ''">${IlAsmVersion}</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNetCoreIlasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ilasm</MicrosoftNetCoreIlasmPackageName>
+    <MicrosoftNetCoreIldasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ildasm</MicrosoftNetCoreIldasmPackageName>
+
+    <!-- If ILAsmToolPath is specified, it will be used and no packages will be restored
+         Otherwise packages will be restored and ilasm and ildasm will be referenced from their packages.  -->
+    <_IlasmDir Condition="'$(ILAsmToolPath)' != ''">$([MSBuild]::NormalizeDirectory($(ILAsmToolPath)))</_IlasmDir>
+    <_IldasmDir Condition="'$(ILAsmToolPath)' != ''">$([MSBuild]::NormalizeDirectory($(ILAsmToolPath)))</_IldasmDir>
+    <CoreCompileDependsOn Condition="'$(ILAsmToolPath)' == ''">$(CoreCompileDependsOn);ResolveIlAsmToolPaths</CoreCompileDependsOn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(ILAsmToolPath)' == ''">
+    <_IlasmPackageReference Include="$(MicrosoftNetCoreIlasmPackageName)" Version="$(MicrosoftNETCoreILAsmVersion)" />
+    <_IlasmPackageReference Include="$(MicrosoftNetCoreIldasmPackageName)" Version="$(MicrosoftNETCoreILAsmVersion)" />
+    <PackageReference Include="@(_IlasmPackageReference)" ExcludeAssets="native" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CreateManifestResourceNamesDependsOn></CreateManifestResourceNamesDependsOn>
+  </PropertyGroup>
+
+  <Target Name="CreateManifestResourceNames"
+          Condition="'@(EmbeddedResource)' != ''"
+          DependsOnTargets="$(CreateManifestResourceNamesDependsOn)">
+    <!-- Required by Microsoft.Common.targets -->
+  </Target>
+
+  <Target Name="ResolveIlAsmToolPaths">
+    <ItemGroup>
+      <_IlasmPackageReference NativePath="$(NuGetPackageRoot)\%(Identity)\%(Version)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native" />
+      <_IlasmSourceFiles Include="%(_IlasmPackageReference.NativePath)\**\*" />
+    </ItemGroup>
+    <Error Condition="!Exists('%(_IlasmPackageReference.NativePath)')" Text="Package %(_IlasmPackageReference.Identity)\%(_IlasmPackageReference.Version) was not restored" />
+
+    <PropertyGroup>
+      <_IlasmDir Condition="'$(_IlasmDir)' == '' and '%(_IlasmPackageReference.Identity)' == '$(MicrosoftNetCoreIlasmPackageName)'">%(_IlasmPackageReference.NativePath)/</_IlasmDir>
+      <_IldasmDir Condition="'$(_IldasmDir)' == '' and '%(_IlasmPackageReference.Identity)' == '$(MicrosoftNetCoreIldasmPackageName)'">%(_IlasmPackageReference.NativePath)/</_IldasmDir>
+    </PropertyGroup>
+  </Target>
+
+  <!-- projects can define an ILResourceReference and we'll decompile it to get native resources -->
+  <Target Name="DisassembleIlasmResourceFile"
+          BeforeTargets="CoreCompile"
+          Condition="'$(OS)'=='Windows_NT'"
+          Inputs="@(ILResourceReference)"
+          Outputs="$(IntermediateOutputPath)$(MSBuildProjectName).ref.res.obj">
+    <Error Condition="'@(ILResourceReference->Count())' != '1'" Text="Only one ILResourceReference can be specified" />
+    <PropertyGroup>
+      <_ilResourceReference>%(ILResourceReference.FullPath)</_ilResourceReference>
+      <_IldasmCommand>"$(_IldasmDir)ildasm"</_IldasmCommand>
+      <_IldasmCommand>$(_IldasmCommand) "$(_ilResourceReference)"</_IldasmCommand>
+      <_IldasmCommand>$(_IldasmCommand) /OUT="$(IntermediateOutputPath)/$(MSBuildProjectName).ref.il"</_IldasmCommand>
+
+      <!-- Try to use cvtres.exe from the framework and fallback to the one that is on the PATH in case we can't find it -->
+      <_CvtResCommand>$(SystemRoot)\Microsoft.NET\Framework\v4.0.30319\cvtres.exe</_CvtResCommand>
+      <_CvtResCommand Condition="!Exists('$(_CvtResCommand)')">cvtres.exe</_CvtResCommand>
+      <_CvtResCommand>$(_CvtResCommand) /MACHINE:x86</_CvtResCommand>
+      <_CvtResCommand>$(_CvtResCommand) /OUT:"$(IntermediateOutputPath)$(MSBuildProjectName).ref.res.obj"</_CvtResCommand>
+      <_CvtResCommand>$(_CvtResCommand) "$(IntermediateOutputPath)$(MSBuildProjectName).ref.res"</_CvtResCommand>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <FileWrites Include="$(IntermediateOutputPath)$(MSBuildProjectName).ref.*" />
+    </ItemGroup>
+
+    <!-- Getting the res file by disassemblying the contract assembly -->
+    <Exec Command="$(_IldasmCommand)" ConsoleToMSBuild="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ExitCode" PropertyName="_IldasmCommandExitCode" />
+    </Exec>
+    <Error Condition="'$(_IldasmCommandExitCode)' != '0'" Text="ILDasm failed while running command: &quot;$(_IldasmCommand)&quot;" />
+
+    <!-- Calling cvtres.exe which should be on the path in order to transform the resource file to an obj -->
+    <Exec Command="$(_CvtResCommand)" ConsoleToMSBuild="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ExitCode" PropertyName="_CvtResCommandExitCode" />
+    </Exec>
+    <Error Condition="'$(_CvtResCommandExitCode)' != '0'" Text="cvtres failed while running command: &quot;$(_CvtResCommand)&quot;" />
+
+    <PropertyGroup>
+      <IlasmResourceFile>$(IntermediateOutputPath)$(MSBuildProjectName).ref.res.obj</IlasmResourceFile>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="CoreCompile"
+          Inputs="$(MSBuildAllProjects);
+                  @(Compile)"
+          Outputs="@(IntermediateAssembly)"
+          Returns=""
+          DependsOnTargets="$(CoreCompileDependsOn)">
+
+    <PropertyGroup>
+      <_OutputTypeArgument Condition="'$(OutputType)' == 'Library'">-DLL</_OutputTypeArgument>
+      <_OutputTypeArgument Condition="'$(OutputType)' == 'Exe'">-EXE</_OutputTypeArgument>
+
+      <_KeyFileArgument Condition="'$(KeyOriginatorFile)' != ''">-KEY="$(KeyOriginatorFile)"</_KeyFileArgument>
+
+      <_IlasmSwitches>-QUIET -NOLOGO</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(FoldIdenticalMethods)' == 'True'">$(_IlasmSwitches) -FOLD</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(SizeOfStackReserve)' != ''">$(_IlasmSwitches) -STACK=$(SizeOfStackReserve)</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(DebugType)' == 'Full'">$(_IlasmSwitches) -DEBUG</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(DebugType)' == 'Impl'">$(_IlasmSwitches) -DEBUG=IMPL</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(DebugType)' == 'PdbOnly'">$(_IlasmSwitches) -DEBUG=OPT</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(Optimize)' == 'True'">$(_IlasmSwitches) -OPTIMIZE</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(IlasmResourceFile)' != ''">$(_IlasmSwitches) -RESOURCES="$(IlasmResourceFile)"</_IlasmSwitches>
+    </PropertyGroup>
+
+    <Exec Command="&quot;$(_IlasmDir)ilasm&quot; $(_IlasmSwitches) $(_OutputTypeArgument) $(IlasmFlags) -OUTPUT=&quot;@(IntermediateAssembly)&quot; $(_KeyFileArgument) @(Compile, ' ')">
+      <Output TaskParameter="ExitCode" PropertyName="_ILAsmExitCode" />
+    </Exec>
+
+    <Error Text="ILAsm failed" Condition="'$(_ILAsmExitCode)' != '0'" />
+
+    <CallTarget Targets="$(TargetsTriggeredByCompilation)" Condition="'$(TargetsTriggeredByCompilation)' != ''"/>
+  </Target>
+  
+  <!-- Target is called by the language server. No-op for ILProj as there is no language service support. -->
+  <Target Name="CompileDesignTime" />
+
+  <!-- Import design time targets for Roslyn Project System. These are only available if Visual Studio is installed. -->
+  <!-- Required for project to load in Visual Studio. -->
+  <PropertyGroup>
+    <ManagedDesignTimeTargetsPath Condition="'$(ManagedDesignTimeTargetsPath)'==''">$(MSBuildExtensionsPath)\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets</ManagedDesignTimeTargetsPath>
+  </PropertyGroup>
+  <Import Project="$(ManagedDesignTimeTargetsPath)" Condition="'$(ManagedDesignTimeTargetsPath)' != '' and Exists('$(ManagedDesignTimeTargetsPath)')" />
+
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+
+</Project>

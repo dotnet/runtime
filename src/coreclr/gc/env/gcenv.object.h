@@ -4,6 +4,10 @@
 #ifndef __GCENV_OBJECT_H__
 #define __GCENV_OBJECT_H__
 
+#ifdef BUILD_AS_STANDALONE
+extern bool g_oldMethodTableFlags;
+#endif
+
 // ARM requires that 64-bit primitive types are aligned at 64-bit boundaries for interlocked-like operations.
 // Additionally the platform ABI requires these types and composite type containing them to be similarly
 // aligned when passed as arguments.
@@ -42,15 +46,15 @@ public:
 
 static_assert(sizeof(ObjHeader) == sizeof(uintptr_t), "this assumption is made by the VM!");
 
-#define MTFlag_RequireAlign8            0x00001000
-#define MTFlag_Category_ValueType       0x00040000
-#define MTFlag_Category_ValueType_Mask  0x000C0000
-#define MTFlag_ContainsPointers         0x01000000
-#define MTFlag_HasCriticalFinalizer     0x08000000
-#define MTFlag_HasFinalizer             0x00100000
-#define MTFlag_IsArray                  0x00080000
-#define MTFlag_Collectible              0x10000000
-#define MTFlag_HasComponentSize         0x80000000
+#define MTFlag_RequiresAlign8           0x00001000 // enum_flag_RequiresAlign8
+#define MTFlag_Category_ValueType       0x00040000 // enum_flag_Category_ValueType
+#define MTFlag_Category_ValueType_Mask  0x000C0000 // enum_flag_Category_ValueType_Mask
+#define MTFlag_ContainsPointers         0x01000000 // enum_flag_ContainsPointers
+#define MTFlag_HasCriticalFinalizer     0x00000002 // enum_flag_HasCriticalFinalizer
+#define MTFlag_HasFinalizer             0x00100000 // enum_flag_HasFinalizer
+#define MTFlag_IsArray                  0x00080000 // enum_flag_Category_Array
+#define MTFlag_Collectible              0x00200000 // enum_flag_Collectible
+#define MTFlag_HasComponentSize         0x80000000 // enum_flag_HasComponentSize
 
 class MethodTable
 {
@@ -85,6 +89,14 @@ public:
 
     bool Collectible()
     {
+#ifdef BUILD_AS_STANDALONE
+        if (g_oldMethodTableFlags)
+        {
+            // This flag is used for .NET 8 or below
+            const int Old_MTFlag_Collectible = 0x10000000;
+            return (m_flags & Old_MTFlag_Collectible) != 0;
+        }
+#endif
         return (m_flags & MTFlag_Collectible) != 0;
     }
 
@@ -100,7 +112,7 @@ public:
 
     bool RequiresAlign8()
     {
-        return (m_flags & MTFlag_RequireAlign8) != 0;
+        return (m_flags & MTFlag_RequiresAlign8) != 0;
     }
 
     bool IsValueType()
@@ -127,18 +139,15 @@ public:
 
     bool HasCriticalFinalizer()
     {
-        return (m_flags & MTFlag_HasCriticalFinalizer) != 0;
-    }
-
-    bool IsArray()
-    {
-        return (m_flags & MTFlag_IsArray) != 0;
-    }
-
-    MethodTable * GetParent()
-    {
-        _ASSERTE(!IsArray());
-        return m_pRelatedType;
+#ifdef BUILD_AS_STANDALONE
+        if (g_oldMethodTableFlags)
+        {
+            // This flag is used for .NET 8 or below
+            const int Old_MTFlag_HasCriticalFinalizer = 0x08000000;
+            return (m_flags & Old_MTFlag_HasCriticalFinalizer) != 0;
+        }
+#endif
+        return !HasComponentSize() && (m_flags & MTFlag_HasCriticalFinalizer);
     }
 
     bool SanityCheck()

@@ -38,7 +38,7 @@ run-browser:
 		echo "The tool dotnet-serve could not be found. Install with: $(DOTNET) tool install --global dotnet-serve"; \
 		exit 1; \
 	else  \
-		$(DOTNET) serve -d:bin/$(CONFIG)/AppBundle $(CORS_HEADERS) $(OPEN_BROWSER) -p:8000; \
+		$(DOTNET) serve -S -d:bin/$(CONFIG)/AppBundle $(CORS_HEADERS) $(OPEN_BROWSER) -p:8000; \
 	fi
 
 run-console:

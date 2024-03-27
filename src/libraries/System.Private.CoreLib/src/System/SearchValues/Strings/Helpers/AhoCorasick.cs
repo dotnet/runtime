@@ -18,21 +18,19 @@ namespace System.Buffers
     internal readonly struct AhoCorasick
     {
         private readonly AhoCorasickNode[] _nodes;
-        private readonly Vector256<byte> _startingCharsAsciiBitmap;
+        private readonly IndexOfAnyAsciiSearcher.AsciiState _startingAsciiChars;
 
-        public AhoCorasick(AhoCorasickNode[] nodes, Vector256<byte> startingAsciiBitmap)
+        public AhoCorasick(AhoCorasickNode[] nodes, IndexOfAnyAsciiSearcher.AsciiState startingAsciiChars)
         {
             _nodes = nodes;
-            _startingCharsAsciiBitmap = startingAsciiBitmap;
+            _startingAsciiChars = startingAsciiChars;
         }
 
         public readonly bool ShouldUseAsciiFastScan
         {
             get
             {
-                Vector256<byte> bitmap = _startingCharsAsciiBitmap;
-
-                if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && bitmap != default)
+                if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && _startingAsciiChars.Bitmap != default)
                 {
                     // If there are a lot of starting characters such that we often find one early,
                     // the ASCII fast scan may end up performing worse than checking one character at a time.
@@ -51,7 +49,7 @@ namespace System.Buffers
 
                     for (int i = 0; i < 128; i++)
                     {
-                        if (IndexOfAnyAsciiSearcher.BitmapContains(ref bitmap, (char)i))
+                        if (_startingAsciiChars.Lookup.Contains128((char)i))
                         {
                             frequency += CharacterFrequencyHelper.AsciiFrequency[i];
                         }
@@ -98,10 +96,10 @@ namespace System.Buffers
                     // If '\0' is one of the starting chars and we're running on Ssse3 hardware, this may return false-positives.
                     // False-positives here are okay, we'll just rule them out below. While we could flow the Ssse3AndWasmHandleZeroInNeedle
                     // generic through, we expect such values to be rare enough that introducing more code is not worth it.
-                    int offset = IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default>(
+                    int offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default>(
                         ref Unsafe.As<char, short>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), i)),
                         remainingLength,
-                        ref Unsafe.AsRef(in _startingCharsAsciiBitmap));
+                        ref Unsafe.AsRef(in _startingAsciiChars));
 
                     if (offset < 0)
                     {
@@ -207,10 +205,10 @@ namespace System.Buffers
 
                 if (remainingLength >= Vector128<ushort>.Count)
                 {
-                    int offset = IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default>(
+                    int offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default>(
                         ref Unsafe.As<char, short>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), i)),
                         remainingLength,
-                        ref Unsafe.AsRef(in _startingCharsAsciiBitmap));
+                        ref Unsafe.AsRef(in _startingAsciiChars));
 
                     if (offset < 0)
                     {
@@ -333,7 +331,7 @@ namespace System.Buffers
             Debug.Assert(char.IsHighSurrogate(h));
             Debug.Assert(char.IsLowSurrogate(l));
 
-            Span<char> chars = stackalloc char[] { h, l };
+            ReadOnlySpan<char> chars = [h, l];
             Span<char> destination = stackalloc char[2];
 
             int written = Ordinal.ToUpperOrdinal(chars, destination);

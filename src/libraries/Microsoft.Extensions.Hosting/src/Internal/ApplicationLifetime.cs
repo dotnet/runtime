@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 try
                 {
-                    ExecuteHandlers(_stoppingSource);
+                    _stoppingSource.Cancel();
                 }
                 catch (Exception ex)
                 {
@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             try
             {
-                ExecuteHandlers(_startedSource);
+                _startedSource.Cancel();
             }
             catch (Exception ex)
             {
@@ -98,7 +98,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             try
             {
-                ExecuteHandlers(_stoppedSource);
+                _stoppedSource.Cancel();
             }
             catch (Exception ex)
             {
@@ -106,18 +106,6 @@ namespace Microsoft.Extensions.Hosting.Internal
                                          "An error occurred stopping the application",
                                          ex);
             }
-        }
-
-        private static void ExecuteHandlers(CancellationTokenSource cancel)
-        {
-            // Noop if this is already cancelled
-            if (cancel.IsCancellationRequested)
-            {
-                return;
-            }
-
-            // Run the cancellation token callbacks
-            cancel.Cancel(throwOnFirstException: false);
         }
     }
 }

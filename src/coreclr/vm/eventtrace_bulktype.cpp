@@ -20,7 +20,7 @@
 #include "eventtracepriv.h"
 
 //---------------------------------------------------------------------------------------
-// BulkStaticsLogger: Batches up and logs static variable roots
+// BulkComLogger: Batches up and logs RCW and CCW
 //---------------------------------------------------------------------------------------
 
 BulkComLogger::BulkComLogger(BulkTypeEventLogger *typeLogger)

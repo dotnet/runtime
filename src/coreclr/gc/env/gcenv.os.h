@@ -410,6 +410,11 @@ public:
     //  non zero if it has succeeded, 0 if it has failed
     static size_t GetVirtualMemoryLimit();
 
+    // Return the maximum address of the of the virtual address space of this process.
+    // Return:
+    //  non zero if it has succeeded, 0 if it has failed
+    static size_t GetVirtualMemoryMaxAddress();
+
     // Get the physical memory that this process can use.
     // Return:
     //  non zero if it has succeeded, 0 if it has failed

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);$(TargetFrameworkForNETFrameworkTasks)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050</NoWarn>
     <!-- Ignore nullable warnings on net4* -->
@@ -19,14 +19,30 @@
   <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />
+    <Compile Include="..\Common\TempFileName.cs" />
     <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\BootJsonData.cs" />
     <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\BootJsonBuilderHelper.cs" />
+  </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
-    <!-- FIXME: is this the correct version of SRM to use when building for .NET Framework? -->
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
-    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
+    <!-- we need to explicitly reference System.Reflection.MetadataLoadContext 8.0 or newer for function pointer support,
+         because the default version pulled in from MSBuild is lower. -->
+    <!-- TODO: this can be removed once MSBuild brings in a new enough version -->
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="$(SystemReflectionMetadataLoadContextToolsetVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <!-- excludeassets prevents the older version of System.Reflection.MetadataLoadContext from MSBuild from trampling the newer version we need -->
+    <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" ExcludeAssets="runtime" />
+    <!-- we need to explicitly reference System.Reflection.MetadataLoadContext 8.0 or newer for function pointer support,
+         because the default version pulled in from MSBuild is lower. -->
+    <!-- TODO: this can be removed once MSBuild brings in a new enough version -->
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="$(SystemReflectionMetadataLoadContextToolsetVersion)" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
+    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableToolsetVersion)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,17 +52,17 @@
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
       <!-- non-net4* -->
-      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\$(MSBuildProjectName)*"
-                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
-      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\System.Reflection.MetadataLoadContext.dll"
-                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
-      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\Microsoft.NET.WebAssembly.Webcil.dll"
-                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\$(MSBuildProjectName)*"
+                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\System.Reflection.MetadataLoadContext.dll"
+                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\Microsoft.NET.WebAssembly.Webcil.dll"
+                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
 
 
       <!-- for net472 we need all the dependent assemblies too, so copy from the publish folder -->
-      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETFrameworkTasks)\*"
-                      TargetPath="tasks\$(TargetFrameworkForNETFrameworkTasks)" />
+      <FilesToPackage Include="$(OutputPath)$(NetFrameworkToolCurrent)\*"
+                      TargetPath="tasks\$(NetFrameworkToolCurrent)" />
     </ItemGroup>
   </Target>
 

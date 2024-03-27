@@ -28,6 +28,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "patchpointinfo.h"
+#include "optcse.h" // for cse metrics
 
 /*****************************************************************************/
 
@@ -314,10 +315,8 @@ void CodeGen::genPrepForCompiler()
         }
     }
     VarSetOps::AssignNoCopy(compiler, genLastLiveSet, VarSetOps::MakeEmpty(compiler));
-    genLastLiveMask = RBM_NONE;
-#ifdef DEBUG
-    compiler->fgBBcountAtCodegen = compiler->fgBBcount;
-#endif
+    genLastLiveMask                        = RBM_NONE;
+    compiler->Metrics.BasicBlocksAtCodegen = compiler->fgBBcount;
 }
 
 //------------------------------------------------------------------------
@@ -327,11 +326,9 @@ void CodeGen::genPrepForCompiler()
 // 1. the target of jumps (fall-through flow doesn't require a label),
 // 2. referenced labels such as for "switch" codegen,
 // 3. needed to denote the range of EH regions to the VM.
-// 4. needed to denote the range of code for alignment processing.
 //
 // No labels will be in the IR before now, but future codegen might annotate additional blocks
 // with this flag, such as "switch" codegen, or codegen-created blocks from genCreateTempLabel().
-// Also, the alignment processing code marks BBJ_COND fall-through labels elsewhere.
 //
 // To report exception handling information to the VM, we need the size of the exception
 // handling regions. To compute that, we need to emit labels for the beginning block of
@@ -356,13 +353,13 @@ void CodeGen::genMarkLabelsForCodegen()
     // No label flags should be set before this.
     for (BasicBlock* const block : compiler->Blocks())
     {
-        assert((block->bbFlags & BBF_HAS_LABEL) == 0);
+        assert(!block->HasFlag(BBF_HAS_LABEL));
     }
 #endif // DEBUG
 
     // The first block is special; it always needs a label. This is to properly set up GC info.
     JITDUMP("  " FMT_BB " : first block\n", compiler->fgFirstBB->bbNum);
-    compiler->fgFirstBB->bbFlags |= BBF_HAS_LABEL;
+    compiler->fgFirstBB->SetFlags(BBF_HAS_LABEL);
 
     // The current implementation of switch tables requires the first block to have a label so it
     // can generate offsets to the switch label targets.
@@ -371,25 +368,44 @@ void CodeGen::genMarkLabelsForCodegen()
     if (compiler->fgHasSwitch)
     {
         JITDUMP("  " FMT_BB " : function has switch; mark first block\n", compiler->fgFirstBB->bbNum);
-        compiler->fgFirstBB->bbFlags |= BBF_HAS_LABEL;
+        compiler->fgFirstBB->SetFlags(BBF_HAS_LABEL);
     }
 
     for (BasicBlock* const block : compiler->Blocks())
     {
-        switch (block->bbJumpKind)
+        switch (block->GetKind())
         {
-            case BBJ_ALWAYS: // This will also handle the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
-            case BBJ_COND:
+            case BBJ_ALWAYS:
+                // If we can skip this jump, don't create a label for the target
+                if (block->CanRemoveJumpToNext(compiler))
+                {
+                    break;
+                }
+
+                FALLTHROUGH;
+
             case BBJ_EHCATCHRET:
-                JITDUMP("  " FMT_BB " : branch target\n", block->bbJumpDest->bbNum);
-                block->bbJumpDest->bbFlags |= BBF_HAS_LABEL;
+                JITDUMP("  " FMT_BB " : branch target\n", block->GetTarget()->bbNum);
+                block->GetTarget()->SetFlags(BBF_HAS_LABEL);
+                break;
+
+            case BBJ_COND:
+                JITDUMP("  " FMT_BB " : branch target\n", block->GetTrueTarget()->bbNum);
+                block->GetTrueTarget()->SetFlags(BBF_HAS_LABEL);
+
+                // If we need a jump to the false target, give it a label
+                if (!block->CanRemoveJumpToTarget(block->GetFalseTarget(), compiler))
+                {
+                    JITDUMP("  " FMT_BB " : branch target\n", block->GetFalseTarget()->bbNum);
+                    block->GetFalseTarget()->SetFlags(BBF_HAS_LABEL);
+                }
                 break;
 
             case BBJ_SWITCH:
                 for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    JITDUMP("  " FMT_BB " : branch target\n", bTarget->bbNum);
-                    bTarget->bbFlags |= BBF_HAS_LABEL;
+                    JITDUMP("  " FMT_BB " : switch target\n", bTarget->bbNum);
+                    bTarget->SetFlags(BBF_HAS_LABEL);
                 }
                 break;
 
@@ -400,67 +416,74 @@ void CodeGen::genMarkLabelsForCodegen()
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
                 {
-                    // For callfinally thunks, we need to mark the block following the callfinally/always pair,
+                    // For callfinally thunks, we need to mark the block following the callfinally/callfinallyret pair,
                     // as that's needed for identifying the range of the "duplicate finally" region in EH data.
-                    BasicBlock* bbToLabel = block->bbNext;
-                    if (block->isBBCallAlwaysPair())
+                    BasicBlock* bbToLabel = block->Next();
+                    if (block->isBBCallFinallyPair())
                     {
-                        bbToLabel = bbToLabel->bbNext; // skip the BBJ_ALWAYS
+                        bbToLabel = bbToLabel->Next(); // skip the BBJ_CALLFINALLYRET
                     }
                     if (bbToLabel != nullptr)
                     {
                         JITDUMP("  " FMT_BB " : callfinally thunk region end\n", bbToLabel->bbNum);
-                        bbToLabel->bbFlags |= BBF_HAS_LABEL;
+                        bbToLabel->SetFlags(BBF_HAS_LABEL);
                     }
                 }
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
                 break;
 
+            case BBJ_CALLFINALLYRET:
+                JITDUMP("  " FMT_BB " : finally continuation\n", block->GetFinallyContinuation()->bbNum);
+                block->GetFinallyContinuation()->SetFlags(BBF_HAS_LABEL);
+                break;
+
             case BBJ_EHFINALLYRET:
             case BBJ_EHFAULTRET:
-            case BBJ_EHFILTERRET:
+            case BBJ_EHFILTERRET: // The filter-handler will get marked when processing the EH handlers, below.
             case BBJ_RETURN:
             case BBJ_THROW:
-            case BBJ_NONE:
                 break;
 
             default:
-                noway_assert(!"Unexpected bbJumpKind");
+                noway_assert(!"Unexpected bbKind");
                 break;
         }
     }
 
     // Walk all the exceptional code blocks and mark them, since they don't appear in the normal flow graph.
-    for (Compiler::AddCodeDsc* add = compiler->fgAddCodeList; add; add = add->acdNext)
+    for (Compiler::AddCodeDsc* add = compiler->fgAddCodeList; add != nullptr; add = add->acdNext)
     {
-        JITDUMP("  " FMT_BB " : throw helper block\n", add->acdDstBlk->bbNum);
-        add->acdDstBlk->bbFlags |= BBF_HAS_LABEL;
+        if (add->acdUsed)
+        {
+            JITDUMP("  " FMT_BB " : throw helper block\n", add->acdDstBlk->bbNum);
+            add->acdDstBlk->SetFlags(BBF_HAS_LABEL);
+        }
     }
 
     for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
-        HBtab->ebdTryBeg->bbFlags |= BBF_HAS_LABEL;
-        HBtab->ebdHndBeg->bbFlags |= BBF_HAS_LABEL;
+        HBtab->ebdTryBeg->SetFlags(BBF_HAS_LABEL);
+        HBtab->ebdHndBeg->SetFlags(BBF_HAS_LABEL);
 
         JITDUMP("  " FMT_BB " : try begin\n", HBtab->ebdTryBeg->bbNum);
         JITDUMP("  " FMT_BB " : hnd begin\n", HBtab->ebdHndBeg->bbNum);
 
-        if (HBtab->ebdTryLast->bbNext != nullptr)
+        if (!HBtab->ebdTryLast->IsLast())
         {
-            HBtab->ebdTryLast->bbNext->bbFlags |= BBF_HAS_LABEL;
-            JITDUMP("  " FMT_BB " : try end\n", HBtab->ebdTryLast->bbNext->bbNum);
+            HBtab->ebdTryLast->Next()->SetFlags(BBF_HAS_LABEL);
+            JITDUMP("  " FMT_BB " : try end\n", HBtab->ebdTryLast->Next()->bbNum);
         }
 
-        if (HBtab->ebdHndLast->bbNext != nullptr)
+        if (!HBtab->ebdHndLast->IsLast())
         {
-            HBtab->ebdHndLast->bbNext->bbFlags |= BBF_HAS_LABEL;
-            JITDUMP("  " FMT_BB " : hnd end\n", HBtab->ebdHndLast->bbNext->bbNum);
+            HBtab->ebdHndLast->Next()->SetFlags(BBF_HAS_LABEL);
+            JITDUMP("  " FMT_BB " : hnd end\n", HBtab->ebdHndLast->Next()->bbNum);
         }
 
         if (HBtab->HasFilter())
         {
-            HBtab->ebdFilter->bbFlags |= BBF_HAS_LABEL;
+            HBtab->ebdFilter->SetFlags(BBF_HAS_LABEL);
             JITDUMP("  " FMT_BB " : filter begin\n", HBtab->ebdFilter->bbNum);
         }
     }
@@ -572,28 +595,6 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 // compHelperCallKillSet: Gets a register mask that represents the kill set for a helper call.
 // Not all JIT Helper calls follow the standard ABI on the target architecture.
 //
-// TODO-CQ: Currently this list is incomplete (not all helpers calls are
-//          enumerated) and not 100% accurate (some killsets are bigger than
-//          what they really are).
-//          There's some work to be done in several places in the JIT to
-//          accurately track the registers that are getting killed by
-//          helper calls:
-//              a) LSRA needs several changes to accommodate more precise killsets
-//                 for every helper call it sees (both explicitly [easy] and
-//                 implicitly [hard])
-//              b) Currently for AMD64, when we generate code for a helper call
-//                 we're independently over-pessimizing the killsets of the call
-//                 (independently from LSRA) and this needs changes
-//                 both in CodeGenAmd64.cpp and emitx86.cpp.
-//
-//                 The best solution for this problem would be to try to centralize
-//                 the killset information in a single place but then make the
-//                 corresponding changes so every code generation phase is in sync
-//                 about this.
-//
-//         The interim solution is to only add known helper calls that don't
-//         follow the AMD64 ABI and actually trash registers that are supposed to be non-volatile.
-//
 // Arguments:
 //   helper - The helper being inquired about
 //
@@ -604,6 +605,12 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 {
     switch (helper)
     {
+        // Most of the helpers are written in C++ and C# and we can't make
+        // any additional assumptions beyond the standard ABI. However, some are written in raw assembly,
+        // so we can narrow down the kill sets.
+        //
+        // TODO-CQ: Inspect all asm helpers and narrow down the kill sets for them.
+        //
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
             return RBM_CALLEE_TRASH_WRITEBARRIER;
@@ -664,7 +671,7 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 //    intervals when calling "siStartVariableLiveRange" and "siEndVariableLiveRange".
 //
 // Notes:
-//    If "ForCodeGen" is false, only "compCurLife" set (and no mask) will be setted.
+//    If "ForCodeGen" is false, only "compCurLife" set (and no mask) will be updated.
 //
 template <bool ForCodeGen>
 void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
@@ -856,18 +863,19 @@ BasicBlock* CodeGen::genCreateTempLabel()
     compiler->fgSafeBasicBlockCreation = true;
 #endif
 
-    BasicBlock* block = compiler->bbNewBasicBlock(BBJ_NONE);
+    // Label doesn't need a jump kind
+    BasicBlock* block = BasicBlock::New(compiler);
 
 #ifdef DEBUG
     compiler->fgSafeBasicBlockCreation = false;
 #endif
 
     JITDUMP("Mark " FMT_BB " as label: codegen temp block\n", block->bbNum);
-    block->bbFlags |= BBF_HAS_LABEL;
+    block->SetFlags(BBF_HAS_LABEL);
 
     // Use coldness of current block, as this label will
     // be contained in it.
-    block->bbFlags |= (compiler->compCurBB->bbFlags & BBF_COLD);
+    block->CopyFlags(compiler->compCurBB, BBF_COLD);
 
 #ifdef DEBUG
 #ifdef UNIX_X86_ABI
@@ -908,7 +916,7 @@ void CodeGen::genDefineTempLabel(BasicBlock* label)
 {
     genLogLabel(label);
     label->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                     gcInfo.gcRegByrefSetCur, false DEBUG_ARG(label));
+                                                     gcInfo.gcRegByrefSetCur DEBUG_ARG(label));
 }
 
 // genDefineInlineTempLabel: Define an inline label that does not affect the GC
@@ -939,7 +947,7 @@ void CodeGen::genDefineInlineTempLabel(BasicBlock* label)
 // Notes:
 //    This only makes an adjustment if !FEATURE_FIXED_OUT_ARGS, if there is no frame pointer,
 //    and if 'block' is a throw helper block with a non-zero stack level.
-
+//
 void CodeGen::genAdjustStackLevel(BasicBlock* block)
 {
 #if !FEATURE_FIXED_OUT_ARGS
@@ -959,7 +967,7 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
 
     if (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block))
     {
-        noway_assert(block->bbFlags & BBF_HAS_LABEL);
+        noway_assert(block->HasFlag(BBF_HAS_LABEL));
 
         SetStackLevel(compiler->fgThrowHlpBlkStkLevel(block) * sizeof(int));
 
@@ -977,35 +985,33 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
 #endif // !FEATURE_FIXED_OUT_ARGS
 }
 
-/*****************************************************************************
- *
- *  Take an address expression and try to find the best set of components to
- *  form an address mode; returns non-zero if this is successful.
- *
- *  TODO-Cleanup: The RyuJIT backend never uses this to actually generate code.
- *  Refactor this code so that the underlying analysis can be used in
- *  the RyuJIT Backend to do lowering, instead of having to call this method with the
- *  option to not generate the code.
- *
- *  'fold' specifies if it is OK to fold the array index which hangs off
- *  a GT_NOP node.
- *
- *  If successful, the parameters will be set to the following values:
- *
- *      *rv1Ptr     ...     base operand
- *      *rv2Ptr     ...     optional operand
- *      *revPtr     ...     true if rv2 is before rv1 in the evaluation order
- *      *mulPtr     ...     optional multiplier (2/4/8) for rv2
- *                          Note that for [reg1 + reg2] and [reg1 + reg2 + icon], *mulPtr == 0.
- *      *cnsPtr     ...     integer constant [optional]
- *
- *  IMPORTANT NOTE: This routine doesn't generate any code, it merely
- *                  identifies the components that might be used to
- *                  form an address mode later on.
- */
-
-bool CodeGen::genCreateAddrMode(
-    GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr)
+//------------------------------------------------------------------------
+// genCreateAddrMode:
+//  Take an address expression and try to find the best set of components to
+//  form an address mode; returns true if this is successful.
+//
+// Parameters:
+//   addr - Tree that potentially computes an address
+//   fold - Secifies if it is OK to fold the array index which hangs off a GT_NOP node.
+//   naturalMul - For arm64 specifies the natural multiplier for the address mode (i.e. the size of the parent
+//   indirection).
+//   revPtr     - [out] True if rv2 is before rv1 in the evaluation order
+//   rv1Ptr     - [out] Base operand
+//   rv2Ptr     - [out] Optional operand
+//   mulPtr     - [out] Optional multiplier for rv2. If non-zero and naturalMul is non-zero, it must match naturalMul.
+//   cnsPtr     - [out] Integer constant [optional]
+//
+// Returns:
+//   True if some address mode components were extracted.
+//
+bool CodeGen::genCreateAddrMode(GenTree*  addr,
+                                bool      fold,
+                                unsigned  naturalMul,
+                                bool*     revPtr,
+                                GenTree** rv1Ptr,
+                                GenTree** rv2Ptr,
+                                unsigned* mulPtr,
+                                ssize_t*  cnsPtr)
 {
     /*
         The following indirections are valid address modes on x86/x64:
@@ -1145,8 +1151,7 @@ AGAIN:
 
                     goto AGAIN;
 
-#if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-                // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
+                // TODO-ARM-CQ: For now we don't try to create a scaled index.
                 case GT_MUL:
                     if (op1->gtOverflow())
                     {
@@ -1156,10 +1161,11 @@ AGAIN:
                     FALLTHROUGH;
 
                 case GT_LSH:
-
-                    mul = op1->GetScaledIndex();
-                    if (mul)
+                {
+                    unsigned mulCandidate = op1->GetScaledIndex();
+                    if (jitIsScaleIndexMul(mulCandidate, naturalMul))
                     {
+                        mul = mulCandidate;
                         /* We can use "[mul*rv2 + icon]" */
 
                         rv1 = nullptr;
@@ -1168,7 +1174,7 @@ AGAIN:
                         goto FOUND_AM;
                     }
                     break;
-#endif // !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+                }
 
                 default:
                     break;
@@ -1189,8 +1195,8 @@ AGAIN:
 
     switch (op1->gtOper)
     {
-#if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-        // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
+#ifdef TARGET_XARCH
+        // TODO-ARM-CQ: For now we don't try to create a scaled index.
         case GT_ADD:
 
             if (op1->gtOverflow())
@@ -1211,6 +1217,7 @@ AGAIN:
                 }
             }
             break;
+#endif // TARGET_XARCH
 
         case GT_MUL:
 
@@ -1222,11 +1229,12 @@ AGAIN:
             FALLTHROUGH;
 
         case GT_LSH:
-
-            mul = op1->GetScaledIndex();
-            if (mul)
+        {
+            unsigned mulCandidate = op1->GetScaledIndex();
+            if (jitIsScaleIndexMul(mulCandidate, naturalMul))
             {
                 /* 'op1' is a scaled value */
+                mul = mulCandidate;
 
                 rv1 = op2;
                 rv2 = op1->AsOp()->gtOp1;
@@ -1234,7 +1242,7 @@ AGAIN:
                 int argScale;
                 while ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (argScale = rv2->GetScaledIndex()) != 0)
                 {
-                    if (jitIsScaleIndexMul(argScale * mul))
+                    if (jitIsScaleIndexMul(argScale * mul, naturalMul))
                     {
                         mul = mul * argScale;
                         rv2 = rv2->AsOp()->gtOp1;
@@ -1251,12 +1259,7 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-#endif // !TARGET_ARMARCH && !TARGET_LOONGARCH64 && !TARGET_RISCV64
-
-        case GT_NOP:
-
-            op1 = op1->AsOp()->gtOp1;
-            goto AGAIN;
+        }
 
         case GT_COMMA:
 
@@ -1270,7 +1273,7 @@ AGAIN:
     noway_assert(op2);
     switch (op2->gtOper)
     {
-#if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#ifdef TARGET_XARCH
         // TODO-ARM64-CQ, TODO-ARM-CQ: For now we only handle MUL and LSH because
         // arm doesn't support both scale and offset at the same. Offset is handled
         // at the emitter as a peephole optimization.
@@ -1294,6 +1297,7 @@ AGAIN:
                 goto AGAIN;
             }
             break;
+#endif // TARGET_XARCH
 
         case GT_MUL:
 
@@ -1305,16 +1309,17 @@ AGAIN:
             FALLTHROUGH;
 
         case GT_LSH:
-
-            mul = op2->GetScaledIndex();
-            if (mul)
+        {
+            unsigned mulCandidate = op2->GetScaledIndex();
+            if (jitIsScaleIndexMul(mulCandidate, naturalMul))
             {
+                mul = mulCandidate;
                 // 'op2' is a scaled value...is it's argument also scaled?
                 int argScale;
                 rv2 = op2->AsOp()->gtOp1;
                 while ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (argScale = rv2->GetScaledIndex()) != 0)
                 {
-                    if (jitIsScaleIndexMul(argScale * mul))
+                    if (jitIsScaleIndexMul(argScale * mul, naturalMul))
                     {
                         mul = mul * argScale;
                         rv2 = rv2->AsOp()->gtOp1;
@@ -1330,12 +1335,7 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-
-        case GT_NOP:
-
-            op2 = op2->AsOp()->gtOp1;
-            goto AGAIN;
+        }
 
         case GT_COMMA:
 
@@ -1440,7 +1440,7 @@ void CodeGen::genExitCode(BasicBlock* block)
     // For non-optimized debuggable code, there is only one epilog.
     genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
     if (compiler->getNeedsGSSecurityCookie())
     {
         genEmitGSCookieCheck(jmpEpilog);
@@ -1507,6 +1507,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
 #ifdef DEBUG
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            assert(add->acdUsed);
             assert(excpRaisingBlock == add->acdDstBlk);
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());
@@ -1519,6 +1520,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
             PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+            assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());
@@ -1620,7 +1622,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
 
 void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
 {
-    if (block->bbFlags & BBF_FUNCLET_BEG)
+    if (block->HasFlag(BBF_FUNCLET_BEG))
     {
         compiler->funSetCurrentFunc(compiler->funGetFuncIdx(block));
         if (compiler->funCurrentFunc()->funKind == FUNC_FILTER)
@@ -1671,6 +1673,8 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
         printf("*************** In genGenerateCode()\n");
         compiler->fgDispBasicBlocks(compiler->verboseTrees);
     }
+
+    genWriteBarrierUsed = false;
 #endif
 
     this->codePtr          = codePtr;
@@ -1679,6 +1683,19 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     DoPhase(this, PHASE_GENERATE_CODE, &CodeGen::genGenerateMachineCode);
     DoPhase(this, PHASE_EMIT_CODE, &CodeGen::genEmitMachineCode);
     DoPhase(this, PHASE_EMIT_GCEH, &CodeGen::genEmitUnwindDebugGCandEH);
+
+#ifdef DEBUG
+    // For R2R/NAOT not all these helpers are implemented. So don't ask for them.
+    //
+    if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries() && !compiler->opts.IsReadyToRun())
+    {
+        void* ignored;
+        for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_ASSIGN_STRUCT; i++)
+        {
+            compiler->compGetHelperFtn((CorInfoHelpFunc)i, &ignored);
+        }
+    }
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -1779,9 +1796,9 @@ void CodeGen::genGenerateMachineCode()
         {
             printf(" - Windows");
         }
-        else if (TargetOS::IsMacOS)
+        else if (TargetOS::IsApplePlatform)
         {
-            printf(" - MacOS");
+            printf(" - Apple");
         }
         else if (TargetOS::IsUnix)
         {
@@ -1976,9 +1993,10 @@ void CodeGen::genEmitMachineCode()
         printf("; BEGIN METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
     }
 
-    codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
-                                            IsFullPtrRegMapRequired(), compiler->compHndBBtabCount, &prologSize,
-                                            &epilogSize, codePtr, &coldCodePtr, &consPtr DEBUGARG(&instrCount));
+    codeSize =
+        GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(), IsFullPtrRegMapRequired(),
+                                     compiler->compHndBBtabCount, &prologSize, &epilogSize, codePtr, &codePtrRW,
+                                     &coldCodePtr, &coldCodePtrRW, &consPtr, &consPtrRW DEBUGARG(&instrCount));
 
 #ifdef DEBUG
     assert(compiler->compCodeGenDone == false);
@@ -1987,39 +2005,60 @@ void CodeGen::genEmitMachineCode()
     compiler->compCodeGenDone = true;
 #endif
 
-#if defined(DEBUG) || defined(LATE_DISASM)
-    // Add code size information into the Perf Score
-    // All compPerfScore calculations must be performed using doubles
-    compiler->info.compPerfScore += ((double)compiler->info.compTotalHotCodeSize * (double)PERFSCORE_CODESIZE_COST_HOT);
-    compiler->info.compPerfScore +=
-        ((double)compiler->info.compTotalColdCodeSize * (double)PERFSCORE_CODESIZE_COST_COLD);
-#endif // DEBUG || LATE_DISASM
-
     if (compiler->opts.disAsm && compiler->opts.disTesting)
     {
         printf("; END METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
     }
 
 #ifdef DEBUG
-    if (compiler->opts.disAsm || verbose)
+    const bool dspMetrics     = compiler->opts.dspMetrics;
+    const bool dspSummary     = compiler->opts.disAsm || verbose;
+    const bool dspMetricsOnly = dspMetrics && !dspSummary;
+
+    if (dspSummary || dspMetrics)
     {
-        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for "
+        if (!dspMetricsOnly)
+        {
+            printf("\n");
+        }
+
+        printf("; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for "
                "code %d",
-               codeSize, prologSize, compiler->info.compPerfScore, instrCount,
+               codeSize, prologSize, compiler->Metrics.PerfScore, instrCount,
                GetEmitter()->emitTotalHotCodeSize + GetEmitter()->emitTotalColdCodeSize);
+
+        if (dspMetrics)
+        {
+            printf(", num cse %d num cand %d", compiler->optCSEcount, compiler->optCSECandidateCount);
+
+            CSE_HeuristicCommon* const cseHeuristic = compiler->optGetCSEheuristic();
+            if (cseHeuristic != nullptr)
+            {
+                cseHeuristic->DumpMetrics();
+            }
+
+            if (compiler->info.compMethodSuperPMIIndex >= 0)
+            {
+                printf(" spmi index %d", compiler->info.compMethodSuperPMIIndex);
+            }
+        }
 
 #if TRACK_LSRA_STATS
         if (JitConfig.DisplayLsraStats() == 3)
         {
-            compiler->m_pLinearScan->dumpLsraStatsSummary(jitstdout);
+            compiler->m_pLinearScan->dumpLsraStatsSummary(jitstdout());
         }
 #endif // TRACK_LSRA_STATS
 
         printf(" (MethodHash=%08x) for method %s (%s)\n", compiler->info.compMethodHash(), compiler->info.compFullName,
                compiler->compGetTieringName(true));
 
-        printf("; ============================================================\n\n");
-        printf(""); // in our logic this causes a flush
+        if (!dspMetricsOnly)
+        {
+            printf("; ============================================================\n\n");
+        }
+
+        fflush(jitstdout());
     }
 
     if (verbose)
@@ -2066,7 +2105,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
     genSetScopeInfo();
 
-#ifdef LATE_DISASM
+#if defined(LATE_DISASM) || defined(DEBUG)
     unsigned finalHotCodeSize;
     unsigned finalColdCodeSize;
     if (compiler->fgFirstColdBlock != nullptr)
@@ -2088,81 +2127,51 @@ void CodeGen::genEmitUnwindDebugGCandEH()
         finalHotCodeSize  = codeSize;
         finalColdCodeSize = 0;
     }
-    getDisAssembler().disAsmCode((BYTE*)*codePtr, finalHotCodeSize, (BYTE*)coldCodePtr, finalColdCodeSize);
+#endif // defined(LATE_DISASM) || defined(DEBUG)
+
+#ifdef LATE_DISASM
+    getDisAssembler().disAsmCode((BYTE*)*codePtr, (BYTE*)codePtrRW, finalHotCodeSize, (BYTE*)coldCodePtr,
+                                 (BYTE*)coldCodePtrRW, finalColdCodeSize);
 #endif // LATE_DISASM
+
+#ifdef DEBUG
+    if (JitConfig.JitRawHexCode().contains(compiler->info.compMethodHnd, compiler->info.compClassHnd,
+                                           &compiler->info.compMethodInfo->args))
+    {
+        // NOTE: code in cold region is not supported.
+
+        BYTE*  dumpAddr = (BYTE*)codePtrRW;
+        size_t dumpSize = finalHotCodeSize;
+
+        const WCHAR* rawHexCodeFilePath = JitConfig.JitRawHexCodeFile();
+        if (rawHexCodeFilePath)
+        {
+            FILE*   hexDmpf;
+            errno_t ec = _wfopen_s(&hexDmpf, rawHexCodeFilePath, W("at")); // NOTE: file append mode
+            if (ec == 0)
+            {
+                assert(hexDmpf);
+                hexDump(hexDmpf, dumpAddr, dumpSize);
+                fclose(hexDmpf);
+            }
+        }
+        else
+        {
+            FILE* dmpf = jitstdout();
+
+            fprintf(dmpf, "Generated native code for %s:\n", compiler->info.compFullName);
+            hexDump(dmpf, dumpAddr, dumpSize);
+            fprintf(dmpf, "\n\n");
+        }
+    }
+#endif // DEBUG
 
     /* Report any exception handlers to the VM */
 
     genReportEH();
 
-#ifdef JIT32_GCENCODER
-#ifdef DEBUG
-    void* infoPtr =
-#endif // DEBUG
-#endif
-        // Create and store the GC info for this method.
-        genCreateAndStoreGCInfo(codeSize, prologSize, epilogSize DEBUGARG(codePtr));
-
-#ifdef DEBUG
-    FILE* dmpf = jitstdout;
-
-    compiler->opts.dmpHex = false;
-    if (!strcmp(compiler->info.compMethodName, "<name of method you want the hex dump for"))
-    {
-        FILE*   codf;
-        errno_t ec = fopen_s(&codf, "C:\\JIT.COD", "at"); // NOTE: file append mode
-        if (ec != 0)
-        {
-            assert(codf);
-            dmpf                  = codf;
-            compiler->opts.dmpHex = true;
-        }
-    }
-    if (compiler->opts.dmpHex)
-    {
-        size_t consSize = GetEmitter()->emitDataSize();
-
-        fprintf(dmpf, "Generated code for %s:\n", compiler->info.compFullName);
-        fprintf(dmpf, "\n");
-
-        if (codeSize)
-        {
-            fprintf(dmpf, "    Code  at %p [%04X bytes]\n", dspPtr(*codePtr), codeSize);
-        }
-        if (consSize)
-        {
-            fprintf(dmpf, "    Const at %p [%04X bytes]\n", dspPtr(consPtr), consSize);
-        }
-#ifdef JIT32_GCENCODER
-        size_t infoSize = compiler->compInfoBlkSize;
-        if (infoSize)
-            fprintf(dmpf, "    Info  at %p [%04X bytes]\n", dspPtr(infoPtr), infoSize);
-#endif // JIT32_GCENCODER
-
-        fprintf(dmpf, "\n");
-
-        if (codeSize)
-        {
-            hexDump(dmpf, "Code", (BYTE*)*codePtr, codeSize);
-        }
-        if (consSize)
-        {
-            hexDump(dmpf, "Const", (BYTE*)consPtr, consSize);
-        }
-#ifdef JIT32_GCENCODER
-        if (infoSize)
-            hexDump(dmpf, "Info", (BYTE*)infoPtr, infoSize);
-#endif // JIT32_GCENCODER
-
-        fflush(dmpf);
-    }
-
-    if (dmpf != jitstdout)
-    {
-        fclose(dmpf);
-    }
-
-#endif // DEBUG
+    // Create and store the GC info for this method.
+    genCreateAndStoreGCInfo(codeSize, prologSize, epilogSize DEBUGARG(codePtr));
 
     /* Tell the emitter that we're done with this function */
 
@@ -2256,7 +2265,7 @@ void CodeGen::genReportEH()
         {
             for (BasicBlock* const block : compiler->Blocks())
             {
-                if (block->bbJumpKind == BBJ_CALLFINALLY)
+                if (block->KindIs(BBJ_CALLFINALLY))
                 {
                     ++clonedFinallyCount;
                 }
@@ -2302,9 +2311,9 @@ void CodeGen::genReportEH()
         hndBeg = compiler->ehCodeOffset(HBtab->ebdHndBeg);
 
         tryEnd = (HBtab->ebdTryLast == compiler->fgLastBB) ? compiler->info.compNativeCodeSize
-                                                           : compiler->ehCodeOffset(HBtab->ebdTryLast->bbNext);
+                                                           : compiler->ehCodeOffset(HBtab->ebdTryLast->Next());
         hndEnd = (HBtab->ebdHndLast == compiler->fgLastBB) ? compiler->info.compNativeCodeSize
-                                                           : compiler->ehCodeOffset(HBtab->ebdHndLast->bbNext);
+                                                           : compiler->ehCodeOffset(HBtab->ebdHndLast->Next());
 
         if (HBtab->HasFilter())
         {
@@ -2524,9 +2533,9 @@ void CodeGen::genReportEH()
                 hndBeg = compiler->ehCodeOffset(bbHndBeg);
 
                 tryEnd = (bbTryLast == compiler->fgLastBB) ? compiler->info.compNativeCodeSize
-                                                           : compiler->ehCodeOffset(bbTryLast->bbNext);
+                                                           : compiler->ehCodeOffset(bbTryLast->Next());
                 hndEnd = (bbHndLast == compiler->fgLastBB) ? compiler->info.compNativeCodeSize
-                                                           : compiler->ehCodeOffset(bbHndLast->bbNext);
+                                                           : compiler->ehCodeOffset(bbHndLast->Next());
 
                 if (encTab->HasFilter())
                 {
@@ -2582,18 +2591,18 @@ void CodeGen::genReportEH()
         unsigned reportedClonedFinallyCount = 0;
         for (BasicBlock* const block : compiler->Blocks())
         {
-            if (block->bbJumpKind == BBJ_CALLFINALLY)
+            if (block->KindIs(BBJ_CALLFINALLY))
             {
                 UNATIVE_OFFSET hndBeg, hndEnd;
 
                 hndBeg = compiler->ehCodeOffset(block);
 
-                // How big is it? The BBJ_ALWAYS has a null bbEmitCookie! Look for the block after, which must be
-                // a label or jump target, since the BBJ_CALLFINALLY doesn't fall through.
-                BasicBlock* bbLabel = block->bbNext;
-                if (block->isBBCallAlwaysPair())
+                // How big is it? The BBJ_CALLFINALLYRET has a null bbEmitCookie! Look for the block after, which must
+                // be a label or jump target, since the BBJ_CALLFINALLY doesn't fall through.
+                BasicBlock* bbLabel = block->Next();
+                if (block->isBBCallFinallyPair())
                 {
-                    bbLabel = bbLabel->bbNext; // skip the BBJ_ALWAYS
+                    bbLabel = bbLabel->Next(); // skip the BBJ_CALLFINALLYRET
                 }
                 if (bbLabel == nullptr)
                 {
@@ -2601,7 +2610,6 @@ void CodeGen::genReportEH()
                 }
                 else
                 {
-                    assert(bbLabel->bbEmitCookie != nullptr);
                     hndEnd = compiler->ehCodeOffset(bbLabel);
                 }
 
@@ -2709,6 +2717,8 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTreeStoreInd* store)
 //
 CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInfo::WriteBarrierForm wbf)
 {
+    INDEBUG(genWriteBarrierUsed = true);
+
     switch (wbf)
     {
         case GCInfo::WBF_BarrierChecked:
@@ -2885,9 +2895,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     else // we are doing the integer registers
     {
         noway_assert(argMax <= MAX_REG_ARG);
-        if (hasFixedRetBuffReg())
+        if (hasFixedRetBuffReg(compiler->info.compCallConv))
         {
-            fixedRetBufIndex = theFixedRetBuffArgNum();
+            fixedRetBufIndex = theFixedRetBuffArgNum(compiler->info.compCallConv);
             // We have an additional integer register argument when hasFixedRetBuffReg() is true
             argMax = fixedRetBufIndex + 1;
             assert(argMax == (MAX_REG_ARG + 1));
@@ -2919,6 +2929,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         bool writeThru;    // true if the argument gets homed to both stack and register
         bool processed;    // true after we've processed the argument (and it is in its final location)
         bool circular;     // true if this register participates in a circular dependency loop.
+        bool hfaConflict;  // arg is part of an HFA that will end up in the same register
+                           // but in a different slot (eg arg in s3 = v3.s[0], needs to end up in v3.s[3])
     } regArgTab[max(MAX_REG_ARG + 1, MAX_FLOAT_REG_ARG)] = {};
 
     unsigned   varNum;
@@ -2974,6 +2986,18 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 }
             }
         }
+
+#ifdef SWIFT_SUPPORT
+        // The Swift self parameter is passed in a callee save register and is
+        // not part of the arg register order that this function relies on to
+        // handle conflicts. For this reason we always mark it as DNER and
+        // handle it outside the normal register arguments.
+        // TODO-CQ: Fix this.
+        if (varNum == compiler->lvaSwiftSelfArg)
+        {
+            continue;
+        }
+#endif
 
         var_types regType = compiler->mangleVarArgsType(varDsc->TypeGet());
         // Change regType to the HFA type when we have a HFA argument
@@ -3081,7 +3105,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     slotRegType = compiler->GetEightByteType(structDesc, slotCounter);
                 }
 
-                regArgNum = genMapRegNumToRegArgNum(regNum, slotRegType);
+                regArgNum = genMapRegNumToRegArgNum(regNum, slotRegType, compiler->info.compCallConv);
 
                 if ((!doingFloat && (structDesc.IsIntegralSlot(slotCounter))) ||
                     (doingFloat && (structDesc.IsSseSlot(slotCounter))))
@@ -3115,7 +3139,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #endif // defined(UNIX_AMD64_ABI)
         {
             // Bingo - add it to our table
-            regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), regType);
+            regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), regType, compiler->info.compCallConv);
             slots     = 1;
 
             if (TargetArchitecture::IsArm32 ||
@@ -3178,7 +3202,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         for (int i = 0; i < slots; i++)
         {
             regType          = regArgTab[regArgNum + i].type;
-            regNumber regNum = genMapRegArgNumToRegNum(regArgNum + i, regType);
+            regNumber regNum = genMapRegArgNumToRegNum(regArgNum + i, regType, compiler->info.compCallConv);
 
 #if !defined(UNIX_AMD64_ABI)
             assert((i > 0) || (regNum == varDsc->GetArgReg()));
@@ -3233,7 +3257,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             regArgTab[regArgNum + i].writeThru = (varDsc->lvIsInReg() && varDsc->lvLiveInOutOfHndlr);
 
             /* mark stack arguments since we will take care of those first */
-            regArgTab[regArgNum + i].stackArg = (varDsc->lvIsInReg()) ? false : true;
+            regArgTab[regArgNum + i].stackArg = varDsc->lvIsInReg() ? false : true;
 
             /* If it goes on the stack or in a register that doesn't hold
              * an argument anymore -> CANNOT form a circular dependency */
@@ -3284,7 +3308,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
      * A circular dependency is a set of registers R1, R2, ..., Rn
      * such that R1->R2 (that is, R1 needs to be moved to R2), R2->R3, ..., Rn->R1 */
 
-    bool change = true;
+    bool change         = true;
+    bool hasHfaConflict = false;
     if (regArgMaskLive)
     {
         /* Possible circular dependencies still exist; the previous pass was not enough
@@ -3318,7 +3343,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 noway_assert(!regArgTab[argNum].stackArg);
 
                 var_types regType = regArgTab[argNum].type;
-                regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType);
+                regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType, compiler->info.compCallConv);
 
                 regNumber destRegNum = REG_NA;
                 if (varTypeIsPromotable(varDsc) &&
@@ -3337,10 +3362,32 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     // This must be a SIMD type that's fully enregistered, but is passed as an HFA.
                     // Each field will be inserted into the same destination register.
+                    //
                     assert(varTypeIsSIMD(varDsc));
                     assert(regArgTab[argNum].slot <= (int)varDsc->lvHfaSlots());
                     assert(argNum > 0);
                     assert(regArgTab[argNum - 1].varNum == varNum);
+
+                    // If the field is passed in the same register as the destination,
+                    // but is in the wrong part of the register, mark it specially so later
+                    // we make sure to move it to the right spot before "freeing" the destination.
+                    //
+                    destRegNum = varDsc->GetRegNum();
+                    if (regNum == destRegNum)
+                    {
+                        // We only get here if the HFA part is not already in the right slot in
+                        // the destination. That is, it is not slot-1.
+                        //
+                        const int slot = regArgTab[argNum].slot;
+                        assert(slot != 1);
+                        JITDUMP("HFA conflict; arg num %u needs to move from %s[%u] to %s[%u]\n", argNum,
+                                getRegName(regNum), 0, getRegName(destRegNum), slot - 1);
+                        regArgTab[argNum].hfaConflict = true;
+
+                        // We'll need to do a special pass later to resolve these
+                        //
+                        hasHfaConflict = true;
+                    }
                     regArgMaskLive &= ~genRegMask(regNum);
                     regArgTab[argNum].circular = false;
                     change                     = true;
@@ -3376,7 +3423,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 if (genRegMask(destRegNum) & regArgMaskLive)
                 {
                     /* we are trashing a live argument register - record it */
-                    unsigned destRegArgNum = genMapRegNumToRegArgNum(destRegNum, regType);
+                    unsigned destRegArgNum = genMapRegNumToRegArgNum(destRegNum, regType, compiler->info.compCallConv);
                     noway_assert(destRegArgNum < argMax);
                     regArgTab[destRegArgNum].trashBy = argNum;
                 }
@@ -3523,7 +3570,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         noway_assert(genTypeSize(storeType) == TARGET_POINTER_SIZE);
 #endif // TARGET_X86
 
-        regNumber srcRegNum = genMapRegArgNumToRegNum(argNum, storeType);
+        regNumber srcRegNum = genMapRegArgNumToRegNum(argNum, storeType, compiler->info.compCallConv);
 
         // Stack argument - if the ref count is 0 don't care about it
 
@@ -3670,7 +3717,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                  * have to "swap" the registers in the GC reg pointer mask
                  */
 
-                if (varTypeGCtype(varDscSrc->TypeGet()) != varTypeGCtype(varDscDest->TypeGet()))
+                if (varTypeIsGC(varDscSrc) != varTypeIsGC(varDscDest))
                 {
                     size = EA_GCREF;
                 }
@@ -3736,14 +3783,15 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     size = EA_4BYTE;
                 }
+                // HVA types...?
 
                 /* move the dest reg (begReg) in the extra reg */
 
                 assert(xtraReg != REG_NA);
 
-                regNumber begRegNum = genMapRegArgNumToRegNum(begReg, destMemType);
-
+                regNumber begRegNum = genMapRegArgNumToRegNum(begReg, destMemType, compiler->info.compCallConv);
                 GetEmitter()->emitIns_Mov(insCopy, size, xtraReg, begRegNum, /* canSkip */ false);
+                assert(!genIsValidIntReg(xtraReg) || !genIsValidFloatReg(begRegNum));
 
                 regSet.verifyRegUsed(xtraReg);
 
@@ -3754,10 +3802,11 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     /* mov dest, src */
 
-                    regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType);
-                    regNumber srcRegNum  = genMapRegArgNumToRegNum(srcReg, destMemType);
+                    regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType, compiler->info.compCallConv);
+                    regNumber srcRegNum  = genMapRegArgNumToRegNum(srcReg, destMemType, compiler->info.compCallConv);
 
                     GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, srcRegNum, /* canSkip */ false);
+                    assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(srcRegNum));
 
                     regSet.verifyRegUsed(destRegNum);
 
@@ -3806,9 +3855,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 /* move the dest reg (begReg) in the extra reg */
 
-                regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType);
+                regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType, compiler->info.compCallConv);
 
                 GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, xtraReg, /* canSkip */ false);
+                assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(xtraReg));
 
                 regSet.verifyRegUsed(destRegNum);
                 /* mark the beginning register as processed */
@@ -3822,6 +3872,77 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             }
         }
     }
+
+#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
+    // If we saw any hfa conflicts, handle those now.
+    //
+    if (hasHfaConflict)
+    {
+        // Up above we noticed that there was at least one non-slot-1 HFA arg whose
+        // destination register was the same as the arg register.
+        //
+        // For example, say an HFA was passed as s0-s3 and the destination was v3.
+        // s3 is in the right register, but not in the right slot in the register.
+        //
+        // We handle this by first moving the conflicting part to the right slot
+        // in the destination (via pass 0 below), and then moving the remaining parts
+        // to their respective slots (via pass 1).
+        //
+        // Note the slot index in the register is one less than value of
+        // regArgTab[argNum].slot, so a slot-1 hfa arg goes into slot 0 of the destination).
+        //
+        // So for the above example, we'd first move the "slot-4" s3 (== v3.s[0]) to v3.s[3].
+        // Then we can insert s0 to v3.s[0]) and so on.
+        //
+        // We can exempt slot-1 cases as the conflicting part is already in the
+        // right slot, and code lower down correctly handles populating the remaining slots.
+        //
+        for (argNum = 0; argNum < argMax; argNum++)
+        {
+            if (!regArgTab[argNum].hfaConflict)
+            {
+                continue;
+            }
+
+            varNum                      = regArgTab[argNum].varNum;
+            varDsc                      = compiler->lvaGetDesc(varNum);
+            const regNumber destRegNum  = varDsc->GetRegNum();
+            const var_types regType     = regArgTab[argNum].type;
+            const unsigned  firstArgNum = argNum - (regArgTab[argNum].slot - 1);
+            const unsigned  lastArgNum  = firstArgNum + varDsc->lvHfaSlots() - 1;
+
+            assert(varDsc->lvIsHfa());
+            assert((argNum >= firstArgNum) && (argNum <= lastArgNum));
+            assert(destRegNum == genMapRegArgNumToRegNum(argNum, regType, compiler->info.compCallConv));
+
+            // Pass 0: move the conflicting part; Pass1: insert everything else
+            //
+            for (int pass = 0; pass <= 1; pass++)
+            {
+                for (unsigned currentArgNum = firstArgNum; currentArgNum <= lastArgNum; currentArgNum++)
+                {
+                    const regNumber regNum =
+                        genMapRegArgNumToRegNum(currentArgNum, regType, compiler->info.compCallConv);
+                    bool insertArg =
+                        ((pass == 0) && (currentArgNum == argNum)) || ((pass == 1) && (currentArgNum != argNum));
+
+                    if (insertArg)
+                    {
+                        assert(!regArgTab[currentArgNum].processed);
+
+                        // EA_4BYTE is probably wrong here (and below)
+                        // todo -- suppress self move
+                        GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_4BYTE, destRegNum, regNum,
+                                                      regArgTab[currentArgNum].slot - 1, 0);
+                        assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(regNum));
+                        regArgTab[currentArgNum].processed = true;
+                        regArgMaskLive &= ~genRegMask(regNum);
+                    }
+                }
+            }
+        }
+    }
+#endif // defined(TARGET_ARM64) && defined(FEATURE_SIMD)
 
     /* Finally take care of the remaining arguments that must be enregistered */
     while (regArgMaskLive)
@@ -3844,7 +3965,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             varNum                     = regArgTab[argNum].varNum;
             varDsc                     = compiler->lvaGetDesc(varNum);
             const var_types regType    = regArgTab[argNum].type;
-            const regNumber regNum     = genMapRegArgNumToRegNum(argNum, regType);
+            const regNumber regNum     = genMapRegArgNumToRegNum(argNum, regType, compiler->info.compCallConv);
             const var_types varRegType = varDsc->GetRegisterType();
 
 #if defined(UNIX_AMD64_ABI)
@@ -3962,7 +4083,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 // Don't process the double until both halves of the destination are clear.
                 if (genActualType(destMemType) == TYP_DOUBLE)
                 {
-                    assert((destMask & RBM_DBL_REGS) != 0);
+                    assert((destMask & RBM_ALLDOUBLE) != 0);
                     destMask |= genRegMask(REG_NEXT(destRegNum));
                 }
 #endif
@@ -3987,6 +4108,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 }
 #endif
                 inst_Mov(destMemType, destRegNum, regNum, /* canSkip */ false, size);
+                assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(regNum));
             }
 
             /* mark the argument as processed */
@@ -4007,11 +4129,13 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             {
                 argRegCount          = 2;
                 int       nextArgNum = argNum + 1;
-                regNumber nextRegNum = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type);
+                regNumber nextRegNum =
+                    genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type, compiler->info.compCallConv);
                 noway_assert(regArgTab[nextArgNum].varNum == varNum);
                 // Emit a shufpd with a 0 immediate, which preserves the 0th element of the dest reg
                 // and moves the 0th element of the src reg into the 1st element of the dest reg.
                 GetEmitter()->emitIns_R_R_I(INS_shufpd, emitActualTypeSize(varRegType), destRegNum, nextRegNum, 0);
+                assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(nextRegNum));
                 // Set destRegNum to regNum so that we skip the setting of the register below,
                 // but mark argNum as processed and clear regNum from the live mask.
                 destRegNum = regNum;
@@ -4033,12 +4157,14 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                         {
                             int        nextArgNum  = argNum + i;
                             LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
-                            regNumber  nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type);
-                            destRegNum             = fieldVarDsc->GetRegNum();
+                            regNumber  nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type,
+                                                                           compiler->info.compCallConv);
+                            destRegNum = fieldVarDsc->GetRegNum();
                             noway_assert(regArgTab[nextArgNum].varNum == varNum);
                             noway_assert(genIsValidFloatReg(nextRegNum));
                             noway_assert(genIsValidFloatReg(destRegNum));
                             GetEmitter()->emitIns_Mov(INS_mov, EA_8BYTE, destRegNum, nextRegNum, /* canSkip */ false);
+                            assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(nextRegNum));
                         }
                     }
 #if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
@@ -4054,11 +4180,13 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                             int         nextArgNum  = argNum + i;
                             regArgElem* nextArgElem = &regArgTab[nextArgNum];
                             var_types   nextArgType = nextArgElem->type;
-                            regNumber   nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, nextArgType);
+                            regNumber   nextRegNum =
+                                genMapRegArgNumToRegNum(nextArgNum, nextArgType, compiler->info.compCallConv);
                             noway_assert(nextArgElem->varNum == varNum);
                             noway_assert(genIsValidFloatReg(nextRegNum));
                             noway_assert(genIsValidFloatReg(destRegNum));
                             GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_4BYTE, destRegNum, nextRegNum, i, 0);
+                            assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(nextRegNum));
                         }
                     }
 #endif // defined(TARGET_ARM64) && defined(FEATURE_SIMD)
@@ -4073,7 +4201,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 int nextArgNum = argNum + regSlot;
                 assert(!regArgTab[nextArgNum].processed);
                 regArgTab[nextArgNum].processed = true;
-                regNumber nextRegNum            = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type);
+                regNumber nextRegNum =
+                    genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type, compiler->info.compCallConv);
                 regArgMaskLive &= ~genRegMask(nextRegNum);
             }
 #endif // FEATURE_MULTIREG_ARGS
@@ -4485,7 +4614,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
                 GetEmitter()->emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
 #elif defined(TARGET_RISCV64)
-                NYI_RISCV64("genZeroInitFltRegs is not implemented");
+                GetEmitter()->emitIns_R_R(INS_fmv_w_x, EA_4BYTE, reg, REG_R0);
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif
@@ -4524,7 +4653,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
 #elif defined(TARGET_LOONGARCH64)
                 GetEmitter()->emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
 #elif defined(TARGET_RISCV64)
-                NYI_RISCV64("genZeroInitFltRegs is not implemented.");
+                GetEmitter()->emitIns_R_R(INS_fmv_d_x, EA_8BYTE, reg, REG_R0);
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif
@@ -4669,7 +4798,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 //    initReg -- scratch register to use if needed
 //    pInitRegZeroed -- [IN,OUT] if init reg is zero (on entry/exit)
 //
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
 #else
 void CodeGen::genEnregisterOSRArgsAndLocals()
@@ -4810,7 +4939,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
         GetEmitter()->emitIns_R_AR(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);
 
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         // Patchpoint offset is from top of Tier0 frame
         //
@@ -4842,7 +4971,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
         genInstrWithConstant(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset, initReg);
         *pInitRegZeroed = false;
-#endif
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 }
 
@@ -5086,7 +5215,7 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
     /* The return value is special-cased: make sure it goes live for the epilog */
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
     if (IsFullPtrRegMapRequired() && !jmpEpilog)
     {
@@ -5116,8 +5245,8 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
     assert(block != nullptr);
     const VARSET_TP& gcrefVarsArg(GetEmitter()->emitThisGCrefVars);
-    bool             last = (block->bbNext == nullptr);
-    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, gcrefVarsArg, gcrefRegsArg, byrefRegsArg, last);
+    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, gcrefVarsArg, gcrefRegsArg, byrefRegsArg,
+                                          block->IsLast());
 }
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -5163,9 +5292,8 @@ void CodeGen::genReserveFuncletEpilog(BasicBlock* block)
 
     JITDUMP("Reserving funclet epilog IG for block " FMT_BB "\n", block->bbNum);
 
-    bool last = (block->bbNext == nullptr);
     GetEmitter()->emitCreatePlaceholderIG(IGPT_FUNCLET_EPILOG, block, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                          gcInfo.gcRegByrefSetCur, last);
+                                          gcInfo.gcRegByrefSetCur, block->IsLast());
 }
 
 #endif // FEATURE_EH_FUNCLETS
@@ -5450,7 +5578,7 @@ void CodeGen::genFnProlog()
         psiBegProlog();
     }
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
     // in the tier0 frame that impact FP and SP on entry to the OSR method.
     //
@@ -5465,7 +5593,7 @@ void CodeGen::genFnProlog()
         // SP is tier0 method's SP.
         compiler->unwindAllocStack(tier0FrameSize);
     }
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #ifdef DEBUG
 
@@ -5718,7 +5846,7 @@ void CodeGen::genFnProlog()
     {
         excludeMask |= RBM_PINVOKE_FRAME;
 
-        assert((!compiler->opts.ShouldUsePInvokeHelpers()) || (compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
+        assert(!compiler->opts.ShouldUsePInvokeHelpers() || (compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!compiler->opts.ShouldUsePInvokeHelpers())
         {
             excludeMask |= (RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH);
@@ -5788,13 +5916,32 @@ void CodeGen::genFnProlog()
     {
         initReg = REG_IP1;
     }
+#elif defined(TARGET_LOONGARCH64)
+    // For LoongArch64 OSR root frames, we may need a scratch register for large
+    // offset addresses. Use a register that won't be allocated.
+    if (isRoot && compiler->opts.IsOSR())
+    {
+        initReg = REG_SCRATCH;
+    }
+#elif defined(TARGET_RISCV64)
+    // For RISC-V64 OSR root frames, we may need a scratch register for large
+    // offset addresses. Use a register that won't be allocated.
+    if (isRoot && compiler->opts.IsOSR())
+    {
+        initReg = REG_SCRATCH; // REG_T0
+    }
 #endif
 
-#ifndef TARGET_LOONGARCH64
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     // For LoongArch64's OSR root frames, we may need a scratch register for large
     // offset addresses. But this does not conflict with the REG_PINVOKE_FRAME.
+    //
+    // RISC-V64's OSR root frames are similar to LoongArch64's. In this case
+    // REG_SCRATCH also shouldn't conflict with REG_PINVOKE_FRAME, even if
+    // technically they are the same register - REG_T0.
+    //
     noway_assert(!compiler->compMethodRequiresPInvokeFrame() || (initReg != REG_PINVOKE_FRAME));
-#endif
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
 #if defined(TARGET_AMD64)
     // If we are a varargs call, in order to set up the arguments correctly this
@@ -6001,6 +6148,14 @@ void CodeGen::genFnProlog()
         intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SECRET_STUB_PARAM;
     }
 
+#ifdef SWIFT_SUPPORT
+    if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) && ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
+    {
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
+        intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
+    }
+#endif
+
     //
     // Zero out the frame as needed
     //
@@ -6105,7 +6260,7 @@ void CodeGen::genFnProlog()
         // Otherwise we'll do some of these fetches twice.
         //
         CLANG_FORMAT_COMMENT_ANCHOR;
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         genEnregisterOSRArgsAndLocals(initReg, &initRegZeroed);
 #else
         genEnregisterOSRArgsAndLocals();
@@ -6153,11 +6308,17 @@ void CodeGen::genFnProlog()
         };
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
-        assignIncomingRegisterArgs(&intRegState);
+        // Handle float parameters first; in the presence of struct promotion
+        // we can have parameters that are homed into float registers but
+        // passed in integer registers. So make sure we get those out of the
+        // integer registers before we potentially override those as part of
+        // handling integer parameters.
+
         assignIncomingRegisterArgs(&floatRegState);
+        assignIncomingRegisterArgs(&intRegState);
 #else
         assignIncomingRegisterArgs(&intRegState);
-#endif
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
@@ -6308,6 +6469,47 @@ void CodeGen::genFnProlog()
 #pragma warning(pop)
 #endif
 
+//----------------------------------------------------------------------------------
+// genEmitJumpTable: emit jump table and return its base offset
+//
+// Arguments:
+//    treeNode     - the GT_JMPTABLE node
+//    relativeAddr - if true, references are treated as 4-byte relative addresses,
+//                   otherwise they are absolute pointers
+//
+// Return Value:
+//    base offset to jump table
+//
+// Assumption:
+//    The current basic block in process ends with a switch statement
+//
+unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
+{
+    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
+    assert(treeNode->OperGet() == GT_JMPTABLE);
+
+    emitter*       emit       = GetEmitter();
+    const unsigned jumpCount  = compiler->compCurBB->GetSwitchTargets()->bbsCount;
+    FlowEdge**     jumpTable  = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
+    const unsigned jmpTabBase = emit->emitBBTableDataGenBeg(jumpCount, relativeAddr);
+
+    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
+
+    for (unsigned i = 0; i < jumpCount; i++)
+    {
+        BasicBlock* target = (*jumpTable)->getDestinationBlock();
+        jumpTable++;
+        noway_assert(target->HasFlag(BBF_HAS_LABEL));
+
+        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
+
+        emit->emitDataGenData(i, target);
+    };
+
+    emit->emitDataGenEnd();
+    return jmpTabBase;
+}
+
 //------------------------------------------------------------------------
 // getCallTarget - Get the node that evaluates to the call target
 //
@@ -6402,10 +6604,19 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
     // For certain indirect calls we may introduce helper calls before that we need to skip:
     // - CFG may introduce a call to the validator first
     // - Generic virtual methods may compute the target dynamically through a separate helper call
-    if (call->IsHelperCall(compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL) ||
-        call->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR))
+    // - memset/memcpy helper calls emitted for GT_STORE_BLK
+    if (call->IsHelperCall())
     {
-        return;
+        switch (compiler->eeGetHelperNum(call->gtCallMethHnd))
+        {
+            case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+            case CORINFO_HELP_VIRTUAL_FUNC_PTR:
+            case CORINFO_HELP_MEMSET:
+            case CORINFO_HELP_MEMCPY:
+                return;
+            default:
+                break;
+        }
     }
 
     genDefineInlineTempLabel(genPendingCallLabel);
@@ -6585,13 +6796,11 @@ unsigned Compiler::GetHfaCount(CORINFO_CLASS_HANDLE hClass)
 unsigned CodeGen::getFirstArgWithStackSlot()
 {
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    unsigned baseVarNum = 0;
     // Iterate over all the lvParam variables in the Lcl var table until we find the first one
     // that's passed on the stack.
-    LclVarDsc* varDsc = nullptr;
     for (unsigned i = 0; i < compiler->info.compArgsCount; i++)
     {
-        varDsc = compiler->lvaGetDesc(i);
+        LclVarDsc* varDsc = compiler->lvaGetDesc(i);
 
         // We should have found a stack parameter (and broken out of this loop) before
         // we find any non-parameters.
@@ -6599,13 +6808,12 @@ unsigned CodeGen::getFirstArgWithStackSlot()
 
         if (varDsc->GetArgReg() == REG_STK)
         {
-            baseVarNum = i;
-            break;
+            return i;
         }
     }
-    assert(varDsc != nullptr);
 
-    return baseVarNum;
+    assert(!"Expected to find a parameter passed on the stack");
+    return BAD_VAR_NUM;
 #elif defined(TARGET_AMD64)
     return 0;
 #else  // TARGET_X86
@@ -6771,317 +6979,6 @@ void CodeGen::genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefReg
 
 #endif // FEATURE_FIXED_OUT_ARGS
 }
-
-/*****************************************************************************
- *                          genSetScopeInfo
- *
- * This function should be called only after the sizes of the emitter blocks
- * have been finalized.
- */
-
-void CodeGen::genSetScopeInfo()
-{
-    if (!compiler->opts.compScopeInfo)
-    {
-        return;
-    }
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In genSetScopeInfo()\n");
-    }
-#endif
-
-    unsigned varsLocationsCount = 0;
-
-    varsLocationsCount = (unsigned int)varLiveKeeper->getLiveRangesCount();
-
-    if (varsLocationsCount == 0)
-    {
-        // No variable home to report
-        compiler->eeSetLVcount(0);
-        compiler->eeSetLVdone();
-        return;
-    }
-
-    noway_assert(compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0));
-
-    // Initialize the table where the reported variables' home will be placed.
-    compiler->eeSetLVcount(varsLocationsCount);
-
-#ifdef DEBUG
-    genTrnslLocalVarCount = varsLocationsCount;
-    if (varsLocationsCount)
-    {
-        genTrnslLocalVarInfo = new (compiler, CMK_DebugOnly) TrnslLocalVarInfo[varsLocationsCount];
-    }
-#endif
-
-    // We can have one of both flags defined, both, or none. Specially if we need to compare both
-    // both results. But we cannot report both to the debugger, since there would be overlapping
-    // intervals, and may not indicate the same variable location.
-
-    genSetScopeInfoUsingVariableRanges();
-
-    compiler->eeSetLVdone();
-}
-
-//------------------------------------------------------------------------
-// genSetScopeInfoUsingVariableRanges: Call "genSetScopeInfo" with the
-//  "VariableLiveRanges" created for the arguments, special arguments and
-//  IL local variables.
-//
-// Notes:
-//  This function is called from "genSetScopeInfo" once the code is generated
-//  and we want to send debug info to the debugger.
-//
-void CodeGen::genSetScopeInfoUsingVariableRanges()
-{
-    unsigned int liveRangeIndex = 0;
-
-    for (unsigned int varNum = 0; varNum < compiler->info.compLocalsCount; varNum++)
-    {
-        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-
-        if (compiler->compMap2ILvarNum(varNum) == (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
-        {
-            continue;
-        }
-
-        auto reportRange = [this, varDsc, varNum, &liveRangeIndex](siVarLoc* loc, UNATIVE_OFFSET start,
-                                                                   UNATIVE_OFFSET end) {
-            if (varDsc->lvIsParam && (start == end))
-            {
-                // If the length is zero, it means that the prolog is empty. In that case,
-                // CodeGen::genSetScopeInfo will report the liveness of all arguments
-                // as spanning the first instruction in the method, so that they can
-                // at least be inspected on entry to the method.
-                end++;
-            }
-
-            if (start < end)
-            {
-                genSetScopeInfo(liveRangeIndex, start, end - start, varNum, varNum, true, loc);
-                liveRangeIndex++;
-            }
-        };
-
-        siVarLoc*      curLoc   = nullptr;
-        UNATIVE_OFFSET curStart = 0;
-        UNATIVE_OFFSET curEnd   = 0;
-
-        for (int rangeIndex = 0; rangeIndex < 2; rangeIndex++)
-        {
-            VariableLiveKeeper::LiveRangeList* liveRanges;
-            if (rangeIndex == 0)
-            {
-                liveRanges = varLiveKeeper->getLiveRangesForVarForProlog(varNum);
-            }
-            else
-            {
-                liveRanges = varLiveKeeper->getLiveRangesForVarForBody(varNum);
-            }
-
-            for (VariableLiveKeeper::VariableLiveRange& liveRange : *liveRanges)
-            {
-                UNATIVE_OFFSET startOffs = liveRange.m_StartEmitLocation.CodeOffset(GetEmitter());
-                UNATIVE_OFFSET endOffs   = liveRange.m_EndEmitLocation.CodeOffset(GetEmitter());
-
-                assert(startOffs <= endOffs);
-                assert(startOffs >= curEnd);
-                if ((curLoc != nullptr) && (startOffs == curEnd) && siVarLoc::Equals(curLoc, &liveRange.m_VarLocation))
-                {
-                    // Extend current range.
-                    curEnd = endOffs;
-                    continue;
-                }
-
-                // Report old range if any.
-                if (curLoc != nullptr)
-                {
-                    reportRange(curLoc, curStart, curEnd);
-                }
-
-                // Start a new range.
-                curLoc   = &liveRange.m_VarLocation;
-                curStart = startOffs;
-                curEnd   = endOffs;
-            }
-        }
-
-        // Report last range
-        if (curLoc != nullptr)
-        {
-            reportRange(curLoc, curStart, curEnd);
-        }
-    }
-
-    compiler->eeVarsCount = liveRangeIndex;
-}
-
-//------------------------------------------------------------------------
-// genSetScopeInfo: Record scope information for debug info
-//
-// Arguments:
-//    which
-//    startOffs - the starting offset for this scope
-//    length    - the length of this scope
-//    varNum    - the lclVar for this scope info
-//    LVnum
-//    avail     - a bool indicating if it has a home
-//    varLoc    - the position (reg or stack) of the variable
-//
-// Notes:
-//    Called for every scope info piece to record by the main genSetScopeInfo()
-
-void CodeGen::genSetScopeInfo(unsigned       which,
-                              UNATIVE_OFFSET startOffs,
-                              UNATIVE_OFFSET length,
-                              unsigned       varNum,
-                              unsigned       LVnum,
-                              bool           avail,
-                              siVarLoc*      varLoc)
-{
-    // We need to do some mapping while reporting back these variables.
-
-    unsigned ilVarNum = compiler->compMap2ILvarNum(varNum);
-    noway_assert((int)ilVarNum != ICorDebugInfo::UNKNOWN_ILNUM);
-
-#ifdef TARGET_X86
-    // Non-x86 platforms are allowed to access all arguments directly
-    // so we don't need this code.
-
-    // Is this a varargs function?
-    if (compiler->info.compIsVarArgs && varNum != compiler->lvaVarargsHandleArg &&
-        varNum < compiler->info.compArgsCount && !compiler->lvaGetDesc(varNum)->lvIsRegArg)
-    {
-        noway_assert(varLoc->vlType == VLT_STK || varLoc->vlType == VLT_STK2);
-
-        // All stack arguments (except the varargs handle) have to be
-        // accessed via the varargs cookie. Discard generated info,
-        // and just find its position relative to the varargs handle
-
-        PREFIX_ASSUME(compiler->lvaVarargsHandleArg < compiler->info.compArgsCount);
-        if (!compiler->lvaGetDesc(compiler->lvaVarargsHandleArg)->lvOnFrame)
-        {
-            noway_assert(!compiler->opts.compDbgCode);
-            return;
-        }
-
-        // Can't check compiler->lvaTable[varNum].lvOnFrame as we don't set it for
-        // arguments of vararg functions to avoid reporting them to GC.
-        noway_assert(!compiler->lvaGetDesc(varNum)->lvRegister);
-        unsigned cookieOffset = compiler->lvaGetDesc(compiler->lvaVarargsHandleArg)->GetStackOffset();
-        unsigned varOffset    = compiler->lvaGetDesc(varNum)->GetStackOffset();
-
-        noway_assert(cookieOffset < varOffset);
-        unsigned offset     = varOffset - cookieOffset;
-        unsigned stkArgSize = compiler->compArgSize - intRegState.rsCalleeRegArgCount * REGSIZE_BYTES;
-        noway_assert(offset < stkArgSize);
-        offset = stkArgSize - offset;
-
-        varLoc->vlType                   = VLT_FIXED_VA;
-        varLoc->vlFixedVarArg.vlfvOffset = offset;
-    }
-
-#endif // TARGET_X86
-
-    VarName name = nullptr;
-
-#ifdef DEBUG
-
-    for (unsigned scopeNum = 0; scopeNum < compiler->info.compVarScopesCount; scopeNum++)
-    {
-        if (LVnum == compiler->info.compVarScopes[scopeNum].vsdLVnum)
-        {
-            name = compiler->info.compVarScopes[scopeNum].vsdName;
-        }
-    }
-
-    // Hang on to this compiler->info.
-
-    TrnslLocalVarInfo& tlvi = genTrnslLocalVarInfo[which];
-
-    tlvi.tlviVarNum    = ilVarNum;
-    tlvi.tlviLVnum     = LVnum;
-    tlvi.tlviName      = name;
-    tlvi.tlviStartPC   = startOffs;
-    tlvi.tlviLength    = length;
-    tlvi.tlviAvailable = avail;
-    tlvi.tlviVarLoc    = *varLoc;
-
-#endif // DEBUG
-
-    compiler->eeSetLVinfo(which, startOffs, length, ilVarNum, *varLoc);
-}
-
-/*****************************************************************************/
-#ifdef LATE_DISASM
-#if defined(DEBUG)
-/*****************************************************************************
- *                          CompilerRegName
- *
- * Can be called only after lviSetLocalVarInfo() has been called
- */
-
-/* virtual */
-const char* CodeGen::siRegVarName(size_t offs, size_t size, unsigned reg)
-{
-    if (!compiler->opts.compScopeInfo)
-        return nullptr;
-
-    if (compiler->info.compVarScopesCount == 0)
-        return nullptr;
-
-    noway_assert(genTrnslLocalVarCount == 0 || genTrnslLocalVarInfo);
-
-    for (unsigned i = 0; i < genTrnslLocalVarCount; i++)
-    {
-        if ((genTrnslLocalVarInfo[i].tlviVarLoc.vlIsInReg((regNumber)reg)) &&
-            (genTrnslLocalVarInfo[i].tlviAvailable == true) && (genTrnslLocalVarInfo[i].tlviStartPC <= offs + size) &&
-            (genTrnslLocalVarInfo[i].tlviStartPC + genTrnslLocalVarInfo[i].tlviLength > offs))
-        {
-            return genTrnslLocalVarInfo[i].tlviName ? compiler->VarNameToStr(genTrnslLocalVarInfo[i].tlviName) : NULL;
-        }
-    }
-
-    return NULL;
-}
-
-/*****************************************************************************
- *                          CompilerStkName
- *
- * Can be called only after lviSetLocalVarInfo() has been called
- */
-
-/* virtual */
-const char* CodeGen::siStackVarName(size_t offs, size_t size, unsigned reg, unsigned stkOffs)
-{
-    if (!compiler->opts.compScopeInfo)
-        return nullptr;
-
-    if (compiler->info.compVarScopesCount == 0)
-        return nullptr;
-
-    noway_assert(genTrnslLocalVarCount == 0 || genTrnslLocalVarInfo);
-
-    for (unsigned i = 0; i < genTrnslLocalVarCount; i++)
-    {
-        if ((genTrnslLocalVarInfo[i].tlviVarLoc.vlIsOnStack((regNumber)reg, stkOffs)) &&
-            (genTrnslLocalVarInfo[i].tlviAvailable == true) && (genTrnslLocalVarInfo[i].tlviStartPC <= offs + size) &&
-            (genTrnslLocalVarInfo[i].tlviStartPC + genTrnslLocalVarInfo[i].tlviLength > offs))
-        {
-            return genTrnslLocalVarInfo[i].tlviName ? compiler->VarNameToStr(genTrnslLocalVarInfo[i].tlviName) : NULL;
-        }
-    }
-
-    return NULL;
-}
-
-/*****************************************************************************/
-#endif // defined(DEBUG)
-#endif // LATE_DISASM
 
 #ifdef DEBUG
 
@@ -7522,6 +7419,26 @@ void CodeGen::genReportRichDebugInfoToFile()
 #endif
 
 //------------------------------------------------------------------------
+// SuccessfulSibling:
+//   Find the next sibling inline context that was successfully inlined.
+//
+// Parameters:
+//   context - the inline context. Can be nullptr in which case nullptr is returned.
+//
+// Returns:
+//   The sibling, or nullptr if there is no succesful sibling.
+//
+static InlineContext* SuccessfulSibling(InlineContext* context)
+{
+    while ((context != nullptr) && !context->IsSuccess())
+    {
+        context = context->GetSibling();
+    }
+
+    return context;
+}
+
+//------------------------------------------------------------------------
 // genRecordRichDebugInfoInlineTree:
 //   Recursively process a context in the inline tree and record information
 //   about it.
@@ -7532,26 +7449,28 @@ void CodeGen::genReportRichDebugInfoToFile()
 //
 void CodeGen::genRecordRichDebugInfoInlineTree(InlineContext* context, ICorDebugInfo::InlineTreeNode* nodes)
 {
-    if (context->IsSuccess())
-    {
-        // We expect 1 + NumInlines unique ordinals
-        assert(context->GetOrdinal() <= compiler->m_inlineStrategy->GetInlineCount());
+    assert(context->IsSuccess());
 
-        ICorDebugInfo::InlineTreeNode* node = &nodes[context->GetOrdinal()];
-        node->Method                        = context->GetCallee();
-        node->ILOffset                      = context->GetActualCallOffset();
-        node->Child                         = context->GetChild() == nullptr ? 0 : context->GetChild()->GetOrdinal();
-        node->Sibling = context->GetSibling() == nullptr ? 0 : context->GetSibling()->GetOrdinal();
+    // We expect 1 + NumInlines unique ordinals
+    assert(context->GetOrdinal() <= compiler->m_inlineStrategy->GetInlineCount());
+
+    InlineContext* successfulChild   = SuccessfulSibling(context->GetChild());
+    InlineContext* successfulSibling = SuccessfulSibling(context->GetSibling());
+
+    ICorDebugInfo::InlineTreeNode* node = &nodes[context->GetOrdinal()];
+    node->Method                        = context->GetCallee();
+    node->ILOffset                      = context->GetActualCallOffset();
+    node->Child                         = successfulChild == nullptr ? 0 : successfulChild->GetOrdinal();
+    node->Sibling                       = successfulSibling == nullptr ? 0 : successfulSibling->GetOrdinal();
+
+    if (successfulSibling != nullptr)
+    {
+        genRecordRichDebugInfoInlineTree(successfulSibling, nodes);
     }
 
-    if (context->GetSibling() != nullptr)
+    if (successfulChild != nullptr)
     {
-        genRecordRichDebugInfoInlineTree(context->GetSibling(), nodes);
-    }
-
-    if (context->GetChild() != nullptr)
-    {
-        genRecordRichDebugInfoInlineTree(context->GetChild(), nodes);
+        genRecordRichDebugInfoInlineTree(successfulChild, nodes);
     }
 }
 
@@ -7600,6 +7519,28 @@ void CodeGen::genReportRichDebugInfo()
 
         mappingIndex++;
     }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Reported inline tree:\n");
+        for (unsigned i = 0; i < numContexts; i++)
+        {
+            printf("  [#%d] %s @ %d, child = %d, sibling = %d\n", i,
+                   compiler->eeGetMethodFullName(inlineTree[i].Method), inlineTree[i].ILOffset, inlineTree[i].Child,
+                   inlineTree[i].Sibling);
+        }
+
+        printf("\nReported rich mappings:\n");
+        for (size_t i = 0; i < mappingIndex; i++)
+        {
+            printf("  [%zu] 0x%x <-> IL %d in #%d\n", i, mappings[i].NativeOffset, mappings[i].ILOffset,
+                   mappings[i].Inlinee);
+        }
+
+        printf("\n");
+    }
+#endif
 
     compiler->info.compCompHnd->reportRichMappings(inlineTree, numContexts, mappings, numRichMappings);
 }
@@ -7717,6 +7658,7 @@ void CodeGen::genLongReturn(GenTree* treeNode)
 //------------------------------------------------------------------------
 // genReturn: Generates code for return statement.
 //            In case of struct return, delegates to the genStructReturn method.
+//            In case of LONG return on 32-bit, delegates to the genLongReturn method.
 //
 // Arguments:
 //    treeNode - The GT_RETURN or GT_RETFILT tree node.
@@ -7726,7 +7668,8 @@ void CodeGen::genLongReturn(GenTree* treeNode)
 //
 void CodeGen::genReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    assert(treeNode->OperIs(GT_RETURN, GT_RETFILT));
+
     GenTree*  op1        = treeNode->gtGetOp1();
     var_types targetType = treeNode->TypeGet();
 
@@ -7827,9 +7770,9 @@ void CodeGen::genReturn(GenTree* treeNode)
     // maintain such an invariant irrespective of whether profiler hook needed or not.
     // Also, there is not much to be gained by materializing it as an explicit node.
     //
-    // There should be a single return block while generating profiler ELT callbacks,
-    // so we just look for that block to trigger insertion of the profile hook.
-    if ((compiler->compCurBB == compiler->genReturnBB) && compiler->compIsProfilerHookNeeded())
+    // There should be a single GT_RETURN while generating profiler ELT callbacks.
+    //
+    if (treeNode->OperIs(GT_RETURN) && compiler->compIsProfilerHookNeeded())
     {
         // !! NOTE !!
         // Since we are invalidating the assumption that we would slip into the epilog
@@ -7849,7 +7792,8 @@ void CodeGen::genReturn(GenTree* treeNode)
             {
                 if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
                 {
-                    gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i), retTypeDesc.GetReturnRegType(i));
+                    gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
+                                           retTypeDesc.GetReturnRegType(i));
                 }
             }
         }
@@ -7866,7 +7810,7 @@ void CodeGen::genReturn(GenTree* treeNode)
             {
                 if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
                 {
-                    gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i)));
+                    gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv)));
                 }
             }
         }
@@ -7973,7 +7917,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         // On LoongArch64, for a struct like "{ int, double }", "retTypeDesc" will be "{ TYP_INT, TYP_DOUBLE }",
         // i. e. not include the padding for the first field, and so the general loop below won't work.
         var_types type  = retTypeDesc.GetReturnRegType(0);
-        regNumber toReg = retTypeDesc.GetABIReturnReg(0);
+        regNumber toReg = retTypeDesc.GetABIReturnReg(0, compiler->info.compCallConv);
         GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), 0);
         if (regCount > 1)
         {
@@ -7981,15 +7925,35 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             int offset = genTypeSize(type);
             type       = retTypeDesc.GetReturnRegType(1);
             offset     = (int)((unsigned int)offset < genTypeSize(type) ? genTypeSize(type) : offset);
-            toReg      = retTypeDesc.GetABIReturnReg(1);
+            toReg      = retTypeDesc.GetABIReturnReg(1, compiler->info.compCallConv);
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         }
-#else  // !TARGET_LOONGARCH64 && !TARGET_RISCV64
+#else // !TARGET_LOONGARCH64 && !TARGET_RISCV64
+
+#ifdef SWIFT_SUPPORT
+        const uint32_t* offsets = nullptr;
+        if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
+        {
+            CORINFO_CLASS_HANDLE          retTypeHnd = compiler->info.compMethodInfo->args.retTypeClass;
+            const CORINFO_SWIFT_LOWERING* lowering   = compiler->GetSwiftLowering(retTypeHnd);
+            assert(!lowering->byReference && (regCount == lowering->numLoweredElements));
+            offsets = lowering->offsets;
+        }
+#endif
+
         int offset = 0;
         for (unsigned i = 0; i < regCount; ++i)
         {
             var_types type  = retTypeDesc.GetReturnRegType(i);
-            regNumber toReg = retTypeDesc.GetABIReturnReg(i);
+            regNumber toReg = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
+
+#ifdef SWIFT_SUPPORT
+            if (offsets != nullptr)
+            {
+                offset = offsets[i];
+            }
+#endif
+
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
             offset += genTypeSize(type);
         }
@@ -8000,7 +7964,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         for (unsigned i = 0; i < regCount; ++i)
         {
             var_types type    = retTypeDesc.GetReturnRegType(i);
-            regNumber toReg   = retTypeDesc.GetABIReturnReg(i);
+            regNumber toReg   = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
             regNumber fromReg = op1->GetRegByIndex(i);
             if ((fromReg == REG_NA) && op1->OperIs(GT_COPY))
             {
@@ -8065,7 +8029,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 
     unsigned   lclNum = lclNode->GetLclNum();
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
-    if (op1->OperIs(GT_CALL))
+    if (actualOp1->OperIs(GT_CALL))
     {
         assert(regCount <= MAX_RET_REG_COUNT);
         noway_assert(varDsc->lvIsMultiRegRet);
@@ -8124,6 +8088,16 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         assert(regCount == varDsc->lvFieldCnt);
     }
 
+#ifdef SWIFT_SUPPORT
+    const uint32_t* offsets = nullptr;
+    if (actualOp1->IsCall() && (actualOp1->AsCall()->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift))
+    {
+        const CORINFO_SWIFT_LOWERING* lowering = compiler->GetSwiftLowering(actualOp1->AsCall()->gtRetClsHnd);
+        assert(!lowering->byReference && (regCount == lowering->numLoweredElements));
+        offsets = lowering->offsets;
+    }
+#endif
+
     for (unsigned i = 0; i < regCount; ++i)
     {
         regNumber reg     = genConsumeReg(op1, i);
@@ -8166,6 +8140,12 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // should consider the padding field within a struct.
             offset = (offset % genTypeSize(srcType)) ? AlignUp(offset, genTypeSize(srcType)) : offset;
+#endif
+#ifdef SWIFT_SUPPORT
+            if (offsets != nullptr)
+            {
+                offset = offsets[i];
+            }
 #endif
             // Several fields could be passed in one register, copy using the register type.
             // It could rewrite memory outside of the fields but local on the stack are rounded to POINTER_SIZE so
@@ -8457,814 +8437,6 @@ unsigned CodeGenInterface::getCurrentStackLevel() const
     return genStackLevel;
 }
 
-#ifdef DEBUG
-//------------------------------------------------------------------------
-//                      VariableLiveRanges dumpers
-//------------------------------------------------------------------------
-
-// Dump "VariableLiveRange" when code has not been generated and we don't have so the assembly native offset
-// but at least "emitLocation"s and "siVarLoc"
-void CodeGenInterface::VariableLiveKeeper::VariableLiveRange::dumpVariableLiveRange(
-    const CodeGenInterface* codeGen) const
-{
-    codeGen->dumpSiVarLoc(&m_VarLocation);
-
-    printf(" [");
-    m_StartEmitLocation.Print(codeGen->GetCompiler()->compMethodID);
-    printf(", ");
-    if (m_EndEmitLocation.Valid())
-    {
-        m_EndEmitLocation.Print(codeGen->GetCompiler()->compMethodID);
-    }
-    else
-    {
-        printf("...");
-    }
-    printf("]");
-}
-
-// Dump "VariableLiveRange" when code has been generated and we have the assembly native offset of each "emitLocation"
-void CodeGenInterface::VariableLiveKeeper::VariableLiveRange::dumpVariableLiveRange(
-    emitter* emit, const CodeGenInterface* codeGen) const
-{
-    assert(emit != nullptr);
-
-    // "VariableLiveRanges" are created setting its location ("m_VarLocation") and the initial native offset
-    // ("m_StartEmitLocation")
-    codeGen->dumpSiVarLoc(&m_VarLocation);
-
-    // If this is an open "VariableLiveRange", "m_EndEmitLocation" is non-valid and print -1
-    UNATIVE_OFFSET endAssemblyOffset = m_EndEmitLocation.Valid() ? m_EndEmitLocation.CodeOffset(emit) : -1;
-
-    printf(" [%X, %X)", m_StartEmitLocation.CodeOffset(emit), m_EndEmitLocation.CodeOffset(emit));
-}
-
-//------------------------------------------------------------------------
-//                      LiveRangeDumper
-//------------------------------------------------------------------------
-//------------------------------------------------------------------------
-// resetDumper: If the "liveRange" has its last "VariableLiveRange" closed, it makes
-//  the "LiveRangeDumper" points to end of "liveRange" (nullptr). In other case,
-//  it makes the "LiveRangeDumper" points to the last "VariableLiveRange" of
-//  "liveRange", which is opened.
-//
-// Arguments:
-//  liveRanges - the "LiveRangeList" of the "VariableLiveDescriptor" we want to
-//      update its "LiveRangeDumper".
-//
-// Notes:
-//  This method is expected to be called once a the code for a BasicBlock has been
-//  generated and all the new "VariableLiveRange"s of the variable during this block
-//  has been dumped.
-void CodeGenInterface::VariableLiveKeeper::LiveRangeDumper::resetDumper(const LiveRangeList* liveRanges)
-{
-    // There must have reported something in order to reset
-    assert(m_hasLiveRangestoDump);
-
-    if (liveRanges->back().m_EndEmitLocation.Valid())
-    {
-        // the last "VariableLiveRange" is closed and the variable
-        // is no longer alive
-        m_hasLiveRangestoDump = false;
-    }
-    else
-    {
-        // the last "VariableLiveRange" remains opened because it is
-        // live at "BasicBlock"s "bbLiveOut".
-        m_StartingLiveRange = liveRanges->backPosition();
-    }
-}
-
-//------------------------------------------------------------------------
-// setDumperStartAt: Make "LiveRangeDumper" instance points the last "VariableLiveRange"
-// added so we can starts dumping from there after the actual "BasicBlock"s code is generated.
-//
-// Arguments:
-//  liveRangeIt - an iterator to a position in "VariableLiveDescriptor::m_VariableLiveRanges"
-//
-// Return Value:
-//  A const pointer to the "LiveRangeList" containing all the "VariableLiveRange"s
-//  of the variable with index "varNum".
-//
-// Notes:
-//  "varNum" should be always a valid inde ("varnum" < "m_LiveDscCount")
-void CodeGenInterface::VariableLiveKeeper::LiveRangeDumper::setDumperStartAt(const LiveRangeListIterator liveRangeIt)
-{
-    m_hasLiveRangestoDump = true;
-    m_StartingLiveRange   = liveRangeIt;
-}
-
-//------------------------------------------------------------------------
-// getStartForDump: Return an iterator to the first "VariableLiveRange" edited/added
-//  during the current "BasicBlock"
-//
-// Return Value:
-//  A LiveRangeListIterator to the first "VariableLiveRange" in "LiveRangeList" which
-//  was used during last "BasicBlock".
-//
-CodeGenInterface::VariableLiveKeeper::LiveRangeListIterator CodeGenInterface::VariableLiveKeeper::LiveRangeDumper::
-    getStartForDump() const
-{
-    return m_StartingLiveRange;
-}
-
-//------------------------------------------------------------------------
-// hasLiveRangesToDump: Retutn whether at least a "VariableLiveRange" was alive during
-//  the current "BasicBlock"'s code generation
-//
-// Return Value:
-//  A boolean indicating indicating if there is at least a "VariableLiveRange"
-//  that has been used for the variable during last "BasicBlock".
-//
-bool CodeGenInterface::VariableLiveKeeper::LiveRangeDumper::hasLiveRangesToDump() const
-{
-    return m_hasLiveRangestoDump;
-}
-#endif // DEBUG
-
-//------------------------------------------------------------------------
-//                      VariableLiveDescriptor
-//------------------------------------------------------------------------
-
-CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::VariableLiveDescriptor(CompAllocator allocator)
-{
-    // Initialize an empty list
-    m_VariableLiveRanges = new (allocator) LiveRangeList(allocator);
-
-    INDEBUG(m_VariableLifeBarrier = new (allocator) LiveRangeDumper(m_VariableLiveRanges));
-}
-
-//------------------------------------------------------------------------
-// hasVariableLiveRangeOpen: Return true if the variable is still alive,
-//  false in other case.
-//
-bool CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::hasVariableLiveRangeOpen() const
-{
-    return !m_VariableLiveRanges->empty() && !m_VariableLiveRanges->back().m_EndEmitLocation.Valid();
-}
-
-//------------------------------------------------------------------------
-// getLiveRanges: Return the list of variable locations for this variable.
-//
-// Return Value:
-//  A const LiveRangeList* pointing to the first variable location if it has
-//  any or the end of the list in other case.
-//
-CodeGenInterface::VariableLiveKeeper::LiveRangeList* CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::
-    getLiveRanges() const
-{
-    return m_VariableLiveRanges;
-}
-
-//------------------------------------------------------------------------
-// startLiveRangeFromEmitter: Report this variable as being born in "varLocation"
-//  since the instruction where "emit" is located.
-//
-// Arguments:
-//  varLocation  - the home of the variable.
-//  emit - an emitter* instance located at the first instruction from
-//  where "varLocation" becomes valid.
-//
-// Assumptions:
-//  This variable is being born so it should be dead.
-//
-// Notes:
-//  The position of "emit" matters to ensure intervals inclusive of the
-//  beginning and exclusive of the end.
-//
-void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRangeFromEmitter(
-    CodeGenInterface::siVarLoc varLocation, emitter* emit) const
-{
-    noway_assert(emit != nullptr);
-
-    // Is the first "VariableLiveRange" or the previous one has been closed so its "m_EndEmitLocation" is valid
-    noway_assert(m_VariableLiveRanges->empty() || m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
-
-    if (!m_VariableLiveRanges->empty() &&
-        siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation)) &&
-        m_VariableLiveRanges->back().m_EndEmitLocation.IsPreviousInsNum(emit))
-    {
-        JITDUMP("Extending debug range...\n");
-
-        // The variable is being born just after the instruction at which it died.
-        // In this case, i.e. an update of the variable's value, we coalesce the live ranges.
-        m_VariableLiveRanges->back().m_EndEmitLocation.Init();
-    }
-    else
-    {
-        JITDUMP("New debug range: %s\n",
-                m_VariableLiveRanges->empty()
-                    ? "first"
-                    : siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation))
-                          ? "new var or location"
-                          : "not adjacent");
-        // Creates new live range with invalid end
-        m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
-        m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
-    }
-
-#ifdef DEBUG
-    if (!m_VariableLifeBarrier->hasLiveRangesToDump())
-    {
-        m_VariableLifeBarrier->setDumperStartAt(m_VariableLiveRanges->backPosition());
-    }
-#endif // DEBUG
-
-    // startEmitLocationendEmitLocation has to be Valid and endEmitLocationendEmitLocation  not
-    noway_assert(m_VariableLiveRanges->back().m_StartEmitLocation.Valid());
-    noway_assert(!m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
-}
-
-//------------------------------------------------------------------------
-// endLiveRangeAtEmitter: Report this variable as becoming dead since the
-//  instruction where "emit" is located.
-//
-// Arguments:
-//  emit - an emitter* instance located at the first instruction from
-//   this variable becomes dead.
-//
-// Assumptions:
-//  This variable is becoming dead so it should be alive.
-//
-// Notes:
-//  The position of "emit" matters to ensure intervals inclusive of the
-//  beginning and exclusive of the end.
-//
-void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::endLiveRangeAtEmitter(emitter* emit) const
-{
-    noway_assert(emit != nullptr);
-    noway_assert(hasVariableLiveRangeOpen());
-
-    // Using [close, open) ranges so as to not compute the size of the last instruction
-    m_VariableLiveRanges->back().m_EndEmitLocation.CaptureLocation(emit);
-
-    JITDUMP("Closing debug range.\n");
-    // No m_EndEmitLocation has to be Valid
-    noway_assert(m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
-}
-
-//------------------------------------------------------------------------
-// UpdateLiveRangeAtEmitter: Report this variable as changing its variable
-//  home to "varLocation" since the instruction where "emit" is located.
-//
-// Arguments:
-//  varLocation  - the new variable location.
-//  emit - an emitter* instance located at the first instruction from
-//   where "varLocation" becomes valid.
-//
-// Assumptions:
-//  This variable is being born so it should be dead.
-//
-// Notes:
-//  The position of "emit" matters to ensure intervals inclusive of the
-//  beginning and exclusive of the end.
-//
-void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::updateLiveRangeAtEmitter(
-    CodeGenInterface::siVarLoc varLocation, emitter* emit) const
-{
-    // This variable is changing home so it has been started before during this block
-    noway_assert(m_VariableLiveRanges != nullptr && !m_VariableLiveRanges->empty());
-
-    // And its last m_EndEmitLocation has to be invalid
-    noway_assert(!m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
-
-    // If we are reporting again the same home, that means we are doing something twice?
-    // noway_assert(! CodeGenInterface::siVarLoc::Equals(&m_VariableLiveRanges->back().m_VarLocation, varLocation));
-
-    // Close previous live range
-    endLiveRangeAtEmitter(emit);
-
-    startLiveRangeFromEmitter(varLocation, emit);
-}
-
-#ifdef DEBUG
-void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::dumpAllRegisterLiveRangesForBlock(
-    emitter* emit, const CodeGenInterface* codeGen) const
-{
-    bool first = true;
-    for (LiveRangeListIterator it = m_VariableLiveRanges->begin(); it != m_VariableLiveRanges->end(); it++)
-    {
-        if (!first)
-        {
-            printf("; ");
-        }
-        it->dumpVariableLiveRange(emit, codeGen);
-        first = false;
-    }
-}
-
-void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::dumpRegisterLiveRangesForBlockBeforeCodeGenerated(
-    const CodeGenInterface* codeGen) const
-{
-    bool first = true;
-    for (LiveRangeListIterator it = m_VariableLifeBarrier->getStartForDump(); it != m_VariableLiveRanges->end(); it++)
-    {
-        if (!first)
-        {
-            printf("; ");
-        }
-        it->dumpVariableLiveRange(codeGen);
-        first = false;
-    }
-}
-
-// Returns true if a live range for this variable has been recorded
-bool CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::hasVarLiveRangesToDump() const
-{
-    return !m_VariableLiveRanges->empty();
-}
-
-// Returns true if a live range for this variable has been recorded from last call to EndBlock
-bool CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::hasVarLiveRangesFromLastBlockToDump() const
-{
-    return m_VariableLifeBarrier->hasLiveRangesToDump();
-}
-
-// Reset the barrier so as to dump only next block changes on next block
-void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::endBlockLiveRanges()
-{
-    // make "m_VariableLifeBarrier->m_StartingLiveRange" now points to nullptr for printing purposes
-    m_VariableLifeBarrier->resetDumper(m_VariableLiveRanges);
-}
-#endif // DEBUG
-
-//------------------------------------------------------------------------
-//                      VariableLiveKeeper
-//------------------------------------------------------------------------
-// Initialize structures for VariableLiveRanges
-void CodeGenInterface::initializeVariableLiveKeeper()
-{
-    CompAllocator allocator = compiler->getAllocator(CMK_VariableLiveRanges);
-
-    int amountTrackedVariables = compiler->opts.compDbgInfo ? compiler->info.compLocalsCount : 0;
-    int amountTrackedArgs      = compiler->opts.compDbgInfo ? compiler->info.compArgsCount : 0;
-
-    varLiveKeeper = new (allocator) VariableLiveKeeper(amountTrackedVariables, amountTrackedArgs, compiler, allocator);
-}
-
-CodeGenInterface::VariableLiveKeeper* CodeGenInterface::getVariableLiveKeeper() const
-{
-    return varLiveKeeper;
-};
-
-//------------------------------------------------------------------------
-// VariableLiveKeeper: Create an instance of the object in charge of managing
-//  VariableLiveRanges and initialize the array "m_vlrLiveDsc".
-//
-// Arguments:
-//    totalLocalCount   - the count of args, special args and IL Local
-//      variables in the method.
-//    argsCount         - the count of args and special args in the method.
-//    compiler          - a compiler instance
-//
-CodeGenInterface::VariableLiveKeeper::VariableLiveKeeper(unsigned int  totalLocalCount,
-                                                         unsigned int  argsCount,
-                                                         Compiler*     comp,
-                                                         CompAllocator allocator)
-    : m_LiveDscCount(totalLocalCount)
-    , m_LiveArgsCount(argsCount)
-    , m_Compiler(comp)
-    , m_LastBasicBlockHasBeenEmitted(false)
-{
-    if (m_LiveDscCount > 0)
-    {
-        // Allocate memory for "m_vlrLiveDsc" and initialize each "VariableLiveDescriptor"
-        m_vlrLiveDsc          = allocator.allocate<VariableLiveDescriptor>(m_LiveDscCount);
-        m_vlrLiveDscForProlog = allocator.allocate<VariableLiveDescriptor>(m_LiveDscCount);
-
-        for (unsigned int varNum = 0; varNum < m_LiveDscCount; varNum++)
-        {
-            new (m_vlrLiveDsc + varNum, jitstd::placement_t()) VariableLiveDescriptor(allocator);
-            new (m_vlrLiveDscForProlog + varNum, jitstd::placement_t()) VariableLiveDescriptor(allocator);
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// siStartOrCloseVariableLiveRange: Reports the given variable as beign born
-//  or becoming dead.
-//
-// Arguments:
-//    varDsc    - the variable for which a location changed will be reported
-//    varNum    - the index of the variable in the "compiler->lvaTable"
-//    isBorn    - whether the variable is being born from where the emitter is located.
-//    isDying   - whether the variable is dying from where the emitter is located.
-//
-// Assumptions:
-//    The emitter should be located on the first instruction from where is true that
-//    the variable becoming valid (when isBorn is true) or invalid (when isDying is true).
-//
-// Notes:
-//    This method is being called from treeLifeUpdater when the variable is being born,
-//    becoming dead, or both.
-//
-void CodeGenInterface::VariableLiveKeeper::siStartOrCloseVariableLiveRange(const LclVarDsc* varDsc,
-                                                                           unsigned int     varNum,
-                                                                           bool             isBorn,
-                                                                           bool             isDying)
-{
-    noway_assert(varDsc != nullptr);
-
-    // Only the variables that exists in the IL, "this", and special arguments
-    // are reported.
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount)
-    {
-        if (isBorn && !isDying)
-        {
-            // "varDsc" is valid from this point
-            siStartVariableLiveRange(varDsc, varNum);
-        }
-        if (isDying && !isBorn)
-        {
-            // this variable live range is no longer valid from this point
-            siEndVariableLiveRange(varNum);
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// siStartOrCloseVariableLiveRanges: Iterates the given set of variables
-//  calling "siStartOrCloseVariableLiveRange" with each one.
-//
-// Arguments:
-//    varsIndexSet    - the set of variables to report start/end "VariableLiveRange"
-//    isBorn    - whether the set is being born from where the emitter is located.
-//    isDying   - whether the set is dying from where the emitter is located.
-//
-// Assumptions:
-//    The emitter should be located on the first instruction from where is true that
-//    the variable becoming valid (when isBorn is true) or invalid (when isDying is true).
-//
-// Notes:
-//    This method is being called from treeLifeUpdater when a set of variables
-//    is being born, becoming dead, or both.
-//
-void CodeGenInterface::VariableLiveKeeper::siStartOrCloseVariableLiveRanges(VARSET_VALARG_TP varsIndexSet,
-                                                                            bool             isBorn,
-                                                                            bool             isDying)
-{
-    if (m_Compiler->opts.compDbgInfo)
-    {
-        VarSetOps::Iter iter(m_Compiler, varsIndexSet);
-        unsigned        varIndex = 0;
-        while (iter.NextElem(&varIndex))
-        {
-            unsigned int     varNum = m_Compiler->lvaTrackedIndexToLclNum(varIndex);
-            const LclVarDsc* varDsc = m_Compiler->lvaGetDesc(varNum);
-            siStartOrCloseVariableLiveRange(varDsc, varNum, isBorn, isDying);
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// siStartVariableLiveRange: Reports the given variable as being born.
-//
-// Arguments:
-//    varDsc    - the variable for which a location changed will be reported
-//    varNum    - the index of the variable to report home in lvLiveDsc
-//
-// Assumptions:
-//    The emitter should be pointing to the first instruction from where the VariableLiveRange is
-//    becoming valid.
-//    The given "varDsc" should have its VariableRangeLists initialized.
-//
-// Notes:
-//    This method should be called on every place a Variable is becoming alive.
-void CodeGenInterface::VariableLiveKeeper::siStartVariableLiveRange(const LclVarDsc* varDsc, unsigned int varNum)
-{
-    noway_assert(varDsc != nullptr);
-
-    // Only the variables that exists in the IL, "this", and special arguments are reported, as long as they were
-    // allocated.
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && (varDsc->lvIsInReg() || varDsc->lvOnFrame))
-    {
-        // Build siVarLoc for this born "varDsc"
-        CodeGenInterface::siVarLoc varLocation =
-            m_Compiler->codeGen->getSiVarLoc(varDsc, m_Compiler->codeGen->getCurrentStackLevel());
-
-        VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDsc[varNum];
-        // this variable live range is valid from this point
-        varLiveDsc->startLiveRangeFromEmitter(varLocation, m_Compiler->GetEmitter());
-    }
-}
-
-//------------------------------------------------------------------------
-// siEndVariableLiveRange: Reports the variable as becoming dead.
-//
-// Arguments:
-//    varNum    - the index of the variable at m_vlrLiveDsc or lvaTable in that
-//       is becoming dead.
-//
-// Assumptions:
-//    The given variable should be alive.
-//    The emitter should be pointing to the first instruction from where the VariableLiveRange is
-//    becoming invalid.
-//
-// Notes:
-//    This method should be called on every place a Variable is becoming dead.
-void CodeGenInterface::VariableLiveKeeper::siEndVariableLiveRange(unsigned int varNum)
-{
-    // Only the variables that exists in the IL, "this", and special arguments
-    // will be reported.
-
-    // This method is being called from genUpdateLife, and that one is called after
-    // code for BasicBlock have been generated, but the emitter has no longer
-    // a valid IG so we don't report the close of a "VariableLiveRange" after code is
-    // emitted.
-
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmitted &&
-        m_vlrLiveDsc[varNum].hasVariableLiveRangeOpen())
-    {
-        // this variable live range is no longer valid from this point
-        m_vlrLiveDsc[varNum].endLiveRangeAtEmitter(m_Compiler->GetEmitter());
-    }
-}
-
-//------------------------------------------------------------------------
-// siUpdateVariableLiveRange: Reports the change of variable location for the
-//  given variable.
-//
-// Arguments:
-//    varDsc    - the variable for which tis home has changed.
-//    varNum    - the index of the variable to report home in lvLiveDsc
-//
-// Assumptions:
-//    The given variable should be alive.
-//    The emitter should be pointing to the first instruction from where
-//    the new variable location is becoming valid.
-//
-void CodeGenInterface::VariableLiveKeeper::siUpdateVariableLiveRange(const LclVarDsc* varDsc, unsigned int varNum)
-{
-    noway_assert(varDsc != nullptr);
-
-    // Only the variables that exists in the IL, "this", and special arguments
-    // will be reported. This are locals and arguments, and are counted in
-    // "info.compLocalsCount".
-
-    // This method is being called when the prolog is being generated, and
-    // the emitter has no longer a valid IG so we don't report the close of
-    //  a "VariableLiveRange" after code is emitted.
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmitted)
-    {
-        // Build the location of the variable
-        CodeGenInterface::siVarLoc siVarLoc =
-            m_Compiler->codeGen->getSiVarLoc(varDsc, m_Compiler->codeGen->getCurrentStackLevel());
-
-        // Report the home change for this variable
-        VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDsc[varNum];
-        varLiveDsc->updateLiveRangeAtEmitter(siVarLoc, m_Compiler->GetEmitter());
-    }
-}
-
-//------------------------------------------------------------------------
-// siEndAllVariableLiveRange: Reports the set of variables as becoming dead.
-//
-// Arguments:
-//    newLife    - the set of variables that are becoming dead.
-//
-// Assumptions:
-//    All the variables in the set are alive.
-//
-// Notes:
-//    This method is called when the last block being generated to killed all
-//    the live variables and set a flag to avoid reporting variable locations for
-//    on next calls to method that update variable liveness.
-void CodeGenInterface::VariableLiveKeeper::siEndAllVariableLiveRange(VARSET_VALARG_TP varsToClose)
-{
-    if (m_Compiler->opts.compDbgInfo)
-    {
-        if (m_Compiler->lvaTrackedCount > 0 || !m_Compiler->opts.OptimizationDisabled())
-        {
-            VarSetOps::Iter iter(m_Compiler, varsToClose);
-            unsigned        varIndex = 0;
-            while (iter.NextElem(&varIndex))
-            {
-                unsigned int varNum = m_Compiler->lvaTrackedIndexToLclNum(varIndex);
-                siEndVariableLiveRange(varNum);
-            }
-        }
-        else
-        {
-            // It seems we are jitting debug code, so we don't have variable
-            //  liveness info
-            siEndAllVariableLiveRange();
-        }
-    }
-
-    m_LastBasicBlockHasBeenEmitted = true;
-}
-
-//------------------------------------------------------------------------
-// siEndAllVariableLiveRange: Reports all live variables as dead.
-//
-// Notes:
-//    This overload exists for the case we are jitting code compiled in
-//    debug mode. When that happen we don't have variable liveness info
-//    as "BaiscBlock::bbLiveIn" or "BaiscBlock::bbLiveOut" and there is no
-//    tracked variable.
-//
-void CodeGenInterface::VariableLiveKeeper::siEndAllVariableLiveRange()
-{
-    // TODO: we can improve this keeping a set for the variables with
-    // open VariableLiveRanges
-
-    for (unsigned int varNum = 0; varNum < m_LiveDscCount; varNum++)
-    {
-        const VariableLiveDescriptor* varLiveDsc = m_vlrLiveDsc + varNum;
-        if (varLiveDsc->hasVariableLiveRangeOpen())
-        {
-            siEndVariableLiveRange(varNum);
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// getLiveRangesForVarForBody: Return the "VariableLiveRange" that correspond to
-//  the given "varNum".
-//
-// Arguments:
-//  varNum  - the index of the variable in m_vlrLiveDsc, which is the same as
-//      in lvaTable.
-//
-// Return Value:
-//  A const pointer to the list of variable locations reported for the variable.
-//
-// Assumptions:
-//  This variable should be an argument, a special argument or an IL local
-//  variable.
-CodeGenInterface::VariableLiveKeeper::LiveRangeList* CodeGenInterface::VariableLiveKeeper::getLiveRangesForVarForBody(
-    unsigned int varNum) const
-{
-    // There should be at least one variable for which its liveness is tracked
-    noway_assert(varNum < m_LiveDscCount);
-
-    return m_vlrLiveDsc[varNum].getLiveRanges();
-}
-
-//------------------------------------------------------------------------
-// getLiveRangesForVarForProlog: Return the "VariableLiveRange" that correspond to
-//  the given "varNum".
-//
-// Arguments:
-//  varNum  - the index of the variable in m_vlrLiveDsc, which is the same as
-//      in lvaTable.
-//
-// Return Value:
-//  A const pointer to the list of variable locations reported for the variable.
-//
-// Assumptions:
-//  This variable should be an argument, a special argument or an IL local
-//  variable.
-CodeGenInterface::VariableLiveKeeper::LiveRangeList* CodeGenInterface::VariableLiveKeeper::getLiveRangesForVarForProlog(
-    unsigned int varNum) const
-{
-    // There should be at least one variable for which its liveness is tracked
-    noway_assert(varNum < m_LiveDscCount);
-
-    return m_vlrLiveDscForProlog[varNum].getLiveRanges();
-}
-
-//------------------------------------------------------------------------
-// getLiveRangesCount: Returns the count of variable locations reported for the tracked
-//  variables, which are arguments, special arguments, and local IL variables.
-//
-// Return Value:
-//    size_t - the count of variable locations
-//
-// Notes:
-//    This method is being called from "genSetScopeInfo" to know the count of
-//    "varResultInfo" that should be created on eeSetLVcount.
-//
-size_t CodeGenInterface::VariableLiveKeeper::getLiveRangesCount() const
-{
-    size_t liveRangesCount = 0;
-
-    if (m_Compiler->opts.compDbgInfo)
-    {
-        for (unsigned int varNum = 0; varNum < m_LiveDscCount; varNum++)
-        {
-            for (int i = 0; i < 2; i++)
-            {
-                VariableLiveDescriptor* varLiveDsc = (i == 0 ? m_vlrLiveDscForProlog : m_vlrLiveDsc) + varNum;
-
-                if (m_Compiler->compMap2ILvarNum(varNum) != (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
-                {
-                    liveRangesCount += varLiveDsc->getLiveRanges()->size();
-                }
-            }
-        }
-    }
-    return liveRangesCount;
-}
-
-//------------------------------------------------------------------------
-// psiStartVariableLiveRange: Reports the given variable as being born.
-//
-// Arguments:
-//  varLcation  - the variable location
-//  varNum      - the index of the variable in "compiler->lvaTable" or
-//      "VariableLivekeeper->m_vlrLiveDsc"
-//
-// Notes:
-//  This function is expected to be called from "psiBegProlog" during
-//  prolog code generation.
-//
-void CodeGenInterface::VariableLiveKeeper::psiStartVariableLiveRange(CodeGenInterface::siVarLoc varLocation,
-                                                                     unsigned int               varNum)
-{
-    // This descriptor has to correspond to a parameter. The first slots in lvaTable
-    // are arguments and special arguments.
-    noway_assert(varNum < m_LiveArgsCount);
-
-    VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDscForProlog[varNum];
-    varLiveDsc->startLiveRangeFromEmitter(varLocation, m_Compiler->GetEmitter());
-}
-
-//------------------------------------------------------------------------
-// psiClosePrologVariableRanges: Report all the parameters as becoming dead.
-//
-// Notes:
-//  This function is expected to be called from preffix "psiEndProlog" after
-//  code for prolog has been generated.
-//
-void CodeGenInterface::VariableLiveKeeper::psiClosePrologVariableRanges()
-{
-    noway_assert(m_LiveArgsCount <= m_LiveDscCount);
-
-    for (unsigned int varNum = 0; varNum < m_LiveArgsCount; varNum++)
-    {
-        VariableLiveDescriptor* varLiveDsc = m_vlrLiveDscForProlog + varNum;
-
-        if (varLiveDsc->hasVariableLiveRangeOpen())
-        {
-            varLiveDsc->endLiveRangeAtEmitter(m_Compiler->GetEmitter());
-        }
-    }
-}
-
-#ifdef DEBUG
-void CodeGenInterface::VariableLiveKeeper::dumpBlockVariableLiveRanges(const BasicBlock* block)
-{
-    assert(block != nullptr);
-
-    bool hasDumpedHistory = false;
-
-    printf("\nVariable Live Range History Dump for " FMT_BB "\n", block->bbNum);
-
-    if (m_Compiler->opts.compDbgInfo)
-    {
-        for (unsigned int varNum = 0; varNum < m_LiveDscCount; varNum++)
-        {
-            VariableLiveDescriptor* varLiveDsc = m_vlrLiveDsc + varNum;
-
-            if (varLiveDsc->hasVarLiveRangesFromLastBlockToDump())
-            {
-                hasDumpedHistory = true;
-                m_Compiler->gtDispLclVar(varNum, false);
-                printf(": ");
-                varLiveDsc->dumpRegisterLiveRangesForBlockBeforeCodeGenerated(m_Compiler->codeGen);
-                varLiveDsc->endBlockLiveRanges();
-                printf("\n");
-            }
-        }
-    }
-
-    if (!hasDumpedHistory)
-    {
-        printf("..None..\n");
-    }
-}
-
-void CodeGenInterface::VariableLiveKeeper::dumpLvaVariableLiveRanges() const
-{
-    bool hasDumpedHistory = false;
-
-    printf("VARIABLE LIVE RANGES:\n");
-
-    if (m_Compiler->opts.compDbgInfo)
-    {
-        for (unsigned int varNum = 0; varNum < m_LiveDscCount; varNum++)
-        {
-            VariableLiveDescriptor* varLiveDsc = m_vlrLiveDsc + varNum;
-
-            if (varLiveDsc->hasVarLiveRangesToDump())
-            {
-                hasDumpedHistory = true;
-                m_Compiler->gtDispLclVar(varNum, false);
-                printf(": ");
-                varLiveDsc->dumpAllRegisterLiveRangesForBlock(m_Compiler->GetEmitter(), m_Compiler->codeGen);
-                printf("\n");
-            }
-        }
-    }
-
-    if (!hasDumpedHistory)
-    {
-        printf("..None..\n");
-    }
-}
-#endif // DEBUG
-
 //-----------------------------------------------------------------------------
 // genPoisonFrame: Generate code that places a recognizable value into address exposed variables.
 //
@@ -9323,7 +8495,9 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
             GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_0, (int)varNum, 0);
             instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ARG_1, static_cast<char>(poisonVal));
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_ARG_2, size);
-            genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
+
+            // Call non-managed memset
+            genEmitHelperCall(CORINFO_HELP_NATIVE_MEMSET, 0, EA_UNKNOWN);
             // May kill REG_SCRATCH, so we need to reload it.
             hasPoisonImm = false;
 #endif
@@ -9487,3 +8661,31 @@ void CodeGen::genCodeForReuseVal(GenTree* treeNode)
         genDefineTempLabel(genCreateTempLabel());
     }
 }
+
+#ifdef SWIFT_SUPPORT
+//---------------------------------------------------------------------
+// genCodeForSwiftErrorReg - generate code for a GT_SWIFT_ERROR node
+//
+// Arguments
+//    tree - the GT_SWIFT_ERROR node
+//
+// Return value:
+//    None
+//
+void CodeGen::genCodeForSwiftErrorReg(GenTree* tree)
+{
+    assert(tree->OperIs(GT_SWIFT_ERROR));
+
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->GetRegNum();
+
+    // LSRA should have picked REG_SWIFT_ERROR as the destination register, too
+    // (see LinearScan::BuildNode for an explanation of why we want this)
+    assert(targetReg == REG_SWIFT_ERROR);
+
+    inst_Mov(targetType, targetReg, REG_SWIFT_ERROR, /* canSkip */ true);
+    genTransferRegGCState(targetReg, REG_SWIFT_ERROR);
+
+    genProduceReg(tree);
+}
+#endif // SWIFT_SUPPORT

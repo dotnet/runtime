@@ -597,6 +597,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 // or else NativeAOT would break
                 Assert.True(prop.PropertyType == typeof(string) ||
                     prop.PropertyType == typeof(bool) ||
+                    prop.PropertyType == typeof(char) ||
                     prop.PropertyType == typeof(int) ||
                     prop.PropertyType.IsEnum, $"ConsoleOptions property '{type.Name}.{prop.Name}' must be a simple type in order for NativeAOT to work");
             }

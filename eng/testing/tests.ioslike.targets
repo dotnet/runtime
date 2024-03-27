@@ -10,16 +10,17 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildTestsOnHelix)' == 'true'">
-    <_AOTBuildCommand>export PATH=$HELIX_CORRELATION_PAYLOAD/build/cmake/cmake-3.16.4-Darwin-x86_64/CMake.app/Contents/bin:$PATH &amp;&amp; </_AOTBuildCommand>
+    <_AOTBuildCommand>export PATH=$HELIX_CORRELATION_PAYLOAD/build/cmake/cmake-3.28.0-macos-universal/CMake.app/Contents/bin:$PATH &amp;&amp; </_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
     <!-- The command below sets default properties for runtime and library tests -->
     <_AOTBuildCommand>$(_AOTBuildCommand) /p:XHARNESS_EXECUTION_DIR=&quot;$XHARNESS_EXECUTION_DIR&quot; /p:RunAOTCompilation=$(RunAOTCompilation) /p:UseNativeAOTRuntime=$(UseNativeAOTRuntime) /p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:MonoForceInterpreter=$(MonoForceInterpreter) /p:MonoEnableLLVM=true /p:DevTeamProvisioning=$(DevTeamProvisioning) /p:UsePortableRuntimePack=true /p:Configuration=$(Configuration)</_AOTBuildCommand>
+    <_AOTBuildCommand Condition="'$(NativeLib)' != ''">$(_AOTBuildCommand) /p:NativeLib=$(NativeLib) /p:BundlesResources=$(BundlesResources) /p:ForceLibraryModeGenerateAppBundle=$(ForceLibraryModeGenerateAppBundle)</_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) </_AOTBuildCommand>
 
-    <_ResetSimulatorSwitch Condition="'$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator'">--reset-simulator</_ResetSimulatorSwitch>
+    <_ResetSimulatorSwitch Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') and '$(IncludesTestRunner)' == 'true'">--reset-simulator</_ResetSimulatorSwitch>
     <_SignalAppEndSwitch>--signal-app-end</_SignalAppEndSwitch>
     <_AppleSignCommand Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">sign &quot;$app&quot;</_AppleSignCommand>
 
@@ -77,7 +78,7 @@
                    Include="@(AppleAssembliesToBundle)"          TargetDir="extraFiles\%(AppleAssembliesToBundle.RecursiveDir)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+    <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(HybridGlobalization)' == 'false'" >
       <BundleFiles Include="$(MicrosoftNetCoreAppRuntimePackDir)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/icudt.dat"
                                                                 TargetDir="publish" />
       <BundleFiles Include="$(MicrosoftNetCoreAppRuntimePackDir)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicudata.a"
@@ -124,6 +125,7 @@
       <_ApplePropertyNames Include="UseConsoleUITemplate" />
       <_ApplePropertyNames Include="UseRuntimeComponents" />
       <_ApplePropertyNames Include="IncludesTestRunner" />
+      <_ApplePropertyNames Include="ShouldILStrip" />
 
       <_ApplePropertiesToPass
         Include="$(%(_ApplePropertyNames.Identity))"
@@ -157,6 +159,8 @@
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
 
     <PropertyGroup>
+    <!-- Default for now. If we can remove our ICU and rely on the system one, then HybridGlobalization becomes the default and we can remove checks for it -->
+      <HybridGlobalization>true</HybridGlobalization>
       <IncludesTestRunner Condition="'$(IncludesTestRunner)' == ''">true</IncludesTestRunner>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IsRuntimeTests)' != 'true' and '$(IncludesTestRunner)' == 'true'">AppleTestRunner.dll</MainLibraryFileName>

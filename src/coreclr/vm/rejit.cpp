@@ -508,6 +508,12 @@ HRESULT ReJitManager::UpdateActiveILVersions(
             continue;
         }
 
+        if (pModule->IsEditAndContinueEnabled())
+        {
+            ReportReJITError(pModule, rgMethodDefs[i], NULL, CORPROF_E_MODULE_IS_ENC);
+            continue;
+        }
+
         if (!pModule->GetMDImport()->IsValidToken(rgMethodDefs[i]))
         {
             ReportReJITError(pModule, rgMethodDefs[i], NULL, E_INVALIDARG);

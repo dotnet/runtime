@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Formats.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -91,9 +92,34 @@ namespace System.Security.Cryptography.X509Certificates
 
         private void Decode(byte[] rawData)
         {
-            X509Pal.Instance.DecodeX509SubjectKeyIdentifierExtension(rawData, out _subjectKeyIdentifierBytes);
+            _subjectKeyIdentifierBytes = DecodeX509SubjectKeyIdentifierExtension(rawData);
             _subjectKeyIdentifierString = _subjectKeyIdentifierBytes.ToHexStringUpper();
             _decoded = true;
+        }
+
+        internal static byte[] DecodeX509SubjectKeyIdentifierExtension(byte[] encoded)
+        {
+            ReadOnlySpan<byte> contents;
+
+            try
+            {
+                bool gotContents = AsnDecoder.TryReadPrimitiveOctetString(
+                    encoded,
+                    AsnEncodingRules.BER,
+                    out contents,
+                    out int consumed);
+
+                if (!gotContents || consumed != encoded.Length)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            return contents.ToArray();
         }
 
         private static byte[] EncodeExtension(ReadOnlySpan<byte> subjectKeyIdentifier)
@@ -101,7 +127,20 @@ namespace System.Security.Cryptography.X509Certificates
             if (subjectKeyIdentifier.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(subjectKeyIdentifier));
 
-            return X509Pal.Instance.EncodeX509SubjectKeyIdentifierExtension(subjectKeyIdentifier);
+            // https://tools.ietf.org/html/rfc5280#section-4.2.1.2
+            //
+            // subjectKeyIdentifier EXTENSION ::= {
+            //     SYNTAX SubjectKeyIdentifier
+            //     IDENTIFIED BY id - ce - subjectKeyIdentifier
+            // }
+            //
+            // SubjectKeyIdentifier::= KeyIdentifier
+            //
+            // KeyIdentifier ::= OCTET STRING
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteOctetString(subjectKeyIdentifier);
+            return writer.Encode();
         }
 
         private static byte[] EncodeExtension(string subjectKeyIdentifier)
@@ -145,11 +184,56 @@ namespace System.Security.Cryptography.X509Certificates
                     }
 
                 case X509SubjectKeyIdentifierHashAlgorithm.CapiSha1:
-                    return X509Pal.Instance.ComputeCapiSha1OfPublicKey(key);
-
+                    // CAPI SHA1 is the SHA-1 hash over the whole SubjectPublicKeyInfo
+                    return HashSubjectPublicKeyInfo(key, HashAlgorithmName.SHA1);
+                case X509SubjectKeyIdentifierHashAlgorithm.Sha256:
+                    return HashSubjectPublicKeyInfo(key, HashAlgorithmName.SHA256);
+                case X509SubjectKeyIdentifierHashAlgorithm.Sha384:
+                    return HashSubjectPublicKeyInfo(key, HashAlgorithmName.SHA384);
+                case X509SubjectKeyIdentifierHashAlgorithm.Sha512:
+                    return HashSubjectPublicKeyInfo(key, HashAlgorithmName.SHA512);
+                case X509SubjectKeyIdentifierHashAlgorithm.ShortSha256:
+                    return HashSubjectPublicKeyLeft160Bits(key, HashAlgorithmName.SHA256);
+                case X509SubjectKeyIdentifierHashAlgorithm.ShortSha384:
+                    return HashSubjectPublicKeyLeft160Bits(key, HashAlgorithmName.SHA384);
+                case X509SubjectKeyIdentifierHashAlgorithm.ShortSha512:
+                    return HashSubjectPublicKeyLeft160Bits(key, HashAlgorithmName.SHA512);
                 default:
                     throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, algorithm), nameof(algorithm));
             }
+        }
+
+        private static byte[] HashSubjectPublicKeyLeft160Bits(PublicKey key, HashAlgorithmName hashAlgorithmName)
+        {
+            const int TruncateSize = 160 / 8;
+            Span<byte> hash = stackalloc byte[512 / 8]; // Largest known hash is 512-bits.
+            int written = CryptographicOperations.HashData(hashAlgorithmName, key.EncodedKeyValue.RawData, hash);
+            Debug.Assert(written >= TruncateSize);
+            return hash.Slice(0, TruncateSize).ToArray();
+        }
+
+        private static byte[] HashSubjectPublicKeyInfo(PublicKey key, HashAlgorithmName hashAlgorithmName)
+        {
+            Span<byte> hash = stackalloc byte[512 / 8]; // Largest known hash is 512-bits.
+            AsnWriter writer = key.EncodeSubjectPublicKeyInfo();
+
+             // An RSA 4096 SPKI is going to be about 550 bytes. 640 for a little extra space. Anything bigger will rent.
+            const int MaxSpkiStackSize = 640;
+            byte[]? rented = null;
+            int encodedLength = writer.GetEncodedLength();
+            Span<byte> spkiBuffer = encodedLength <= MaxSpkiStackSize ?
+                stackalloc byte[MaxSpkiStackSize] :
+                (rented = CryptoPool.Rent(encodedLength));
+
+            int spkiWritten = writer.Encode(spkiBuffer);
+            int hashWritten = CryptographicOperations.HashData(hashAlgorithmName, spkiBuffer.Slice(0, spkiWritten), hash);
+
+            if (rented is not null)
+            {
+                CryptoPool.Return(rented, clearSize: 0); // SPKI is public so no need to zero it.
+            }
+
+            return hash.Slice(0, hashWritten).ToArray();
         }
     }
 }

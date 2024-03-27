@@ -52,15 +52,15 @@ namespace System.Collections.Generic
             if (_size != _array.Length) _tail = _size;
         }
 
-        public int Count
-        {
-            get { return _size; }
-        }
+        public int Count => _size;
 
-        bool ICollection.IsSynchronized
-        {
-            get { return false; }
-        }
+        /// <summary>
+        /// Gets the total numbers of elements the internal data structure can hold without resizing.
+        /// </summary>
+        public int Capacity => _array.Length;
+
+        /// <inheritdoc cref="ICollection{T}"/>
+        bool ICollection.IsSynchronized => false;
 
         object ICollection.SyncRoot => this;
 
@@ -309,6 +309,7 @@ namespace System.Collections.Generic
         // must be >= _size.
         private void SetCapacity(int capacity)
         {
+            Debug.Assert(capacity >= _size);
             T[] newarray = new T[capacity];
             if (_size > 0)
             {
@@ -356,6 +357,22 @@ namespace System.Collections.Generic
             {
                 SetCapacity(_size);
             }
+        }
+
+        /// <summary>
+        /// Sets the capacity of a <see cref="Queue{T}"/> object to the specified number of entries.
+        /// </summary>
+        /// <param name="capacity">The new capacity.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Passed capacity is lower than entries count.</exception>
+        public void TrimExcess(int capacity)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _size);
+
+            if (capacity == _array.Length)
+                return;
+
+            SetCapacity(capacity);
         }
 
         /// <summary>

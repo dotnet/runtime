@@ -89,18 +89,6 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
     METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(NativeCodeSlot)),
     METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot)),
     METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot)),
-
-#ifdef FEATURE_COMINTEROP
-    METHOD_DESC_SIZES(sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(ComPlusCallInfo)),
-
-    METHOD_DESC_SIZES(sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo))
-#endif
 };
 
 #ifndef FEATURE_COMINTEROP
@@ -203,21 +191,6 @@ CHECK MethodDesc::CheckActivated()
     WRAPPER_NO_CONTRACT;
     CHECK(GetModule()->CheckActivated());
     CHECK_OK;
-}
-
-//*******************************************************************************
-BaseDomain *MethodDesc::GetDomain()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return AppDomain::GetCurrentDomain();
 }
 
 #ifndef DACCESS_COMPILE
@@ -2994,7 +2967,7 @@ bool MethodDesc::DetermineIsEligibleForTieredCompilationInvariantForAllMethodsIn
 #ifndef FEATURE_CODE_VERSIONING
     #error Tiered compilation requires code versioning
 #endif
-    return 
+    return
         // Policy
         g_pConfig->TieredCompilation() &&
 
@@ -3082,9 +3055,7 @@ bool MethodDesc::IsJitOptimizationDisabledForAllMethodsInChunk()
 
     return
         g_pConfig->JitMinOpts() ||
-#ifdef _DEBUG
         g_pConfig->GenDebuggableCode() ||
-#endif
         CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits());
 }
 
@@ -3311,13 +3282,7 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
         }
 #endif
 
-        PTR_PCODE pSlot = GetAddrOfNativeCodeSlot();
-        NativeCodeSlot expected;
-
-        expected = *pSlot;
-
-        return InterlockedCompareExchangeT(reinterpret_cast<TADDR*>(pSlot),
-            (TADDR&)addr, (TADDR&)expected) == (TADDR&)expected;
+        return InterlockedCompareExchangeT(GetAddrOfNativeCodeSlot(), addr, pExpected) == pExpected;
     }
 
     _ASSERTE(pExpected == NULL);

@@ -23,9 +23,14 @@
     <EnableRunSettingsSupport>false</EnableRunSettingsSupport>
     <DefineConstants>TARGET_WASI</DefineConstants>
     <_MonoSrcWasmDir>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm'))</_MonoSrcWasmDir>
+
+    <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and
+                                        ('$(ContinuousIntegrationBuild)' != 'true' or Exists('/.dockerenv'))"
+                                        >true</InstallWasmtimeForTests>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\workloads-testing.targets" />
+  <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />
 
   <PropertyGroup>
     <RunScriptInputName Condition="'$(OS)' == 'Windows_NT'">RunScriptTemplate.cmd</RunScriptInputName>
@@ -39,6 +44,7 @@
 
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(_MonoSrcWasmDir)Wasm.Build.Tests\data\nuget*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(_MonoSrcWasmDir)Wasm.Build.Tests\data\WasmOverridePacks.targets" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
@@ -90,7 +96,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER8" />
+      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER9" />
+      <_RuntimePackVersions Include="$(PackageVersionNet8)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' != ''" />
+      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' == ''" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export %(_RuntimePackVersions.EnvVarName)=&quot;%(_RuntimePackVersions.Identity)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;%(_RuntimePackVersions.EnvVarName)=%(_RuntimePackVersions.Identity)&quot;" />

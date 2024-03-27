@@ -213,7 +213,16 @@ void FireDynamicEvent(const char* name, EventArgument... arguments)
         return;
     }
 
-    uint8_t* buf = new (nothrow) uint8_t[size];
+    bool heap_allocated = size > 256;
+    uint8_t* buf;
+    if (heap_allocated)
+    {
+        buf = new (nothrow) uint8_t[size];
+    }
+    else
+    {
+        buf = (uint8_t*)alloca(size);
+    }
     if (!buf)
     {
         // best effort - if we're OOM, don't bother with the event.
@@ -226,7 +235,10 @@ void FireDynamicEvent(const char* name, EventArgument... arguments)
     IGCToCLREventSink* sink = GCToEEInterface::EventSink();
     assert(sink != nullptr);
     sink->FireDynamicEvent(name, buf, static_cast<uint32_t>(size));
-    delete[] buf;
+    if (heap_allocated)
+    {
+        delete[] buf;
+    }
 };
 
 /*

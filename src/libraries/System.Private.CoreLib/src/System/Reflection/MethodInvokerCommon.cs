@@ -58,7 +58,7 @@ namespace System.Reflection
                 {
                     invokerFlags[i] |= InvokerArgFlags.IsValueType;
                 }
-                else if (RuntimeTypeHandle.IsValueType(type))
+                else if (type.IsActualValueType)
                 {
                     invokerFlags[i] |= InvokerArgFlags.IsValueType | InvokerArgFlags.IsValueType_ByRef_Or_Pointer;
 
@@ -96,7 +96,7 @@ namespace System.Reflection
 
             if (!method.DeclaringType!.IsInstanceOfType(target))
             {
-                throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
+                throw new TargetException(SR.Format(SR.RFLCT_Targ_ITargMismatch_WithType, method.DeclaringType, target.GetType()));
             }
         }
 

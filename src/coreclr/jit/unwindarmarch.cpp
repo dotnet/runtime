@@ -329,10 +329,6 @@ void Compiler::unwindPushMaskInt(regMaskTP maskInt)
     if (generateCFIUnwindCodes())
     {
         // If we are pushing LR, we should give unwind codes in terms of caller's PC
-        if (maskInt & RBM_LR)
-        {
-            maskInt = (maskInt & ~RBM_LR) | RBM_PC;
-        }
         unwindPushPopMaskCFI(maskInt, false);
         return;
     }
@@ -1834,6 +1830,22 @@ void UnwindInfo::Split()
 #ifdef DEBUG
     // Consider DOTNET_JitSplitFunctionSize
     unsigned splitFunctionSize = (unsigned)JitConfig.JitSplitFunctionSize();
+    if (splitFunctionSize == 0)
+    {
+        // If the split configuration is not set, then sometimes set it during stress.
+        // Use two stress modes: a split size of 4 (extreme) and a split size of 200 (reasonable).
+        if (uwiComp->compStressCompile(Compiler::STRESS_UNWIND, 10))
+        {
+            if (uwiComp->compStressCompile(Compiler::STRESS_UNWIND, 5))
+            {
+                splitFunctionSize = 4;
+            }
+            else
+            {
+                splitFunctionSize = 200;
+            }
+        }
+    }
 
     if (splitFunctionSize != 0)
         if (splitFunctionSize < maxFragmentSize)

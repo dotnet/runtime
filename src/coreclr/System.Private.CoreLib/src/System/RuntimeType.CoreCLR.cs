@@ -599,7 +599,7 @@ namespace System
                     RuntimeType declaringType = ReflectedType;
                     Debug.Assert(declaringType != null);
 
-                    if (RuntimeTypeHandle.IsInterface(declaringType))
+                    if (declaringType.IsInterface)
                     {
                         #region IsInterface
 
@@ -653,7 +653,7 @@ namespace System
                         bool* overrides = stackalloc bool[numVirtuals];
                         new Span<bool>(overrides, numVirtuals).Clear();
 
-                        bool isValueType = declaringType.IsValueType;
+                        bool isValueType = declaringType.IsActualValueType;
 
                         do
                         {
@@ -1144,7 +1144,7 @@ namespace System
                     RuntimeType declaringType = ReflectedType;
                     ListBuilder<RuntimeEventInfo> list = default;
 
-                    if (!RuntimeTypeHandle.IsInterface(declaringType))
+                    if (!declaringType.IsInterface)
                     {
                         while (RuntimeTypeHandle.IsGenericVariable(declaringType))
                             declaringType = declaringType.GetBaseType()!;
@@ -1234,7 +1234,7 @@ namespace System
 
                     ListBuilder<RuntimePropertyInfo> list = default;
 
-                    if (!RuntimeTypeHandle.IsInterface(declaringType))
+                    if (!declaringType.IsInterface)
                     {
                         while (RuntimeTypeHandle.IsGenericVariable(declaringType))
                             declaringType = declaringType.GetBaseType()!;
@@ -1438,7 +1438,6 @@ namespace System
             private string? m_toString;
             private string? m_namespace;
             private readonly bool m_isGlobal;
-            private bool m_bIsDomainInitialized;
             private MemberInfoCache<RuntimeMethodInfo>? m_methodInfoCache;
             private MemberInfoCache<RuntimeConstructorInfo>? m_constructorInfoCache;
             private MemberInfoCache<RuntimeFieldInfo>? m_fieldInfoCache;
@@ -1521,12 +1520,6 @@ namespace System
 
                     return value;
                 }
-            }
-
-            internal bool DomainInitialized
-            {
-                get => m_bIsDomainInitialized;
-                set => m_bIsDomainInitialized = value;
             }
 
             internal string? GetName(TypeNameKind kind)
@@ -1935,12 +1928,6 @@ namespace System
             set => Cache.GenericCache = value;
         }
 
-        internal bool DomainInitialized
-        {
-            get => Cache.DomainInitialized;
-            set => Cache.DomainInitialized = value;
-        }
-
         internal static FieldInfo GetFieldInfo(IRuntimeFieldInfo fieldHandle)
         {
             return GetFieldInfo(RuntimeFieldHandle.GetApproxDeclaringType(fieldHandle), fieldHandle);
@@ -2046,11 +2033,7 @@ namespace System
             if (nsDelimiter >= 0)
             {
                 ns = fullname.Substring(0, nsDelimiter);
-                int nameLength = fullname.Length - ns.Length - 1;
-                if (nameLength != 0)
-                    name = fullname.Substring(nsDelimiter + 1, nameLength);
-                else
-                    name = "";
+                name = fullname.Substring(nsDelimiter + 1);
                 Debug.Assert(fullname.Equals(ns + "." + name));
             }
             else
@@ -2290,7 +2273,7 @@ namespace System
             // Check if argumentTypes supplied
             if (argumentTypes != null)
             {
-                ParameterInfo[] parameterInfos = methodBase.GetParametersNoCopy();
+                ReadOnlySpan<ParameterInfo> parameterInfos = methodBase.GetParametersAsSpan();
 
                 if (argumentTypes.Length != parameterInfos.Length)
                 {
@@ -2390,7 +2373,9 @@ namespace System
         #region Private Data Members
 
 #pragma warning disable CA1823
+#pragma warning disable CS0169
         private readonly object m_keepalive; // This will be filled with a LoaderAllocator reference when this RuntimeType represents a collectible type
+#pragma warning restore CS0169
 #pragma warning restore CA1823
         private IntPtr m_cache;
         internal IntPtr m_handle;
@@ -2774,7 +2759,12 @@ namespace System
                 MethodBase? rtTypeMethodBase = GetMethodBase(reflectedType, classRtMethodHandle);
                 // a class may not implement all the methods of an interface (abstract class) so null is a valid value
                 Debug.Assert(rtTypeMethodBase is null || rtTypeMethodBase is RuntimeMethodInfo);
-                im.TargetMethods[i] = (MethodInfo)rtTypeMethodBase!;
+                RuntimeMethodInfo? targetMethod = (RuntimeMethodInfo?)rtTypeMethodBase;
+                // the TargetMethod provided to us by runtime internals may be a generic method instance,
+                //  potentially with invalid arguments. TargetMethods in the InterfaceMap should never be
+                //  instances, only definitions.
+                im.TargetMethods[i] = (targetMethod is { IsGenericMethod: true, IsGenericMethodDefinition: false })
+                    ? targetMethod.GetGenericMethodDefinition() : targetMethod!;
             }
 
             return im;
@@ -2848,8 +2838,7 @@ namespace System
             {
                 ConstructorInfo firstCandidate = candidates[0];
 
-                ParameterInfo[] parameters = firstCandidate.GetParametersNoCopy();
-                if (parameters == null || parameters.Length == 0)
+                if (firstCandidate.GetParametersAsSpan().IsEmpty)
                 {
                     return firstCandidate;
                 }
@@ -3383,6 +3372,19 @@ namespace System
             return isValueType;
         }
 
+        // This returns true for actual value types only, ignoring generic parameter constraints.
+        internal unsafe bool IsActualValueType
+        {
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isValueType = !th.IsTypeDesc && th.AsMethodTable()->IsValueType;
+                GC.KeepAlive(this);
+                return isValueType;
+            }
+        }
+
         public override unsafe bool IsEnum
         {
             get
@@ -3399,7 +3401,7 @@ namespace System
             }
         }
 
-        // This returns true for actual enum types only.
+        // This returns true for actual enum types only, ignoring generic parameter constraints.
         internal unsafe bool IsActualEnum
         {
             [Intrinsic]
@@ -3410,6 +3412,30 @@ namespace System
                 bool isEnum = !th.IsTypeDesc && th.AsMethodTable()->ParentMethodTable == Runtime.CompilerServices.TypeHandle.TypeHandleOf<Enum>().AsMethodTable();
                 GC.KeepAlive(this);
                 return isEnum;
+            }
+        }
+
+        internal new unsafe bool IsInterface
+        {
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isInterface = !th.IsTypeDesc && th.AsMethodTable()->IsInterface;
+                GC.KeepAlive(this);
+                return isInterface;
+            }
+        }
+
+        public override unsafe bool IsByRefLike
+        {
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isByRefLike = !th.IsTypeDesc && th.AsMethodTable()->IsByRefLike;
+                GC.KeepAlive(this);
+                return isByRefLike;
             }
         }
 
@@ -3817,7 +3843,7 @@ namespace System
                     throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName));
                 }
 
-                if (invokeMethod.GetParametersNoCopy().Length == 0)
+                if (invokeMethod.GetParametersAsSpan().Length == 0)
                 {
                     if (args.Length != 0)
                     {
@@ -3845,6 +3871,31 @@ namespace System
             {
                 return Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
             }
+        }
+
+        /// <summary>
+        /// Helper to get instances of uninitialized objects.
+        /// </summary>
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal object GetUninitializedObject()
+        {
+            object? genericCache = GenericCache;
+
+            if (genericCache is not CreateUninitializedCache cache)
+            {
+                if (genericCache is ActivatorCache activatorCache)
+                {
+                    cache = activatorCache.GetCreateUninitializedCache(this);
+                }
+                else
+                {
+                    cache = new CreateUninitializedCache(this);
+                    GenericCache = cache;
+                }
+            }
+
+            return cache.CreateUninitializedObject(this);
         }
 
         /// <summary>

@@ -7,7 +7,7 @@
 
     <ItemGroup>
       <_ProjectReferencesUsedByReferencePaths Include="@(ReferencePath->Metadata('ProjectReferenceOriginalItemSpec'))" />
-      <_ProjectAssemblyReferences Include="@(ProjectReference)" Condition="'%(ProjectReference.OutputItemType)' == ''" />
+      <_ProjectAssemblyReferences Include="@(ProjectReference)" Condition="'%(ProjectReference.OutputItemType)' == '' and '%(ProjectReference.ReferenceOutputAssembly)' != 'false'" />
       <_ProjectAssemblyReferences Remove="@(_ReferenceWithDisabledBuild->Metadata('OriginalItemSpec'))" />
       <_ProjectReferencesRemovedDueToConflictResolution Include="@(_ProjectAssemblyReferences)" Exclude="@(_ProjectReferencesUsedByReferencePaths)" />
     </ItemGroup>
@@ -17,6 +17,6 @@
     -->
     <Error Text="@(_ProjectReferencesRemovedDueToConflictResolution->'This project has an assembly name identical to another project, if this CoreCLRTestLibrary, you should reference %24(TestLibraryProjectPath) instead of constructing the path yourself: %(FullPath)', '&#010;')" Condition="'@(_ProjectReferencesRemovedDueToConflictResolution)' != ''"  />
   </Target>
-  
+
   <Import Project="$(RepoRoot)/src/tests/Common/mergedrunnermobile.targets" Condition="'$(TargetsMobile)' == 'true'" />
 </Project>

@@ -113,6 +113,10 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 
 *Normal PInvoke* - The VM shares IL stubs based on signatures, but wants the right method to show up in call stack and exceptions, so the MethodDesc for the exact PInvoke is passed in the (x86) `EAX` / (AMD64) `R10` / (ARM, ARM64) `R12` (in the JIT: `REG_SECRET_STUB_PARAM`). Then in the IL stub, when the JIT gets `CORJIT_FLG_PUBLISH_SECRET_PARAM`, it must move the register into a compiler temp. The value is returned for the intrinsic `NI_System_StubHelpers_GetStubContext`.
 
+## Small primitive returns
+
+Primitive value types smaller than 32-bits are widened to 32-bits: signed small types are sign extended and unsigned small types are zero extended. This can be different from the standard calling conventions that may leave the state of unused bits in the return register undefined.
+
 # PInvokes
 
 The convention is that any method with an InlinedCallFrame (either an IL stub or a normal method with an inlined PInvoke) saves/restores all non-volatile integer registers in its prolog/epilog respectively. This is done so that the InlinedCallFrame can just contain a return address, a stack pointer and a frame pointer. Then using just those three it can start a full stack walk using the normal RtlVirtualUnwind.
@@ -191,9 +195,7 @@ JIT32 does not implement finally cloning.
 
 In order to have proper forward progress and `Thread.Abort` semantics, there are restrictions on where a call-to-finally can be, and what the call site must look like. The return address can **NOT** be in the corresponding try body (otherwise the VM would think the finally protects itself). The return address **MUST** be within any outer protected region (so exceptions from the finally body are properly handled).
 
-JIT64, and RyuJIT for AMD64 and ARM64, creates something similar to a jump island: a block of code outside the try body that calls the finally and then branches to the final target of the leave/non-local-exit. This jump island is then marked in the EH tables as if it were a cloned finally. The cloned finally clause prevents a Thread.Abort from firing before entering the handler. By having the return address outside of the try body we satisfy the other constraint.
-
-Note that ARM solves this by not using a call (bl) instruction and instead explicitly places a return address in `LR` and then jumps to the finally. We have not yet implemented this for AMD64 because it might mess up the call-return predictor on the CPU. (So far performance data on ARM indicates they don't have an issue).
+JIT64, and RyuJIT for non-x86, creates something similar to a jump island: a block of code outside the try body that calls the finally and then branches to the final target of the leave/non-local-exit. This jump island is then marked in the EH tables as if it were a cloned finally. The cloned finally clause prevents a Thread.Abort from firing before entering the handler. By having the return address outside of the try body we satisfy the other constraint.
 
 ## ThreadAbortException considerations
 
@@ -205,7 +207,7 @@ For non-rude thread abort, the VM walks the stack, running any catch handler tha
 
 For example:
 
-```
+```cs
 try { // try 1
     try { // try 2
         System.Threading.Thread.CurrentThread.Abort();
@@ -221,7 +223,7 @@ L:
 
 In this case, if the address returned in catch 2 corresponding to label L is outside try 1, then the ThreadAbortException re-raised by the VM will not be caught by catch 1, as is expected. The JIT needs to insert a block such that this is the effective code generation:
 
-```
+```cs
 try { // try 1
     try { // try 2
         System.Threading.Thread.CurrentThread.Abort();
@@ -238,7 +240,7 @@ L:
 
 Similarly, the automatic re-raise address for a ThreadAbortException can't be within a finally handler, or the VM will abort the re-raise and swallow the exception. This can happen due to call-to-finally thunks marked as "cloned finally", as described above. For example (this is pseudo-assembly-code, not C#):
 
-```
+```cs
 try { // try 1
     try { // try 2
         System.Threading.Thread.CurrentThread.Abort();
@@ -254,7 +256,7 @@ L:
 
 This would generate something like:
 
-```
+```asm
 	// beginning of 'try 1'
 	// beginning of 'try 2'
 	System.Threading.Thread.CurrentThread.Abort();
@@ -279,7 +281,7 @@ Finally1:
 
 Note that the JIT must already insert a "step" block so the finally will be called. However, this isn't sufficient to support ThreadAbortException processing, because "L1" is marked as "cloned finally". In this case, the JIT must insert another step block that is within "try 1" but outside the cloned finally block, that will allow for correct re-raise semantics. For example:
 
-```
+```asm
 	// beginning of 'try 1'
 	// beginning of 'try 2'
 	System.Threading.Thread.CurrentThread.Abort();
@@ -397,7 +399,7 @@ To implement this requirement, for any function with EH, we create a frame-local
 
 Note that the since a slot on x86 is 4 bytes, the minimum size is 16 bytes. The idea is to have 1 slot for each handler that could be possibly be invoked at the same time. For example, for:
 
-```
+```cs
 	try {
 		...
 	} catch {
@@ -417,7 +419,7 @@ When calling a finally, we set the appropriate level to 0xFC (aka "finally call"
 
 Thus, calling a finally from JIT generated code looks like:
 
-```
+```asm
 	mov      dword ptr [L_02+0x4 ebp-10H], 0 // This must happen before the 0xFC is written
 	mov      dword ptr [L_02+0x8 ebp-0CH], 252 // 0xFC
 	push     G_M52300_IG07
@@ -428,7 +430,7 @@ In this case, `G_M52300_IG07` is not the address after the 'jmp', so a simple 'c
 
 The code this finally returns to looks like this:
 
-```
+```asm
 	mov      dword ptr [L_02+0x8 ebp-0CH], 0
 	jmp      SHORT G_M52300_IG05
 ```
@@ -477,7 +479,7 @@ Because a main function body will **always** be on the stack when one of its fun
 
 There is one "corner case" in the VM implementation of WantsReportOnlyLeaf model that has implications for the code the JIT is allowed to generate. Consider this function with nested exception handling:
 
-```
+```cs
 public void runtest() {
     try {
         try {
@@ -612,13 +614,11 @@ The GS Cookie is not a GC object, but still needs to be reported. It can only ha
 
 The unwind callbacks don't know if the current frame is a leaf or a return address. Consequently, the JIT must ensure that the return address of a call is in the same region as the call. Specifically, the JIT must add a NOP (or some other instruction) after any call that otherwise would directly precede the start of a try body, the end of a try body, or the end of a method.
 
-The OS has an optimization in the unwinder such that if an unwind results in a PC being within (or at the start of) an epilog, it assumes that frame is unimportant and unwinds again. Since the CLR considers every frame important, it does not want this double-unwind behavior and requires the JIT to place a NOP (or other instruction) between the any call and any epilog.
+The OS has an optimization in the unwinder such that if an unwind results in a PC being within (or at the start of) an epilog, it assumes that frame is unimportant and unwinds again. Since the CLR considers every frame important, it does not want this double-unwind behavior and requires the JIT to place a NOP (or other instruction) between any call and any epilog.
 
 ### ARM and ARM64 padding info
 
 The OS unwinder uses the `RUNTIME_FUNCTION` extents to determine which function or funclet to unwind out of. The net result is that a call (bl opcode) to `IL_Throw` cannot be the last thing. So similar to AMD64 the JIT must inject an opcode (a breakpoint in this case) when the `bl IL_Throw` would otherwise be the last opcode of a function or funclet, the last opcode before the end of the hot section, or (this might be an x86-ism leaking into ARM) the last before a "special throw block".
-
-The CLR unwinder assumes any non-leaf frame was unwound as a result of a call. This is mostly (always?) true except for non-exceptional finally invocations. For those cases, the JIT must place a 2 byte NOP **before** the address set as the finally return address (in the LR register, before jumping to the finally). I believe this is only needed if the preceding 2 bytes would have otherwise been in a different region (i.e. the end or start of a try body, etc.), but currently the JIT always emits the NOP. This is because the stack walker looks at the return address, subtracts 2, and uses that as the PC for the next step of stack walking. Note that the inserted NOP must have correct GC information.
 
 # Profiler Hooks
 
@@ -804,3 +804,29 @@ In addition to the usual registers it also preserves all float registers and `rc
 `CORINFO_HELP_DISPATCH_INDIRECT_CALL` takes the call address in `rax` and it reserves the right to use and trash `r10` and `r11`.
 The JIT uses the dispatch helper on x64 whenever possible as it is expected that the code size benefits outweighs the less accurate branch prediction.
 However, note that the use of `r11` in the dispatcher makes it incompatible with VSD calls where the JIT must fall back to the validator and a manual call.
+
+# Notes on Memset/Memcpy
+
+Generally, `memset` and `memcpy` do not provide any guarantees of atomicity. This implies that they should only be used when the memory being modified by `memset`/`memcpy` is not observable by any other thread (including GC), or when there are no atomicity requirements according to our [Memory Model](../../specs/Memory-model.md). It's especially important when we modify heap containing managed pointers - those must be updated atomically, e.g. using pointer-sized `mov` instruction (managed pointers are always aligned) - see [Atomic Memory Access](../../specs/Memory-model.md#Atomic-memory-accesses). It's worth noting that by "update" it's implied "set to zero", otherwise, we need a write barrier.
+
+Examples:
+
+```cs
+struct MyStruct
+{
+	long a;
+	string b;
+}
+
+void Test1(ref MyStruct m)
+{
+	// We're not allowed to use memset here
+	m = default;
+}
+
+MyStruct Test2()
+{
+	// We can use memset here
+	return default;
+}
+```

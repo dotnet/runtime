@@ -510,57 +510,6 @@ HCIMPL1_V(double, JIT_Lng2Dbl, INT64 val)
 }
 HCIMPLEND
 
-//--------------------------------------------------------------------------
-template <class ftype>
-ftype modftype(ftype value, ftype *iptr);
-template <> float modftype(float value, float *iptr) { return modff(value, iptr); }
-template <> double modftype(double value, double *iptr) { return modf(value, iptr); }
-
-// round to nearest, round to even if tied
-template <class ftype>
-ftype BankersRound(ftype value)
-{
-    if (value < 0.0) return -BankersRound <ftype> (-value);
-
-    ftype integerPart;
-    modftype( value, &integerPart );
-
-    // if decimal part is exactly .5
-    if ((value -(integerPart +0.5)) == 0.0)
-    {
-        // round to even
-        if (fmod(ftype(integerPart), ftype(2.0)) == 0.0)
-            return integerPart;
-
-        // Else return the nearest even integer
-        return (ftype)_copysign(ceil(fabs(value+0.5)),
-                         value);
-    }
-
-    // Otherwise round to closest
-    return (ftype)_copysign(floor(fabs(value)+0.5),
-                     value);
-}
-
-
-/*********************************************************************/
-// round double to nearest int (as double)
-HCIMPL1_V(double, JIT_DoubleRound, double val)
-{
-    FCALL_CONTRACT;
-    return BankersRound(val);
-}
-HCIMPLEND
-
-/*********************************************************************/
-// round float to nearest int (as float)
-HCIMPL1_V(float, JIT_FloatRound, float val)
-{
-    FCALL_CONTRACT;
-    return BankersRound(val);
-}
-HCIMPLEND
-
 /*********************************************************************/
 // Call fast Dbl2Lng conversion - used by functions below
 FORCEINLINE INT64 FastDbl2Lng(double val)
@@ -678,33 +627,7 @@ HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
 {
     FCALL_CONTRACT;
 
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-
-    if (divisor==0 || !_finite(dividend))
-    {
-        UINT32 NaN = CLR_NAN_32;
-        return *(float *)(&NaN);
-    }
-    else if (!_finite(divisor) && !_isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-#if 0
-    // COMPILER BUG WITH FMODF() + /Oi, USE FMOD() INSTEAD
-    return fmodf(dividend,divisor);
-#else
-    return (float)fmod((double)dividend,(double)divisor);
-#endif
+    return fmodf(dividend, divisor);
 }
 HCIMPLEND
 
@@ -712,27 +635,7 @@ HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
 {
     FCALL_CONTRACT;
 
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-    if (divisor==0 || !_finite(dividend))
-    {
-        UINT64 NaN = CLR_NAN_64;
-        return *(double *)(&NaN);
-    }
-    else if (!_finite(divisor) && !_isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-    return(fmod(dividend,divisor));
+    return fmod(dividend, divisor);
 }
 HCIMPLEND
 
@@ -1779,24 +1682,13 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 }
 HCIMPLEND
 
-struct ThreadStaticBlockInfo
-{
-    uint32_t NonGCMaxThreadStaticBlocks;
-    void** NonGCThreadStaticBlocks;
-
-    uint32_t GCMaxThreadStaticBlocks;
-    void** GCThreadStaticBlocks;
-};
-
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
-__declspec(selectany) __declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
-__declspec(selectany) __declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
+__declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
+__declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
 #else
-EXTERN_C __thread ThreadStaticBlockInfo t_ThreadStatics;
-EXTERN_C __thread uint32_t t_NonGCThreadStaticBlocksSize;
-EXTERN_C __thread uint32_t t_GCThreadStaticBlocksSize;
-#endif
+__thread uint32_t t_NonGCThreadStaticBlocksSize;
+__thread uint32_t t_GCThreadStaticBlocksSize;
+#endif // !_MSC_VER
 
 // *** This helper corresponds to both CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE and
 //     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR. Even though we always check
@@ -2456,7 +2348,6 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable *pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -2483,7 +2374,6 @@ HCIMPL1(Object*, JIT_NewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable* pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -3137,48 +3027,32 @@ HCIMPLEND
 
 struct JitGenericHandleCacheKey
 {
-    JitGenericHandleCacheKey(CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, void *signature, BaseDomain* pDomain=NULL)
+    JitGenericHandleCacheKey(CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, void *signature)
     {
         LIMITED_METHOD_CONTRACT;
         m_Data1 = (size_t)classHnd;
         m_Data2 = (size_t)methodHnd;
         m_Data3 = (size_t)signature;
-        m_pDomainAndType = 0 | (size_t)pDomain;
+        m_type = 0;
     }
 
-    JitGenericHandleCacheKey(MethodTable* pMT, CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, BaseDomain* pDomain=NULL)
+    JitGenericHandleCacheKey(MethodTable* pMT, CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd)
     {
         LIMITED_METHOD_CONTRACT;
         m_Data1 = (size_t)pMT;
         m_Data2 = (size_t)classHnd;
         m_Data3 = (size_t)methodHnd;
-        m_pDomainAndType = 1 | (size_t)pDomain;
-    }
-
-    size_t GetType() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_pDomainAndType & 1);
-    }
-
-    BaseDomain* GetDomain() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (BaseDomain*)(m_pDomainAndType & ~1);
+        m_type = 1;
     }
 
     size_t  m_Data1;
     size_t  m_Data2;
     size_t  m_Data3;
 
-    size_t  m_pDomainAndType; // Which domain the entry belongs to. Not actually part of the key.
-                        // Used only so we can scrape the table on AppDomain termination.
-                        // NULL appdomain means that the entry should be scratched
-                        // on any appdomain unload.
-                        //
-                        // The lowest bit is used to indicate the type of the entry:
-                        //  0 - JIT_GenericHandle entry
-                        //  1 - JIT_VirtualFunctionPointer entry
+    // The type of the entry:
+    //  0 - JIT_GenericHandle entry
+    //  1 - JIT_VirtualFunctionPointer entry
+    unsigned char m_type;
 };
 
 class JitGenericHandleCacheTraits
@@ -3205,9 +3079,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         const JitGenericHandleCacheKey *e1 = (const JitGenericHandleCacheKey*)&pEntry->Key;
         return (e1->m_Data1 == e2->m_Data1) && (e1->m_Data2 == e2->m_Data2) && (e1->m_Data3 == e2->m_Data3) &&
-            (e1->GetType() == e2->GetType()) &&
-            // Any domain will work if the lookup key does not specify it
-            ((e2->GetDomain() == NULL) || (e1->GetDomain() == e2->GetDomain()));
+            (e1->m_type == e2->m_type);
     }
 
     static DWORD Hash(const JitGenericHandleCacheKey *k)
@@ -3255,7 +3127,7 @@ void AddToGenericHandleCache(JitGenericHandleCacheKey* pKey, HashDatum datum)
 }
 
 /* static */
-void ClearJitGenericHandleCache(AppDomain *pDomain)
+void ClearJitGenericHandleCache()
 {
     CONTRACTL {
         NOTHROW;
@@ -3263,8 +3135,8 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
     } CONTRACTL_END;
 
 
-    // We call this on every AppDomain unload, because entries in the cache might include
-    // pointers into the AppDomain being unloaded.  We would prefer to
+    // We call this on every ALC unload, because entries in the cache might include
+    // pointers into the ALC being unloaded.  We would prefer to
     // only flush entries that have that are no longer valid, but the entries don't yet contain
     // enough information to do that.  However everything in the cache can be found again by calling
     // loader functions, and the total number of entries in the cache is typically very small (indeed
@@ -3281,17 +3153,9 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
         while(keepGoing)
         {
             const JitGenericHandleCacheKey *key = g_pJitGenericHandleCache->IterateGetKey(&iter);
-            BaseDomain* pKeyDomain = key->GetDomain();
-            if (pKeyDomain == pDomain || pKeyDomain == NULL)
-            {
-                // Advance the iterator before we delete!!  See notes in EEHash.h
-                keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
-                g_pJitGenericHandleCache->DeleteValue(key);
-            }
-            else
-            {
-                keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
-            }
+            // Advance the iterator before we delete!!  See notes in EEHash.h
+            keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
+            g_pJitGenericHandleCache->DeleteValue(key);
         }
     }
 }
@@ -3367,20 +3231,9 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
     if (pSlot == NULL)
     {
         // If we've overflowed the dictionary write the result to the cache.
-        BaseDomain *pDictDomain = NULL;
-
-        if (pMT != NULL)
-        {
-            pDictDomain = pDeclaringMT->GetDomain();
-        }
-        else
-        {
-            pDictDomain = pMD->GetDomain();
-        }
-
         // Add the normalized key (pDeclaringMT) here so that future lookups of any
         // inherited types are faster next time rather than just just for this specific pMT.
-        JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature, pDictDomain);
+        JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature);
         AddToGenericHandleCache(&key, (HashDatum)result);
     }
 
@@ -3505,7 +3358,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClass, CORINFO_CLASS_HANDLE cla
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -3525,7 +3377,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO
     CONTRACTL{
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(pArgs));
     } CONTRACTL_END;
 
@@ -3547,7 +3398,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassLogging, CORINFO_CLASS_HAN
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -3620,6 +3470,14 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
     HELPER_METHOD_FRAME_END();
 
     return addr;
+}
+HCIMPLEND
+
+HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
+{
+    _ASSERTE(pDest != nullptr);
+    FCALL_CONTRACT;
+    memset(pDest, value, length);
 }
 HCIMPLEND
 
@@ -4245,7 +4103,7 @@ void ThrowNew(OBJECTREF oref)
         }
     }
 
-    DispatchManagedException(oref);
+    DispatchManagedException(oref, /* preserveStackTrace */ false);
 }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -4312,14 +4170,14 @@ HCIMPLEND
 #ifdef FEATURE_EH_FUNCLETS
 void RethrowNew()
 {
-    CONTEXT ctx = {};
-    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-    REGDISPLAY rd;
     Thread *pThread = GetThread();
 
-    ExInfo *pActiveExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+    ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
-    ExInfo exInfo(pThread, &ctx, &rd, ExKind::None);
+    CONTEXT exceptionContext;
+    RtlCaptureContext(&exceptionContext);
+
+    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, &exceptionContext, ExKind::None);
 
     GCPROTECT_BEGIN(exInfo.m_exception);
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
@@ -4327,6 +4185,8 @@ void RethrowNew()
 
     args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    pThread->IncPreventAbort();
 
     //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
     CALL_MANAGED_METHOD_NORET(args)
@@ -5818,6 +5678,46 @@ FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
     *sampleIndex = static_cast<size_t>(x % S);
     return true;
 }
+
+HCIMPL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* valueProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    size_t sampleIndex;
+    if (!CheckSample(&valueProfile->Count, &sampleIndex))
+    {
+        return;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(valueProfile);
+    PgoManager::VerifyAddress(valueProfile + 1);
+#endif
+
+    valueProfile->ValueTable[sampleIndex] = val;
+}
+HCIMPLEND
+
+HCIMPL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* valueProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    size_t sampleIndex;
+    if (!CheckSample(&valueProfile->Count, &sampleIndex))
+    {
+        return;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(valueProfile);
+    PgoManager::VerifyAddress(valueProfile + 1);
+#endif
+
+    valueProfile->ValueTable[sampleIndex] = val;
+}
+HCIMPLEND
 
 HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
 {

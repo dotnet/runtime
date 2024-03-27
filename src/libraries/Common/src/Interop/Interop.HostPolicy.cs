@@ -21,12 +21,12 @@ internal static partial class Interop
 #else
         [LibraryImport(Libraries.HostPolicy, StringMarshalling = StringMarshalling.Utf8)]
 #endif
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial int corehost_resolve_component_dependencies(string componentMainAssemblyPath,
             corehost_resolve_component_dependencies_result_fn result);
 
         [LibraryImport(Libraries.HostPolicy)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial IntPtr corehost_set_error_writer(IntPtr errorWriter);
 #pragma warning restore CS3016 // Arrays as attribute arguments is not CLS-compliant
     }

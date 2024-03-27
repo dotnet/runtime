@@ -217,6 +217,8 @@ typedef struct {
 	guint32  size;
 } MonoStreamHeader;
 
+#define MONO_TABLE_INFO_MAX_COLUMNS 9
+
 struct _MonoTableInfo {
 	const char *base;
 	guint       rows_     : 24;	/* don't access directly, use table_info_get_rows */
@@ -234,6 +236,12 @@ struct _MonoTableInfo {
 	 * we only need 4, but 8 is aligned no shift required.
 	 */
 	guint32   size_bitfield;
+
+	/*
+	 * optimize out the loop in mono_metadata_decode_row_col_raw.
+	 * 4 * 9 easily fits in a uint8
+	 */
+	guint8    column_offsets[MONO_TABLE_INFO_MAX_COLUMNS];
 };
 
 #define REFERENCE_MISSING ((gpointer) -1)
@@ -467,11 +475,6 @@ struct _MonoImage {
 	 */
 	void *user_info;
 
-#ifndef DISABLE_DLLMAP
-	/* dll map entries */
-	MonoDllMap *dll_map;
-#endif
-
 	/* interfaces IDs from this image */
 	/* protected by the classes lock */
 	MonoBitSet *interface_bitset;
@@ -661,10 +664,16 @@ struct _MonoMethodSignature {
 	unsigned int  pinvoke             : 1;
 	unsigned int  is_inflated         : 1;
 	unsigned int  has_type_parameters : 1;
-	unsigned int  suppress_gc_transition : 1;
 	unsigned int  marshalling_disabled : 1;
+	uint8_t       ext_callconv; // see MonoExtCallConv
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
+
+typedef enum {
+  MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION = 0x01,
+  MONO_EXT_CALLCONV_SWIFTCALL = 0x02,
+  /// see MonoMethodSignature:ext_callconv - only 8 bits
+} MonoExtCallConv;
 
 /*
  * AOT cache configuration loaded from config files.
@@ -887,6 +896,8 @@ mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_i
 MONO_COMPONENT_API
 const char *   mono_meta_table_name              (int table);
 void           mono_metadata_compute_table_bases (MonoImage *meta);
+MONO_COMPONENT_API
+void           mono_metadata_compute_column_offsets (MonoTableInfo *table);
 
 gboolean
 mono_metadata_interfaces_from_typedef_full  (MonoImage             *image,
@@ -1279,5 +1290,10 @@ mono_class_set_deferred_type_load_failure (MonoClass *klass, const char * fmt, .
 
 gboolean
 mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...);
+
+static inline gboolean
+mono_method_signature_has_ext_callconv (MonoMethodSignature *sig, MonoExtCallConv flags) {
+	return (sig->ext_callconv & flags) != 0;
+}
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */

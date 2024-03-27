@@ -80,7 +80,7 @@ namespace System.Net.Security
             }
         }
 
-        private SecurityStatusPal EncryptData(ReadOnlyMemory<byte> buffer, ref byte[] outBuffer, out int outSize)
+        private ProtocolToken EncryptData(ReadOnlyMemory<byte> buffer)
         {
             ThrowIfExceptionalOrNotAuthenticated();
 
@@ -88,12 +88,13 @@ namespace System.Net.Security
             {
                 if (_handshakeWaiter != null)
                 {
-                    outSize = 0;
+                    ProtocolToken token = default;
                     // avoid waiting under lock.
-                    return new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
+                    token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
+                    return token;
                 }
 
-                return Encrypt(buffer, ref outBuffer, out outSize);
+                return Encrypt(buffer);
             }
         }
 
@@ -183,6 +184,8 @@ namespace System.Net.Security
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
 
+            ProtocolToken token = default;
+            token.RentBuffer = true;
             try
             {
                 if (_buffer.ActiveLength > 0)
@@ -194,38 +197,40 @@ namespace System.Net.Security
                 _isRenego = true;
 
 
-                SecurityStatusPal status = Renegotiate(out byte[]? nextmsg);
+                token = Renegotiate();
 
-                if (nextmsg is { Length: > 0 })
+                if (token.Size > 0)
                 {
-                    await TIOAdapter.WriteAsync(InnerStream, nextmsg, cancellationToken).ConfigureAwait(false);
+                    await TIOAdapter.WriteAsync(InnerStream, token.AsMemory(), cancellationToken).ConfigureAwait(false);
                     await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
+                token.ReleasePayload();
+
+                if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK)
                 {
-                    if (status.ErrorCode == SecurityStatusPalErrorCode.NoRenegotiation)
+                    if (token.Status.ErrorCode == SecurityStatusPalErrorCode.NoRenegotiation)
                     {
                         // Peer does not want to renegotiate. That should keep session usable.
                         return;
                     }
 
-                    throw SslStreamPal.GetException(status);
+                    throw SslStreamPal.GetException(token.Status);
                 }
 
-                ProtocolToken message;
                 do
                 {
                     int frameSize = await ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
-                    ProcessTlsFrame(frameSize, out message);
+                    token = ProcessTlsFrame(frameSize);
 
-                    if (message.Size > 0)
+                    if (token.Size > 0)
                     {
-                        await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(message.Payload!, 0, message.Size), cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, token.AsMemory(), cancellationToken).ConfigureAwait(false);
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                     }
+                    token.ReleasePayload();
                 }
-                while (message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
+                while (token.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
 
                 CompleteHandshake(_sslAuthenticationOptions);
             }
@@ -235,6 +240,8 @@ namespace System.Net.Security
                 {
                     _buffer.ReturnBuffer();
                 }
+
+                token.ReleasePayload();
 
                 _nestedRead = StreamNotInUse;
                 _nestedWrite = StreamNotInUse;
@@ -247,8 +254,10 @@ namespace System.Net.Security
         private async Task ForceAuthenticationAsync<TIOAdapter>(bool receiveFirst, byte[]? reAuthenticationData, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            ProtocolToken message = default;
             bool handshakeCompleted = false;
+            ProtocolToken token = default;
+
+            token.RentBuffer = true;
 
             if (reAuthenticationData == null)
             {
@@ -262,22 +271,25 @@ namespace System.Net.Security
             {
                 if (!receiveFirst)
                 {
-                    NextMessage(reAuthenticationData, out message);
+                    token = NextMessage(reAuthenticationData);
 
-                    if (message.Size > 0)
+                    if (token.Size > 0)
                     {
-                        await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(message.Payload!, 0, message.Size), cancellationToken).ConfigureAwait(false);
+                        Debug.Assert(token.Payload != null);
+                        await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(token.Payload!, 0, token.Size), cancellationToken).ConfigureAwait(false);
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                         if (NetEventSource.Log.IsEnabled())
-                            NetEventSource.Log.SentFrame(this, message.Payload);
+                            NetEventSource.Log.SentFrame(this, token.Payload);
                     }
 
-                    if (message.Failed)
+                    token.ReleasePayload();
+
+                    if (token.Failed)
                     {
                         // tracing done in NextMessage()
-                        throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
+                        throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
                     }
-                    else if (message.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                    else if (token.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
                     {
                         // We can finish renegotiation without doing any read.
                         handshakeCompleted = true;
@@ -292,14 +304,14 @@ namespace System.Net.Security
                 while (!handshakeCompleted)
                 {
                     int frameSize = await ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
-                    ProcessTlsFrame(frameSize, out message);
+                    token = ProcessTlsFrame(frameSize);
 
                     ReadOnlyMemory<byte> payload = default;
-                    if (message.Size > 0)
+                    if (token.Size > 0)
                     {
-                        payload = new ReadOnlyMemory<byte>(message.Payload, 0, message.Size);
+                        payload = token.AsMemory();
                     }
-                    else if (message.Failed && (_lastFrame.Header.Type == TlsContentType.Handshake || _lastFrame.Header.Type == TlsContentType.ChangeCipherSpec))
+                    else if (token.Failed && (_lastFrame.Header.Type == TlsContentType.Handshake || _lastFrame.Header.Type == TlsContentType.ChangeCipherSpec))
                     {
                         // If we failed without OS sending out alert, inject one here to be consistent across platforms.
                         payload = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, TlsAlertDescription.ProtocolVersion);
@@ -315,20 +327,22 @@ namespace System.Net.Security
                             NetEventSource.Log.SentFrame(this, payload.Span);
                     }
 
-                    if (message.Failed)
+                    token.ReleasePayload();
+
+                    if (token.Failed)
                     {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, message.Status);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, token.Status);
 
                         if (_lastFrame.Header.Type == TlsContentType.Alert && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify &&
-                                 message.Status.ErrorCode == SecurityStatusPalErrorCode.IllegalMessage)
+                                 token.Status.ErrorCode == SecurityStatusPalErrorCode.IllegalMessage)
                         {
                             // Improve generic message and show details if we failed because of TLS Alert.
-                            throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastFrame.AlertDescription.ToString()), message.GetException());
+                            throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastFrame.AlertDescription.ToString()), token.GetException());
                         }
 
-                        throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
+                        throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
                     }
-                    else if (message.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                    else if (token.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
                     {
                         // We can finish renegotiation without doing any read.
                         handshakeCompleted = true;
@@ -344,6 +358,8 @@ namespace System.Net.Security
                     _nestedAuth = StreamNotInUse;
                     _isRenego = false;
                 }
+
+                token.ReleasePayload();
             }
 
             if (NetEventSource.Log.IsEnabled())
@@ -390,7 +406,7 @@ namespace System.Net.Security
                                                                     TlsFrameHelper.ProcessingOptions.ServerName;
                         if (OperatingSystem.IsMacOS() && _sslAuthenticationOptions.IsServer)
                         {
-                            // macOS cannot process ALPN on server at the momennt.
+                            // macOS cannot process ALPN on server at the moment.
                             // We fallback to our own process similar to SNI bellow.
                             options |= TlsFrameHelper.ProcessingOptions.RawApplicationProtocol;
                         }
@@ -438,7 +454,7 @@ namespace System.Net.Security
         }
 
         // Calls crypto on received data. No IO inside.
-        private void ProcessTlsFrame(int frameSize, out ProtocolToken message)
+        private ProtocolToken ProcessTlsFrame(int frameSize)
         {
             int chunkSize = frameSize;
 
@@ -471,7 +487,7 @@ namespace System.Net.Security
                 _buffer.DiscardEncrypted(frameSize);
             }
 
-            NextMessage(availableData.Slice(0, chunkSize), out message);
+            return NextMessage(availableData.Slice(0, chunkSize));
         }
 
         //
@@ -578,21 +594,17 @@ namespace System.Net.Security
         private ValueTask WriteSingleChunk<TIOAdapter>(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length + FrameOverhead);
-            byte[] outBuffer = rentedBuffer;
-
-            SecurityStatusPal status;
-            int encryptedBytes;
+            ProtocolToken token;
             while (true)
             {
-                status = EncryptData(buffer, ref outBuffer, out encryptedBytes);
-
+                token = EncryptData(buffer);
                 // TryAgain should be rare, when renegotiation happens exactly when we want to write.
-                if (status.ErrorCode != SecurityStatusPalErrorCode.TryAgain)
+                if (token.Status.ErrorCode != SecurityStatusPalErrorCode.TryAgain)
                 {
                     break;
                 }
 
+                // We failed to encrypt because renegotiation is pending.
                 TaskCompletionSource<bool>? waiter = _handshakeWaiter;
                 if (waiter != null)
                 {
@@ -604,67 +616,58 @@ namespace System.Net.Security
                     }
 
                     // We need to wait asynchronously as well as for the write when EncryptData is finished.
-                    return WaitAndWriteAsync(buffer, waiterTask, rentedBuffer, cancellationToken);
+                    return WaitAndWriteAsync(buffer, waiterTask, cancellationToken);
                 }
             }
 
-            if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
+            if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
-                ArrayPool<byte>.Shared.Return(rentedBuffer);
-                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status))));
+                token.ReleasePayload();
+                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(token.Status))));
             }
 
-            ValueTask t = TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(outBuffer, 0, encryptedBytes), cancellationToken);
+            ValueTask t = TIOAdapter.WriteAsync(InnerStream, token.AsMemory(), cancellationToken);
             if (t.IsCompletedSuccessfully)
             {
-                ArrayPool<byte>.Shared.Return(rentedBuffer);
+                token.ReleasePayload();
                 return t;
             }
             else
             {
-                return CompleteWriteAsync(t, rentedBuffer);
+                return CompleteWriteAsync(t, token);
             }
 
-            async ValueTask WaitAndWriteAsync(ReadOnlyMemory<byte> buffer, Task waitTask, byte[] rentedBuffer, CancellationToken cancellationToken)
+            async ValueTask WaitAndWriteAsync(ReadOnlyMemory<byte> buffer, Task waitTask, CancellationToken cancellationToken)
             {
-                byte[]? bufferToReturn = rentedBuffer;
-                byte[] outBuffer = rentedBuffer;
+                ProtocolToken token = default;
                 try
                 {
                     // Wait for renegotiation to finish.
                     await waitTask.ConfigureAwait(false);
 
-                    SecurityStatusPal status = EncryptData(buffer, ref outBuffer, out int encryptedBytes);
-                    if (status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
+                    token = EncryptData(buffer);
+                    if (token.Status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
                     {
-                        // No need to hold on the buffer any more.
-                        byte[] tmp = bufferToReturn;
-                        bufferToReturn = null;
-                        ArrayPool<byte>.Shared.Return(tmp);
-
                         // Call WriteSingleChunk() recursively to avoid code duplication.
                         // This should be extremely rare in cases when second renegotiation happens concurrently with Write.
                         await WriteSingleChunk<TIOAdapter>(buffer, cancellationToken).ConfigureAwait(false);
                     }
-                    else if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                    else if (token.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
                     {
-                        await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(outBuffer, 0, encryptedBytes), cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, token.AsMemory(), cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        throw new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status));
+                        throw new IOException(SR.net_io_encrypt, SslStreamPal.GetException(token.Status));
                     }
                 }
                 finally
                 {
-                    if (bufferToReturn != null)
-                    {
-                        ArrayPool<byte>.Shared.Return(bufferToReturn);
-                    }
+                    token.ReleasePayload();
                 }
             }
 
-            static async ValueTask CompleteWriteAsync(ValueTask writeTask, byte[] bufferToReturn)
+            static async ValueTask CompleteWriteAsync(ValueTask writeTask, ProtocolToken token)
             {
                 try
                 {
@@ -672,7 +675,7 @@ namespace System.Net.Security
                 }
                 finally
                 {
-                    ArrayPool<byte>.Shared.Return(bufferToReturn);
+                    token.ReleasePayload();
                 }
             }
         }

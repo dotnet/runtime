@@ -16,8 +16,8 @@
     <namespace fullname="Xunit.Sdk" />
   </assembly>
   <assembly fullname="xunit.assert">
-    <type fullname="Xunit.Sdk.AssertEqualityComparer`1">
-      <method signature="System.Boolean CompareTypedSets(System.Collections.IEnumerable,System.Collections.IEnumerable)" />
+    <type fullname="Xunit.Sdk.CollectionTracker">
+      <method name="CompareTypedSets" />
     </type>
   </assembly>
   <assembly fullname="xunit.runner.utility.netcoreapp10" />

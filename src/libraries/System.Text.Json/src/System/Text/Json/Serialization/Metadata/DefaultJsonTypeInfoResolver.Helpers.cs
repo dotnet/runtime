@@ -38,12 +38,20 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonTypeInfo CreateTypeInfoCore(Type type, JsonConverter converter, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, converter, options);
-            typeInfo.NumberHandling = GetNumberHandlingForType(typeInfo.Type);
-            typeInfo.PreferredPropertyObjectCreationHandling = GetObjectCreationHandlingForType(typeInfo.Type);
 
-            if (typeInfo.Kind == JsonTypeInfoKind.Object)
+            if (GetNumberHandlingForType(typeInfo.Type) is { } numberHandling)
             {
-                typeInfo.UnmappedMemberHandling = GetUnmappedMemberHandling(typeInfo.Type);
+                typeInfo.NumberHandling = numberHandling;
+            }
+
+            if (GetObjectCreationHandlingForType(typeInfo.Type) is { } creationHandling)
+            {
+                typeInfo.PreferredPropertyObjectCreationHandling = creationHandling;
+            }
+
+            if (GetUnmappedMemberHandling(typeInfo.Type) is { } unmappedMemberHandling)
+            {
+                typeInfo.UnmappedMemberHandling = unmappedMemberHandling;
             }
 
             typeInfo.PopulatePolymorphismMetadata();
@@ -80,7 +88,7 @@ namespace System.Text.Json.Serialization.Metadata
             bool constructorHasSetsRequiredMembersAttribute =
                 typeInfo.Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false;
 
-            JsonTypeInfo.PropertyHierarchyResolutionState state = new();
+            JsonTypeInfo.PropertyHierarchyResolutionState state = new(typeInfo.Options);
 
             // Walk the type hierarchy starting from the current type up to the base type(s)
             foreach (Type currentType in typeInfo.Type.GetSortedTypeHierarchy())
@@ -105,6 +113,33 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        private const BindingFlags AllInstanceMembers =
+            BindingFlags.Instance |
+            BindingFlags.Public |
+            BindingFlags.NonPublic |
+            BindingFlags.DeclaredOnly;
+
+        /// <summary>
+        /// Looks up the type for a member matching the given name and member type.
+        /// </summary>
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        internal static MemberInfo? LookupMemberInfo(Type type, MemberTypes memberType, string name)
+        {
+            Debug.Assert(memberType is MemberTypes.Field or MemberTypes.Property);
+
+            // Walk the type hierarchy starting from the current type up to the base type(s)
+            foreach (Type t in type.GetSortedTypeHierarchy())
+            {
+                MemberInfo[] members = t.GetMember(name, memberType, AllInstanceMembers);
+                if (members.Length > 0)
+                {
+                    return members[0];
+                }
+            }
+
+            return null;
+        }
+
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static void AddMembersDeclaredBySuperType(
@@ -116,17 +151,11 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(!typeInfo.IsReadOnly);
             Debug.Assert(currentType.IsAssignableFrom(typeInfo.Type));
 
-            const BindingFlags BindingFlags =
-                BindingFlags.Instance |
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.DeclaredOnly;
-
             // Compiler adds RequiredMemberAttribute to type if any of the members are marked with 'required' keyword.
             bool shouldCheckMembersForRequiredMemberAttribute =
                 !constructorHasSetsRequiredMembersAttribute && currentType.HasRequiredMemberAttribute();
 
-            foreach (PropertyInfo propertyInfo in currentType.GetProperties(BindingFlags))
+            foreach (PropertyInfo propertyInfo in currentType.GetProperties(AllInstanceMembers))
             {
                 // Ignore indexers and virtual properties that have overrides that were [JsonIgnore]d.
                 if (propertyInfo.GetIndexParameters().Length > 0 ||
@@ -152,7 +181,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
             }
 
-            foreach (FieldInfo fieldInfo in currentType.GetFields(BindingFlags))
+            foreach (FieldInfo fieldInfo in currentType.GetFields(AllInstanceMembers))
             {
                 bool hasJsonIncludeAtribute = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
                 if (hasJsonIncludeAtribute || (fieldInfo.IsPublic && typeInfo.Options.IncludeFields))

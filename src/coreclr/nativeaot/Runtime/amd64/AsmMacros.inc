@@ -214,24 +214,6 @@ Name label proc
 PUBLIC Name
         endm
 
-EXPORT_POINTER_TO_ADDRESS macro Name
-
-        local   AddressToExport
-
-AddressToExport  label   proc
-
-        .const
-
-        align   8
-
-Name    dq      offset AddressToExport
-
-        public  Name
-
-        .code
-
-        endm
-
 _tls_array     equ 58h     ;; offsetof(TEB, ThreadLocalStoragePointer)
 
 ;;
@@ -391,7 +373,6 @@ STATUS_REDHAWK_THREAD_ABORT      equ 43h
 ;;
 
 ifdef FEATURE_GC_STRESS
-REDHAWKGCINTERFACE__STRESSGC                equ ?StressGc@RedhawkGCInterface@@SAXXZ
 THREAD__HIJACKFORGCSTRESS                   equ ?HijackForGcStress@Thread@@SAXPEAUPAL_LIMITED_CONTEXT@@@Z
 endif ;; FEATURE_GC_STRESS
 
@@ -409,7 +390,7 @@ EXTERN RhThrowEx                                : PROC
 EXTERN RhRethrow                                : PROC
 EXTERN RhpGcPoll2                               : PROC
 ifdef FEATURE_GC_STRESS
-EXTERN REDHAWKGCINTERFACE__STRESSGC             : PROC
+EXTERN RhpStressGc                              : PROC
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC
 endif ;; FEATURE_GC_STRESS
 

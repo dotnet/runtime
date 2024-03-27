@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-static unsafe class UnsafeAccessorsTests
+public static unsafe class UnsafeAccessorsTests
 {
     const string PrivateStatic = nameof(PrivateStatic);
     const string Private = nameof(Private);
@@ -43,7 +43,7 @@ static unsafe class UnsafeAccessorsTests
         private void _mvv() {}
 
         // The "init" is important to have here - custom modifier test.
-        // The signature of set_Prop is 
+        // The signature of set_Prop is
         // instance void modreq([System.Runtime]System.Runtime.CompilerServices.IsExternalInit) set_Prop ( string 'value')
         private string Prop { get; init; }
 
@@ -526,15 +526,6 @@ static unsafe class UnsafeAccessorsTests
     {
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
         public extern string NonStatic(string a);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
-        public static extern string CallToString<U>(U a);
-    }
-
-    class Invalid<T>
-    {
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
-        public static extern string CallToString(T a);
     }
 
     [Fact]
@@ -559,8 +550,6 @@ static unsafe class UnsafeAccessorsTests
         Assert.Throws<BadImageFormatException>(() => LookUpFailsOnPointers(null));
         Assert.Throws<BadImageFormatException>(() => LookUpFailsOnFunctionPointers(null));
         Assert.Throws<BadImageFormatException>(() => new Invalid().NonStatic(string.Empty));
-        Assert.Throws<BadImageFormatException>(() => Invalid.CallToString<string>(string.Empty));
-        Assert.Throws<BadImageFormatException>(() => Invalid<string>.CallToString(string.Empty));
         Assert.Throws<BadImageFormatException>(() =>
         {
             string str = string.Empty;

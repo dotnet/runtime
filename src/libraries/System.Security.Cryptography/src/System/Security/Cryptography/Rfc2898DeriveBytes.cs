@@ -36,7 +36,7 @@ namespace System.Security.Cryptography
         }
 
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm)
-            :this(password, salt, iterations, hashAlgorithm, clearPassword: false)
+            : this(password, salt, iterations, hashAlgorithm, clearPassword: false)
         {
         }
 

@@ -40,7 +40,7 @@
                                            // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
   #define TARGET_POINTER_SIZE      4       // equal to sizeof(void*) and the managed pointer size in bytes for this target
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
-  #define FEATURE_EH_CALLFINALLY_THUNKS 0  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
+  #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
 
@@ -70,6 +70,11 @@
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
   #define RBM_ALLFLOAT            (RBM_FLT_CALLEE_SAVED | RBM_FLT_CALLEE_TRASH)
   #define RBM_ALLDOUBLE           (RBM_F0|RBM_F2|RBM_F4|RBM_F6|RBM_F8|RBM_F10|RBM_F12|RBM_F14|RBM_F16|RBM_F18|RBM_F20|RBM_F22|RBM_F24|RBM_F26|RBM_F28|RBM_F30)
+
+  // Double registers on ARM take two registers in odd/even pairs, e.g. f0 and f1, f2 and f3, etc. Mostly, we refer
+  // to double registers by their low, even, part. Sometimes we need to know that the high, odd, part is unused in
+  // a bitmask, say, hence we have this definition.
+  #define RBM_ALLDOUBLE_HIGH      (RBM_F1|RBM_F3|RBM_F5|RBM_F7|RBM_F9|RBM_F11|RBM_F13|RBM_F15|RBM_F17|RBM_F19|RBM_F21|RBM_F23|RBM_F25|RBM_F27|RBM_F29|RBM_F31)
 
   #define REG_VAR_ORDER            REG_R3,REG_R2,REG_R1,REG_R0,REG_R4,REG_LR,REG_R12,\
                                    REG_R5,REG_R6,REG_R7,REG_R8,REG_R9,REG_R10
@@ -281,7 +286,6 @@
 
   #define RBM_ARG_REGS            (RBM_ARG_0|RBM_ARG_1|RBM_ARG_2|RBM_ARG_3)
   #define RBM_FLTARG_REGS         (RBM_F0|RBM_F1|RBM_F2|RBM_F3|RBM_F4|RBM_F5|RBM_F6|RBM_F7|RBM_F8|RBM_F9|RBM_F10|RBM_F11|RBM_F12|RBM_F13|RBM_F14|RBM_F15)
-  #define RBM_DBL_REGS            RBM_ALLDOUBLE
 
   extern const regNumber fltArgRegs [MAX_FLOAT_REG_ARG];
   extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];

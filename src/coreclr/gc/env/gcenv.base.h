@@ -54,8 +54,11 @@
 typedef int BOOL;
 typedef uint32_t DWORD;
 typedef uint64_t DWORD64;
+#ifdef _MSC_VER
+typedef unsigned long ULONG;
+#else
 typedef uint32_t ULONG;
-
+#endif
 // -----------------------------------------------------------------------------------------------------------
 // HRESULT subset.
 
@@ -383,11 +386,6 @@ inline void* ALIGN_DOWN(void* ptr, size_t alignment)
 {
     size_t as_size_t = reinterpret_cast<size_t>(ptr);
     return reinterpret_cast<void*>(ALIGN_DOWN(as_size_t, alignment));
-}
-
-inline int GetRandomInt(int max)
-{
-    return rand() % max;
 }
 
 typedef struct _PROCESSOR_NUMBER {

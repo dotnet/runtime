@@ -279,7 +279,7 @@ echo %__MsgPrefix%Number of processor cores %NumberOfCores%
 set __ExtraCmakeArgs=
 
 if %__Ninja% EQU 1 (
-    set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0 -DCMAKE_BUILD_TYPE=!__BuildType!"
+    set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" "-DCMAKE_BUILD_TYPE=!__BuildType!"
 ) else (
     set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0"
 )

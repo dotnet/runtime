@@ -121,6 +121,12 @@ namespace ILCompiler.DependencyAnalysis
                         command |= StackTraceDataCommand.UpdateSignature;
                     }
                 }
+
+                if (entry.IsHidden)
+                {
+                    command |= StackTraceDataCommand.IsStackTraceHidden;
+                }
+
                 objData.EmitByte(commandReservation, command);
                 objData.EmitReloc(factory.MethodEntrypoint(entry.Method), RelocType.IMAGE_REL_BASED_RELPTR32);
             }

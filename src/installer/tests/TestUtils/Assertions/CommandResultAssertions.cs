@@ -74,6 +74,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return new AndConstraint<CommandResultAssertions>(this);
         }
 
+        public AndConstraint<CommandResultAssertions> NotHaveStdOutMatching(string pattern, RegexOptions options = RegexOptions.None)
+        {
+            Execute.Assertion.ForCondition(!Regex.IsMatch(Result.StdOut, pattern, options))
+                .FailWith($"The command output matched a pattern is should not have matched. Pattern: '{pattern}'{GetDiagnosticsInfo()}");
+            return new AndConstraint<CommandResultAssertions>(this);
+        }
+
         public AndConstraint<CommandResultAssertions> HaveStdErr()
         {
             Execute.Assertion.ForCondition(!string.IsNullOrEmpty(Result.StdErr))
@@ -147,20 +154,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 $"Exit Code: {Result.ExitCode}{Environment.NewLine}" +
                 $"StdOut:{Environment.NewLine}{Result.StdOut}{Environment.NewLine}" +
                 $"StdErr:{Environment.NewLine}{Result.StdErr}{Environment.NewLine}";
-        }
-
-        public AndConstraint<CommandResultAssertions> HaveSkippedProjectCompilation(string skippedProject, string frameworkFullName)
-        {
-            Result.StdOut.Should().Contain("Project {0} ({1}) was previously compiled. Skipping compilation.", skippedProject, frameworkFullName);
-
-            return new AndConstraint<CommandResultAssertions>(this);
-        }
-
-        public AndConstraint<CommandResultAssertions> HaveCompiledProject(string compiledProject, string frameworkFullName)
-        {
-            Result.StdOut.Should().Contain($"Project {0} ({1}) will be compiled", compiledProject, frameworkFullName);
-
-            return new AndConstraint<CommandResultAssertions>(this);
         }
     }
 }

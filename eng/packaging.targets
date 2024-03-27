@@ -4,13 +4,14 @@
     <!-- Package Validation isn't helpful when authoring shared framework packages. -->
     <EnablePackageValidation Condition="'$(EnablePackageValidation)' == '' and
                                         '$(UsingMicrosoftDotNetSharedFrameworkSdk)' != 'true' and
-                                        '$(DotNetBuildFromSource)' != 'true'">true</EnablePackageValidation>
+                                        '$(DotNetBuildSourceOnly)' != 'true'">true</EnablePackageValidation>
     <!-- Don't perform baseline validation if we don't have a stable prebuilt version.
          Don't attempt to restore prebuilts during source-build. -->
     <DisablePackageBaselineValidation Condition="'$(IsShipping)' == 'false' or
                                                  '$(SuppressFinalPackageVersion)' == 'true' or
-                                                 '$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
+                                                 '$(DotNetBuildSourceOnly)' == 'true'">true</DisablePackageBaselineValidation>
     <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$(ApiCompatNetCoreAppBaselineVersion)</PackageValidationBaselineVersion>
+
     <BeforePack>$(BeforePack);IncludeAnalyzersInPackage;AddNETStandardCompatErrorFileForPackaging</BeforePack>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage;IncludeProjectReferencesWithPackAttributeInPackage</TargetsForTfmSpecificContentInPackage>
     <!-- Don't include target platform specific dependencies, since we use the target platform to represent RIDs instead -->
@@ -20,21 +21,35 @@
     <ApiCompatIgnoreTargetPlatformMoniker Condition="'$(SuppressDependenciesWhenPacking)' == 'true'">true</ApiCompatIgnoreTargetPlatformMoniker>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
     <PackageReadmeFile Condition="'$(PackageReadmeFile)' == '' and Exists('PACKAGE.md')">PACKAGE.md</PackageReadmeFile>
+    <!-- Non-shipping packages shouldn't incrementally serviced. -->
+    <PackageUseIncrementalServicingVersion Condition="'$(IsShipping)' != 'true'">false</PackageUseIncrementalServicingVersion>
     <!-- Generate packages for rid specific projects or for allconfigurations during build. -->
     <!-- A package isn't generated if in servicing or in runtimelab. Intended to be overridden at project level. -->
     <IsRIDSpecificProject Condition="$(MSBuildProjectName.StartsWith('runtime.')) and
                                      !$(MSBuildProjectName.StartsWith('runtime.native'))">true</IsRIDSpecificProject>
-    <GeneratePackageOnBuild Condition="('$(BuildAllConfigurations)' == 'true' or
-                                       '$(IsRIDSpecificProject)' == 'true') and
-                                       '$(PreReleaseVersionLabel)' != 'servicing' and
+    <GeneratePackageOnBuild Condition="(
+                                        '$(BuildAllConfigurations)' == 'true' or
+                                        '$(IsRIDSpecificProject)' == 'true'
+                                       ) and
+                                       (
+                                        '$(PreReleaseVersionLabel)' != 'servicing' or
+                                        '$(PackageUseIncrementalServicingVersion)' != 'true'
+                                       ) and
                                        '$(GitHubRepositoryName)' != 'runtimelab'">true</GeneratePackageOnBuild>
     <!-- When in source-build we need to generate all packages when building for all configurations even in servicing. -->
     <GeneratePackageOnBuild Condition="'$(GeneratePackageOnBuild)' != 'true' and
                                        '$(BuildAllConfigurations)' == 'true' and
-                                       '$(DotNetBuildFromSource)' == 'true'">true</GeneratePackageOnBuild>
+                                       '$(DotNetBuildSourceOnly)' == 'true'">true</GeneratePackageOnBuild>
 
     <!-- During NoBuild pack invocations, skip project reference build. Necessary for the IncludeProjectReferencesWithPackAttributeInPackage target. -->
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
+    <!-- In servicing, the live package is compared against the GA version in strict mode. -->
+    <EnableStrictModeForBaselineValidation>true</EnableStrictModeForBaselineValidation>
+    <!-- In servicing, disable the APICompat rule that validates that the assembly versions must match. -->
+    <NoWarn>$(NoWarn);CP0003</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing' and
@@ -47,12 +62,13 @@
     <!-- Always update the package version in servicing. -->
     <Version>$(MajorVersion).$(MinorVersion).$(ServicingVersion)</Version>
     <Version Condition="'$(VersionSuffix)' != ''">$(Version)-$(VersionSuffix)</Version>
-    <_IsWindowsDesktopApp Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsWindowsDesktopApp>
-    <_IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsAspNetCoreApp>
-    <_AssemblyInTargetingPack Condition="('$(IsNETCoreAppSrc)' == 'true' or '$(IsNetCoreAppRef)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true') and '$(TargetFrameworkIdentifier)' != '.NETFramework'">true</_AssemblyInTargetingPack>
-    <!-- The assembly version gets updated when the assembly isn't part of a targeting pack. -->
-    <AssemblyVersion Condition="'$(_AssemblyInTargetingPack)' != 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
   </PropertyGroup>
+
+  <!-- Main packages intentionally don't include assets for net6.0 and net7.0 anymore. -->
+  <ItemGroup>
+    <PackageValidationBaselineFrameworkToIgnore Include="net6.0" />
+    <PackageValidationBaselineFrameworkToIgnore Include="net7.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Add a marker to help the designer optimize & share .NET Core packages -->
@@ -291,7 +307,7 @@
   <Target Name="ValidateServicingVersionIsProperlySet"
           Condition="'$(PreReleaseVersionLabel)' == 'servicing' and
                      '$(PackageUseIncrementalServicingVersion)' == 'true' and
-                     '$(DotNetBuildFromSource)' != 'true'"
+                     '$(DotNetBuildSourceOnly)' != 'true'"
           AfterTargets="GenerateNuspec">
     <Error Condition="'$(ServicingVersion)' == '0'" Text="ServicingVersion is set to 0 and it should be an increment of the patch version from the last released package." />
   </Target>

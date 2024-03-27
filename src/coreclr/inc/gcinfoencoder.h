@@ -285,7 +285,7 @@ private:
     // Writes bits knowing that they will all fit in the current memory slot
     inline void WriteInCurrentSlot( size_t data, UINT32 count )
     {
-        data &= SAFE_SHIFT_LEFT(1, count) - 1;
+        data &= ((size_t)-1 >> (BITS_PER_SIZE_T - count));
         data <<= (BITS_PER_SIZE_T - m_FreeBitsInCurrentSlot);
         *m_pCurrentSlot |= data;
     }

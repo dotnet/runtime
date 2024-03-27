@@ -65,8 +65,21 @@ const char* CodeGen::genInsName(instruction ins)
         #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9 ) nm,
         #include "instrs.h"
 
+        #define INST1(id, nm, info, fmt, e1                                                     ) nm,
+        #define INST2(id, nm, info, fmt, e1, e2                                                 ) nm,
+        #define INST3(id, nm, info, fmt, e1, e2, e3                                             ) nm,
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                                         ) nm,
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                                     ) nm,
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6                                 ) nm,
+        #define INST7(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7                             ) nm,
+        #define INST8(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8                         ) nm,
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9                     ) nm,
+        #define INST11(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10,e11           ) nm,
+        #define INST13(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13) nm,
+        #include "instrsarm64sve.h"
+
 #elif defined(TARGET_LOONGARCH64)
-        #define INST(id, nm, ldst, e1) nm,
+        #define INST(id, nm, ldst, e1, msk, fmt) nm,
         #include "instrs.h"
 
 #elif defined(TARGET_RISCV64)
@@ -827,7 +840,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     assert(varTypeIsFloating(simdBaseType));
                     GenTree* hwintrinsicChild = hwintrinsic->Op(1);
                     assert(hwintrinsicChild->isContained());
-                    if (hwintrinsicChild->OperIs(GT_LCL_ADDR, GT_CLS_VAR_ADDR, GT_CNS_INT, GT_LEA))
+                    if (hwintrinsicChild->OperIs(GT_LCL_ADDR, GT_CNS_INT, GT_LEA))
                     {
                         addr = hwintrinsic->Op(1);
                         break;
@@ -903,21 +916,14 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 #endif // FEATURE_HW_INTRINSICS
         }
 
-        switch (addr->OperGet())
+        if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
         {
-            case GT_LCL_ADDR:
-            {
-                assert(addr->isContained());
-                varNum = addr->AsLclFld()->GetLclNum();
-                offset = addr->AsLclFld()->GetLclOffs();
-                break;
-            }
-
-            case GT_CLS_VAR_ADDR:
-                return OperandDesc(addr->AsClsVar()->gtClsVarHnd);
-
-            default:
-                return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);
+            varNum = addr->AsLclFld()->GetLclNum();
+            offset = addr->AsLclFld()->GetLclOffs();
+        }
+        else
+        {
+            return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);
         }
     }
     else
@@ -982,6 +988,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                         simd64_t constValue;
                         memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd64_t));
                         return OperandDesc(emit->emitSimd64Const(constValue));
+                    }
+
+                    case TYP_MASK:
+                    {
+                        simdmask_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simdmask_t));
+                        return OperandDesc(emit->emitSimdMaskConst(constValue));
                     }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -1201,6 +1214,22 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 
     return op->AsHWIntrinsic()->OperIsBroadcastScalar();
 }
+
+//------------------------------------------------------------------------
+// AddEmbBroadcastMode: Adds the embedded broadcast mode to the insOpts
+//
+// Arguments:
+//    instOptions - The existing insOpts
+//
+// Return Value:
+//    The modified insOpts
+//
+static insOpts AddEmbBroadcastMode(insOpts instOptions)
+{
+    assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
+    unsigned result = static_cast<unsigned>(instOptions);
+    return static_cast<insOpts>(result | INS_OPTS_EVEX_eb_er_rd);
+}
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
@@ -1215,21 +1244,26 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 //    op1Reg       -- The first operand register
 //    op2          -- The second operand, which may be a memory node or a node producing a register
 //    isRMW        -- true if the instruction is RMW; otherwise, false
-void CodeGen::inst_RV_RV_TT(
-    instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW)
+//    instOptions  -- The options that modify how the instruction is generated
+void CodeGen::inst_RV_RV_TT(instruction ins,
+                            emitAttr    size,
+                            regNumber   targetReg,
+                            regNumber   op1Reg,
+                            GenTree*    op2,
+                            bool        isRMW,
+                            insOpts     instOptions)
 {
     emitter* emit = GetEmitter();
     noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
 
-    // TODO-XArch-CQ: Commutative operations can have op1 be contained
-    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+// TODO-XArch-CQ: Commutative operations can have op1 be contained
+// TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
-    insOpts instOptions = INS_OPTS_NONE;
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    bool IsEmbBroadcast = CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2);
-    if (IsEmbBroadcast)
+    if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2))
     {
-        instOptions = INS_OPTS_EVEX_b;
+        instOptions = AddEmbBroadcastMode(instOptions);
+
         if (emitter::IsBitwiseInstruction(ins) && varTypeIsLong(op2->AsHWIntrinsic()->GetSimdBaseType()))
         {
             switch (ins)
@@ -1256,7 +1290,9 @@ void CodeGen::inst_RV_RV_TT(
         }
     }
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
+
     OperandDesc op2Desc = genOperandDesc(op2);
+
     switch (op2Desc.GetKind())
     {
         case OperandKind::ClsVar:
@@ -1296,7 +1332,7 @@ void CodeGen::inst_RV_RV_TT(
                 op1Reg = targetReg;
             }
 
-            emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg);
+            emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg, instOptions);
         }
         break;
 
@@ -1651,12 +1687,17 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
         return ins;
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(srcType))
     {
+#if defined(TARGET_XARCH)
         return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        unreached(); // TODO-SVE: This needs testing
+        return INS_sve_mov;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(srcType));
 
@@ -1801,12 +1842,16 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         return ins;
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(srcType))
     {
+#if defined(TARGET_XARCH)
         return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        return INS_sve_ldr_mask;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(srcType));
 
@@ -1885,12 +1930,17 @@ instruction CodeGen::ins_Copy(var_types dstType)
 #endif
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(dstType))
     {
+#if defined(TARGET_XARCH)
         return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        unreached(); // TODO-SVE: This needs testing
+        return INS_sve_mov;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));
 
@@ -1994,7 +2044,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 #endif
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(dstType))
     {
         if (genIsValidMaskReg(srcReg))
@@ -2005,9 +2055,14 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 
         // mask to int
         assert(genIsValidIntOrFakeReg(srcReg));
+#if defined(TARGET_XARCH)
         return INS_kmovq_gpr;
+#elif defined(TARGET_ARM64)
+        unreached(); // TODO-SVE: This needs testing
+        return INS_sve_mov;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));
 
@@ -2109,12 +2164,16 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         return ins;
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(dstType))
     {
+#if defined(TARGET_XARCH)
         return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        return INS_sve_str_mask;
+#endif
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));
 
@@ -2226,7 +2285,7 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
         return ins_Store(dstType, aligned);
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(dstType))
     {
         if (genIsValidMaskReg(srcReg))
@@ -2239,7 +2298,7 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
         assert(genIsValidIntOrFakeReg(srcReg));
         return ins_Store(dstType, aligned);
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     assert(varTypeUsesFloatReg(dstType));
 

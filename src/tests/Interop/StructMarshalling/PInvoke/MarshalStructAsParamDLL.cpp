@@ -651,7 +651,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByVal14(S
 {
 	if( str1.i32 != 0 || str1.i != 32 )
 		return FALSE;
-	str1.i32 = reinterpret_cast<LPINT>(static_cast<INT_PTR>(str1.i));
+	str1.i32 = reinterpret_cast<int32_t*>(static_cast<INT_PTR>(str1.i));
 	str1.i = 64;
 	return TRUE;
 }
@@ -661,7 +661,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRef14(S
 		return FALSE;
 	else
 	{
-		str1->i32 = reinterpret_cast<LPINT>(static_cast<INT_PTR>(str1->i));
+		str1->i32 = reinterpret_cast<int32_t*>(static_cast<INT_PTR>(str1->i));
 		str1->i = 64;
 		return TRUE;
 	}
@@ -672,21 +672,21 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefIn14
 		return FALSE;
 	else
 	{
-		str1->i32 = reinterpret_cast<LPINT>(static_cast<INT_PTR>(str1->i));
+		str1->i32 = reinterpret_cast<int32_t*>(static_cast<INT_PTR>(str1->i));
 		str1->i = 64;
 		return TRUE;
 	}
 }
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValOut14(S11 str1)
 {
-	if( str1.i32 != (LPINT)32 || str1.i != 32 )
+	if( str1.i32 != (int32_t*)32 || str1.i != 32 )
 		return FALSE;
 	str1.i = 64;
 	return TRUE;
 }
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut14(S11* str1)
 {
-	str1->i32 = reinterpret_cast<LPINT>(static_cast<INT_PTR>(str1->i));
+	str1->i32 = reinterpret_cast<int32_t*>(static_cast<INT_PTR>(str1->i));
 	str1->i = 64;
 	return TRUE;
 }
@@ -1179,7 +1179,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefOutL
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByValOverlappingLongFloat(OverlappingLongFloat str, LONG64 expected)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByValOverlappingLongFloat(OverlappingLongFloat str, int64_t expected)
 {
     return str.a == expected;
 }
@@ -1253,7 +1253,7 @@ extern "C" DLL_EXPORT ManyInts STDMETHODCALLTYPE GetMultiplesOf(int value)
     return multiples;
 }
 
-extern "C" DLL_EXPORT LongStructPack16Explicit STDMETHODCALLTYPE GetLongStruct(LONG64 val1, LONG64 val2)
+extern "C" DLL_EXPORT LongStructPack16Explicit STDMETHODCALLTYPE GetLongStruct(int64_t val1, int64_t val2)
 {
     return {val1, val2};
 }

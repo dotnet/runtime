@@ -174,6 +174,33 @@ struct EHContext {
 
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
 
+
+//**********************************************************************
+// Profiling
+//**********************************************************************
+
+#ifdef PROFILING_SUPPORTED
+
+typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
+{
+    UINT32      r0;         // Keep r0 & r1 contiguous to make returning 64-bit results easier
+    UINT32      r1;
+    void       *R11;
+    void       *Pc;
+    union                   // Float arg registers as 32-bit (s0-s15) and 64-bit (d0-d7)
+    {
+        UINT32  s[16];
+        UINT64  d[8];
+    };
+    FunctionID  functionId;
+    void       *probeSp;    // stack pointer of managed function
+    void       *profiledSp; // location of arguments on stack
+    LPVOID      hiddenArg;
+    UINT32      flags;
+} PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
+
+#endif  // PROFILING_SUPPORTED
+
 //**********************************************************************
 // Exception handling
 //**********************************************************************
@@ -996,7 +1023,7 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 // Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
 struct ThisPtrRetBufPrecode {
 
-    static const int Type = 0x46;
+    static const int Type = 0x01;
 
     // mov r12, r0
     // mov r0, r1

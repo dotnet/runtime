@@ -29,7 +29,7 @@ namespace System.Net.Http.Metrics
             _requestsDuration = meter.CreateHistogram<double>(
                 "http.client.request.duration",
                 unit: "s",
-                description: "The duration of outbound HTTP requests.");
+                description: "Duration of HTTP client requests.");
         }
 
         internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
@@ -112,11 +112,12 @@ namespace System.Net.Http.Metrics
                 tags.Add("http.response.status_code", GetBoxedStatusCode((int)response.StatusCode));
                 tags.Add("network.protocol.version", GetProtocolVersionString(response.Version));
             }
-            else
+
+            if (TryGetErrorType(response, exception, out string? errorType))
             {
-                Debug.Assert(exception is not null);
-                tags.Add("http.error.reason", GetErrorReason(exception));
+                tags.Add("error.type", errorType);
             }
+
             TimeSpan durationTime = Stopwatch.GetElapsedTime(startTimestamp, Stopwatch.GetTimestamp());
 
             HttpMetricsEnrichmentContext? enrichmentContext = HttpMetricsEnrichmentContext.GetEnrichmentContextForRequest(request);
@@ -130,37 +131,47 @@ namespace System.Net.Http.Metrics
             }
         }
 
-        private static string GetErrorReason(Exception exception)
+        private static bool TryGetErrorType(HttpResponseMessage? response, Exception? exception, out string? errorType)
         {
-            if (exception is HttpRequestException e)
+            if (response is not null)
             {
-                Debug.Assert(Enum.GetValues<HttpRequestError>().Length == 12, "We need to extend the mapping in case new values are added to HttpRequestError.");
+                int statusCode = (int)response.StatusCode;
 
-                string? errorReason = e.HttpRequestError switch
+                // In case the status code indicates a client or a server error, return the string representation of the status code.
+                // See the paragraph Status and the definition of 'error.type' in
+                // https://github.com/open-telemetry/semantic-conventions/blob/2bad9afad58fbd6b33cc683d1ad1f006e35e4a5d/docs/http/http-spans.md
+                if (statusCode >= 400 && statusCode <= 599)
                 {
-                    HttpRequestError.NameResolutionError => "name_resolution_error",
-                    HttpRequestError.ConnectionError => "connection_error",
-                    HttpRequestError.SecureConnectionError => "secure_connection_error",
-                    HttpRequestError.HttpProtocolError => "http_protocol_error",
-                    HttpRequestError.ExtendedConnectNotSupported => "extended_connect_not_supported",
-                    HttpRequestError.VersionNegotiationError => "version_negotiation_error",
-                    HttpRequestError.UserAuthenticationError => "user_authentication_error",
-                    HttpRequestError.ProxyTunnelError => "proxy_tunnel_error",
-                    HttpRequestError.InvalidResponse => "invalid_response",
-                    HttpRequestError.ResponseEnded => "response_ended",
-                    HttpRequestError.ConfigurationLimitExceeded => "configuration_limit_exceeded",
-
-                    // Fall back to the exception type name (including for HttpRequestError.Unknown).
-                    _ => null
-                };
-
-                if (errorReason is not null)
-                {
-                    return errorReason;
+                    errorType = GetErrorStatusCodeString(statusCode);
+                    return true;
                 }
             }
 
-            return exception.GetType().Name;
+            if (exception is null)
+            {
+                errorType = null;
+                return false;
+            }
+
+            Debug.Assert(Enum.GetValues<HttpRequestError>().Length == 12, "We need to extend the mapping in case new values are added to HttpRequestError.");
+            errorType = (exception as HttpRequestException)?.HttpRequestError switch
+            {
+                HttpRequestError.NameResolutionError => "name_resolution_error",
+                HttpRequestError.ConnectionError => "connection_error",
+                HttpRequestError.SecureConnectionError => "secure_connection_error",
+                HttpRequestError.HttpProtocolError => "http_protocol_error",
+                HttpRequestError.ExtendedConnectNotSupported => "extended_connect_not_supported",
+                HttpRequestError.VersionNegotiationError => "version_negotiation_error",
+                HttpRequestError.UserAuthenticationError => "user_authentication_error",
+                HttpRequestError.ProxyTunnelError => "proxy_tunnel_error",
+                HttpRequestError.InvalidResponse => "invalid_response",
+                HttpRequestError.ResponseEnded => "response_ended",
+                HttpRequestError.ConfigurationLimitExceeded => "configuration_limit_exceeded",
+
+                // Fall back to the exception type name in case of HttpRequestError.Unknown or when exception is not an HttpRequestException.
+                _ => exception.GetType().FullName!
+            };
+            return true;
         }
 
         private static string GetProtocolVersionString(Version httpVersion) => (httpVersion.Major, httpVersion.Minor) switch
@@ -199,7 +210,9 @@ namespace System.Net.Http.Metrics
         }
 
         private static object[]? s_boxedStatusCodes;
+        private static string[]? s_statusCodeStrings;
 
+#pragma warning disable CA1859 // we explictly box here
         private static object GetBoxedStatusCode(int statusCode)
         {
             object[] boxes = LazyInitializer.EnsureInitialized(ref s_boxedStatusCodes, static () => new object[512]);
@@ -207,6 +220,18 @@ namespace System.Net.Http.Metrics
             return (uint)statusCode < (uint)boxes.Length
                 ? boxes[statusCode] ??= statusCode
                 : statusCode;
+        }
+#pragma warning restore
+
+        private static string GetErrorStatusCodeString(int statusCode)
+        {
+            Debug.Assert(statusCode >= 400 && statusCode <= 599);
+
+            string[] strings = LazyInitializer.EnsureInitialized(ref s_statusCodeStrings, static () => new string[200]);
+            int index = statusCode - 400;
+            return (uint)index < (uint)strings.Length
+                ? strings[index] ??= statusCode.ToString()
+                : statusCode.ToString();
         }
 
         private sealed class SharedMeter : Meter

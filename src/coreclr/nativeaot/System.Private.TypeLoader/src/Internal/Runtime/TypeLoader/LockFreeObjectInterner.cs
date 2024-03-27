@@ -8,7 +8,7 @@ namespace Internal.TypeSystem
 {
     public class LockFreeObjectInterner : LockFreeReaderHashtableOfPointers<object, GCHandle>
     {
-        static LockFreeObjectInterner s_interner = new LockFreeObjectInterner();
+        private static LockFreeObjectInterner s_interner = new LockFreeObjectInterner();
         public static GCHandle GetInternedObjectHandle(object obj)
         {
             return s_interner.GetOrCreateValue(obj);

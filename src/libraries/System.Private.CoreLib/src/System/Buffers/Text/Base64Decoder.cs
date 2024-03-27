@@ -68,7 +68,18 @@ namespace System.Buffers.Text
 
                 if (maxSrcLength >= 24)
                 {
-                    byte* end = srcMax - 45;
+                    byte* end = srcMax - 88;
+                    if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && (end >= src))
+                    {
+                        Avx512Decode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
+
+                        if (src == srcEnd)
+                        {
+                            goto DoneExit;
+                        }
+                    }
+
+                    end = srcMax - 45;
                     if (Avx2.IsSupported && (end >= src))
                     {
                         Avx2Decode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
@@ -617,6 +628,78 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
+        private static unsafe void Avx512Decode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
+        {
+            // Reference for VBMI implementation : https://github.com/WojciechMula/base64simd/tree/master/decode
+            // If we have AVX512 support, pick off 64 bytes at a time for as long as we can,
+            // but make sure that we quit before seeing any == markers at the end of the
+            // string. Also, because we write 16 zeroes at the end of the output, ensure
+            // that there are at least 22 valid bytes of input data remaining to close the
+            // gap. 64 + 2 + 22 = 88 bytes.
+            byte* src = srcBytes;
+            byte* dest = destBytes;
+
+            // The JIT won't hoist these "constants", so help it
+            Vector512<sbyte> vbmiLookup0 = Vector512.Create(
+                0x80808080, 0x80808080, 0x80808080, 0x80808080,
+                0x80808080, 0x80808080, 0x80808080, 0x80808080,
+                0x80808080, 0x80808080, 0x3e808080, 0x3f808080,
+                0x37363534, 0x3b3a3938, 0x80803d3c, 0x80808080).AsSByte();
+            Vector512<sbyte> vbmiLookup1 = Vector512.Create(
+                0x02010080, 0x06050403, 0x0a090807, 0x0e0d0c0b,
+                0x1211100f, 0x16151413, 0x80191817, 0x80808080,
+                0x1c1b1a80, 0x201f1e1d, 0x24232221, 0x28272625,
+                0x2c2b2a29, 0x302f2e2d, 0x80333231, 0x80808080).AsSByte();
+            Vector512<byte> vbmiPackedLanesControl = Vector512.Create(
+                0x06000102, 0x090a0405, 0x0c0d0e08, 0x16101112,
+                0x191a1415, 0x1c1d1e18, 0x26202122, 0x292a2425,
+                0x2c2d2e28, 0x36303132, 0x393a3435, 0x3c3d3e38,
+                0x00000000, 0x00000000, 0x00000000, 0x00000000).AsByte();
+
+            Vector512<sbyte> mergeConstant0 = Vector512.Create(0x01400140).AsSByte();
+            Vector512<short> mergeConstant1 = Vector512.Create(0x00011000).AsInt16();
+
+            // This algorithm requires AVX512VBMI support.
+            // Vbmi was first introduced in CannonLake and is avaialable from IceLake on.
+            do
+            {
+                AssertRead<Vector512<sbyte>>(src, srcStart, sourceLength);
+                Vector512<sbyte> str = Vector512.Load(src).AsSByte();
+
+                // Step 1: Translate encoded Base64 input to their original indices
+                // This step also checks for invalid inputs and exits.
+                // After this, we have indices which are verified to have upper 2 bits set to 0 in each byte.
+                // origIndex      = [...|00dddddd|00cccccc|00bbbbbb|00aaaaaa]
+                Vector512<sbyte> origIndex = Avx512Vbmi.PermuteVar64x8x2(vbmiLookup0, str, vbmiLookup1);
+                Vector512<sbyte> errorVec = (origIndex.AsInt32() | str.AsInt32()).AsSByte();
+                if (errorVec.ExtractMostSignificantBits() != 0)
+                {
+                    break;
+                }
+
+                // Step 2: Now we need to reshuffle bits to remove the 0 bits.
+                // multiAdd1: [...|0000cccc|ccdddddd|0000aaaa|aabbbbbb]
+                Vector512<short> multiAdd1 = Avx512BW.MultiplyAddAdjacent(origIndex.AsByte(), mergeConstant0);
+                // multiAdd1: [...|00000000|aaaaaabb|bbbbcccc|ccdddddd]
+                Vector512<int> multiAdd2 = Avx512BW.MultiplyAddAdjacent(multiAdd1, mergeConstant1);
+
+                // Step 3: Pack 48 bytes
+                str = Avx512Vbmi.PermuteVar64x8(multiAdd2.AsByte(), vbmiPackedLanesControl).AsSByte();
+
+                AssertWrite<Vector512<sbyte>>(dest, destStart, destLength);
+                str.Store((sbyte*)dest);
+                src += 64;
+                dest += 48;
+            }
+            while (src <= srcEnd);
+
+            srcBytes = src;
+            destBytes = dest;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
         private static unsafe void Avx2Decode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
         {
@@ -1006,8 +1089,8 @@ namespace System.Buffers.Text
         }
 
         // Pre-computing this table using a custom string(s_characters) and GenerateDecodingMapAndVerify (found in tests)
-        private static ReadOnlySpan<sbyte> DecodingMap => new sbyte[]
-        {
+        private static ReadOnlySpan<sbyte> DecodingMap =>
+        [
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,         //62 is placed at index 43 (for +), 63 at index 47 (for /)
@@ -1024,6 +1107,6 @@ namespace System.Buffers.Text
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        };
+        ];
     }
 }

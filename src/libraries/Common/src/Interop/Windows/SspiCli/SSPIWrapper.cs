@@ -141,24 +141,24 @@ namespace System.Net
             return outCredential;
         }
 
-        internal static int InitializeSecurityContext(ISSPIInterface secModule, ref SafeFreeCredentials? credential, ref SafeDeleteSslContext? context, string? targetName, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, InputSecurityBuffers inputBuffers, ref SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
+        internal static int InitializeSecurityContext(ISSPIInterface secModule, ref SafeFreeCredentials? credential, ref SafeDeleteSslContext? context, string? targetName, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, InputSecurityBuffers inputBuffers, ref ProtocolToken outToken, ref Interop.SspiCli.ContextFlags outFlags)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.InitializeSecurityContext(credential, context, targetName, inFlags);
 
-            int errorCode = secModule.InitializeSecurityContext(ref credential, ref context, targetName, inFlags, datarep, inputBuffers, ref outputBuffer, ref outFlags);
+            int errorCode = secModule.InitializeSecurityContext(ref credential, ref context, targetName, inFlags, datarep, inputBuffers, ref outToken, ref outFlags);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SecurityContextInputBuffers(nameof(InitializeSecurityContext), inputBuffers.Count, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SecurityContextInputBuffers(nameof(InitializeSecurityContext), inputBuffers.Count, outToken.Size, (Interop.SECURITY_STATUS)errorCode);
 
             return errorCode;
         }
 
-        internal static int AcceptSecurityContext(ISSPIInterface secModule, SafeFreeCredentials? credential, ref SafeDeleteSslContext? context, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, InputSecurityBuffers inputBuffers, ref SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
+        internal static int AcceptSecurityContext(ISSPIInterface secModule, SafeFreeCredentials? credential, ref SafeDeleteSslContext? context, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, InputSecurityBuffers inputBuffers, ref ProtocolToken outToken, ref Interop.SspiCli.ContextFlags outFlags)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.AcceptSecurityContext(credential, context, inFlags);
 
-            int errorCode = secModule.AcceptSecurityContext(credential, ref context, inputBuffers, inFlags, datarep, ref outputBuffer, ref outFlags);
+            int errorCode = secModule.AcceptSecurityContext(credential, ref context, inputBuffers, inFlags, datarep, ref outToken, ref outFlags);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SecurityContextInputBuffers(nameof(AcceptSecurityContext), inputBuffers.Count, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SecurityContextInputBuffers(nameof(AcceptSecurityContext), inputBuffers.Count, outToken.Size, (Interop.SECURITY_STATUS)errorCode);
 
             return errorCode;
         }
@@ -270,29 +270,42 @@ namespace System.Net
             }
         }
 
-        private static bool QueryCertContextAttribute(ISSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute attribute, out SafeFreeCertContext? certContext)
+        private static unsafe bool QueryCertContextAttribute(ISSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute attribute, out SafeFreeCertContext? certContext)
         {
-            Span<IntPtr> buffer = stackalloc IntPtr[1];
-            int errorCode = secModule.QueryContextAttributes(
-                securityContext,
-                attribute,
-                MemoryMarshal.AsBytes(buffer),
-                typeof(SafeFreeCertContext),
-                out SafeHandle? sspiHandle);
+            IntPtr handle = IntPtr.Zero;
+            certContext = null;
 
-            // certificate is not always present (e.g. on server when querying client certificate)
-            // but we still want to consider such case as a success.
-            bool success = errorCode == 0 || errorCode == (int)Interop.SECURITY_STATUS.NoCredentials;
-
-            if (!success)
+            try
             {
-                sspiHandle?.Dispose();
-                sspiHandle = null;
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"ERROR = {ErrorDescription(errorCode)}");
-            }
+                int errorCode = secModule.QueryContextAttributes(
+                    securityContext,
+                    attribute,
+                    &handle);
 
-            certContext = sspiHandle as SafeFreeCertContext;
-            return success;
+                // certificate is not always present (e.g. on server when querying client certificate)
+                // but we still want to consider such case as a success.
+                bool success = errorCode == 0 || errorCode == (int)Interop.SECURITY_STATUS.NoCredentials;
+
+                if (errorCode == 0 && handle != IntPtr.Zero)
+                {
+                    certContext = new SafeFreeCertContext();
+                    certContext.Set(handle);
+                    // Handle was successfully transferred to SafeHandle
+                    handle = IntPtr.Zero;
+                }
+                if (!success)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"ERROR = {ErrorDescription(errorCode)}");
+                }
+                return success;
+            }
+            finally
+            {
+                if (handle != IntPtr.Zero)
+                {
+                    Interop.Crypt32.CertFreeCertificateContext(handle);
+                }
+            }
         }
 
         public static bool QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(ISSPIInterface secModule, SafeDeleteContext securityContext, out SafeFreeCertContext? certContext)

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -41,11 +40,12 @@ namespace System.Globalization
     public sealed class NumberFormatInfo : IFormatProvider, ICloneable
     {
         private static volatile NumberFormatInfo? s_invariantInfo;
-        internal static readonly string[] s_asciiDigits = new string[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+        internal static readonly string[] s_asciiDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+        internal static readonly int[] s_intArrayWithElement3 = [3];
 
-        internal int[] _numberGroupSizes = new int[] { 3 };
-        internal int[] _currencyGroupSizes = new int[] { 3 };
-        internal int[] _percentGroupSizes = new int[] { 3 };
+        internal int[] _numberGroupSizes = s_intArrayWithElement3; // default to [3]; only clones of this array are handed out
+        internal int[] _currencyGroupSizes = s_intArrayWithElement3; // default to [3]; only clones of this array are handed out
+        internal int[] _percentGroupSizes = s_intArrayWithElement3; // default to [3]; only clones of this array are handed out
         internal string _positiveSign = "+";
         internal string _negativeSign = "-";
         internal string _numberDecimalSeparator = ".";
@@ -76,7 +76,7 @@ namespace System.Globalization
         internal byte[]? _positiveInfinitySymbolUtf8;
         internal byte[]? _negativeInfinitySymbolUtf8;
 
-        internal string[] _nativeDigits = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+        internal string[] _nativeDigits = s_asciiDigits; // default to ASCII digits; only clones of this array are handed out
 
         internal int _numberDecimalDigits = 2;
         internal int _currencyDecimalDigits = 2;
@@ -157,7 +157,7 @@ namespace System.Globalization
         }
 
         internal bool HasInvariantNumberSigns => _hasInvariantNumberSigns;
-        internal bool AllowHyphenDuringParsing => _allowHyphenDuringParsing;
+        internal bool AllowHyphenDuringParsing() => _allowHyphenDuringParsing;
 
         private void InitializeInvariantAndNegativeSignFlags()
         {

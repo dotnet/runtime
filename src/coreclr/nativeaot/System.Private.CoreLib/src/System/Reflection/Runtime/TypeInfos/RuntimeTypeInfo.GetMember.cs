@@ -1,27 +1,25 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
 using System.Reflection.Runtime.BindingFlagSupport;
+using System.Reflection.Runtime.General;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract partial class RuntimeTypeInfo
     {
-        [DynamicallyAccessedMembers(GetAllMembers)]
-        public sealed override MemberInfo[] GetMembers(BindingFlags bindingAttr) => GetMemberImpl(null, MemberTypes.All, bindingAttr);
+        public MemberInfo[] GetMembers(BindingFlags bindingAttr) => GetMemberImpl(null, MemberTypes.All, bindingAttr);
 
-        [DynamicallyAccessedMembers(GetAllMembers)]
-        public sealed override MemberInfo[] GetMember(string name, BindingFlags bindingAttr)
+        public MemberInfo[] GetMember(string name, BindingFlags bindingAttr)
         {
             ArgumentNullException.ThrowIfNull(name);
             return GetMemberImpl(name, MemberTypes.All, bindingAttr);
         }
 
-        [DynamicallyAccessedMembers(GetAllMembers)]
-        public sealed override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
+        public MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             ArgumentNullException.ThrowIfNull(name);
             return GetMemberImpl(name, type, bindingAttr);
@@ -116,7 +114,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return null;
         }
 
-        public sealed override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
+        public MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {
             ArgumentNullException.ThrowIfNull(member);
 
@@ -128,8 +126,9 @@ namespace System.Reflection.Runtime.TypeInfos
                 MemberInfo result = runtimeType.GetDeclaredMemberWithSameMetadataDefinitionAs(member);
                 if (result != null)
                     return result;
-                runtimeType = runtimeType.BaseType as RuntimeTypeInfo;
+                runtimeType = runtimeType.BaseType?.ToRuntimeTypeInfo();
             }
+
             throw new ArgumentException(SR.Format(SR.Arg_MemberInfoNotFound, member.Name), nameof(member));
         }
 

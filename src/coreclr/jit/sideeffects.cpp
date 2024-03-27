@@ -174,18 +174,14 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
 
     // Is the operation a write? If so, set `node` to the location that is being written to.
     bool isWrite = false;
-    if (node->OperIsStore() || node->OperIs(GT_STORE_DYN_BLK, GT_MEMORYBARRIER))
+    if (node->OperIsStore() || node->OperIs(GT_MEMORYBARRIER))
     {
         isWrite = true;
     }
 #ifdef FEATURE_HW_INTRINSICS
-    else if (node->OperIsHWIntrinsic())
+    else if (node->OperIsHWIntrinsic() && node->AsHWIntrinsic()->OperIsMemoryStoreOrBarrier())
     {
-        if (node->AsHWIntrinsic()->OperIsMemoryStoreOrBarrier())
-        {
-            // For barriers, we model the behavior after GT_MEMORYBARRIER
-            isWrite = true;
-        }
+        isWrite = true;
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -421,6 +417,21 @@ bool AliasSet::InterferesWith(const NodeInfo& other) const
 }
 
 //------------------------------------------------------------------------
+// AliasSet::WritesLocal:
+//    Returns true if this alias set contains a write to the specified local.
+//
+// Arguments:
+//    lclNum - The local number.
+//
+// Returns:
+//    True if so.
+//
+bool AliasSet::WritesLocal(unsigned lclNum) const
+{
+    return m_lclVarWrites.Contains(lclNum);
+}
+
+//------------------------------------------------------------------------
 // AliasSet::Clear:
 //    Clears the current alias set.
 //
@@ -464,7 +475,7 @@ SideEffectSet::SideEffectSet(Compiler* compiler, GenTree* node) : m_sideEffectFl
 //
 void SideEffectSet::AddNode(Compiler* compiler, GenTree* node)
 {
-    m_sideEffectFlags |= (node->gtFlags & GTF_ALL_EFFECT);
+    m_sideEffectFlags |= node->OperEffects(compiler);
     m_aliasSet.AddNode(compiler, node);
 }
 
@@ -473,22 +484,17 @@ void SideEffectSet::AddNode(Compiler* compiler, GenTree* node)
 //    Returns true if the side effects in this set interfere with the
 //    given side effect flags and alias information.
 //
-//    Two side effect sets interfere under any of the following
-//    conditions:
+//    Two side effect sets interfere under any of the following conditions:
 //    - If the analysis is strict, and:
-//        - One set contains a compiler barrier and the other set contains a global reference, or
+//        - One set contains a compiler barrier and the other set contains a global reference or compiler barrier, or
 //        - Both sets produce an exception
 //    - Whether or not the analysis is strict:
-//        - One set produces an exception and the other set contains a
-//          write
-//        - One set's reads and writes interfere with the other set's
-//          reads and writes
+//        - One set produces an exception and the other set contains a write
+//        - One set's reads and writes interfere with the other set's reads and writes
 //
 // Arguments:
-//    otherSideEffectFlags - The side effect flags for the other side
-//                           effect set.
-//    otherAliasInfo - The alias information for the other side effect
-//                     set.
+//    otherSideEffectFlags - The side effect flags for the other side effect set.
+//    otherAliasInfo - The alias information for the other side effect set.
 //    strict - True if the analysis should be strict as described above.
 //
 template <typename TOtherAliasInfo>
@@ -503,12 +509,14 @@ bool SideEffectSet::InterferesWith(unsigned               otherSideEffectFlags,
     {
         // If either set contains a compiler barrier, and the other set contains a global reference,
         // the sets interfere.
-        if (((m_sideEffectFlags & GTF_ORDER_SIDEEFF) != 0) && ((otherSideEffectFlags & GTF_GLOB_REF) != 0))
+        if (((m_sideEffectFlags & GTF_ORDER_SIDEEFF) != 0) &&
+            ((otherSideEffectFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
         {
             return true;
         }
 
-        if (((otherSideEffectFlags & GTF_ORDER_SIDEEFF) != 0) && ((m_sideEffectFlags & GTF_GLOB_REF) != 0))
+        if (((otherSideEffectFlags & GTF_ORDER_SIDEEFF) != 0) &&
+            ((m_sideEffectFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
         {
             return true;
         }
@@ -571,7 +579,7 @@ bool SideEffectSet::InterferesWith(const SideEffectSet& other, bool strict) cons
 //
 bool SideEffectSet::InterferesWith(Compiler* compiler, GenTree* node, bool strict) const
 {
-    return InterferesWith((node->gtFlags & GTF_ALL_EFFECT), AliasSet::NodeInfo(compiler, node), strict);
+    return InterferesWith(node->OperEffects(compiler), AliasSet::NodeInfo(compiler, node), strict);
 }
 
 //------------------------------------------------------------------------

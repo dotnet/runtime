@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions.Tests
@@ -15,8 +14,8 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Matches_MultipleCapturingGroups(RegexEngine engine)
         {
-            string[] expectedGroupValues = { "abracadabra", "abra", "cad" };
-            string[] expectedGroupCaptureValues = { "abracad", "abra" };
+            string[] expectedGroupValues = ["abracadabra", "abra", "cad"];
+            string[] expectedGroupCaptureValues = ["abracad", "abra"];
 
             // Another example - given by Brad Merril in an article on RegularExpressions
             Regex regex = await RegexHelpers.GetRegexAsync(engine, @"(abra(cad)?)+");
@@ -436,7 +435,6 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
 #if !NETFRAMEWORK // these tests currently fail on .NET Framework, and we need to check IsDynamicCodeCompiled but that doesn't exist on .NET Framework
-                
                 yield return new object[]
                 {
                     engine, "@(a*)+?", "@", RegexOptions.None, new[]

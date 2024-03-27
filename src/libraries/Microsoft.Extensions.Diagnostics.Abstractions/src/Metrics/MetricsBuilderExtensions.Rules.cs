@@ -46,12 +46,12 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         /// <summary>
         /// Enables a specified <see cref="Instrument"/> for the given <see cref="Meter"/> and <see cref="IMetricsListener"/>.
         /// </summary>
-        /// <param name="options">The <see cref="MeterOptions"/>.</param>
+        /// <param name="options">The <see cref="MetricsOptions"/>.</param>
         /// <param name="meterName">The <see cref="Meter.Name"/> or prefix. A null value matches all meters.</param>
         /// <param name="instrumentName">The <see cref="Instrument.Name"/>. A null value matches all instruments.</param>
         /// <param name="listenerName">The <see cref="IMetricsListener"/>.Name. A null value matches all listeners.</param>
         /// <param name="scopes">Indicates which <see cref="MeterScope"/>'s to consider. Default to all scopes.</param>
-        /// <returns>The original <see cref="MeterOptions"/> for chaining.</returns>
+        /// <returns>The original <see cref="MetricsOptions"/> for chaining.</returns>
         public static MetricsOptions EnableMetrics(this MetricsOptions options, string? meterName, string? instrumentName = null, string? listenerName = null,
             MeterScope scopes = MeterScope.Global | MeterScope.Local)
             => options.AddRule(meterName, instrumentName, listenerName, scopes, enable: true);
@@ -90,12 +90,12 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         /// <summary>
         /// Disables a specified <see cref="Instrument"/> for the given <see cref="Meter"/> and <see cref="IMetricsListener"/>.
         /// </summary>
-        /// <param name="options">The <see cref="MeterOptions"/>.</param>
+        /// <param name="options">The <see cref="MetricsOptions"/>.</param>
         /// <param name="meterName">The <see cref="Meter.Name"/> or prefix. A null value matches all meters.</param>
         /// <param name="instrumentName">The <see cref="Instrument.Name"/>. A null value matches all instruments.</param>
         /// <param name="listenerName">The <see cref="IMetricsListener"/>.Name. A null value matches all listeners.</param>
         /// <param name="scopes">Indicates which <see cref="MeterScope"/>'s to consider. Default to all scopes.</param>
-        /// <returns>The original <see cref="MeterOptions"/> for chaining.</returns>
+        /// <returns>The original <see cref="MetricsOptions"/> for chaining.</returns>
         public static MetricsOptions DisableMetrics(this MetricsOptions options, string? meterName, string? instrumentName = null, string? listenerName = null,
             MeterScope scopes = MeterScope.Global | MeterScope.Local)
             => options.AddRule(meterName, instrumentName, listenerName, scopes, enable: false);

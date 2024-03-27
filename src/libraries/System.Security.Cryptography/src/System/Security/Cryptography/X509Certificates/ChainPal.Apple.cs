@@ -190,7 +190,7 @@ namespace System.Security.Cryptography.X509Certificates
             return GetCertsArray(rootCertificates);
         }
 
-        private SafeCreateHandle GetCertsArray(IList<SafeHandle> safeHandles)
+        private SafeCreateHandle GetCertsArray(List<SafeHandle> safeHandles)
         {
             int idx = 0;
 
@@ -348,16 +348,14 @@ namespace System.Security.Cryptography.X509Certificates
 
             for (int i = 0; i < elementTuples.Length; i++)
             {
-                (X509Certificate2, int) tuple = elementTuples[i];
+                (X509Certificate2 cert, int chainStatus) = elementTuples[i];
 
-                elements[i] = BuildElement(tuple.Item1, tuple.Item2);
-                allStatus |= tuple.Item2;
+                elements[i] = new X509ChainElement(cert, BuildChainElementStatuses(cert, chainStatus), "");
+                allStatus |= chainStatus;
             }
 
             ChainElements = elements;
-
-            X509ChainElement rollupElement = BuildElement(null!, allStatus);
-            ChainStatus = rollupElement.ChainElementStatus;
+            ChainStatus = BuildChainElementStatuses(null, allStatus);
         }
 
         private static void FixupRevocationStatus(
@@ -457,11 +455,11 @@ namespace System.Security.Cryptography.X509Certificates
             return X509ChainStatusFlags.UntrustedRoot;
         }
 
-        private X509ChainElement BuildElement(X509Certificate2 cert, int dwStatus)
+        private X509ChainStatus[] BuildChainElementStatuses(X509Certificate2? cert, int dwStatus)
         {
             if (dwStatus == 0)
             {
-                return new X509ChainElement(cert, Array.Empty<X509ChainStatus>(), "");
+                return Array.Empty<X509ChainStatus>();
             }
 
             List<X509ChainStatus> statuses = new List<X509ChainStatus>();
@@ -499,7 +497,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            return new X509ChainElement(cert, statuses.ToArray(), "");
+            return statuses.ToArray();
         }
 
         private readonly struct X509ChainErrorMapping

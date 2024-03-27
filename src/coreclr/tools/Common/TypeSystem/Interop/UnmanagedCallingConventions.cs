@@ -40,7 +40,7 @@ namespace Internal.TypeSystem
         // Unmanaged            = 0x00000009, - this one is always translated to cdecl/stdcall
 
         // The ones higher than 0xF are defined by the type system
-        // There are no such calling conventions yet.
+        Swift                   = 0x00000010
     }
 
     public static class CallingConventionExtensions
@@ -135,6 +135,25 @@ namespace Internal.TypeSystem
             return result;
         }
 
+        public static UnmanagedCallingConventions GetDelegateCallingConventions(this TypeDesc delegateType)
+        {
+            Debug.Assert(delegateType.IsDelegate);
+
+            if (delegateType is EcmaType ecmaDelegate)
+            {
+                MethodSignatureFlags unmanagedCallConv = ecmaDelegate.GetDelegatePInvokeFlags().UnmanagedCallingConvention;
+                if (unmanagedCallConv != MethodSignatureFlags.None)
+                {
+                    Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)UnmanagedCallingConventions.Cdecl
+                        && (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)UnmanagedCallingConventions.Stdcall
+                        && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall);
+                    return (UnmanagedCallingConventions)unmanagedCallConv;
+                }
+            }
+
+            return GetPlatformDefaultUnmanagedCallingConvention(delegateType.Context);
+        }
+
         private static UnmanagedCallingConventions GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> attributeWithCallConvsArray, TypeSystemContext context)
         {
             ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> callConvArray = default;
@@ -181,6 +200,7 @@ namespace Internal.TypeSystem
                 "CallConvThiscall" => UnmanagedCallingConventions.Thiscall,
                 "CallConvSuppressGCTransition" => UnmanagedCallingConventions.IsSuppressGcTransition,
                 "CallConvMemberFunction" => UnmanagedCallingConventions.IsMemberFunction,
+                "CallConvSwift" => UnmanagedCallingConventions.Swift,
                 _ => null
             };
 
@@ -218,6 +238,7 @@ namespace Internal.TypeSystem
                     UnmanagedCallingConventions.Stdcall => "CallConvStdcall",
                     UnmanagedCallingConventions.Fastcall => "CallConvFastcall",
                     UnmanagedCallingConventions.Thiscall => "CallConvThiscall",
+                    UnmanagedCallingConventions.Swift => "CallConvSwift",
                     _ => throw new InvalidProgramException()
                 });
             }

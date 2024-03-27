@@ -4,6 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="DisabledRuntimeMarshallingNative.cs" />
+    <Compile Include="../DisabledRuntimeMarshallingNative.cs" />
   </ItemGroup>
 </Project>

@@ -240,7 +240,7 @@ namespace System.Reflection
         #endregion
 
         #region MethodBase Overrides
-        internal override ParameterInfo[] GetParametersNoCopy() =>
+        internal override ReadOnlySpan<ParameterInfo> GetParametersAsSpan() =>
             FetchNonReturnParameters();
 
         public override ParameterInfo[] GetParameters()
@@ -486,18 +486,6 @@ namespace System.Reflection
 
                 return false;
             }
-        }
-        #endregion
-
-        #region Legacy Internal
-        internal static MethodBase? InternalGetCurrentMethod(ref StackCrawlMark stackMark)
-        {
-            IRuntimeMethodInfo? method = RuntimeMethodHandle.GetCurrentMethod(ref stackMark);
-
-            if (method == null)
-                return null;
-
-            return RuntimeType.GetMethodBase(method);
         }
         #endregion
     }

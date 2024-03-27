@@ -9,8 +9,8 @@ namespace System.Text.RegularExpressions
         // PLEASE DON'T MODIFY BY HAND
         // IF YOU NEED TO UPDATE UNICODE VERSION FOLLOW THE GUIDE AT src/libraries/System.Private.CoreLib/Tools/GenUnicodeProp/Updating-Unicode-Versions.md
 
-        private static ReadOnlySpan<char> EquivalenceCasingValues => new char[2336]
-        {
+        private static ReadOnlySpan<char> EquivalenceCasingValues => // 2336
+        [
             '\u0041', '\u0061', '\u0042', '\u0062', '\u0043', '\u0063', '\u0044', '\u0064', '\u0045', '\u0065', '\u0046', '\u0066', '\u0047', '\u0067', '\u0048', '\u0068',
             '\u0049', '\u0069', '\u004A', '\u006A', '\u004B', '\u006B', '\u212A', '\u004C', '\u006C', '\u004D', '\u006D', '\u004E', '\u006E', '\u004F', '\u006F', '\u0050',
             '\u0070', '\u0051', '\u0071', '\u0052', '\u0072', '\u0053', '\u0073', '\u0054', '\u0074', '\u0055', '\u0075', '\u0056', '\u0076', '\u0057', '\u0077', '\u0058',
@@ -157,18 +157,18 @@ namespace System.Text.RegularExpressions
             '\uFF23', '\uFF43', '\uFF24', '\uFF44', '\uFF25', '\uFF45', '\uFF26', '\uFF46', '\uFF27', '\uFF47', '\uFF28', '\uFF48', '\uFF29', '\uFF49', '\uFF2A', '\uFF4A',
             '\uFF2B', '\uFF4B', '\uFF2C', '\uFF4C', '\uFF2D', '\uFF4D', '\uFF2E', '\uFF4E', '\uFF2F', '\uFF4F', '\uFF30', '\uFF50', '\uFF31', '\uFF51', '\uFF32', '\uFF52',
             '\uFF33', '\uFF53', '\uFF34', '\uFF54', '\uFF35', '\uFF55', '\uFF36', '\uFF56', '\uFF37', '\uFF57', '\uFF38', '\uFF58', '\uFF39', '\uFF59', '\uFF3A', '\uFF5A'
-        };
+        ];
 
-        private static ReadOnlySpan<ushort> EquivalenceFirstLevelLookup => new ushort[64]
-        {
+        private static ReadOnlySpan<ushort> EquivalenceFirstLevelLookup => // 64
+        [
             0x0000, 0x0400, 0xffff, 0xffff, 0x0800, 0xffff, 0xffff, 0x0c00, 0x1000, 0x1400, 0xffff, 0x1800, 0xffff, 0xffff, 0xffff, 0xffff,
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0x1c00, 0x2000, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0x2400
-        };
+        ];
 
-        private static ReadOnlySpan<ushort> EquivalenceCasingMap => new ushort[10240]
-        {
+        private static ReadOnlySpan<ushort> EquivalenceCasingMap => // 10240
+        [
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,
@@ -809,6 +809,6 @@ namespace System.Text.RegularExpressions
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
-        };
+        ];
     }
 }

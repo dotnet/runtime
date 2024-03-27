@@ -4,8 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
-class Program
+public class Program
 {
     // Each of the module initializer, class constructor, and IncrementExitCode
     // should be executed exactly once, causing this to each 100 by program exit.
@@ -24,7 +25,7 @@ class Program
         Console.WriteLine("hello from static constructor");
     }
 
-    [UnmanagedCallersOnly(EntryPoint = "IncrementExitCode", CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(EntryPoint = "IncrementExitCode")]
     static void IncrementExitCode(int amount)
     {
         s_exitCode += amount;
@@ -32,7 +33,8 @@ class Program
 
     int ExitCode;
 
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine("hello from managed main");
         return s_exitCode;

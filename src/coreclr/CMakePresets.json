@@ -77,11 +77,11 @@
       "name": "ARM64",
       "hidden": true,
       "architecture": {
-        "value": "ARM64",
+        "value": "arm64",
         "strategy": "external"
       },
       "cacheVariables": {
-        "CLR_CMAKE_HOST_ARCH": "ARM64"
+        "CLR_CMAKE_HOST_ARCH": "arm64"
       }
     },
     {

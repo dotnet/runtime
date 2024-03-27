@@ -1,12 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Collections\BitArray.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\DebugViewDictionaryItem.cs"
+             Link="Common\System\Collections\Generic\DebugViewDictionaryItem.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ICollectionDebugView.cs"
              Link="Common\System\Collections\Generic\ICollectionDebugView.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\IDictionaryDebugView.cs"
@@ -32,7 +37,9 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
+
 </Project>

@@ -6,6 +6,7 @@ using System.Collections.Specialized;
 
 namespace System.Net
 {
+    [Obsolete(Obsoletions.AuthenticationManagerMessage, DiagnosticId = Obsoletions.AuthenticationManagerDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public class AuthenticationManager
     {
         private AuthenticationManager() { }
@@ -14,11 +15,9 @@ namespace System.Net
 
         public static StringDictionary CustomTargetNameDictionary { get; } = new StringDictionary();
 
-        [Obsolete(Obsoletions.AuthenticationManagerMessage, DiagnosticId = Obsoletions.AuthenticationManagerDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Authorization? Authenticate(string challenge, WebRequest request, ICredentials credentials) =>
             throw new PlatformNotSupportedException();
 
-        [Obsolete(Obsoletions.AuthenticationManagerMessage, DiagnosticId = Obsoletions.AuthenticationManagerDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Authorization? PreAuthenticate(WebRequest request, ICredentials credentials) =>
             throw new PlatformNotSupportedException();
 

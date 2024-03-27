@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
-    public class AdditionalProbingPath : DependencyResolutionBase, IClassFixture<AdditionalProbingPath.SharedTestState>
+    public class AdditionalProbingPath : IClassFixture<AdditionalProbingPath.SharedTestState>
     {
         private readonly SharedTestState sharedState;
 
@@ -48,7 +48,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [Fact]
         public void PlaceholderArchTfm()
         {
-            // Host should replace |arch| and |tfm| with actual architecture and TFM 
+            // Host should replace |arch| and |tfm| with actual architecture and TFM
             string probePath = Path.Combine(sharedState.AdditionalProbingPath, "|arch|", "|tfm|");
             TestApp app = sharedState.FrameworkReferenceApp;
             sharedState.DotNetWithNetCoreApp.Exec(Constants.AdditionalProbingPath.CommandLineArgument, probePath, app.AppDll)
@@ -90,7 +90,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             }
         }
 
-        public class SharedTestState : DependencyResolutionBase.SharedTestStateBase
+        public class SharedTestState : SharedTestStateBase
         {
             public DotNetCli DotNetWithNetCoreApp { get; }
 
@@ -111,24 +111,24 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             public SharedTestState()
             {
                 DotNetWithNetCoreApp = DotNet("WithNetCoreApp")
-                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr(RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion)
+                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr(TestContext.MicrosoftNETCoreAppVersion)
                     .Build();
 
-                string nativeDependencyRelPath = $"{RepoDirectoriesProvider.Default.TargetRID}/{Binaries.GetSharedLibraryFileNameForCurrentPlatform("native")}";
-                FrameworkReferenceApp = CreateFrameworkReferenceApp(MicrosoftNETCoreApp, RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion, b => b
+                string nativeDependencyRelPath = $"{TestContext.TargetRID}/{Binaries.GetSharedLibraryFileNameForCurrentPlatform("native")}";
+                FrameworkReferenceApp = CreateFrameworkReferenceApp(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion, b => b
                     .WithProject(DependencyName, DependencyVersion, p => p
                         .WithAssemblyGroup(null, g => g
                             .WithAsset($"{DependencyName}.dll", f => f.NotOnDisk()))
-                        .WithNativeLibraryGroup(RepoDirectoriesProvider.Default.TargetRID, g => g
+                        .WithNativeLibraryGroup(TestContext.TargetRID, g => g
                             .WithAsset(nativeDependencyRelPath, f => f.NotOnDisk()))));
                 RuntimeConfig.FromFile(FrameworkReferenceApp.RuntimeConfigJson)
-                    .WithTfm(RepoDirectoriesProvider.Default.Tfm)
+                    .WithTfm(TestContext.Tfm)
                     .Save();
 
                 AdditionalProbingPath = Path.Combine(Location, "probe");
                 (DependencyPath, NativeDependencyDirectory) = AddDependencies(AdditionalProbingPath);
 
-                AdditionalProbingPath_ArchTfm = Path.Combine(AdditionalProbingPath, RepoDirectoriesProvider.Default.BuildArchitecture, RepoDirectoriesProvider.Default.Tfm);
+                AdditionalProbingPath_ArchTfm = Path.Combine(AdditionalProbingPath, TestContext.BuildArchitecture, TestContext.Tfm);
                 (DependencyPath_ArchTfm, NativeDependencyDirectory_ArchTfm) = AddDependencies(AdditionalProbingPath_ArchTfm);
 
                 (string, string) AddDependencies(string probeDir)

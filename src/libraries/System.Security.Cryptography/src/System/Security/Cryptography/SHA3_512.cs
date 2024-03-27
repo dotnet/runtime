@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -29,7 +29,7 @@ namespace System.Security.Cryptography
         public const int HashSizeInBytes = HashSizeInBits / 8;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="SHA3_256" />.
+        /// Initializes a new instance of <see cref="SHA3_512" />.
         /// </summary>
         protected SHA3_512()
         {

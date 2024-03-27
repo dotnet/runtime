@@ -1505,6 +1505,7 @@ Thread::Thread()
 #endif  // TRACK_SYNC
 
     m_PreventAsync = 0;
+    m_PreventAbort = 0;
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
 #endif //FEATURE_COMINTEROP
@@ -1512,7 +1513,6 @@ Thread::Thread()
     m_TraceCallCount = 0;
     m_ThrewControlForThread = 0;
     m_ThreadTasks = (ThreadTasks)0;
-    m_pLoadLimiter= NULL;
 
     // The state and the tasks must be 32-bit aligned for atomicity to be guaranteed.
     _ASSERTE((((size_t) &m_State) & 3) == 0);
@@ -1547,16 +1547,10 @@ Thread::Thread()
     m_RedirectContextInUse = false;
 #endif
 
-#ifdef FEATURE_COMINTEROP
-    m_pRCWStack = new RCWStackHeader();
-#endif
-
 #ifdef _DEBUG
     m_bGCStressing = FALSE;
     m_bUniqueStacking = FALSE;
 #endif
-
-    m_pPendingTypeLoad = NULL;
 
     m_dwAVInRuntimeImplOkayCount = 0;
 
@@ -1743,8 +1737,6 @@ void Thread::InitThread()
     }
 
     _ASSERTE(HasValidThreadHandle());
-
-    m_random.Init();
 
     // Set floating point mode to round to nearest
 #ifndef TARGET_UNIX
@@ -2647,11 +2639,6 @@ Thread::~Thread()
     MarkRedirectContextInUse(m_pSavedRedirectContext);
     m_pSavedRedirectContext = NULL;
 
-#ifdef FEATURE_COMINTEROP
-    if (m_pRCWStack)
-        delete m_pRCWStack;
-#endif
-
     if (m_pExceptionDuringStartup)
     {
         Exception::Delete (m_pExceptionDuringStartup);
@@ -3168,6 +3155,7 @@ DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
         BOOL waitAll;
         DWORD millis;
         WaitMode mode;
+        void *associatedObjectForMonitorWait;
         DWORD dwRet;
     } param;
     param.pThis = this;
@@ -3176,10 +3164,11 @@ DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
     param.waitAll = waitAll;
     param.millis = millis;
     param.mode = mode;
+    param.associatedObjectForMonitorWait = syncState != NULL ? syncState->m_Object : NULL;
     param.dwRet = (DWORD) -1;
 
     EE_TRY_FOR_FINALLY(Param *, pParam, &param) {
-        pParam->dwRet = pParam->pThis->DoAppropriateWaitWorker(pParam->countHandles, pParam->handles, pParam->waitAll, pParam->millis, pParam->mode);
+        pParam->dwRet = pParam->pThis->DoAppropriateWaitWorker(pParam->countHandles, pParam->handles, pParam->waitAll, pParam->millis, pParam->mode, pParam->associatedObjectForMonitorWait);
     }
     EE_FINALLY {
         if (syncState) {
@@ -3382,7 +3371,7 @@ void UnMarkOSAlertableWait()
 // style of Wait.
 //--------------------------------------------------------------------
 DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL waitAll,
-                                      DWORD millis, WaitMode mode)
+                                      DWORD millis, WaitMode mode, void *associatedObjectForMonitorWait)
 {
     CONTRACTL {
         THROWS;
@@ -3455,6 +3444,47 @@ DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL wa
 
     ThreadStateHolder tsh(alertable, TS_Interruptible | TS_Interrupted);
 
+    bool sendWaitEvents =
+        millis != 0 &&
+        (mode & WaitMode_Alertable) != 0 &&
+        ETW_TRACING_CATEGORY_ENABLED(
+            MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+            TRACE_LEVEL_VERBOSE,
+            CLR_WAITHANDLE_KEYWORD);
+
+    // Monitor.Wait is typically a blocking wait. For other waits, when sending the wait events try a nonblocking wait first
+    // such that the events sent are more likely to represent blocking waits.
+    bool tryNonblockingWaitFirst = sendWaitEvents && associatedObjectForMonitorWait == NULL;
+    if (tryNonblockingWaitFirst)
+    {
+        ret = DoAppropriateAptStateWait(countHandles, handles, waitAll, 0 /* timeout */, mode);
+        if (ret == WAIT_TIMEOUT)
+        {
+            // Do a full wait and send the wait events
+            tryNonblockingWaitFirst = false;
+        }
+        else if (ret != WAIT_IO_COMPLETION && ret != WAIT_FAILED)
+        {
+            // The nonblocking wait was successful, don't send the wait events
+            sendWaitEvents = false;
+        }
+    }
+
+    if (sendWaitEvents)
+    {
+        if (associatedObjectForMonitorWait != NULL)
+        {
+            FireEtwWaitHandleWaitStart(
+                ETW::WaitHandleLog::WaitHandleStructs::MonitorWait,
+                associatedObjectForMonitorWait,
+                GetClrInstanceId());
+        }
+        else
+        {
+            FireEtwWaitHandleWaitStart(ETW::WaitHandleLog::WaitHandleStructs::Unknown, NULL, GetClrInstanceId());
+        }
+    }
+
     ULONGLONG dwStart = 0, dwEnd;
 retry:
     if (millis != INFINITE)
@@ -3462,7 +3492,15 @@ retry:
         dwStart = CLRGetTickCount64();
     }
 
-    ret = DoAppropriateAptStateWait(countHandles, handles, waitAll, millis, mode);
+    if (tryNonblockingWaitFirst)
+    {
+        // We have a final wait result from the nonblocking wait above
+        tryNonblockingWaitFirst = false;
+    }
+    else
+    {
+        ret = DoAppropriateAptStateWait(countHandles, handles, waitAll, millis, mode);
+    }
 
     if (ret == WAIT_IO_COMPLETION)
     {
@@ -3478,7 +3516,7 @@ retry:
         if (millis != INFINITE)
         {
             dwEnd = CLRGetTickCount64();
-            if (dwEnd >= dwStart + millis)
+            if (dwEnd - dwStart >= millis)
             {
                 ret = WAIT_TIMEOUT;
                 goto WaitCompleted;
@@ -3563,7 +3601,7 @@ retry:
             dwEnd = CLRGetTickCount64();
             if (millis != INFINITE)
             {
-                if (dwEnd >= dwStart + millis)
+                if (dwEnd - dwStart >= millis)
                 {
                     ret = WAIT_TIMEOUT;
                     goto WaitCompleted;
@@ -3608,6 +3646,11 @@ retry:
 WaitCompleted:
 
     _ASSERTE((ret != WAIT_TIMEOUT) || (millis != INFINITE));
+
+    if (sendWaitEvents)
+    {
+        FireEtwWaitHandleWaitStop(GetClrInstanceId());
+    }
 
     return ret;
 }
@@ -5110,7 +5153,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
 ThreadStore::ThreadStore()
            : m_Crst(CrstThreadStore, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD)),
              m_ThreadCount(0),
-             m_MaxThreadCount(0),
              m_UnstartedThreadCount(0),
              m_BackgroundThreadCount(0),
              m_PendingThreadCount(0),
@@ -5229,8 +5271,6 @@ void ThreadStore::AddThread(Thread *newThread)
     s_pThreadStore->m_ThreadList.InsertTail(newThread);
 
     s_pThreadStore->m_ThreadCount++;
-    if (s_pThreadStore->m_MaxThreadCount < s_pThreadStore->m_ThreadCount)
-        s_pThreadStore->m_MaxThreadCount = s_pThreadStore->m_ThreadCount;
 
     if (newThread->IsUnstarted())
         s_pThreadStore->m_UnstartedThreadCount++;
@@ -6524,7 +6564,6 @@ static void DebugLogMBIFlags(UINT uState, UINT uProtect)
         LOG_FLAG(uState, MEM_FREE);
         LOG_FLAG(uState, MEM_PRIVATE);
         LOG_FLAG(uState, MEM_MAPPED);
-        LOG_FLAG(uState, MEM_RESET);
         LOG_FLAG(uState, MEM_TOP_DOWN);
         LOG_FLAG(uState, MEM_WRITE_WATCH);
         LOG_FLAG(uState, MEM_PHYSICAL);
@@ -6994,12 +7033,12 @@ bool Thread::InitRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool validCo
 }
 
 
-void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx)
+void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool fLightUnwind)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    ::FillRegDisplay(pRD, pctx);
+    ::FillRegDisplay(pRD, pctx, NULL, fLightUnwind);
 
 #if defined(DEBUG_REGDISPLAY) && !defined(TARGET_X86)
     CONSISTENCY_CHECK(!pRD->_pThread || pRD->_pThread == this);
@@ -7094,8 +7133,6 @@ void Thread::ClearContext()
     if (!m_pDomain)
         return;
 
-    // must set exposed context to null first otherwise object verification
-    // checks will fail AV when m_Context is null
     m_pDomain = NULL;
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
@@ -8206,7 +8243,7 @@ void Thread::InitializeSpecialUserModeApc()
     WRAPPER_NO_CONTRACT;
     static_assert_no_msg(OFFSETOF__APC_CALLBACK_DATA__ContextRecord == offsetof(CLONE_APC_CALLBACK_DATA, ContextRecord));
 
-    HMODULE hKernel32 = WszLoadLibraryEx(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    HMODULE hKernel32 = WszLoadLibrary(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
 
     // See if QueueUserAPC2 exists
     QueueUserAPC2Proc pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(hKernel32, "QueueUserAPC2");
@@ -8222,12 +8259,7 @@ void Thread::InitializeSpecialUserModeApc()
         return;
     }
 
-    // In the future, once code paths using the special user-mode APC get some bake time, it should be used regardless of
-    // whether CET shadow stacks are enabled
-    if (AreCetShadowStacksEnabled())
-    {
-        s_pfnQueueUserAPC2Proc = pfnQueueUserAPC2Proc;
-    }
+    s_pfnQueueUserAPC2Proc = pfnQueueUserAPC2Proc;
 }
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC

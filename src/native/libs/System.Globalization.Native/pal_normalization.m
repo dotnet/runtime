@@ -7,7 +7,11 @@
 #include "pal_normalization.h"
 #import <Foundation/Foundation.h>
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if !__has_feature(objc_arc)
+#error This file relies on ARC for memory management, but ARC is not enabled.
+#endif
+
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 static NSString* GetNormalizedStringForForm(NormalizationForm normalizationForm, NSString* sourceString)
 {
     switch (normalizationForm)

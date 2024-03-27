@@ -1826,7 +1826,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 pMethodTable = thValueType.AsNativeValueType();
             }
             _ASSERTE(pMethodTable != nullptr);
-            flags = MethodTable::GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+            flags = MethodTable::GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
             if (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)
             {
                 cFPRegs = (flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? 2 : 1;
@@ -2040,7 +2040,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
                 assert(!thValueType.IsTypeDesc());
 
                 MethodTable *pMethodTable = thValueType.AsMethodTable();
-                flags = (MethodTable::GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) & 0xff) << RETURN_FP_SIZE_SHIFT;
+                flags = (MethodTable::GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) & 0xff) << RETURN_FP_SIZE_SHIFT;
                 break;
             }
 #else
@@ -2321,6 +2321,16 @@ public:
     {
         m_pSig = pSig;
     }
+
+#ifdef FEATURE_INTERPRETER
+    ArgIterator(MetaSig* pSig, MethodDesc* pMD)
+    {
+        m_pSig = pSig;
+        bool fCtorOfVariableSizedObject = m_pSig->HasThis() && (pMD->GetMethodTable() == g_pStringClass) && pMD->IsCtor();
+        if (fCtorOfVariableSizedObject)
+            m_pSig->ClearHasThis();
+    }
+#endif // FEATURE_INTERPRETER
 
     // This API returns true if we are returning a structure in registers instead of using a byref return buffer
     BOOL HasNonStandardByvalReturn()

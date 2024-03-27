@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Test.Cryptography;
 using Xunit;
 
@@ -86,6 +89,29 @@ namespace System.Formats.Cbor.Tests
 
             byte[] encoding = writer.Encode();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void WriteDateTimeOffset_IsCultureInvariant()
+        {
+            // Regression test for https://github.com/dotnet/runtime/pull/92539
+            RemoteExecutor.Invoke(static () =>
+            {
+                DateTimeOffset value = DateTimeOffset.Parse("2020-04-09T14:31:21.3535941+01:00", CultureInfo.InvariantCulture);
+                string expectedHexEncoding = "c07821323032302d30342d30395431343a33313a32312e333533353934312b30313a3030";
+
+                // Install a non-Gregorian calendar
+                var culture = new CultureInfo("he-IL");
+                culture.DateTimeFormat.Calendar = new HebrewCalendar();
+                Thread.CurrentThread.CurrentCulture = culture;
+
+                var writer = new CborWriter();
+
+                writer.WriteDateTimeOffset(value);
+
+                byte[] encoding = writer.Encode();
+                AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
+            }).Dispose();
         }
 
         [Theory]

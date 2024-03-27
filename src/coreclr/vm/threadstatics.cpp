@@ -110,9 +110,6 @@ void ThreadLocalBlock::FreeTable()
         delete m_pThreadStaticHandleTable;
         m_pThreadStaticHandleTable = NULL;
     }
-
-    // Free any pinning handles we may have created
-    FreePinningHandles();
 }
 
 void ThreadLocalBlock::EnsureModuleIndex(ModuleIndex index)
@@ -278,37 +275,6 @@ void ThreadLocalModule::SetClassFlags(MethodTable* pMT, DWORD dwFlags)
     }
 }
 
-void ThreadLocalBlock::AddPinningHandleToList(OBJECTHANDLE oh)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    ObjectHandleList::NodeType* pNewNode = new ObjectHandleList::NodeType(oh);
-    m_PinningHandleList.LinkHead(pNewNode);
-}
-
-void ThreadLocalBlock::FreePinningHandles()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    // Destroy all pinning handles in the list, and free the nodes
-    ObjectHandleList::NodeType* pHandleNode;
-    while ((pHandleNode = m_PinningHandleList.UnlinkHead()) != NULL)
-    {
-        DestroyPinningHandle(pHandleNode->data);
-        delete pHandleNode;
-    }
-}
-
 void ThreadLocalBlock::AllocateThreadStaticHandles(Module * pModule, PTR_ThreadLocalModule pThreadLocalModule)
 {
     CONTRACTL
@@ -389,7 +355,7 @@ void ThreadLocalBlock::AllocateThreadStaticBoxes(MethodTable * pMT)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(pMT->GetNumBoxedThreadStatics() > 0);
+        PRECONDITION(pMT->HasBoxedThreadStatics());
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -412,21 +378,12 @@ void ThreadLocalBlock::AllocateThreadStaticBoxes(MethodTable * pMT)
             TypeHandle  th = pField->GetFieldTypeHandleThrowing();
             MethodTable* pFieldMT = th.GetMethodTable();
 
-            // AllocateStaticBox will pin this object if this class is FixedAddressVTStatics.
-            // We save this pinning handle in a list attached to the ThreadLocalBlock. When
-            // the thread dies, we release all the pinning handles in the list.
-
-            OBJECTHANDLE handle;
-            OBJECTREF obj = MethodTable::AllocateStaticBox(pFieldMT, pMT->HasFixedAddressVTStatics(), &handle);
+            OBJECTREF obj = MethodTable::AllocateStaticBox(pFieldMT, pMT->HasFixedAddressVTStatics());
 
             PTR_BYTE pStaticBase = pMT->GetGCThreadStaticsBasePointer();
             _ASSERTE(pStaticBase != NULL);
 
             SetObjectReference( (OBJECTREF*)(pStaticBase + pField->GetOffset()), obj );
-
-            // If we created a pinning handle, save it to the list
-            if (handle != NULL)
-                AddPinningHandleToList(handle);
         }
 
         pField++;
@@ -609,7 +566,7 @@ void ThreadLocalModule::PopulateClass(MethodTable *pMT)
     // We need to allocate boxes any value-type statics that are not
     // primitives or enums, because these statics may contain references
     // to objects on the GC heap
-    if (pMT->GetNumBoxedThreadStatics() > 0)
+    if (pMT->HasBoxedThreadStatics())
     {
         PTR_ThreadLocalBlock pThreadLocalBlock = ThreadStatics::GetCurrentTLB();
         _ASSERTE(pThreadLocalBlock != NULL);

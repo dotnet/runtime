@@ -66,7 +66,7 @@ namespace System.Net.Security.Tests
 
             var selectionCallback = new LocalCertificateSelectionCallback((object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] issuers) =>
             {
-                Assert.True(false, "LocalCertificateSelectionCallback called when AuthenticateAsServerAsync was expected to fail.");
+                Assert.Fail("LocalCertificateSelectionCallback called when AuthenticateAsServerAsync was expected to fail.");
                 return null;
             });
 
@@ -82,7 +82,7 @@ namespace System.Net.Security.Tests
             {
                 Task clientJob = Task.Run(() => {
                     client.AuthenticateAsClient(hostName);
-                    Assert.True(false, "RemoteCertificateValidationCallback called when AuthenticateAsServerAsync was expected to fail.");
+                    Assert.Fail("RemoteCertificateValidationCallback called when AuthenticateAsServerAsync was expected to fail.");
                 });
 
                 SslServerAuthenticationOptions options = DefaultServerOptions();
@@ -243,7 +243,7 @@ namespace System.Net.Security.Tests
             string rawHostname = "räksmörgås.josefsson.org";
             string punycodeHostname = "xn--rksmrgs-5wao1o.josefsson.org";
 
-            var (serverCert, serverChain) = TestHelper.GenerateCertificates(punycodeHostname);
+            var (serverCert, serverChain) = Configuration.Certificates.GenerateCertificates(punycodeHostname);
             try
             {
                 SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()

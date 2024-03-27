@@ -3,11 +3,11 @@
 
 using System;
 using System.Diagnostics;
+using System.DirectoryServices;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.DirectoryServices;
-using System.Text;
 using System.Security.Principal;
+using System.Text;
 
 namespace System.DirectoryServices.AccountManagement
 {

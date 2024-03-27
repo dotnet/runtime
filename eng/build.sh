@@ -32,7 +32,7 @@ usage()
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, linux, freebsd, osx, maccatalyst, tvos,"
   echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos, solaris"
-  echo "                                  linux-musl, linux-bionic or haiku."
+  echo "                                  linux-musl, linux-bionic, tizen, or haiku."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --outputrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -149,7 +149,7 @@ initDistroRid()
 
 showSubsetHelp()
 {
-  "$scriptroot/common/build.sh" "-restore" "-build" "/p:Subset=help" "/clp:nosummary"
+  "$scriptroot/common/build.sh" "-restore" "-build" "/p:Subset=help" "/clp:nosummary /tl:false"
 }
 
 arguments=''
@@ -158,7 +158,7 @@ extraargs=''
 crossBuild=0
 portableBuild=1
 
-source $scriptroot/native/init-os-and-arch.sh
+source $scriptroot/common/native/init-os-and-arch.sh
 
 hostArch=$arch
 
@@ -524,6 +524,11 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
 
+      -verbose)
+      arguments="$arguments /p:CoreclrVerbose=true"
+      shift 1
+      ;;
+
       *)
       extraargs="$extraargs $1"
       shift 1
@@ -547,6 +552,9 @@ fi
 if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
     arguments="$arguments -warnAsError 0"
 fi
+
+# disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
+arguments="$arguments -tl:false"
 
 initDistroRid "$os" "$arch" "$crossBuild"
 

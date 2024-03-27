@@ -1,9 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-class Program
+using System.IO;
+
+namespace NativeFormatGen;
+
+public class Program
 {
-    static void Main(string[] args)
+    public static void Main(string[] args)
     {
         using (var writer = new PublicGen(@"NativeFormatReaderCommonGen.cs"))
         {
@@ -15,7 +19,7 @@ class Program
             writer.EmitSource();
         }
 
-        using (var writer = new WriterGen(@"..\..\..\..\aot\ILCompiler.MetadataTransform\Internal\Metadata\NativeFormat\Writer\NativeFormatWriterGen.cs"))
+        using (var writer = new WriterGen(Path.Combine("..", "..", "..", "..", "aot", "ILCompiler.MetadataTransform", "Internal", "Metadata", "NativeFormat", "Writer", "NativeFormatWriterGen.cs")))
         {
             writer.EmitSource();
         }
@@ -25,7 +29,7 @@ class Program
             writer.EmitSource();
         }
 
-        using (var writer = new MdBinaryWriterGen(@"..\..\..\..\aot\ILCompiler.MetadataTransform\Internal\Metadata\NativeFormat\Writer\MdBinaryWriterGen.cs"))
+        using (var writer = new MdBinaryWriterGen(Path.Combine("..", "..", "..", "..", "aot", "ILCompiler.MetadataTransform", "Internal", "Metadata", "NativeFormat", "Writer", "MdBinaryWriterGen.cs")))
         {
             writer.EmitSource();
         }

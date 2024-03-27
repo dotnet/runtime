@@ -394,7 +394,6 @@ ep_rt_mono_system_timestamp_get (void)
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <utime.h>
 #include <time.h>
 
 #if HAVE_SYS_TIME_H
@@ -853,6 +852,11 @@ ep_rt_mono_init_finish (void)
 void
 ep_rt_mono_fini (void)
 {
+	// Avoid cleaning up resources to prevent cleaning up out from under running
+	// threads.
+	if (!mono_runtime_is_shutting_down ())
+		return;
+
 	ep_rt_mono_runtime_provider_fini ();
 	ep_rt_mono_profiler_provider_fini ();
 

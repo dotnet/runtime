@@ -51,12 +51,12 @@ public:
         }
 
         rgBstrNames[0] = TP_SysAllocString(W("a"));
-        
+
         for(size_t i = 1; i < *pcNames; i++)
         {
             rgBstrNames[i] = nullptr;
         }
-        
+
         return S_OK;
     }
 
@@ -234,12 +234,12 @@ public:
         }
 
         rgBstrNames[0] = TP_SysAllocString(W("b"));
-        
+
         for(size_t i = 1; i < *pcNames; i++)
         {
             rgBstrNames[i] = nullptr;
         }
-        
+
         return S_OK;
     }
 
@@ -368,7 +368,7 @@ public:
     }
 
 private:
-    ULONG refCount;
+    uint32_t refCount;
 } s_NonBlittableRecordInfo;
 
 extern "C" DLL_EXPORT SAFEARRAY* STDMETHODCALLTYPE CreateSafeArrayOfRecords(BlittableRecord records[], int numRecords)

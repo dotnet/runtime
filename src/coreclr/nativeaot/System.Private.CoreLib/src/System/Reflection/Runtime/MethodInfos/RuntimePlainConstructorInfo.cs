@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Collections.Generic;
+using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Reflection.Core.Execution;
 
@@ -71,7 +71,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return _common.DeclaringType;
+                return _common.DeclaringType.ToType();
             }
         }
 
@@ -83,7 +83,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return ctorAllocatedObject;
         }
 
-        public sealed override MethodBase MetadataDefinitionMethod
+        internal sealed override MethodBase MetadataDefinitionMethod
         {
             get
             {

@@ -36,11 +36,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		protected partial TrimmingCustomizations? CustomizeLinker (TrimmingDriver linker, TestCaseMetadataProvider metadataProvider)
+		protected partial TrimmingCustomizations? CustomizeTrimming (TrimmingDriver linker, TestCaseMetadataProvider metadataProvider)
 		{
 			TrimmingCustomizations customizations = new TrimmingCustomizations ();
 
-			metadataProvider.CustomizeLinker (linker, customizations);
+			metadataProvider.CustomizeTrimming (linker, customizations);
 
 			return customizations;
 		}

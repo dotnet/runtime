@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
 
@@ -32,8 +33,8 @@ internal unsafe struct MsQuicBuffers : IDisposable
     {
         QUIC_BUFFER* buffers = _buffers;
         _buffers = null;
-        NativeMemory.Free(buffers);
         _count = 0;
+        NativeMemory.Free(buffers);
     }
 
     private void Reserve(int count)
@@ -48,6 +49,10 @@ internal unsafe struct MsQuicBuffers : IDisposable
 
     private void SetBuffer(int index, ReadOnlyMemory<byte> buffer)
     {
+        Debug.Assert(index < _count);
+        Debug.Assert(_buffers[index].Buffer is null);
+        Debug.Assert(_buffers[index].Length == 0);
+
         _buffers[index].Buffer = (byte*)NativeMemory.Alloc((nuint)buffer.Length, (nuint)sizeof(byte));
         _buffers[index].Length = (uint)buffer.Length;
         buffer.Span.CopyTo(_buffers[index].Span);
@@ -93,8 +98,8 @@ internal unsafe struct MsQuicBuffers : IDisposable
             }
             byte* buffer = _buffers[i].Buffer;
             _buffers[i].Buffer = null;
-            NativeMemory.Free(buffer);
             _buffers[i].Length = 0;
+            NativeMemory.Free(buffer);
         }
     }
 

@@ -188,31 +188,45 @@ namespace System.Numerics
         /// <remarks>The <see cref="Quaternion.op_Multiply" /> method defines the operation of the multiplication operator for <see cref="Quaternion" /> objects.</remarks>
         public static Quaternion operator *(Quaternion value1, Quaternion value2)
         {
-            Quaternion ans;
+            if (Vector128.IsHardwareAccelerated)
+            {
+                var left = value1.AsVector128();
+                var right = value2.AsVector128();
 
-            float q1x = value1.X;
-            float q1y = value1.Y;
-            float q1z = value1.Z;
-            float q1w = value1.W;
+                var result = right * left.GetElementUnsafe(3);
+                result += (Vector128.Shuffle(right, Vector128.Create(3, 2, 1, 0)) * left.GetElementUnsafe(0)) * Vector128.Create(+1.0f, -1.0f, +1.0f, -1.0f);
+                result += (Vector128.Shuffle(right, Vector128.Create(2, 3, 0, 1)) * left.GetElementUnsafe(1)) * Vector128.Create(+1.0f, +1.0f, -1.0f, -1.0f);
+                result += (Vector128.Shuffle(right, Vector128.Create(1, 0, 3, 2)) * left.GetElementUnsafe(2)) * Vector128.Create(-1.0f, +1.0f, +1.0f, -1.0f);
+                return Unsafe.BitCast<Vector128<float>, Quaternion>(result);
+            }
+            else
+            {
+                Quaternion ans;
 
-            float q2x = value2.X;
-            float q2y = value2.Y;
-            float q2z = value2.Z;
-            float q2w = value2.W;
+                float q1x = value1.X;
+                float q1y = value1.Y;
+                float q1z = value1.Z;
+                float q1w = value1.W;
 
-            // cross(av, bv)
-            float cx = q1y * q2z - q1z * q2y;
-            float cy = q1z * q2x - q1x * q2z;
-            float cz = q1x * q2y - q1y * q2x;
+                float q2x = value2.X;
+                float q2y = value2.Y;
+                float q2z = value2.Z;
+                float q2w = value2.W;
 
-            float dot = q1x * q2x + q1y * q2y + q1z * q2z;
+                // cross(av, bv)
+                float cx = q1y * q2z - q1z * q2y;
+                float cy = q1z * q2x - q1x * q2z;
+                float cz = q1x * q2y - q1y * q2x;
 
-            ans.X = q1x * q2w + q2x * q1w + cx;
-            ans.Y = q1y * q2w + q2y * q1w + cy;
-            ans.Z = q1z * q2w + q2z * q1w + cz;
-            ans.W = q1w * q2w - dot;
+                float dot = q1x * q2x + q1y * q2y + q1z * q2z;
 
-            return ans;
+                ans.X = q1x * q2w + q2x * q1w + cx;
+                ans.Y = q1y * q2w + q2y * q1w + cy;
+                ans.Z = q1z * q2w + q2z * q1w + cz;
+                ans.W = q1w * q2w - dot;
+
+                return ans;
+            }
         }
 
         /// <summary>Returns the quaternion that results from scaling all the components of a specified quaternion by a scalar factor.</summary>

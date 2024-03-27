@@ -27,7 +27,7 @@ if(CLR_CMAKE_HOST_WIN32)
         set(OUT_NAME ${CMAKE_CURRENT_BINARY_DIR}/idls_out/${IDLNAME}_i.c)
         list(APPEND CORGUIDS_SOURCES ${OUT_NAME})
         add_custom_command(OUTPUT ${OUT_NAME}
-                      COMMAND ${MIDL} ${MIDL_INCLUDE_DIRECTORIES} /no_stamp /h ${CMAKE_CURRENT_BINARY_DIR}/idls_out/${IDLNAME}.h ${MIDL_DEFINITIONS} /out ${CMAKE_CURRENT_BINARY_DIR}/idls_out ${CMAKE_CURRENT_SOURCE_DIR}/${GENERATE_IDL}
+                      COMMAND ${MIDL} ${MIDL_INCLUDE_DIRECTORIES} /nologo /no_stamp /h ${CMAKE_CURRENT_BINARY_DIR}/idls_out/${IDLNAME}.h ${MIDL_DEFINITIONS} /out ${CMAKE_CURRENT_BINARY_DIR}/idls_out ${CMAKE_CURRENT_SOURCE_DIR}/${GENERATE_IDL}
                       DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${GENERATE_IDL}
                       COMMENT "Compiling ${GENERATE_IDL}")
     endforeach(GENERATE_IDL)
@@ -56,9 +56,7 @@ if(FEATURE_JIT_PITCHING)
 endif(FEATURE_JIT_PITCHING)
 
 # Compile *_i.cpp to lib
-add_library_clr(corguids_obj OBJECT ${CORGUIDS_SOURCES})
-add_library(corguids INTERFACE)
-target_sources(corguids INTERFACE $<TARGET_OBJECTS:corguids_obj>)
+add_library_clr(corguids OBJECT ${CORGUIDS_SOURCES})
 
 # Binplace the inc files for packaging later.
 

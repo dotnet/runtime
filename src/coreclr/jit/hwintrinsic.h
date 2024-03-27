@@ -58,6 +58,7 @@ enum HWIntrinsicCategory : uint8_t
     HW_Category_ShiftLeftByImmediate,
     HW_Category_ShiftRightByImmediate,
     HW_Category_SIMDByIndexedElement,
+    HW_Category_EnumPattern,
 
     // Helper intrinsics
     // - do not directly correspond to a instruction, such as Vector64.AllBitsSet
@@ -175,6 +176,21 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic needs consecutive registers
     HW_Flag_NeedsConsecutiveRegisters = 0x4000,
+
+    // The intrinsic uses scalable registers
+    HW_Flag_Scalable = 0x8000,
+
+    // Returns Per-Element Mask
+    // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
+    // this output can be used as a per-element mask
+    HW_Flag_ReturnsPerElementMask = 0x10000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result
+    HW_Flag_MaskedOperation = 0x20000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low register.
+    HW_Flag_LowMaskedOperation = 0x40000,
+
 #else
 #error Unsupported platform
 #endif
@@ -201,9 +217,17 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic is a PermuteVar2x intrinsic
     HW_Flag_PermuteVar2x = 0x4000000,
 
-    // The intrinsic is an embedded broadcast compatiable intrinsic
+    // The intrinsic is an embedded broadcast compatible intrinsic
     HW_Flag_EmbBroadcastCompatible = 0x8000000,
+
+    // The intrinsic is an embedded rounding compatible intrinsic
+    HW_Flag_EmbRoundingCompatible = 0x10000000,
+
+    // The intrinsic is an embedded masking incompatible intrinsic
+    HW_Flag_EmbMaskingIncompatible = 0x20000000,
 #endif // TARGET_XARCH
+
+    HW_Flag_CanBenefitFromConstantProp = 0x80000000,
 };
 
 #if defined(TARGET_XARCH)
@@ -587,7 +611,25 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_EmbBroadcastCompatible) != 0;
     }
+
+    static bool IsEmbRoundingCompatible(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_EmbRoundingCompatible) != 0;
+    }
+
+    static bool IsEmbMaskingCompatible(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_EmbMaskingIncompatible) == 0;
+    }
 #endif // TARGET_XARCH
+
+    static bool CanBenefitFromConstantProp(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_CanBenefitFromConstantProp) != 0;
+    }
 
     static bool IsMaybeCommutative(NamedIntrinsic id)
     {
@@ -628,10 +670,8 @@ struct HWIntrinsicInfo
     static bool ReturnsPerElementMask(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         return (flags & HW_Flag_ReturnsPerElementMask) != 0;
-#elif defined(TARGET_ARM64)
-        unreached();
 #else
 #error Unsupported platform
 #endif
@@ -762,14 +802,41 @@ struct HWIntrinsicInfo
         switch (id)
         {
 #ifdef TARGET_ARM64
-            // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
             case NI_AdvSimd_Arm64_LoadPairScalarVector64:
             case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
             case NI_AdvSimd_Arm64_LoadPairVector64:
             case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
             case NI_AdvSimd_Arm64_LoadPairVector128:
             case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+            case NI_AdvSimd_LoadVector64x2AndUnzip:
+            case NI_AdvSimd_Arm64_LoadVector128x2AndUnzip:
+            case NI_AdvSimd_LoadVector64x2:
+            case NI_AdvSimd_Arm64_LoadVector128x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_LoadAndReplicateToVector64x2:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
                 return 2;
+
+            case NI_AdvSimd_LoadVector64x3AndUnzip:
+            case NI_AdvSimd_Arm64_LoadVector128x3AndUnzip:
+            case NI_AdvSimd_LoadVector64x3:
+            case NI_AdvSimd_Arm64_LoadVector128x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_LoadAndReplicateToVector64x3:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
+                return 3;
+
+            case NI_AdvSimd_LoadVector64x4AndUnzip:
+            case NI_AdvSimd_Arm64_LoadVector128x4AndUnzip:
+            case NI_AdvSimd_LoadVector64x4:
+            case NI_AdvSimd_Arm64_LoadVector128x4:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+            case NI_AdvSimd_LoadAndReplicateToVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+                return 4;
 #endif
 
 #ifdef TARGET_XARCH
@@ -795,6 +862,25 @@ struct HWIntrinsicInfo
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_HasImmediateOperand) != 0;
     }
+
+    static bool IsScalable(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_Scalable) != 0;
+    }
+
+    static bool IsMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return ((flags & HW_Flag_MaskedOperation) != 0) || IsLowMaskedOperation(id);
+    }
+
+    static bool IsLowMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_LowMaskedOperation) != 0;
+    }
+
 #endif // TARGET_ARM64
 
     static bool HasSpecialSideEffect(NamedIntrinsic id)
@@ -854,7 +940,7 @@ struct HWIntrinsic final
         InitializeBaseType(node);
     }
 
-    bool IsTableDriven() const
+    bool codeGenIsTableDriven() const
     {
         // TODO-Arm64-Cleanup - make more categories to the table-driven framework
         bool isTableDrivenCategory = category != HW_Category_Helper;

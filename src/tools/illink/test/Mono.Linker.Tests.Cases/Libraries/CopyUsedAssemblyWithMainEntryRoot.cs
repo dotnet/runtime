@@ -4,6 +4,8 @@ using Mono.Linker.Tests.Cases.Libraries.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Libraries
 {
+	[IgnoreTestCase ("NativeAOT doesn't implement copy used behavior", IgnoredBy = Tool.NativeAot)]
+	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = Tool.Trimmer)]
 	[Kept]
 	[KeptMember (".ctor()")]
 	[SetupLinkerAction ("copyused", "test")]

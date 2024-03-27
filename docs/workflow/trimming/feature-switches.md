@@ -13,6 +13,7 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 | EnableUnsafeBinaryFormatterSerialization | System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization | BinaryFormatter serialization support is trimmed when set to false |
 | EventSourceSupport | System.Diagnostics.Tracing.EventSource.IsSupported | Any EventSource related code or logic is trimmed when set to false |
 | InvariantGlobalization | System.Globalization.Invariant | All globalization specific code and data is trimmed when set to true |
+| MetricsSupport | System.Diagnostics.Metrics.Meter.IsSupported | Any Metrics related code or logic is trimmed when set to false |
 | PredefinedCulturesOnly | System.Globalization.PredefinedCulturesOnly |  Don't allow creating a culture for which the platform does not have data |
 | HybridGlobalization | System.Globalization.Hybrid |  Properties connected with the mixed: platform-specific + icu-based globalization will be trimmed  |
 | UseSystemResourceKeys | System.Resources.UseSystemResourceKeys |  Any localizable resources for system assemblies is trimmed when set to true |

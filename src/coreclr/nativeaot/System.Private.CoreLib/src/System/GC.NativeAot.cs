@@ -12,8 +12,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-using Internal.Runtime.CompilerServices;
 using Internal.Runtime;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -695,7 +695,9 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-            RuntimeImports.RhEnumerateConfigurationValues(Unsafe.AsPointer(ref context), &ConfigCallback);
+#pragma warning disable CS8500 // takes address of managed type
+            RuntimeImports.RhEnumerateConfigurationValues(&context, &ConfigCallback);
+#pragma warning restore CS8500
             return context.Configurations!;
         }
 
@@ -741,14 +743,14 @@ namespace System
             return size;
         }
 
-        private static IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize)
+        private static unsafe IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize)
         {
-            return RuntimeImports.RhpRegisterFrozenSegment(sectionAddress, sectionSize);
+            return RuntimeImports.RhRegisterFrozenSegment((void*)sectionAddress, (nuint)sectionSize, (nuint)sectionSize, (nuint)sectionSize);
         }
 
         private static void _UnregisterFrozenSegment(IntPtr segmentHandle)
         {
-            RuntimeImports.RhpUnregisterFrozenSegment(segmentHandle);
+            RuntimeImports.RhUnregisterFrozenSegment(segmentHandle);
         }
 
         public static long GetAllocatedBytesForCurrentThread()
@@ -830,7 +832,9 @@ namespace System
                     throw new OverflowException();
 
                 T[]? array = null;
-                RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, Unsafe.AsPointer(ref array));
+#pragma warning disable CS8500 // takes address of managed type
+                RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, &array);
+#pragma warning restore CS8500
                 if (array == null)
                     throw new OutOfMemoryException();
 
@@ -857,7 +861,9 @@ namespace System
                 throw new OverflowException();
 
             T[]? array = null;
-            RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, Unsafe.AsPointer(ref array));
+#pragma warning disable CS8500 // takes address of managed type
+            RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, &array);
+#pragma warning restore CS8500
             if (array == null)
                 throw new OutOfMemoryException();
 
@@ -869,7 +875,6 @@ namespace System
             return new TimeSpan(RuntimeImports.RhGetTotalPauseDuration());
         }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
         public static void RefreshMemoryLimit()
         {
             ulong heapHardLimit = (AppContext.GetData("GCHeapHardLimit") as ulong?) ?? ulong.MaxValue;

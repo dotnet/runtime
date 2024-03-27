@@ -30,6 +30,7 @@ extends:
           platforms:
             - linux_x64
             - osx_x64
+            - windows_x64
           variables:
             - name: _nativeSanitizersArg
               value: -fsanitize address
@@ -38,13 +39,14 @@ extends:
             buildArgs: -s clr+libs -c $(_BuildConfig) $(_nativeSanitizersArg)
             timeoutInMinutes: 300
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-              scenarios:
-                - normal
-                - no_tiered_compilation
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  scenarios:
+                    - normal
+                    - no_tiered_compilation
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -72,12 +74,45 @@ extends:
             buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked $(_nativeSanitizersArg) /p:ArchiveTests=true
             timeoutInMinutes: 180
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: Libraries_$(_BuildConfig)
-              scenarios:
-                - normal
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: Libraries_$(_BuildConfig)
+                  scenarios:
+                    - normal
+
+      #
+      # Build the whole product with CoreCLR and run libraries tests with AddressSanitizer
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Debug
+          runtimeFlavor: coreclr
+          platforms:
+            - windows_x64
+          variables:
+            - name: _nativeSanitizersArg
+              value: -fsanitize address
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: CoreCLR_LibrariesTests
+            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked $(_nativeSanitizersArg) /p:ArchiveTests=true
+            timeoutInMinutes: 360
+            # Hard-code queues here as we don't want to run on pre Win-10 queues
+            # and we don't want to overcompilcate helix-queues-setup.yml just for this case.
+            helixQueues:
+              - Windows.Amd64.Server2022.Open
+              - Windows.11.Amd64.Client.Open
+            # extra steps, run tests
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: Libraries_$(_BuildConfig)
+                  scenarios:
+                    - normal
 
       #
       # NativeAOT release build and smoke tests with AddressSanitizer
@@ -90,6 +125,7 @@ extends:
           platforms:
             - linux_x64
             - osx_x64
+            - windows_x64
           variables:
             - name: _nativeSanitizersArg
               value: -fsanitize address
@@ -98,11 +134,12 @@ extends:
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release $(_nativeSanitizersArg)
-            extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testBuildArgs: nativeaot tree nativeaot
-              liveLibrariesBuildConfig: Release
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: nativeaot tree nativeaot
+                  liveLibrariesBuildConfig: Release
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:

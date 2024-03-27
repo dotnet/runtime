@@ -8,13 +8,18 @@
 // in other cases.
 //
 .assembly extern System.Runtime { auto }
+.assembly extern xunit.core {}
 .assembly extern System.Console { auto }
 
 .assembly test24524{}
 
-.method private hidebysig static int32
+.class public auto ansi test24524 {
+.method public hidebysig static int32
         Main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .maxstack  2
 
@@ -24,4 +29,5 @@
 
   ldc.i4     100
   ret
+}
 }

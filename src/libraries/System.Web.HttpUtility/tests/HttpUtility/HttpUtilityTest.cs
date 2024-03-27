@@ -792,6 +792,7 @@ namespace System.Web.Tests
         [InlineData("foo&bar")]
         [InlineData("foo&name=bar")]
         [InlineData("name=bar&foo&foo")]
+        [InlineData("_return_fields%2b=extattrs&name%3a=somename.somedomain.local")]
         public void ParseAndToStringMaintainAllKeyValuePairs(string input)
         {
             var values = HttpUtility.ParseQueryString(input);

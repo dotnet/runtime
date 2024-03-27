@@ -14,6 +14,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Initializes a new instance of <see cref="JsonUnmappedMemberHandlingAttribute"/>.
         /// </summary>
+        /// <param name="unmappedMemberHandling">The handling to apply to the current member.</param>
         public JsonUnmappedMemberHandlingAttribute(JsonUnmappedMemberHandling unmappedMemberHandling)
         {
             UnmappedMemberHandling = unmappedMemberHandling;

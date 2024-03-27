@@ -25,6 +25,11 @@ namespace System.Linq
             where TSource : struct, INumber<TSource>
             where TResult : struct, INumber<TResult>
         {
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
             if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
                 return Sum<TSource, TResult>(span);
@@ -55,11 +60,11 @@ namespace System.Linq
 
                 if (typeof(T) == typeof(long))
                 {
-                    return (TResult) (object) SumSignedIntegersVectorized(MemoryMarshal.Cast<T, long>(span));
+                    return (TResult)(object)SumSignedIntegersVectorized(MemoryMarshal.Cast<T, long>(span));
                 }
                 if (typeof(T) == typeof(int))
                 {
-                    return (TResult) (object) SumSignedIntegersVectorized(MemoryMarshal.Cast<T, int>(span));
+                    return (TResult)(object)SumSignedIntegersVectorized(MemoryMarshal.Cast<T, int>(span));
                 }
             }
 

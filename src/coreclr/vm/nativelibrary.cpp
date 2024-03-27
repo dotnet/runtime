@@ -144,8 +144,8 @@ namespace
             SString::Iterator i = m_message.Begin();
             if (!m_message.Find(i, new_message))
             {
-                m_message += new_message;
-                m_message += SString(SString::Utf8, "\n");
+                m_message.Append(new_message);
+                m_message.AppendUTF8("\n");
             }
 #else
             m_message = SString(SString::Utf8, message);
@@ -475,7 +475,7 @@ namespace
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
 
-        SString path = pAssembly->GetPEAssembly()->GetPath();
+        SString path{ pAssembly->GetPEAssembly()->GetPath() };
 
         SString::Iterator lastPathSeparatorIter = path.End();
         if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
@@ -606,9 +606,9 @@ namespace
         // or an existing known extension. This is done due to issues with case-sensitive file systems
         // on Windows. The Windows loader always appends ".DLL" as opposed to the more common ".dll".
         if (libNameIsRelativePath
-            && !libName.EndsWith(W("."))
-            && !libName.EndsWithCaseInsensitive(W(".dll"))
-            && !libName.EndsWithCaseInsensitive(W(".exe")))
+            && !libName.EndsWith(SL(W(".")))
+            && !libName.EndsWithCaseInsensitive(SL(W(".dll")))
+            && !libName.EndsWithCaseInsensitive(SL(W(".exe"))))
         {
             libNameVariations[varCount++] = NameSuffixFmt;
         }
@@ -665,7 +665,7 @@ namespace
         // We try to dlopen with such variations on the original.
         NameVariations prefixSuffixCombinations[MaxVariationCount] = {};
         int numberOfVariations = ARRAY_SIZE(prefixSuffixCombinations);
-        DetermineLibNameVariations(prefixSuffixCombinations, &numberOfVariations, wszLibName, libNameIsRelativePath);
+        DetermineLibNameVariations(prefixSuffixCombinations, &numberOfVariations, SString{ SString::Literal, wszLibName }, libNameIsRelativePath);
         for (int i = 0; i < numberOfVariations; i++)
         {
             SString currLibNameVariation;

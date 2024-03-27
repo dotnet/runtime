@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -282,8 +283,11 @@ namespace ILCompiler
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
-                    // It might seem reasonable to disallow array of void, but the CLR doesn't prevent that too hard.
-                    // E.g. "newarr void" will fail, but "newarr void[]" or "ldtoken void[]" will succeed.
+                    if (parameterType.IsVoid)
+                    {
+                        // Arrays of System.Void are not allowed
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    }
                 }
             }
             else if (type.IsFunctionPointer)
@@ -301,16 +305,31 @@ namespace ILCompiler
                 // Validate classes, structs, enums, interfaces, and delegates
                 Debug.Assert(type.IsDefType);
 
-                // Don't validate generic definitions
+                // Don't validate generic definitions much other than by checking for illegal recursion.
                 if (type.IsGenericDefinition)
                 {
+                    // Check for illegal recursion
+                    if (type is EcmaType ecmaType && ILCompiler.LazyGenericsSupport.CheckForECMAIllegalGenericRecursion(ecmaType))
+                    {
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    }
                     return type;
+                }
+                else if (type.HasInstantiation)
+                {
+                    ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(type.GetTypeDefinition());
                 }
 
                 // System.__Canon or System.__UniversalCanon
                 if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                 {
                     return type;
+                }
+
+                // Make sure instantiation length matches the expectation
+                if (type.Instantiation.Length != type.GetTypeDefinition().Instantiation.Length)
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                 }
 
                 // We need to be able to load interfaces
@@ -329,12 +348,6 @@ namespace ILCompiler
                 // Ensure we can compute the type layout
                 defType.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
                 defType.ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizesAndFields);
-
-                // Make sure instantiation length matches the expectation
-                if (defType.Instantiation.Length != defType.GetTypeDefinition().Instantiation.Length)
-                {
-                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                }
 
                 foreach (TypeDesc typeArg in defType.Instantiation)
                 {

@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''
   container: ''
   crossBuild: false
-  dependOnEvaluatePaths: false
   timeoutInMinutes: ''
   variables: {}
   pool: ''
@@ -13,7 +12,7 @@ parameters:
 
 ### Format job
 jobs:
-- template: xplat-pipeline-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -21,27 +20,29 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
     crossBuild: ${{ parameters.crossBuild }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     name: ${{ format('format_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     displayName: ${{ format('Formatting {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     helixType: 'format'
     pool: ${{ parameters.pool }}
     variables:
-
+    - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
 
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - name: PythonScript
-        value: 'py -3'
+    - ${{ if eq(parameters.osGroup, 'linux') }}:
+      - name: LinuxCrossArg
+        value: '--cross'
+    - ${{ if ne(parameters.osGroup, 'linux') }}:
+      - name: LinuxCrossArg
+        value: ''
 
-    - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - name: PythonScript
-        value: 'python3'
+    condition: and(succeeded(), ${{ parameters.condition }})
 
-    condition: ${{ parameters.condition }}
     steps:
+
     - task: UseDotNet@2
       # This should match what jitutils YML uses to build.
       displayName: 'Install .NET SDK'
@@ -50,12 +51,17 @@ jobs:
         version: '6.x'
         includePreviewVersions: true
         installationPath: $(Agent.ToolsDirectory)/dotnet
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitformat.py -c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)
+
+    - script: $(PythonSetupScript)
+      displayName: Enable python venv
+
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitformat.py -r $(Build.SourcesDirectory) -o $(osGroup) -a $(archType) $(LinuxCrossArg)
       displayName: Run jitformat.py
+
     - task: PublishBuildArtifacts@1
       displayName: Publish format.patch
       inputs:
-        PathtoPublish: '$(Build.SourcesDirectory)/src/coreclr/format.patch'
+        PathtoPublish: '$(Build.SourcesDirectory)/format.patch'
         ArtifactName: format.$(osGroup).$(archType).patch
       continueOnError: true
       condition: failed()
