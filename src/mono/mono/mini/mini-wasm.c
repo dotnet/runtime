@@ -591,6 +591,8 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	return FALSE;
 }
 
+#ifdef DISABLE_THREADS
+
 // this points to System.Threading.TimerQueue.TimerHandler C# method
 static void *timer_handler;
 
@@ -608,7 +610,6 @@ mono_wasm_execute_timer (void)
 	MONO_EXIT_GC_UNSAFE;
 }
 
-#ifdef DISABLE_THREADS
 void
 mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
 {
