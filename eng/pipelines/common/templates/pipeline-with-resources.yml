@@ -3,6 +3,7 @@ parameters:
     type: stageList
   - name: isOfficialBuild
     type: boolean
+    default: false
 
 extends:
   template: templateDispatch.yml
