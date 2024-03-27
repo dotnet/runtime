@@ -270,17 +270,14 @@ namespace System.Net.Http
             _readBuffer.Discard(bytesToConsume);
         }
 
-        private void WriteHeaders(HttpRequestMessage request, HttpMethod normalizedMethod)
+        private void WriteHeaders(HttpRequestMessage request)
         {
             Debug.Assert(request.RequestUri is not null);
 
             // Write the request line
-            WriteAsciiString(normalizedMethod.Method);
-            _writeBuffer.EnsureAvailableSpace(1);
-            _writeBuffer.AvailableSpan[0] = (byte)' ';
-            _writeBuffer.Commit(1);
+            WriteBytes(request.Method.Http1EncodedBytes);
 
-            if (ReferenceEquals(normalizedMethod, HttpMethod.Connect))
+            if (request.Method.IsConnect)
             {
                 // RFC 7231 #section-4.3.6.
                 // Write only CONNECT foo.com:345 HTTP/1.1
@@ -353,7 +350,7 @@ namespace System.Net.Http
             {
                 // Write out Content-Length: 0 header to indicate no body,
                 // unless this is a method that never has a body.
-                if (normalizedMethod.MustHaveRequestBody)
+                if (request.Method.MustHaveRequestBody)
                 {
                     WriteBytes("Content-Length: 0\r\n"u8);
                 }
@@ -417,16 +414,11 @@ namespace System.Net.Http
                 // Some headers such as User-Agent and Server use space as a separator (see: ProductInfoHeaderParser)
                 if (headerValuesCount > 1)
                 {
-                    HttpHeaderParser? parser = header.Key.Parser;
-                    string separator = HttpHeaderParser.DefaultSeparator;
-                    if (parser != null && parser.SupportsMultipleValues)
-                    {
-                        separator = parser.Separator!;
-                    }
+                    byte[] separator = header.Key.SeparatorBytes;
 
                     for (int i = 1; i < headerValuesCount; i++)
                     {
-                        WriteAsciiString(separator);
+                        WriteBytes(separator);
                         WriteString(headerValues[i], valueEncoding);
                     }
                 }
@@ -460,11 +452,15 @@ namespace System.Net.Http
 
         private void WriteAsciiString(string s)
         {
+            Debug.Assert(Ascii.IsValid(s));
+
             _writeBuffer.EnsureAvailableSpace(s.Length);
-            int length = Encoding.ASCII.GetBytes(s, _writeBuffer.AvailableSpan);
-            Debug.Assert(length == s.Length);
-            Debug.Assert(Encoding.ASCII.GetString(_writeBuffer.AvailableSpan.Slice(0, length)) == s);
-            _writeBuffer.Commit(length);
+
+            OperationStatus status = Ascii.FromUtf16(s, _writeBuffer.AvailableSpan, out int bytesWritten);
+            Debug.Assert(status == OperationStatus.Done);
+            Debug.Assert(bytesWritten == s.Length);
+
+            _writeBuffer.Commit(s.Length);
         }
 
         private void WriteString(string s, Encoding? encoding)
@@ -509,7 +505,6 @@ namespace System.Net.Http
             Task? sendRequestContentTask = null;
 
             _currentRequest = request;
-            HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
 
             _canRetry = false;
 
@@ -520,7 +515,7 @@ namespace System.Net.Http
             {
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart(Id);
 
-                WriteHeaders(request, normalizedMethod);
+                WriteHeaders(request);
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
 
@@ -744,12 +739,12 @@ namespace System.Net.Http
 
                 // Create the response stream.
                 Stream responseStream;
-                if (ReferenceEquals(normalizedMethod, HttpMethod.Head) || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
+                if (request.Method.IsHead || response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotModified)
                 {
                     responseStream = EmptyReadStream.Instance;
                     CompleteResponse();
                 }
-                else if (ReferenceEquals(normalizedMethod, HttpMethod.Connect) && response.StatusCode == HttpStatusCode.OK)
+                else if (request.Method.IsConnect && response.StatusCode == HttpStatusCode.OK)
                 {
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
@@ -1737,22 +1732,30 @@ namespace System.Net.Http
             return count;
         }
 
-        private async ValueTask<int> ReadAsync(Memory<byte> destination)
+        private ValueTask<int> ReadAsync(Memory<byte> destination)
         {
             // This is called when reading the response body.
 
             if (_readBuffer.ActiveLength > 0)
             {
                 // We have data in the read buffer.  Return it to the caller.
-                return ReadFromBuffer(destination.Span);
+                return new ValueTask<int>(ReadFromBuffer(destination.Span));
             }
 
             // No data in read buffer.
             // Do an unbuffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == default, "Read ahead task should have been consumed as part of the headers.");
-            int count = await _stream.ReadAsync(destination).ConfigureAwait(false);
-            if (NetEventSource.Log.IsEnabled()) Trace($"Received {count} bytes.");
-            return count;
+
+            return NetEventSource.Log.IsEnabled()
+                ? ReadAndLogBytesReadAsync(destination)
+                : _stream.ReadAsync(destination);
+
+            async ValueTask<int> ReadAndLogBytesReadAsync(Memory<byte> destination)
+            {
+                int count = await _stream.ReadAsync(destination).ConfigureAwait(false);
+                if (NetEventSource.Log.IsEnabled()) Trace($"Received {count} bytes.");
+                return count;
+            }
         }
 
         private int ReadBuffered(Span<byte> destination)

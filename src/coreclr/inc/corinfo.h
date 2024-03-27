@@ -397,8 +397,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_DBL2ULNG_OVF,
     CORINFO_HELP_FLTREM,
     CORINFO_HELP_DBLREM,
-    CORINFO_HELP_FLTROUND,
-    CORINFO_HELP_DBLROUND,
+    CORINFO_HELP_FLTROUND,              // unused, remove once MINIMUM_READYTORUN_MAJOR_VERSION > 9
+    CORINFO_HELP_DBLROUND,              // unused, remove once MINIMUM_READYTORUN_MAJOR_VERSION > 9
 
     /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide
        which is the right helper to use to allocate an object of a given type. */
@@ -2983,7 +2983,7 @@ public:
             CORINFO_CLASS_HANDLE*       vcTypeRet       /* OUT */
             ) = 0;
 
-    // Obtains a list of exact classes for a given base type. Returns 0 if the number of
+    // Obtains a list of exact classes for a given base type. Returns -1 if the number of
     // the exact classes is greater than maxExactClasses or if more types might be loaded
     // in future.
     virtual int getExactClasses(
