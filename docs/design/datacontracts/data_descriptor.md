@@ -243,9 +243,8 @@ Rationale: This allows tooling to generate the in-memory data descriptor as a si
 string.  For pointers, the address can be stored at a known offset in an in-proc
 array of pointers and the offset written into the constant JSON string.
 
-The indirection array is not part of the data descriptor spec.  It is expected that the data
-contract descriptor will include it. (The data contract descriptor must contain: the data
-descriptor, the set of compatible algorithmic contracts, the aux array of globals).
+The indirection array is not part of the data descriptor spec.  It is part of the [contract
+descriptor](./contract_descriptor.md#Contract_descriptor).
 
 
 
