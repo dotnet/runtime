@@ -7290,12 +7290,17 @@ bool Compiler::lvaParamShouldHaveLocalStackSpace(unsigned lclNum)
     // In Swift functions, struct parameters that aren't passed in a single
     // stack segment are always reassembled on the local stack frame since they
     // are passed in a way that does not match their full layout.
-    if ((info.compCallConv == CorInfoCallConvExtension::Swift) &&
-        (varDsc->TypeGet() == TYP_STRUCT) &&
-        !lvaIsImplicitByRefLocal(lclNum) &&
-        !lvaParameterPassingInfo[lclNum].HasExactlyOneStackSegment())
+    if ((info.compCallConv == CorInfoCallConvExtension::Swift))
     {
-        return true;
+        unsigned baseLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
+        LclVarDsc* baseDsc = lvaGetDesc(baseLclNum);
+
+        if ((baseDsc->TypeGet() == TYP_STRUCT) &&
+            !lvaIsImplicitByRefLocal(baseLclNum) &&
+            !lvaParameterPassingInfo[baseLclNum].HasExactlyOneStackSegment())
+        {
+            return true;
+        }
     }
 #endif
 
