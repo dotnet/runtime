@@ -12192,11 +12192,18 @@ ValueNum ValueNumStore::VNForCast(ValueNum  srcVN,
                                   bool      srcIsUnsigned,    /* = false */
                                   bool      hasOverflowCheck) /* = false */
 {
-
+#if 0
     if ((castFromType == TYP_I_IMPL) && varTypeIsGC(castToType) && IsVNConstant(srcVN))
     {
         // Omit cast for CNS_INT [TYP_I_IMPL -> TYP_BYREF/TYP_REF]
         // We can't check `IsVNHandle(srcVN)` because we may have lost handle information with shared const CSEs.
+        return srcVN;
+    }
+#endif // 0
+
+    if ((castFromType == TYP_I_IMPL) && (castToType == TYP_BYREF) && IsVNHandle(srcVN))
+    {
+        // Omit cast for (h)CNS_INT [TYP_I_IMPL -> TYP_BYREF]
         return srcVN;
     }
 
