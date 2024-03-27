@@ -54,9 +54,6 @@ EXTERN_C void checkStack(void);
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
 
-#define USE_INDIRECT_CODEHEADER
-
-
 EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
 EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 

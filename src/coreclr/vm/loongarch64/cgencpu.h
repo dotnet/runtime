@@ -36,8 +36,6 @@ extern PCODE GetPreStubEntryPoint();
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
 
-#define USE_INDIRECT_CODEHEADER
-
 #define HAS_FIXUP_PRECODE                       1
 #define HAS_FIXUP_PRECODE_CHUNKS                1
 
