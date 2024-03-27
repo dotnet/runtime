@@ -23,7 +23,13 @@ namespace System.Tests
             {
                 "System.Tests.EnvironmentStackTrace.StaticFrame(Object obj)",
                 "System.Tests.EnvironmentStackTrace.TestClass..ctor()",
-                "System.Tests.EnvironmentStackTrace.GenericFrame[T1,T2](T1 t1, T2 t2)",
+                AppContext.TryGetSwitch("Switch.System.Diagnostics.StackTrace.ShowGenericInstantiations", out var showGenericInstantiations)
+                ?
+                    showGenericInstantiations
+                    ? "System.Tests.EnvironmentStackTrace.GenericFrame[System.DateTime,System.Text.StringBuilder](DateTime t1, StringBuilder t2)"
+                    : "System.Tests.EnvironmentStackTrace.GenericFrame[T1,T2](T1 t1, T2 t2)"
+                : "System.Tests.EnvironmentStackTrace.GenericFrame[T1,T2](T1 t1, T2 t2)"
+                ,
                 "System.Tests.EnvironmentStackTrace.TestFrame()"
             };
 
@@ -40,19 +46,19 @@ namespace System.Tests
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private void TestFrame()
         {
             GenericFrame<DateTime, StringBuilder>(DateTime.Now, null);
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private void GenericFrame<T1, T2>(T1 t1, T2 t2)
         {
             new TestClass();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static void StaticFrame(object obj)
         {
             s_stackTrace = Environment.StackTrace;
@@ -60,7 +66,7 @@ namespace System.Tests
 
         private class TestClass
         {
-            [MethodImpl(MethodImplOptions.NoInlining)]
+            [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
             public TestClass()
             {
                 StaticFrame(null);

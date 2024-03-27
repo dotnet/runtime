@@ -391,13 +391,15 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         int iNumValidFrames = 0;
         for (int i = 0; i < data.cElements; i++)
         {
-            // The managed stacktrace classes always returns typical method definition, so we don't need to bother providing exact instantiation.
-            // Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(data.pElements[i].pFunc, data.pElements[i].pExactGenericArgsToken, &pExactMethod, &thExactType);
             MethodDesc* pFunc = data.pElements[i].pFunc;
 
-            // Strip the instantiation to make sure that the reflection never gets a bad method desc back.
-            if (pFunc->HasMethodInstantiation())
+            // We need to strip the instantiations if the method desc is shared by generic instantiations
+            // to make sure the reflection never gets a bad method desc back.
+            // i.e. a method desc has System.__Canon in its instantiations
+            if (pFunc->HasClassOrMethodInstantiation() && pFunc->IsSharedByGenericInstantiations())
+            {
                 pFunc = pFunc->StripMethodInstantiation();
+            }
             _ASSERTE(pFunc->IsRuntimeMethodHandle());
 
             // Method handle
@@ -946,6 +948,7 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
     //        Can we always assume FramedMethodFrame?
     //        NOT AT ALL!!!, but we can assume it's a function
     //                       because we asked the stackwalker for it!
+    pCf->InitializeExactGenericInstantiations();
     MethodDesc* pFunc = pCf->GetFunction();
 
     if (pData->cElements >= pData->cElementsAllocated)

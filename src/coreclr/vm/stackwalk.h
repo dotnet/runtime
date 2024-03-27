@@ -145,6 +145,10 @@ public:
      */
     PTR_VOID GetExactGenericArgsToken();
 
+#ifndef DACCESS_COMPILE
+    void InitializeExactGenericInstantiations();
+#endif
+
     inline CodeManState * GetCodeManState() { LIMITED_METHOD_DAC_CONTRACT; return & codeManState; }
     /*
        IF YOU USE ANY OF THE SUBSEQUENT FUNCTIONS, YOU NEED TO REALLY UNDERSTAND THE

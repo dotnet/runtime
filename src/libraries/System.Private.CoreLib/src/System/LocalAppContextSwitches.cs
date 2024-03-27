@@ -80,5 +80,24 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => GetDefaultShowILOffsetSetting();
         }
+
+        private static int s_showGenericInstantiations;
+        private static bool GetDefaultShowGenericInstantiationsSetting()
+        {
+            if (s_showGenericInstantiations < 0) return false;
+            if (s_showGenericInstantiations > 0) return true;
+
+            // Disabled by default.
+            bool isSwitchEnabled = AppContextConfigHelper.GetBooleanConfig("Switch.System.Diagnostics.StackTrace.ShowGenericInstantiations", false);
+            s_showGenericInstantiations = isSwitchEnabled ? 1 : -1;
+
+            return isSwitchEnabled;
+        }
+
+        public static bool ShowGenericInstantiations
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetDefaultShowGenericInstantiationsSetting();
+        }
     }
 }

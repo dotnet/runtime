@@ -7779,19 +7779,26 @@ static void getMethodInfoHelper(
 
     if (methInfo->options & CORINFO_GENERICS_CTXT_MASK)
     {
-#if defined(PROFILING_SUPPORTED)
-        BOOL fProfilerRequiresGenericsContextForEnterLeave = FALSE;
-        {
-            BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
-            if ((&g_profControlBlock)->RequiresGenericsContextForEnterLeave())
-            {
-                fProfilerRequiresGenericsContextForEnterLeave = TRUE;
-            }
-            END_PROFILER_CALLBACK();
-        }
-        if (fProfilerRequiresGenericsContextForEnterLeave)
+        if (ftn->IsJitOptimizationDisabled())
         {
             methInfo->options = CorInfoOptions(methInfo->options|CORINFO_GENERICS_CTXT_KEEP_ALIVE);
+        }
+        else
+        {
+#if defined(PROFILING_SUPPORTED)
+            BOOL fProfilerRequiresGenericsContextForEnterLeave = FALSE;
+            {
+                BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
+                if ((&g_profControlBlock)->RequiresGenericsContextForEnterLeave())
+                {
+                    fProfilerRequiresGenericsContextForEnterLeave = TRUE;
+                }
+                END_PROFILER_CALLBACK();
+            }
+            if (fProfilerRequiresGenericsContextForEnterLeave)
+            {
+                methInfo->options = CorInfoOptions(methInfo->options|CORINFO_GENERICS_CTXT_KEEP_ALIVE);
+            }
         }
 #endif // defined(PROFILING_SUPPORTED)
     }

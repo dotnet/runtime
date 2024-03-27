@@ -1871,6 +1871,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
         // the stack range can also be accessed during GC stackwalk.
         fProcessThisFrame = UpdateScannedStackRange(sf, fIsFirstPass);
 
+        cfThisFrame.InitializeExactGenericInstantiations();
         MethodDesc *pMD = cfThisFrame.GetFunction();
 
         Frame*  pFrame = GetLimitFrame(); // next frame to process
@@ -2018,6 +2019,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
             // If crawlframe is dirty, it implies that it got modified as part of explicit frame processing. Thus, we shall
             // reinitialize it here.
             ExceptionTracker::InitializeCrawlFrame(&cfThisFrame, pThread, sf, &regdisp, pDispatcherContext, ControlPc, &uMethodStartPC, this);
+            cfThisFrame.InitializeExactGenericInstantiations();
         }
 
         if (fIsFrameLess)
@@ -2060,7 +2062,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
 
         // GCX_COOP_THREAD_EXISTS ends here and we may switch to preemp mode now (if applicable).
     }
-
+    
     //
     // now process managed call frame if needed
     //

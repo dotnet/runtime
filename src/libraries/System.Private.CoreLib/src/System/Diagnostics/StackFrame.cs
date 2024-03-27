@@ -222,7 +222,12 @@ namespace System.Diagnostics
                         else
                             fFirstTyParam = false;
 
-                        sb.Append(typars[k].Name);
+                        string typeName = typars[k].ToString();
+                        for (int i = 0; i < typeName.Length; i++)
+                        {
+                            char ch = typeName[i];
+                            sb.Append(ch == '+' ? '.' : ch);
+                        }
                         k++;
                     }
 
