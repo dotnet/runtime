@@ -35,7 +35,7 @@ namespace System.IO.Compression
         /// that is not supported.</exception>
         ///
         /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
-        /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
+        /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName) =>
             ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false);
 
@@ -67,7 +67,7 @@ namespace System.IO.Compression
         /// that is not supported.</exception>
         ///
         /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
-        /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
+        /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <param name="overwriteFiles">True to indicate overwrite.</param>
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles) =>
             ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles);
@@ -154,7 +154,7 @@ namespace System.IO.Compression
         /// that is not supported.</exception>
         ///
         /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
-        /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
+        /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <param name="overwriteFiles">True to indicate overwrite.</param>
         /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this ZipArchive.
         ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
