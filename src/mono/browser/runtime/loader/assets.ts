@@ -315,7 +315,7 @@ export function prepareAssets() {
                     name,
                     hash: resources.assembly[name],
                     behavior: "assembly"
-                }, false);
+                }, !resources.coreAssembly); // if there are no core assemblies, then all assemblies are core
             }
         }
 
@@ -337,7 +337,7 @@ export function prepareAssets() {
                         name,
                         hash: resources.pdb[name],
                         behavior: "pdb"
-                    }, false);
+                    }, !resources.corePdb); // if there are no core pdbs, then all pdbs are core
                 }
             }
         }
@@ -376,7 +376,7 @@ export function prepareAssets() {
                         hash: resources.vfs[virtualPath][name],
                         behavior: "vfs",
                         virtualPath
-                    }, false);
+                    }, !resources.coreVfs);
                 }
             }
         }
@@ -403,7 +403,7 @@ export function prepareAssets() {
 
         if (resources.wasmSymbols) {
             for (const name in resources.wasmSymbols) {
-                assetsToLoad.push({
+                coreAssetsToLoad.push({
                     name,
                     hash: resources.wasmSymbols[name],
                     behavior: "symbols"
@@ -430,7 +430,7 @@ export function prepareAssets() {
         }
     }
 
-    config.assets = [...assetsToLoad, ...modulesAssets];
+    config.assets = [...coreAssetsToLoad, ...assetsToLoad, ...modulesAssets];
 }
 
 export function prepareAssetsWorker() {
