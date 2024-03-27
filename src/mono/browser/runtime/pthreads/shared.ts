@@ -12,6 +12,7 @@ import { bindings_init } from "../startup";
 import { forceDisposeProxies } from "../gc-handles";
 import { monoMessageSymbol, GCHandleNull, PThreadPtrNull, WorkerToMainMessageType } from "../types/internal";
 import { threads_c_functions as tcwraps } from "../cwraps";
+import { forceThreadMemoryViewRefresh } from "../memory";
 
 // A duplicate in loader/assets.ts
 export const worker_empty_prefix = "          -    ";
@@ -110,6 +111,7 @@ export function exec_synchronization_context_pump (): void {
     if (!loaderHelpers.is_runtime_running()) {
         return;
     }
+    forceThreadMemoryViewRefresh();
     tcwraps.mono_wasm_synchronization_context_pump();
 }
 

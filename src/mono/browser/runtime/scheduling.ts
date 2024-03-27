@@ -64,10 +64,6 @@ export function mono_wasm_schedule_timer (shortestDueTimeMs: number): void {
     if (lastScheduledTimeoutId) {
         globalThis.clearTimeout(lastScheduledTimeoutId);
         lastScheduledTimeoutId = undefined;
-        // NOTE: Multi-threaded Module.safeSetTimeout() does the runtimeKeepalivePush()
-        // and non-Multi-threaded Module.safeSetTimeout does not runtimeKeepalivePush()
-        // but clearTimeout does not runtimeKeepalivePop() so we need to do it here in MT only.
-        if (WasmEnableThreads) Module.runtimeKeepalivePop();
     }
     lastScheduledTimeoutId = Module.safeSetTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
 }
