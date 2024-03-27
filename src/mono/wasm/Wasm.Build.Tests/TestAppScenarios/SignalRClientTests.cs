@@ -55,7 +55,7 @@ public class SignalRClientTests : AppTestBase
                     _testOutput.WriteLine(msg.Text);
 
                 // prevent timeouts with [Long Running Test] on error
-                if (msg.Text.ToLowerInvariant().Contains.("error"))
+                if (msg.Text.ToLowerInvariant().Contains("error"))
                 {
                     Console.WriteLine(msg.Text);
                     Console.WriteLine(_testOutput);
