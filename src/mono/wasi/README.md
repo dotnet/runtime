@@ -4,7 +4,7 @@ This directory contains a build configuration for WASI support, plus a basic sam
 
 ## Try it out
 
-Here is a quick overview of how to consume published artifacts. Assuming .NET SDK is already installed
+Here is a quick overview of how to consume published artifacts. Assuming .NET SDK is already installed, you should run:
 
 ```
 dotnet workload install wasi-experimental
