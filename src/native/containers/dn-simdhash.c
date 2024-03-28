@@ -132,8 +132,8 @@ dn_simdhash_foreach (dn_simdhash_t *hash, dn_simdhash_foreach_func func, void *u
 	assert(hash);
 	dn_simdhash_meta_t meta = hash->meta;
 
-	uint8_t *bucket = hash->buffers.buckets,
-		*values = hash->buffers.values;
+	uint8_t *bucket = (uint8_t *)hash->buffers.buckets,
+		*values = (uint8_t *)hash->buffers.values;
 	uint32_t values_step = meta.value_size * meta.bucket_capacity;
 
 	for (

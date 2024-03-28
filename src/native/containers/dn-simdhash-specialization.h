@@ -121,9 +121,9 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 	match_vector.vec = vceqq_u8(needle.vec, haystack.vec);
 	dn_simdhash_suffixes masked;
 	masked.vec = vandq_u8(match_vector.vec, byte_mask.vec);
-	_msb.b[0] = vaddv_u8(vget_low_u8(masked.vec));
-	_msb.b[1] = vaddv_u8(vget_high_u8(masked.vec));
-	return __builtin_ctz(_msb.u);
+	msb.b[0] = vaddv_u8(vget_low_u8(masked.vec));
+	msb.b[1] = vaddv_u8(vget_high_u8(masked.vec));
+	return __builtin_ctz(msb.u);
 #else
 	// Completely untested.
 	for (int i = 0; i < dn_simdhash_bucket_count(haystack); i++)
