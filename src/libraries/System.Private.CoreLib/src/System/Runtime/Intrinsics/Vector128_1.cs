@@ -692,6 +692,11 @@ namespace System.Runtime.Intrinsics
         // New Surface Area
         //
 
+        static bool ISimdVector<Vector128<T>, T>.AnyMatches(Vector128<T> vector)
+        {
+            return (vector != Vector128<T>.Zero);
+        }
+
         static int ISimdVector<Vector128<T>, T>.IndexOfLastMatch(Vector128<T> vector)
         {
             uint mask = vector.ExtractMostSignificantBits();

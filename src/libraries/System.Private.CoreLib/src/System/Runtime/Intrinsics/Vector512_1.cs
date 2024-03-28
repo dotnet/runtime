@@ -682,6 +682,11 @@ namespace System.Runtime.Intrinsics
         // New Surface Area
         //
 
+        static bool ISimdVector<Vector512<T>, T>.AnyMatches(Vector512<T> vector)
+        {
+            return (vector != Vector512<T>.Zero);
+        }
+
         static int ISimdVector<Vector512<T>, T>.IndexOfLastMatch(Vector512<T> vector)
         {
             ulong mask = vector.ExtractMostSignificantBits();
