@@ -5,31 +5,33 @@
 
 #if defined(__clang__) || defined (__GNUC__) // vector intrinsics
 
-#if defined(__wasm)
+#if defined(__wasm_simd128__)
 #include <wasm_simd128.h>
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
 #include <emmintrin.h>
 #elif defined(__ARM_NEON)
 #include <arm_neon.h>
+#elif defined(__wasm)
+#warning Building dn_simdhash for WASM without -msimd128! Performance will be terrible!
 #else
-#error Unsupported architecture for dn_simdhash
+#warning Unsupported architecture for dn_simdhash! Performance will be terrible!
 #endif
 
 // FIXME: How can we inline this without polluting every consumer with intrinsic includes?
 int
 dn_simdhash_find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
+#if defined(__wasm_simd128__)
     dn_simdhash_suffixes match_vector;
-    uint32_t msb;
-
-#if defined(__wasm)
     match_vector.vec = wasm_i8x16_eq(needle.vec, haystack.vec);
-    msb = wasm_i8x16_bitmask(match_vector.vec);
+    return __builtin_ctz(wasm_i8x16_bitmask(match_vector.vec));
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
+    dn_simdhash_suffixes match_vector;
     // Completely untested.
     match_vector.vec = _mm_cmpeq_epi8(needle.vec, haystack.vec);
-    msb = _mm_movemask_epi8(match_vector.vec);
+    return __builtin_ctz(_mm_movemask_epi8(match_vector.vec));
 #elif defined(__ARM_NEON)
+    dn_simdhash_suffixes match_vector;
     // Completely untested.
 	static const dn_simdhash_suffixes byte_mask = {
         1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128
@@ -37,13 +39,13 @@ dn_simdhash_find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash
     union {
         uint8_t b[4];
         uint32_t u;
-    } _msb;
+    } msb;
     match_vector.vec = vceqq_u8(needle.vec, haystack.vec);
 	dn_simdhash_suffixes masked;
     masked.vec = vandq_u8(match_vector.vec, byte_mask.vec);
 	_msb.b[0] = vaddv_u8(vget_low_u8(masked.vec));
     _msb.b[1] = vaddv_u8(vget_high_u8(masked.vec));
-    msb = _msb.u;
+    return __builtin_ctz(_msb.u);
 #else
     // Completely untested.
     for (int i = 0; i < dn_simdhash_bucket_count(haystack); i++)
@@ -52,14 +54,23 @@ dn_simdhash_find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash
 
     return 32;
 #endif
-
-    int first_match_index = __builtin_ctz(msb);
-    return first_match_index;
 }
 
 #else // __clang__ || __GNUC__
 
-#error Unsupported compiler for dn_simdhash
+// FIXME: How can we inline this without polluting every consumer with intrinsic includes?
+int
+dn_simdhash_find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
+{
+    // FIXME: Do this using intrinsics on MSVC. Seems complicated.
+
+    // Completely untested.
+    for (int i = 0; i < dn_simdhash_bucket_count(haystack); i++)
+        if (needle.values[i] == haystack.values[i])
+            return i;
+
+    return 32;
+}
 
 #endif // __clang__ || __GNUC__
 
@@ -76,9 +87,14 @@ dn_simdhash_new_internal (dn_simdhash_meta_t meta, dn_simdhash_vtable_t vtable, 
     result->vtable = vtable;
     result->buffers.allocator = allocator;
 
+    // FIXME: Why does clang insist old_buffers is unused here?
+    /*
     dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(result, capacity);
     assert(old_buffers.buckets == NULL);
     assert(old_buffers.values == NULL);
+    */
+
+    dn_simdhash_ensure_capacity_internal(result, capacity);
 
     return result;
 }
