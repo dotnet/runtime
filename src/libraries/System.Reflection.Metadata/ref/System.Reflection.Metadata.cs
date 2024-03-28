@@ -2408,6 +2408,39 @@ namespace System.Reflection.Metadata
         public int PackingSize { get { throw null; } }
         public int Size { get { throw null; } }
     }
+    public sealed partial class TypeName : System.IEquatable<System.Reflection.Metadata.TypeName>
+    {
+        internal TypeName() { }
+        public string AssemblyQualifiedName { get { throw null; } }
+        public string? AssemblySimpleName { get { throw null; } }
+        public System.Reflection.Metadata.TypeName? DeclaringType { get { throw null; } }
+        public string FullName { get { throw null; } }
+        public bool IsArray { get { throw null; } }
+        public bool IsByRef { get { throw null; } }
+        public bool IsConstructedGenericType { get { throw null; } }
+        public bool IsNested { get { throw null; } }
+        public bool IsPointer { get { throw null; } }
+        public bool IsSimple { get { throw null; } }
+        public bool IsSZArray { get { throw null; } }
+        public bool IsVariableBoundArrayType { get { throw null; } }
+        public string Name { get { throw null; } }
+        public static System.Reflection.Metadata.TypeName Parse(System.ReadOnlySpan<char> typeName, System.Reflection.Metadata.TypeNameParseOptions? options = null) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> typeName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Reflection.Metadata.TypeName? result, System.Reflection.Metadata.TypeNameParseOptions? options = null) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public bool Equals(System.Reflection.Metadata.TypeName? other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public int GetArrayRank() { throw null; }
+        public System.Reflection.AssemblyName? GetAssemblyName() { throw null; }
+        public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.TypeName> GetGenericArguments() { throw null; }
+        public System.Reflection.Metadata.TypeName GetGenericTypeDefinition() { throw null; }
+        public System.Reflection.Metadata.TypeName GetElementType() { throw null; }
+        public int GetNodeCount() { throw null; }
+    }
+    public sealed partial class TypeNameParseOptions
+    {
+        public TypeNameParseOptions() { }
+        public int MaxNodes { get { throw null; } set { } }
+    }
     public readonly partial struct TypeReference
     {
         private readonly object _dummy;

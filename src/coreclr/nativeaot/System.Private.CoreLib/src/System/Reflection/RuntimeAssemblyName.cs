@@ -129,6 +129,15 @@ namespace System.Reflection
             return assemblyName;
         }
 
+        internal static RuntimeAssemblyName FromAssemblyName(AssemblyName source)
+        {
+            byte[]? publicKeyOrToken = (source._flags & AssemblyNameFlags.PublicKey) != 0
+                ? source.GetPublicKey()
+                : source.GetPublicKeyToken();
+
+            return new(source.Name, source.Version, source.CultureName, source._flags, publicKeyOrToken);
+        }
+
         //
         // Copies a RuntimeAssemblyName into a freshly allocated AssemblyName with no data aliasing to any other object.
         //
