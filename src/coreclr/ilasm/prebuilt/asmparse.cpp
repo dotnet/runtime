@@ -53,8 +53,8 @@ typedef union  {
 # define DOTTEDNAME 261
 # define QSTRING 262
 # define SQSTRING 263
-# define INT32 264
-# define INT64 265
+# define INT32_V 264
+# define INT64_V 265
 # define FLOAT64 266
 # define HEXBYTE 267
 # define TYPEDEF_T 268
