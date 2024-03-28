@@ -59,6 +59,7 @@ dn_simdhash_free (dn_simdhash_t *hash)
 	dn_simdhash_buffers_t buffers = hash->buffers;
 	memset(hash, 0, sizeof(dn_simdhash_t));
 	dn_simdhash_free_buffers(buffers);
+	dn_allocator_free(buffers.allocator, (void *)hash);
 }
 
 void
