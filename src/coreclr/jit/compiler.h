@@ -3994,6 +3994,11 @@ public:
                        CORINFO_ARG_LIST_HANDLE varList,
                        CORINFO_SIG_INFO*       varSig);
 
+    template <typename Classifier>
+    void lvaClassifyParameterABI(Classifier& classifier);
+
+    void lvaClassifyParameterABI();
+
     bool lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd);
 
     var_types lvaGetActualType(unsigned lclNum);
