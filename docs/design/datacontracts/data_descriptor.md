@@ -97,15 +97,15 @@ memory.
 
 The physical descriptors are meant to describe *subsets* of a logical descriptor and to compose.
 
-In typical usage we expect to have two physical descriptors that are combined to form the logical descriptor for a target runtime:
-* a "baseline" physical descriptor with a well-known name,
-* a "binary blob" physical descriptor that is part of the target runtime process' memory
+In the .NET runtime there are two physical descriptors:
+* a "baseline" physical data descriptor with a well-known name,
+* an in-memory physical data descriptor that resides in the target process' memory
 
 When constructing the logical descriptor, first the baseline physical descriptor is consumed: the
 types and values from the baseline are added to the logical descriptor.  Then the types of the
-binary blob are used to augment the baseline: fields are added or modified, sizes and offsets are
-overwritten.  The global values of the binary blob are used to augment the baseline: new globals are
-added, existing globals are modified by overwriting their types or values.
+in-memory data descriptor are used to augment the baseline: fields are added or modified, sizes and
+offsets are overwritten.  The global values of the in-memory data descriptor are used to augment the
+baseline: new globals are added, existing globals are modified by overwriting their types or values.
 
 Rationale: If a type appears in multiple physical descriptors, the later appearances may add more
 fields or change the offsets or definite/indefinite sizes of prior definitions.  If a value appears
@@ -141,11 +141,12 @@ Each `FIELD_ARRAY` is an array of dictionaries each containing keys:
 * `"type": "type name"` the name of a primitive type or another type defined in the logical descriptor
 * optional `"offset": int | "unknown"` the offset of the field or "unknown". If omitted, same as "unknown".
 
-Note that the logical descriptor does not contain "unknown" offsets: it is expected that the binary
-blob will augment the baseline with a known offset for all fields in the baseline.
+Note that the logical descriptor does not contain "unknown" offsets: it is expected that the
+in-memory data descriptor will augment the baseline with a known offset for all fields in the
+baseline.
 
-Rationale: "unknown" offsets may be used to document in the physical JSON descriptor that the binary
-blob descriptor is expected to provide the offset of the field.
+Rationale: "unknown" offsets may be used to document in the physical JSON descriptor that the
+in-memory descriptor is expected to provide the offset of the field.
 
 ### Global values
 
@@ -155,8 +156,9 @@ The global values will be in an array, with each value described by a dictionary
 * `"type": "type name"` the type of the global value
 * optional `"value": VALUE | { "indirect": int } | "unknown"` the value of the global value, or an offset in an auxiliary array containing the value or "unknown".
 
-Note that the logical descriptor does not contain "unknown" values: it is expected that the binary
-blob will augment the baseline with a known offset for all fields in the baseline.
+Note that the logical descriptor does not contain "unknown" values: it is expected that the
+in-memory data descriptor will augment the baseline with a known offset for all fields in the
+baseline.
 
 The `VALUE` may be a JSON numeric constant integer or a string containing a signed or unsigned
 decimal or hex (with prefix `0x` or `0X`) integer constant.  The constant must be within the range
