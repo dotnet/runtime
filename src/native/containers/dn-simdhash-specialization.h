@@ -119,6 +119,9 @@ build_search_vector (uint8_t needle)
 		needle, needle, needle, needle, needle, needle, needle, needle,
 		needle, needle, needle, needle, needle, needle, needle, needle
 	};
+	// TODO: Evaluate whether the & mask is actually worth it. In the C# prototype, it wasn't.
+	// Not doing it means there is a ~1% chance of a false positive in the data bytes near the
+	//  end of the bucket, but we check the index against the bucket count anyway, so...
 	dn_u8x16 mask = {
 		0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu,
 		0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0x00u, 0x00u
@@ -131,7 +134,6 @@ build_search_vector (uint8_t needle)
 static DN_FORCEINLINE(int)
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
-	// FIXME: This code is worse because according to gcc, ctz/clz are undefined for 0.
 #if defined(__wasm_simd128__)
 	dn_simdhash_suffixes match_vector;
 	match_vector.vec = wasm_i8x16_eq(needle.vec, haystack.vec);

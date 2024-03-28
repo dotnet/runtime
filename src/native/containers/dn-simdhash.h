@@ -34,7 +34,6 @@
 
 #if defined(__clang__) || defined (__GNUC__) // vector intrinsics
 typedef uint8_t dn_u8x16 __attribute__ ((vector_size (DN_SIMDHASH_VECTOR_WIDTH)));
-typedef int8_t dn_i8x16 __attribute__ ((vector_size (DN_SIMDHASH_VECTOR_WIDTH)));
 
 // extract/replace lane opcodes require constant indices on some target architectures,
 //  and in some cases it is profitable to do a single-byte memory load/store instead of
