@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysisFramework;
+using System;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -30,6 +31,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
+            if (!CustomAttributeBasedDependencyAlgorithm.CanOptimizeAttributeArtifacts(factory))
+                return Array.Empty<CombinedDependencyListEntry>();
+
             // Presence of this type indicates that more than just the attribute metadata is needed:
             // we also need runtime artifacts, such as the method body of the attribute constructor.
             MetadataType nativeFormatType = factory.TypeSystemContext.SystemModule.GetType("System.Reflection.Runtime.CustomAttributes.NativeFormat", "NativeFormatCustomAttributeData");

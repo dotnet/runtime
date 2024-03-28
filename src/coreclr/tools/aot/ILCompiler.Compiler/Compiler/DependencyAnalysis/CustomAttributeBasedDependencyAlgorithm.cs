@@ -19,6 +19,8 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal static class CustomAttributeBasedDependencyAlgorithm
     {
+        public static bool CanOptimizeAttributeArtifacts(NodeFactory factory) => factory.CompilationModuleGroup.IsSingleFileCompilation;
+
         public static void AddDependenciesDueToCustomAttributes(ref DependencyList dependencies, NodeFactory factory, EcmaMethod method)
         {
             MetadataReader reader = method.MetadataReader;
@@ -108,6 +110,7 @@ namespace ILCompiler.DependencyAnalysis
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
             var attributeTypeProvider = new CustomAttributeTypeProvider(module);
 
+            bool metadataOnlyDependencies = CanOptimizeAttributeArtifacts(factory);
 
             foreach (CustomAttributeHandle caHandle in attributeHandles)
             {
@@ -128,9 +131,12 @@ namespace ILCompiler.DependencyAnalysis
                     // Make a new list in case we need to abort.
                     var caDependencies = factory.MetadataManager.GetDependenciesForCustomAttribute(factory, constructor, decodedValue, parent) ?? new DependencyList();
 
-                    caDependencies.Add(factory.MethodMetadata(constructor.GetTypicalMethodDefinition()), "Attribute constructor");
+                    if (metadataOnlyDependencies)
+                        caDependencies.Add(factory.MethodMetadata(constructor.GetTypicalMethodDefinition()), "Attribute constructor");
+                    else
+                        caDependencies.Add(factory.ReflectedMethod(constructor.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Attribute constructor");
 
-                    if (AddDependenciesFromCustomAttributeBlob(caDependencies, factory, constructor.OwningType, decodedValue, metadataOnly: true))
+                    if (AddDependenciesFromCustomAttributeBlob(caDependencies, factory, constructor.OwningType, decodedValue, metadataOnlyDependencies))
                     {
                         dependencies ??= new DependencyList();
                         dependencies.AddRange(caDependencies);
