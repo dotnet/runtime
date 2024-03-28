@@ -345,11 +345,11 @@ void CILJit::setTargetOS(CORINFO_OS os)
 //   including padding after the actual value.
 //
 // Arguments:
-//   list - the arg list handle pointing to the argument
-//   sig  - the signature for the arg's method
+//   corInfoType - EE type of the argument
+//   typeHnd     - if the type is a value class, its class handle
 //
 // Return value:
-//   the number of stack slots in stack arguments for the call.
+//   the size in bytes when the type is passed on the stack for the call.
 //
 // Notes:
 //   - On most platforms arguments are passed with TARGET_POINTER_SIZE alignment,
@@ -357,8 +357,10 @@ void CILJit::setTargetOS(CORINFO_OS os)
 //   It is different for arm64 apple that packs some types without alignment and padding.
 //   If the argument is passed by reference then the method returns REF size.
 //
-unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig)
+unsigned Compiler::eeGetArgSize(CorInfoType corInfoType, CORINFO_CLASS_HANDLE typeHnd)
 {
+    var_types argType = JITtype2varType(corInfoType);
+
 #if defined(TARGET_AMD64)
 
     // Everything fits into a single 'slot' size
@@ -366,12 +368,9 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef UNIX_AMD64_ABI
-    CORINFO_CLASS_HANDLE argClass;
-    CorInfoType          argTypeJit = strip(info.compCompHnd->getArgType(sig, list, &argClass));
-    var_types            argType    = JITtype2varType(argTypeJit);
     if (varTypeIsStruct(argType))
     {
-        unsigned structSize = info.compCompHnd->getClassSize(argClass);
+        unsigned structSize = info.compCompHnd->getClassSize(typeHnd);
         return roundUp(structSize, TARGET_POINTER_SIZE);
     }
 #endif // UNIX_AMD64_ABI
@@ -379,22 +378,19 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 
 #else // !TARGET_AMD64
 
-    CORINFO_CLASS_HANDLE argClass;
-    CorInfoType          argTypeJit = strip(info.compCompHnd->getArgType(sig, list, &argClass));
-    var_types            argType    = JITtype2varType(argTypeJit);
-    unsigned             argSize;
+    unsigned argSize;
 
     var_types hfaType = TYP_UNDEF;
     bool      isHfa   = false;
 
     if (varTypeIsStruct(argType))
     {
-        hfaType             = GetHfaType(argClass);
+        hfaType             = GetHfaType(typeHnd);
         isHfa               = (hfaType != TYP_UNDEF);
-        unsigned structSize = info.compCompHnd->getClassSize(argClass);
+        unsigned structSize = info.compCompHnd->getClassSize(typeHnd);
 
         // make certain the EE passes us back the right thing for refanys
-        assert(argTypeJit != CORINFO_TYPE_REFANY || structSize == 2 * TARGET_POINTER_SIZE);
+        assert(corInfoType != CORINFO_TYPE_REFANY || structSize == 2 * TARGET_POINTER_SIZE);
 
         // For each target that supports passing struct args in multiple registers
         // apply the target specific rules for them here:

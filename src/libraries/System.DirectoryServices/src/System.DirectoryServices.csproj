@@ -5,7 +5,7 @@
     <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
-    <NoWarn>$(NoWarn);IDE0059;IDE0060;CA1822</NoWarn>
+    <NoWarn>$(NoWarn);IDE0059;IDE0060;CA1822;CA1865</NoWarn>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>

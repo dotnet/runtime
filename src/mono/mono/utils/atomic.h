@@ -95,22 +95,6 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 
 #include <stdatomic.h>
 
-static inline guint8
-mono_atomic_cas_u8 (volatile guint8 *dest, guint8 exch, guint8 comp)
-{
-	g_static_assert (sizeof (atomic_uchar) == sizeof (*dest) && ATOMIC_CHAR_LOCK_FREE == 2);
-	(void)atomic_compare_exchange_strong ((volatile atomic_uchar *)dest, &comp, exch);
-	return comp;
-}
-
-static inline gint16
-mono_atomic_cas_i16 (volatile gint16 *dest, gint16 exch, gint16 comp)
-{
-	g_static_assert (sizeof (atomic_short) == sizeof (*dest) && ATOMIC_SHORT_LOCK_FREE == 2);
-	(void)atomic_compare_exchange_strong ((volatile atomic_short *)dest, &comp, exch);
-	return comp;
-}
-
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
 {
@@ -185,20 +169,6 @@ static inline gint64
 mono_atomic_dec_i64 (volatile gint64 *dest)
 {
 	return mono_atomic_add_i64 (dest, -1);
-}
-
-static inline guint8
-mono_atomic_xchg_u8 (volatile guint8 *dest, guint8 exch)
-{
-	g_static_assert (sizeof (atomic_uchar) == sizeof (*dest) && ATOMIC_CHAR_LOCK_FREE == 2);
-	return atomic_exchange ((volatile atomic_uchar *)dest, exch);
-}
-
-static inline gint16
-mono_atomic_xchg_i16 (volatile gint16 *dest, gint16 exch)
-{
-	g_static_assert (sizeof (atomic_short) == sizeof (*dest) && ATOMIC_SHORT_LOCK_FREE == 2);
-	return atomic_exchange ((volatile atomic_short *)dest, exch);
 }
 
 static inline gint32
@@ -341,18 +311,6 @@ mono_atomic_store_ptr (volatile gpointer *dst, gpointer val)
 #include <windows.h>
 #include <intrin.h>
 
-static inline guint8
-mono_atomic_cas_u8 (volatile guint8 *dest, guint8 exch, guint8 comp)
-{
-	return _InterlockedCompareExchange8 ((CHAR volatile *)dest, (CHAR)exch, (CHAR)comp);
-}
-
-static inline gint16
-mono_atomic_cas_i16 (volatile gint16 *dest, gint16 exch, gint16 comp)
-{
-	return _InterlockedCompareExchange16 ((SHORT volatile *)dest, (SHORT)exch, (SHORT)comp);
-}
-
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
 {
@@ -405,18 +363,6 @@ static inline gint64
 mono_atomic_dec_i64 (volatile gint64 *dest)
 {
 	return InterlockedDecrement64 ((LONG64 volatile *)dest);
-}
-
-static inline guint8
-mono_atomic_xchg_u8 (volatile guint8 *dest, guint8 exch)
-{
-	return _InterlockedExchange8 ((CHAR volatile *)dest, (CHAR)exch);
-}
-
-static inline gint16
-mono_atomic_xchg_i16 (volatile gint16 *dest, gint16 exch)
-{
-	return _InterlockedExchange16 ((SHORT volatile *)dest, (SHORT)exch);
 }
 
 static inline gint32
@@ -562,18 +508,6 @@ mono_atomic_store_ptr (volatile gpointer *dst, gpointer val)
 #define gcc_sync_fetch_and_add(a, b) __sync_fetch_and_add (a, b)
 #endif
 
-static inline guint8 mono_atomic_cas_u8(volatile guint8 *dest,
-						guint8 exch, guint8 comp)
-{
-	return gcc_sync_val_compare_and_swap (dest, comp, exch);
-}
-
-static inline gint16 mono_atomic_cas_i16(volatile gint16 *dest,
-						gint16 exch, gint16 comp)
-{
-	return gcc_sync_val_compare_and_swap (dest, comp, exch);
-}
-
 static inline gint32 mono_atomic_cas_i32(volatile gint32 *dest,
 						gint32 exch, gint32 comp)
 {
@@ -598,24 +532,6 @@ static inline gint32 mono_atomic_inc_i32(volatile gint32 *val)
 static inline gint32 mono_atomic_dec_i32(volatile gint32 *val)
 {
 	return gcc_sync_sub_and_fetch (val, 1);
-}
-
-static inline guint8 mono_atomic_xchg_u8(volatile guint8 *val, guint8 new_val)
-{
-	guint8 old_val;
-	do {
-		old_val = *val;
-	} while (gcc_sync_val_compare_and_swap (val, old_val, new_val) != old_val);
-	return old_val;
-}
-
-static inline gint16 mono_atomic_xchg_i16(volatile gint16 *val, gint16 new_val)
-{
-	gint16 old_val;
-	do {
-		old_val = *val;
-	} while (gcc_sync_val_compare_and_swap (val, old_val, new_val) != old_val);
-	return old_val;
 }
 
 static inline gint32 mono_atomic_xchg_i32(volatile gint32 *val, gint32 new_val)
@@ -809,12 +725,7 @@ static inline void mono_atomic_store_i64(volatile gint64 *dst, gint64 val)
 
 #define WAPI_NO_ATOMIC_ASM
 
-/* Fallbacks seem to not be used anymore, they should be removed
- * or small type ones should be added in case we find a platform that still needs them.
- * extern guint8 mono_atomic_cas_u8(volatile guint8 *dest, guint8 exch, guint8 comp);
- * extern gint16 mono_atomic_cas_i16(volatile gint16 *dest, gint16 exch, gint16 comp);
- * extern guint8 mono_atomic_xchg_u8(volatile guint8 *dest, guint8 exch);
- * extern gint16 mono_atomic_xchg_i16(volatile gint16 *dest, gint16 exch); */
+/* Fallbacks seem to not be used anymore, they should be removed. */
 extern gint32 mono_atomic_cas_i32(volatile gint32 *dest, gint32 exch, gint32 comp);
 extern gint64 mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp);
 extern gpointer mono_atomic_cas_ptr(volatile gpointer *dest, gpointer exch, gpointer comp);
