@@ -672,6 +672,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         checkForSmallType = true;
 
         impPopArgsForUnmanagedCall(call->AsCall(), sig, &swiftErrorArg);
+
+        // Before we finish importing this call, we might transform the call node into something other than a GT_CALL.
+        // Keep a pointer to the call's args around in case we need to generate special IR for them
+        // (for example, when importing a Swift call with a SwiftError* arg).
         callArgs = &(call->AsCall()->gtArgs);
 
         goto DONE;

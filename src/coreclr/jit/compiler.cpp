@@ -10946,6 +10946,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                     m_externallyVisibleImplicitly++;
                     break;
 
+                case AddressExposedReason::SWIFT_ERROR_PSEUDOLOCAL:
+                    m_swiftErrorPseudolocal++;
+                    break;
+
                 default:
                     unreached();
                     break;

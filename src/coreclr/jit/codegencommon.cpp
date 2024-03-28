@@ -5400,6 +5400,8 @@ void CodeGen::genFinalizeFrame()
 #endif
 
 #ifdef SWIFT_SUPPORT
+    // If this method returns an error value in the Swift error register,
+    // don't push/pop REG_SWIFT_ERROR.
     if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
     {
         assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
@@ -7852,10 +7854,21 @@ void CodeGen::genReturn(GenTree* treeNode)
 }
 
 #ifdef SWIFT_SUPPORT
+//------------------------------------------------------------------------
+// genSwiftErrorReturn: Generates code for storing error value in REG_SWIFT_ERROR.
+//
+// Arguments:
+//    treeNode - The GT_SWIFT_ERROR_RET tree node,
+//    where its operand is the SwiftError::Value field
+//
+// Return Value:
+//    None
+//
 void CodeGen::genSwiftErrorReturn(GenTreeUnOp* treeNode)
 {
     assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
     assert(compiler->lvaSwiftErrorArg != BAD_VAR_NUM);
+    assert(compiler->lvaSwiftErrorLocal != BAD_VAR_NUM);
 
     GenTree* op = treeNode->gtGetOp1();
 

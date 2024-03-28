@@ -1742,11 +1742,12 @@ void Compiler::fgAddReversePInvokeEnterExit()
     fgNewStmtNearEnd(genReturnBB, tree);
 
 #ifdef SWIFT_SUPPORT
+    // If this method has a SwiftError* out parameter, add some IR for setting the error register before returning.
     if (lvaSwiftErrorArg != BAD_VAR_NUM)
     {
         assert(info.compCallConv == CorInfoCallConvExtension::Swift);
         assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
-        GenTreeLclFld* const swiftErrorLocal = gtNewLclFldNode(lvaSwiftErrorLocal, TYP_LONG, 0);
+        GenTreeLclFld* const swiftErrorLocal = gtNewLclFldNode(lvaSwiftErrorLocal, TYP_I_IMPL, 0);
         GenTree* const swiftReturn = gtNewOperNode(GT_SWIFT_ERROR_RET, TYP_I_IMPL, swiftErrorLocal);
         swiftReturn->SetHasOrderingSideEffect();
         swiftReturn->gtFlags |= (GTF_CALL | GTF_GLOB_REF);

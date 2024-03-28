@@ -63,6 +63,9 @@ void CodeGen::genInitializeRegisterState()
 #ifdef SWIFT_SUPPORT
             if ((compiler->lvaSwiftErrorArg != BAD_VAR_NUM) && (reg == REG_SWIFT_ERROR))
             {
+                // A variable is using REG_SWIFT_ERROR, but we also intend to return an error value in this register.
+                // CodeGen::genFinalizeFrame ensured this register isn't pushed/pop so we don't trash the error value,
+                // so we don't expect the register to be marked as used. Thus, skip this check.
                 continue;
             }
 #endif // SWIFT_SUPPORT

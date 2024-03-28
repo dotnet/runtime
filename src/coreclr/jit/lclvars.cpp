@@ -1351,16 +1351,16 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #ifdef SWIFT_SUPPORT
 //-----------------------------------------------------------------------------
-// lvaInitSpecialSwiftParam:
-//  If the parameter is a special Swift parameter then initialize it and return true.
+// lvaInitSpecialSwiftParam: Initialize SwiftSelf/SwiftError* parameters.
 //
 // Parameters:
+//   argHnd  - Handle for this parameter in the method's signature
 //   varDsc  - LclVarDsc* for the parameter
 //   type    - Type of the parameter
 //   typeHnd - Class handle for the type of the parameter
 //
-// Remarks:
-//   Handles SwiftSelf.
+// Returns:
+//   true if parameter was initialized
 //
 bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd, InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd)
 {
@@ -1388,34 +1388,42 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd, InitVarD
     const char* className = info.compCompHnd->getClassNameFromMetadata(typeHnd, &namespaceName);
     if ((strcmp(className, "SwiftSelf") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
     {
-        // TODO: Should we do error handling with BADCODE here?
-        assert(!argIsByrefOrPtr);
+        if (argIsByrefOrPtr)
+        {
+            BADCODE("Expected SwiftSelf struct, got pointer/reference");
+        }
         
-        // TODO: Should we do error handling for duplicate SwiftSelf args?
+        if (lvaSwiftSelfArg != BAD_VAR_NUM)
+        {
+            BADCODE("Duplicate SwiftSelf parameter");
+        }
 
         LclVarDsc* const varDsc = varDscInfo->varDsc;
         varDsc->SetArgReg(REG_SWIFT_SELF);
-        // varDsc->SetOtherArgReg(REG_NA);
+        varDsc->SetOtherArgReg(REG_NA);
         varDsc->lvIsRegArg = true;
         lvaSwiftSelfArg    = varDscInfo->varNum;
         lvaSetVarDoNotEnregister(lvaSwiftSelfArg DEBUGARG(DoNotEnregisterReason::NonStandardParameter));
         return true;
     }
-    else if ((strcmp(className, "SwiftError") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+    
+    if ((strcmp(className, "SwiftError") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
     {
-        // TODO: Should we do error handling with BADCODE here?
-        assert(argIsByrefOrPtr);
+        if (!argIsByrefOrPtr)
+        {
+            BADCODE("Expected SwiftError pointer/reference, got struct");
+        }
         
-        // TODO: Should we do error handling for duplicate SwiftError* args?
+        if (lvaSwiftErrorArg != BAD_VAR_NUM)
+        {
+            BADCODE("Duplicate SwiftError* parameter");
+        }
 
         lvaSwiftErrorArg = varDscInfo->varNum;
         lvaSwiftErrorLocal = lvaGrabTemp(false DEBUGARG("SwiftError pseudolocal"));
         lvaSetStruct(lvaSwiftErrorLocal, typeHnd, false);
-        lvaSetVarAddrExposed(lvaSwiftErrorLocal DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
-
-        // LclVarDsc* const varDsc = lvaGetDesc(lvaSwiftErrorLocal);
-        // varDsc->SetArgReg(REG_SWIFT_ERROR);
-        // varDsc->lvIsRegArg = true;
+        lvaSetVarAddrExposed(lvaSwiftErrorLocal DEBUGARG(AddressExposedReason::SWIFT_ERROR_PSEUDOLOCAL));
+        return true;
     }
 
     return false;
