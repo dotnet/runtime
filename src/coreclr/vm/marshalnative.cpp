@@ -533,7 +533,7 @@ extern "C" void* QCALLTYPE MarshalNative_GetIUnknownOrIDispatchForObject(QCall::
 
     OBJECTREF oref = o.Get();
     GCPROTECT_BEGIN(oref);
-    ComIpType fetchedIpType = {};
+    ComIpType fetchedIpType = ComIpType_None;
     retVal = GetComIPFromObjectRef(&oref, ComIpType_Both, &fetchedIpType);
     *isIDispatch = fetchedIpType == ComIpType_Dispatch;
     GCPROTECT_END();
