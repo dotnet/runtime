@@ -22,6 +22,7 @@ namespace System.Security.Cryptography
         // Some platforms have a mutable struct for LiteXof, do not mark this field as readonly.
         private LiteXof _hashProvider;
         private bool _disposed;
+        private ConcurrencyBlock _block;
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="Shake256" /> class.
@@ -68,7 +69,10 @@ namespace System.Security.Cryptography
         {
             CheckDisposed();
 
-            _hashProvider.Append(data);
+            using (ConcurrencyBlock.Enter(ref _block))
+            {
+                _hashProvider.Append(data);
+            }
         }
 
         /// <summary>
@@ -87,10 +91,13 @@ namespace System.Security.Cryptography
             ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
             CheckDisposed();
 
-            byte[] output = new byte[outputLength];
-            _hashProvider.Finalize(output);
-            _hashProvider.Reset();
-            return output;
+            using (ConcurrencyBlock.Enter(ref _block))
+            {
+                byte[] output = new byte[outputLength];
+                _hashProvider.Finalize(output);
+                _hashProvider.Reset();
+                return output;
+            }
         }
 
         /// <summary>
@@ -104,8 +111,11 @@ namespace System.Security.Cryptography
         {
             CheckDisposed();
 
-            _hashProvider.Finalize(destination);
-            _hashProvider.Reset();
+            using (ConcurrencyBlock.Enter(ref _block))
+            {
+                _hashProvider.Finalize(destination);
+                _hashProvider.Reset();
+            }
         }
 
         /// <summary>
@@ -124,9 +134,12 @@ namespace System.Security.Cryptography
             ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
             CheckDisposed();
 
-            byte[] output = new byte[outputLength];
-            _hashProvider.Current(output);
-            return output;
+            using (ConcurrencyBlock.Enter(ref _block))
+            {
+                byte[] output = new byte[outputLength];
+                _hashProvider.Current(output);
+                return output;
+            }
         }
 
         /// <summary>
@@ -139,7 +152,11 @@ namespace System.Security.Cryptography
         public void GetCurrentHash(Span<byte> destination)
         {
             CheckDisposed();
-            _hashProvider.Current(destination);
+
+            using (ConcurrencyBlock.Enter(ref _block))
+            {
+                _hashProvider.Current(destination);
+            }
         }
 
         /// <summary>

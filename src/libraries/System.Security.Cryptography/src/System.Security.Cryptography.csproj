@@ -650,6 +650,7 @@
     <Compile Include="System\Security\Cryptography\CapiHelper.Browser.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\Cng.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\ConcurrencyBlock.NoOp.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\DesImplementation.NotSupported.cs" />
@@ -834,6 +835,7 @@
     <Compile Include="System\Security\Cryptography\CapiHelper.Unix.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\Cng.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\ConcurrencyBlock.Block.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.Unix.cs" />
     <Compile Include="System\Security\Cryptography\DesImplementation.OpenSsl.cs" />
@@ -998,6 +1000,7 @@
     <Compile Include="System\Security\Cryptography\CapiHelper.Shared.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.Unix.cs" />
     <Compile Include="System\Security\Cryptography\Cng.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\ConcurrencyBlock.NoOp.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.Android.cs" />
     <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.Unix.cs" />
@@ -1125,6 +1128,7 @@
     <Compile Include="System\Security\Cryptography\CapiHelper.Shared.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.Unix.cs" />
     <Compile Include="System\Security\Cryptography\Cng.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\ConcurrencyBlock.NoOp.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.Unix.cs" />
     <Compile Include="System\Security\Cryptography\DesImplementation.Apple.cs" />
@@ -1709,6 +1713,7 @@
     <Compile Include="System\Security\Cryptography\CngKey.StandardProperties.cs" />
     <Compile Include="System\Security\Cryptography\CngPkcs8.cs" />
     <Compile Include="System\Security\Cryptography\CngSymmetricAlgorithmCore.cs" />
+    <Compile Include="System\Security\Cryptography\ConcurrencyBlock.NoOp.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.Windows.cs" />
     <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.Windows.cs" />
     <Compile Include="System\Security\Cryptography\DesImplementation.Windows.cs" />
