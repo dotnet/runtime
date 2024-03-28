@@ -12,6 +12,8 @@ namespace System
 {
     internal static partial class Number
     {
+        private const int CharStackBufferSize = 32;
+
         private const int DefaultPrecisionExponentialFormat = 6;
 
         private const int MaxUInt32DecDigits = 10;

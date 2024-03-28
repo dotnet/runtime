@@ -133,6 +133,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Decoder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Validator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\FormattingHelpers.CountDigits.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\FormattingHelpers.CountDigits.Int128.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Constants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\FormattingHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Boolean.cs" />
