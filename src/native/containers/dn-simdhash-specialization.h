@@ -56,22 +56,7 @@ static_assert(sizeof(DN_SIMDHASH_VALUE_T) == sizeof(void *), "You said your valu
 #else
 #endif
 
-// Gluing macro expansions together requires nested macro invocation :/
-#define _GLUE(a,b) a ## b
-
-// We generate unique names for each specialization so that they will be easy to distinguish
-//  when debugging, profiling, or disassembling. Otherwise they would have linker-assigned names
-#define DN_SIMDHASH_T_VTABLE(t) _GLUE(t,_vtable)
-#define DN_SIMDHASH_T_META(t) _GLUE(t,_meta)
-#define DN_SIMDHASH_SCAN_BUCKET_INTERNAL(t) _GLUE(t,_scan_bucket_internal)
-#define DN_SIMDHASH_FIND_VALUE_INTERNAL(t) _GLUE(t,_find_value_internal)
-#define DN_SIMDHASH_TRY_INSERT_INTERNAL(t) _GLUE(t,_try_insert_internal)
-#define DN_SIMDHASH_REHASH_INTERNAL(t) _GLUE(t,_rehash_internal)
-#define DN_SIMDHASH_NEW(t) _GLUE(t,_new)
-#define DN_SIMDHASH_TRY_ADD(t) _GLUE(t,_try_add)
-#define DN_SIMDHASH_TRY_ADD_WITH_HASH(t) _GLUE(t,_try_add_with_hash)
-#define DN_SIMDHASH_TRY_GET_VALUE(t) _GLUE(t,_try_get_value)
-#define DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(t) _GLUE(t,_try_get_value_with_hash)
+#include "dn-simdhash-specialization-declarations.h"
 
 static_assert (DN_SIMDHASH_BUCKET_CAPACITY < DN_SIMDHASH_MAX_BUCKET_CAPACITY, "Maximum bucket capacity exceeded");
 static_assert (DN_SIMDHASH_BUCKET_CAPACITY > 1, "Bucket capacity too low");
@@ -243,22 +228,6 @@ dn_simdhash_meta_t DN_SIMDHASH_T_META(DN_SIMDHASH_T) = {
     DN_SIMDHASH_KEY_IS_POINTER,
     DN_SIMDHASH_VALUE_IS_POINTER
 };
-
-// HACK: We don't expect the caller to pre-declare these in the specialization file
-dn_simdhash_t *
-DN_SIMDHASH_NEW(DN_SIMDHASH_T) (uint32_t capacity, dn_allocator_t *allocator);
-
-uint8_t
-DN_SIMDHASH_TRY_ADD(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T value);
-
-uint8_t
-DN_SIMDHASH_TRY_ADD_WITH_HASH(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value);
-
-uint8_t
-DN_SIMDHASH_TRY_GET_VALUE(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T *result);
-
-uint8_t
-DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T *result);
 
 dn_simdhash_t *
 DN_SIMDHASH_NEW(DN_SIMDHASH_T) (uint32_t capacity, dn_allocator_t *allocator)
