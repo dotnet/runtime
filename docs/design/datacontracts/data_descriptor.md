@@ -115,19 +115,23 @@ multiple times, later definitions take precedence.
 
 ### Version
 
-This is version 0 of the physical descriptor
+This is version 0 of the physical descriptor.
 
 ### Summary
 
-A data descriptor may be stored in the "JSON with comments" format.
+A data descriptor may be stored in the "JSON with comments" format.  There are two formats: a
+"regular" format and a "compact" format.  The baseline data descriptor may be either regular or
+compact.  The in-memory descriptor will typically be compact.
 
 The toplevel dictionary will contain:
 
 * `"version": 0`
-* `"types": TYPE_ARRAY` see below
-* `"globals": VALUE_ARRAY` see below
+* `"types": TYPES_DESCRIPTOR` see below
+* `"globals": GLOBALS_DESCRIPTOR` see below
 
-### Types
+### Types descriptor
+
+**Regular format**:
 
 The types will be in an array, with each type described by a dictionary containing keys:
 
@@ -141,6 +145,29 @@ Each `FIELD_ARRAY` is an array of dictionaries each containing keys:
 * `"type": "type name"` the name of a primitive type or another type defined in the logical descriptor
 * optional `"offset": int | "unknown"` the offset of the field or "unknown". If omitted, same as "unknown".
 
+**Compact format**:
+
+The types will be in a dictionary, with each type name being the key and a `FIELD_DICT` dictionary as a value.
+
+The `FIELD_DICT` will have a field name as a key, or the special name `"!"` as a key.
+
+If a key is `!` the value is an `int` giving the total size of the struct. The key must be omitted
+if the size is indeterminate.
+
+If the key is any other string, the value may be one of:
+
+* `[int, "type name"]` giving the type and offset of the field
+* `int` giving just the offset of the field with the type left unspecified
+
+Unknown offsets are not supported in the compact format.
+
+Rationale: the compact format is expected ot be used for the in-memory data descriptor. In the
+common case the field type is known from the baseline descriptor. As a result, a field descriptor
+like `"field_name": 36` is the minimum necessary information to be conveyed.  If the field is not
+present in the baseline, then `"field_name": [12, "uint16"]` may be used.
+
+**Both formats**:
+
 Note that the logical descriptor does not contain "unknown" offsets: it is expected that the
 in-memory data descriptor will augment the baseline with a known offset for all fields in the
 baseline.
@@ -150,22 +177,38 @@ in-memory descriptor is expected to provide the offset of the field.
 
 ### Global values
 
+**Regular format**:
+
 The global values will be in an array, with each value described by a dictionary containing keys:
 
 * `"name": "global value name"` the name of the global value
 * `"type": "type name"` the type of the global value
 * optional `"value": VALUE | [ int ] | "unknown"` the value of the global value, or an offset in an auxiliary array containing the value or "unknown".
 
-Note that the logical descriptor does not contain "unknown" values: it is expected that the
-in-memory data descriptor will augment the baseline with a known offset for all fields in the
-baseline.
-
 The `VALUE` may be a JSON numeric constant integer or a string containing a signed or unsigned
 decimal or hex (with prefix `0x` or `0X`) integer constant.  The constant must be within the range
 of the type of the global value.
 
+**Compact format**:
+
+The global values will be in a dictionary, with each key being the name of a global and the values being one of:
+
+* `[VALUE | [int], "type name"]` the type and value of a global
+* `VALUE | [int]` just the value of a global
+
+As in the regular format, `VALUE` is a numeric constant or a string containing an integer constant.
+
+Note that a two element array is unambiguously "type and value", whereas a one-element array is
+unambiguosly "indirect value".
+
+**Both formats**
+
 For pointer and nuint globals, the value may be assumed to fit in a 64-bit unsigned integer.  For
 nint globals, the value may be assumed to fit in a 64-bit signed integer.
+
+Note that the logical descriptor does not contain "unknown" values: it is expected that the
+in-memory data descriptor will augment the baseline with a known offset for all fields in the
+baseline.
 
 If the value is given as a single-element array `[ int ]` then the value is stored in an auxiliary
 array that is part of the data contract descriptor.  Only in-memory data descriptors may have
@@ -179,9 +222,13 @@ The indirection array is not part of the data descriptor spec.  It is expected t
 contract descriptor will include it. (The data contract descriptor must contain: the data
 descriptor, the set of compatible algorithmic contracts, the aux array of globals).
 
+
+
 ## Example
 
 This is an example of a baseline descriptor for a 64-bit architecture. Suppose it has the name `"example-64"`
+
+The baseline is given in the "regular" format.
 
 ```jsonc
 {
@@ -219,33 +266,22 @@ This is an example of a baseline descriptor for a 64-bit architecture. Suppose i
 }
 ```
 
-The following is an example of an in-memory descriptor that references the above baseline:
+The following is an example of an in-memory descriptor that references the above baseline. The in-memory descriptor is in the "compact" format:
 
 ```jsonc
 {
   "version": "0",
   "baseline": "example-64",
-  "types": [
-    {
-      "name": "Thread",
-      "fields": [
-        { "name": "ThreadId", "offset": 32 },
-        { "name": "ThreadState", "offset": 0 },
-        { "name": "Next", "offset": 128 }
-      ]
-    },
-    {
-      "name": "ThreadStore",
-      "fields": [
-        { "name": "ThreadCount", "offset": 32 }
-        { "name": "ThreadList", "offset": 8 }
-      ]
-    }
-  ],
-  "globals": [
-    { "name": "FEATURE_COMINTEROP", "value": "0"},
-    { "name": "s_pThreadStore", "value": [ 0 ] } // indirect from aux data offset 0
-  ]
+  "types":
+  {
+    "Thread": { "ThreadId": 32, "ThreadState": 0, "Next": 128 },
+    "ThreadStore": { "ThreadCount": 32, "ThreadList": 8 }
+  },
+  "globals":
+  {
+    "FEATURE_COMINTEROP": 0,
+    "s_pThreadStore": [ 0 ] // indirect from aux data offset 0
+  }
 }
 ```
 
