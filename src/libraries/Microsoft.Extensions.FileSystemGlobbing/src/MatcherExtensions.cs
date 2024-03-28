@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 
 namespace Microsoft.Extensions.FileSystemGlobbing
@@ -51,9 +51,18 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <returns>Absolute file paths of all files matched. Empty enumerable if no files matched given patterns.</returns>
         public static IEnumerable<string> GetResultsInFullPath(this Matcher matcher, string directoryPath)
         {
-            IEnumerable<FilePatternMatch> matches = matcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(directoryPath))).Files;
-            string[] result = matches.Select(match => Path.GetFullPath(Path.Combine(directoryPath, match.Path))).ToArray();
+            PatternMatchingResult patternMatchingResult = matcher.Execute(new DirectoryInfoWrapper(new DirectoryInfo(directoryPath)));
+            if (!patternMatchingResult.HasMatches)
+            {
+                return Array.Empty<string>();
+            }
 
+            IEnumerable<FilePatternMatch> matches = patternMatchingResult.Files;
+            List<string> result = matches is ICollection matchCollection ? new(matchCollection.Count) : new();
+            foreach (FilePatternMatch match in matches)
+            {
+                result.Add(Path.GetFullPath(Path.Combine(directoryPath, match.Path)));
+            }
             return result;
         }
 
