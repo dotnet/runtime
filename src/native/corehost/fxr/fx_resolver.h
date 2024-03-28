@@ -14,13 +14,23 @@ struct host_startup_info_t;
 class fx_resolver_t
 {
 public:
+    struct resolution_failure_info
+    {
+        fx_reference_t missing;
+        fx_reference_t incompatible_lower;
+        fx_reference_t incompatible_higher;
+        std::unique_ptr<fx_definition_t> invalid_config;
+    };
+
+public:
     static StatusCode resolve_frameworks_for_app(
         const host_startup_info_t& host_info,
         bool disable_multilevel_lookup,
         const runtime_config_t::settings_t& override_settings,
         const runtime_config_t& app_config,
-        fx_definition_vector_t& fx_definitions,
-        const pal::char_t* app_display_name = nullptr);
+        /*in_out*/ fx_definition_vector_t& fx_definitions,
+        const pal::char_t* app_display_name = nullptr,
+        bool print_errors = true);
 
     static bool is_config_compatible_with_frameworks(
         const runtime_config_t& config,
@@ -38,12 +48,13 @@ private:
         const runtime_config_t& config,
         const fx_reference_t * effective_parent_fx_ref,
         fx_definition_vector_t& fx_definitions,
-        const pal::char_t* app_display_name);
+        resolution_failure_info& resolution_failure);
 
     static StatusCode reconcile_fx_references(
         const fx_reference_t& fx_ref_a,
         const fx_reference_t& fx_ref_b,
-        /*out*/ fx_reference_t& effective_fx_ref);
+        /*out*/ fx_reference_t& effective_fx_ref,
+        resolution_failure_info& resolution_failure);
 
     static void display_missing_framework_error(
         const pal::string_t& fx_name,
