@@ -100,9 +100,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
     // so if we're importing a Swift call, look for this type in the signature
-    CallArg* swiftErrorArg = nullptr;
+    CallArg*  swiftErrorArg = nullptr;
     CallArgs* callArgs;
-
 
     /*-------------------------------------------------------------------------
      * First create the call node
@@ -2034,8 +2033,8 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
 
         if (argIsByrefOrPtr)
         {
-            argClass        = info.compCompHnd->getArgClass(sig, sigArg);
-            argType         = info.compCompHnd->getChildType(argClass, &argClass);
+            argClass = info.compCompHnd->getArgClass(sig, sigArg);
+            argType  = info.compCompHnd->getChildType(argClass, &argClass);
         }
 
         if (argType != CORINFO_TYPE_VALUECLASS)

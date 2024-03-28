@@ -70,7 +70,7 @@ void Compiler::lvaInit()
     lvaRetAddrVar       = BAD_VAR_NUM;
 
 #ifdef SWIFT_SUPPORT
-    lvaSwiftSelfArg = BAD_VAR_NUM;
+    lvaSwiftSelfArg  = BAD_VAR_NUM;
     lvaSwiftErrorArg = BAD_VAR_NUM;
 #endif
 
@@ -1362,7 +1362,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 // Returns:
 //   true if parameter was initialized
 //
-bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd, InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd)
+bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
+                                        InitVarDscInfo*         varDscInfo,
+                                        CorInfoType             type,
+                                        CORINFO_CLASS_HANDLE    typeHnd)
 {
     const bool argIsByrefOrPtr = (type == CORINFO_TYPE_BYREF) || (type == CORINFO_TYPE_PTR);
 
@@ -1371,7 +1374,7 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd, InitVarD
         // For primitive types, we don't expect to be passed a CORINFO_CLASS_HANDLE; look up the actual handle
         assert(typeHnd == nullptr);
         CORINFO_CLASS_HANDLE clsHnd = info.compCompHnd->getArgClass(&info.compMethodInfo->args, argHnd);
-        type = info.compCompHnd->getChildType(clsHnd, &typeHnd);
+        type                        = info.compCompHnd->getChildType(clsHnd, &typeHnd);
     }
 
     if (type != CORINFO_TYPE_VALUECLASS)
@@ -1392,7 +1395,7 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd, InitVarD
         {
             BADCODE("Expected SwiftSelf struct, got pointer/reference");
         }
-        
+
         if (lvaSwiftSelfArg != BAD_VAR_NUM)
         {
             BADCODE("Duplicate SwiftSelf parameter");
@@ -1406,20 +1409,20 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd, InitVarD
         lvaSetVarDoNotEnregister(lvaSwiftSelfArg DEBUGARG(DoNotEnregisterReason::NonStandardParameter));
         return true;
     }
-    
+
     if ((strcmp(className, "SwiftError") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
     {
         if (!argIsByrefOrPtr)
         {
             BADCODE("Expected SwiftError pointer/reference, got struct");
         }
-        
+
         if (lvaSwiftErrorArg != BAD_VAR_NUM)
         {
             BADCODE("Duplicate SwiftError* parameter");
         }
 
-        lvaSwiftErrorArg = varDscInfo->varNum;
+        lvaSwiftErrorArg   = varDscInfo->varNum;
         lvaSwiftErrorLocal = lvaGrabTemp(false DEBUGARG("SwiftError pseudolocal"));
         lvaSetStruct(lvaSwiftErrorLocal, typeHnd, false);
         lvaSetVarAddrExposed(lvaSwiftErrorLocal DEBUGARG(AddressExposedReason::SWIFT_ERROR_PSEUDOLOCAL));
