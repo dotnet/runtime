@@ -1320,7 +1320,6 @@ void ProfileSynthesis::GaussSeidelSolver()
 
         if (m_overflow)
         {
-            printf("*** Overflowed counts in %s\n", m_comp->info.compFullName);
             break;
         }
 
