@@ -358,7 +358,6 @@ set(VM_SOURCES_WKS
     reflectclasswriter.cpp
     reflectioninvocation.cpp
     runtimehandles.cpp
-    safehandle.cpp
     simplerwlock.cpp
     stackingallocator.cpp
     stringliteralmap.cpp
