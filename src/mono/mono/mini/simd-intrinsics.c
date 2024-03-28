@@ -1232,6 +1232,7 @@ static guint16 sri_vector_methods [] = {
 	SN_Negate,
 	SN_OnesComplement,
 	SN_Shuffle,
+	SN_ShuffleUnsafe,
 	SN_Sqrt,
 	SN_Subtract,
 	SN_Sum,
@@ -2251,7 +2252,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
 	}
-	case SN_Shuffle: {
+	case SN_Shuffle:
+	case SN_ShuffleUnsafe: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 #ifdef TARGET_WASM

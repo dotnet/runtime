@@ -1,9 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using Xunit;
 
 namespace System.Runtime.Intrinsics.Tests.Vectors
@@ -2640,11 +2643,42 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
         }
 
+        //helper method for the below set of helper methods:
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void CheckVectorUnsafeEquality<T>(Vector256<T> shuffle, Vector256<T> shuffleUnsafe)
+        {
+            for (int i = 0; i < Vector256<T>.Count; i++)
+            {
+                if (!EqualityComparer<T>.Default.Equals(shuffle.GetElement(i), shuffleUnsafe.GetElement(i)))
+                {
+                    throw new Exception($"Different results were produced: Shuffle - {shuffle}, ShuffleUnsafe - {shuffleUnsafe}");
+                }
+            }
+        }
+
+        //these helper methods allow us to check Shuffle and ShuffleUnsafe give the same results:
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<byte> ShuffleUnsafeEqualHelper(Vector256<byte> vector, Vector256<byte> indices)
+        {
+            var shuffle = Vector256.Shuffle(vector, indices);
+            var shuffleUnsafe = Vector256.ShuffleUnsafe(vector, indices);
+            CheckVectorUnsafeEquality(shuffle, shuffleUnsafe);
+            return shuffle;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<sbyte> ShuffleUnsafeEqualHelper(Vector256<sbyte> vector, Vector256<sbyte> indices)
+        {
+            var shuffle = Vector256.Shuffle(vector, indices);
+            var shuffleUnsafe = Vector256.ShuffleUnsafe(vector, indices);
+            CheckVectorUnsafeEquality(shuffle, shuffleUnsafe);
+            return shuffle;
+        }
+
         [Fact]
         public void Vector256ByteShuffleOneInputTest()
         {
             Vector256<byte> vector = Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
-            Vector256<byte> result = Vector256.Shuffle(vector, Vector256.Create((byte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector256<byte> result = ShuffleUnsafeEqualHelper(vector, Vector256.Create((byte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector256<byte>.Count; index++)
             {
@@ -2704,7 +2738,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Vector256SByteShuffleOneInputTest()
         {
             Vector256<sbyte> vector = Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
-            Vector256<sbyte> result = Vector256.Shuffle(vector, Vector256.Create((sbyte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector256<sbyte> result = ShuffleUnsafeEqualHelper(vector, Vector256.Create((sbyte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector256<sbyte>.Count; index++)
             {
@@ -2763,7 +2797,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void Vector256ByteShuffleOneInputWithDirectVectorTest()
         {
-            Vector256<byte> result = Vector256.Shuffle(Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32), Vector256.Create((byte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector256<byte> result = ShuffleUnsafeEqualHelper(Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32), Vector256.Create((byte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector256<byte>.Count; index++)
             {
@@ -2818,7 +2852,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void Vector256SByteShuffleOneInputWithDirectVectorTest()
         {
-            Vector256<sbyte> result = Vector256.Shuffle(Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32), Vector256.Create((sbyte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector256<sbyte> result = ShuffleUnsafeEqualHelper(Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32), Vector256.Create((sbyte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector256<sbyte>.Count; index++)
             {
@@ -2873,7 +2907,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void Vector256ByteShuffleOneInputWithDirectVectorAndNoCrossLaneTest()
         {
-            Vector256<byte> result = Vector256.Shuffle(Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32), Vector256.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16));
+            Vector256<byte> result = ShuffleUnsafeEqualHelper(Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32), Vector256.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16));
 
             for (int index = 0; index < Vector128<byte>.Count; index++)
             {
@@ -2953,7 +2987,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void Vector256SByteShuffleOneInputWithDirectVectorAndNoCrossLaneTest()
         {
-            Vector256<sbyte> result = Vector256.Shuffle(Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32), Vector256.Create((sbyte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16));
+            Vector256<sbyte> result = ShuffleUnsafeEqualHelper(Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32), Vector256.Create((sbyte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16));
 
             for (int index = 0; index < Vector128<sbyte>.Count; index++)
             {
@@ -3035,7 +3069,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector256<byte> vector = Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
             Vector256<byte> indices = Vector256.Create((byte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-            Vector256<byte> result = Vector256.Shuffle(vector, indices);
+            Vector256<byte> result = ShuffleUnsafeEqualHelper(vector, indices);
 
             for (int index = 0; index < Vector256<byte>.Count; index++)
             {
@@ -3100,7 +3134,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector256<sbyte> vector = Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
             Vector256<sbyte> indices = Vector256.Create((sbyte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-            Vector256<sbyte> result = Vector256.Shuffle(vector, indices);
+            Vector256<sbyte> result = ShuffleUnsafeEqualHelper(vector, indices);
 
             for (int index = 0; index < Vector256<sbyte>.Count; index++)
             {
@@ -3165,10 +3199,26 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector256<byte> vector = Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
             Vector256<byte> result = Vector256.Shuffle(vector, Vector256<byte>.AllBitsSet);
+            Vector256<byte> resultUnsafe = Vector256.ShuffleUnsafe(vector, Vector256<byte>.AllBitsSet);
 
             for (int index = 0; index < Vector256<byte>.Count; index++)
             {
                 Assert.Equal((byte)0, result.GetElement(index));
+            }
+
+            if (Avx512Vbmi.VL.IsSupported)
+            {
+                for (int index = 0; index < Vector256<byte>.Count; index++)
+                {
+                    Assert.Equal((byte)32, resultUnsafe.GetElement(index));
+                }
+            }
+            else
+            {
+                for (int index = 0; index < Vector256<byte>.Count; index++)
+                {
+                    Assert.Equal((byte)0, resultUnsafe.GetElement(index));
+                }
             }
         }
 
@@ -3225,10 +3275,26 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector256<sbyte> vector = Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
             Vector256<sbyte> result = Vector256.Shuffle(vector, Vector256<sbyte>.AllBitsSet);
+            Vector256<sbyte> resultUnsafe = Vector256.ShuffleUnsafe(vector, Vector256<sbyte>.AllBitsSet);
 
             for (int index = 0; index < Vector256<sbyte>.Count; index++)
             {
                 Assert.Equal((sbyte)0, result.GetElement(index));
+            }
+
+            if (Avx512Vbmi.VL.IsSupported)
+            {
+                for (int index = 0; index < Vector256<byte>.Count; index++)
+                {
+                    Assert.Equal((sbyte)32, resultUnsafe.GetElement(index));
+                }
+            }
+            else
+            {
+                for (int index = 0; index < Vector256<byte>.Count; index++)
+                {
+                    Assert.Equal((sbyte)0, resultUnsafe.GetElement(index));
+                }
             }
         }
 
@@ -3284,7 +3350,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Vector256ByteShuffleOneInputWithZeroIndicesTest()
         {
             Vector256<byte> vector = Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
-            Vector256<byte> result = Vector256.Shuffle(vector, Vector256<byte>.Zero);
+            Vector256<byte> result = ShuffleUnsafeEqualHelper(vector, Vector256<byte>.Zero);
 
             for (int index = 0; index < Vector256<byte>.Count; index++)
             {
@@ -3344,7 +3410,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Vector256SByteShuffleOneInputWithZeroIndicesTest()
         {
             Vector256<sbyte> vector = Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
-            Vector256<sbyte> result = Vector256.Shuffle(vector, Vector256<sbyte>.Zero);
+            Vector256<sbyte> result = ShuffleUnsafeEqualHelper(vector, Vector256<sbyte>.Zero);
 
             for (int index = 0; index < Vector256<sbyte>.Count; index++)
             {
@@ -3397,6 +3463,74 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             for (int index = 0; index < Vector256<ulong>.Count; index++)
             {
                 Assert.Equal((ulong)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256ByteShuffleUnsafeTooLargeTest()
+        {
+            Vector256<byte> vector = Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+            Vector256<byte> result = Vector256.ShuffleUnsafe(vector, Vector256.Create((byte)32, 33, 34, 35, 36, 37, 255, 254, 127, 128, 63, 64, 95, 96, 71, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54));
+            Vector256<byte> expected = Vector256<byte>.Zero;
+            if (Avx512Vbmi.VL.IsSupported) expected = Vector256.Create((byte)1, 2, 3, 4, 5, 6, 32, 31, 32, 1, 32, 1, 32, 1, 8, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23);
+            else if (Avx2.IsSupported) expected = Vector256.Create((byte)1, 2, 3, 4, 5, 6, 0, 0, 32, 0, 32, 1, 32, 1, 8, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23);
+
+            for (int index = 0; index < Vector256<byte>.Count; index++)
+            {
+                Assert.Equal(expected.GetElement(index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256SByteShuffleUnsafeTooLargeTest()
+        {
+            Vector256<sbyte> vector = Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+            Vector256<sbyte> result = Vector256.ShuffleUnsafe(vector, Vector256.Create((byte)32, 33, 34, 35, 36, 37, 255, 254, 127, 128, 63, 64, 95, 96, 71, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54).AsSByte());
+            Vector256<sbyte> expected = Vector256<sbyte>.Zero;
+            if (Avx512Vbmi.VL.IsSupported) expected = Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 32, 31, 32, 1, 32, 1, 32, 1, 8, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23);
+            else if (Avx2.IsSupported) expected = Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 0, 0, 32, 0, 32, 1, 32, 1, 8, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23);
+
+            for (int index = 0; index < Vector256<sbyte>.Count; index++)
+            {
+                Assert.Equal(expected.GetElement(index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector256ByteShuffleUnsafeFirstLaneOnlyTestAvx2()
+        {
+            if (Avx2.IsSupported && !Avx512Vbmi.VL.IsSupported)
+            {
+                Vector256<byte> resultUnsafe = Vector256.ShuffleUnsafe(Vector256.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32), Vector256.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+                for (int index = 0; index < Vector128<byte>.Count; index++)
+                {
+                    Assert.Equal((byte)(Vector128<byte>.Count - index), resultUnsafe.GetElement(index));
+                }
+
+                for (int index = Vector128<byte>.Count; index < Vector256<byte>.Count; index++)
+                {
+                    Assert.Equal((byte)(Vector128<byte>.Count - (index - Vector128<byte>.Count)), resultUnsafe.GetElement(index));
+                }
+            }
+        }
+
+        [Fact]
+        public void Vector256SByteShuffleUnsafeFirstLaneOnlyTestAvx2()
+        {
+            if (Avx2.IsSupported && !Avx512Vbmi.VL.IsSupported)
+            {
+                Vector256<sbyte> resultUnsafe = Vector256.ShuffleUnsafe(Vector256.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32), Vector256.Create((sbyte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+                for (int index = 0; index < Vector128<sbyte>.Count; index++)
+                {
+                    Assert.Equal((sbyte)(Vector128<sbyte>.Count - index), resultUnsafe.GetElement(index));
+                }
+
+                for (int index = Vector128<sbyte>.Count; index < Vector256<sbyte>.Count; index++)
+                {
+                    Assert.Equal((sbyte)(Vector128<sbyte>.Count - (index - Vector128<sbyte>.Count)), resultUnsafe.GetElement(index));
+                }
             }
         }
 

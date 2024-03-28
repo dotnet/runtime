@@ -249,6 +249,9 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<byte> Shuffle(System.Runtime.Intrinsics.Vector128<byte> vector, System.Runtime.Intrinsics.Vector128<byte> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<sbyte> Shuffle(System.Runtime.Intrinsics.Vector128<sbyte> vector, System.Runtime.Intrinsics.Vector128<sbyte> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> ShuffleUnsafe(System.Runtime.Intrinsics.Vector128<byte> vector, System.Runtime.Intrinsics.Vector128<byte> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<sbyte> ShuffleUnsafe(System.Runtime.Intrinsics.Vector128<sbyte> vector, System.Runtime.Intrinsics.Vector128<sbyte> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> Shuffle(System.Runtime.Intrinsics.Vector128<short> vector, System.Runtime.Intrinsics.Vector128<short> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<ushort> Shuffle(System.Runtime.Intrinsics.Vector128<ushort> vector, System.Runtime.Intrinsics.Vector128<ushort> indices) { throw null; }
@@ -584,6 +587,9 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<byte> Shuffle(System.Runtime.Intrinsics.Vector256<byte> vector, System.Runtime.Intrinsics.Vector256<byte> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<sbyte> Shuffle(System.Runtime.Intrinsics.Vector256<sbyte> vector, System.Runtime.Intrinsics.Vector256<sbyte> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> ShuffleUnsafe(System.Runtime.Intrinsics.Vector256<byte> vector, System.Runtime.Intrinsics.Vector256<byte> indices) { throw null; }
+         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<sbyte> ShuffleUnsafe(System.Runtime.Intrinsics.Vector256<sbyte> vector, System.Runtime.Intrinsics.Vector256<sbyte> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<short> Shuffle(System.Runtime.Intrinsics.Vector256<short> vector, System.Runtime.Intrinsics.Vector256<short> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<ushort> Shuffle(System.Runtime.Intrinsics.Vector256<ushort> vector, System.Runtime.Intrinsics.Vector256<ushort> indices) { throw null; }
@@ -919,6 +925,9 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<byte> Shuffle(System.Runtime.Intrinsics.Vector512<byte> vector, System.Runtime.Intrinsics.Vector512<byte> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<sbyte> Shuffle(System.Runtime.Intrinsics.Vector512<sbyte> vector, System.Runtime.Intrinsics.Vector512<sbyte> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<byte> ShuffleUnsafe(System.Runtime.Intrinsics.Vector512<byte> vector, System.Runtime.Intrinsics.Vector512<byte> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<sbyte> ShuffleUnsafe(System.Runtime.Intrinsics.Vector512<sbyte> vector, System.Runtime.Intrinsics.Vector512<sbyte> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> Shuffle(System.Runtime.Intrinsics.Vector512<short> vector, System.Runtime.Intrinsics.Vector512<short> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<ushort> Shuffle(System.Runtime.Intrinsics.Vector512<ushort> vector, System.Runtime.Intrinsics.Vector512<ushort> indices) { throw null; }
@@ -1226,6 +1235,9 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<byte> Shuffle(System.Runtime.Intrinsics.Vector64<byte> vector, System.Runtime.Intrinsics.Vector64<byte> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<sbyte> Shuffle(System.Runtime.Intrinsics.Vector64<sbyte> vector, System.Runtime.Intrinsics.Vector64<sbyte> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> ShuffleUnsafe(System.Runtime.Intrinsics.Vector64<byte> vector, System.Runtime.Intrinsics.Vector64<byte> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<sbyte> ShuffleUnsafe(System.Runtime.Intrinsics.Vector64<sbyte> vector, System.Runtime.Intrinsics.Vector64<sbyte> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<short> Shuffle(System.Runtime.Intrinsics.Vector64<short> vector, System.Runtime.Intrinsics.Vector64<short> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<ushort> Shuffle(System.Runtime.Intrinsics.Vector64<ushort> vector, System.Runtime.Intrinsics.Vector64<ushort> indices) { throw null; }

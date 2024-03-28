@@ -2718,17 +2718,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_Shuffle:
         case NI_Vector256_Shuffle:
         case NI_Vector512_Shuffle:
+        case NI_Vector128_ShuffleUnsafe:
+        case NI_Vector256_ShuffleUnsafe:
+        case NI_Vector512_ShuffleUnsafe:
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
             assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
 
             GenTree* indices = impStackTop(0).val;
-
-            if (!indices->IsVectorConst())
-            {
-                // TODO-XARCH-CQ: Handling non-constant indices is a bit more complex
-                break;
-            }
 
             size_t elementSize  = genTypeSize(simdBaseType);
             size_t elementCount = simdSize / elementSize;
@@ -2740,42 +2737,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     // While we could accelerate some functions on hardware with only AVX support
                     // it's likely not worth it overall given that IsHardwareAccelerated reports false
                     break;
-                }
-                else if ((varTypeIsByte(simdBaseType) &&
-                          !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
-                         (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL)))
-                {
-                    bool crossLane = false;
-
-                    for (size_t index = 0; index < elementCount; index++)
-                    {
-                        uint64_t value = indices->GetIntegralVectorConstElement(index, simdBaseType);
-
-                        if (value >= elementCount)
-                        {
-                            continue;
-                        }
-
-                        if (index < (elementCount / 2))
-                        {
-                            if (value >= (elementCount / 2))
-                            {
-                                crossLane = true;
-                                break;
-                            }
-                        }
-                        else if (value < (elementCount / 2))
-                        {
-                            crossLane = true;
-                            break;
-                        }
-                    }
-
-                    if (crossLane)
-                    {
-                        // TODO-XARCH-CQ: We should emulate cross-lane shuffling for byte/sbyte and short/ushort
-                        break;
-                    }
                 }
             }
             else if (simdSize == 64)
@@ -2795,6 +2756,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     // TYP_BYTE, TYP_UBYTE, TYP_SHORT, and TYP_USHORT need SSSE3 to be able to shuffle any operation
                     break;
                 }
+
+                if (!indices->IsVectorConst() && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+                {
+                    // the variable implementation for Vector128 Shuffle always needs SSSE3
+                    break;
+                }
             }
 
             if (sig->numArgs == 2)
@@ -2802,7 +2769,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
-                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize);
+                bool isUnsafe = intrinsic == NI_Vector128_ShuffleUnsafe || intrinsic == NI_Vector256_ShuffleUnsafe ||
+                                intrinsic == NI_Vector512_ShuffleUnsafe;
+                if (indices->IsVectorConst())
+                {
+                    retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isUnsafe);
+                }
+                else
+                {
+                    retNode = gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isUnsafe);
+                }
             }
             break;
         }

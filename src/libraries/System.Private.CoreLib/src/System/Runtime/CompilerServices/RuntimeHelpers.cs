@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Runtime.CompilerServices
 {
