@@ -112,16 +112,32 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T) (bucket *bucket, DN_SIMDHASH_KEY
     return -1;
 }
 
+// Helper macro so that we can optimize and change scan logic more easily
+
+#define BEGIN_SCAN_BUCKETS(initial_index, bucket_index, bucket_address) \
+    { \
+        uint32_t bucket_index = initial_index; \
+        bucket *bucket_address; \
+        do { \
+            bucket_address = address_of_bucket(buffers, bucket_index);
+
+#define END_SCAN_BUCKETS(initial_index, bucket_index, bucket_address) \
+            bucket_index++; \
+            /* Wrap around if we hit the last bucket. */ \
+            if (bucket_index >= buffers.buckets_length) \
+                bucket_index = 0; \
+        } while (bucket_index != initial_index); \
+    }
+
 static DN_SIMDHASH_VALUE_T *
 DN_SIMDHASH_FIND_VALUE_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash)
 {
     dn_simdhash_buffers_t buffers = hash->buffers;
     uint8_t suffix = dn_simdhash_select_suffix(key_hash);
-    uint32_t bucket_index = dn_simdhash_select_bucket_index(buffers, key_hash);
-    bucket *bucket_address = address_of_bucket(buffers, bucket_index);
+    uint32_t first_bucket_index = dn_simdhash_select_bucket_index(buffers, key_hash);
     dn_simdhash_suffixes search_vector = dn_simdhash_build_search_vector(suffix);
 
-    for (uint32_t c = buffers.buckets_length; bucket_index < c; bucket_index++, bucket_address++) {
+    BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
         int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T)(bucket_address, key, search_vector);
         if (index_in_bucket >= 0) {
             uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + index_in_bucket;
@@ -130,7 +146,7 @@ DN_SIMDHASH_FIND_VALUE_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH
 
         if (!dn_simdhash_bucket_is_cascaded(bucket_address->suffixes))
             return NULL;
-    }
+    END_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 
     return NULL;
 }
@@ -139,8 +155,11 @@ static dn_simdhash_insert_result
 DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value, uint8_t ensure_not_present)
 {
     // HACK: Early out. Better to grow without scanning here.
-    if (hash->count >= hash->buffers.values_length)
+    // We're comparing with the computed grow_at_count threshold to maintain an appropriate load factor
+    if (hash->count >= hash->grow_at_count) {
+        // printf ("hash->count %d >= hash->grow_at_count %d\n", hash->count, hash->grow_at_count);
         return DN_SIMDHASH_INSERT_NEED_TO_GROW;
+    }
 
     // TODO: Optimize this to do a single scan that either locates an existing item or chooses
     //  a slot for the new item
@@ -148,11 +167,11 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH
         if (DN_SIMDHASH_FIND_VALUE_INTERNAL(DN_SIMDHASH_T)(hash, key, key_hash))
             return DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT;
 
+    dn_simdhash_buffers_t buffers = hash->buffers;
     uint8_t suffix = dn_simdhash_select_suffix(key_hash);
-    uint32_t bucket_index = dn_simdhash_select_bucket_index(hash->buffers, key_hash);
-    bucket *bucket_address = address_of_bucket(hash->buffers, bucket_index);
+    uint32_t first_bucket_index = dn_simdhash_select_bucket_index(hash->buffers, key_hash);
 
-    for (uint32_t c = hash->buffers.buckets_length; bucket_index < c; bucket_index++, bucket_address++) {
+    BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
         uint32_t new_index = dn_simdhash_bucket_count (bucket_address->suffixes);
         if (new_index < DN_SIMDHASH_BUCKET_CAPACITY) {
             // We found a bucket with space, so claim the first free slot
@@ -167,12 +186,13 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH
 
         // The current bucket is full, so set the cascade flag and try the next bucket.
         dn_simdhash_bucket_set_cascaded (bucket_address->suffixes, 1);
-    }
+    END_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 
     // If we got here, we had so many hash collisions that we hit the last bucket without finding
     //  a spot for our new item. It's best to just grow and rehash the whole table now.
     // TODO: Wrap around to the first bucket, like S.C.G.Dictionary does? I don't like it, but it
     //  would reduce memory usage for the worst case scenario.
+    // printf("Scanned from bucket %d without finding space, growing\n", first_bucket_index);
     return DN_SIMDHASH_INSERT_NEED_TO_GROW;
 }
 

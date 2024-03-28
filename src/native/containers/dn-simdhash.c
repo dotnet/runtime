@@ -136,9 +136,17 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
         return result;
     }
 
+    /*
+    printf (
+        "growing from %d bucket(s) to %d bucket(s) for requested capacity %d (actual capacity %d)\n",
+        hash->buffers.buckets_length, bucket_count,
+        capacity, value_count
+    );
+    */
     // Store old buffers so caller can rehash and then free them
     result = hash->buffers;
 
+    hash->grow_at_count = value_count * 100 / DN_SIMDHASH_SIZING_PERCENTAGE;
     hash->buffers.buckets_length = bucket_count;
     hash->buffers.values_length = value_count;
     // FIXME: 16-byte aligned allocation
