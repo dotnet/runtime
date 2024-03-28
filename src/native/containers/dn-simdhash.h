@@ -60,8 +60,8 @@ dn_simdhash_build_search_vector (uint8_t needle)
 		needle, needle, needle, needle, needle, needle, needle, needle
 	};
 	dn_u8x16 mask = {
-		~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0,
-		~0, ~0, ~0, ~0, ~0, ~0, 0, 0
+		0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu,
+		0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0x00u, 0x00u
 	};
 	dn_simdhash_suffixes result;
 	result.vec = needles & mask;
