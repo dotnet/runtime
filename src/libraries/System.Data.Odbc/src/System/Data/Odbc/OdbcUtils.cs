@@ -332,7 +332,7 @@ namespace System.Data.Odbc
 
         internal void WriteODBCDateTime(int offset, DateTime value)
         {
-            short[] buffer = new short[6] {
+            Span<short> spanBuffer = stackalloc short[6] {
                 unchecked((short)value.Year),
                 unchecked((short)value.Month),
                 unchecked((short)value.Day),
@@ -340,7 +340,7 @@ namespace System.Data.Odbc
                 unchecked((short)value.Minute),
                 unchecked((short)value.Second),
             };
-            WriteInt16Array(offset, buffer, 0, 6);
+            WriteInt16Array(offset, spanBuffer.Slice(0, 6));
             WriteInt32(offset + 12, value.Millisecond * 1000000); //fraction
         }
     }
