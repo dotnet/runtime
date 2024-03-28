@@ -1656,3 +1656,12 @@ public class GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClassTha
 
     public int myField;
 }
+
+public class SpanByte
+{
+    public static void Run()
+    {
+        System.Span<byte> span = new ();
+        System.Diagnostics.Debugger.Break();
+    }
+}
