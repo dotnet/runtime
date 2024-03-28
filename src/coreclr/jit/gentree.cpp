@@ -24441,46 +24441,130 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
 
-            // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX_PermuteVar, CORINFO_TYPE_FLOAT, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX_PermuteVar, CORINFO_TYPE_FLOAT, simdSize);
         }
     }
-    else if (elementSize == 8 && compOpportunisticallyDependsOn(InstructionSet_AVX))
+    else if (elementSize == 8 && simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
     {
-        assert(simdSize == 16 || simdSize == 32);
-
-        if (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
-        {
-            // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512F_VL_PermuteVar4x64, simdBaseJitType, simdSize);
-        }
-        else
-        {
-            // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX_PermuteVar, CORINFO_TYPE_DOUBLE, simdSize);
-        }
+        // swap the operands to match the encoding requirements
+        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512F_VL_PermuteVar4x64, simdBaseJitType, simdSize);
     }
     else
     {
         assert((elementSize == 1 && simdSize == 32) || elementSize == 2 || (elementSize == 4 && simdSize == 16) ||
-               (elementSize == 8 && simdSize == 16));
+               elementSize == 8);
 
-        if (simdSize == 32)
+        if (elementSize == 8 && (simdSize == 32 || compOpportunisticallyDependsOn(InstructionSet_AVX)))
+        {
+            assert(simdSize == 16 || simdSize == 32);
+            if (simdSize == 32)
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+            }
+            else
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+            }
+
+            // the below is implemented for integral types
+            if (varTypeIsFloating(simdBaseType))
+            {
+                assert(elementSize == 8);
+                simdBaseJitType = CORINFO_TYPE_ULONG;
+            }
+
+            // shift all indices to the left by 1 (long to int index)
+            cnsNode = gtNewIconNode(1, TYP_INT);
+            if (simdSize == 32)
+            {
+                op2 =
+                    gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_AVX2_ShiftLeftLogical, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                op2 =
+                    gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_SSE2_ShiftLeftLogical, simdBaseJitType, simdSize);
+            }
+
+            // the below are implemented with float/int/uint
+            simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
+            if (varTypeIsFloating(simdBaseType))
+            {
+                simdBaseJitType = CORINFO_TYPE_FLOAT;
+            }
+
+            // shuffle & manipulate the long indices to int indices
+            simd_t shufCns = {};
+            for (size_t index = 0; index < simdSize / 4; index++)
+            {
+                shufCns.u32[index] = index & 6;
+            }
+
+            cnsNode                        = gtNewVconNode(type);
+            cnsNode->AsVecCon()->gtSimdVal = shufCns;
+
+            if (simdSize == 32)
+            {
+                // swap the operands to match the encoding requirements
+                op2 = gtNewSimdHWIntrinsicNode(type, cnsNode, op2, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_AVX_PermuteVar, CORINFO_TYPE_FLOAT, simdSize);
+            }
+
+            simd_t orCns = {};
+            for (size_t index = 0; index < simdSize / 4; index++)
+            {
+                orCns.u32[index] = index & 1;
+            }
+
+            cnsNode                        = gtNewVconNode(type);
+            cnsNode->AsVecCon()->gtSimdVal = orCns;
+
+            op2 = gtNewSimdBinOpNode(GT_OR, type, op2, cnsNode, simdBaseJitType, simdSize);
+
+            // perform the shuffle with our int indices
+            if (simdSize == 32)
+            {
+                // swap the operands to match the encoding requirements
+                retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX_PermuteVar, CORINFO_TYPE_FLOAT, simdSize);
+            }
+        }
+        else if (simdSize == 32)
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
             assert(elementSize <= 2);
 
-            // if we have elementSize == 2, we need to convert op2 (short indices) to byte indices
-            if (elementSize == 2)
+            // if we have elementSize > 1, we need to convert op2 (short/long indices) to byte indices
+            if (elementSize > 1)
             {
-                // shuffle with a pattern like 0 0 2 2 4 4 6 6 ... 0 0 2 2 ...
+                // the below is implemented for integral types
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    assert(elementSize == 8);
+                    simdBaseJitType = CORINFO_TYPE_ULONG;
+                }
 
+                // shift all indices to the left by tzcnt(size)
+                cnsNode = gtNewIconNode(BitOperations::TrailingZeroCount(static_cast<uint64_t>(elementSize)), TYP_INT);
+                op2 =
+                    gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_AVX2_ShiftLeftLogical, simdBaseJitType, simdSize);
+
+                // the below are implemented with byte/sbyte
+                simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
+
+                // shuffle with a pattern like 0 0 2 2 4 4 6 6 ... 0 0 2 2 ... (for shorts)
                 simd_t shufCns = {};
                 for (size_t index = 0; index < elementCount; index++)
                 {
                     for (size_t i = 0; i < elementSize; i++)
                     {
-                        shufCns.u8[(index * elementSize) + i] = static_cast<uint8_t>((index * elementCount) & 0x0F);
+                        shufCns.u8[(index * elementSize) + i] = static_cast<uint8_t>((index * elementSize) & 0x0F);
                     }
                 }
 
@@ -24489,15 +24573,12 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
                 op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
 
-                // shift all indices to the left by 1, then or every second index with 1
-
-                cnsNode = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(1, TYP_INT), simdBaseJitType, simdSize);
-                op2     = gtNewSimdBinOpNode(GT_LSH, type, op2, cnsNode, simdBaseJitType, simdSize);
+                // or every second index with 1 (short), or 0, 1, 2, 3, 4, 5, 6, 7 repeating for long
 
                 simd_t orCns = {};
                 for (size_t index = 0; index < simdSize; index++)
                 {
-                    orCns.u8[index] = static_cast<uint8_t>(index & 1);
+                    orCns.u8[index] = static_cast<uint8_t>(index & (elementSize - 1));
                 }
 
                 cnsNode                        = gtNewVconNode(type);
@@ -24557,6 +24638,27 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             assert(simdSize == 16);
             assert(elementSize > 1);
 
+            // the below is implemented for integral types
+            if (varTypeIsFloating(simdBaseType))
+            {
+                if (elementSize == 4)
+                {
+                    simdBaseJitType = CORINFO_TYPE_UINT;
+                }
+                else
+                {
+                    assert(elementSize == 8);
+                    simdBaseJitType = CORINFO_TYPE_ULONG;
+                }
+            }
+
+            // shift all indices to the left by tzcnt(size)
+            cnsNode = gtNewIconNode(BitOperations::TrailingZeroCount(static_cast<uint64_t>(elementSize)), TYP_INT);
+            op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_SSE2_ShiftLeftLogical, simdBaseJitType, simdSize);
+
+            // the below are implemented with byte/sbyte
+            simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
+
             // we need to convert the indices to byte indices
             // shuffle with a pattern like 0 0 2 2 4 4 6 6 ... (for short, and similar for larger)
 
@@ -24565,7 +24667,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             {
                 for (size_t i = 0; i < elementSize; i++)
                 {
-                    shufCns.u8[(index * elementSize) + i] = static_cast<uint8_t>(index * elementCount);
+                    shufCns.u8[(index * elementSize) + i] = static_cast<uint8_t>(index * elementSize);
                 }
             }
 
@@ -24574,11 +24676,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
             op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_SSSE3_Shuffle, simdBaseJitType, simdSize);
 
-            // shift all indices to the left by tzcnt(elementSize), then or the relevant bits
-
-            int shift = BitOperations::TrailingZeroCount(static_cast<uint64_t>(elementSize));
-            cnsNode   = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(shift, TYP_INT), simdBaseJitType, simdSize);
-            op2       = gtNewSimdBinOpNode(GT_LSH, type, op2, cnsNode, simdBaseJitType, simdSize);
+            // or the relevant bits
 
             simd_t orCns = {};
             for (size_t index = 0; index < simdSize; index++)
@@ -24606,9 +24704,6 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector64_ToVector128, simdBaseJitType, simdSize);
     }
 
-    // VectorTableLookup is only valid on byte/sbyte
-    simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
-
     // fix-up indices for non-byte sized element types:
     // if we have short / int / long, then we want to VectorTableLookup the least-significant byte to all bytes of that
     // index element, and then shift left by the applicable amount, then or on the bits for the elements
@@ -24616,6 +24711,31 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     GenTree* op2DupSafe = (isUnsafe || elementSize == 1) ? nullptr : fgMakeMultiUse(&op2);
     if (elementSize > 1)
     {
+        // AdvSimd.ShiftLeftLogical is only valid on integral types, excluding Vector128<int>
+        if (varTypeIsFloating(simdBaseType))
+        {
+            if (elementSize == 4)
+            {
+                simdBaseJitType = CORINFO_TYPE_INT;
+            }
+            else
+            {
+                assert(elementSize == 8);
+                simdBaseJitType = CORINFO_TYPE_LONG;
+            }
+        }
+        if (simdSize == 16 && simdBaseJitType == CORINFO_TYPE_INT)
+        {
+            simdBaseJitType = CORINFO_TYPE_UINT;
+        }
+
+        // shift all indices to the left by tzcnt(size)
+        cnsNode = gtNewIconNode(BitOperations::TrailingZeroCount(static_cast<uint64_t>(elementSize)), TYP_INT);
+        op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_AdvSimd_ShiftLeftLogical, simdBaseJitType, simdSize);
+
+        // VectorTableLookup is only valid on byte/sbyte
+        simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
+
         simd_t shufCns = {};
         for (size_t index = 0; index < elementCount; index++)
         {
@@ -24629,10 +24749,6 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         cnsNode->AsVecCon()->gtSimdVal = shufCns;
 
         op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, lookupIntrinsic, simdBaseJitType, simdSize);
-
-        int shift = BitOperations::TrailingZeroCount(static_cast<uint64_t>(elementSize));
-        cnsNode   = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(shift, TYP_INT), simdBaseJitType, simdSize);
-        op2       = gtNewSimdBinOpNode(GT_LSH, type, op2, cnsNode, simdBaseJitType, simdSize);
 
         simd_t orCns = {};
         for (size_t index = 0; index < simdSize; index++)
