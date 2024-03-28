@@ -82,15 +82,7 @@ typedef struct {
     uint32_t bucket_capacity, bucket_size_bytes, key_size, value_size;
 } dn_simdhash_meta_t;
 
-typedef struct dn_simdhash_vtable_t;
-
-typedef struct {
-    // internal state
-    uint32_t count;
-    dn_simdhash_meta_t meta;
-    dn_simdhash_buffers_t buffers;
-    dn_simdhash_vtable_t vtable;
-} dn_simdhash_t;
+typedef struct dn_simdhash_t;
 
 typedef enum {
     DN_SIMDHASH_INSERT_OK,
@@ -104,6 +96,16 @@ typedef struct {
     void *(*rehash) (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buffers);
     uint32_t *(*compute_hash) (void *key_ptr);
 } dn_simdhash_vtable_t;
+
+typedef struct {
+    // internal state
+    uint32_t count;
+    dn_simdhash_meta_t meta;
+    dn_simdhash_buffers_t buffers;
+    dn_simdhash_vtable_t vtable;
+} dn_simdhash_t;
+
+typedef void (*dn_simdhash_foreach_func) (void *key, void *value, void* user_data);
 
 // These helpers use .values instead of .vec to avoid generating unnecessary
 //  vector loads/stores. Operations that touch these values may not need vectorization
@@ -181,5 +183,26 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity);
 
 void
 dn_simdhash_clear (dn_simdhash_t *hash);
+
+uint32_t
+dn_simdhash_capacity (dn_simdhash_t *hash);
+
+uint32_t
+dn_simdhash_count (dn_simdhash_t *hash);
+
+void
+dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity);
+
+uint8_t
+dn_simdhash_try_add (dn_simdhash_t *hash, void *key, void *value);
+
+void *
+dn_simdhash_find_value_by_key (dn_simdhash_t *hash, void *key);
+
+void *
+dn_simdhash_find_value_by_key_with_hash (dn_simdhash_t *hash, void *key, uint32_t key_hash);
+
+void
+dn_simdhash_foreach (dn_simdhash_t *hash, dn_simdhash_foreach_func func, void *user_data);
 
 #endif // __DN_SIMDHASH_H__
