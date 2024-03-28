@@ -11,7 +11,6 @@ class HostInformation
 public:
     static void SetContract(_In_ host_runtime_contract* hostContract);
     static bool GetProperty(_In_z_ const char* name, SString& value);
-    static bool GetProbingProperties(probing_path_properties* props);
 };
 
 #endif // _HOSTINFORMATION_H_

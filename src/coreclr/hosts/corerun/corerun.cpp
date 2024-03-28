@@ -9,6 +9,8 @@
 #include "dotenv.hpp"
 
 #include <fstream>
+#include <wchar.h>
+#include <unordered_map>
 
 using char_t = pal::char_t;
 using string_t = pal::string_t;
@@ -101,7 +103,7 @@ static void wait_for_debugger()
 // (for example, ni's may be preferred over il, even if they appear later). Therefore, when building
 // the TPA only include the first instance of a simple assembly name to allow users the opportunity to
 // override Framework assemblies by placing dlls in %CORE_LIBRARIES%.
-static string_t build_tpa(const string_t& core_root, const string_t& core_libraries)
+static string_t build_tpa(const string_t& core_root, const string_t& core_libraries, trusted_platform_assemblies* tpa_items)
 {
     static const char_t* const tpa_extensions[] =
     {
@@ -112,7 +114,7 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
         nullptr
     };
 
-    std::set<string_t> name_set;
+    std::unordered_map<string_t, string_t> name_path_map;
     pal::stringstream_t tpa_list;
 
     // Iterate over all extensions.
@@ -131,18 +133,39 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
             string_t tmp = pal::build_file_list(dir, ext, [&](const char_t* file)
                 {
                     string_t file_local{ file };
+                    string_t file_name { file }; 
 
                     // Strip the extension.
                     if (pal::string_ends_with(file_local, ext_len, ext))
-                        file_local = file_local.substr(0, file_local.length() - ext_len);
+                        file_name = file_local.substr(0, file_local.length() - ext_len);
 
                     // Return true if the file is new.
-                    return name_set.insert(file_local).second;
+                    return name_path_map.insert({file_name, file_local}).second;
                 });
 
             // Add to the TPA.
             tpa_list << tmp;
         }
+    }
+
+    tpa_items->assembly_count = static_cast<uint32_t>(name_path_map.size());
+    tpa_items->assembly_filepaths = new char_t*[tpa_items->assembly_count];
+    tpa_items->basenames = new char_t*[tpa_items->assembly_count];
+
+    // Convert the paths into a string and return it
+    int32_t item_count = 0;
+    for (auto item = name_path_map.begin(); item != name_path_map.end(); ++item)
+    {
+        string_t base_name = item->first;
+        size_t base_length = base_name.size() + 1;
+        size_t assembly_name_length = item->second.size() + 1;
+
+        tpa_items->basenames[item_count] = new char_t[base_length];
+        tpa_items->assembly_filepaths[item_count] = new char_t[assembly_name_length];
+        wcscpy_s(tpa_items->basenames[item_count], base_length, base_name.c_str());
+        wcscpy_s(tpa_items->assembly_filepaths[item_count], assembly_name_length, item->second.c_str());
+
+        item_count++;
     }
 
     return tpa_list.str();
@@ -247,6 +270,16 @@ static int run(const configuration& config)
     // Check if debugger attach scenario was requested.
     if (config.wait_to_debug)
         wait_for_debugger();
+
+    host_runtime_contract host_contract;
+    host_contract.size = sizeof(host_runtime_contract);
+    host_contract.context = (void*)&config;
+    host_contract.get_runtime_property = &get_runtime_property;
+    host_contract.bundle_probe = nullptr;
+    host_contract.pinvoke_override = nullptr;
+
+    host_contract.entry_assembly = new char_t[config.entry_assembly_fullpath.size() + 1];
+    wcscpy_s(host_contract.entry_assembly, config.entry_assembly_fullpath.size() + 1, config.entry_assembly_fullpath.c_str());
     
     config.dotenv_configuration.load_into_current_process();
     
@@ -262,6 +295,9 @@ static int run(const configuration& config)
 
     // Accumulate path for native search path.
     pal::stringstream_t native_search_dirs;
+    std::set<string_t> native_search_dirs_set;
+
+    native_search_dirs_set.insert(app_path);
     native_search_dirs << app_path << pal::env_path_delim;
 
     // CORE_LIBRARIES
@@ -269,6 +305,7 @@ static int run(const configuration& config)
     if (!core_libs.empty() && core_libs != app_path)
     {
         pal::ensure_trailing_delimiter(core_libs);
+        native_search_dirs_set.insert(core_libs);
         native_search_dirs << core_libs << pal::env_path_delim;
     }
 
@@ -290,10 +327,23 @@ static int run(const configuration& config)
     else
     {
         pal::ensure_trailing_delimiter(core_root);
+        native_search_dirs_set.insert(core_root);
         native_search_dirs << core_root << pal::env_path_delim;
     }
 
-    string_t tpa_list = build_tpa(core_root, core_libs);
+    string_t tpa_list = build_tpa(core_root, core_libs, &host_contract.probing_paths.trusted_platform_assemblies);
+    probing_lookup_paths* native_paths = &host_contract.probing_paths.native_dll_search_directories;
+
+    native_paths->dir_count = static_cast<uint32_t>(native_search_dirs_set.size());
+    native_paths->dirs = new char_t*[native_paths->dir_count];
+
+    int dir_count = 0;
+    for (const auto& native_dir : native_search_dirs_set)
+    {
+        native_paths->dirs[dir_count] = new char_t[native_dir.size() + 1];
+        wcscpy_s(native_paths->dirs[dir_count], native_dir.size() + 1, native_dir.c_str());
+    }
+
 
     {
         // Load hostpolicy if requested.
@@ -369,13 +419,6 @@ static int run(const configuration& config)
     for (const pal::string_utf8_t& str : user_defined_values_utf8)
         propertyValues.push_back(str.c_str());
 
-    host_runtime_contract host_contract = {
-        sizeof(host_runtime_contract),
-        (void*)&config,
-        &get_runtime_property,
-        nullptr,
-        nullptr,
-        nullptr };
     propertyKeys.push_back(HOST_PROPERTY_RUNTIME_CONTRACT);
     std::stringstream ss;
     ss << "0x" << std::hex << (size_t)(&host_contract);

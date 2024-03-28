@@ -971,8 +971,15 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     // Don't write breadcrumbs since we're not executing the app, just resolving dependencies
     // doesn't guarantee that they will actually execute.
 
+    const std::shared_ptr<hostpolicy_context_t> context = get_hostpolicy_context(/*require_runtime*/ true);
+    if (context == nullptr)
+    {
+        trace::error(_X("Trying to get host_runtime_contract, but hostpolicy has not been initialized"));
+        return StatusCode::HostInvalidState;
+    }
+
     probe_paths_t probe_paths;
-    if (!resolver.resolve_probe_paths(&probe_paths, nullptr, /* ignore_missing_assemblies */ true))
+    if (!resolver.resolve_probe_paths(&probe_paths, &context->host_contract, nullptr, /* ignore_missing_assemblies */ true))
     {
         return StatusCode::ResolverResolveFailure;
     }

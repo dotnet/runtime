@@ -133,17 +133,6 @@ namespace
 
         return -1;
     }
-
-    bool HOST_CONTRACT_CALLTYPE get_probing_path_properties(
-        probing_path_properties* props,
-        void* contract_context)
-    {
-        hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
-
-        // do we need to copy this instead of referring?
-        props = &context->probing_path_properties;
-        return true;
-    }
 }
 
 bool hostpolicy_context_t::should_read_rid_fallback_graph(const hostpolicy_init_t &init)
@@ -189,6 +178,29 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         return StatusCode::ResolverInitFailure;
     }
 
+    {
+        host_contract = { sizeof(host_runtime_contract), this };
+        if (bundle::info_t::is_single_file_bundle())
+        {
+            host_contract.bundle_probe = &bundle_probe;
+#if defined(NATIVE_LIBS_EMBEDDED)
+            host_contract.pinvoke_override = &pinvoke_override;
+#endif
+        }
+
+        host_contract.entry_assembly = new pal::char_t[application.size() + 1];
+        wcscpy_s(host_contract.entry_assembly, application.size() + 1, application.c_str());
+
+        host_contract.get_runtime_property = &get_runtime_property;
+        pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff")];
+        pal::snwprintf(buffer, ARRAY_SIZE(buffer), _X("0x%zx"), (size_t)(&host_contract));
+        if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), buffer))
+        {
+            log_duplicate_property_error(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT));
+            return StatusCode::LibHostDuplicateProperty;
+        }
+    }
+
     probe_paths_t probe_paths;
 
     // Setup breadcrumbs.
@@ -201,14 +213,14 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         breadcrumbs.insert(policy_name);
         breadcrumbs.insert(policy_name + _X(",") + policy_version);
 
-        if (!resolver.resolve_probe_paths(&probe_paths, &breadcrumbs))
+        if (!resolver.resolve_probe_paths(&probe_paths, &host_contract, &breadcrumbs))
         {
             return StatusCode::ResolverResolveFailure;
         }
     }
     else
     {
-        if (!resolver.resolve_probe_paths(&probe_paths, nullptr))
+        if (!resolver.resolve_probe_paths(&probe_paths, &host_contract, nullptr))
         {
             return StatusCode::ResolverResolveFailure;
         }
@@ -285,7 +297,6 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     pal::string_t app_base;
     resolver.get_app_dir(&app_base);
 
-    // populate probing path properties struct here....
     coreclr_properties.add(common_property::TrustedPlatformAssemblies, probe_paths.tpa.c_str());
     coreclr_properties.add(common_property::NativeDllSearchDirectories, probe_paths.native.c_str());
     coreclr_properties.add(common_property::PlatformResourceRoots, probe_paths.resources.c_str());
@@ -340,27 +351,6 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         }
 
         coreclr_properties.add(common_property::StartUpHooks, startup_hooks.c_str());
-    }
-
-    {
-        host_contract = { sizeof(host_runtime_contract), this };
-        if (bundle::info_t::is_single_file_bundle())
-        {
-            host_contract.bundle_probe = &bundle_probe;
-#if defined(NATIVE_LIBS_EMBEDDED)
-            host_contract.pinvoke_override = &pinvoke_override;
-#endif
-        }
-
-        host_contract.get_runtime_property = &get_runtime_property;
-        host_contract.get_probing_path_properties = &get_probing_path_properties;
-        pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff")];
-        pal::snwprintf(buffer, ARRAY_SIZE(buffer), _X("0x%zx"), (size_t)(&host_contract));
-        if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), buffer))
-        {
-            log_duplicate_property_error(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT));
-            return StatusCode::LibHostDuplicateProperty;
-        }
     }
 
     return StatusCode::Success;

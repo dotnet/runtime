@@ -2,16 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <set>
+#include <deque>
 #include <functional>
 #include <cassert>
 
 #include <trace.h>
+#include <host_runtime_contract.h>
 #include "deps_entry.h"
 #include "deps_format.h"
 #include "deps_resolver.h"
+
 #include "shared_store.h"
 #include <utils.h>
 #include <fx_ver.h>
+#include <string.h>
 
 namespace
 {
@@ -42,6 +46,7 @@ namespace
         deps_entry_t::asset_types asset_type,
         const pal::string_t& path,
         std::unordered_set<pal::string_t>* existing,
+        std::deque<pal::string_t>* items,
         pal::string_t* serviced,
         pal::string_t* non_serviced,
         const pal::string_t& svc_dir)
@@ -56,13 +61,16 @@ namespace
 
         trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], path.c_str());
 
+        // serviced paths come before non-serviced paths.
         if (utils::starts_with(path, svc_dir.c_str(), svc_dir.length(), false))
         {
+            items->push_front(path);
             serviced->append(path);
             serviced->push_back(PATH_SEPARATOR);
         }
         else
         {
+            items->push_back(path);
             non_serviced->append(path);
             non_serviced->push_back(PATH_SEPARATOR);
         }
@@ -412,6 +420,7 @@ bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continu
  */
 bool deps_resolver_t::resolve_tpa_list(
         pal::string_t* output,
+        trusted_platform_assemblies* tpa_list,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies)
 {
@@ -581,11 +590,26 @@ bool deps_resolver_t::resolve_tpa_list(
         }
     }
 
+    tpa_list->assembly_count = static_cast<uint32_t>(items.size());
+    tpa_list->assembly_filepaths = new pal::char_t*[tpa_list->assembly_count];
+    tpa_list->basenames = new pal::char_t*[tpa_list->assembly_count];
+
     // Convert the paths into a string and return it
-    for (const auto& item : items)
+    int32_t item_count = 0;
+    for (auto item = items.begin(); item != items.end(); ++item)
     {
-        output->append(item.second.resolved_path);
+        pal::string_t base_name = get_filename(item->second.resolved_path);
+        size_t base_length = base_name.size() + 1;
+        size_t assembly_name_length = item->second.resolved_path.size() + 1;
+
+        tpa_list->basenames[item_count] = new pal::char_t[base_length];
+        tpa_list->assembly_filepaths[item_count] = new pal::char_t[assembly_name_length];
+        wcscpy_s(tpa_list->basenames[item_count], base_length, base_name.c_str());
+        wcscpy_s(tpa_list->assembly_filepaths[item_count], assembly_name_length, item->second.resolved_path.c_str());
+
+        output->append(item->second.resolved_path);
         output->push_back(PATH_SEPARATOR);
+        item_count++;
     }
 
     return true;
@@ -746,6 +770,7 @@ void deps_resolver_t::enum_app_context_deps_files(std::function<void(const pal::
 bool deps_resolver_t::resolve_probe_dirs(
         deps_entry_t::asset_types asset_type,
         pal::string_t* output,
+        probing_lookup_paths* probing_paths,
         std::unordered_set<pal::string_t>* breadcrumb)
 {
     bool is_resources = asset_type == deps_entry_t::asset_types::resources;
@@ -762,6 +787,9 @@ bool deps_resolver_t::resolve_probe_dirs(
     };
     // Action for post processing the resolved path
     std::function<pal::string_t(const pal::string_t&)>& action = is_resources ? resources : native;
+
+    // Set to track the entries in probing_lookup_paths
+    std::deque<pal::string_t> probing_items;
 
     // Set for de-duplication
     std::unordered_set<pal::string_t> items;
@@ -802,7 +830,7 @@ bool deps_resolver_t::resolve_probe_dirs(
             if (!found_in_bundle)
             {
                 init_known_entry_path(entry, candidate);
-                add_unique_path(asset_type, action(candidate), &items, output, &non_serviced, core_servicing);
+                add_unique_path(asset_type, action(candidate), &items, &probing_items, output, &non_serviced, core_servicing);
             }
         }
         else
@@ -834,7 +862,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     if (!get_app_deps().exists())
     {
         // App local path
-        add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
+        add_unique_path(asset_type, m_app_dir, &items, &probing_items, output, &non_serviced, core_servicing);
 
         // deps_resolver treats being able to get the coreclr path as optional, so we ignore the return value here.
         // The caller is responsible for checking whether coreclr path is set and handling as appropriate.
@@ -872,13 +900,24 @@ bool deps_resolver_t::resolve_probe_dirs(
     if (bundle::info_t::is_single_file_bundle() && !is_resources)
     {
         auto bundle = bundle::runner_t::app();
-        add_unique_path(asset_type, bundle->base_path(), &items, output, &non_serviced, core_servicing);
+        add_unique_path(asset_type, bundle->base_path(), &items, &probing_items, output, &non_serviced, core_servicing);
 
         // Add the extraction path if it exists.
         if (pal::directory_exists(bundle->extraction_path()))
         {
-            add_unique_path(asset_type, bundle->extraction_path(), &items, output, &non_serviced, core_servicing);
+            add_unique_path(asset_type, bundle->extraction_path(), &items, &probing_items, output, &non_serviced, core_servicing);
         }
+    }
+
+    // Add the probing paths to piece of the host_runtime_contract
+    probing_paths->dir_count = static_cast<uint32_t>(probing_items.size());
+    probing_paths->dirs = new pal::char_t*[probing_paths->dir_count];
+
+    int dir_count = 0;
+    for (const auto& probing_item : probing_items)
+    {
+        probing_paths->dirs[dir_count] = new pal::char_t[probing_item.size() + 1];
+        wcscpy_s(probing_paths->dirs[dir_count], probing_item.size() + 1, probing_item.c_str());
     }
 
     output->append(non_serviced);
@@ -898,19 +937,19 @@ bool deps_resolver_t::resolve_probe_dirs(
 //                                 instead such entry will simply be ignored.
 //
 //
-bool deps_resolver_t::resolve_probe_paths(probe_paths_t* probe_paths, std::unordered_set<pal::string_t>* breadcrumb, bool ignore_missing_assemblies)
+bool deps_resolver_t::resolve_probe_paths(probe_paths_t* probe_paths, host_runtime_contract* host_contract, std::unordered_set<pal::string_t>* breadcrumb, bool ignore_missing_assemblies)
 {
-    if (!resolve_tpa_list(&probe_paths->tpa, breadcrumb, ignore_missing_assemblies))
+    if (!resolve_tpa_list(&probe_paths->tpa, &host_contract->probing_paths.trusted_platform_assemblies, breadcrumb, ignore_missing_assemblies))
     {
         return false;
     }
 
-    if (!resolve_probe_dirs(deps_entry_t::asset_types::native, &probe_paths->native, breadcrumb))
+    if (!resolve_probe_dirs(deps_entry_t::asset_types::native, &probe_paths->native, &host_contract->probing_paths.native_dll_search_directories, breadcrumb))
     {
         return false;
     }
 
-    if (!resolve_probe_dirs(deps_entry_t::asset_types::resources, &probe_paths->resources, breadcrumb))
+    if (!resolve_probe_dirs(deps_entry_t::asset_types::resources, &probe_paths->resources, &host_contract->probing_paths.platform_resource_roots, breadcrumb))
     {
         return false;
     }

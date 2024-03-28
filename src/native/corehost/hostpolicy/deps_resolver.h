@@ -14,6 +14,7 @@
 #include "deps_entry.h"
 #include "runtime_config.h"
 #include "bundle/runner.h"
+#include <host_runtime_contract.h>
 
 // Probe paths to be resolved for ordering
 struct probe_paths_t
@@ -129,6 +130,7 @@ public:
 
     bool resolve_probe_paths(
         probe_paths_t* probe_paths,
+        host_runtime_contract* host_contract,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies = false);
 
@@ -208,6 +210,7 @@ private:
     // Resolve order for TPA lookup.
     bool resolve_tpa_list(
         pal::string_t* output,
+        trusted_platform_assemblies* tpa_list,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies);
 
@@ -215,6 +218,7 @@ private:
     bool resolve_probe_dirs(
         deps_entry_t::asset_types asset_type,
         pal::string_t* output,
+        probing_lookup_paths* probing_paths,
         std::unordered_set<pal::string_t>* breadcrumb);
 
     // Probe entry in probe configurations and deps dir.
