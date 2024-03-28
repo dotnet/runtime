@@ -111,12 +111,10 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 	// FIXME: This code is worse because according to gcc, ctz/clz are undefined for 0.
 #if defined(__wasm_simd128__)
 	dn_simdhash_suffixes match_vector;
-	uint32_t msb;
 	match_vector.vec = wasm_i8x16_eq(needle.vec, haystack.vec);
 	return ctz(wasm_i8x16_bitmask(match_vector.vec));
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
 	dn_simdhash_suffixes match_vector;
-	uint32_t msb;
 	match_vector.vec = _mm_cmpeq_epi8(needle.vec, haystack.vec);
 	return ctz(_mm_movemask_epi8(match_vector.vec));
 #elif defined(__ARM_NEON)
@@ -136,7 +134,6 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 	msb.b[1] = vaddv_u8(vget_high_u8(masked.vec));
 	return ctz(msb.u);
 #else
-	// Completely untested.
 	for (uint32_t i = 0, c = dn_simdhash_bucket_count(haystack); i < c; i++)
 		if (needle.values[i] == haystack.values[i])
 			return i;
@@ -153,8 +150,6 @@ int
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
 	// FIXME: Do this using intrinsics on MSVC. Seems complicated since there's no __builtin_ctz.
-
-	// Completely untested.
 	for (uint32_t i = 0, c = dn_simdhash_bucket_count(haystack); i < c; i++)
 		if (needle.values[i] == haystack.values[i])
 			return i;
