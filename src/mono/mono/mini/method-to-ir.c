@@ -10561,7 +10561,6 @@ field_access_end:
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
-#ifndef TARGET_S390X
 			if (sp [0]->type == STACK_I8 && TARGET_SIZEOF_VOID_P == 4) {
 				MONO_INST_NEW (cfg, ins, OP_LCONV_TO_OVF_U4);
 				ins->sreg1 = sp [0]->dreg;
@@ -10570,7 +10569,8 @@ field_access_end:
 				MONO_ADD_INS (cfg->cbb, ins);
 				*sp = mono_decompose_opcode (cfg, ins);
 			}
-#else
+
+#if defined(TARGET_S390X) || defined(TARGET_POWERPC64)
 			/* The array allocator expects a 64-bit input, and we cannot rely
 			   on the high bits of a 32-bit result, so we have to extend.  */
 			if (sp [0]->type == STACK_I4 && TARGET_SIZEOF_VOID_P == 8) {
