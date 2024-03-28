@@ -5428,6 +5428,25 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, Stat
             if (parent != nullptr)
             {
                 parent->ReplaceOperand(useEdge, newTree);
+
+                // If the parent is a GT_IND and we replaced the child with a handle constant, we might need
+                // to mark the GT_IND as invariant. This is the same as what gtNewIndOfIconHandleNode() does.
+                // Review: should some kind of more general morphing take care of this?
+                // Should this share code with gtNewIndOfIconHandleNode()?
+
+                if (parent->OperIs(GT_IND) && newTree->IsIconHandle())
+                {
+                    GenTreeFlags iconFlags = newTree->GetIconHandleFlag();
+                    if (GenTree::HandleKindDataIsInvariant(iconFlags))
+                    {
+                        parent->gtFlags |= GTF_IND_INVARIANT;
+                        if (iconFlags == GTF_ICON_STR_HDL)
+                        {
+                            // String literals are never null
+                            parent->gtFlags |= GTF_IND_NONNULL;
+                        }
+                    }
+                }
             }
             else
             {
