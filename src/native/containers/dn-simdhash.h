@@ -23,8 +23,8 @@
 // Set a minimum number of buckets when created, regardless of requested capacity
 #define DN_SIMDHASH_MIN_BUCKET_COUNT 4
 // User-specified capacity values will be increased to this percentage in order
-//  to maintain an ideal load factor. FIXME: 140 isn't right
-#define DN_SIMDHASH_SIZING_PERCENTAGE 140
+//  to maintain an ideal load factor. FIXME: 120 isn't right
+#define DN_SIMDHASH_SIZING_PERCENTAGE 120
 
 #ifdef _MSC_VER
 #define DN_FORCEINLINE(RET_TYPE) __forceinline RET_TYPE
@@ -129,7 +129,7 @@ typedef struct dn_simdhash_vtable_t {
 
 typedef struct dn_simdhash_t {
     // internal state
-    uint32_t count;
+    uint32_t count, grow_at_count;
     dn_simdhash_buffers_t buffers;
     dn_simdhash_vtable_t vtable;
     dn_simdhash_meta_t meta;
