@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
+using System.Text;
 using System.Runtime.Intrinsics;
 
 namespace System
@@ -829,11 +830,11 @@ namespace System
                 uint* ptr = (uint*) src;
                 int length = this.Length;
 
-                if(Vector128.IsHardwareAccelerated && length >= 2 * Vector128<ushort>.Count)
+                if (Vector128.IsHardwareAccelerated && length >= 2 * Vector128<ushort>.Count)
                 {
                     Vector128<uint> hashVector = Vector128.Create(hash1);
 
-                    while(length > 8)
+                    while (length > 8)
                     {
                         Vector128<uint> srcVec = Vector128.Load(ptr);
                         length -= 8;
@@ -871,7 +872,7 @@ namespace System
                 }
 
 
-                while(length > 8)
+                while (length > 8)
                 {
                     uint p0 = ptr[0];
                     uint p1 = ptr[1];
@@ -931,15 +932,15 @@ namespace System
                 // be ok because we expect this to be very rare in practice.
                 const uint NormalizeToLowercase = 0x0020_0020u; // valid both for big-endian and for little-endian
 
-                if(Vector128.IsHardwareAccelerated && length >= 2 * Vector128<ushort>.Count)
+                if (Vector128.IsHardwareAccelerated && length >= 2 * Vector128<ushort>.Count)
                 {
                     Vector128<uint> hashVector = Vector128.Create(hash1);
                     Vector128<uint> NormalizeToLowercaseVec = Vector128.Create(NormalizeToLowercase);
 
-                    while(length > 8)
+                    while (length > 8)
                     {
                         Vector128<uint> srcVec = Vector128.Load(ptr);
-                        if (VectorContainsNonAsciiChar(srcVec.AsUInt16()))
+                        if (Ascii.VectorContainsNonAsciiChar(srcVec.AsUInt16()))
                         {
                             goto NotAscii;
                         }
@@ -983,7 +984,7 @@ namespace System
                     return (int)res;
                 }
 
-                while(length > 8)
+                while (length > 8)
                 {
                     uint p0 = ptr[0];
                     uint p1 = ptr[1];
@@ -1206,15 +1207,6 @@ namespace System
 
             int ct = (int)comparisonType;
             return (CompareOptions)((ct & -ct) << 28); // neg and shl
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
-        {
-            const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
-            Vector128<ushort> zeroIsAscii = utf16Vector & Vector128.Create(asciiMask);
-            // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-            return zeroIsAscii != Vector128<ushort>.Zero;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
