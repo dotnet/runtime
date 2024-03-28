@@ -4553,7 +4553,8 @@ protected:
                             CORINFO_CLASS_HANDLE  clsHnd,
                             CORINFO_METHOD_HANDLE method,
                             CORINFO_SIG_INFO*     sig,
-                            bool                  mustExpand);
+                            bool                  mustExpand,
+                            bool*                 pLateExpansion);
     GenTree* impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,

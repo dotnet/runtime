@@ -1036,12 +1036,14 @@ struct HWIntrinsicSignatureReader final
 // impHWIntrinsic: Import a hardware intrinsic as a GT_HWINTRINSIC node if possible
 //
 // Arguments:
-//    intrinsic  -- id of the intrinsic function.
-//    clsHnd     -- class handle containing the intrinsic function.
-//    method     -- method handle of the intrinsic function.
-//    sig        -- signature of the intrinsic call
-//    mustExpand -- true if the intrinsic must return a GenTree*; otherwise, false
-
+//    intrinsic      - id of the intrinsic function.
+//    clsHnd         - class handle containing the intrinsic function.
+//    method         - method handle of the intrinsic function.
+//    sig            - signature of the intrinsic call
+//    mustExpand     - true if the intrinsic must return a GenTree*; otherwise, false
+//    pLateExpansion - [OUT] set to true if the intrinsic must be expanded during codegen phase
+//                     (typically, via a jump table).
+//
 // Return Value:
 //    The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic
 //
@@ -1049,7 +1051,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
-                                  bool                  mustExpand)
+                                  bool                  mustExpand,
+                                  bool*                 pLateExpansion)
 {
     // NextCallRetAddr requires a CALL, so return nullptr.
     if (!mustExpand && info.compHasNextCallRetAddr)
@@ -1225,7 +1228,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         if ((immVal2 < immLowerBound2) || (immVal2 > immUpperBound2))
         {
-            assert(!mustExpand);
+            // Will be expanded as a jump table during codegen phase
+            *pLateExpansion = true;
             return nullptr;
         }
     }
@@ -1306,7 +1310,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             if (immOutOfRange)
             {
-                assert(!mustExpand);
+                // Will be expanded as a jump table during codegen phase
+                *pLateExpansion = true;
                 // The imm-HWintrinsics that do not accept all imm8 values may throw
                 // ArgumentOutOfRangeException when the imm argument is not in the valid range
                 return nullptr;

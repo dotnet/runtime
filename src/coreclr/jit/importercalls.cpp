@@ -2871,7 +2871,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     if (isIntrinsic)
     {
         // The recursive non-virtual calls to Jit intrinsics are must-expand by convention.
-        mustExpand = gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL);
+        mustExpand = (info.compMethodHnd == method) && !(methodFlags & CORINFO_FLG_VIRTUAL);
     }
     else
     {
@@ -3054,9 +3054,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 }
             }
 
-            GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
+            bool     lateExpansion = false;
+            GenTree* hwintrinsic   = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand, &lateExpansion);
 
-            if (mustExpand && (hwintrinsic == nullptr))
+            if (mustExpand && (hwintrinsic == nullptr) && !lateExpansion)
             {
                 return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
             }
@@ -9610,7 +9611,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             assert(strcmp(className, "Vector`1") == 0);
                             result = NI_Vector_GetCount;
                         }
-                        else if (gtIsRecursiveCall(method))
+                        else if (info.compMethodHnd == method)
                         {
                             // For the framework itself, any recursive intrinsics will either be
                             // only supported on a single platform or will be guarded by a relevant
@@ -9834,7 +9835,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                             result = NI_Vector_GetCount;
                         }
-                        else if (gtIsRecursiveCall(method))
+                        else if (info.compMethodHnd == method)
                         {
                             // For the framework itself, any recursive intrinsics will either be
                             // only supported on a single platform or will be guarded by a relevant
