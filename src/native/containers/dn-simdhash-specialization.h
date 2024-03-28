@@ -93,7 +93,10 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 #if defined(__wasm_simd128__)
 #include <wasm_simd128.h>
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
+// Protect ourselves from an extra include in mono-context.h
+#ifndef MONO_HAVE_SIMD_REG
 #include <emmintrin.h>
+#endif
 #elif defined(__ARM_NEON)
 #include <arm_neon.h>
 #elif defined(__wasm)
