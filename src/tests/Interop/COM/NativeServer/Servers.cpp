@@ -162,6 +162,7 @@ STDAPI DllRegisterServer(void)
     RETURN_IF_FAILED(RegisterClsid(__uuidof(NumericTesting), L"Both"));
     RETURN_IF_FAILED(RegisterClsid(__uuidof(ArrayTesting), L"Both"));
     RETURN_IF_FAILED(RegisterClsid(__uuidof(StringTesting), L"Both"));
+    RETURN_IF_FAILED(RegisterClsid(__uuidof(MiscTypesTesting), L"Both"));
     RETURN_IF_FAILED(RegisterClsid(__uuidof(ErrorMarshalTesting), L"Both"));
     RETURN_IF_FAILED(RegisterClsid(__uuidof(DispatchTesting), L"Both"));
     RETURN_IF_FAILED(RegisterClsid(__uuidof(EventTesting), L"Both"));
@@ -180,6 +181,7 @@ STDAPI DllUnregisterServer(void)
     RETURN_IF_FAILED(RemoveClsid(__uuidof(NumericTesting)));
     RETURN_IF_FAILED(RemoveClsid(__uuidof(ArrayTesting)));
     RETURN_IF_FAILED(RemoveClsid(__uuidof(StringTesting)));
+    RETURN_IF_FAILED(RemoveClsid(__uuidof(MiscTypesTesting)));
     RETURN_IF_FAILED(RemoveClsid(__uuidof(ErrorMarshalTesting)));
     RETURN_IF_FAILED(RemoveClsid(__uuidof(DispatchTesting)));
     RETURN_IF_FAILED(RemoveClsid(__uuidof(EventTesting)));
@@ -201,6 +203,9 @@ STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Out_ LPVOID FA
 
     if (rclsid == __uuidof(StringTesting))
         return ClassFactoryBasic<StringTesting>::Create(riid, ppv);
+
+    if (rclsid == __uuidof(MiscTypesTesting))
+        return ClassFactoryBasic<MiscTypesTesting>::Create(riid, ppv);
 
     if (rclsid == __uuidof(ErrorMarshalTesting))
         return ClassFactoryBasic<ErrorMarshalTesting>::Create(riid, ppv);

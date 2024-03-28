@@ -10,7 +10,7 @@ namespace Server.Contract.Servers
     using System.Runtime.InteropServices;
 
     /// <summary>
-    /// Managed definition of CoClass 
+    /// Managed definition of CoClass
     /// </summary>
     [ComImport]
     [CoClass(typeof(NumericTestingClass))]
@@ -29,7 +29,7 @@ namespace Server.Contract.Servers
     }
 
     /// <summary>
-    /// Managed definition of CoClass 
+    /// Managed definition of CoClass
     /// </summary>
     [ComImport]
     [CoClass(typeof(ArrayTestingClass))]
@@ -48,7 +48,7 @@ namespace Server.Contract.Servers
     }
 
     /// <summary>
-    /// Managed definition of CoClass 
+    /// Managed definition of CoClass
     /// </summary>
     [ComImport]
     [CoClass(typeof(StringTestingClass))]
@@ -67,7 +67,26 @@ namespace Server.Contract.Servers
     }
 
     /// <summary>
-    /// Managed definition of CoClass 
+    /// Managed definition of CoClass
+    /// </summary>
+    [ComImport]
+    [CoClass(typeof(MiscTypesTestingClass))]
+    [Guid("7FBB8677-BDD0-4E5A-B38B-CA92A4555466")]
+    internal interface MiscTypesTesting : Server.Contract.IMiscTypesTesting
+    {
+    }
+
+    /// <summary>
+    /// Managed activation for CoClass
+    /// </summary>
+    [ComImport]
+    [Guid(Server.Contract.Guids.MiscTypesTesting)]
+    internal class MiscTypesTestingClass
+    {
+    }
+
+    /// <summary>
+    /// Managed definition of CoClass
     /// </summary>
     [ComImport]
     [CoClass(typeof(ErrorMarshalTestingClass))]
@@ -86,7 +105,7 @@ namespace Server.Contract.Servers
     }
 
     /// <summary>
-    /// Managed definition of CoClass 
+    /// Managed definition of CoClass
     /// </summary>
     [ComImport]
     [CoClass(typeof(DispatchTestingClass))]
@@ -105,7 +124,7 @@ namespace Server.Contract.Servers
     }
 
     /// <summary>
-    /// Managed definition of CoClass 
+    /// Managed definition of CoClass
     /// </summary>
     [ComImport]
     [CoClass(typeof(AggregationTestingClass))]
@@ -124,7 +143,7 @@ namespace Server.Contract.Servers
     }
 
     /// <summary>
-    /// Managed definition of CoClass 
+    /// Managed definition of CoClass
     /// </summary>
     [ComImport]
     [CoClass(typeof(ColorTestingClass))]

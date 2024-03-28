@@ -366,6 +366,18 @@ IStringTesting : IUnknown
         /*[out]*/ LCID* outLcid) = 0;
 };
 
+struct __declspec(uuid("7FBB8677-BDD0-4E5A-B38B-CA92A4555466"))
+IMiscTypesTesting : IUnknown
+{
+      virtual HRESULT STDMETHODCALLTYPE Marshal_Variant (
+        /*[in]*/ VARIANT obj,
+        /*[out,retval]*/ VARIANT* result) = 0;
+
+      virtual HRESULT STDMETHODCALLTYPE Marshal_Instance_Variant (
+        /*[in]*/ LPCWSTR init,
+        /*[out,retval]*/ VARIANT* result) = 0;
+};
+
 struct __declspec(uuid("592386a5-6837-444d-9de3-250815d18556"))
 IErrorMarshalTesting : IUnknown
 {
