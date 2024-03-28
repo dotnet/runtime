@@ -1494,7 +1494,7 @@ void StackTraceArray::EnsureThreadAffinity()
         StackTraceArray copy;
         GCPROTECT_BEGIN(copy);
             copy.CopyFrom(*this);
-            this->Swap(copy);
+            this->Set(copy.Get());
         GCPROTECT_END();
     }
 }
@@ -1849,10 +1849,11 @@ StackTraceElement & StackTraceArray::operator[](size_t index)
 }
 
 #if !defined(DACCESS_COMPILE)
-// Define the lock used to access stacktrace from an exception object
-SpinLock g_StackTraceArrayLock;
 
-void ExceptionObject::SetStackTrace(I1ARRAYREF stackTrace, PTRARRAYREF dynamicMethodArray)
+// If there are any dynamic methods, the stack trace object is the dynamic methods array with its first
+// slot set to the stack trace I1Array.
+// Otherwise the stack trace object is directly the stacktrace I1Array
+void ExceptionObject::SetStackTrace(OBJECTREF stackTrace)
 {
     CONTRACTL
     {
@@ -1869,13 +1870,7 @@ void ExceptionObject::SetStackTrace(I1ARRAYREF stackTrace, PTRARRAYREF dynamicMe
     }
 #endif
 
-    SpinLock::AcquireLock(&g_StackTraceArrayLock);
-
     SetObjectReference((OBJECTREF*)&_stackTrace, (OBJECTREF)stackTrace);
-    SetObjectReference((OBJECTREF*)&_dynamicMethods, (OBJECTREF)dynamicMethodArray);
-
-    SpinLock::ReleaseLock(&g_StackTraceArrayLock);
-
 }
 #endif // !defined(DACCESS_COMPILE)
 
@@ -1889,20 +1884,18 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
     }
     CONTRACTL_END;
 
-#if !defined(DACCESS_COMPILE)
-    SpinLock::AcquireLock(&g_StackTraceArrayLock);
-#endif // !defined(DACCESS_COMPILE)
+    OBJECTREF actualStackTrace = _stackTrace;
 
-    StackTraceArray temp(_stackTrace);
-    stackTrace.Swap(temp);
-
-    if (outDynamicMethodArray != NULL)
+    if ((actualStackTrace != NULL) && ((dac_cast<PTR_ArrayBase>(OBJECTREFToObject(actualStackTrace)))->GetArrayElementType() != ELEMENT_TYPE_I1))
     {
-        *outDynamicMethodArray = _dynamicMethods;
+        // The stack trace object is the dynamic methods array with its first slot set to the stack trace I1Array.
+        PTR_PTRArray combinedArray = dac_cast<PTR_PTRArray>(OBJECTREFToObject(actualStackTrace));
+        actualStackTrace = combinedArray->GetAt(0);
+        if (outDynamicMethodArray != NULL)
+        {
+            *outDynamicMethodArray = dac_cast<PTRARRAYREF>(ObjectToOBJECTREF(combinedArray));
+        }
     }
 
-#if !defined(DACCESS_COMPILE)
-    SpinLock::ReleaseLock(&g_StackTraceArrayLock);
-#endif // !defined(DACCESS_COMPILE)
-
+    stackTrace.Set(dac_cast<I1ARRAYREF>(actualStackTrace));
 }

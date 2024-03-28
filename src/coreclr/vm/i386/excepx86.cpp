@@ -1225,9 +1225,6 @@ void InitializeExceptionHandling()
     WRAPPER_NO_CONTRACT;
 
     CLRAddVectoredHandlers();
-
-    // Initialize the lock used for synchronizing access to the stacktrace in the exception object
-    g_StackTraceArrayLock.Init(LOCK_TYPE_DEFAULT, TRUE);
 }
 
 //******************************************************************************

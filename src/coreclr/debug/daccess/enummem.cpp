@@ -533,7 +533,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
     DumpManagedExcepObject(flags, exceptRef->GetInnerException());
 
     // Dump the stack trace array object and its underlying type
-    I1ARRAYREF stackTraceArrayObj = exceptRef->GetStackTraceArrayObject();
+    OBJECTREF stackTraceArrayObj = exceptRef->GetStackTraceArrayObject();
 
     // There are cases where a managed exception does not have a stack trace.
     // These cases are:

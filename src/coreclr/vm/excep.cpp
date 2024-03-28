@@ -2365,6 +2365,11 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
 
                         if (cTotalDynamicMethodCount > m_cDynamicMethodItems)
                         {
+                            if (m_cDynamicMethodItems == 0)
+                            {
+                                // We are allocating the array for the first time, add one slot for the stack trace reference
+                                cTotalDynamicMethodCount++;
+                            }
                             // Double the current limit of the array.
                             S_UINT32 cNewSize = S_UINT32(2) * S_UINT32(cTotalDynamicMethodCount);
                             if (cNewSize.IsOverflow())
@@ -2394,29 +2399,11 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                                 // m_dCurrentDynamicIndex is already referring to the correct index
                                 // at which the next resolver object will be saved
                             }
-                        }
-                        else
-                        {
-                            // We are adding objects to the existing array.
-                            //
-                            // We have new dynamic method entries for which
-                            // resolver objects need to be saved. Ensure
-                            // that we have the array to store them
-                            if (gc.dynamicMethodsArray == NULL)
-                            {
-                                _ASSERTE(m_cDynamicMethodItems > 0);
-
-                                gc.dynamicMethodsArray = (PTRARRAYREF)AllocateObjectArray(m_cDynamicMethodItems,
-                                                                                          g_pObjectClass);
-                                m_dCurrentDynamicIndex = 0;
-                                LOG((LF_EH, LL_INFO100, "StackTraceInfo::SaveStackTrace - allocated dynamic array of size %lu\n",
-                                    m_cDynamicMethodItems));
-                            }
                             else
                             {
-                                // The array exists for storing resolver objects.
-                                // Simply set the index at which the next resolver
-                                // will be stored in it.
+                                _ASSERTE(m_dCurrentDynamicIndex == 0);
+                                gc.dynamicMethodsArray->SetAt(0, gc.stackTrace.Get());
+                                m_dCurrentDynamicIndex = 1;
                             }
                         }
                     }
@@ -2460,7 +2447,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                     }
                 }
 
-                ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(gc.stackTrace.Get(), gc.dynamicMethodsArray);
+                ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace((gc.dynamicMethodsArray != NULL) ? dac_cast<OBJECTREF>(gc.dynamicMethodsArray) : dac_cast<OBJECTREF>(gc.stackTrace.Get()));
 
                 // Update _stackTraceString field.
                 ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTraceString(NULL);
