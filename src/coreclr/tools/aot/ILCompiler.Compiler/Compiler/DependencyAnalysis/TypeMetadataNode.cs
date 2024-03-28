@@ -53,10 +53,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_type.IsEnum)
             {
-                // A lot of the enum reflection actually happens on top of the respective MethodTable (e.g. getting the underlying type),
-                // so for enums also include their MethodTable.
-                dependencies.Add(factory.ReflectedType(_type), "Reflectable enum");
-
                 // Enums are not useful without their literal fields. The literal fields are not referenced
                 // from anywhere (source code reference to enums compiles to the underlying numerical constants in IL).
                 foreach (FieldDesc enumField in _type.GetFields())

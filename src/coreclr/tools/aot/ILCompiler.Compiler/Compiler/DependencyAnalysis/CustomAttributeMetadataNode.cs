@@ -3,7 +3,10 @@
 
 using System.Collections.Generic;
 
+using Internal.TypeSystem;
+
 using ILCompiler.DependencyAnalysisFramework;
+using System;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -22,7 +25,24 @@ namespace ILCompiler.DependencyAnalysis
             _customAttribute = customAttribute;
         }
 
+        public override bool HasConditionalStaticDependencies => true;
+
         public ReflectableCustomAttribute CustomAttribute => _customAttribute;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            if (!CustomAttributeBasedDependencyAlgorithm.CanOptimizeAttributeArtifacts(factory))
+                return Array.Empty<CombinedDependencyListEntry>();
+
+            // Presence of this type indicates that more than just the attribute metadata is needed:
+            // we also need runtime artifacts, such as the method body of the attribute constructor.
+            MetadataType nativeFormatType = factory.TypeSystemContext.SystemModule.GetType("System.Reflection.Runtime.CustomAttributes.NativeFormat", "NativeFormatCustomAttributeData");
+            return [new CombinedDependencyListEntry(
+                new ReflectedCustomAttributeNode(CustomAttribute),
+                factory.ConstructedTypeSymbol(nativeFormatType),
+                "Attributes are activated"
+                )];
+        }
 
         // The metadata that the attribute depends on gets injected into the entity that owns the attribute.
         // This makes the dependency graph less "nice", but it avoids either having to walk the attribute
@@ -39,9 +59,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
-        public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
     }
 }
