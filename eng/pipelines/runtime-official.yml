@@ -589,10 +589,6 @@ extends:
           - SourceBuild_linux_x64
           jobParameters:
             nameSuffix: PortableSourceBuild
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: SourceBuildPackages
             timeoutInMinutes: 95
 
       #

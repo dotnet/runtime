@@ -198,7 +198,6 @@
     <SubsetName Include="Packs.Tests" Description="The framework pack tests." />
 
     <!-- Utility -->
-    <SubsetName Include="publish" OnDemand="true" Description="Generate asset manifests and prepare to publish to BAR." />
     <SubsetName Include="RegenerateDownloadTable" OnDemand="true" Description="Regenerates the nightly build download table" />
     <SubsetName Include="RegenerateThirdPartyNotices" OnDemand="true" Description="Regenerates the THIRD-PARTY-NOTICES.TXT file based on other repos' TPN files." />
     <SubsetName Include="tasks" OnDemand="true" Description="Build the repo local task projects." />
@@ -546,10 +545,6 @@
   <ItemGroup Condition="$(_subset.Contains('+packs.tests+')) AND '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
     <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="true" Test="true" Category="packs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+publish+'))">
-    <ProjectToBuild Include="$(InstallerProjectRoot)prepare-artifacts.proj" Pack="true" Category="publish" />
   </ItemGroup>
 
   <!-- Utility -->
