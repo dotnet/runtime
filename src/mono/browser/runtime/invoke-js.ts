@@ -44,7 +44,7 @@ export function mono_wasm_invoke_jsimport_MT (signature: JSFunctionSignature, ar
         try {
             bound_fn = bind_js_import(signature);
         } catch (ex: any) {
-            // propagate the exception back to caller, which could be on different thread and the async Task
+            // propagate the exception back to caller, which could be on different thread. Handle both sync and async signatures.
             try {
                 const res_sig = get_sig(signature, 1);
                 const res_type = get_signature_type(res_sig);
