@@ -91,9 +91,9 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 #elif defined(__ARM_NEON)
 #include <arm_neon.h>
 #elif defined(__wasm)
-#warning Building dn_simdhash for WASM without -msimd128! Performance will be terrible!
+#pragma message("WARNING: Building dn_simdhash for WASM without -msimd128! Performance will be terrible!")
 #else
-#warning Unsupported architecture for dn_simdhash! Performance will be terrible!
+#pragma message("WARNING: Unsupported architecture for dn_simdhash! Performance will be terrible!")
 #endif
 
 static DN_FORCEINLINE(int)
@@ -135,7 +135,7 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 
 #else // __clang__ || __GNUC__
 
-#warning Building dn_simdhash for MSVC without SIMD intrinsics! Performance will be terrible!
+#pragma message("WARNING: Building dn_simdhash for MSVC without SIMD intrinsics! Performance will be terrible!")
 
 int
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
