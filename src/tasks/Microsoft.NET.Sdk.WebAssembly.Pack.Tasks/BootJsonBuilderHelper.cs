@@ -12,6 +12,14 @@ namespace Microsoft.NET.Sdk.WebAssembly
 {
     public class BootJsonBuilderHelper(TaskLoggingHelper Log)
     {
+        private static readonly string[] coreAssemblyNames = [
+            "System.Private.CoreLib",
+            "System.Runtime.InteropServices.JavaScript",
+        ];
+
+        public bool IsCoreAssembly(string fileName)
+            => coreAssemblyNames.Contains(Path.GetFileNameWithoutExtension(fileName));
+
         public void ComputeResourcesHash(BootJsonData bootConfig)
         {
             var sb = new StringBuilder();
@@ -26,6 +34,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             }
 
             AddDictionary(sb, bootConfig.resources.assembly);
+            AddDictionary(sb, bootConfig.resources.coreAssembly);
 
             AddDictionary(sb, bootConfig.resources.jsModuleWorker);
             AddDictionary(sb, bootConfig.resources.jsModuleNative);
@@ -45,6 +54,12 @@ namespace Microsoft.NET.Sdk.WebAssembly
             if (bootConfig.resources.vfs != null)
             {
                 foreach (var entry in bootConfig.resources.vfs)
+                    AddDictionary(sb, entry.Value);
+            }
+
+            if (bootConfig.resources.coreVfs != null)
+            {
+                foreach (var entry in bootConfig.resources.coreVfs)
                     AddDictionary(sb, entry.Value);
             }
 

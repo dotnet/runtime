@@ -343,7 +343,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
-      IsPublish="false" />
+      IsPublish="false"
+      IsAot="$(RunAOTCompilation)" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
@@ -586,7 +587,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
-      IsPublish="true" />
+      IsPublish="true"
+      IsAot="$(RunAOTCompilation)" />
 
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)blazor.publish.boot.json" />

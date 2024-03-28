@@ -31,6 +31,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     public string? RuntimeAssetsLocation { get; set; }
     public bool CacheBootResources { get; set; }
     public int DebugLevel { get; set; }
+    public bool IsAot { get; set; }
 
     private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions
     {
@@ -206,16 +207,30 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                     bytes = File.ReadAllBytes(assemblyPath);
                 }
 
-                bootConfig.resources.assembly[Path.GetFileName(assemblyPath)] = Utils.ComputeIntegrity(bytes);
+                var assemblyName = Path.GetFileName(assemblyPath);
+                bool isCoreAssembly = IsAot || helper.IsCoreAssembly(assemblyName);
+
+                var assemblyList = isCoreAssembly ? bootConfig.resources.coreAssembly : bootConfig.resources.assembly;
+                assemblyList[assemblyName] = Utils.ComputeIntegrity(bytes);
+
                 if (DebugLevel != 0)
                 {
                     var pdb = Path.ChangeExtension(assembly, ".pdb");
                     if (File.Exists(pdb))
                     {
-                        if (bootConfig.resources.pdb == null)
-                            bootConfig.resources.pdb = new();
+                        if (isCoreAssembly)
+                        {
+                            if (bootConfig.resources.corePdb == null)
+                                bootConfig.resources.corePdb = new();
+                        }
+                        else
+                        {
+                            if (bootConfig.resources.pdb == null)
+                                bootConfig.resources.pdb = new();
+                        }
 
-                        bootConfig.resources.pdb[Path.GetFileName(pdb)] = Utils.ComputeIntegrity(pdb);
+                        var pdbList = isCoreAssembly ? bootConfig.resources.corePdb : bootConfig.resources.pdb;
+                        pdbList[Path.GetFileName(pdb)] = Utils.ComputeIntegrity(pdb);
                     }
                 }
             }
@@ -268,9 +283,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             var i = 0;
             StringDictionary targetPathTable = new();
             var vfs = new Dictionary<string, Dictionary<string, string>>();
+            var coreVfs = new Dictionary<string, Dictionary<string, string>>();
             foreach (var item in FilesToIncludeInFileSystem)
             {
                 string? targetPath = item.GetMetadata("TargetPath");
+                string? loadingStage = item.GetMetadata("LoadingStage");
                 if (string.IsNullOrEmpty(targetPath))
                 {
                     targetPath = Path.GetFileName(item.ItemSpec);
@@ -298,7 +315,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 var vfsPath = Path.Combine(supportFilesDir, generatedFileName);
                 FileCopyChecked(item.ItemSpec, vfsPath, "FilesToIncludeInFileSystem");
 
-                vfs[targetPath] = new()
+                (loadingStage == "Core" ? coreVfs : vfs)[targetPath] = new()
                 {
                     [$"supportFiles/{generatedFileName}"] = Utils.ComputeIntegrity(vfsPath)
                 };
@@ -306,6 +323,9 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
             if (vfs.Count > 0)
                 bootConfig.resources.vfs = vfs;
+
+            if (coreVfs.Count > 0)
+                bootConfig.resources.coreVfs = coreVfs;
         }
 
         if (!InvariantGlobalization)

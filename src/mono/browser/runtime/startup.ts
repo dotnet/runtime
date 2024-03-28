@@ -248,16 +248,21 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
             threadsReady = mono_wasm_init_threads();
         }
 
-        await wait_for_all_assets();
+        await runtimeHelpers.coreAssetsInMemory.promise;
 
         if (runtimeHelpers.config.virtualWorkingDirectory) {
             const FS = Module.FS;
             const cwd = runtimeHelpers.config.virtualWorkingDirectory;
-            const wds = FS.stat(cwd);
-            if (!wds) {
+            try {
+                const wds = FS.stat(cwd);
+                if (!wds) {
+                    Module.FS_createPath("/", cwd, true, true);
+                } else {
+                    mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
+                }
+            } catch (e) {
                 Module.FS_createPath("/", cwd, true, true);
             }
-            mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
             FS.chdir(cwd);
         }
 
@@ -304,6 +309,8 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
         if (WasmEnableThreads && runtimeHelpers.config.mainThreadingMode == MainThreadingMode.DeputyAndIOThreads) {
             await runtimeHelpers.afterIOStarted.promise;
         }
+
+        await wait_for_all_assets();
 
         runtimeList.registerRuntime(exportedRuntimeAPI);
 

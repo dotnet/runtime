@@ -156,6 +156,7 @@
       RuntimeAssetsLocation="$(WasmRuntimeAssetsLocation)"
       CacheBootResources="$(BlazorCacheBootResources)"
       RuntimeConfigJsonPath="$(_WasmRuntimeConfigFilePath)"
+      IsAot="$(RunAOTCompilation)"
       >
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>

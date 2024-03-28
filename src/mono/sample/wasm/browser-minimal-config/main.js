@@ -34,11 +34,13 @@ const assets = [
     },
     {
         name: "System.Private.CoreLib.wasm",
-        behavior: "assembly"
+        behavior: "assembly",
+        isCore: true,
     },
     {
         name: "System.Runtime.InteropServices.JavaScript.wasm",
-        behavior: "assembly"
+        behavior: "assembly",
+        isCore: true,
     },
     {
         name: "Wasm.Browser.Config.Sample.wasm",
@@ -62,10 +64,12 @@ const resources = {
     "wasmNative": {
         "dotnet.native.wasm": ""
     },
-    "assembly": {
-        "System.Console.wasm": "",
+    "coreAssembly": {
         "System.Private.CoreLib.wasm": "",
         "System.Runtime.InteropServices.JavaScript.wasm": "",
+    },
+    "assembly": {
+        "System.Console.wasm": "",
         "Wasm.Browser.Config.Sample.wasm": ""
     },
 };

@@ -245,8 +245,10 @@ type ResourceExtensions = {
 };
 interface ResourceGroups {
     hash?: string;
+    coreAssembly?: ResourceList;
     assembly?: ResourceList;
     lazyAssembly?: ResourceList;
+    corePdb?: ResourceList;
     pdb?: ResourceList;
     jsModuleWorker?: ResourceList;
     jsModuleNative: ResourceList;
@@ -260,6 +262,9 @@ interface ResourceGroups {
     modulesAfterConfigLoaded?: ResourceList;
     modulesAfterRuntimeReady?: ResourceList;
     extensions?: ResourceExtensions;
+    coreVfs?: {
+        [virtualPath: string]: ResourceList;
+    };
     vfs?: {
         [virtualPath: string]: ResourceList;
     };

@@ -203,8 +203,10 @@ export type ResourceExtensions = { [extensionName: string]: ResourceList };
 
 export interface ResourceGroups {
     hash?: string;
+    coreAssembly?: ResourceList; // nullable only temporarily
     assembly?: ResourceList; // nullable only temporarily
     lazyAssembly?: ResourceList; // nullable only temporarily
+    corePdb?: ResourceList;
     pdb?: ResourceList;
 
     jsModuleWorker?: ResourceList;
@@ -220,6 +222,7 @@ export interface ResourceGroups {
     modulesAfterRuntimeReady?: ResourceList
 
     extensions?: ResourceExtensions
+    coreVfs?: { [virtualPath: string]: ResourceList };
     vfs?: { [virtualPath: string]: ResourceList };
 }
 
