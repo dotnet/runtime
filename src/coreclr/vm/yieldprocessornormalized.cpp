@@ -110,12 +110,19 @@ static double MeasureNsPerYield(unsigned int measureDurationUs)
     return Max(MinNsPerYield, Min((double)elapsedTicks * NsPerS / ((double)yieldCount * ticksPerS), MaxNsPerYield));
 }
 
-void YieldProcessorNormalization::GCHeapSetYieldProcessorScalingFactor()
+void YieldProcessorNormalization::NotifyGC()
 {
-    if (GCHeapUtilities::IsGCHeapInitialized())
+    CONTRACTL
     {
-        GCHeapUtilities::GetGCHeap()->SetYieldProcessorScalingFactor((float)s_yieldsPerNormalizedYield);
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
     }
+    CONTRACTL_END;
+
+    _ASSERTE(GCHeapUtilities::IsGCHeapInitialized());
+
+    GCHeapUtilities::GetGCHeap()->SetYieldProcessorScalingFactor((float)s_yieldsPerNormalizedYield);
 }
 
 void YieldProcessorNormalization::PerformMeasurement()
@@ -225,7 +232,10 @@ void YieldProcessorNormalization::PerformMeasurement()
         Max(1u, (unsigned int)(TargetMaxNsPerSpinIteration / (yieldsPerNormalizedYield * establishedNsPerYield) + 0.5));
     _ASSERTE(s_optimalMaxNormalizedYieldsPerSpinIteration <= MaxOptimalMaxNormalizedYieldsPerSpinIteration);
 
-    GCHeapSetYieldProcessorScalingFactor();
+    if (GCHeapUtilities::IsGCHeapInitialized())
+    {
+        NotifyGC();
+    }
 
     if (s_normalizationState != NormalizationState::Uninitialized)
     {

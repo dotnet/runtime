@@ -883,7 +883,7 @@ void EEStartupHelper()
             LogErrorToHost("GC heap initialization failed with error 0x%08X", hr);
         }
 
-        YieldProcessorNormalization::GCHeapSetYieldProcessorScalingFactor();
+        YieldProcessorNormalization::NotifyGC();
 
         IfFailGo(hr);
 
