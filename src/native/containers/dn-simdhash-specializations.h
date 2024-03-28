@@ -6,18 +6,20 @@
 
 #include "dn-simdhash.h"
 
+typedef struct dn_simdhash_str_key dn_simdhash_str_key;
+
 #define DN_SIMDHASH_T dn_simdhash_string_ptr
-#define DN_SIMDHASH_KEY_T const char *
+#define DN_SIMDHASH_KEY_T dn_simdhash_str_key
 #define DN_SIMDHASH_VALUE_T void *
-#define DN_SIMDHASH_KEY_IS_POINTER 1
-#define DN_SIMDHASH_VALUE_IS_POINTER 1
+#define DN_SIMDHASH_ACCESSOR_SUFFIX _raw
 
 #include "dn-simdhash-specialization-declarations.h"
 
 #undef DN_SIMDHASH_T
 #undef DN_SIMDHASH_KEY_T
 #undef DN_SIMDHASH_VALUE_T
-#undef DN_SIMDHASH_KEY_IS_POINTER
-#undef DN_SIMDHASH_VALUE_IS_POINTER
+#undef DN_SIMDHASH_ACCESSOR_SUFFIX
+
+#include "dn-simdhash-string-ptr.h"
 
 #endif

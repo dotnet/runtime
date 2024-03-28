@@ -164,7 +164,10 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 static DN_FORCEINLINE(int)
 DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T) (bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_suffixes search_vector)
 {
-	dn_simdhash_suffixes suffixes = bucket->suffixes;
+	dn_simdhash_suffixes suffixes;
+	// HACK: Source address may not be aligned, because allocator may not have aligned our buffer,
+	//  and our bucket size may not be properly aligned either :(
+	memcpy(&suffixes, &bucket->suffixes, sizeof(dn_simdhash_suffixes));
 	int index = find_first_matching_suffix (search_vector, suffixes);
 	// FIXME: This shouldn't be necessary.
 	if (index > DN_SIMDHASH_BUCKET_CAPACITY)

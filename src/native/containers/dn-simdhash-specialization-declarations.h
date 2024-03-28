@@ -5,6 +5,14 @@
 #ifndef DN_SIMDHASH_GLUE
 #define DN_SIMDHASH_GLUE(a,b) a ## b
 #endif
+#ifndef DN_SIMDHASH_GLUE_3
+#define DN_SIMDHASH_GLUE_3_INNER(a, b, c) a ## b ## c
+#define DN_SIMDHASH_GLUE_3(a, b, c) DN_SIMDHASH_GLUE_3_INNER(a, b, c)
+#endif
+
+#ifndef DN_SIMDHASH_ACCESSOR_SUFFIX
+#define DN_SIMDHASH_ACCESSOR_SUFFIX
+#endif
 
 // We generate unique names for each specialization so that they will be easy to distinguish
 //  when debugging, profiling, or disassembling. Otherwise they would have linker-assigned names
@@ -17,12 +25,12 @@
 #define DN_SIMDHASH_TRY_INSERT_INTERNAL(t) DN_SIMDHASH_GLUE(t,_try_insert_internal)
 #define DN_SIMDHASH_REHASH_INTERNAL(t) DN_SIMDHASH_GLUE(t,_rehash_internal)
 #define DN_SIMDHASH_NEW(t) DN_SIMDHASH_GLUE(t,_new)
-#define DN_SIMDHASH_TRY_ADD(t) DN_SIMDHASH_GLUE(t,_try_add)
-#define DN_SIMDHASH_TRY_ADD_WITH_HASH(t) DN_SIMDHASH_GLUE(t,_try_add_with_hash)
-#define DN_SIMDHASH_TRY_GET_VALUE(t) DN_SIMDHASH_GLUE(t,_try_get_value)
-#define DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(t) DN_SIMDHASH_GLUE(t,_try_get_value_with_hash)
-#define DN_SIMDHASH_TRY_REMOVE(t) DN_SIMDHASH_GLUE(t,_try_remove)
-#define DN_SIMDHASH_TRY_REMOVE_WITH_HASH(t) DN_SIMDHASH_GLUE(t,_try_remove_with_hash)
+#define DN_SIMDHASH_TRY_ADD(t) DN_SIMDHASH_GLUE_3(t,_try_add,DN_SIMDHASH_ACCESSOR_SUFFIX)
+#define DN_SIMDHASH_TRY_ADD_WITH_HASH(t) DN_SIMDHASH_GLUE_3(t,_try_add_with_hash,DN_SIMDHASH_ACCESSOR_SUFFIX)
+#define DN_SIMDHASH_TRY_GET_VALUE(t) DN_SIMDHASH_GLUE_3(t,_try_get_value,DN_SIMDHASH_ACCESSOR_SUFFIX)
+#define DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(t) DN_SIMDHASH_GLUE_3(t,_try_get_value_with_hash,DN_SIMDHASH_ACCESSOR_SUFFIX)
+#define DN_SIMDHASH_TRY_REMOVE(t) DN_SIMDHASH_GLUE_3(t,_try_remove,DN_SIMDHASH_ACCESSOR_SUFFIX)
+#define DN_SIMDHASH_TRY_REMOVE_WITH_HASH(t) DN_SIMDHASH_GLUE_3(t,_try_remove_with_hash,DN_SIMDHASH_ACCESSOR_SUFFIX)
 
 // Declare a specific alias so intellisense gives more helpful info
 typedef dn_simdhash_t DN_SIMDHASH_T_NAME(DN_SIMDHASH_T);
