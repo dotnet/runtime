@@ -34,7 +34,7 @@ public class ReflectionTests
                 FieldInfo fieldInfo = typeof(ZipArchiveEntry).GetField("_generalPurposeBitFlag", BindingFlags.Instance | BindingFlags.NonPublic);
                 object fieldObject = fieldInfo.GetValue(entry);
                 ushort shortField = (ushort)fieldObject;
-                Assert.Equal(0, shortField); // If it was UTF8, we would set the general purpose bit flag to 0x800 (UnicodeFileNameAndComment)
+                Assert.Equal(0, shortField & 0x800); // If it was UTF8, we would set the general purpose bit flag to 0x800 (UnicodeFileNameAndComment)
                 CheckCharacters(entry.Name);
                 CheckCharacters(entry.Comment); // Unavailable in .NET Framework
             }
