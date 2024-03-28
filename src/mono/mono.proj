@@ -179,7 +179,7 @@
 
   <!-- Sets up emscripten if you don't have the EMSDK_PATH env variable set -->
   <Target Name="ProvisionEmscripten"
-          Condition="'$(ShouldProvisionEmscripten)' == 'true' and '$(SkipMonoCrossJitConfigure)' != 'true'">
+          Condition="'$(ShouldProvisionEmscripten)' == 'true'">
     <ReadLinesFromFile File="$(MSBuildThisFileDirectory)\browser\emscripten-version.txt">
       <Output TaskParameter="Lines" ItemName="_VersionLines" />
     </ReadLinesFromFile>
@@ -261,6 +261,10 @@ JS_ENGINES = [NODE_JS]
       Lines="#!/usr/bin/env node;require('../lib/node_modules/%(Filename)/lib/cli.js')(process)"
       File="%(NodeModulesBinFiles.RootDir)%(NodeModulesBinFiles.Directory)%(NodeModulesBinFiles.Filename)"
       Overwrite="true" />
+
+    <PropertyGroup>
+      <ShouldProvisionEmscripten>false</ShouldProvisionEmscripten>
+    </PropertyGroup>    
   </Target>
 
   <!-- Sets up WASI SDK if you don't have the WASI_SDK_PATH env variable set -->
