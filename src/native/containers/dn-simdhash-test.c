@@ -10,7 +10,7 @@
 #define DN_SIMDHASH_T dn_simdhash_size_t_size_t
 #define DN_SIMDHASH_KEY_T size_t
 #define DN_SIMDHASH_VALUE_T size_t
-#define DN_SIMDHASH_KEY_HASHER(key) key
+#define DN_SIMDHASH_KEY_HASHER(key) (uint32_t)(key & 0xFFFFFFFFu)
 #define DN_SIMDHASH_KEY_COMPARER(lhs, rhs) (lhs != rhs)
 #define DN_SIMDHASH_KEY_IS_POINTER 1
 #define DN_SIMDHASH_VALUE_IS_POINTER 1
@@ -38,21 +38,35 @@ uint8_t tasserteq (size_t actual, size_t expected, const char *msg) {
     return 0;
 }
 
+void foreach_callback (dn_simdhash_key_ref key, dn_simdhash_value_ref value, void * user_data) {
+    printf("[%zd, %zd]\n", key, value);
+}
+
 int main () {
     const int c = 4096;
     dn_simdhash_t *test = dn_simdhash_size_t_size_t_new(0, NULL);
     dn_vector_t *keys = dn_vector_alloc(sizeof(DN_SIMDHASH_KEY_T)),
         *values = dn_vector_alloc(sizeof(DN_SIMDHASH_VALUE_T));
+
     for (int i = 0; i < c; i++) {
         DN_SIMDHASH_KEY_T key = rand();
         dn_vector_push_back(keys, key);
         DN_SIMDHASH_VALUE_T value = (i * 2) + 1;
         dn_vector_push_back(values, value);
+
+        uint8_t ok = dn_simdhash_try_add(test, (void *)key, (void *)value);
+        tassert(ok, "Insert failed");
     }
 
+    if (!tasserteq(dn_simdhash_count(test), c, "count did not match"))
+        return 1;
+
+    // dn_simdhash_foreach(test, foreach_callback, NULL);
+
     for (int i = 0; i < c; i++) {
-        DN_SIMDHASH_KEY_T key = *dn_vector_at_t(keys, DN_SIMDHASH_KEY_T, i);
-        DN_SIMDHASH_VALUE_T value, expected_value = *dn_vector_at_t(values, DN_SIMDHASH_VALUE_T, i);
+        DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
+        DN_SIMDHASH_VALUE_T value, expected_value = *dn_vector_index_t(values, DN_SIMDHASH_VALUE_T, i);
+        uint32_t key_hash = test->vtable.compute_hash((void *)key);
         uint8_t ok = dn_simdhash_try_get_value(test, (void *)key, &value, sizeof(value));
         if (tassert1(ok, key, "did not find key"))
             tasserteq(value, expected_value, "value did not match");
