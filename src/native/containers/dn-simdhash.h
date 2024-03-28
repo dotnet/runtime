@@ -9,6 +9,8 @@
 
 // We reserve the last two bytes of each suffix vector to store data
 #define DN_SIMDHASH_MAX_BUCKET_CAPACITY 14
+// The ideal capacity depends on the size of your keys. For 4-byte keys, it is 12.
+#define DN_SIMDHASH_DEFAULT_BUCKET_CAPACITY 12
 // We use the last two bytes specifically to store item count and cascade flag
 #define DN_SIMDHASH_COUNT_SLOT (DN_SIMDHASH_MAX_BUCKET_CAPACITY)
 // The cascade flag indicates that an item overflowed from this bucket into the next one
@@ -39,11 +41,28 @@ typedef union {
     uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
 } dn_simdhash_suffixes;
 
-static inline uint32_t
+static DN_FORCEINLINE(uint32_t)
 dn_simdhash_next_power_of_two (uint32_t value) {
     if (value < 2)
         return 2;
     return 1u << (32 - __builtin_clz (value - 1));
+}
+
+DN_FORCEINLINE(dn_simdhash_suffixes)
+dn_simdhash_build_search_vector (uint8_t needle)
+{
+    // this produces a splat and then .const, .and in wasm, and the other architectures are fine too
+    dn_u8x16 needles = {
+        needle, needle, needle, needle, needle, needle, needle, needle,
+        needle, needle, needle, needle, needle, needle, needle, needle
+    };
+    dn_u8x16 mask = {
+        ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0,
+        ~0, ~0, ~0, ~0, ~0, ~0, 0, 0
+    };
+    dn_simdhash_suffixes result;
+    result.vec = needles & mask;
+    return result;
 }
 
 #else // __clang__ || __GNUC__
@@ -66,9 +85,18 @@ dn_simdhash_next_power_of_two (uint32_t value) {
     return value;
 }
 
+DN_FORCEINLINE(dn_simdhash_suffixes)
+dn_simdhash_build_search_vector (uint8_t needle)
+{
+    dn_simdhash_suffixes result;
+    for (int i = 0; i < DN_SIMDHASH_VECTOR_WIDTH; i++)
+        result.values[i] = (i >= DN_SIMDHASH_MAX_BUCKET_CAPACITY) ? 0 : needle;
+    return result;
+}
+
 #endif // __clang__ || __GNUC__
 
-typedef struct {
+typedef struct dn_simdhash_buffers_t {
     // sizes of current allocations in items (not bytes)
     // so values_length should == (buckets_length * bucket_capacity)
     uint32_t buckets_length, values_length;
@@ -77,27 +105,37 @@ typedef struct {
     dn_allocator_t *allocator;
 } dn_simdhash_buffers_t;
 
-typedef struct {
+typedef struct dn_simdhash_t dn_simdhash_t;
+
+// The address of a key to insert into the hashtable.
+// Unless DN_SIMDHASH_KEY_IS_POINTER, this will be de-referenced.
+typedef const void * dn_simdhash_key_ref;
+// The address of a value to insert into the hashtable.
+// Unless DN_SIMDHASH_VALUE_IS_POINTER, this will be de-referenced.
+typedef const void * dn_simdhash_value_ref;
+
+typedef struct dn_simdhash_meta_t {
     // type metadata for generic implementation
     uint32_t bucket_capacity, bucket_size_bytes, key_size, value_size;
 } dn_simdhash_meta_t;
 
-typedef struct dn_simdhash_t;
-
-typedef enum {
+typedef enum dn_simdhash_insert_result {
     DN_SIMDHASH_INSERT_OK,
     DN_SIMDHASH_INSERT_NEED_TO_GROW,
     DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT,
 } dn_simdhash_insert_result;
 
-typedef struct {
-    void* *(*find_value) (dn_simdhash_t *hash, void *key_ptr, uint32_t key_hash);
-    dn_simdhash_insert_result *(*try_insert) (dn_simdhash_t *hash, void *key_ptr, void *value_ptr, uint32_t key_hash, uint8_t ensure_not_present);
-    void *(*rehash) (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buffers);
-    uint32_t *(*compute_hash) (void *key_ptr);
+typedef struct dn_simdhash_vtable_t {
+    // This returns void*, not value_ref, because it *always* returns the address of a value,
+    //  or it returns NULL if the key was not found
+    void *(*find_value) (dn_simdhash_t *hash, dn_simdhash_key_ref key_ptr, uint32_t key_hash);
+    // Does not update hash->count, that's your job.
+    dn_simdhash_insert_result (*try_insert) (dn_simdhash_t *hash, dn_simdhash_key_ref key_ptr, dn_simdhash_value_ref value_ptr, uint32_t key_hash, uint8_t ensure_not_present);
+    void (*rehash) (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buffers);
+    uint32_t (*compute_hash) (dn_simdhash_key_ref key_ptr);
 } dn_simdhash_vtable_t;
 
-typedef struct {
+typedef struct dn_simdhash_t {
     // internal state
     uint32_t count;
     dn_simdhash_meta_t meta;
@@ -105,7 +143,7 @@ typedef struct {
     dn_simdhash_vtable_t vtable;
 } dn_simdhash_t;
 
-typedef void (*dn_simdhash_foreach_func) (void *key, void *value, void* user_data);
+typedef void (*dn_simdhash_foreach_func) (dn_simdhash_key_ref key, dn_simdhash_value_ref value, void* user_data);
 
 // These helpers use .values instead of .vec to avoid generating unnecessary
 //  vector loads/stores. Operations that touch these values may not need vectorization
@@ -122,19 +160,19 @@ dn_simdhash_bucket_is_cascaded (dn_simdhash_suffixes bucket)
     return bucket.values[DN_SIMDHASH_CASCADED_SLOT];
 }
 
-static DN_FORCEINLINE(uint8_t)
+static DN_FORCEINLINE(void)
 dn_simdhash_bucket_set_suffix (dn_simdhash_suffixes bucket, uint32_t slot, uint8_t value)
 {
     bucket.values[slot] = value;
 }
 
-static DN_FORCEINLINE(uint8_t)
+static DN_FORCEINLINE(void)
 dn_simdhash_bucket_set_count (dn_simdhash_suffixes bucket, uint8_t value)
 {
     bucket.values[DN_SIMDHASH_COUNT_SLOT] = value;
 }
 
-static DN_FORCEINLINE(uint8_t)
+static DN_FORCEINLINE(void)
 dn_simdhash_bucket_set_cascaded (dn_simdhash_suffixes bucket, uint8_t value)
 {
     bucket.values[DN_SIMDHASH_CASCADED_SLOT] = value;
@@ -161,10 +199,7 @@ dn_simdhash_address_of_bucket (dn_simdhash_meta_t meta, dn_simdhash_buffers_t bu
     return buffers.buckets + (bucket_index * meta.bucket_size_bytes);
 }
 
-DN_FORCEINLINE(dn_simdhash_suffixes)
-dn_simdhash_build_search_vector (uint8_t needle);
-
-DN_FORCEINLINE(int)
+int
 dn_simdhash_find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack);
 
 dn_simdhash_t *
@@ -194,13 +229,15 @@ void
 dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity);
 
 uint8_t
-dn_simdhash_try_add (dn_simdhash_t *hash, void *key, void *value);
+dn_simdhash_try_add (dn_simdhash_t *hash, dn_simdhash_key_ref key, dn_simdhash_value_ref value);
 
+// This always returns the address of a value, or NULL if no value was found.
 void *
-dn_simdhash_find_value_by_key (dn_simdhash_t *hash, void *key);
+dn_simdhash_find_value_by_key (dn_simdhash_t *hash, dn_simdhash_key_ref key);
 
+// This always returns the address of a value, or NULL if no value was found.
 void *
-dn_simdhash_find_value_by_key_with_hash (dn_simdhash_t *hash, void *key, uint32_t key_hash);
+dn_simdhash_find_value_by_key_with_hash (dn_simdhash_t *hash, dn_simdhash_key_ref key, uint32_t key_hash);
 
 void
 dn_simdhash_foreach (dn_simdhash_t *hash, dn_simdhash_foreach_func func, void *user_data);

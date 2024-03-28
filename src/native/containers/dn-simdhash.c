@@ -15,24 +15,8 @@
 #error Unsupported architecture for dn_simdhash
 #endif
 
-DN_FORCEINLINE(dn_simdhash_suffixes)
-dn_simdhash_build_search_vector (uint8_t needle)
-{
-    // this produces a splat and then .const, .and in wasm, and the other architectures are fine too
-    dn_u8x16 needles = {
-        needle, needle, needle, needle, needle, needle, needle, needle,
-        needle, needle, needle, needle, needle, needle, needle, needle
-    };
-    dn_u8x16 mask = {
-        ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0,
-        ~0, ~0, ~0, ~0, ~0, ~0, 0, 0
-    };
-    dn_simdhash_suffixes result;
-    result.vec = needles & mask;
-    return result;
-}
-
-DN_FORCEINLINE(int)
+// FIXME: How can we inline this without polluting every consumer with intrinsic includes?
+int
 dn_simdhash_find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
     dn_simdhash_suffixes match_vector;
@@ -85,16 +69,16 @@ dn_simdhash_new_internal (dn_simdhash_meta_t meta, dn_simdhash_vtable_t vtable, 
     dn_simdhash_t *result = dn_allocator_alloc(allocator, sizeof(dn_simdhash_t));
     memset(result, 0, sizeof(dn_simdhash_t));
 
-    DN_ASSERT((meta.bucket_capacity > 1) && (meta.bucket_capacity <= DN_SIMDHASH_MAX_BUCKET_CAPACITY));
-    DN_ASSERT(meta.key_size > 0);
-    DN_ASSERT(meta.bucket_size_bytes >= (DN_SIMDHASH_VECTOR_WIDTH + (meta.bucket_capacity * meta.key_size)));
+    assert((meta.bucket_capacity > 1) && (meta.bucket_capacity <= DN_SIMDHASH_MAX_BUCKET_CAPACITY));
+    assert(meta.key_size > 0);
+    assert(meta.bucket_size_bytes >= (DN_SIMDHASH_VECTOR_WIDTH + (meta.bucket_capacity * meta.key_size)));
     result->meta = meta;
     result->vtable = vtable;
     result->buffers.allocator = allocator;
 
     dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(result, capacity);
-    DN_ASSERT(old_buffers.buckets == NULL);
-    DN_ASSERT(old_buffers.values == NULL);
+    assert(old_buffers.buckets == NULL);
+    assert(old_buffers.values == NULL);
 
     return result;
 }
@@ -102,7 +86,7 @@ dn_simdhash_new_internal (dn_simdhash_meta_t meta, dn_simdhash_vtable_t vtable, 
 void
 dn_simdhash_free (dn_simdhash_t *hash)
 {
-    DN_ASSERT(hash);
+    assert(hash);
     dn_simdhash_buffers_t buffers = hash->buffers;
     memset(hash, 0, sizeof(dn_simdhash_t));
     dn_simdhash_free_buffers(buffers);
@@ -120,7 +104,7 @@ dn_simdhash_free_buffers (dn_simdhash_buffers_t buffers)
 dn_simdhash_buffers_t
 dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 {
-    DN_ASSERT(hash);
+    assert(hash);
     uint32_t bucket_count = (capacity + hash->meta.bucket_capacity - 1) / hash->meta.bucket_capacity;
     // FIXME: Only apply this when capacity == 0?
     if (bucket_count < DN_SIMDHASH_MIN_BUCKET_COUNT)
@@ -131,7 +115,7 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 
     dn_simdhash_buffers_t result = { 0, };
     if (bucket_count <= hash->buffers.buckets_length) {
-        DN_ASSERT(value_count <= hash->buffers.values_length);
+        assert(value_count <= hash->buffers.values_length);
         return result;
     }
 
@@ -149,7 +133,7 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 void
 dn_simdhash_clear (dn_simdhash_t *hash)
 {
-    DN_ASSERT(hash);
+    assert(hash);
     hash->count = 0;
     memset(hash->buffers.buckets, 0, hash->buffers.buckets_length * hash->meta.bucket_size_bytes);
     memset(hash->buffers.values, 0, hash->buffers.values_length * hash->meta.value_size);
@@ -158,14 +142,14 @@ dn_simdhash_clear (dn_simdhash_t *hash)
 uint32_t
 dn_simdhash_capacity (dn_simdhash_t *hash)
 {
-    DN_ASSERT(hash);
+    assert(hash);
     return hash->buffers.buckets_length * hash->meta.bucket_capacity;
 }
 
 uint32_t
 dn_simdhash_count (dn_simdhash_t *hash)
 {
-    DN_ASSERT(hash);
+    assert(hash);
     return hash->count;
 }
 
@@ -180,38 +164,41 @@ dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity)
 }
 
 uint8_t
-dn_simdhash_try_add (dn_simdhash_t *hash, void *key, void *value)
+dn_simdhash_try_add (dn_simdhash_t *hash, dn_simdhash_key_ref key, dn_simdhash_value_ref value)
 {
-    uint32_t key_hash = hash->vtable.compute_hash(key);
-retry:
-    dn_simdhash_insert_result ok = hash->vtable.try_insert(hash, key, value, key_hash, true);
+    assert(hash);
+    while (true) {
+        uint32_t key_hash = hash->vtable.compute_hash(key);
+        dn_simdhash_insert_result ok = hash->vtable.try_insert(hash, key, value, key_hash, true);
 
-    switch (ok) {
-        case DN_SIMDHASH_INSERT_OK:
-            return 1;
-        case DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT:
-            return 0;
-        case DN_SIMDHASH_INSERT_NEED_TO_GROW:
-            // We may have already grown once and still not had enough space, due to collisions
-            //  so we want to ensure we increase the *capacity* beyond its current value, not
-            //  ensure a capacity of count + 1
-            dn_simdhash_ensure_capacity(hash, dn_simdhash_capacity(hash) + 1);
-            goto retry;
-        default:
-            DN_ASSERT(0);
-            return 0;
+        switch (ok) {
+            case DN_SIMDHASH_INSERT_OK:
+                hash->count++;
+                return 1;
+            case DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT:
+                return 0;
+            case DN_SIMDHASH_INSERT_NEED_TO_GROW:
+                // We may have already grown once and still not had enough space, due to collisions
+                //  so we want to ensure we increase the *capacity* beyond its current value, not
+                //  ensure a capacity of count + 1
+                dn_simdhash_ensure_capacity(hash, dn_simdhash_capacity(hash) + 1);
+                continue;
+            default:
+                assert(0);
+                return 0;
+        }
     }
 }
 
 void *
-dn_simdhash_find_value_by_key (dn_simdhash_t *hash, void *key)
+dn_simdhash_find_value_by_key (dn_simdhash_t *hash, dn_simdhash_key_ref key)
 {
     uint32_t key_hash = hash->vtable.compute_hash(key);
     return hash->vtable.find_value(hash, key, key_hash);
 }
 
 void *
-dn_simdhash_find_value_by_key_with_hash (dn_simdhash_t *hash, void *key, uint32_t key_hash)
+dn_simdhash_find_value_by_key_with_hash (dn_simdhash_t *hash, dn_simdhash_key_ref key, uint32_t key_hash)
 {
     return hash->vtable.find_value(hash, key, key_hash);
 }

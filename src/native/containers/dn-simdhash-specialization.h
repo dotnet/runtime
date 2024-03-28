@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef __DN_SIMDHASH_H__
+#error Include dn-simdhash.h first
+// HACK: for better language server parsing
 #include "dn-simdhash.h"
+#endif
 
 #ifndef DN_SIMDHASH_T
 #error Expected DN_SIMDHASH_T definition
@@ -11,8 +15,16 @@
 #error Expected DN_SIMDHASH_KEY_T definition
 #endif
 
+#ifndef DN_SIMDHASH_KEY_IS_POINTER
+#error Expected DN_SIMDHASH_KEY_IS_POINTER to be 0 or 1
+#endif
+
 #ifndef DN_SIMDHASH_VALUE_T
 #error Expected DN_SIMDHASH_VALUE_T definition
+#endif
+
+#ifndef DN_SIMDHASH_VALUE_IS_POINTER
+#error Expected DN_SIMDHASH_VALUE_IS_POINTER to be 0 or 1
 #endif
 
 #ifndef DN_SIMDHASH_KEY_HASHER
@@ -24,23 +36,46 @@
 #endif
 
 #ifndef DN_SIMDHASH_BUCKET_CAPACITY
-#error Expected DN_SIMDHASH_BUCKET_CAPACITY definition
+#define DN_SIMDHASH_BUCKET_CAPACITY DN_SIMDHASH_DEFAULT_BUCKET_CAPACITY
 #endif
 
-#define DN_SIMDHASH_BUCKET_T (DN_SIMDHASH_T ## _bucket)
-#define DN_SIMDHASH_T_VTABLE (DN_SIMDHASH_T ## _vtable)
-#define DN_SIMDHASH_T_META (DN_SIMDHASH_T ## _meta)
-#define DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T ## _scan_bucket_internal)
-#define DN_SIMDHASH_FIND_VALUE_INTERNAL (DN_SIMDHASH_T ## _find_value_internal)
-#define DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T ## _try_insert_internal)
-#define DN_SIMDHASH_REHASH_INTERNAL (DN_SIMDHASH_T ## _rehash_internal)
-#define DN_SIMDHASH_COMPUTE_HASH_INTERNAL (DN_SIMDHASH_T ## _compute_hash_internal)
-#define DN_SIMDHASH_NEW (DN_SIMDHASH_T ## _new)
+#if DN_SIMDHASH_KEY_IS_POINTER
+#define KEY_REF DN_SIMDHASH_KEY_T
+#define REF_KEY(K) K
+#define DEREF_KEY(P) P
+#else
+#define KEY_REF DN_SIMDHASH_KEY_T*
+#define REF_KEY(K) &K
+#define DEREF_KEY(P) *P
+#endif
+
+#if DN_SIMDHASH_VALUE_IS_POINTER
+#define VALUE_REF DN_SIMDHASH_VALUE_T
+#define REF_VALUE(V) V
+#define DEREF_VALUE(P) P
+#else
+#define VALUE_REF DN_SIMDHASH_VALUE_T*
+#define REF_VALUE(V) &V
+#define DEREF_VALUE(P) *P
+#endif
+
+#define DN_SIMDHASH_BUCKET_T DN_SIMDHASH_T ## _bucket
+#define DN_SIMDHASH_T_VTABLE DN_SIMDHASH_T ## _vtable
+#define DN_SIMDHASH_T_META DN_SIMDHASH_T ## _meta
+#define DN_SIMDHASH_SCAN_BUCKET_INTERNAL DN_SIMDHASH_T ## _scan_bucket_internal
+#define DN_SIMDHASH_FIND_VALUE_INTERNAL DN_SIMDHASH_T ## _find_value_internal
+#define DN_SIMDHASH_TRY_INSERT_INTERNAL DN_SIMDHASH_T ## _try_insert_internal
+#define DN_SIMDHASH_REHASH_INTERNAL DN_SIMDHASH_T ## _rehash_internal
+#define DN_SIMDHASH_COMPUTE_HASH_INTERNAL DN_SIMDHASH_T ## _compute_hash_internal
+#define DN_SIMDHASH_NEW DN_SIMDHASH_T ## _new
+
+static_assert (DN_SIMDHASH_BUCKET_CAPACITY < DN_SIMDHASH_MAX_BUCKET_CAPACITY, "Maximum bucket capacity exceeded");
+static_assert (DN_SIMDHASH_BUCKET_CAPACITY > 1, "Bucket capacity too low");
 
 dn_simdhash_t *
 DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator);
 
-typedef struct {
+typedef struct DN_SIMDHASH_BUCKET_T {
     dn_simdhash_suffixes suffixes;
     DN_SIMDHASH_KEY_T keys[DN_SIMDHASH_BUCKET_CAPACITY];
 } DN_SIMDHASH_BUCKET_T;
@@ -49,9 +84,9 @@ typedef struct {
 //  specialize code to avoid extra indirection when invoking through vtable
 
 static uint32_t
-DN_SIMDHASH_COMPUTE_HASH_INTERNAL (DN_SIMDHASH_KEY_T *key_ptr)
+DN_SIMDHASH_COMPUTE_HASH_INTERNAL (KEY_REF key_ptr)
 {
-    return DN_SIMDHASH_KEY_HASHER(*key_ptr);
+    return DN_SIMDHASH_KEY_HASHER(DEREF_KEY(key_ptr));
 }
 
 static int
@@ -70,12 +105,12 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_BUCKET_T *buc
 }
 
 static DN_SIMDHASH_VALUE_T *
-DN_SIMDHASH_FIND_VALUE_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T *key_ptr, uint32_t key_hash)
+DN_SIMDHASH_FIND_VALUE_INTERNAL (dn_simdhash_t *hash, KEY_REF key_ptr, uint32_t key_hash)
 {
     uint8_t suffix = dn_simdhash_select_suffix(key_hash);
     uint32_t bucket_index = dn_simdhash_select_bucket_index(hash->buffers, key_hash);
     DN_SIMDHASH_BUCKET_T *bucket_address = (DN_SIMDHASH_BUCKET_T *)dn_simdhash_address_of_bucket(hash->meta, hash->buffers, bucket_index);
-    DN_SIMDHASH_KEY_T key = *key_ptr;
+    DN_SIMDHASH_KEY_T key = DEREF_KEY(key_ptr);
     dn_simdhash_suffixes search_vector = dn_simdhash_build_search_vector(suffix);
 
     for (uint32_t c = hash->buffers.buckets_length; bucket_index < c; bucket_index++, bucket_address++) {
@@ -92,9 +127,8 @@ DN_SIMDHASH_FIND_VALUE_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T *key_ptr
     return NULL;
 }
 
-// Does not update hash->count, that's your job.
 static dn_simdhash_insert_result
-DN_SIMDHASH_TRY_INSERT_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T *key_ptr, DN_SIMDHASH_VALUE_T *value_ptr, uint32_t key_hash, uint8_t ensure_not_present)
+DN_SIMDHASH_TRY_INSERT_INTERNAL (dn_simdhash_t *hash, KEY_REF key_ptr, VALUE_REF value_ptr, uint32_t key_hash, uint8_t ensure_not_present)
 {
     // HACK: Early out. Better to grow without scanning here.
     if (hash->count >= hash->buffers.values_length)
@@ -116,9 +150,9 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T *key_ptr
             // We found a bucket with space, so claim the first free slot
             dn_simdhash_bucket_set_count (bucket_address->suffixes, new_index + 1);
             dn_simdhash_bucket_set_suffix (bucket_address->suffixes, new_index, suffix);
-            bucket_address->keys[new_index] = *key_ptr;
+            bucket_address->keys[new_index] = DEREF_KEY(key_ptr);
             uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + new_index;
-            ((DN_SIMDHASH_VALUE_T *)hash->buffers.values)[value_slot_index] = *value_ptr;
+            ((DN_SIMDHASH_VALUE_T *)hash->buffers.values)[value_slot_index] = DEREF_VALUE(value_ptr);
             return DN_SIMDHASH_INSERT_OK;
         }
 
@@ -134,24 +168,27 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T *key_ptr
 static void
 DN_SIMDHASH_REHASH_INTERNAL (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buffers)
 {
-    DN_SIMDHASH_BUCKET_T *bucket_address = old_buffers.buckets;
+    DN_SIMDHASH_BUCKET_T *bucket_address = (void *)old_buffers.buckets;
     for (
         uint32_t i = 0, bc = old_buffers.buckets_length, value_slot_base = 0;
         i < bc; i++, bucket_address++, value_slot_base += DN_SIMDHASH_BUCKET_CAPACITY
     ) {
         uint32_t c = dn_simdhash_bucket_count(bucket_address->suffixes);
         for (uint32_t j = 0; j < c; j++) {
-            DN_SIMDHASH_KEY_T key = bucket_address->keys[j];
-            uint32_t key_hash = DN_SIMDHASH_KEY_HASHER(key);
+            KEY_REF key = REF_KEY(bucket_address->keys[j]);
+            uint32_t key_hash = DN_SIMDHASH_KEY_HASHER(DEREF_KEY(key));
             // FIXME: If there are too many collisions, this could theoretically fail
             // But I'm not sure it's possible in practice, since we just grew the table -
             //  we should have double the previous number of buckets and the items should
             //  be spread out better
-            DN_ASSERT(DN_SIMDHASH_TRY_INSERT_INTERNAL(
+            dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(
                 hash, key,
-                ((DN_SIMDHASH_VALUE_T *)old_buffers.values)[value_slot_base + j],
+                REF_VALUE(
+                    ((DN_SIMDHASH_VALUE_T *)old_buffers.values)[value_slot_base + j]
+                ),
                 key_hash, 0
-            ) == DN_SIMDHASH_INSERT_OK);
+            );
+            assert (ok == DN_SIMDHASH_INSERT_OK);
         }
     }
 
@@ -159,10 +196,10 @@ DN_SIMDHASH_REHASH_INTERNAL (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buff
 }
 
 dn_simdhash_vtable_t DN_SIMDHASH_T_VTABLE = {
-    DN_SIMDHASH_FIND_VALUE_INTERNAL,
-    DN_SIMDHASH_TRY_INSERT_INTERNAL,
-    DN_SIMDHASH_REHASH_INTERNAL,
-    DN_SIMDHASH_COMPUTE_HASH_INTERNAL,
+    (void *)DN_SIMDHASH_FIND_VALUE_INTERNAL,
+    (void *)DN_SIMDHASH_TRY_INSERT_INTERNAL,
+    (void *)DN_SIMDHASH_REHASH_INTERNAL,
+    (void *)DN_SIMDHASH_COMPUTE_HASH_INTERNAL,
 };
 
 dn_simdhash_meta_t DN_SIMDHASH_T_META = {
