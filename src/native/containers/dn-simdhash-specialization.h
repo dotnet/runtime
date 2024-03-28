@@ -80,9 +80,6 @@ typedef struct DN_SIMDHASH_BUCKET_T {
     DN_SIMDHASH_KEY_T keys[DN_SIMDHASH_BUCKET_CAPACITY];
 } DN_SIMDHASH_BUCKET_T;
 
-// TODO: Add DN_SIMDHASH_KEY_IS_POINTER (and maybe VALUE_IS_POINTER), and
-//  specialize code to avoid extra indirection when invoking through vtable
-
 static uint32_t
 DN_SIMDHASH_COMPUTE_HASH_INTERNAL (KEY_REF key_ptr)
 {
