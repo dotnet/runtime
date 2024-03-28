@@ -3030,7 +3030,7 @@ struct GenTreeOp : public GenTreeUnOp
         : GenTreeUnOp(oper, type DEBUGARG(largeNode)), gtOp2(nullptr)
     {
 #ifdef SWIFT_SUPPORT
-        if (oper != GT_SWIFT_RETURN)
+        if (oper != GT_SWIFT_ERROR_RET)
 #endif // SWIFT_SUPPORT
         {
             // Unary operators with optional arguments:

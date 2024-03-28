@@ -1320,7 +1320,7 @@ protected:
     void genReturn(GenTree* treeNode);
 
 #ifdef SWIFT_SUPPORT
-    void genSwiftReturn(GenTreeUnOp* treeNode);
+    void genSwiftErrorReturn(GenTreeUnOp* treeNode);
 #endif // SWIFT_SUPPORT
 
 #ifdef TARGET_XARCH

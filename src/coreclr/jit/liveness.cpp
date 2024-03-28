@@ -1957,7 +1957,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_IL_OFFSET:
             case GT_KEEPALIVE:
 #ifdef SWIFT_SUPPORT
-            case GT_SWIFT_RETURN:
+            case GT_SWIFT_ERROR_RET:
 #endif // SWIFT_SUPPORT
                 // Never remove these nodes, as they are always side-effecting.
                 //

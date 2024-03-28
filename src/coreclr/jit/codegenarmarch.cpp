@@ -283,8 +283,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
 #ifdef SWIFT_SUPPORT
-        case GT_SWIFT_RETURN:
-            genSwiftReturn(treeNode->AsUnOp());
+        case GT_SWIFT_ERROR_RET:
+            genSwiftErrorReturn(treeNode->AsUnOp());
             break;
 #endif // SWIFT_SUPPORT
 

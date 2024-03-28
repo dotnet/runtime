@@ -292,7 +292,7 @@ GTNODE(END_LFIN         , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // End l
 #endif // !FEATURE_EH_FUNCLETS
 
 #ifdef SWIFT_SUPPORT
-GTNODE(SWIFT_RETURN     , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE) // Return value and error register value for Swift reverse P/Invokes.
+GTNODE(SWIFT_ERROR_RET  , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE) // Returns error value in REG_SWIFT_ERROR for Swift reverse P/Invokes.
 #endif // SWIFT_SUPPORT
 
 //-----------------------------------------------------------------------------

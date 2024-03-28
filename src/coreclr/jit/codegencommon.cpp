@@ -7852,7 +7852,7 @@ void CodeGen::genReturn(GenTree* treeNode)
 }
 
 #ifdef SWIFT_SUPPORT
-void CodeGen::genSwiftReturn(GenTreeUnOp* treeNode)
+void CodeGen::genSwiftErrorReturn(GenTreeUnOp* treeNode)
 {
     assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
     assert(compiler->lvaSwiftErrorArg != BAD_VAR_NUM);
