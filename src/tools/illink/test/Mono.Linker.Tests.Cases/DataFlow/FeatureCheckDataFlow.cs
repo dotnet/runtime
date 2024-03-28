@@ -1155,6 +1155,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void Test ()
 			{
+				// Use the IEnumerable to mark the IEnumerable methods
 				GuardInIterator ();
 				StateFlowsAcrossYield ();
 				GuardInAsync ();

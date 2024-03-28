@@ -515,7 +515,7 @@ interface ISOSDacInterface13 : IUnknown
 ]
 interface ISOSDacInterface14 : IUnknown
 {
-    HRESULT GetStaticBaseAddress(CLRDATA_ADDRESS methodTable, BOOL isGCStaticBase, CLRDATA_ADDRESS *address);
-    HRESULT GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS thread, BOOL isGCStaticBase, CLRDATA_ADDRESS *address);
+    HRESULT GetStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
+    HRESULT GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS thread, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
     HRESULT GetMethodTableInitializationFlags(CLRDATA_ADDRESS methodTable, MethodTableInitializationFlags *initializationStatus);
 }

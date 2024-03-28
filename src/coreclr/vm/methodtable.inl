@@ -1078,7 +1078,6 @@ inline DWORD MethodTable::GetOptionalMembersSize()
     return GetEndOffsetOfOptionalMembers() - GetStartOffsetOfOptionalMembers();
 }
 
-
 //==========================================================================================
 inline PTR_BYTE MethodTable::GetNonGCStaticsBasePointer()
 {

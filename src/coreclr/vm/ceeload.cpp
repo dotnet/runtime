@@ -739,11 +739,6 @@ void Module::Destruct()
         delete m_debuggerSpecificData.m_pDynamicILBlobTable;
     }
 
-    if (m_debuggerSpecificData.m_pTemporaryILBlobTable)
-    {
-        delete m_debuggerSpecificData.m_pTemporaryILBlobTable;
-    }
-
     if (m_debuggerSpecificData.m_pILOffsetMappingTable)
     {
         for (ILOffsetMappingTable::Iterator pCurElem = m_debuggerSpecificData.m_pILOffsetMappingTable->Begin(),
@@ -868,13 +863,10 @@ void Module::InitializeDynamicILCrst()
 //     Input:
 //         token        method token
 //         blobAddress  address of the start of the IL blob address, including the header
-//         fTemporaryOverride
-//                      is this a permanent override that should go in the
-//                      DynamicILBlobTable, or a temporary one?
 //     Output: not explicit, but if the pair was not already in the table it will be added.
 //             Does not add duplicate tokens to the table.
 
-void Module::SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverride)
+void Module::SetDynamicIL(mdToken token, TADDR blobAddress)
 {
     DynamicILBlobEntry entry = {mdToken(token), TADDR(blobAddress)};
 
@@ -887,16 +879,12 @@ void Module::SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverr
 
     CrstHolder ch(m_debuggerSpecificData.m_pDynamicILCrst);
 
-    // Figure out which table to fill in
-    PTR_DynamicILBlobTable &table(fTemporaryOverride ? m_debuggerSpecificData.m_pTemporaryILBlobTable
-                                                     : m_debuggerSpecificData.m_pDynamicILBlobTable);
-
     // Lazily allocate the hash table.
-    if (table == NULL)
+    if (m_debuggerSpecificData.m_pDynamicILBlobTable == NULL)
     {
-        table = PTR_DynamicILBlobTable(new DynamicILBlobTable);
+        m_debuggerSpecificData.m_pDynamicILBlobTable = PTR_DynamicILBlobTable(new DynamicILBlobTable);
     }
-    table->AddOrReplace(entry);
+    m_debuggerSpecificData.m_pDynamicILBlobTable->AddOrReplace(entry);
 }
 
 #endif // !DACCESS_COMPILE
@@ -908,7 +896,7 @@ void Module::SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverr
 //         fAllowTemporary also check the temporary overrides
 // Return Value: starting (target) address of the IL blob corresponding to the input token
 
-TADDR Module::GetDynamicIL(mdToken token, BOOL fAllowTemporary)
+TADDR Module::GetDynamicIL(mdToken token)
 {
     SUPPORTS_DAC;
 
@@ -923,19 +911,8 @@ TADDR Module::GetDynamicIL(mdToken token, BOOL fAllowTemporary)
     CrstHolder ch(m_debuggerSpecificData.m_pDynamicILCrst);
 #endif
 
-    // Both hash tables are lazily allocated, so if they're NULL
+    // The hash table is lazily allocated, so if it is NULL
     // then we have no IL blobs
-
-    if (fAllowTemporary && m_debuggerSpecificData.m_pTemporaryILBlobTable != NULL)
-    {
-        DynamicILBlobEntry entry = m_debuggerSpecificData.m_pTemporaryILBlobTable->Lookup(token);
-
-        // Only return a value if the lookup succeeded
-        if (!DynamicILBlobTraits::IsNull(entry))
-        {
-            return entry.m_il;
-        }
-    }
 
     if (m_debuggerSpecificData.m_pDynamicILBlobTable == NULL)
     {

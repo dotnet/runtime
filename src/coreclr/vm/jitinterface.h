@@ -691,9 +691,7 @@ public:
         m_CodeHeaderRW = NULL;
 
         m_codeWriteBufferSize = 0;
-#ifdef USE_INDIRECT_CODEHEADER
         m_pRealCodeHeader = NULL;
-#endif
         m_pCodeHeap = NULL;
 
         if (m_pOffsetMapping != NULL)
@@ -804,9 +802,7 @@ public:
           m_CodeHeader(NULL),
           m_CodeHeaderRW(NULL),
           m_codeWriteBufferSize(0),
-#ifdef USE_INDIRECT_CODEHEADER
           m_pRealCodeHeader(NULL),
-#endif
           m_pCodeHeap(NULL),
           m_ILHeader(header),
 #ifdef FEATURE_EH_FUNCLETS
@@ -954,9 +950,7 @@ protected :
     CodeHeader*             m_CodeHeader;   // descriptor for JITTED code - read/execute address
     CodeHeader*             m_CodeHeaderRW; // descriptor for JITTED code - code write scratch buffer address
     size_t                  m_codeWriteBufferSize;
-#ifdef USE_INDIRECT_CODEHEADER
     BYTE*                   m_pRealCodeHeader;
-#endif
     HeapList*               m_pCodeHeap;
     COR_ILMETHOD_DECODER *  m_ILHeader;     // the code header as exist in the file
 #ifdef FEATURE_EH_FUNCLETS

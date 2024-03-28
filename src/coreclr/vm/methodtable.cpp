@@ -366,7 +366,6 @@ BOOL MethodTable::ValidateWithPossibleAV()
         (pEEClass && (pEEClass->GetMethodTableWithPossibleAV()->GetClassWithPossibleAV() == pEEClass))));
 }
 
-#ifndef DACCESS_COMPILE
 
 //==========================================================================================
 // mark as COM object type (System.__ComObject and types deriving from it)

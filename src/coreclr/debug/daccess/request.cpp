@@ -4603,7 +4603,7 @@ HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDe
         pILData->rejitID = static_cast<ULONG>(pCodeVersionManager->GetActiveILCodeVersion(pMD).GetVersionId());
     }
 
-    TADDR pDynamicIL = pMD->GetModule()->GetDynamicIL(pMD->GetMemberDef(), TRUE);
+    TADDR pDynamicIL = pMD->GetModule()->GetDynamicIL(pMD->GetMemberDef());
     if (pDynamicIL != NULL)
     {
         pILData->type = DacpProfilerILData::ILModified;
@@ -4645,7 +4645,7 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
             {
                 PTR_MethodDesc pMD = dac_cast<PTR_MethodDesc>(itMethods.GetMethodDesc());
 
-                TADDR pDynamicIL = pModule->GetDynamicIL(pMD->GetMemberDef(), TRUE);
+                TADDR pDynamicIL = pModule->GetDynamicIL(pMD->GetMemberDef());
                 ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
                 if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL() || pDynamicIL != NULL)
                 {
@@ -5348,9 +5348,9 @@ HRESULT ClrDataAccess::LockedFlush()
     return hr;
 }
 
-HRESULT STDMETHODCALLTYPE ClrDataAccess::GetStaticBaseAddress(CLRDATA_ADDRESS methodTable, BOOL isGCStaticBase, CLRDATA_ADDRESS *address)
+HRESULT STDMETHODCALLTYPE ClrDataAccess::GetStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress)
 {
-    if (!address)
+    if (!nonGCStaticsAddress && !GCStaticsAddress)
         return E_POINTER;
     
     if (!methodTable)
@@ -5367,17 +5367,13 @@ HRESULT STDMETHODCALLTYPE ClrDataAccess::GetStaticBaseAddress(CLRDATA_ADDRESS me
     }
     else
     {
-        if (!mTable->IsDynamicStatics())
+        if (GCStaticsAddress != NULL)
         {
-            *address = 0;
+            *GCStaticsAddress = PTR_CDADDR(mTable->GetGCStaticsBasePointer());
         }
-        if (isGCStaticBase)
+        if (nonGCStaticsAddress != NULL)
         {
-            *address = PTR_CDADDR(mTable->GetGCStaticsBasePointer());
-        }
-        else
-        {
-            *address = PTR_CDADDR(mTable->GetNonGCStaticsBasePointer());
+            *nonGCStaticsAddress = PTR_CDADDR(mTable->GetNonGCStaticsBasePointer());
         }
     }
 
@@ -5386,9 +5382,9 @@ HRESULT STDMETHODCALLTYPE ClrDataAccess::GetStaticBaseAddress(CLRDATA_ADDRESS me
 }
 
 
-HRESULT STDMETHODCALLTYPE ClrDataAccess::GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS threadPtr, BOOL isGCStaticBase, CLRDATA_ADDRESS *address)
+HRESULT STDMETHODCALLTYPE ClrDataAccess::GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS threadPtr, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress)
 {
-    if (!address)
+    if (!nonGCStaticsAddress && !GCStaticsAddress)
         return E_POINTER;
     
     if (!methodTable)
@@ -5412,15 +5408,25 @@ HRESULT STDMETHODCALLTYPE ClrDataAccess::GetThreadStaticBaseAddress(CLRDATA_ADDR
     {
         if (mTable->GetClass()->GetNumThreadStaticFields() == 0)
         {
-            *address = 0;
-        }
-        if (isGCStaticBase)
-        {
-            *address = PTR_CDADDR(mTable->GetGCThreadStaticsBasePointer(thread));
+            if (GCStaticsAddress != NULL)
+            {
+                *GCStaticsAddress = 0;
+            }
+            if (nonGCStaticsAddress != NULL)
+            {
+                *nonGCStaticsAddress = 0;
+            }
         }
         else
         {
-            *address = PTR_CDADDR(mTable->GetNonGCThreadStaticsBasePointer(thread));
+            if (GCStaticsAddress != NULL)
+            {
+                *GCStaticsAddress = PTR_CDADDR(mTable->GetGCThreadStaticsBasePointer(thread));
+            }
+            if (nonGCStaticsAddress != NULL)
+            {
+                *nonGCStaticsAddress = PTR_CDADDR(mTable->GetNonGCThreadStaticsBasePointer(thread));
+            }
         }
     }
 
@@ -5448,7 +5454,7 @@ HRESULT STDMETHODCALLTYPE ClrDataAccess::GetMethodTableInitializationFlags(CLRDA
     else
     {
         *initializationStatus = mTable->IsClassInited() ? MethodTableInitialized : (MethodTableInitializationFlags)0;
-        if (mTable->GetAuxiliaryData()->IsInitError())
+        if (mTable->IsInitError())
         {
             *initializationStatus = (MethodTableInitializationFlags)(*initializationStatus | MethodTableInitializationFailed);
         }

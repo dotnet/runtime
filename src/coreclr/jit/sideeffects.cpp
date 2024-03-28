@@ -484,22 +484,17 @@ void SideEffectSet::AddNode(Compiler* compiler, GenTree* node)
 //    Returns true if the side effects in this set interfere with the
 //    given side effect flags and alias information.
 //
-//    Two side effect sets interfere under any of the following
-//    conditions:
+//    Two side effect sets interfere under any of the following conditions:
 //    - If the analysis is strict, and:
-//        - One set contains a compiler barrier and the other set contains a global reference, or
+//        - One set contains a compiler barrier and the other set contains a global reference or compiler barrier, or
 //        - Both sets produce an exception
 //    - Whether or not the analysis is strict:
-//        - One set produces an exception and the other set contains a
-//          write
-//        - One set's reads and writes interfere with the other set's
-//          reads and writes
+//        - One set produces an exception and the other set contains a write
+//        - One set's reads and writes interfere with the other set's reads and writes
 //
 // Arguments:
-//    otherSideEffectFlags - The side effect flags for the other side
-//                           effect set.
-//    otherAliasInfo - The alias information for the other side effect
-//                     set.
+//    otherSideEffectFlags - The side effect flags for the other side effect set.
+//    otherAliasInfo - The alias information for the other side effect set.
 //    strict - True if the analysis should be strict as described above.
 //
 template <typename TOtherAliasInfo>
@@ -514,12 +509,14 @@ bool SideEffectSet::InterferesWith(unsigned               otherSideEffectFlags,
     {
         // If either set contains a compiler barrier, and the other set contains a global reference,
         // the sets interfere.
-        if (((m_sideEffectFlags & GTF_ORDER_SIDEEFF) != 0) && ((otherSideEffectFlags & GTF_GLOB_REF) != 0))
+        if (((m_sideEffectFlags & GTF_ORDER_SIDEEFF) != 0) &&
+            ((otherSideEffectFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
         {
             return true;
         }
 
-        if (((otherSideEffectFlags & GTF_ORDER_SIDEEFF) != 0) && ((m_sideEffectFlags & GTF_GLOB_REF) != 0))
+        if (((otherSideEffectFlags & GTF_ORDER_SIDEEFF) != 0) &&
+            ((m_sideEffectFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
         {
             return true;
         }

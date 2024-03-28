@@ -707,11 +707,7 @@ namespace Internal.IL
                     _dependencies.Add(_factory.InterfaceDispatchCell(method), reason);
                 }
             }
-            else if (_compilation.HasFixedSlotVTable(method.OwningType))
-            {
-                // No dependencies: virtual call through the vtable
-            }
-            else
+            else if (_compilation.NeedsSlotUseTracking(method.OwningType))
             {
                 MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
                         targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
@@ -1224,7 +1220,7 @@ namespace Internal.IL
                     break;
                 case ILOpcode.mul_ovf:
                 case ILOpcode.mul_ovf_un:
-                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    if (_compilation.TypeSystemContext.Target.PointerSize == 4)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LMulOfv), "_lmulovf");
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULMulOvf), "_ulmulovf");
@@ -1244,6 +1240,10 @@ namespace Internal.IL
                     else if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
+                        if (opcode == ILOpcode.div)
+                        {
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
+                        }
                     }
                     break;
                 case ILOpcode.rem:
@@ -1258,7 +1258,14 @@ namespace Internal.IL
                     else if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
+                        if (opcode == ILOpcode.rem)
+                        {
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
+                        }
                     }
+
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.DblRem), "rem");
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.FltRem), "rem");
                     break;
             }
         }
