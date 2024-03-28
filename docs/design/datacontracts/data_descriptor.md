@@ -154,7 +154,7 @@ The global values will be in an array, with each value described by a dictionary
 
 * `"name": "global value name"` the name of the global value
 * `"type": "type name"` the type of the global value
-* optional `"value": VALUE | { "indirect": int } | "unknown"` the value of the global value, or an offset in an auxiliary array containing the value or "unknown".
+* optional `"value": VALUE | [ int ] | "unknown"` the value of the global value, or an offset in an auxiliary array containing the value or "unknown".
 
 Note that the logical descriptor does not contain "unknown" values: it is expected that the
 in-memory data descriptor will augment the baseline with a known offset for all fields in the
@@ -167,8 +167,9 @@ of the type of the global value.
 For pointer and nuint globals, the value may be assumed to fit in a 64-bit unsigned integer.  For
 nint globals, the value may be assumed to fit in a 64-bit signed integer.
 
-If the value is given as `{"indirect": int}` then the value is stored in an auxiliary array that is
-part of the data contract descriptor.  Only in-memory data descriptors may have indirect values; baseline data descriptors may not have indirect values.
+If the value is given as a single-element array `[ int ]` then the value is stored in an auxiliary
+array that is part of the data contract descriptor.  Only in-memory data descriptors may have
+indirect values; baseline data descriptors may not have indirect values.
 
 Rationale: This allows tooling to generate the in-memory data descriptor as a single constant
 string.  For pointers, the address can be stored at a known offset in an in-proc
@@ -212,6 +213,7 @@ This is an example of a baseline descriptor for a 64-bit architecture. Suppose i
   ],
   "globals": [
     { "name": "FEATURE_EH_FUNCLETS", "type": "uint8", "value": "0" }, // baseline defaults value to 0
+    { "name": "FEATURE_COMINTEROP", "type", "uint8", "value": "1"},
     { "name": "s_pThreadStore", "type": "pointer" } // no baseline value
   ]
 }
@@ -241,7 +243,8 @@ The following is an example of an in-memory descriptor that references the above
     }
   ],
   "globals": [
-    { "name": "s_pThreadStore", "value": { "indirect": 0 } }
+    { "name": "FEATURE_COMINTEROP", "value": "0"},
+    { "name": "s_pThreadStore", "value": [ 0 ] } // indirect from aux data offset 0
   ]
 }
 ```
@@ -262,5 +265,12 @@ And the globals will be:
 
 | Name                | Type    | Value      |
 | ------------------- | ------- | ---------- |
+| FEATURE_COMINTEROP  | uint8   | 0          |
 | FEATURE_EH_FUNCLETS | uint8   | 0          |
 | s_pThreadStore      | pointer | 0x0100ffe0 |
+
+The `FEATURE_EH_FUNCLETS` global's value comes from the baseline - not the in-memory data
+descriptor.  By contrast, `FEATUER_COMINTEROP` comes from the in-memory data descriptor - with the
+value embedded directly in the json since it is known at build time and does not vary.  Finally the
+value of the pointer `s_pThreadStore` comes from the auxiliary vector's offset 0 since it is an
+execution-time value that is only known to the running process.
