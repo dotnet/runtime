@@ -209,9 +209,7 @@ DN_SIMDHASH_REHASH_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, dn_simdhash_buf
 
 // TODO: Store this by-reference instead of inline in the hash?
 dn_simdhash_vtable_t DN_SIMDHASH_T_VTABLE(DN_SIMDHASH_T) = {
-    // HACK: Cast these fn pointers to (void *), because their signatures
-    //  aren't exact matches, but they're compatible.
-    (void *)DN_SIMDHASH_REHASH_INTERNAL(DN_SIMDHASH_T),
+    DN_SIMDHASH_REHASH_INTERNAL(DN_SIMDHASH_T),
 };
 
 // While we've inlined these constants into the specialized code generated above,
