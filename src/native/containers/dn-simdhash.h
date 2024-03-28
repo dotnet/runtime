@@ -80,11 +80,14 @@ typedef struct {
     uint32_t bucket_capacity, bucket_size_bytes, key_size, value_size;
 } dn_simdhash_meta_t;
 
+typedef struct dn_simdhash_vtable_t;
+
 typedef struct {
     // internal state
     uint32_t count;
     dn_simdhash_meta_t meta;
     dn_simdhash_buffers_t buffers;
+    dn_simdhash_vtable_t vtable;
 } dn_simdhash_t;
 
 typedef enum {
@@ -92,6 +95,13 @@ typedef enum {
     DN_SIMDHASH_INSERT_NEED_TO_GROW,
     DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT,
 } dn_simdhash_insert_result;
+
+typedef struct {
+    void* *(*find_value) (dn_simdhash_t *hash, void *key_ptr, uint32_t key_hash);
+    dn_simdhash_insert_result *(*try_insert) (dn_simdhash_t *hash, void *key_ptr, void *value_ptr, uint32_t key_hash, uint8_t ensure_not_present);
+    void *(*rehash) (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buffers);
+    uint32_t *(*compute_hash) (void *key_ptr);
+} dn_simdhash_vtable_t;
 
 // These helpers use .values instead of .vec to avoid generating unnecessary
 //  vector loads/stores. Operations that touch these values may not need vectorization
