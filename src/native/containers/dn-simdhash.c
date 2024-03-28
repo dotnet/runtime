@@ -129,13 +129,14 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
     bucket_count = dn_simdhash_next_power_of_two(bucket_count);
     uint32_t value_count = bucket_count * hash->meta.bucket_capacity;
 
+    dn_simdhash_buffers_t result = { 0, };
     if (bucket_count <= hash->buffers.buckets_length) {
         DN_ASSERT(value_count <= hash->buffers.values_length);
-        return;
+        return result;
     }
 
     // Store old buffers so caller can rehash and then free them
-    dn_simdhash_buffers_t result = hash->buffers;
+    result = hash->buffers;
 
     hash->buffers.buckets_length = bucket_count;
     hash->buffers.values_length = value_count;
@@ -148,7 +149,87 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 void
 dn_simdhash_clear (dn_simdhash_t *hash)
 {
+    DN_ASSERT(hash);
     hash->count = 0;
     memset(hash->buffers.buckets, 0, hash->buffers.buckets_length * hash->meta.bucket_size_bytes);
     memset(hash->buffers.values, 0, hash->buffers.values_length * hash->meta.value_size);
+}
+
+uint32_t
+dn_simdhash_capacity (dn_simdhash_t *hash)
+{
+    DN_ASSERT(hash);
+    return hash->buffers.buckets_length * hash->meta.bucket_capacity;
+}
+
+uint32_t
+dn_simdhash_count (dn_simdhash_t *hash)
+{
+    DN_ASSERT(hash);
+    return hash->count;
+}
+
+void
+dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity)
+{
+    dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1);
+    if (old_buffers.buckets) {
+        hash->vtable.rehash(hash, old_buffers);
+        dn_simdhash_free_buffers(old_buffers);
+    }
+}
+
+uint8_t
+dn_simdhash_try_add (dn_simdhash_t *hash, void *key, void *value)
+{
+    uint32_t key_hash = hash->vtable.compute_hash(key);
+retry:
+    dn_simdhash_insert_result ok = hash->vtable.try_insert(hash, key, value, key_hash, true);
+
+    switch (ok) {
+        case DN_SIMDHASH_INSERT_OK:
+            return 1;
+        case DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT:
+            return 0;
+        case DN_SIMDHASH_INSERT_NEED_TO_GROW:
+            // We may have already grown once and still not had enough space, due to collisions
+            //  so we want to ensure we increase the *capacity* beyond its current value, not
+            //  ensure a capacity of count + 1
+            dn_simdhash_ensure_capacity(hash, dn_simdhash_capacity(hash) + 1);
+            goto retry;
+        default:
+            DN_ASSERT(0);
+            return 0;
+    }
+}
+
+void *
+dn_simdhash_find_value_by_key (dn_simdhash_t *hash, void *key)
+{
+    uint32_t key_hash = hash->vtable.compute_hash(key);
+    return hash->vtable.find_value(hash, key, key_hash);
+}
+
+void *
+dn_simdhash_find_value_by_key_with_hash (dn_simdhash_t *hash, void *key, uint32_t key_hash)
+{
+    return hash->vtable.find_value(hash, key, key_hash);
+}
+
+void
+dn_simdhash_foreach (dn_simdhash_t *hash, dn_simdhash_foreach_func func, void *user_data)
+{
+    uint8_t *bucket = hash->buffers.buckets,
+        *values = hash->buffers.values;
+    uint32_t values_step = hash->meta.value_size * hash->meta.bucket_capacity;
+
+    for (
+        uint32_t i = 0; i < hash->buffers.buckets_length;
+        i++, bucket += hash->meta.bucket_size_bytes, values += values_step
+    ) {
+        uint32_t count = dn_simdhash_bucket_count(*(dn_simdhash_suffixes *)bucket);
+        uint8_t *keys = bucket + sizeof(dn_simdhash_suffixes);
+        for (uint32_t j = 0; j < count; j++)
+            func(keys + (j * hash->meta.key_size), values + (j * hash->meta.value_size), user_data);
+    }
 }
