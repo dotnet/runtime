@@ -211,8 +211,6 @@ void ExInfo::UnwindExInfo(VOID* limit)
         pPrevNestedInfo->GetWatsonBucketTracker()->ClearWatsonBucketDetails();
         #endif // TARGET_UNIX
 
-        pPrevNestedInfo->m_StackTraceInfo.FreeStackTrace();
-
         #ifdef DEBUGGING_SUPPORTED
         if (g_pDebugInterface != NULL)
         {
@@ -230,9 +228,6 @@ void ExInfo::UnwindExInfo(VOID* limit)
 
         pPrevNestedInfo = pPrev;
     }
-
-    // either clear the one we're about to copy over or the topmost one
-    m_StackTraceInfo.FreeStackTrace();
 
     if (pPrevNestedInfo)
     {
@@ -329,7 +324,6 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     m_pMDToReportFunctionLeave(NULL),
     m_lastReportedFunclet({0, 0, 0})
 {
-    m_StackTraceInfo.AllocateStackTrace();
     pThread->GetExceptionState()->m_pCurrentTracker = this;
     m_pInitialFrame = pThread->GetFrame();
     if (exceptionKind == ExKind::HardwareFault)
@@ -367,7 +361,6 @@ void ExInfo::ReleaseResources()
         }
         m_hThrowable = NULL;
     }
-    m_StackTraceInfo.FreeStackTrace();
 
 #ifndef TARGET_UNIX
     // Clear any held Watson Bucketing details

@@ -150,23 +150,23 @@ class AsmOffsets
     public const int SIZEOF__EHEnum = 0x20;
     public const int OFFSETOF__StackFrameIterator__m_pRegDisplay = 0x228;
     public const int OFFSETOF__ExInfo__m_pPrevExInfo = 0;
-    public const int OFFSETOF__ExInfo__m_pExContext = 0xc0;
-    public const int OFFSETOF__ExInfo__m_exception = 0xc8;
-    public const int OFFSETOF__ExInfo__m_kind = 0xd0;
-    public const int OFFSETOF__ExInfo__m_passNumber = 0xd1;
-    public const int OFFSETOF__ExInfo__m_idxCurClause = 0xd4;
-    public const int OFFSETOF__ExInfo__m_frameIter = 0xd8;
+    public const int OFFSETOF__ExInfo__m_pExContext = 0xb0;
+    public const int OFFSETOF__ExInfo__m_exception = 0xb8;
+    public const int OFFSETOF__ExInfo__m_kind = 0xc0;
+    public const int OFFSETOF__ExInfo__m_passNumber = 0xc1;
+    public const int OFFSETOF__ExInfo__m_idxCurClause = 0xc4;
+    public const int OFFSETOF__ExInfo__m_frameIter = 0xc8;
     public const int OFFSETOF__ExInfo__m_notifyDebuggerSP = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator;
 #else // TARGET_64BIT
     public const int SIZEOF__EHEnum = 0x10;
     public const int OFFSETOF__StackFrameIterator__m_pRegDisplay = 0x218;
     public const int OFFSETOF__ExInfo__m_pPrevExInfo = 0;
-    public const int OFFSETOF__ExInfo__m_pExContext = 0x70;
-    public const int OFFSETOF__ExInfo__m_exception = 0x74;
-    public const int OFFSETOF__ExInfo__m_kind = 0x78;
-    public const int OFFSETOF__ExInfo__m_passNumber = 0x79;
-    public const int OFFSETOF__ExInfo__m_idxCurClause = 0x7C;
-    public const int OFFSETOF__ExInfo__m_frameIter = 0x80;
+    public const int OFFSETOF__ExInfo__m_pExContext = 0x60;
+    public const int OFFSETOF__ExInfo__m_exception = 0x64;
+    public const int OFFSETOF__ExInfo__m_kind = 0x68;
+    public const int OFFSETOF__ExInfo__m_passNumber = 0x69;
+    public const int OFFSETOF__ExInfo__m_idxCurClause = 0x6c;
+    public const int OFFSETOF__ExInfo__m_frameIter = 0x70;
     public const int OFFSETOF__ExInfo__m_notifyDebuggerSP = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator;
 #endif // TARGET_64BIT
 

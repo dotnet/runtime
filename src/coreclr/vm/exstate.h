@@ -59,8 +59,6 @@ class ThreadExceptionState
 
 public:
 
-    void FreeAllStackTraces();
-
 #ifdef _DEBUG
     typedef enum
     {

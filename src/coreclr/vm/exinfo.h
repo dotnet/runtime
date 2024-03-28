@@ -169,6 +169,12 @@ enum RhEHClauseKind
     RH_EH_CLAUSE_UNUSED = 3,
 };
 
+enum RhEHFrameType
+{
+    RH_EH_FIRST_FRAME = 1,
+    RH_EH_FIRST_RETHROW_FRAME = 2,
+};
+
 struct RhEHClause
 {
     RhEHClauseKind _clauseKind;

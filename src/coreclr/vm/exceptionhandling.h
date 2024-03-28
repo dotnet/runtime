@@ -137,9 +137,6 @@ public:
         m_fDeliveredFirstChanceNotification(FALSE),
         m_ExceptionCode((pExceptionRecord != PTR_NULL) ? pExceptionRecord->ExceptionCode : 0)
     {
-#ifndef DACCESS_COMPILE
-        m_StackTraceInfo.Init();
-#endif //  DACCESS_COMPILE
 #ifndef TARGET_UNIX
         // Init the WatsonBucketTracker
         m_WatsonBucketTracker.Init();
@@ -515,8 +512,6 @@ private:
 
     static bool
         IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC);
-
-    void SaveStackTrace();
 
     inline BOOL CanAllocateMemory()
     {

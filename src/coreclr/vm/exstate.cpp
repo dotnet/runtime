@@ -76,24 +76,6 @@ Thread* ThreadExceptionState::GetMyThread()
 }
 
 
-void ThreadExceptionState::FreeAllStackTraces()
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef FEATURE_EH_FUNCLETS
-    ExceptionTrackerBase* pNode = m_pCurrentTracker;
-#else // FEATURE_EH_FUNCLETS
-    ExInfo*           pNode = &m_currentExInfo;
-#endif // FEATURE_EH_FUNCLETS
-
-    for ( ;
-          pNode != NULL;
-          pNode = pNode->m_pPrevNestedInfo)
-    {
-        pNode->m_StackTraceInfo.FreeStackTrace();
-    }
-}
-
 OBJECTREF ThreadExceptionState::GetThrowable()
 {
     CONTRACTL
