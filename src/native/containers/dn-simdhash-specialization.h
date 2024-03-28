@@ -29,10 +29,16 @@
 
 #define DN_SIMDHASH_BUCKET_T (DN_SIMDHASH_T ## _bucket)
 #define DN_SIMDHASH_T_VTABLE (DN_SIMDHASH_T ## _vtable)
+#define DN_SIMDHASH_T_META (DN_SIMDHASH_T ## _meta)
 #define DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T ## _scan_bucket_internal)
 #define DN_SIMDHASH_FIND_VALUE_INTERNAL (DN_SIMDHASH_T ## _find_value_internal)
 #define DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T ## _try_insert_internal)
 #define DN_SIMDHASH_REHASH_INTERNAL (DN_SIMDHASH_T ## _rehash_internal)
+#define DN_SIMDHASH_COMPUTE_HASH_INTERNAL (DN_SIMDHASH_T ## _compute_hash_internal)
+#define DN_SIMDHASH_NEW (DN_SIMDHASH_T ## _new)
+
+dn_simdhash_t *
+DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator);
 
 typedef struct {
     dn_simdhash_suffixes suffixes;
@@ -155,3 +161,16 @@ dn_simdhash_vtable_t DN_SIMDHASH_T_VTABLE = {
     DN_SIMDHASH_REHASH_INTERNAL,
     DN_SIMDHASH_COMPUTE_HASH_INTERNAL,
 };
+
+dn_simdhash_meta_t DN_SIMDHASH_T_META = {
+    DN_SIMDHASH_BUCKET_CAPACITY,
+    sizeof(DN_SIMDHASH_BUCKET_T),
+    sizeof(DN_SIMDHASH_KEY_T),
+    sizeof(DN_SIMDHASH_VALUE_T),
+};
+
+dn_simdhash_t *
+DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator)
+{
+    return dn_simdhash_new_internal(DN_SIMDHASH_T_META, DN_SIMDHASH_T_VTABLE, capacity, allocator);
+}
