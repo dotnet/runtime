@@ -10,19 +10,8 @@ Here is a quick overview of how to consume published artifacts. Assuming .NET SD
 dotnet workload install wasi-experimental
 ```
 
-This will install workload for building .NET based WASI apps + basic template. For the time being, you will need to separately download a WASI SDK from https://github.com/WebAssembly/wasi-sdk and point an environment variable `WASI_SDK_PATH` or MSBuild property `WasiSdkRoot` to a location where you extract it
-
-```pwsh
-$env:WASI_SDK_PATH="LOCATION_OF_WASI_SDK"
-```
-
-or 
-
-```xml
-<WasiSdkRoot>LOCATION_OF_WASI_SDK</WasiSdkRoot>
-```
-
-With the environment setup, you can create a new .NET application that targets WASI
+This will install workload for building .NET based WASI apps + basic template. 
+Now you can create a new .NET application that targets WASI
 
 ```
 dotnet new wasiconsole
@@ -35,6 +24,17 @@ dotnet run
 ```
 
 The `runtimeconfig.template.json` contains `perHostConfig` section where wasm host's can be configured
+
+### Wasi SDK
+
+The workload for the time being doesn't include Wasi SDK, which is responsible for native compilation. 
+If don't need to modify runtime configuration, you can omit this step, but once get 
+
+```
+error : Could not find wasi-sdk. Either set $(WASI_SDK_PATH), or use workloads to get the sdk. SDK is required for building native files.
+```
+
+You will need to separately download a WASI SDK from https://github.com/WebAssembly/wasi-sdk and point an environment variable `WASI_SDK_PATH` or MSBuild property `WasiSdkRoot` to a location where you extract it.
 
 ### Optional build flags
 
