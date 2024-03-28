@@ -70,7 +70,6 @@ namespace Internal.JitInterface
                     StructFloatFieldInfoFlags type =
                         (category is TypeFlags.Single or TypeFlags.Double ? STRUCT_FLOAT_FIELD_FIRST : (StructFloatFieldInfoFlags)0) |
                         (field.FieldType.GetElementSize().AsInt == TARGET_POINTER_SIZE ? STRUCT_FIRST_FIELD_SIZE_IS8 : (StructFloatFieldInfoFlags)0);
-
                     types[typeIndex++] = type;
                 }
                 else
@@ -78,9 +77,6 @@ namespace Internal.JitInterface
                     return false;
                 }
             }
-
-            if (nFields == 0)
-                return true;
 
             if ((td as MetadataType).HasImpliedRepeatedFields())
             {

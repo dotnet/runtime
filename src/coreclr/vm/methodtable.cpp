@@ -3467,8 +3467,6 @@ static bool FlattenFieldTypes(CORINFO_CLASS_HANDLE cls, StructFloatFieldInfoFlag
     bool isManaged = !th.IsTypeDesc();
     MethodTable* pMT = isManaged ? th.AsMethodTable() : th.AsNativeValueType();
     int nFields = isManaged ? pMT->GetNumIntroducedInstanceFields() : pMT->GetNativeLayoutInfo()->GetNumFields();
-    if (nFields == 0)
-        return true;
 
     // TODO: templatize isManaged and use if constexpr for differences when we migrate to C++17
     // because the logic for both branches is nearly the same.
@@ -3496,7 +3494,6 @@ static bool FlattenFieldTypes(CORINFO_CLASS_HANDLE cls, StructFloatFieldInfoFlag
                 StructFloatFieldInfoFlags retType = StructFloatFieldInfoFlags(
                     (CorTypeInfo::IsFloat_NoThrow(type) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
                     (CorTypeInfo::Size_NoThrow(type) == TARGET_POINTER_SIZE ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0));
-
                 types[typeIndex++] = retType;
             }
             else
@@ -3543,7 +3540,6 @@ static bool FlattenFieldTypes(CORINFO_CLASS_HANDLE cls, StructFloatFieldInfoFlag
                 StructFloatFieldInfoFlags type = StructFloatFieldInfoFlags(
                     (category == NativeFieldCategory::FLOAT ? STRUCT_FLOAT_FIELD_FIRST : 0) |
                     (fields[i].NativeSize() == TARGET_POINTER_SIZE ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0));
-
                 types[typeIndex++] = type;
             }
             else
