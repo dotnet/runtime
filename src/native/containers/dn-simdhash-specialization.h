@@ -97,6 +97,15 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 #endif
 
 static DN_FORCEINLINE(int)
+ctz (uint32_t value)
+{
+	// __builtin_ctz is undefined for 0
+	if (value == 0)
+		return 32;
+	return __builtin_ctz(value);
+}
+
+static DN_FORCEINLINE(int)
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
 	// FIXME: This code is worse because according to gcc, ctz/clz are undefined for 0.
@@ -104,18 +113,12 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 	dn_simdhash_suffixes match_vector;
 	uint32_t msb;
 	match_vector.vec = wasm_i8x16_eq(needle.vec, haystack.vec);
-	msb = wasm_i8x16_bitmask(match_vector.vec);
-	if (!msb)
-		return 32;
-	return __builtin_ctz(msb);
+	return ctz(wasm_i8x16_bitmask(match_vector.vec));
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
 	dn_simdhash_suffixes match_vector;
 	uint32_t msb;
 	match_vector.vec = _mm_cmpeq_epi8(needle.vec, haystack.vec);
-	msb = _mm_movemask_epi8(match_vector.vec);
-	if (!msb)
-		return 32;
-	return __builtin_ctz(msb);
+	return ctz(_mm_movemask_epi8(match_vector.vec));
 #elif defined(__ARM_NEON)
 	dn_simdhash_suffixes match_vector;
 	// Completely untested.
@@ -131,9 +134,7 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 	masked.vec = vandq_u8(match_vector.vec, byte_mask.vec);
 	msb.b[0] = vaddv_u8(vget_low_u8(masked.vec));
 	msb.b[1] = vaddv_u8(vget_high_u8(masked.vec));
-	if (!msb.u)
-		return 32;
-	return __builtin_ctz(msb.u);
+	return ctz(msb.u);
 #else
 	// Completely untested.
 	for (uint32_t i = 0, c = dn_simdhash_bucket_count(haystack); i < c; i++)
