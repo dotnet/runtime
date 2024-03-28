@@ -1002,7 +1002,7 @@ namespace System
                     hash4 = (BitOperations.RotateLeft(hash4, 5) + hash4) ^ (p3 | NormalizeToLowercase);
                     ptr += 4;
                 }
-                while (length > 2)
+                while (length > 4)
                 {
                     uint p0 = ptr[0];
                     uint p1 = ptr[1];
@@ -1054,22 +1054,37 @@ namespace System
                 const uint NormalizeToLowercase = 0x0020_0020u;
                 uint hash1 = (5381 << 16) + 5381;
                 uint hash2 = hash1;
+                uint hash3 = hash1;
+                uint hash4 = hash1;
 
                 // Duplicate the main loop, can be removed once JIT gets "Loop Unswitching" optimization
                 fixed (char* src = scratch)
                 {
                     uint* ptr = (uint*)src;
-                    while (length > 2)
+                    while (length > 8)
                     {
-                        length -= 4;
+                        length -= 8;
+                        // hashVector = (hashVector + RotateLeft(hashVector, 5)) ^ srcVec;
                         hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (ptr[0] | NormalizeToLowercase);
                         hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (ptr[1] | NormalizeToLowercase);
+                        hash3 = (BitOperations.RotateLeft(hash3, 5) + hash3) ^ (ptr[2] | NormalizeToLowercase);
+                        hash4 = (BitOperations.RotateLeft(hash4, 5) + hash4) ^ (ptr[3] | NormalizeToLowercase);
+                        ptr += 4;
+                    }
+
+                    while (length > 4)
+                    {
+                        length -= 4;
+                        hash3 = (BitOperations.RotateLeft(hash3, 5) + hash3) ^ (ptr[0] | NormalizeToLowercase);
+                        hash4 = (BitOperations.RotateLeft(hash4, 5) + hash4) ^ (ptr[1] | NormalizeToLowercase);
                         ptr += 2;
                     }
 
-                    if (length > 0)
+                    while (length > 0)
                     {
-                        hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (ptr[0] | NormalizeToLowercase);
+                        length -= 2;
+                        hash4 = (BitOperations.RotateLeft(hash4, 5) + hash4) ^ (ptr[0] | NormalizeToLowercase);
+                        ptr += 1;
                     }
                 }
 
@@ -1077,7 +1092,8 @@ namespace System
                 {
                     ArrayPool<char>.Shared.Return(borrowedArr);
                 }
-                return (int)(hash1 + (hash2 * 1566083941));
+                uint resOnSlowPath = (((BitOperations.RotateLeft(hash1, 5) + hash1)) ^ hash3) + 1566083941 * (((BitOperations.RotateLeft(hash2, 5) + hash2)) ^ hash4);
+                return (int)resOnSlowPath;
             }
         }
 
