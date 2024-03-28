@@ -385,10 +385,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     public class NamedCall
     {
         public string Name { get; set; }
+        public bool IsBlocking { get; set; }
         public delegate void Method(CancellationToken ct);
         public Method Call { get; set; }
 
         override public string ToString() => Name;
     }
-
 }
