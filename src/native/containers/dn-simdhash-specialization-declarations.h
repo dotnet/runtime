@@ -19,6 +19,8 @@
 #define DN_SIMDHASH_TRY_ADD_WITH_HASH(t) DN_SIMDHASH_GLUE(t,_try_add_with_hash)
 #define DN_SIMDHASH_TRY_GET_VALUE(t) DN_SIMDHASH_GLUE(t,_try_get_value)
 #define DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(t) DN_SIMDHASH_GLUE(t,_try_get_value_with_hash)
+#define DN_SIMDHASH_TRY_REMOVE(t) DN_SIMDHASH_GLUE(t,_try_remove)
+#define DN_SIMDHASH_TRY_REMOVE_WITH_HASH(t) DN_SIMDHASH_GLUE(t,_try_remove_with_hash)
 
 dn_simdhash_t *
 DN_SIMDHASH_NEW(DN_SIMDHASH_T) (uint32_t capacity, dn_allocator_t *allocator);
@@ -34,3 +36,9 @@ DN_SIMDHASH_TRY_GET_VALUE(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T
 
 uint8_t
 DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T *result);
+
+uint8_t
+DN_SIMDHASH_TRY_REMOVE(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key);
+
+uint8_t
+DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash);

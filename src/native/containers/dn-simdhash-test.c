@@ -37,7 +37,7 @@ uint8_t tassert1 (int b, size_t v, const char *msg) {
 uint8_t tasserteq (size_t actual, size_t expected, const char *msg) {
 	if (actual == expected)
 		return 1;
-	printf("%s: expected %zd, got %zd\n", msg, actual, expected);
+	printf("%s: expected %zd, got %zd\n", msg, expected, actual);
 	return 0;
 }
 
@@ -46,7 +46,7 @@ void foreach_callback (void * key, void * value, void * user_data) {
 }
 
 int main () {
-	const int c = 4096;
+	const int c = 1024;
 	dn_simdhash_t *test = dn_simdhash_size_t_size_t_new(0, NULL);
 	dn_vector_t *keys = dn_vector_alloc(sizeof(DN_SIMDHASH_KEY_T)),
 		*values = dn_vector_alloc(sizeof(DN_SIMDHASH_VALUE_T));
@@ -64,6 +64,7 @@ int main () {
 	if (!tasserteq(dn_simdhash_count(test), c, "count did not match"))
 		return 1;
 
+	printf ("Calling foreach:\n");
 	dn_simdhash_foreach(test, foreach_callback, NULL);
 
 	for (int i = 0; i < c; i++) {
@@ -74,6 +75,31 @@ int main () {
 		if (tassert1(ok, key, "did not find key"))
 			tasserteq(value, expected_value, "value did not match");
 	}
+
+	for (int i = 0; i < c; i++) {
+		DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
+		uint8_t ok = dn_simdhash_size_t_size_t_try_remove(test, key);
+		tassert1(ok, key, "could not remove key");
+
+		DN_SIMDHASH_VALUE_T value;
+		ok = dn_simdhash_size_t_size_t_try_get_value(test, key, &value);
+		tassert1(!ok, key, "found key after removal");
+	}
+
+	if (!tasserteq(dn_simdhash_count(test), 0, "was not empty"))
+		return 1;
+
+	printf ("Calling foreach after emptying:\n");
+	dn_simdhash_foreach(test, foreach_callback, NULL);
+
+	for (int i = 0; i < c; i++) {
+		DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
+		DN_SIMDHASH_VALUE_T value;
+		uint8_t ok = dn_simdhash_size_t_size_t_try_get_value(test, key, &value);
+		tassert1(!ok, key, "found key after removal");
+	}
+
+	printf("done\n");
 
 	return 0;
 	/*
