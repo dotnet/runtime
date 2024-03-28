@@ -40,99 +40,99 @@ typedef int8_t dn_i8x16 __attribute__ ((vector_size (DN_SIMDHASH_VECTOR_WIDTH)))
 //  and in some cases it is profitable to do a single-byte memory load/store instead of
 //  a full vector load/store, so we expose both layouts as a union
 typedef union {
-    dn_u8x16 vec;
-    uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
+	dn_u8x16 vec;
+	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
 } dn_simdhash_suffixes;
 
 static DN_FORCEINLINE(uint32_t)
 dn_simdhash_next_power_of_two (uint32_t value) {
-    if (value < 2)
-        return 2;
-    return 1u << (32 - __builtin_clz (value - 1));
+	if (value < 2)
+		return 2;
+	return 1u << (32 - __builtin_clz (value - 1));
 }
 
 DN_FORCEINLINE(dn_simdhash_suffixes)
 dn_simdhash_build_search_vector (uint8_t needle)
 {
-    // this produces a splat and then .const, .and in wasm, and the other architectures are fine too
-    dn_u8x16 needles = {
-        needle, needle, needle, needle, needle, needle, needle, needle,
-        needle, needle, needle, needle, needle, needle, needle, needle
-    };
-    dn_u8x16 mask = {
-        ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0,
-        ~0, ~0, ~0, ~0, ~0, ~0, 0, 0
-    };
-    dn_simdhash_suffixes result;
-    result.vec = needles & mask;
-    return result;
+	// this produces a splat and then .const, .and in wasm, and the other architectures are fine too
+	dn_u8x16 needles = {
+		needle, needle, needle, needle, needle, needle, needle, needle,
+		needle, needle, needle, needle, needle, needle, needle, needle
+	};
+	dn_u8x16 mask = {
+		~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0,
+		~0, ~0, ~0, ~0, ~0, ~0, 0, 0
+	};
+	dn_simdhash_suffixes result;
+	result.vec = needles & mask;
+	return result;
 }
 
 #else // __clang__ || __GNUC__
 
 typedef struct {
-    uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
+	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
 } dn_simdhash_suffixes;
 
 static uint32_t
 dn_simdhash_next_power_of_two (uint32_t value) {
-    if (value < 2)
-        return 2;
-    value--;
-    value |= value >> 1;
-    value |= value >> 2;
-    value |= value >> 4;
-    value |= value >> 8;
-    value |= value >> 16;
-    value++;
-    return value;
+	if (value < 2)
+		return 2;
+	value--;
+	value |= value >> 1;
+	value |= value >> 2;
+	value |= value >> 4;
+	value |= value >> 8;
+	value |= value >> 16;
+	value++;
+	return value;
 }
 
 DN_FORCEINLINE(dn_simdhash_suffixes)
 dn_simdhash_build_search_vector (uint8_t needle)
 {
-    dn_simdhash_suffixes result;
-    for (int i = 0; i < DN_SIMDHASH_VECTOR_WIDTH; i++)
-        result.values[i] = (i >= DN_SIMDHASH_MAX_BUCKET_CAPACITY) ? 0 : needle;
-    return result;
+	dn_simdhash_suffixes result;
+	for (int i = 0; i < DN_SIMDHASH_VECTOR_WIDTH; i++)
+		result.values[i] = (i >= DN_SIMDHASH_MAX_BUCKET_CAPACITY) ? 0 : needle;
+	return result;
 }
 
 #endif // __clang__ || __GNUC__
 
 typedef struct dn_simdhash_buffers_t {
-    // sizes of current allocations in items (not bytes)
-    // so values_length should == (buckets_length * bucket_capacity)
-    uint32_t buckets_length, values_length;
-    void *buckets;
-    void *values;
-    dn_allocator_t *allocator;
+	// sizes of current allocations in items (not bytes)
+	// so values_length should == (buckets_length * bucket_capacity)
+	uint32_t buckets_length, values_length;
+	void *buckets;
+	void *values;
+	dn_allocator_t *allocator;
 } dn_simdhash_buffers_t;
 
 typedef struct dn_simdhash_t dn_simdhash_t;
 
 typedef struct dn_simdhash_meta_t {
-    // type metadata for generic implementation
-    uint32_t bucket_capacity, bucket_size_bytes, key_size, value_size;
-    uint8_t key_is_pointer, value_is_pointer;
+	// type metadata for generic implementation
+	uint32_t bucket_capacity, bucket_size_bytes, key_size, value_size;
+	uint8_t key_is_pointer, value_is_pointer;
 } dn_simdhash_meta_t;
 
 typedef enum dn_simdhash_insert_result {
-    DN_SIMDHASH_INSERT_OK,
-    DN_SIMDHASH_INSERT_NEED_TO_GROW,
-    DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT,
+	DN_SIMDHASH_INSERT_OK,
+	DN_SIMDHASH_INSERT_NEED_TO_GROW,
+	DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT,
 } dn_simdhash_insert_result;
 
 typedef struct dn_simdhash_vtable_t {
-    // Does not free old_buffers, that's your job.
-    void (*rehash) (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buffers);
+	// Does not free old_buffers, that's your job.
+	void (*rehash) (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buffers);
 } dn_simdhash_vtable_t;
 
 typedef struct dn_simdhash_t {
-    // internal state
-    uint32_t count, grow_at_count;
-    dn_simdhash_buffers_t buffers;
-    dn_simdhash_vtable_t vtable;
-    dn_simdhash_meta_t meta;
+	// internal state
+	uint32_t count, grow_at_count;
+	dn_simdhash_buffers_t buffers;
+	dn_simdhash_vtable_t vtable;
+	dn_simdhash_meta_t meta;
 } dn_simdhash_t;
 
 // These helpers use .values instead of .vec to avoid generating unnecessary
@@ -141,37 +141,37 @@ typedef struct dn_simdhash_t {
 static DN_FORCEINLINE(uint8_t)
 dn_simdhash_bucket_count (dn_simdhash_suffixes bucket)
 {
-    return bucket.values[DN_SIMDHASH_COUNT_SLOT];
+	return bucket.values[DN_SIMDHASH_COUNT_SLOT];
 }
 
 static DN_FORCEINLINE(uint8_t)
 dn_simdhash_bucket_is_cascaded (dn_simdhash_suffixes bucket)
 {
-    return bucket.values[DN_SIMDHASH_CASCADED_SLOT];
+	return bucket.values[DN_SIMDHASH_CASCADED_SLOT];
 }
 
 #define dn_simdhash_bucket_set_suffix(suffixes, slot, value) \
-    (suffixes).values[(slot)] = (value)
+	(suffixes).values[(slot)] = (value)
 
 #define dn_simdhash_bucket_set_count(suffixes, value) \
-    (suffixes).values[DN_SIMDHASH_COUNT_SLOT] = (value)
+	(suffixes).values[DN_SIMDHASH_COUNT_SLOT] = (value)
 
 #define dn_simdhash_bucket_set_cascaded(suffixes, value) \
-    (suffixes).values[DN_SIMDHASH_CASCADED_SLOT] = (value)
+	(suffixes).values[DN_SIMDHASH_CASCADED_SLOT] = (value)
 
 static DN_FORCEINLINE(uint8_t)
 dn_simdhash_select_suffix (uint32_t key_hash)
 {
-    // Extract top 8 bits, then trash the highest one.
-    // The lowest bits of the hash are used to select the bucket index.
-    return (key_hash >> 24) | DN_SIMDHASH_SUFFIX_SALT;
+	// Extract top 8 bits, then trash the highest one.
+	// The lowest bits of the hash are used to select the bucket index.
+	return (key_hash >> 24) | DN_SIMDHASH_SUFFIX_SALT;
 }
 
 static DN_FORCEINLINE(uint32_t)
 dn_simdhash_select_bucket_index (dn_simdhash_buffers_t buffers, uint32_t key_hash)
 {
-    // This relies on bucket count being a power of two.
-    return key_hash & (buffers.buckets_length - 1);
+	// This relies on bucket count being a power of two.
+	return key_hash & (buffers.buckets_length - 1);
 }
 
 
