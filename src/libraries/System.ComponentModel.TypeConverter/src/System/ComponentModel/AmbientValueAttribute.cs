@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel.Design;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
@@ -22,6 +24,13 @@ namespace System.ComponentModel
         {
             // The try/catch here is because attributes should never throw exceptions. We would fail to
             // load an otherwise normal class.
+
+            if (!IDesignerHost.IsSupported)
+            {
+                Debug.Assert(!IDesignerHost.IsSupported, "Runtime instantiation of this attribute is not allowed.");
+                return;
+            }
+
             try
             {
                 Value = TypeDescriptor.GetConverter(type).ConvertFromInvariantString(value);
