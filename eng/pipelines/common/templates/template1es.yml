@@ -20,7 +20,7 @@ extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
     pool:
-      name: netcore1espool-internal
+      name: $(DncEngInternalBuildPool)
       image: 1es-windows-2022
       os: windows
 
