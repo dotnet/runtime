@@ -43,28 +43,6 @@ extends:
       jobs:
 
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(in(variables['Build.Reason'], 'Schedule'), parameters.runScheduledJobs)) }}:
-        # build coreclr and libraries
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/common/global-build-job.yml
-            buildConfig: release
-            platforms:
-            - linux_arm64
-            jobParameters:
-              nameSuffix: coreclr
-              buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
-              isOfficialBuild: false
-              postBuildSteps:
-              - template: /eng/pipelines/common/upload-artifact-step.yml
-                parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
-                  displayName: Build Assets
-
         # build mono
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
