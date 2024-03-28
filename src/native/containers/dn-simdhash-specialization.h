@@ -99,14 +99,23 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 static DN_FORCEINLINE(int)
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
+	// FIXME: This code is worse because according to gcc, ctz/clz are undefined for 0.
 #if defined(__wasm_simd128__)
 	dn_simdhash_suffixes match_vector;
+	uint32_t msb;
 	match_vector.vec = wasm_i8x16_eq(needle.vec, haystack.vec);
-	return __builtin_ctz(wasm_i8x16_bitmask(match_vector.vec));
+	msb = wasm_i8x16_bitmask(match_vector.vec);
+	if (!msb)
+		return 32;
+	return __builtin_ctz(msb);
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
 	dn_simdhash_suffixes match_vector;
+	uint32_t msb;
 	match_vector.vec = _mm_cmpeq_epi8(needle.vec, haystack.vec);
-	return __builtin_ctz(_mm_movemask_epi8(match_vector.vec));
+	msb = _mm_movemask_epi8(match_vector.vec);
+	if (!msb)
+		return 32;
+	return __builtin_ctz(msb);
 #elif defined(__ARM_NEON)
 	dn_simdhash_suffixes match_vector;
 	// Completely untested.
@@ -122,10 +131,12 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 	masked.vec = vandq_u8(match_vector.vec, byte_mask.vec);
 	msb.b[0] = vaddv_u8(vget_low_u8(masked.vec));
 	msb.b[1] = vaddv_u8(vget_high_u8(masked.vec));
+	if (!msb.u)
+		return 32;
 	return __builtin_ctz(msb.u);
 #else
 	// Completely untested.
-	for (int i = 0; i < dn_simdhash_bucket_count(haystack); i++)
+	for (uint32_t i = 0, c = dn_simdhash_bucket_count(haystack); i < c; i++)
 		if (needle.values[i] == haystack.values[i])
 			return i;
 
@@ -143,7 +154,7 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 	// FIXME: Do this using intrinsics on MSVC. Seems complicated since there's no __builtin_ctz.
 
 	// Completely untested.
-	for (int i = 0; i < dn_simdhash_bucket_count(haystack); i++)
+	for (uint32_t i = 0, c = dn_simdhash_bucket_count(haystack); i < c; i++)
 		if (needle.values[i] == haystack.values[i])
 			return i;
 
@@ -159,6 +170,9 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T) (bucket_t *bucket, DN_SIMDHASH_K
 {
 	dn_simdhash_suffixes suffixes = bucket->suffixes;
 	int index = find_first_matching_suffix (search_vector, suffixes);
+	// FIXME: This shouldn't be necessary.
+	if (index > DN_SIMDHASH_BUCKET_CAPACITY)
+		return -1;
 	DN_SIMDHASH_KEY_T *key = &bucket->keys[index];
 
 	for (int count = dn_simdhash_bucket_count (suffixes); index < count; index++, key++) {
