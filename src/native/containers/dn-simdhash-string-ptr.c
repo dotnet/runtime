@@ -192,8 +192,8 @@ dn_simdhash_string_ptr_foreach (dn_simdhash_string_ptr_t *hash, dn_simdhash_fore
 		uint32_t c = dn_simdhash_bucket_count(bucket_address->suffixes);
 		for (uint32_t j = 0; j < c; j++) {
 			DN_SIMDHASH_KEY_T *key = &bucket_address->keys[j];
-			DN_SIMDHASH_VALUE_T *value = address_of_value(buffers, value_slot_base + j);
-			func((void *)key, (void *)value, user_data);
+			DN_SIMDHASH_VALUE_T value = *address_of_value(buffers, value_slot_base + j);
+			func((void *)key->text, value, user_data);
 		}
 	}
 }
