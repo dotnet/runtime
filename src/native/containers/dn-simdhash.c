@@ -216,17 +216,27 @@ dn_simdhash_try_add (dn_simdhash_t *hash, dn_simdhash_key_ref key, dn_simdhash_v
     }
 }
 
-void *
-dn_simdhash_find_value_by_key (dn_simdhash_t *hash, dn_simdhash_key_ref key)
+uint8_t
+dn_simdhash_try_get_value (dn_simdhash_t *hash, dn_simdhash_key_ref key, void * result, uint32_t result_size)
 {
+    assert(hash);
     uint32_t key_hash = hash->vtable.compute_hash(key);
-    return hash->vtable.find_value(hash, key, key_hash);
+    return dn_simdhash_try_get_value_with_hash(hash, key, key_hash, result, result_size);
 }
 
-void *
-dn_simdhash_find_value_by_key_with_hash (dn_simdhash_t *hash, dn_simdhash_key_ref key, uint32_t key_hash)
+uint8_t
+dn_simdhash_try_get_value_with_hash (dn_simdhash_t *hash, dn_simdhash_key_ref key, uint32_t key_hash, void * result, uint32_t result_size)
 {
-    return hash->vtable.find_value(hash, key, key_hash);
+    assert(hash);
+    assert(!result || (result_size == hash->meta.value_size));
+    const void * value_ptr = hash->vtable.find_value(hash, key, key_hash);
+    if (!value_ptr)
+        return 0;
+    // We always get the address of the value back from find_value, so we always copy
+    //  the value out of its slot into the result buffer, even if it's a pointer
+    if (result)
+        memcpy(result, value_ptr, result_size);
+    return 1;
 }
 
 static DN_FORCEINLINE(void *)
