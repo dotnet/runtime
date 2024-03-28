@@ -205,6 +205,10 @@ enum _regMask_enum : unsigned
 #define REGISTER_TYPE_COUNT 2
 #endif
 
+#ifdef TARGET_ARM64
+#define HAS_MORE_THAN_64_REGISTERS 1
+#endif
+
 /*****************************************************************************/
 
 // TODO-Cleanup: The types defined below are mildly confusing: why are there both?
@@ -281,14 +285,33 @@ private:
         {
             RegBitSet64 _float_gpr;
             RegBitSet32 _predicateRegs;
+            //RegBitSet32 _predicateRegs : 28;
+            //bool _hasPredicateRegister : 8;
+
+        };
+        struct
+        {
+            // This one is just to have uniform code when `if(_hasPredicateRegister)` is used
+            RegBitSet64 _allRegisters;
+            RegBitSet32 _predicateRegs;
+            //RegBitSet32 _predicateRegs : 28;
+            //bool        _hasPredicateRegister : 8;
         };
         struct
         {
             RegBitSet32 _gprRegs;
             RegBitSet32 _floatRegs;
             RegBitSet32 _predicateRegs;
+            //RegBitSet32 _predicateRegs : 28;
+            //bool        _hasPredicateRegister : 8;
         };
     };
+    // TODO: This can be moved inside the union by trimming the size of _predicateRegs: 28
+    // and have this as 8 bits. However, there are chances of accidently overwritting it
+    // when updating the predicateReg mask. Evaluation this option on how we can secure it.
+    // Find out if the TP cost is more by having this field separately vs. adding extra checks
+    // when the predicateReg is updated.
+    bool _hasPredicateRegister;
 #else
     RegBitSet64 _allRegisters;
 #endif
@@ -355,7 +378,7 @@ public:
 
     _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _float_gpr(floatRegMask | gprRegMask), _predicateRegs(RBM_NONE)
+        : _float_gpr(floatRegMask | gprRegMask), _predicateRegs(RBM_NONE), _hasPredicateRegister(true)
 #else
         : _allRegisters(floatRegMask | gprRegMask)
 #endif
@@ -365,7 +388,7 @@ public:
     // TODO: See if we can avoid the '|' operation here.
     _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask, RegBitSet64 predicateRegs)
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _float_gpr(floatRegMask | gprRegMask), _predicateRegs(predicateRegs)
+        : _float_gpr(floatRegMask | gprRegMask), _predicateRegs((RegBitSet32)predicateRegs), _hasPredicateRegister(true)
 #else
         : _allRegisters(predicateRegs | floatRegMask | gprRegMask)
 #endif
@@ -374,7 +397,7 @@ public:
 
     _regMaskAll()
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _float_gpr(RBM_NONE), _predicateRegs(RBM_NONE)
+        : _float_gpr(RBM_NONE), _predicateRegs(RBM_NONE), _hasPredicateRegister(true)
 #else
         : _allRegisters(RBM_NONE)
 #endif
@@ -383,11 +406,18 @@ public:
 
     _regMaskAll(RegBitSet64 allRegistersMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _float_gpr(allRegistersMask), _predicateRegs(RBM_NONE)
+        : _float_gpr(allRegistersMask), _predicateRegs(RBM_NONE), _hasPredicateRegister(true)
 #else
         : _allRegisters(allRegistersMask)
 #endif
     {
+    }
+
+    FORCEINLINE void NeedPredicateRegisterTracking()
+    {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        _hasPredicateRegister = true;
+#endif
     }
 
 //    _regMaskAll(int (&_registers)[REGISTER_TYPE_COUNT])
