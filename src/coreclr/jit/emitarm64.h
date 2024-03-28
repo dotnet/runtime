@@ -33,8 +33,17 @@ const char* emitSveRegName(regNumber reg) const;
 const char* emitVectorRegName(regNumber reg);
 const char* emitPredicateRegName(regNumber reg, PredicateType ptype);
 
+#ifdef DEBUG
+void emitInsSveSanityCheck(instrDesc* id);
+#endif // DEBUG
+
+#if defined(DEBUG) || defined(LATE_DISASM)
+void getInsSveExecutionCharacteristics(instrDesc* id, insExecutionCharacteristics& result);
+#endif // defined(DEBUG) || defined(LATE_DISASM)
+
 void emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
+void emitDispInsSveHelp(instrDesc* id);
 void emitDispLargeJmp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
 void emitDispComma();
@@ -326,94 +335,115 @@ union condFlagsImm {
 };
 
 // Returns an encoding for the specified register used in the 'Rd' position
-static code_t insEncodeReg_Rd(regNumber reg);
+static code_t insEncodeReg_Rd(regNumber reg)
+{
+    return insEncodeReg_R<4, 0>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Rt' position
-static code_t insEncodeReg_Rt(regNumber reg);
+static code_t insEncodeReg_Rt(regNumber reg)
+{
+    return insEncodeReg_R<4, 0>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Rn' position
-static code_t insEncodeReg_Rn(regNumber reg);
+static code_t insEncodeReg_Rn(regNumber reg)
+{
+    return insEncodeReg_R<9, 5>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Rm' position
-static code_t insEncodeReg_Rm(regNumber reg);
+static code_t insEncodeReg_Rm(regNumber reg)
+{
+    return insEncodeReg_R<20, 16>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Ra' position
-static code_t insEncodeReg_Ra(regNumber reg);
+static code_t insEncodeReg_Ra(regNumber reg)
+{
+    return insEncodeReg_R<14, 10>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Vd' position
-static code_t insEncodeReg_Vd(regNumber reg);
+static code_t insEncodeReg_Vd(regNumber reg)
+{
+    return insEncodeReg_V<4, 0>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Vt' position
-static code_t insEncodeReg_Vt(regNumber reg);
+static code_t insEncodeReg_Vt(regNumber reg)
+{
+    return insEncodeReg_V<4, 0>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Vn' position
-static code_t insEncodeReg_Vn(regNumber reg);
+static code_t insEncodeReg_Vn(regNumber reg)
+{
+    return insEncodeReg_V<9, 5>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Vm' position
-static code_t insEncodeReg_Vm(regNumber reg);
+static code_t insEncodeReg_Vm(regNumber reg)
+{
+    return insEncodeReg_V<20, 16>(reg);
+}
 
 // Returns an encoding for the specified register used in the 'Va' position
-static code_t insEncodeReg_Va(regNumber reg);
+static code_t insEncodeReg_Va(regNumber reg)
+{
+    return insEncodeReg_V<14, 10>(reg);
+}
 
-// Return an encoding for the specified 'V' register used in '4' thru '0' position.
-static code_t insEncodeReg_V_4_to_0(regNumber reg);
+// Returns an encoding for the specified 'V' register used in 'hi' thru 'lo' position.
+template <const size_t hi, const size_t lo>
+static code_t insEncodeReg_V(regNumber reg)
+{
+    // lo <= hi < 32
+    static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
+    assert(isVectorRegister(reg));
+    code_t ureg = (code_t)reg - (code_t)REG_V0;
 
-// Return an encoding for the specified 'V' register used in '9' thru '5' position.
-static code_t insEncodeReg_V_9_to_5(regNumber reg);
+    constexpr size_t bits = hi - lo + 1;
+    static_assert(bits <= 5);
+    constexpr size_t mask = (1 << bits) - 1;
+    return (ureg & mask) << lo;
+}
 
-// Return an encoding for the specified 'P' register used in '12' thru '10' position.
-static code_t insEncodeReg_P_12_to_10(regNumber reg);
+// Returns an encoding for the specified 'P' register used in 'hi' thru 'lo' position.
+template <const size_t hi, const size_t lo>
+static code_t insEncodeReg_P(regNumber reg)
+{
+    // lo <= hi < 32
+    static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
+    assert(isPredicateRegister(reg));
+    code_t ureg = (code_t)reg - (code_t)REG_P0;
 
-// Return an encoding for the specified 'V' register used in '20' thru '16' position.
-static code_t insEncodeReg_V_20_to_16(regNumber reg);
+    constexpr size_t bits = hi - lo + 1;
+    static_assert(bits <= 4);
+    constexpr size_t mask = (1 << bits) - 1;
+    return (ureg & mask) << lo;
+}
 
-// Return an encoding for the specified 'R' register used in '20' thru '16' position.
-static code_t insEncodeReg_R_20_to_16(regNumber reg);
+// Returns an encoding for the specified 'R' register used in 'hi' thru 'lo' position.
+template <const size_t hi, const size_t lo>
+static code_t insEncodeReg_R(regNumber reg)
+{
+    // lo <= hi < 32
+    static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
+    assert(isIntegerRegister(reg));
+    code_t ureg = (code_t)reg;
 
-// Return an encoding for the specified 'R' register used in '9' thru '5' position.
-static code_t insEncodeReg_R_9_to_5(regNumber reg);
-
-// Return an encoding for the specified 'R' register used in '4' thru '0' position.
-static code_t insEncodeReg_R_4_to_0(regNumber reg);
-
-// Return an encoding for the specified 'P' register used in '19' thru '16' position.
-static code_t insEncodeReg_P_19_to_16(regNumber reg);
-
-// Return an encoding for the specified 'P' register used in '3' thru '0' position.
-static code_t insEncodeReg_P_3_to_0(regNumber reg);
-
-// Return an encoding for the specified 'P' register used in '8' thru '5' position.
-static code_t insEncodeReg_P_8_to_5(regNumber reg);
-
-// Return an encoding for the specified 'P' register used in '13' thru '10' position.
-static code_t insEncodeReg_P_13_to_10(regNumber reg);
-
-// Return an encoding for the specified 'R' register used in '17' thru '16' position.
-static code_t insEncodeReg_R_17_to_16(regNumber reg);
-
-// Return an encoding for the specified 'P' register used in '7' thru '5' position.
-static code_t insEncodeReg_P_7_to_5(regNumber reg);
-
-// Return an encoding for the specified 'P' register used in '3' thru '1' position.
-static code_t insEncodeReg_P_3_to_1(regNumber reg);
-
-// Return an encoding for the specified 'P' register used in '2' thru '0' position.
-static code_t insEncodeReg_P_2_to_0(regNumber reg);
+    constexpr size_t bits = hi - lo + 1;
+    static_assert(bits <= 5);
+    constexpr size_t mask = (1 << bits) - 1;
+    return (ureg & mask) << lo;
+}
 
 // Return an encoding for the specified predicate type used in '16' position.
 static code_t insEncodePredQualifier_16(bool merge);
 
 // Return an encoding for the specified predicate type used in '4' position.
 static code_t insEncodePredQualifier_4(bool merge);
-
-// Return an encoding for the specified 'V' register used in '18' thru '16' position.
-static code_t insEncodeReg_V_18_to_16(regNumber reg);
-
-// Return an encoding for the specified 'V' register used in '19' thru '16' position.
-static code_t insEncodeReg_V_19_to_16(regNumber reg);
-
-// Return an encoding for the specified 'V' register used in '9' thru '6' position.
-static code_t insEncodeReg_V_9_to_6(regNumber reg);
 
 // Return an encoding for the specified 'V' register used in '9' thru '6' position with the times two encoding.
 // This encoding requires that the register number be divisible by two.
@@ -676,50 +706,32 @@ static code_t insEncodeSimm(ssize_t imm)
     return result << lo;
 }
 
+// Returns the encoding for unsigned immediate `imm` that is a multiple of `mul` with `bits` number of bits,
+// for bit locations `hi-lo`.
+template <const size_t hi, const size_t lo, const ssize_t mul>
+static code_t insEncodeUimm_MultipleOf(ssize_t imm)
+{
+
+    constexpr size_t bits = hi - lo + 1;
+    assert((isValidUimm_MultipleOf<bits, mul>(imm)));
+    return insEncodeUimm<hi, lo>(imm / mul);
+}
+
+// Returns the encoding for signed immediate `imm` that is a multiple of `mul` with `bits` number of bits,
+// for bit locations `hi-lo`.
+template <const size_t hi, const size_t lo, const ssize_t mul>
+static code_t insEncodeSimm_MultipleOf(ssize_t imm)
+{
+    constexpr size_t bits = hi - lo + 1;
+    assert((isValidSimm_MultipleOf<bits, mul>(imm)));
+    return insEncodeSimm<hi, lo>(imm / mul);
+}
+
 // Returns the encoding for the immediate value as 9-bits at bit locations '21-16' for high and '12-10' for low.
 static code_t insEncodeSimm9h9l_21_to_16_and_12_to_10(ssize_t imm);
 
-// Returns the encoding for the immediate value that is a multiple of 2 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf2_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 3 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf3_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 4 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf4_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 16 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 32 as 4-bits at bit locations '19-16'.
-static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
-static code_t insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 4 as 5-bits at bit locations '20-16'.
-static code_t insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
-static code_t insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
-static code_t insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 4 as 6-bits at bit locations '21-16'.
-static code_t insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
-static code_t insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm);
-
-// Returns the encoding for the immediate value as 1-bit at bit locations '23'.
-static code_t insEncodeUimm1_23(ssize_t imm);
-
 // Returns the encoding for the immediate value as 3-bits at bit locations '23-22' for high and '12' for low.
 static code_t insEncodeUimm3h3l_23_to_22_and_12(ssize_t imm);
-
-// Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
-static code_t insEncodeUimm4From1_19_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
 static code_t insEncodeImm8_12_to_5(ssize_t imm);
@@ -1185,6 +1197,23 @@ inline static bool isLowPredicateRegister(regNumber reg)
 inline static bool isHighPredicateRegister(regNumber reg)
 {
     return (reg >= REG_PREDICATE_HIGH_FIRST) && (reg <= REG_PREDICATE_HIGH_LAST);
+}
+
+inline static bool isEvenRegister(regNumber reg)
+{
+    if (isGeneralRegister(reg))
+    {
+        return ((reg - REG_INT_FIRST) % 2 == 0);
+    }
+    else if (isVectorRegister(reg))
+    {
+        return ((reg - REG_FP_FIRST) % 2) == 0;
+    }
+    else
+    {
+        assert(isPredicateRegister(reg));
+        return ((reg - REG_PREDICATE_FIRST) % 2) == 0;
+    }
 }
 
 inline static bool insOptsNone(insOpts opt)

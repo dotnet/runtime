@@ -22,7 +22,6 @@ public:
     FCDECL1_V(static double, Cosh, double x);
     FCDECL1_V(static double, Exp, double x);
     FCDECL1_V(static double, Floor, double x);
-    FCDECL2_VV(static double, FMod, double x, double y);
     FCDECL3_VVV(static double, FusedMultiplyAdd, double x, double y, double z);
     FCDECL1_V(static double, Log, double x);
     FCDECL1_V(static double, Log2, double x);
