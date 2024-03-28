@@ -60,6 +60,13 @@ void CodeGen::genInitializeRegisterState()
         regNumber reg = varDsc->GetRegNum();
         if (genIsValidIntReg(reg))
         {
+#ifdef SWIFT_SUPPORT
+            if ((compiler->lvaSwiftErrorArg != BAD_VAR_NUM) && (reg == REG_SWIFT_ERROR))
+            {
+                continue;
+            }
+#endif // SWIFT_SUPPORT
+
             regSet.verifyRegUsed(reg);
         }
     }

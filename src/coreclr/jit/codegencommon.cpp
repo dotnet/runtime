@@ -5399,6 +5399,15 @@ void CodeGen::genFinalizeFrame()
     noway_assert(!regSet.rsRegsModified(RBM_FPBASE));
 #endif
 
+#ifdef SWIFT_SUPPORT
+    if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+    {
+        assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
+        assert(compiler->lvaSwiftErrorLocal != BAD_VAR_NUM);
+        regSet.rsRemoveRegsModified(RBM_SWIFT_ERROR);
+    }
+#endif // SWIFT_SUPPORT
+
     regMaskTP maskCalleeRegsPushed = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
 
 #ifdef TARGET_ARMARCH
