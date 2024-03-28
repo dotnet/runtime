@@ -273,6 +273,9 @@
   <data name="Cryptography_CipherModeNotSupported" xml:space="preserve">
     <value>The specified CipherMode '{0}' is not supported.</value>
   </data>
+  <data name="Cryptography_ConcurrentUseNotSupported" xml:space="preserve">
+    <value>Concurrent operations from multiple threads on this type are not supported.</value>
+  </data>
   <data name="Cryptography_CngKeyWrongAlgorithm" xml:space="preserve">
     <value>This key is for algorithm '{0}'. Expected '{1}'.</value>
   </data>
