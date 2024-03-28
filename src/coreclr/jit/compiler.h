@@ -4413,7 +4413,7 @@ protected:
     void impRetypeUnmanagedCallArgs(GenTreeCall* call);
 
 #ifdef SWIFT_SUPPORT
-    void impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg);
+    void impAppendSwiftErrorStore(CallArgs* const callArgs, CallArg* const swiftErrorArg);
 #endif // SWIFT_SUPPORT
 
     void impInsertHelperCall(CORINFO_HELPER_DESC* helperCall);

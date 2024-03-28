@@ -101,6 +101,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
     // so if we're importing a Swift call, look for this type in the signature
     CallArg* swiftErrorArg = nullptr;
+    CallArgs* callArgs;
+
 
     /*-------------------------------------------------------------------------
      * First create the call node
@@ -670,6 +672,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         checkForSmallType = true;
 
         impPopArgsForUnmanagedCall(call->AsCall(), sig, &swiftErrorArg);
+        callArgs = &(call->AsCall()->gtArgs);
 
         goto DONE;
     }
@@ -1504,7 +1507,7 @@ DONE_CALL:
     // to handle storing the error register's value post-call.
     if (swiftErrorArg != nullptr)
     {
-        impAppendSwiftErrorStore(call->AsCall(), swiftErrorArg);
+        impAppendSwiftErrorStore(callArgs, swiftErrorArg);
     }
 #endif // SWIFT_SUPPORT
 
@@ -2293,13 +2296,12 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
 // to the SwiftError* argument specified by swiftErrorArg, post-Swift call
 //
 // Arguments:
-//    call - the Swift call
+//    callArgs - pointer to the beginning of the Swift call's arg list
 //    swiftErrorArg - the SwiftError* argument passed to call
 //
-void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg)
+void Compiler::impAppendSwiftErrorStore(CallArgs* const callArgs, CallArg* const swiftErrorArg)
 {
-    assert(call != nullptr);
-    assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+    assert(callArgs != nullptr);
     assert(swiftErrorArg != nullptr);
 
     GenTree* const argNode = swiftErrorArg->GetNode();
@@ -2318,11 +2320,11 @@ void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftE
     // the JIT will emit code for clearing the error register before the call, and will mark the error register as busy
     // so that it isn't used to hold the function call's address.
     GenTree* errorSentinelValueNode = gtNewIconNode(0);
-    call->gtArgs.InsertAfter(this, swiftErrorArg,
-                             NewCallArg::Primitive(errorSentinelValueNode).WellKnown(WellKnownArg::SwiftError));
+    callArgs->InsertAfter(this, swiftErrorArg,
+                          NewCallArg::Primitive(errorSentinelValueNode).WellKnown(WellKnownArg::SwiftError));
 
     // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
-    call->gtArgs.Remove(swiftErrorArg);
+    callArgs->Remove(swiftErrorArg);
 }
 #endif // SWIFT_SUPPORT
 

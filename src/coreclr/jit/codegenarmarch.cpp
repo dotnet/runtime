@@ -284,7 +284,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
 #ifdef SWIFT_SUPPORT
         case GT_SWIFT_RETURN:
-            assert(!"Emit GT_SWIFT_RETURN");
+            genSwiftReturn(treeNode->AsUnOp());
             break;
 #endif // SWIFT_SUPPORT
 
