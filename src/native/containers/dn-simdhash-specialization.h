@@ -105,6 +105,23 @@ ctz (uint32_t value)
 	return __builtin_ctz(value);
 }
 
+static DN_FORCEINLINE(dn_simdhash_suffixes)
+build_search_vector (uint8_t needle)
+{
+	// this produces a splat and then .const, .and in wasm, and the other architectures are fine too
+	dn_u8x16 needles = {
+		needle, needle, needle, needle, needle, needle, needle, needle,
+		needle, needle, needle, needle, needle, needle, needle, needle
+	};
+	dn_u8x16 mask = {
+		0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu,
+		0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0x00u, 0x00u
+	};
+	dn_simdhash_suffixes result;
+	result.vec = needles & mask;
+	return result;
+}
+
 static DN_FORCEINLINE(int)
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
@@ -145,6 +162,15 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 #else // __clang__ || __GNUC__
 
 #pragma message("WARNING: Building dn_simdhash for MSVC without SIMD intrinsics! Performance will be terrible!")
+
+static DN_FORCEINLINE(dn_simdhash_suffixes)
+build_search_vector (uint8_t needle)
+{
+	dn_simdhash_suffixes result;
+	for (int i = 0; i < DN_SIMDHASH_VECTOR_WIDTH; i++)
+		result.values[i] = (i >= DN_SIMDHASH_MAX_BUCKET_CAPACITY) ? 0 : needle;
+	return result;
+}
 
 int
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
@@ -205,7 +231,7 @@ DN_SIMDHASH_FIND_VALUE_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T)
 	dn_simdhash_buffers_t buffers = hash->buffers;
 	uint8_t suffix = dn_simdhash_select_suffix(key_hash);
 	uint32_t first_bucket_index = dn_simdhash_select_bucket_index(buffers, key_hash);
-	dn_simdhash_suffixes search_vector = dn_simdhash_build_search_vector(suffix);
+	dn_simdhash_suffixes search_vector = build_search_vector(suffix);
 
 	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 		int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T)(bucket_address, key, search_vector);
@@ -234,7 +260,7 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T)
 	dn_simdhash_buffers_t buffers = hash->buffers;
 	uint8_t suffix = dn_simdhash_select_suffix(key_hash);
 	uint32_t first_bucket_index = dn_simdhash_select_bucket_index(hash->buffers, key_hash);
-	dn_simdhash_suffixes search_vector = dn_simdhash_build_search_vector(suffix);
+	dn_simdhash_suffixes search_vector = build_search_vector(suffix);
 
 	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 		// If necessary, check the current bucket for the key
@@ -397,7 +423,7 @@ DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T
 	dn_simdhash_buffers_t buffers = hash->buffers;
 	uint8_t suffix = dn_simdhash_select_suffix(key_hash);
 	uint32_t first_bucket_index = dn_simdhash_select_bucket_index(buffers, key_hash);
-	dn_simdhash_suffixes search_vector = dn_simdhash_build_search_vector(suffix);
+	dn_simdhash_suffixes search_vector = build_search_vector(suffix);
 
 	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 		int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T)(bucket_address, key, search_vector);

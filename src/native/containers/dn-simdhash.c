@@ -3,6 +3,29 @@
 
 #include "dn-simdhash.h"
 
+#if defined(__clang__) || defined (__GNUC__)
+static DN_FORCEINLINE(uint32_t)
+next_power_of_two (uint32_t value) {
+	if (value < 2)
+		return 1;
+	return 1u << (32 - __builtin_clz (value - 1));
+}
+#else // __clang__ || __GNUC__
+static uint32_t
+next_power_of_two (uint32_t value) {
+	if (value < 2)
+		return 2;
+	value--;
+	value |= value >> 1;
+	value |= value >> 2;
+	value |= value >> 4;
+	value |= value >> 8;
+	value |= value >> 16;
+	value++;
+	return value;
+}
+#endif // __clang__ || __GNUC__
+
 dn_simdhash_t *
 dn_simdhash_new_internal (dn_simdhash_meta_t meta, dn_simdhash_vtable_t vtable, uint32_t capacity, dn_allocator_t *allocator)
 {
@@ -56,7 +79,7 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 	if (bucket_count < DN_SIMDHASH_MIN_BUCKET_COUNT)
 		bucket_count = DN_SIMDHASH_MIN_BUCKET_COUNT;
 	// Bucket count must be a power of two (this enables more efficient hashcode -> bucket mapping)
-	bucket_count = dn_simdhash_next_power_of_two(bucket_count);
+	bucket_count = next_power_of_two(bucket_count);
 	uint32_t value_count = bucket_count * hash->meta.bucket_capacity;
 
 	dn_simdhash_buffers_t result = { 0, };

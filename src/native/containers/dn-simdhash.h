@@ -44,58 +44,11 @@ typedef union {
 	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
 } dn_simdhash_suffixes;
 
-static DN_FORCEINLINE(uint32_t)
-dn_simdhash_next_power_of_two (uint32_t value) {
-	if (value < 2)
-		return 2;
-	return 1u << (32 - __builtin_clz (value - 1));
-}
-
-DN_FORCEINLINE(dn_simdhash_suffixes)
-dn_simdhash_build_search_vector (uint8_t needle)
-{
-	// this produces a splat and then .const, .and in wasm, and the other architectures are fine too
-	dn_u8x16 needles = {
-		needle, needle, needle, needle, needle, needle, needle, needle,
-		needle, needle, needle, needle, needle, needle, needle, needle
-	};
-	dn_u8x16 mask = {
-		0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu,
-		0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0x00u, 0x00u
-	};
-	dn_simdhash_suffixes result;
-	result.vec = needles & mask;
-	return result;
-}
-
 #else // __clang__ || __GNUC__
 
 typedef struct {
 	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
 } dn_simdhash_suffixes;
-
-static uint32_t
-dn_simdhash_next_power_of_two (uint32_t value) {
-	if (value < 2)
-		return 2;
-	value--;
-	value |= value >> 1;
-	value |= value >> 2;
-	value |= value >> 4;
-	value |= value >> 8;
-	value |= value >> 16;
-	value++;
-	return value;
-}
-
-DN_FORCEINLINE(dn_simdhash_suffixes)
-dn_simdhash_build_search_vector (uint8_t needle)
-{
-	dn_simdhash_suffixes result;
-	for (int i = 0; i < DN_SIMDHASH_VECTOR_WIDTH; i++)
-		result.values[i] = (i >= DN_SIMDHASH_MAX_BUCKET_CAPACITY) ? 0 : needle;
-	return result;
-}
 
 #endif // __clang__ || __GNUC__
 
