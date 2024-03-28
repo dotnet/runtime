@@ -177,6 +177,7 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, KEY_REF key
             bucket_address->keys[new_index] = DEREF_KEY(key_ptr);
             uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + new_index;
             ((DN_SIMDHASH_VALUE_T *)hash->buffers.values)[value_slot_index] = DEREF_VALUE(value_ptr);
+            // printf("Inserted [%zd, %zd] in bucket %d at index %d\n", key_ptr, value_ptr, bucket_index, new_index);
             return DN_SIMDHASH_INSERT_OK;
         }
 
@@ -219,8 +220,6 @@ DN_SIMDHASH_REHASH_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, dn_simdhash_buf
                 assert(0);
         }
     }
-
-    dn_simdhash_free_buffers (old_buffers);
 }
 
 // We expose these tables instead of making them static, just in case you want to use

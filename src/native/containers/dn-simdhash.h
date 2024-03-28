@@ -163,23 +163,14 @@ dn_simdhash_bucket_is_cascaded (dn_simdhash_suffixes bucket)
     return bucket.values[DN_SIMDHASH_CASCADED_SLOT];
 }
 
-static DN_FORCEINLINE(void)
-dn_simdhash_bucket_set_suffix (dn_simdhash_suffixes bucket, uint32_t slot, uint8_t value)
-{
-    bucket.values[slot] = value;
-}
+#define dn_simdhash_bucket_set_suffix(suffixes, slot, value) \
+    (suffixes).values[(slot)] = (value)
 
-static DN_FORCEINLINE(void)
-dn_simdhash_bucket_set_count (dn_simdhash_suffixes bucket, uint8_t value)
-{
-    bucket.values[DN_SIMDHASH_COUNT_SLOT] = value;
-}
+#define dn_simdhash_bucket_set_count(suffixes, value) \
+    (suffixes).values[DN_SIMDHASH_COUNT_SLOT] = (value)
 
-static DN_FORCEINLINE(void)
-dn_simdhash_bucket_set_cascaded (dn_simdhash_suffixes bucket, uint8_t value)
-{
-    bucket.values[DN_SIMDHASH_CASCADED_SLOT] = value;
-}
+#define dn_simdhash_bucket_set_cascaded(suffixes, value) \
+    (suffixes).values[DN_SIMDHASH_CASCADED_SLOT] = (value)
 
 static DN_FORCEINLINE(uint8_t)
 dn_simdhash_select_suffix (uint32_t key_hash)
