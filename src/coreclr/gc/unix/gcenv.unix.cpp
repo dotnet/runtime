@@ -35,11 +35,7 @@
 #define __has_cpp_attribute(x) (0)
 #endif
 
-#if __has_cpp_attribute(fallthrough)
-#define FALLTHROUGH [[fallthrough]]
-#else
-#define FALLTHROUGH
-#endif
+#include "../../inc/fallthrough.h"
 
 #include <algorithm>
 

@@ -59,6 +59,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <EventPipeName Condition="'$(EventSourceSupport)' == 'true'">libeventpipe-enabled</EventPipeName>
 
       <LinkStandardCPlusPlusLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' == '' and '$(_IsiOSLikePlatform)' == 'true' and '$(InvariantGlobalization)' != 'true'">true</LinkStandardCPlusPlusLibrary>
+      <VxSortSupportName>libRuntime.VxsortEnabled</VxSortSupportName>
+      <VxSortSupportName Condition="'$(OptimizationPreference)' == 'Size' or '$(IlcDisableVxsort)' == 'true'">libRuntime.VxsortDisabled</VxSortSupportName>
       <StandaloneGCSupportName>libstandalonegc-disabled</StandaloneGCSupportName>
       <StandaloneGCSupportName Condition="'$(IlcStandaloneGCSupport)' == 'true'">libstandalonegc-enabled</StandaloneGCSupportName>
     </PropertyGroup>
@@ -117,6 +119,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'" Include="$(IlcSdkPath)libbootstrapperdll.o" />
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName).a" />
       <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibFileExt)" />
+      <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibFileExt)" />
       <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibFileExt)" />
       <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
     </ItemGroup>

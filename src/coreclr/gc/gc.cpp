@@ -18,7 +18,7 @@
 
 #include "gcpriv.h"
 
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+#ifdef TARGET_AMD64
 #define USE_VXSORT
 #else
 #define USE_INTROSORT
@@ -10305,11 +10305,11 @@ static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* rang
 {
     // above this threshold, using AVX2 for sorting will likely pay off
     // despite possible downclocking on some devices
-    const size_t AVX2_THRESHOLD_SIZE = 8 * 1024;
+    const ptrdiff_t AVX2_THRESHOLD_SIZE = 8 * 1024;
 
     // above this threshold, using AVX512F for sorting will likely pay off
     // despite possible downclocking on current devices
-    const size_t AVX512F_THRESHOLD_SIZE = 128 * 1024;
+    const ptrdiff_t AVX512F_THRESHOLD_SIZE = 128 * 1024;
 
     if (item_count <= 1)
         return;
