@@ -8,6 +8,8 @@
 
 // We generate unique names for each specialization so that they will be easy to distinguish
 //  when debugging, profiling, or disassembling. Otherwise they would have linker-assigned names
+#define DN_SIMDHASH_T_NAME(t) DN_SIMDHASH_GLUE(t,_t)
+#define DN_SIMDHASH_T_PTR(t) DN_SIMDHASH_GLUE(t,_t *)
 #define DN_SIMDHASH_T_VTABLE(t) DN_SIMDHASH_GLUE(t,_vtable)
 #define DN_SIMDHASH_T_META(t) DN_SIMDHASH_GLUE(t,_meta)
 #define DN_SIMDHASH_SCAN_BUCKET_INTERNAL(t) DN_SIMDHASH_GLUE(t,_scan_bucket_internal)
@@ -22,23 +24,26 @@
 #define DN_SIMDHASH_TRY_REMOVE(t) DN_SIMDHASH_GLUE(t,_try_remove)
 #define DN_SIMDHASH_TRY_REMOVE_WITH_HASH(t) DN_SIMDHASH_GLUE(t,_try_remove_with_hash)
 
-dn_simdhash_t *
+// Declare a specific alias so intellisense gives more helpful info
+typedef dn_simdhash_t DN_SIMDHASH_T_NAME(DN_SIMDHASH_T);
+
+DN_SIMDHASH_T_PTR(DN_SIMDHASH_T)
 DN_SIMDHASH_NEW(DN_SIMDHASH_T) (uint32_t capacity, dn_allocator_t *allocator);
 
 uint8_t
-DN_SIMDHASH_TRY_ADD(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T value);
+DN_SIMDHASH_TRY_ADD(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T value);
 
 uint8_t
-DN_SIMDHASH_TRY_ADD_WITH_HASH(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value);
+DN_SIMDHASH_TRY_ADD_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value);
 
 uint8_t
-DN_SIMDHASH_TRY_GET_VALUE(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T *result);
+DN_SIMDHASH_TRY_GET_VALUE(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T *result);
 
 uint8_t
-DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T *result);
+DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T *result);
 
 uint8_t
-DN_SIMDHASH_TRY_REMOVE(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key);
+DN_SIMDHASH_TRY_REMOVE(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key);
 
 uint8_t
-DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash);
+DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash);

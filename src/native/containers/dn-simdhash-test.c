@@ -47,7 +47,7 @@ void foreach_callback (void * key, void * value, void * user_data) {
 
 int main () {
 	const int c = 1024;
-	dn_simdhash_t *test = dn_simdhash_size_t_size_t_new(0, NULL);
+	dn_simdhash_size_t_size_t_t *test = dn_simdhash_size_t_size_t_new(0, NULL);
 	dn_vector_t *keys = dn_vector_alloc(sizeof(DN_SIMDHASH_KEY_T)),
 		*values = dn_vector_alloc(sizeof(DN_SIMDHASH_VALUE_T));
 
