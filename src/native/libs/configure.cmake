@@ -526,6 +526,11 @@ check_symbol_exists(
     "sys/socket.h"
     HAVE_DISCONNECTX)
 
+check_symbol_exists(
+    connectx
+    "sys/socket.h"
+    HAVE_CONNECTX)
+
 set(PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
 set(CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
 check_c_source_compiles(
