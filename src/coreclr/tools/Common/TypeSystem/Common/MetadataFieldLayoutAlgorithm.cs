@@ -993,6 +993,11 @@ namespace Internal.TypeSystem
                 }
             }
 
+            if (type.ContainsGCPointers)
+            {
+                instanceSize = LayoutInt.AlignUp(instanceSize, new LayoutInt(target.PointerSize), target);
+            }
+
             if (type.IsValueType)
             {
                 result.Size = instanceSize;
