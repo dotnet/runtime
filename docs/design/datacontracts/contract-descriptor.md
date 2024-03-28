@@ -32,6 +32,7 @@ struct DotNetRuntimeContractDescriptor
 struct DotNetRuntimeContractDescriptorList
 {
     struct DotNetRuntimeContractDescriptor descriptor;
+    const char *runtime_name;
     struct DotNetRuntimeContractDescriptorList *next_runtime;
 }
 ```
@@ -117,6 +118,10 @@ up, it shall atomically store a pointer to a `struct DotNetRuntimeContractDescri
 `DotNetRuntimeContractDescriptor` where `next_runtime` points to the previous value of
 `DotNetRuntimeContractDescriptor` as if by the following C code:
 
+The `runtime_name` is an arbitrary identifier to aid diagnostic tooling in identifying the current
+runtime.  (For example hosted runtimes may want to embed the name of the host; a desktop runtime may
+use just the runtime flavor and version)
+
 ``` c
 typedef struct DotNetRuntimeContractDescriptorList* DescPtr;
 typedef _Atomic(DescPtr) AtomicDescPtr;
@@ -128,11 +133,12 @@ static const struct DotNetRuntimeContractDescriptor g_private_descriptor = { ...
 
 // to be called at startup
 void
-install_descriptor(void)
+install_descriptor(const char *runtime_name)
 {
     DescPtr descriptor = malloc(sizeof(struct DotNetRuntimeContractDescriptorList));
     assert (descriptor != NULL);
     descriptor->descriptor = g_private_descriptor; // copy the constant values
+    descriptor->runtime_name = runtime_name;
     descriptor->next_runtime = NULL;
 
     DescPtr prev = atomic_load(&DotNetRuntimeContractDescriptor);
