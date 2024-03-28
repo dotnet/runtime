@@ -358,6 +358,13 @@ FCFuncStart(gWaitHandleFuncs)
     FCFuncElement("SignalAndWaitNative", WaitHandleNative::CorSignalAndWaitOneNative)
 FCFuncEnd()
 
+#ifdef FEATURE_COMINTEROP
+FCFuncStart(gVariantFuncs)
+    FCFuncElement("SetFieldsObject", COMVariant::SetFieldsObject)
+    FCFuncElement("BoxEnum", COMVariant::BoxEnum)
+FCFuncEnd()
+#endif // FEATURE_COMINTEROP
+
 FCFuncStart(gCastHelpers)
     FCFuncElement("IsInstanceOfAny_NoCacheLookup", ::IsInstanceOfAny_NoCacheLookup)
     FCFuncElement("ChkCastAny_NoCacheLookup", ::ChkCastAny_NoCacheLookup)
@@ -592,6 +599,9 @@ FCClassElement("Thread", "System.Threading", gThreadFuncs)
 FCClassElement("ThreadPool", "System.Threading", gThreadPoolFuncs)
 FCClassElement("Type", "System", gSystem_Type)
 FCClassElement("TypedReference", "System", gTypedReferenceFuncs)
+#ifdef FEATURE_COMINTEROP
+FCClassElement("Variant", "System", gVariantFuncs)
+#endif
 FCClassElement("WaitHandle", "System.Threading", gWaitHandleFuncs)
 
 #undef FCFuncElement

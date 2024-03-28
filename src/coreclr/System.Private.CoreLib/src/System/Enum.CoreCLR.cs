@@ -15,7 +15,7 @@ namespace System
         private static partial void GetEnumValuesAndNames(QCallTypeHandle enumType, ObjectHandleOnStack values, ObjectHandleOnStack names, Interop.BOOL getNames);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object InternalBoxEnum(RuntimeType enumType, long value);
+        private static extern object InternalBoxEnum(RuntimeType enumType, long value);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe CorElementType InternalGetCorElementType(MethodTable* pMT);
@@ -30,7 +30,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe CorElementType InternalGetCorElementType()
+        private unsafe CorElementType InternalGetCorElementType()
         {
             CorElementType elementType = InternalGetCorElementType(RuntimeHelpers.GetMethodTable(this));
             GC.KeepAlive(this);
