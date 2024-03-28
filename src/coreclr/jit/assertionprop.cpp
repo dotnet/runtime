@@ -83,6 +83,7 @@ bool IntegralRange::Contains(int64_t value) const
     {
         case TYP_UBYTE:
         case TYP_USHORT:
+        case TYP_UINT:
             return SymbolicIntegerValue::Zero;
         case TYP_BYTE:
             return SymbolicIntegerValue::ByteMin;

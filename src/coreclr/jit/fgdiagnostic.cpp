@@ -3563,9 +3563,12 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
     {
         // Print the tree so we can see it in the log.
         printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
+        printf("%d\n", actualFlags);
+        printf("%d\n", expectedFlags);
+        printf("%d\n", tree->gtOper);
         Compiler::fgDebugCheckDispFlags(tree, expectedFlags & ~actualFlags, GTF_DEBUG_NONE);
-        printf("\n");
-        gtDispTree(tree);
+        printf("\n\n\n");
+        // gtDispTree(tree);
 
         noway_assert(!"Missing flags on tree");
 

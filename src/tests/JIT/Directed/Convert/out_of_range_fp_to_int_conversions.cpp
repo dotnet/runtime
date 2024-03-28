@@ -17,7 +17,6 @@ typedef enum {
     CONVERT_SENTINEL,
     CONVERT_SATURATING,
     CONVERT_NATIVECOMPILERBEHAVIOR,
-    CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64,
     CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32,
 } FPtoIntegerConversionType;
 
@@ -30,7 +29,6 @@ extern "C" DLLEXPORT int32_t ConvertDoubleToInt32(double x, FPtoIntegerConversio
 
     switch (t) {
     case CONVERT_BACKWARD_COMPATIBLE:
-    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
     case CONVERT_SENTINEL:
         return ((x != x) || (x < INT32_MIN) || (x > INT32_MAX)) ? INT32_MIN : (int32_t)x;
 
@@ -53,7 +51,6 @@ extern "C" DLLEXPORT uint32_t ConvertDoubleToUInt32(double x, FPtoIntegerConvers
     const double int64_max_plus_1 = 0x1.p63; // 0x43e0000000000000 // (uint64_t)INT64_MAX + 1;
 
     switch (t) {
-    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
     case CONVERT_BACKWARD_COMPATIBLE:
         return ((x != x) || (x < INT64_MIN) || (x >= int64_max_plus_1)) ? 0 : (uint32_t)(int64_t)x;
 
@@ -95,7 +92,6 @@ extern "C" DLLEXPORT int64_t ConvertDoubleToInt64(double x, FPtoIntegerConversio
     const double int32_max_plus1 = ((double)INT32_MAX) + 1;
 
     switch (t) {
-    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
     case CONVERT_BACKWARD_COMPATIBLE:
     case CONVERT_SENTINEL:
         return ((x != x) || (x < INT64_MIN) || (x >= int64_max_plus_1)) ? INT64_MIN : (int64_t)x;
@@ -154,17 +150,6 @@ extern "C" DLLEXPORT  uint64_t ConvertDoubleToUInt64(double x, FPtoIntegerConver
             }
         }
 
-    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
-        if (x < int64_max_plus_1)
-        {
-            return (x < INT64_MIN) ? (uint64_t)INT64_MIN : (uint64_t)(int64_t)x;
-        }
-        else
-        {
-            x -= int64_max_plus_1;
-            x = trunc(x);
-            return (uint64_t)(((x != x) || (x >= int64_max_plus_1)) ? INT64_MIN : (int64_t)x) + (0x8000000000000000);
-        }
     case CONVERT_NATIVECOMPILERBEHAVIOR: // handled above, but add case to silence warning
         return 0;
     }
