@@ -55,13 +55,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (type == typeof(bool?))
             {
-                return ParseBool(value, () => section.Path);
+                return ParseBool(value, section.Path);
             }
 
             return null;
         }
 
-        public static bool ParseBool(string value, Func<string?> getPath)
+        public static bool ParseBool(string value, string? path)
         {
             try
             {
@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(bool)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(bool)}'.", exception);
             }
         }
         #endregion Core binding extensions.
