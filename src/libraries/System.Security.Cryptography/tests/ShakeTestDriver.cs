@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -535,6 +537,48 @@ namespace System.Security.Cryptography.Tests
         public void IsSupported_AgreesWithPlatform()
         {
             Assert.Equal(TShakeTrait.IsSupported, PlatformDetection.SupportsSha3);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void GetHashAndReset_ConcurrentUseDoesNotCrashProcess()
+        {
+            if (!IsSupported)
+            {
+                throw new SkipTestException("Algorithm is not supported on this platform.");
+            }
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                using (TShake shake = TShakeTrait.Create())
+                {
+                    Thread thread1 = new(ThreadWork);
+                    Thread thread2 = new(ThreadWork);
+                    thread1.Start(shake);
+                    thread2.Start(shake);
+                    thread1.Join();
+                    thread2.Join();
+                }
+            }).Dispose();
+
+            static void ThreadWork(object obj)
+            {
+                TShake shake = (TShake)obj;
+
+                try
+                {
+                    byte[] input = new byte[128];
+
+                    for (int i = 0; i < 10_000; i++)
+                    {
+                        TShakeTrait.AppendData(shake, input);
+                        TShakeTrait.GetHashAndReset(shake, 128);
+                    }
+                }
+                catch
+                {
+                    // Ignore all managed exceptions. HashAlgorithm is not thread safe, but we don't want process crashes.
+                }
+            }
         }
     }
 }
