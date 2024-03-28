@@ -22,6 +22,7 @@ namespace System.Text.Json.Serialization.Converters
             if (state.Current.CollectionEnumerator == null)
             {
                 enumerator = value.GetEnumerator();
+                state.Current.Disposable = enumerator;
                 if (!enumerator.MoveNext())
                 {
                     enumerator.Dispose();
