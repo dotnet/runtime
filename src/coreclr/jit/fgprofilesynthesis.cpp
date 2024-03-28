@@ -1289,6 +1289,12 @@ void ProfileSynthesis::GaussSeidelSolver()
                 residual      = change;
                 residualBlock = block;
             }
+
+            if (newWeight >= maxCount)
+            {
+                JITDUMP("count overflow in " FMT_BB ": " FMT_WT "\n", block->bbNum, newWeight);
+                m_overflow = true;
+            }
         }
 
         // If there were no improper headers, we will have converged in one pass.
@@ -1309,6 +1315,12 @@ void ProfileSynthesis::GaussSeidelSolver()
         if ((residual < stopResidual) || (relResidual < stopRelResidual))
         {
             converged = true;
+            break;
+        }
+
+        if (m_overflow)
+        {
+            printf("*** Overflowed counts in %s\n", m_comp->info.compFullName);
             break;
         }
 
