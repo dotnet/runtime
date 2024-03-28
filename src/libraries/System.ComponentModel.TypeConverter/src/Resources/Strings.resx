@@ -94,6 +94,9 @@
   <data name="InvalidMemberName" xml:space="preserve">
     <value>Invalid member name</value>
   </data>
+  <data name="InstanceBasedTypeDescriptorsNotSupported" xml:space="preserve">
+    <value>Instance-based type descriptors are disabled in the app configuration and are not supported.</value>
+  </data>
   <data name="none" xml:space="preserve">
     <value>(none)</value>
   </data>
@@ -102,6 +105,9 @@
   </data>
   <data name="NullableConverterBadCtorArg" xml:space="preserve">
     <value>The specified type is not a nullable type.</value>
+  </data>
+  <data name="NullableConverterNotSupported" xml:space="preserve">
+    <value>NullableConverter support has been disabled in the app configuration, but requested a converter for a nullable type.</value>
   </data>
   <data name="Text" xml:space="preserve">
     <value>(Text)</value>

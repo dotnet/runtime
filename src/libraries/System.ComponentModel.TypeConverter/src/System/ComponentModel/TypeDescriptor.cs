@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Specialized;
 using System.ComponentModel.Design;
@@ -19,6 +20,11 @@ namespace System.ComponentModel
     /// </summary>
     public sealed class TypeDescriptor
     {
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+        [FeatureSwitchDefinition("System.ComponentModel.TypeDescriptor.SupportsInstanceBasedDescriptors")]
+#pragma warning disable IL4000
+        internal static bool SupportsInstanceBasedDescriptors => AppContext.TryGetSwitch("System.ComponentModel.TypeDescriptor.SupportsInstanceBasedDescriptors", out bool result) ? result : true;
+#pragma warning restore IL4000
         internal const DynamicallyAccessedMemberTypes ReflectTypesDynamicallyAccessedMembers = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields;
         internal const string DesignTimeAttributeTrimmed = "Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.";
 
@@ -106,6 +112,17 @@ namespace System.ComponentModel
         /// Occurs when Refreshed is raised for a component.
         /// </summary>
         public static event RefreshEventHandler? Refreshed;
+
+        internal static void CheckInstance(object? instance)
+        {
+            if (!SupportsInstanceBasedDescriptors)
+            {
+                if (instance != null)
+                {
+                    throw new NotSupportedException(SR.InstanceBasedTypeDescriptorsNotSupported);
+                }
+            }
+        }
 
         /// <summary>
         /// The AddAttributes method allows you to add class-level attributes for a
@@ -784,16 +801,10 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a type converter for the specified type.
         /// </summary>
-        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
         public static TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             return GetDescriptor(type, nameof(type)).GetConverter();
         }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The callers of this method ensure getting the converter is trim compatible - i.e. the type is not Nullable<T>.")]
-        internal static TypeConverter GetConverterTrimUnsafe([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
-            GetConverter(type);
 
         // This is called by System.ComponentModel.DefaultValueAttribute via reflection.
         [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
@@ -2586,6 +2597,8 @@ namespace System.ComponentModel
                     return null;
                 }
 
+                CheckInstance(instance);
+
                 if (!objectType.IsInstanceOfType(instance))
                 {
                     throw new ArgumentException(SR.Format(SR.ConvertToException, nameof(objectType), instance.GetType()), nameof(instance));
@@ -2620,7 +2633,6 @@ namespace System.ComponentModel
 
                 string? ICustomTypeDescriptor.GetComponentName() => null;
 
-                [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
                 TypeConverter ICustomTypeDescriptor.GetConverter() => _handler.GetConverter(_instance);
 
                 [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
@@ -2690,6 +2702,7 @@ namespace System.ComponentModel
             /// </summary>
             public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
             {
+                CheckInstance(instance);
                 return new AttributeTypeDescriptor(_attrs, base.GetTypeDescriptor(objectType, instance));
             }
 
@@ -2857,6 +2870,7 @@ namespace System.ComponentModel
             [return: NotNullIfNotNull(nameof(instance))]
             public override ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
             {
+                CheckInstance(instance);
                 return _comNativeDescriptor.GetTypeDescriptor(objectType, instance);
             }
         }
@@ -2914,7 +2928,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
             TypeConverter ICustomTypeDescriptor.GetConverter()
             {
                 TypeConverter? converter = _primary.GetConverter() ?? _secondary.GetConverter();
@@ -3134,6 +3147,7 @@ namespace System.ComponentModel
             public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
             {
                 ArgumentNullException.ThrowIfNull(objectType);
+                CheckInstance(instance);
 
                 if (instance != null && !objectType.IsInstanceOfType(instance))
                 {
@@ -3243,7 +3257,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
                 TypeConverter ICustomTypeDescriptor.GetConverter()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3467,6 +3481,7 @@ namespace System.ComponentModel
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType,
                 object? instance)
             {
+                CheckInstance(instance);
                 _node = node;
                 _objectType = objectType;
                 _instance = instance;
@@ -3552,7 +3567,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
             public TypeConverter GetConverter()
             {
                 // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3562,7 +3576,14 @@ namespace System.ComponentModel
                 TypeConverter? converter;
                 if (p is ReflectTypeDescriptionProvider rp)
                 {
-                    converter = rp.GetConverter(_objectType, _instance);
+                    if (SupportsInstanceBasedDescriptors)
+                    {
+                        converter = rp.GetConverter(_objectType, _instance);
+                    }
+                    else
+                    {
+                        converter = rp.GetConverter(_objectType);
+                    }
                 }
                 else
                 {

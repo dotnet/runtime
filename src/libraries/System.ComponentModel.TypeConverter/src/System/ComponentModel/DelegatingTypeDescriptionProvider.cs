@@ -116,6 +116,7 @@ namespace System.ComponentModel
         /// </summary>
         public override ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
         {
+            TypeDescriptor.CheckInstance(instance);
             return Provider.GetTypeDescriptor(objectType, instance);
         }
 

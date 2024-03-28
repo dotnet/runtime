@@ -38,7 +38,7 @@ namespace System.Drawing
                 char sep = culture.TextInfo.ListSeparator[0];
                 string[] tokens = text.Split(sep);
                 int[] values = new int[tokens.Length];
-                TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
+                TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
                 for (int i = 0; i < values.Length; i++)
                 {
                     // Note: ConvertFromString will raise exception if value cannot be converted.
@@ -69,7 +69,7 @@ namespace System.Drawing
                     culture ??= CultureInfo.CurrentCulture;
 
                     string sep = culture.TextInfo.ListSeparator + " ";
-                    TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
+                    TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
 
                     // Note: ConvertFromString will raise exception if value cannot be converted.
                     var args = new string?[]
