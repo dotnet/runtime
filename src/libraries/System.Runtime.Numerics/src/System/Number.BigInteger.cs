@@ -298,175 +298,59 @@ namespace System
 #else
         internal const
 #endif
-        int s_naiveThreshold = 1233;
+        int
+            BigIntegerParseNaiveThreshold = 1233,
+            BigIntegerParseNaiveThresholdInRecursive = 9 * (1 << 7);
+
         private static ParsingStatus NumberToBigInteger(ref NumberBuffer number, out BigInteger result)
         {
-            int currentBufferSize = 0;
+            const uint TenPowMaxPartial = PowersOf1e9.TenPowMaxPartial;
+            const int MaxPartialDigits = PowersOf1e9.MaxPartialDigits;
 
-            int totalDigitCount = 0;
-            int numberScale = number.Scale;
-
-            const int MaxPartialDigits = 9;
-            const uint TenPowMaxPartial = 1000000000;
-
-            int[]? arrayFromPoolForResultBuffer = null;
-
-            if (numberScale == int.MaxValue)
+            if (number.Scale == int.MaxValue)
             {
                 result = default;
                 return ParsingStatus.Overflow;
             }
 
-            if (numberScale < 0)
+            if (number.Scale < 0)
             {
                 result = default;
                 return ParsingStatus.Failed;
             }
 
-            try
+            const double digitRatio = 0.10381025297; // log_{2^32}(10)
+            int resultLength = checked((int)(number.Scale * digitRatio) + 1 + 2);
+            uint[]? resultBufferFromPool = null;
+            Span<uint> resultBuffer = (
+                resultLength <= BigIntegerCalculator.StackAllocThreshold
+                ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                : resultBufferFromPool = ArrayPool<uint>.Shared.Rent(resultLength)).Slice(0, resultLength);
+            resultBuffer.Clear();
+
+            if (number.Scale <= BigIntegerParseNaiveThreshold
+                ? !Naive(ref number, resultBuffer)
+                : !DivideAndConquer(ref number, resultBuffer))
             {
-                if (number.DigitsCount <= s_naiveThreshold)
-                {
-                    return Naive(ref number, out result);
-                }
-                else
-                {
-                    return DivideAndConquer(ref number, out result);
-                }
-            }
-            finally
-            {
-                if (arrayFromPoolForResultBuffer != null)
-                {
-                    ArrayPool<int>.Shared.Return(arrayFromPoolForResultBuffer);
-                }
+                result = default;
+                return ParsingStatus.Failed;
             }
 
-            ParsingStatus Naive(ref NumberBuffer number, out BigInteger result)
+            result = NumberBufferToBigInteger(resultBuffer.Slice(0, BigIntegerCalculator.ActualLength(resultBuffer)), number.IsNegative);
+
+            if (resultBufferFromPool != null)
+                ArrayPool<uint>.Shared.Return(resultBufferFromPool);
+
+            return ParsingStatus.OK;
+
+            static bool DivideAndConquer(ref NumberBuffer number, scoped Span<uint> bits)
             {
-                Span<uint> stackBuffer = stackalloc uint[BigIntegerCalculator.StackAllocThreshold];
-                Span<uint> currentBuffer = stackBuffer;
-                uint partialValue = 0;
-                int partialDigitCount = 0;
-
-                if (!ProcessChunk(number.Digits[..number.DigitsCount], ref currentBuffer))
+                ReadOnlySpan<byte> intDigits = number.Digits.Slice(0, Math.Min(number.Scale, number.DigitsCount));
+                int intDigitsEnd = intDigits.IndexOf<byte>(0);
+                if (intDigitsEnd < 0)
                 {
-                    result = default;
-                    return ParsingStatus.Failed;
-                }
-
-                if (partialDigitCount > 0)
-                {
-                    MultiplyAdd(ref currentBuffer, UInt32PowersOfTen[partialDigitCount], partialValue);
-                }
-
-                result = NumberBufferToBigInteger(currentBuffer, number.IsNegative);
-                return ParsingStatus.OK;
-
-                bool ProcessChunk(ReadOnlySpan<byte> chunkDigits, ref Span<uint> currentBuffer)
-                {
-                    int remainingIntDigitCount = Math.Max(numberScale - totalDigitCount, 0);
-                    ReadOnlySpan<byte> intDigitsSpan = chunkDigits.Slice(0, Math.Min(remainingIntDigitCount, chunkDigits.Length));
-
-                    bool endReached = false;
-
-                    // Storing these captured variables in locals for faster access in the loop.
-                    uint _partialValue = partialValue;
-                    int _partialDigitCount = partialDigitCount;
-                    int _totalDigitCount = totalDigitCount;
-
-                    for (int i = 0; i < intDigitsSpan.Length; i++)
-                    {
-                        char digitChar = (char)chunkDigits[i];
-                        if (digitChar == '\0')
-                        {
-                            endReached = true;
-                            break;
-                        }
-
-                        _partialValue = _partialValue * 10 + (uint)(digitChar - '0');
-                        _partialDigitCount++;
-                        _totalDigitCount++;
-
-                        // Update the buffer when enough partial digits have been accumulated.
-                        if (_partialDigitCount == MaxPartialDigits)
-                        {
-                            MultiplyAdd(ref currentBuffer, TenPowMaxPartial, _partialValue);
-                            _partialValue = 0;
-                            _partialDigitCount = 0;
-                        }
-                    }
-
                     // Check for nonzero digits after the decimal point.
-                    if (!endReached)
-                    {
-                        ReadOnlySpan<byte> fracDigitsSpan = chunkDigits.Slice(intDigitsSpan.Length);
-                        for (int i = 0; i < fracDigitsSpan.Length; i++)
-                        {
-                            char digitChar = (char)fracDigitsSpan[i];
-                            if (digitChar == '\0')
-                            {
-                                break;
-                            }
-                            if (digitChar != '0')
-                            {
-                                return false;
-                            }
-                        }
-                    }
-
-                    partialValue = _partialValue;
-                    partialDigitCount = _partialDigitCount;
-                    totalDigitCount = _totalDigitCount;
-
-                    return true;
-                }
-            }
-
-            ParsingStatus DivideAndConquer(ref NumberBuffer number, out BigInteger result)
-            {
-                Span<uint> currentBuffer;
-                int[]? arrayFromPoolForMultiplier = null;
-                try
-                {
-                    totalDigitCount = Math.Min(number.DigitsCount, numberScale);
-                    int bufferSize = (totalDigitCount + MaxPartialDigits - 1) / MaxPartialDigits;
-
-                    Span<uint> buffer = new uint[bufferSize];
-                    arrayFromPoolForResultBuffer = ArrayPool<int>.Shared.Rent(bufferSize);
-                    Span<uint> newBuffer = MemoryMarshal.Cast<int, uint>(arrayFromPoolForResultBuffer).Slice(0, bufferSize);
-                    newBuffer.Clear();
-
-                    // Separate every MaxPartialDigits digits and store them in the buffer.
-                    // Buffers are treated as little-endian. That means, the array { 234567890, 1 }
-                    // represents the number 1234567890.
-                    int bufferIndex = bufferSize - 1;
-                    uint currentBlock = 0;
-                    int shiftUntil = (totalDigitCount - 1) % MaxPartialDigits;
-                    int remainingIntDigitCount = totalDigitCount;
-
-                    ReadOnlySpan<byte> digitsChunkSpan = number.Digits[..number.DigitsCount];
-                    ReadOnlySpan<byte> intDigitsSpan = digitsChunkSpan.Slice(0, Math.Min(remainingIntDigitCount, digitsChunkSpan.Length));
-
-                    for (int i = 0; i < intDigitsSpan.Length; i++)
-                    {
-                        char digitChar = (char)intDigitsSpan[i];
-                        Debug.Assert(char.IsDigit(digitChar));
-                        currentBlock *= 10;
-                        currentBlock += unchecked((uint)(digitChar - '0'));
-                        if (shiftUntil == 0)
-                        {
-                            buffer[bufferIndex] = currentBlock;
-                            currentBlock = 0;
-                            bufferIndex--;
-                            shiftUntil = MaxPartialDigits;
-                        }
-                        shiftUntil--;
-                    }
-                    remainingIntDigitCount -= intDigitsSpan.Length;
-                    Debug.Assert(0 <= remainingIntDigitCount);
-
-                    ReadOnlySpan<byte> fracDigitsSpan = digitsChunkSpan.Slice(intDigitsSpan.Length);
+                    ReadOnlySpan<byte> fracDigitsSpan = number.Digits.Slice(intDigits.Length);
                     for (int i = 0; i < fracDigitsSpan.Length; i++)
                     {
                         char digitChar = (char)fracDigitsSpan[i];
@@ -476,184 +360,236 @@ namespace System
                         }
                         if (digitChar != '0')
                         {
-                            result = default;
-                            return ParsingStatus.Failed;
+                            return false;
                         }
-                    }
-
-                    Debug.Assert(currentBlock == 0);
-                    Debug.Assert(bufferIndex == -1);
-
-                    int blockSize = 1;
-                    arrayFromPoolForMultiplier = ArrayPool<int>.Shared.Rent(blockSize);
-                    Span<uint> multiplier = MemoryMarshal.Cast<int, uint>(arrayFromPoolForMultiplier).Slice(0, blockSize);
-                    multiplier[0] = TenPowMaxPartial;
-
-                    // This loop is executed ceil(log_2(bufferSize)) times.
-                    while (true)
-                    {
-                        // merge each block pairs.
-                        // When buffer represents:
-                        // |     A     |     B     |     C     |     D     |
-                        // Make newBuffer like:
-                        // |  A + B * multiplier   |  C + D * multiplier   |
-                        for (int i = 0; i < bufferSize; i += blockSize * 2)
-                        {
-                            Span<uint> curBuffer = buffer.Slice(i);
-                            Span<uint> curNewBuffer = newBuffer.Slice(i);
-
-                            int len = Math.Min(bufferSize - i, blockSize * 2);
-                            int lowerLen = Math.Min(len, blockSize);
-                            int upperLen = len - lowerLen;
-                            if (upperLen != 0)
-                            {
-                                Debug.Assert(blockSize == lowerLen);
-                                Debug.Assert(blockSize == multiplier.Length);
-                                Debug.Assert(multiplier.Length == lowerLen);
-                                BigIntegerCalculator.Multiply(multiplier, curBuffer.Slice(blockSize, upperLen), curNewBuffer.Slice(0, len));
-                            }
-
-                            long carry = 0;
-                            int j = 0;
-                            for (; j < lowerLen; j++)
-                            {
-                                long digit = (curBuffer[j] + carry) + curNewBuffer[j];
-                                curNewBuffer[j] = unchecked((uint)digit);
-                                carry = digit >> 32;
-                            }
-                            if (carry != 0)
-                            {
-                                while (true)
-                                {
-                                    curNewBuffer[j]++;
-                                    if (curNewBuffer[j] != 0)
-                                    {
-                                        break;
-                                    }
-                                    j++;
-                                }
-                            }
-                        }
-
-                        Span<uint> tmp = buffer;
-                        buffer = newBuffer;
-                        newBuffer = tmp;
-                        blockSize *= 2;
-
-                        if (bufferSize <= blockSize)
-                        {
-                            break;
-                        }
-                        newBuffer.Clear();
-                        int[]? arrayToReturn = arrayFromPoolForMultiplier;
-
-                        arrayFromPoolForMultiplier = ArrayPool<int>.Shared.Rent(blockSize);
-                        Span<uint> newMultiplier = MemoryMarshal.Cast<int, uint>(arrayFromPoolForMultiplier).Slice(0, blockSize);
-                        newMultiplier.Clear();
-                        BigIntegerCalculator.Square(multiplier, newMultiplier);
-                        multiplier = newMultiplier;
-                        if (arrayToReturn is not null)
-                        {
-                            ArrayPool<int>.Shared.Return(arrayToReturn);
-                        }
-                    }
-
-                    // shrink buffer to the currently used portion.
-                    // First, calculate the rough size of the buffer from the ratio that the number
-                    // of digits follows. Then, shrink the size until there is no more space left.
-                    // The Ratio is calculated as: log_{2^32}(10^9)
-                    const double digitRatio = 0.934292276687070661;
-                    currentBufferSize = Math.Min((int)(bufferSize * digitRatio) + 1, bufferSize);
-                    Debug.Assert(buffer.Length == currentBufferSize || buffer[currentBufferSize] == 0);
-                    while (0 < currentBufferSize && buffer[currentBufferSize - 1] == 0)
-                    {
-                        currentBufferSize--;
-                    }
-                    currentBuffer = buffer.Slice(0, currentBufferSize);
-                    result = NumberBufferToBigInteger(currentBuffer, number.IsNegative);
-                }
-                finally
-                {
-                    if (arrayFromPoolForMultiplier != null)
-                    {
-                        ArrayPool<int>.Shared.Return(arrayFromPoolForMultiplier);
                     }
                 }
-                return ParsingStatus.OK;
-            }
+                else
+                    intDigits = intDigits.Slice(0, intDigitsEnd);
 
-            BigInteger NumberBufferToBigInteger(Span<uint> currentBuffer, bool signa)
-            {
-                int trailingZeroCount = numberScale - totalDigitCount;
+                int totalDigitCount = Math.Min(number.DigitsCount, number.Scale);
+                int trailingZeroCount = number.Scale - totalDigitCount;
 
-                while (trailingZeroCount >= MaxPartialDigits)
-                {
-                    MultiplyAdd(ref currentBuffer, TenPowMaxPartial, 0);
-                    trailingZeroCount -= MaxPartialDigits;
-                }
+                int powersOf1e9BufferLength = PowersOf1e9.GetBufferSize(Math.Max(totalDigitCount, trailingZeroCount));
+                uint[]? powersOf1e9BufferFromPool = null;
+                Span<uint> powersOf1e9Buffer = (
+                    powersOf1e9BufferLength <= BigIntegerCalculator.StackAllocThreshold
+                    ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                    : powersOf1e9BufferFromPool = ArrayPool<uint>.Shared.Rent(powersOf1e9BufferLength)).Slice(0, powersOf1e9BufferLength);
+                powersOf1e9Buffer.Clear();
+
+                PowersOf1e9 powersOf1e9 = new PowersOf1e9(powersOf1e9Buffer);
+
 
                 if (trailingZeroCount > 0)
                 {
-                    MultiplyAdd(ref currentBuffer, UInt32PowersOfTen[trailingZeroCount], 0);
-                }
+                    int leadingLength = checked((int)(digitRatio * totalDigitCount) + 2);
+                    uint[]? leadingFromPool = null;
+                    Span<uint> leading = (
+                        leadingLength <= BigIntegerCalculator.StackAllocThreshold
+                        ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                        : leadingFromPool = ArrayPool<uint>.Shared.Rent(leadingLength)).Slice(0, leadingLength);
+                    leading.Clear();
 
-                int sign;
-                uint[]? bits;
+                    Recursive(powersOf1e9, intDigits, leading);
+                    leading = leading.Slice(0, BigIntegerCalculator.ActualLength(leading));
 
-                if (currentBufferSize == 0)
-                {
-                    sign = 0;
-                    bits = null;
-                }
-                else if (currentBufferSize == 1 && currentBuffer[0] <= int.MaxValue)
-                {
-                    sign = (int)(signa ? -currentBuffer[0] : currentBuffer[0]);
-                    bits = null;
+                    powersOf1e9.MultiplyPowerOfTen(leading, trailingZeroCount, bits);
+
+                    if (leadingFromPool != null)
+                        ArrayPool<uint>.Shared.Return(leadingFromPool);
                 }
                 else
                 {
-                    sign = signa ? -1 : 1;
-                    bits = currentBuffer.Slice(0, currentBufferSize).ToArray();
+                    Recursive(powersOf1e9, intDigits, bits);
                 }
 
-                return new BigInteger(sign, bits);
+
+                if (powersOf1e9BufferFromPool != null)
+                    ArrayPool<uint>.Shared.Return(powersOf1e9BufferFromPool);
+
+                return true;
             }
 
-            // This function should only be used for result buffer.
-            void MultiplyAdd(ref Span<uint> currentBuffer, uint multiplier, uint addValue)
+            static void Recursive(in PowersOf1e9 powersOf1e9, ReadOnlySpan<byte> digits, Span<uint> bits)
             {
-                Span<uint> curBits = currentBuffer.Slice(0, currentBufferSize);
-                uint carry = addValue;
-
-                for (int i = 0; i < curBits.Length; i++)
+                Debug.Assert(BigIntegerParseNaiveThresholdInRecursive >= MaxPartialDigits);
+                if (digits.Length < BigIntegerParseNaiveThresholdInRecursive)
                 {
-                    ulong p = (ulong)multiplier * curBits[i] + carry;
-                    curBits[i] = (uint)p;
-                    carry = (uint)(p >> 32);
-                }
-
-                if (carry == 0)
-                {
+                    NaiveDigits(digits, bits);
                     return;
                 }
 
-                if (currentBufferSize == currentBuffer.Length)
+                int lengthe9 = (digits.Length + MaxPartialDigits - 1) / MaxPartialDigits;
+                int log2 = BitOperations.Log2((uint)(lengthe9 - 1));
+                int powOfTenSize = 1 << log2;
+
+                ReadOnlySpan<byte> digitsUpper = digits.Slice(0, digits.Length - MaxPartialDigits * powOfTenSize);
+                ReadOnlySpan<byte> digitsLower = digits.Slice(digitsUpper.Length);
                 {
-                    int[]? arrayToReturn = arrayFromPoolForResultBuffer;
+                    int iv = 0;
+                    while ((uint)iv < (uint)digitsLower.Length && digitsLower[iv] == 0) ++iv;
+                    digitsLower = digitsLower.Slice(iv);
+                }
 
-                    arrayFromPoolForResultBuffer = ArrayPool<int>.Shared.Rent(checked(currentBufferSize * 2));
-                    Span<uint> newBuffer = MemoryMarshal.Cast<int, uint>(arrayFromPoolForResultBuffer);
-                    currentBuffer.CopyTo(newBuffer);
-                    currentBuffer = newBuffer;
+                int upperBufferLength = checked((int)(digitsUpper.Length * digitRatio) + 1 + 2);
+                uint[]? upperBufferFromPool = null;
+                Span<uint> upperBuffer = (
+                    upperBufferLength <= BigIntegerCalculator.StackAllocThreshold
+                    ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                    : upperBufferFromPool = ArrayPool<uint>.Shared.Rent(upperBufferLength)).Slice(0, upperBufferLength);
+                upperBuffer.Clear();
+                {
+                    Recursive(powersOf1e9, digitsUpper, upperBuffer);
+                    upperBuffer = upperBuffer.Slice(0, BigIntegerCalculator.ActualLength(upperBuffer));
+                    ReadOnlySpan<uint> multiplier = powersOf1e9.GetSpan(log2);
+                    int multiplierTrailingZeroCountUInt32 = PowersOf1e9.OmittedLength(log2);
 
-                    if (arrayToReturn != null)
+                    Span<uint> bitsUpper = bits.Slice(0, upperBuffer.Length + multiplier.Length + multiplierTrailingZeroCountUInt32);
+                    bitsUpper = bitsUpper.Slice(multiplierTrailingZeroCountUInt32);
+
+                    if (multiplier.Length < upperBuffer.Length)
+                        BigIntegerCalculator.Multiply(upperBuffer, multiplier, bitsUpper);
+                    else
+                        BigIntegerCalculator.Multiply(multiplier, upperBuffer, bitsUpper);
+                }
+                if (upperBufferFromPool != null)
+                    ArrayPool<uint>.Shared.Return(upperBufferFromPool);
+
+
+                int lowerBufferLength = checked((int)(digitsLower.Length * digitRatio) + 1 + 2);
+                uint[]? lowerBufferFromPool = null;
+                Span<uint> lowerBuffer = (
+                    lowerBufferLength <= BigIntegerCalculator.StackAllocThreshold
+                    ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                    : lowerBufferFromPool = ArrayPool<uint>.Shared.Rent(lowerBufferLength)).Slice(0, lowerBufferLength);
+                lowerBuffer.Clear();
+
+                Recursive(powersOf1e9, digitsLower, lowerBuffer);
+                lowerBuffer = lowerBuffer.Slice(0, BigIntegerCalculator.ActualLength(lowerBuffer));
+
+                BigIntegerCalculator.AddSelf(bits, lowerBuffer);
+
+                if (lowerBufferFromPool != null)
+                    ArrayPool<uint>.Shared.Return(lowerBufferFromPool);
+            }
+
+            static int NaiveDigits(ReadOnlySpan<byte> intDigits, Span<uint> bits)
+            {
+                int leadingLength = intDigits.Length % 9;
+                uint partialValue = 0;
+                foreach (uint dig in intDigits.Slice(0, leadingLength))
+                {
+                    partialValue = partialValue * 10 + (dig - '0');
+                }
+                bits[0] = partialValue;
+
+                int partialDigitCount = 0;
+                int resultLength = 1;
+                partialValue = 0;
+                for (int i = leadingLength; i < intDigits.Length; i++)
+                {
+                    partialValue = partialValue * 10 + (uint)(intDigits[i] - '0');
+
+                    // Update the buffer when enough partial digits have been accumulated.
+                    if (++partialDigitCount == MaxPartialDigits)
                     {
-                        ArrayPool<int>.Shared.Return(arrayToReturn);
+                        uint carry = MultiplyAdd(bits.Slice(0, resultLength), TenPowMaxPartial, partialValue);
+                        partialValue = 0;
+                        partialDigitCount = 0;
+                        Debug.Assert(bits[resultLength] == 0);
+                        if (carry != 0)
+                            bits[resultLength++] = carry;
                     }
                 }
 
-                currentBuffer[currentBufferSize] = carry;
-                currentBufferSize++;
+                return resultLength;
+            }
+
+            static bool Naive(ref NumberBuffer number, scoped Span<uint> bits)
+            {
+                ReadOnlySpan<byte> intDigits = number.Digits.Slice(0, Math.Min(number.Scale, number.DigitsCount));
+                int intDigitsEnd = intDigits.IndexOf<byte>(0);
+                if (intDigitsEnd < 0)
+                {
+                    // Check for nonzero digits after the decimal point.
+                    ReadOnlySpan<byte> fracDigitsSpan = number.Digits.Slice(intDigits.Length);
+                    for (int i = 0; i < fracDigitsSpan.Length; i++)
+                    {
+                        char digitChar = (char)fracDigitsSpan[i];
+                        if (digitChar == '\0')
+                        {
+                            break;
+                        }
+                        if (digitChar != '0')
+                        {
+                            return false;
+                        }
+                    }
+                }
+                else
+                    intDigits = intDigits.Slice(0, intDigitsEnd);
+
+
+                int totalDigitCount = Math.Min(number.DigitsCount, number.Scale);
+                if (totalDigitCount == 0)
+                {
+                    // number is 0.
+                    return true;
+                }
+                int resultLength = NaiveDigits(intDigits, bits);
+
+                int trailingZeroCount = number.Scale - totalDigitCount;
+                int trailingPartialCount = Math.DivRem(trailingZeroCount, MaxPartialDigits, out int remainingTrailingZeroCount);
+                for (int i = 0; i < trailingPartialCount; i++)
+                {
+                    uint carry = MultiplyAdd(bits.Slice(0, resultLength), TenPowMaxPartial, 0);
+                    Debug.Assert(bits[resultLength] == 0);
+                    if (carry != 0)
+                        bits[resultLength++] = carry;
+                }
+
+                if (remainingTrailingZeroCount != 0)
+                {
+                    uint multiplier = UInt32PowersOfTen[remainingTrailingZeroCount];
+                    uint carry = MultiplyAdd(bits.Slice(0, resultLength), multiplier, 0);
+                    Debug.Assert(bits[resultLength] == 0);
+                    if (carry != 0)
+                        bits[resultLength++] = carry;
+                }
+
+                return true;
+            }
+
+            static uint MultiplyAdd(Span<uint> bits, uint multiplier, uint addValue)
+            {
+                uint carry = addValue;
+
+                for (int i = 0; i < bits.Length; i++)
+                {
+                    ulong p = (ulong)multiplier * bits[i] + carry;
+                    bits[i] = (uint)p;
+                    carry = (uint)(p >> 32);
+                }
+                return carry;
+            }
+
+            static BigInteger NumberBufferToBigInteger(ReadOnlySpan<uint> result, bool isNegative)
+            {
+                Debug.Assert(result.Length == 0 || result[^1] != 0);
+
+                if (result.Length == 0)
+                {
+                    return BigInteger.Zero;
+                }
+                else if (result is [uint leading] && (leading <= int.MaxValue || isNegative && leading == unchecked((uint)(int.MaxValue + 1))))
+                {
+                    return new BigInteger((int)(isNegative ? -leading : leading));
+                }
+                else
+                {
+                    return new BigInteger(isNegative ? -1 : 1, result.ToArray());
+                }
             }
         }
 
@@ -1059,6 +995,265 @@ namespace System
                 charsWritten = 0;
                 spanSuccess = false;
                 return null;
+            }
+        }
+
+        internal readonly ref struct PowersOf1e9
+        {
+            // Holds 1000000000^(1<<<n).
+            private readonly ReadOnlySpan<uint> pow1E9;
+            public const uint TenPowMaxPartial = 1000000000;
+            public const int MaxPartialDigits = 9;
+
+            // indexes[i] is pre-calculated length of (10^9)^i
+            // This means that pow1E9[indexes[i-1]..indexes[i]] equals 1000000000 * (1<<i)
+            //
+            // The `indexes` are calculated as follows
+            //    const double digitRatio = 0.934292276687070661; // log_{2^32}(10^9)
+            //    int[] indexes = new int[32];
+            //    indexes[0] = 0;
+            //    for (int i = 0; i + 1 < indexes.Length; i++)
+            //    {
+            //        int length = unchecked((int)(digitRatio * (1 << i)) + 1);
+            //        length -= (9*(1<<i)) >> 5;
+            //        indexes[i+1] = indexes[i] + length;
+            //    }
+            private static ReadOnlySpan<int> Indexes =>
+            [
+                0,
+                1,
+                3,
+                6,
+                12,
+                23,
+                44,
+                86,
+                170,
+                338,
+                673,
+                1342,
+                2680,
+                5355,
+                10705,
+                21405,
+                42804,
+                85602,
+                171198,
+                342390,
+                684773,
+                1369538,
+                2739067,
+                5478125,
+                10956241,
+                21912473,
+                43824936,
+                87649862,
+                175299713,
+                484817143,
+                969634274,
+                1939268536,
+            ];
+
+            // The PowersOf1e9 structure holds 1000000000^(1<<<n). However, if the lower element is zero,
+            // it is truncated. Therefore, if the lower element becomes zero in the process of calculating
+            // 1000000000^(1<<<n), it must be truncated. If 1000000000^(1<<<<n) is calculated in advance
+            // for less than 6, there is no need to consider the case where the lower element becomes zero
+            // during the calculation process, since 1000000000^(1<<<<n) mod 32 is always zero.
+            private static ReadOnlySpan<uint> LeadingPowers1E9 =>
+            [
+                // 1000000000^(1<<0)
+                1000000000,
+                // 1000000000^(1<<1)
+                2808348672,
+                232830643,
+                // 1000000000^(1<<2)
+                3008077584,
+                2076772117,
+                12621774,
+                // 1000000000^(1<<3)
+                4130660608,
+                835571558,
+                1441351422,
+                977976457,
+                264170013,
+                37092,
+                // 1000000000^(1<<4)
+                767623168,
+                4241160024,
+                1260959332,
+                2541775228,
+                2965753944,
+                1796720685,
+                484800439,
+                1311835347,
+                2945126454,
+                3563705203,
+                1375821026,
+                // 1000000000^(1<<5)
+                3940379521,
+                184513341,
+                2872588323,
+                2214530454,
+                38258512,
+                2980860351,
+                114267010,
+                2188874685,
+                234079247,
+                2101059099,
+                1948702207,
+                947446250,
+                864457656,
+                507589568,
+                1321007357,
+                3911984176,
+                1011110295,
+                2382358050,
+                2389730781,
+                730678769,
+                440721283,
+            ];
+
+            public PowersOf1e9(Span<uint> pow1E9)
+            {
+                Debug.Assert(pow1E9.Length >= 1);
+                Debug.Assert(Indexes[6] == LeadingPowers1E9.Length);
+                if (pow1E9.Length <= LeadingPowers1E9.Length)
+                {
+                    this.pow1E9 = LeadingPowers1E9;
+                    return;
+                }
+                LeadingPowers1E9.CopyTo(pow1E9.Slice(0, LeadingPowers1E9.Length));
+                this.pow1E9 = pow1E9;
+
+                ReadOnlySpan<uint> src = pow1E9.Slice(Indexes[5], Indexes[6] - Indexes[5]);
+                int toExclusive = Indexes[6];
+                for (int i = 6; i + 1 < Indexes.Length; i++)
+                {
+                    Debug.Assert(2 * src.Length - (Indexes[i + 1] - Indexes[i]) is 0 or 1);
+                    if (pow1E9.Length - toExclusive < (src.Length << 1))
+                        break;
+                    Span<uint> dst = pow1E9.Slice(toExclusive, src.Length << 1);
+                    BigIntegerCalculator.Square(src, dst);
+                    int from = toExclusive;
+                    toExclusive = Indexes[i + 1];
+                    src = pow1E9.Slice(from, toExclusive - from);
+                    Debug.Assert(toExclusive == pow1E9.Length || pow1E9[toExclusive] == 0);
+                }
+            }
+
+            public static int GetBufferSize(int digits)
+            {
+                int scale1E9 = digits / MaxPartialDigits;
+                int log2 = BitOperations.Log2((uint)scale1E9) + 1;
+                return (uint)log2 < (uint)Indexes.Length ? Indexes[log2] + 1 : Indexes[^1];
+            }
+
+            public ReadOnlySpan<uint> GetSpan(int index)
+            {
+                // Returns 1E9^(1<<index) >> (32*(9*(1<<index)/32))
+                int from = Indexes[index];
+                int toExclusive = Indexes[index + 1];
+                return pow1E9.Slice(from, toExclusive - from);
+            }
+
+            public static int OmittedLength(int index)
+            {
+                // Returns 9*(1<<index)/32
+                return (MaxPartialDigits * (1 << index)) >> 5;
+            }
+
+            public void MultiplyPowerOfTen(ReadOnlySpan<uint> left, int trailingZeroCount, Span<uint> bits)
+            {
+                Debug.Assert(trailingZeroCount >= 0);
+                if (trailingZeroCount < UInt32PowersOfTen.Length)
+                {
+                    BigIntegerCalculator.Multiply(left, UInt32PowersOfTen[trailingZeroCount], bits.Slice(0, left.Length + 1));
+                    return;
+                }
+
+                uint[]? powersOfTenFromPool = null;
+
+                Span<uint> powersOfTen = (
+                    bits.Length <= BigIntegerCalculator.StackAllocThreshold
+                    ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                    : powersOfTenFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
+                scoped Span<uint> powersOfTen2 = bits;
+
+                int trailingPartialCount = Math.DivRem(trailingZeroCount, MaxPartialDigits, out int remainingTrailingZeroCount);
+
+                int fi = BitOperations.TrailingZeroCount(trailingPartialCount);
+                int omittedLength = OmittedLength(fi);
+
+                // Copy first
+                ReadOnlySpan<uint> first = GetSpan(fi);
+                int curLength = first.Length;
+                trailingPartialCount >>= fi;
+                trailingPartialCount >>= 1;
+
+                if ((BitOperations.PopCount((uint)trailingPartialCount) & 1) != 0)
+                {
+                    powersOfTen2 = powersOfTen;
+                    powersOfTen = bits;
+                    powersOfTen2.Clear();
+                }
+
+                first.CopyTo(powersOfTen);
+
+                for (++fi; trailingPartialCount != 0; ++fi, trailingPartialCount >>= 1)
+                {
+                    Debug.Assert(fi + 1 < Indexes.Length);
+                    if ((trailingPartialCount & 1) != 0)
+                    {
+                        omittedLength += OmittedLength(fi);
+
+                        ReadOnlySpan<uint> power = GetSpan(fi);
+                        Span<uint> src = powersOfTen.Slice(0, curLength);
+                        Span<uint> dst = powersOfTen2.Slice(0, curLength += power.Length);
+
+                        if (power.Length < src.Length)
+                            BigIntegerCalculator.Multiply(src, power, dst);
+                        else
+                            BigIntegerCalculator.Multiply(power, src, dst);
+
+                        Span<uint> tmp = powersOfTen;
+                        powersOfTen = powersOfTen2;
+                        powersOfTen2 = tmp;
+                        powersOfTen2.Clear();
+
+                        // Trim
+                        while (--curLength >= 0 && powersOfTen[curLength] == 0) ;
+                        ++curLength;
+                    }
+                }
+
+                Debug.Assert(Unsafe.AreSame(ref bits[0], ref powersOfTen2[0]));
+
+                powersOfTen = powersOfTen.Slice(0, curLength);
+                Span<uint> bits2 = bits.Slice(omittedLength, curLength += left.Length);
+                if (left.Length < powersOfTen.Length)
+                    BigIntegerCalculator.Multiply(powersOfTen, left, bits2);
+                else
+                    BigIntegerCalculator.Multiply(left, powersOfTen, bits2);
+
+                if (powersOfTenFromPool != null)
+                    ArrayPool<uint>.Shared.Return(powersOfTenFromPool);
+
+                if (remainingTrailingZeroCount > 0)
+                {
+                    uint multiplier = UInt32PowersOfTen[remainingTrailingZeroCount];
+                    uint carry = 0;
+                    for (int i = 0; i < bits2.Length; i++)
+                    {
+                        ulong p = (ulong)multiplier * bits2[i] + carry;
+                        bits2[i] = (uint)p;
+                        carry = (uint)(p >> 32);
+                    }
+
+                    if (carry != 0)
+                    {
+                        bits[omittedLength + curLength] = carry;
+                    }
+                }
             }
         }
     }
