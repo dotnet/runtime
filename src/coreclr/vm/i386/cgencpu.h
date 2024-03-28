@@ -103,6 +103,9 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unu
     CALLEE_SAVED_REGISTER(Ebx) \
     CALLEE_SAVED_REGISTER(Ebp)
 
+// There are no FP callee saved registers on x86
+#define ENUM_FP_CALLEE_SAVED_REGISTERS()
+
 typedef DPTR(struct CalleeSavedRegisters) PTR_CalleeSavedRegisters;
 struct CalleeSavedRegisters {
 #define CALLEE_SAVED_REGISTER(regname) INT32 regname;
