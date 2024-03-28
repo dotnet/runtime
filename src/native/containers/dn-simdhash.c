@@ -141,6 +141,7 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 
     hash->buffers.buckets_length = bucket_count;
     hash->buffers.values_length = value_count;
+    // FIXME: 16-byte aligned allocation
     hash->buffers.buckets = dn_allocator_alloc(hash->buffers.allocator, bucket_count * hash->meta.bucket_size_bytes);
     hash->buffers.values = dn_allocator_alloc(hash->buffers.allocator, value_count * hash->meta.value_size);
 
@@ -153,6 +154,7 @@ dn_simdhash_clear (dn_simdhash_t *hash)
     assert(hash);
     hash->count = 0;
     memset(hash->buffers.buckets, 0, hash->buffers.buckets_length * hash->meta.bucket_size_bytes);
+    // Clearing the values is technically optional, so we could skip this for performance
     memset(hash->buffers.values, 0, hash->buffers.values_length * hash->meta.value_size);
 }
 
@@ -227,20 +229,40 @@ dn_simdhash_find_value_by_key_with_hash (dn_simdhash_t *hash, dn_simdhash_key_re
     return hash->vtable.find_value(hash, key, key_hash);
 }
 
+static DN_FORCEINLINE(void *)
+deref_raw (void * src)
+{
+    return *((void**)src);
+}
+
 void
 dn_simdhash_foreach (dn_simdhash_t *hash, dn_simdhash_foreach_func func, void *user_data)
 {
+    assert(hash);
+    dn_simdhash_meta_t meta = hash->meta;
+
     uint8_t *bucket = hash->buffers.buckets,
         *values = hash->buffers.values;
-    uint32_t values_step = hash->meta.value_size * hash->meta.bucket_capacity;
+    uint32_t values_step = meta.value_size * meta.bucket_capacity;
 
     for (
         uint32_t i = 0; i < hash->buffers.buckets_length;
-        i++, bucket += hash->meta.bucket_size_bytes, values += values_step
+        i++, bucket += meta.bucket_size_bytes, values += values_step
     ) {
         uint32_t count = dn_simdhash_bucket_count(*(dn_simdhash_suffixes *)bucket);
         uint8_t *keys = bucket + sizeof(dn_simdhash_suffixes);
-        for (uint32_t j = 0; j < count; j++)
-            func(keys + (j * hash->meta.key_size), values + (j * hash->meta.value_size), user_data);
+        if (meta.key_is_pointer && meta.value_is_pointer) {
+            for (uint32_t j = 0; j < count; j++)
+                func(deref_raw(keys + (j * meta.key_size)), deref_raw(values + (j * meta.value_size)), user_data);
+        } else if (meta.key_is_pointer) {
+            for (uint32_t j = 0; j < count; j++)
+                func(deref_raw(keys + (j * meta.key_size)), values + (j * meta.value_size), user_data);
+        } else if (meta.value_is_pointer) {
+            for (uint32_t j = 0; j < count; j++)
+                func(keys + (j * meta.key_size), deref_raw(values + (j * meta.value_size)), user_data);
+        } else {
+            for (uint32_t j = 0; j < count; j++)
+                func(keys + (j * meta.key_size), values + (j * meta.value_size), user_data);
+        }
     }
 }

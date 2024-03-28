@@ -28,11 +28,11 @@
 #endif
 
 #ifndef DN_SIMDHASH_KEY_HASHER
-#error Expected DN_SIMDHASH_KEY_HASHER definition
+#error Expected DN_SIMDHASH_KEY_HASHER definition with signature: uint32_t (KEY_T key)
 #endif
 
 #ifndef DN_SIMDHASH_KEY_COMPARER
-#error Expected DN_SIMDHASH_KEY_COMPARER definition
+#error Expected DN_SIMDHASH_KEY_COMPARER definition with signature: int (KEY_T lhs, KEY_T rhs)
 #endif
 
 #ifndef DN_SIMDHASH_BUCKET_CAPACITY
@@ -128,12 +128,12 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_BUCKET_T *bucket, DN_SIMDHASH_KEY_
 static DN_SIMDHASH_VALUE_T *
 DN_SIMDHASH_FIND_VALUE_INTERNAL (dn_simdhash_t *hash, KEY_REF key_ptr, uint32_t key_hash)
 {
+    dn_simdhash_buffers_t buffers = hash->buffers;
     uint8_t suffix = dn_simdhash_select_suffix(key_hash);
-    uint32_t bucket_index = dn_simdhash_select_bucket_index(hash->buffers, key_hash);
-    DN_SIMDHASH_BUCKET_T *bucket_address = address_of_bucket(hash->buffers, bucket_index);
+    uint32_t bucket_index = dn_simdhash_select_bucket_index(buffers, key_hash);
+    DN_SIMDHASH_BUCKET_T *bucket_address = address_of_bucket(buffers, bucket_index);
     DN_SIMDHASH_KEY_T key = DEREF_KEY(key_ptr);
     dn_simdhash_suffixes search_vector = dn_simdhash_build_search_vector(suffix);
-    dn_simdhash_buffers_t buffers = hash->buffers;
 
     for (uint32_t c = buffers.buckets_length; bucket_index < c; bucket_index++, bucket_address++) {
         int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(bucket_address, key, search_vector);
