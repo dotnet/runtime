@@ -21,6 +21,7 @@ class DeadCodeElimination
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeEquals.Run();
+        TestTypeIsEnum.Run();
         TestTypeIsValueType.Run();
         TestBranchesInGenericCodeRemoval.Run();
         TestUnmodifiableStaticFieldOptimization.Run();
@@ -359,6 +360,31 @@ class DeadCodeElimination
 #if !DEBUG
             ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
 #endif
+        }
+    }
+
+    class TestTypeIsEnum
+    {
+        class Never { }
+
+        class Ever { }
+
+        static void Generic<T>()
+        {
+            if (typeof(T).IsEnum)
+            {
+                Activator.CreateInstance(typeof(Never));
+            }
+
+            Activator.CreateInstance(typeof(Ever));
+        }
+
+        public static void Run()
+        {
+            Generic<object>();
+
+            ThrowIfPresent(typeof(TestTypeIsValueType), nameof(Never));
+            ThrowIfNotPresent(typeof(TestTypeIsValueType), nameof(Ever));
         }
     }
 

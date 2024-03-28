@@ -673,10 +673,10 @@ namespace ILCompiler
                         {
                             return true;
                         }
-                        else if (method.IsIntrinsic && method.Name is "get_IsValueType"
+                        else if (method.IsIntrinsic && method.Name is "get_IsValueType" or "get_IsEnum"
                             && method.OwningType is MetadataType mdt
                             && mdt.Name == "Type" && mdt.Namespace == "System" && mdt.Module == mdt.Context.SystemModule
-                            && TryExpandTypeIsValueType(methodIL, body, flags, currentOffset, out constant))
+                            && TryExpandTypeIs(methodIL, body, flags, currentOffset, method.Name, out constant))
                         {
                             return true;
                         }
@@ -819,7 +819,7 @@ namespace ILCompiler
             return false;
         }
 
-        private static bool TryExpandTypeIsValueType(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, out int constant)
+        private static bool TryExpandTypeIs(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, string name, out int constant)
         {
             // We expect to see a sequence:
             // ldtoken Foo
@@ -848,7 +848,12 @@ namespace ILCompiler
             if (type.IsSignatureVariable)
                 return false;
 
-            constant = type.IsValueType ? 1 : 0;
+            constant = name switch
+            {
+                "get_IsValueType" => type.IsValueType ? 1 : 0,
+                "get_IsEnum" => type.IsEnum ? 1 : 0,
+                _ => throw new Exception(),
+            };
 
             return true;
         }
