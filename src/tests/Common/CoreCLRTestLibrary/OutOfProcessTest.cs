@@ -72,11 +72,20 @@ namespace TestLibrary
                     testExecutable = Path.Combine(baseDir, Path.ChangeExtension(assemblyPath.Replace("\\", "/"), ".sh"));
                 }
 
+                Console.WriteLine($"Looking for test at {testExecutable}");
+                Console.WriteLine(assemblyPath);
+                Console.WriteLine(outputDir);
+                Console.WriteLine(reportBase);
+                Console.WriteLine(testBinaryBase);
+
                 if (!File.Exists(testExecutable))
                 {
+                    Console.WriteLine($"Not found");
+
                     // Skip platform-specific test when running on the excluded platform
                     return;
                 }
+                Console.WriteLine($"Here");
 
                 System.IO.Directory.CreateDirectory(outputDir);
 
