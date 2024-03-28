@@ -231,9 +231,9 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T)
 				return DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT;
 		}
 
-		// The current bucket doesn't compare the key, or duplicate checks are disabled (for rehashing),
+		// The current bucket doesn't contain the key, or duplicate checks are disabled (for rehashing),
 		//  so attempt to insert into the bucket
-		uint32_t new_index = dn_simdhash_bucket_count (bucket_address->suffixes);
+		uint8_t new_index = dn_simdhash_bucket_count (bucket_address->suffixes);
 		if (new_index < DN_SIMDHASH_BUCKET_CAPACITY) {
 			// We found a bucket with space, so claim the first free slot
 			dn_simdhash_bucket_set_count (bucket_address->suffixes, new_index + 1);
@@ -391,7 +391,7 @@ DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T
 		if (index_in_bucket >= 0) {
 			// We found the item. Replace it with the last item in the bucket, then erase
 			//  the last item in the bucket. This ensures sequential scans still work.
-			uint32_t bucket_count = dn_simdhash_bucket_count(bucket_address->suffixes),
+			uint8_t bucket_count = dn_simdhash_bucket_count(bucket_address->suffixes),
 				replacement_index_in_bucket = bucket_count - 1;
 			uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + index_in_bucket,
 				replacement_value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + replacement_index_in_bucket;
