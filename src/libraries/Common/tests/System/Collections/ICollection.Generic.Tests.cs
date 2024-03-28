@@ -130,7 +130,7 @@ namespace System.Collections.Tests
         public void ICollection_Generic_Count_Validity(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
-            Assert.Equal(count, collection.Count);
+            CollectionAsserts.HasCount(collection, count);
         }
 
         #endregion
@@ -145,7 +145,7 @@ namespace System.Collections.Tests
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
                 collection.Add(default(T));
-                Assert.Equal(count + 1, collection.Count);
+                CollectionAsserts.HasCount(collection, count + 1);
             }
         }
 
@@ -161,7 +161,7 @@ namespace System.Collections.Tests
                     collection.Add(invalidValue);
                     for (int i = 0; i < count; i++)
                         collection.Add(CreateT(i));
-                    Assert.Equal(count * 2, collection.Count);
+                    CollectionAsserts.HasCount(collection, count * 2);
                 });
             }
         }
@@ -178,7 +178,7 @@ namespace System.Collections.Tests
                     collection.Add(invalidValue);
                     for (int i = 0; i < count; i++)
                         collection.Add(CreateT(i));
-                    Assert.Equal(count, collection.Count);
+                    CollectionAsserts.HasCount(collection, count);
                 });
             }
         }
@@ -192,8 +192,9 @@ namespace System.Collections.Tests
                 Assert.All(InvalidValues, invalidValue =>
                 {
                     ICollection<T> collection = GenericICollectionFactory(count);
+                    
                     collection.Add(invalidValue);
-                    Assert.Equal(count, collection.Count);
+                    CollectionAsserts.HasCount(collection, count);
                 });
             }
         }
@@ -208,7 +209,7 @@ namespace System.Collections.Tests
                 T duplicateValue = CreateT(700);
                 collection.Add(duplicateValue);
                 collection.Add(duplicateValue);
-                Assert.Equal(count + 2, collection.Count);
+                CollectionAsserts.HasCount(collection, count + 2);
             }
         }
 
@@ -221,7 +222,7 @@ namespace System.Collections.Tests
                 ICollection<T> collection = GenericICollectionFactory(count);
                 collection.Clear();
                 AddToCollection(collection, 5);
-                Assert.Equal(5, collection.Count);
+                CollectionAsserts.HasCount(collection, 5);
             }
         }
 
@@ -261,7 +262,7 @@ namespace System.Collections.Tests
                 for (int i = 0; i < count; i++)
                     collection.Remove(collection.ElementAt(0));
                 collection.Add(CreateT(254));
-                Assert.Equal(1, collection.Count);
+                CollectionAsserts.HasCount(collection, 1);
             }
         }
 
@@ -273,7 +274,7 @@ namespace System.Collections.Tests
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
                 Assert.Throws<NotSupportedException>(() => collection.Add(CreateT(0)));
-                Assert.Equal(count, collection.Count);
+                CollectionAsserts.HasCount(collection, count);
             }
         }
 
@@ -306,12 +307,12 @@ namespace System.Collections.Tests
             if (IsReadOnly || AddRemoveClear_ThrowsNotSupported)
             {
                 Assert.Throws<NotSupportedException>(() => collection.Clear());
-                Assert.Equal(count, collection.Count);
+                CollectionAsserts.HasCount(collection, count);
             }
             else
             {
                 collection.Clear();
-                Assert.Equal(0, collection.Count);
+                CollectionAsserts.HasCount(collection, 0);
             }
         }
 
@@ -325,14 +326,14 @@ namespace System.Collections.Tests
                 Assert.Throws<NotSupportedException>(() => collection.Clear());
                 Assert.Throws<NotSupportedException>(() => collection.Clear());
                 Assert.Throws<NotSupportedException>(() => collection.Clear());
-                Assert.Equal(count, collection.Count);
+                CollectionAsserts.HasCount(collection, count);
             }
             else
             {
                 collection.Clear();
                 collection.Clear();
                 collection.Clear();
-                Assert.Equal(0, collection.Count);
+                CollectionAsserts.HasCount(collection, 0);
             }
         }
 
@@ -434,7 +435,7 @@ namespace System.Collections.Tests
                 T item = CreateT(12);
                 collection.Add(item);
                 collection.Add(item);
-                Assert.Equal(count + 2, collection.Count);
+                CollectionAsserts.HasCount(collection, count + 2);
             }
         }
 
@@ -567,7 +568,7 @@ namespace System.Collections.Tests
                     count--;
                 }
                 Assert.False(collection.Remove(value));
-                Assert.Equal(count, collection.Count);
+                CollectionAsserts.HasCount(collection, count);
             }
         }
 
@@ -583,7 +584,7 @@ namespace System.Collections.Tests
                 while (collection.Contains(value) || Enumerable.Contains(InvalidValues, value))
                     value = CreateT(seed++);
                 Assert.False(collection.Remove(value));
-                Assert.Equal(count, collection.Count);
+                CollectionAsserts.HasCount(collection, count);
             }
         }
 
@@ -602,7 +603,7 @@ namespace System.Collections.Tests
                     count++;
                 }
                 Assert.True(collection.Remove(value));
-                Assert.Equal(count - 1, collection.Count);
+                CollectionAsserts.HasCount(collection, count - 1);
             }
         }
 
@@ -621,7 +622,7 @@ namespace System.Collections.Tests
                     count++;
                 }
                 Assert.True(collection.Remove(value));
-                Assert.Equal(count - 1, collection.Count);
+                CollectionAsserts.HasCount(collection, count - 1);
             }
         }
 
@@ -639,7 +640,7 @@ namespace System.Collections.Tests
                 count += 2;
                 Assert.True(collection.Remove(value));
                 Assert.True(collection.Contains(value));
-                Assert.Equal(count - 1, collection.Count);
+                CollectionAsserts.HasCount(collection, count - 1);
             }
         }
 
@@ -654,7 +655,7 @@ namespace System.Collections.Tests
                 {
                     Assert.True(collection.Remove(value));
                 });
-                Assert.Empty(collection);
+                CollectionAsserts.HasCount(collection, 0);
             }
         }
 
@@ -667,7 +668,7 @@ namespace System.Collections.Tests
             {
                 Assert.Throws<ArgumentException>(() => collection.Remove(value));
             });
-            Assert.Equal(count, collection.Count);
+            CollectionAsserts.HasCount(collection, count);
         }
 
         [Theory]
