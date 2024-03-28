@@ -88,7 +88,7 @@ coreCLRLttngDataTypeMapping ={
         "win:Binary"        :"const BYTE"
         }
 
-monoLttngDataTypeMapping ={
+portableLttngDataTypeMapping ={
         #constructed types
         "win:null"          :" ",
         "win:Int64"         :"const int64_t",
@@ -113,8 +113,8 @@ monoLttngDataTypeMapping ={
 def getLttngDataTypeMapping(runtimeFlavor):
     if runtimeFlavor.coreclr:
         return coreCLRLttngDataTypeMapping
-    elif runtimeFlavor.mono:
-        return monoLttngDataTypeMapping
+    else:
+        return portableLttngDataTypeMapping
 
 ctfDataTypeMapping ={
         #constructed types
