@@ -3,6 +3,7 @@
 parameters:
   - name: templatePath
     type: string
+    default: 'templates-official'
   - name: stages
     type: stageList
   - name: containers
