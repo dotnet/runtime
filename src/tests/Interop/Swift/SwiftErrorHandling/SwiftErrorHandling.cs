@@ -23,6 +23,15 @@ public class ErrorHandlingTests
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling018conditionallyThrowB004willE0s5Int32VAE_tKF")]
     public static extern nint conditionallyThrowErrorOnStack(int willThrow, int dummy1, int dummy2, int dummy3, int dummy4, int dummy5, int dummy6, int dummy7, int dummy8, int dummy9, ref SwiftError error);
 
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling26nativeFunctionWithCallbackyyyyXEF")]
+    public static extern unsafe IntPtr NativeFunctionWithCallback(delegate* unmanaged[Swift]<SwiftError*, void> callback, SwiftError* error);
+
+    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    private static unsafe void ProxyMethod(SwiftError* error) {
+        *error = new SwiftError((void*)42);
+    }
+
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05getMyB7Message4from13messageLengthSPys6UInt16VGSgs0B0_p_s5Int32VztF")]
     public unsafe static extern void* GetErrorMessage(void* handle, out int length);
 
@@ -91,6 +100,18 @@ public class ErrorHandlingTests
 
         Assert.True(error.Value == null, "No Swift error was expected to be thrown.");
         Assert.True(result == 42, "The result from Swift does not match the expected value.");
+    }
+
+    [Fact]
+    public static unsafe void TestUnmanagedCallersOnly()
+    {
+        int expectedValue = 42;
+        SwiftError error;
+
+        NativeFunctionWithCallback(&ProxyMethod, &error);
+
+        int value = (int)error.Value;
+        Assert.True(value == expectedValue, string.Format("The value retrieved does not match the expected value. Expected: {0}, Actual: {1}", expectedValue, value));
     }
     
     private static void SetErrorMessageForSwift(string message)
