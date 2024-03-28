@@ -8,6 +8,8 @@ list(APPEND SHARED_CONTAINER_SOURCES
     dn-queue.c
     dn-umap.c
     dn-vector.c
+    dn-simdhash.c
+    dn-simdhash-string-ptr.c
 )
 
 list(APPEND SHARED_CONTAINER_HEADERS
@@ -24,4 +26,8 @@ list(APPEND SHARED_CONTAINER_HEADERS
     dn-vector-ptr.h
     dn-vector-t.h
     dn-vector-types.h
+    dn-simdhash.h
+    dn-simdhash-specialization.h
+    dn-simdhash-specialization-declarations.h
+    dn-simdhash-specializations.h
 )
