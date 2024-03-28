@@ -950,9 +950,6 @@ namespace Internal.JitInterface
                                 RelocType.IMAGE_REL_BASED_ABSOLUTE :
                                 RelocType.IMAGE_REL_BASED_RELPTR32;
 
-                            if (_compilation.NodeFactory.Target.Abi == TargetAbi.Jit)
-                                rel = RelocType.IMAGE_REL_BASED_REL32;
-
                             builder.EmitReloc(typeSymbol, rel);
                         }
                         break;
