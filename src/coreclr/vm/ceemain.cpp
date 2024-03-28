@@ -630,7 +630,6 @@ void EEStartupHelper()
 
         Thread::StaticInitialize();
         InitializeThreadStaticData();
-        InitMoveableGCPointerTracker();
 
         JITInlineTrackingMap::StaticInitialize();
         MethodDescBackpatchInfoTracker::StaticInitialize();

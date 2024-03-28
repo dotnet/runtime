@@ -7746,6 +7746,8 @@ void CALLBACK DacHandleWalker::EnumCallback(PTR_UNCHECKED_OBJECTREF handle, uint
     data.Type = param->Type;
     if (param->Type == HNDTYPE_DEPENDENT)
         data.Secondary = GetDependentHandleSecondary(handle.GetAddr()).GetAddr();
+    else if (param->Type == HNDTYPE_WEAK_INTERIOR_POINTER)
+        data.Secondary = TO_CDADDR(HndGetHandleExtraInfo(handle.GetAddr()));
     else
         data.Secondary = 0;
     data.AppDomain = param->AppDomain;

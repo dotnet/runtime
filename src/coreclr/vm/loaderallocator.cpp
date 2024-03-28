@@ -1833,9 +1833,9 @@ void AssemblyLoaderAllocator::RegisterHandleForCleanup(OBJECTHANDLE objHandle)
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         THROWS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(objHandle));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -1846,6 +1846,25 @@ void AssemblyLoaderAllocator::RegisterHandleForCleanup(OBJECTHANDLE objHandle)
 
     // InsertTail must be protected by a lock. Just use the loader allocator lock
     CrstHolder ch(&m_crstLoaderAllocator);
+    m_handleCleanupList.InsertTail(new (pItem) HandleCleanupListItem(objHandle));
+}
+
+void AssemblyLoaderAllocator::RegisterHandleForCleanupLocked(OBJECTHANDLE objHandle)
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        THROWS;
+        MODE_COOPERATIVE;
+        CAN_TAKE_LOCK;
+        PRECONDITION(CheckPointer(objHandle));
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    void * pItem = GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(HandleCleanupListItem)));
+    // InsertTail must be protected by a lock. Just use the loader allocator lock
+    _ASSERTE(m_crstLoaderAllocator.OwnedByCurrentThread());
     m_handleCleanupList.InsertTail(new (pItem) HandleCleanupListItem(objHandle));
 }
 
@@ -1890,7 +1909,6 @@ void AssemblyLoaderAllocator::CleanupHandles()
     if (m_hLoaderAllocatorObjectHandle != NULL)
     {
         GCX_COOP();
-        g_pMoveableGCPointerTracker->RemoveEntriesAssociatedWithGCHandle(m_hLoaderAllocatorObjectHandle);
         FreeTLSIndicesForLoaderAllocator(this);
     }
 
@@ -2226,10 +2244,28 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
             GCPROTECT_BEGIN(ptrArray);
             // Keep this allocation alive till the LoaderAllocator is collected
             AllocateHandle(ptrArray);
+            CrstHolder cs(&m_crstLoaderAllocator);
             {
-                CrstHolder crst(g_pMoveableGCPointerTracker->GetCrst());
-                pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)ptrArray->GetDataPtr());
-                g_pMoveableGCPointerTracker->AddPointer(m_hLoaderAllocatorObjectHandle, OBJECTREFToObject(ptrArray), &pStaticsInfo->m_pNonGCStatics);
+                if (pStaticsInfo->GetNonGCStaticsPointer() == NULL)
+                {
+                    GCX_FORBID();
+                    // Allocating a weak interior handle is a tricky thing.
+                    // 1. If there are multiple weak interior handles that point at a given interior pointer location, there will be heap corruption
+                    // 2. If the interior handle is created, but not registered for cleanup, it is a memory leak
+                    // 3. Since the weak interior handle doesn't actually keep the object alive, it needs to be kept alive by some other means
+                    //
+                    // We work around these details by the following means
+                    // 1. We use a LOADERHANDLE to keep the object alive until the LoaderAllocator is freed.
+                    // 2. We hold the crstLoaderAllocatorLock, and double check to wnsure that the data is ready to be filled in
+                    // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
+                    // 4. Registration for cleanup cannot trigger a GC
+                    // 5. We then unconditionally set the statics pointer.
+                    WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pNonGCStatics);
+                    RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
+                    weakHandleHolder.SuppressRelease();
+                    bool didUpdateStaticsPointer = pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)ptrArray->GetDataPtr());
+                    _ASSERTE(didUpdateStaticsPointer);
+                }
             }
             GCPROTECT_END();
         }
@@ -2288,11 +2324,28 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInf
             }
             // Keep this allocation alive till the LoaderAllocator is collected
             AllocateHandle(ptrArray);
-
+            CrstHolder cs(&m_crstLoaderAllocator);
             {
-                CrstHolder crst(g_pMoveableGCPointerTracker->GetCrst());
-                pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */true, (TADDR)ptrArray->GetDataPtr());
-                g_pMoveableGCPointerTracker->AddPointer(m_hLoaderAllocatorObjectHandle, OBJECTREFToObject(ptrArray), &pStaticsInfo->m_pGCStatics);
+                if (pStaticsInfo->GetGCStaticsPointer() == NULL)
+                {
+                    GCX_FORBID();
+                    // Allocating a weak interior handle is a tricky thing.
+                    // 1. If there are multiple weak interior handles that point at a given interior pointer location, there will be heap corruption
+                    // 2. If the interior handle is created, but not registered for cleanup, it is a memory leak
+                    // 3. Since the weak interior handle doesn't actually keep the object alive, it needs to be kept alive by some other means
+                    //
+                    // We work around these details by the following means
+                    // 1. We use a LOADERHANDLE to keep the object alive until the LoaderAllocator is freed.
+                    // 2. We hold the crstLoaderAllocatorLock, and double check to wnsure that the data is ready to be filled in
+                    // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
+                    // 4. Registration for cleanup cannot trigger a GC
+                    // 5. We then unconditionally set the statics pointer.
+                    WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pGCStatics);
+                    RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
+                    weakHandleHolder.SuppressRelease();
+                    bool didUpdateStaticsPointer = pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */true, (TADDR)ptrArray->GetDataPtr());
+                    _ASSERTE(didUpdateStaticsPointer);
+                }
             }
             GCPROTECT_END();
         }
@@ -2303,152 +2356,4 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInf
     }
 }
 #endif // !DACCESS_COMPILE
-#ifndef DACCESS_COMPILE
-CollectibleMoveableGCPointerTracker *g_pMoveableGCPointerTracker;
-void InitMoveableGCPointerTracker()
-{
-    STANDARD_VM_CONTRACT;
-    g_pMoveableGCPointerTracker = new CollectibleMoveableGCPointerTracker();
-}
 
-CollectibleMoveableGCPointerTracker::CollectibleMoveableGCPointerTracker() : 
-    m_pointers(nullptr),
-    m_numPointers(0),
-    m_maxPointers(0),
-    m_nextTableScanChunk(-1),
-    m_Crst(CrstLeafLock, (CrstFlags)(CRST_UNSAFE_COOPGC | CRST_REENTRANCY))
-{
-}
-
-void CollectibleMoveableGCPointerTracker::AddPointer(OBJECTHANDLE gcHandleDescribingLifetime, Object *pObject, uintptr_t *pTrackedInteriorPointer)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE; // Since the GC reads the array without taking locks, we need to be in cooperative mode
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACTL_END;
-
-    CrstHolder ch(&m_Crst);
-    MoveableGCPointer structToAdd;
-    structToAdd.LifetimeTrackingHandle = gcHandleDescribingLifetime;
-    structToAdd.PointerValue = pObject;
-    structToAdd.TrackedInteriorPointer = pTrackedInteriorPointer;
-    if (m_numPointers >= m_maxPointers)
-    {
-        uintptr_t newMaxPointers = max(16, m_maxPointers * 2);
-        MoveableGCPointer *newPointers = new MoveableGCPointer[newMaxPointers];
-        if (m_pointers != nullptr)
-        {
-            memcpy(newPointers, m_pointers, m_maxPointers * sizeof(MoveableGCPointer));
-            delete[] m_pointers;
-        }
-        m_pointers = newPointers;
-        m_maxPointers = newMaxPointers;
-    }
-    
-    m_pointers[m_numPointers] = structToAdd;
-    m_numPointers++;
-}
-
-void CollectibleMoveableGCPointerTracker::ScanTable(promote_func* fn, ScanContext* sc)
-{
-    // This executes during the GC, so we don't need to take a lock, as the table cannot be modified, as all modifications involve cooperative mode
-    WRAPPER_NO_CONTRACT;
-
-
-    if (sc->promotion)
-    {
-        // We must not promote anything, as the lifetime of these pointers is driven by the lifetime of the LifetimeTrackingHandle
-        return;
-    }
-
-    if (m_numPointers == 0)
-    {
-        // There isn't any work to do.
-        return;
-    }
-
-    // On the server heap, where multiple threads may be scanning the table, we can to divide the work up. Use a simple work-stealing approach
-    //
-    // Notably, in GCToEEInterface::AnalyzeSurvivorsFinished which is called once for each time that there is a set of relocations, we reset the current
-    // chunk index to -1. Then in this function, we operate on chunks from 0 to maxChunkCount. We use InterlockedIncrement to get the next chunk index, and
-    // when a chunk is done, we increment the next chunk index. This is done is a loop, so if 1 (or more) threads of the GC is running ahead of the others,
-    // it will do more chunks than another thread which is running behind, thus balancing the work.
-    uintptr_t maxChunkCount = GCHeapUtilities::IsServerHeap() ? sc->thread_count : 1;
-    LONG chunkIndex = InterlockedIncrement(&m_nextTableScanChunk);
-    while ((uintptr_t)chunkIndex < maxChunkCount)
-    {
-        uintptr_t pointerRangeStart = 0;
-        uintptr_t pointerRangeEnd = m_numPointers;
-
-        uintptr_t pointersPerThread = (m_numPointers / maxChunkCount) + 1;
-        pointerRangeStart = pointersPerThread * chunkIndex;
-        pointerRangeEnd = pointerRangeStart + pointersPerThread;
-        if (pointerRangeEnd > m_numPointers)
-        {
-            pointerRangeEnd = m_numPointers;
-        }
-
-        for (uintptr_t i = pointerRangeStart; i < pointerRangeEnd; ++i)
-        {
-            if (!ObjectHandleIsNull(m_pointers[i].LifetimeTrackingHandle))
-            {
-                Object *pObjectOld = m_pointers[i].PointerValue;
-                fn(&m_pointers[i].PointerValue, sc, 0);
-                Object *pObject = m_pointers[i].PointerValue;
-
-                if (pObject != pObjectOld)
-                {
-                    uintptr_t delta = (uintptr_t)pObject - (uintptr_t)pObjectOld;
-                    // Use VolatileLost/Store to handle the case where the GC is running on one thread and another thread updates the lowest bit
-                    // on the pointer. This can happen when the GC is running on one thread, and another thread is running the JIT, and happens to trigger
-                    // the pre-init logic for a collectible type. The jit will update the value using InterlockedCompareExchange, and this code will do the update
-                    // using VolatileStoreWithoutBarrier. This may result in the flag bit update from SetClassInited to be lost, but that's ok, as the flag bit will
-                    // being lost won't actually change program behavior, and the lost bit is an extremely rare occurence.
-                    uintptr_t *trackedInteriorPointer = m_pointers[i].TrackedInteriorPointer;
-                    uintptr_t currentInteriorPointerVale = VolatileLoadWithoutBarrier(trackedInteriorPointer);
-                    uintptr_t newInteriorPointerValue = currentInteriorPointerVale + delta;
-                    VolatileStoreWithoutBarrier(trackedInteriorPointer, newInteriorPointerValue);
-                }
-            }
-        }
-
-        chunkIndex = InterlockedIncrement(&m_nextTableScanChunk);
-    }
-}
-
-void CollectibleMoveableGCPointerTracker::RemoveEntriesAssociatedWithGCHandle(OBJECTHANDLE gcHandleDescribingLifetime)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE; // Since the GC reads the array without taking locks, we need to be in cooperative mode
-    }
-    CONTRACTL_END;
-
-    CrstHolder ch(&m_Crst);
-    if (m_numPointers == 0)
-        return;
-
-    uintptr_t index = m_numPointers - 1;
-
-    while (true)
-    {
-        MoveableGCPointer &currentElement = m_pointers[index];
-        if (currentElement.LifetimeTrackingHandle == gcHandleDescribingLifetime)
-        {
-            currentElement = m_pointers[m_numPointers - 1];
-            --m_numPointers;
-        }
-
-        if (index == 0)
-            break;
-        index--;
-    }
-}
-
-#endif // !DACCESS_COMPILE

@@ -502,7 +502,17 @@ typedef enum
      *       but we are keeping it here for backward compatibility purposes"
      *
      */
-    HNDTYPE_WEAK_NATIVE_COM   = 9
+    HNDTYPE_WEAK_NATIVE_COM   = 9,
+
+    /*
+     * INTERIOR POINTER HANDLES
+     *
+     * Interior pointer handles allow the vm to request that the GC keep an interior pointer to
+     * a given object updated to keep pointing at the same location within an object. These handles
+     * have an extra pointer which points at an interior pointer into the first object.
+     *
+     */
+    HNDTYPE_WEAK_INTERIOR_POINTER = 10
 } HandleType;
 
 typedef enum

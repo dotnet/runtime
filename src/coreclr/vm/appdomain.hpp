@@ -577,6 +577,12 @@ public:
         return ::CreatePinningHandle(m_handleStore, object);
     }
 
+    OBJECTHANDLE CreateWeakInteriorHandle(OBJECTREF object, void* pInteriorPointerLocation)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateWeakInteriorHandle(m_handleStore, object, pInteriorPointerLocation);
+    }
+
     OBJECTHANDLE CreateSizedRefHandle(OBJECTREF object)
     {
         WRAPPER_NO_CONTRACT;
