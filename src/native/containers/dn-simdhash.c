@@ -94,6 +94,7 @@ dn_simdhash_new_internal (dn_simdhash_meta_t meta, dn_simdhash_vtable_t vtable, 
     assert(old_buffers.values == NULL);
     */
 
+    capacity = capacity * DN_SIMDHASH_SIZING_PERCENTAGE / 100;
     dn_simdhash_ensure_capacity_internal(result, capacity);
 
     return result;
@@ -172,7 +173,8 @@ dn_simdhash_count (dn_simdhash_t *hash)
 void
 dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity)
 {
-    dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1);
+    capacity = capacity * DN_SIMDHASH_SIZING_PERCENTAGE / 100;
+    dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, capacity);
     if (old_buffers.buckets) {
         hash->vtable.rehash(hash, old_buffers);
         dn_simdhash_free_buffers(old_buffers);
@@ -193,12 +195,18 @@ dn_simdhash_try_add (dn_simdhash_t *hash, dn_simdhash_key_ref key, dn_simdhash_v
                 return 1;
             case DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT:
                 return 0;
-            case DN_SIMDHASH_INSERT_NEED_TO_GROW:
+            case DN_SIMDHASH_INSERT_NEED_TO_GROW: {
                 // We may have already grown once and still not had enough space, due to collisions
                 //  so we want to ensure we increase the *capacity* beyond its current value, not
                 //  ensure a capacity of count + 1
-                dn_simdhash_ensure_capacity(hash, dn_simdhash_capacity(hash) + 1);
+                // We use ensure_capacity_internal because the public one applies the sizing percentage
+                dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1);
+                if (old_buffers.buckets) {
+                    hash->vtable.rehash(hash, old_buffers);
+                    dn_simdhash_free_buffers(old_buffers);
+                }
                 continue;
+            }
             default:
                 assert(0);
                 return 0;

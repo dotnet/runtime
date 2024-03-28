@@ -22,6 +22,9 @@
 #define DN_SIMDHASH_SUFFIX_SALT 0b10000000
 // Set a minimum number of buckets when created, regardless of requested capacity
 #define DN_SIMDHASH_MIN_BUCKET_COUNT 4
+// User-specified capacity values will be increased to this percentage in order
+//  to maintain an ideal load factor. FIXME: 140 isn't right
+#define DN_SIMDHASH_SIZING_PERCENTAGE 140
 
 #ifdef _MSC_VER
 #define DN_FORCEINLINE(RET_TYPE) __forceinline RET_TYPE
@@ -131,6 +134,7 @@ typedef struct dn_simdhash_vtable_t {
     void *(*find_value) (dn_simdhash_t *hash, dn_simdhash_key_ref key_ptr, uint32_t key_hash);
     // Does not update hash->count, that's your job.
     dn_simdhash_insert_result (*try_insert) (dn_simdhash_t *hash, dn_simdhash_key_ref key_ptr, dn_simdhash_value_ref value_ptr, uint32_t key_hash, uint8_t ensure_not_present);
+    // Does not free old_buffers, that's your job.
     void (*rehash) (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buffers);
     uint32_t (*compute_hash) (dn_simdhash_key_ref key_ptr);
 } dn_simdhash_vtable_t;
@@ -211,8 +215,8 @@ dn_simdhash_free (dn_simdhash_t *hash);
 void
 dn_simdhash_free_buffers (dn_simdhash_buffers_t buffers);
 
-// This will allocate new buffers. The old buffers are your responsibility to free.
-// You almost certainly want to rehash the table if (result != hash->buffers)
+// If a resize happens, this will allocate new buffers and return the old ones.
+// It is your responsibility to rehash and then free the old buffers.
 dn_simdhash_buffers_t
 dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity);
 

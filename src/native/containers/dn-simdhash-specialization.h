@@ -43,6 +43,7 @@
 #define KEY_REF DN_SIMDHASH_KEY_T
 #define REF_KEY(K) K
 #define DEREF_KEY(P) P
+static_assert(sizeof(DN_SIMDHASH_KEY_T) == sizeof(void *), "You said your key is a pointer, but it's not!");
 #else
 #define KEY_REF DN_SIMDHASH_KEY_T*
 #define REF_KEY(K) &K
@@ -53,12 +54,15 @@
 #define VALUE_REF DN_SIMDHASH_VALUE_T
 #define REF_VALUE(V) V
 #define DEREF_VALUE(P) P
+static_assert(sizeof(DN_SIMDHASH_VALUE_T) == sizeof(void *), "You said your value is a pointer, but it's not!");
 #else
 #define VALUE_REF DN_SIMDHASH_VALUE_T*
 #define REF_VALUE(V) &V
 #define DEREF_VALUE(P) *P
 #endif
 
+// We generate unique names for each specialization so that they will be easy to distinguish
+//  when debugging, profiling, or disassembling. Otherwise they would have linker-assigned names
 #define DN_SIMDHASH_BUCKET_T DN_SIMDHASH_T ## _bucket
 #define DN_SIMDHASH_T_VTABLE DN_SIMDHASH_T ## _vtable
 #define DN_SIMDHASH_T_META DN_SIMDHASH_T ## _meta
@@ -72,9 +76,9 @@
 static_assert (DN_SIMDHASH_BUCKET_CAPACITY < DN_SIMDHASH_MAX_BUCKET_CAPACITY, "Maximum bucket capacity exceeded");
 static_assert (DN_SIMDHASH_BUCKET_CAPACITY > 1, "Bucket capacity too low");
 
-dn_simdhash_t *
-DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator);
-
+// We set bucket_size_bytes to sizeof() this struct so that we can let the compiler
+//  generate the most optimal code possible when we're manipulating pointers to it -
+//  that is, it can do mul-by-constant instead of mul-by-(hash->meta.etc)
 typedef struct DN_SIMDHASH_BUCKET_T {
     dn_simdhash_suffixes suffixes;
     DN_SIMDHASH_KEY_T keys[DN_SIMDHASH_BUCKET_CAPACITY];
@@ -159,6 +163,8 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (dn_simdhash_t *hash, KEY_REF key_ptr, VALUE_REF
 
     // If we got here, we had so many hash collisions that we hit the last bucket without finding
     //  a spot for our new item. It's best to just grow and rehash the whole table now.
+    // TODO: Wrap around to the first bucket, like S.C.G.Dictionary does? I don't like it, but it
+    //  would reduce memory usage for the worst case scenario.
     return DN_SIMDHASH_INSERT_NEED_TO_GROW;
 }
 
@@ -185,26 +191,41 @@ DN_SIMDHASH_REHASH_INTERNAL (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buff
                 ),
                 key_hash, 0
             );
-            assert (ok == DN_SIMDHASH_INSERT_OK);
+            // FIXME: Why doesn't assert(ok) work here? Clang says it's unused
+            if (ok != DN_SIMDHASH_INSERT_OK)
+                assert(0);
         }
     }
 
     dn_simdhash_free_buffers (old_buffers);
 }
 
+// We expose these tables instead of making them static, just in case you want to use
+//  them directly for some reason
+
+// TODO: Store this by-reference instead of inline in the hash?
 dn_simdhash_vtable_t DN_SIMDHASH_T_VTABLE = {
+    // HACK: Cast these fn pointers to (void *), because their signatures
+    //  aren't exact matches, but they're compatible.
     (void *)DN_SIMDHASH_FIND_VALUE_INTERNAL,
     (void *)DN_SIMDHASH_TRY_INSERT_INTERNAL,
     (void *)DN_SIMDHASH_REHASH_INTERNAL,
     (void *)DN_SIMDHASH_COMPUTE_HASH_INTERNAL,
 };
 
+// While we've inlined these constants into the specialized code generated above,
+//  the generic code in dn-simdhash.c needs them, so we put them in this meta header
+//  that lives inside every hash instance. (TODO: Store it by-reference?)
 dn_simdhash_meta_t DN_SIMDHASH_T_META = {
     DN_SIMDHASH_BUCKET_CAPACITY,
     sizeof(DN_SIMDHASH_BUCKET_T),
     sizeof(DN_SIMDHASH_KEY_T),
     sizeof(DN_SIMDHASH_VALUE_T),
 };
+
+// HACK: We don't expect the caller to pre-declare this in the specialization file
+dn_simdhash_t *
+DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator);
 
 dn_simdhash_t *
 DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator)
