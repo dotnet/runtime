@@ -110,6 +110,14 @@ static double MeasureNsPerYield(unsigned int measureDurationUs)
     return Max(MinNsPerYield, Min((double)elapsedTicks * NsPerS / ((double)yieldCount * ticksPerS), MaxNsPerYield));
 }
 
+void YieldProcessorNormalization::GCHeapSetYieldProcessorScalingFactor()
+{
+    if (GCHeapUtilities::IsGCHeapInitialized())
+    {
+        GCHeapUtilities::GetGCHeap()->SetYieldProcessorScalingFactor((float)s_yieldsPerNormalizedYield);
+    }
+}
+
 void YieldProcessorNormalization::PerformMeasurement()
 {
     CONTRACTL
@@ -217,7 +225,7 @@ void YieldProcessorNormalization::PerformMeasurement()
         Max(1u, (unsigned int)(TargetMaxNsPerSpinIteration / (yieldsPerNormalizedYield * establishedNsPerYield) + 0.5));
     _ASSERTE(s_optimalMaxNormalizedYieldsPerSpinIteration <= MaxOptimalMaxNormalizedYieldsPerSpinIteration);
 
-    GCHeapUtilities::GetGCHeap()->SetYieldProcessorScalingFactor((float)yieldsPerNormalizedYield);
+    GCHeapSetYieldProcessorScalingFactor();
 
     if (s_normalizationState != NormalizationState::Uninitialized)
     {

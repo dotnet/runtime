@@ -43,6 +43,8 @@ public:
         return s_isMeasurementScheduled;
     }
 
+    static void GCHeapSetYieldProcessorScalingFactor();
+
     static void PerformMeasurement();
 
 private:
