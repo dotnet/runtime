@@ -6,34 +6,30 @@ import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid, get_sync_done_semaphore_ptr } from "./marshal";
-import { setI32_unchecked, receiveWorkerHeapViews, forceThreadMemoryViewRefresh } from "./memory";
-import { stringToMonoStringRoot } from "./strings";
-import { MonoObject, MonoObjectRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
-import { Int32Ptr } from "./types/emscripten";
+import { forceThreadMemoryViewRefresh } from "./memory";
+import { JSFunctionSignature, JSMarshalerArguments, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType, VoidPtrNull } from "./types/internal";
+import { VoidPtr } from "./types/emscripten";
 import { INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
-import { mono_wasm_new_external_root } from "./roots";
 import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
 import { threads_c_functions as tcwraps } from "./cwraps";
 import { monoThreadInfo } from "./pthreads";
+import { stringToUTF16Ptr } from "./strings";
 
 export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 
-export function mono_wasm_bind_js_import (signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
-    if (WasmEnableThreads) return;
+export function mono_wasm_bind_js_import_ST (signature: JSFunctionSignature): VoidPtr {
+    if (WasmEnableThreads) return VoidPtrNull;
     assert_js_interop();
-    const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         bind_js_import(signature);
-        wrap_no_error_root(is_exception, resultRoot);
+        return VoidPtrNull;
     } catch (ex: any) {
         Module.err(ex.toString());
-        wrap_error_root(is_exception, ex, resultRoot);
-    } finally {
-        resultRoot.release();
+        return stringToUTF16Ptr(normalize_exception(ex));
     }
 }
 
@@ -46,7 +42,13 @@ export function mono_wasm_invoke_jsimport_MT (signature: JSFunctionSignature, ar
     let bound_fn = js_import_wrapper_by_fn_handle[function_handle];
     if (bound_fn == undefined) {
         // it was not bound yet, let's do it now
-        bound_fn = bind_js_import(signature);
+        try {
+            bound_fn = bind_js_import(signature);
+        } catch (ex: any) {
+            Module.err(ex.toString());
+            marshal_exception_to_cs(<any>args, ex);
+            return;
+        }
     }
     mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
 
@@ -378,14 +380,18 @@ function mono_wasm_lookup_js_import (function_name: string, js_module_name: stri
     for (let i = 0; i < parts.length - 1; i++) {
         const part = parts[i];
         const newscope = scope[part];
-        mono_assert(newscope, () => `${part} not found while looking up ${function_name}`);
+        if (!newscope) {
+            throw new Error(`${part} not found while looking up ${function_name}`);
+        }
         scope = newscope;
     }
 
     const fname = parts[parts.length - 1];
     const fn = scope[fname];
 
-    mono_assert(typeof (fn) === "function", () => `${function_name} must be a Function but was ${typeof fn}`);
+    if (typeof (fn) !== "function") {
+        throw new Error(`${function_name} must be a Function but was ${typeof fn}`);
+    }
 
     // if the function was already bound to some object it would stay bound to original object. That's good.
     return fn.bind(scope);
@@ -440,7 +446,7 @@ export function dynamic_import (module_name: string, module_url: string): Promis
     });
 }
 
-function _wrap_error_flag (is_exception: Int32Ptr | null, ex: any): string {
+export function normalize_exception (ex: any) {
     let res = "unknown exception";
     if (ex) {
         res = ex.toString();
@@ -456,29 +462,7 @@ function _wrap_error_flag (is_exception: Int32Ptr | null, ex: any): string {
 
         res = mono_wasm_symbolicate_string(res);
     }
-    if (is_exception) {
-        receiveWorkerHeapViews();
-        setI32_unchecked(is_exception, 1);
-    }
     return res;
-}
-
-export function wrap_error_root (is_exception: Int32Ptr | null, ex: any, result: WasmRoot<MonoObject>): void {
-    const res = _wrap_error_flag(is_exception, ex);
-    stringToMonoStringRoot(res, <any>result);
-}
-
-// to set out parameters of icalls
-// TODO replace it with replace it with UTF8 char*, no GC root needed
-// https://github.com/dotnet/runtime/issues/98365
-export function wrap_no_error_root (is_exception: Int32Ptr | null, result?: WasmRoot<MonoObject>): void {
-    if (is_exception) {
-        receiveWorkerHeapViews();
-        setI32_unchecked(is_exception, 0);
-    }
-    if (result) {
-        result.clear();
-    }
 }
 
 export function assert_js_interop (): void {

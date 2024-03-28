@@ -52,7 +52,7 @@ extern void mono_threads_wasm_async_run_in_target_thread_vi (pthread_t target_th
 extern void mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 extern void mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer args);
 #else
-extern void mono_wasm_bind_js_import (void *signature, int *is_exception, MonoObject **result);
+extern void* mono_wasm_bind_js_import_ST (void *signature);
 extern void mono_wasm_invoke_jsimport_ST (int function_handle, void *args);
 #endif /* DISABLE_THREADS */
 
@@ -87,7 +87,7 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::InvokeJSFunctionSend", mono_wasm_invoke_js_function_send);
 	mono_add_internal_call ("Interop/Runtime::CancelPromisePost", mono_wasm_cancel_promise_post);
 #else
-	mono_add_internal_call ("Interop/Runtime::BindJSImport", mono_wasm_bind_js_import);
+	mono_add_internal_call ("Interop/Runtime::BindJSImportST", mono_wasm_bind_js_import_ST);
 	mono_add_internal_call ("Interop/Runtime::InvokeJSImportST", mono_wasm_invoke_jsimport_ST);
 #endif /* DISABLE_THREADS */
 

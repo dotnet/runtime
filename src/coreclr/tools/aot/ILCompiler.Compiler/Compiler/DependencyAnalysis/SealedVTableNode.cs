@@ -101,10 +101,11 @@ namespace ILCompiler.DependencyAnalysis
                 return true;
 
             DefType declType = _type.GetClosestDefType();
+            VTableSliceNode declTypeVTable = factory.VTable(declType);
 
             // It's only okay to touch the actual list of slots if we're in the final emission phase
             // or the vtable is not built lazily.
-            if (relocsOnly && !factory.VTable(declType).HasFixedSlots)
+            if (relocsOnly && !declTypeVTable.HasKnownVirtualMethodUse)
                 return false;
 
             _sealedVTableEntries = new List<SealedVTableEntry>();
@@ -117,10 +118,13 @@ namespace ILCompiler.DependencyAnalysis
             bool needsEntriesForInstanceInterfaceMethodImpls = !isInterface
                     || ((MetadataType)declType).IsDynamicInterfaceCastableImplementation();
 
-            IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(declType).Slots;
+            IReadOnlyList<MethodDesc> virtualSlots = declTypeVTable.Slots;
 
             for (int i = 0; i < virtualSlots.Count; i++)
             {
+                if (!declTypeVTable.IsSlotUsed(virtualSlots[i]))
+                    continue;
+
                 if (!virtualSlots[i].Signature.IsStatic && !needsEntriesForInstanceInterfaceMethodImpls)
                     continue;
 
@@ -146,11 +150,15 @@ namespace ILCompiler.DependencyAnalysis
                 var interfaceType = declTypeRuntimeInterfaces[interfaceIndex];
                 var definitionInterfaceType = declTypeDefinitionRuntimeInterfaces[interfaceIndex];
 
-                virtualSlots = factory.VTable(interfaceType).Slots;
+                VTableSliceNode interfaceVTable = factory.VTable(interfaceType);
+                virtualSlots = interfaceVTable.Slots;
 
                 for (int interfaceMethodSlot = 0; interfaceMethodSlot < virtualSlots.Count; interfaceMethodSlot++)
                 {
                     MethodDesc declMethod = virtualSlots[interfaceMethodSlot];
+
+                    if (!interfaceVTable.IsSlotUsed(declMethod))
+                        continue;
 
                     if (!declMethod.Signature.IsStatic && !needsEntriesForInstanceInterfaceMethodImpls)
                         continue;

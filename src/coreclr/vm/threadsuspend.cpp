@@ -2099,9 +2099,6 @@ void Thread::RareDisablePreemptiveGC()
         goto Exit;
     }
 
-    // This should NEVER be called if the TSNC_UnsafeSkipEnterCooperative bit is set!
-    _ASSERTE(!(m_StateNC & TSNC_UnsafeSkipEnterCooperative) && "DisablePreemptiveGC called while the TSNC_UnsafeSkipEnterCooperative bit is set");
-
     // Holding a spin lock in preemp mode and switch to coop mode could cause other threads spinning
     // waiting for GC
     _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
