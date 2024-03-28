@@ -77,7 +77,7 @@ dn_simdhash_find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash
 dn_simdhash_t *
 dn_simdhash_new_internal (dn_simdhash_meta_t meta, dn_simdhash_vtable_t vtable, uint32_t capacity, dn_allocator_t *allocator)
 {
-    dn_simdhash_t *result = dn_allocator_alloc(allocator, sizeof(dn_simdhash_t));
+    dn_simdhash_t *result = (dn_simdhash_t *)dn_allocator_alloc(allocator, sizeof(dn_simdhash_t));
     memset(result, 0, sizeof(dn_simdhash_t));
 
     assert((meta.bucket_capacity > 1) && (meta.bucket_capacity <= DN_SIMDHASH_MAX_BUCKET_CAPACITY));
