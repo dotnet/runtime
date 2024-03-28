@@ -31,8 +31,8 @@
 #error Expected DN_SIMDHASH_KEY_HASHER definition with signature: uint32_t (KEY_T key)
 #endif
 
-#ifndef DN_SIMDHASH_KEY_COMPARER
-#error Expected DN_SIMDHASH_KEY_COMPARER definition with signature: int (KEY_T lhs, KEY_T rhs)
+#ifndef DN_SIMDHASH_KEY_EQUALS
+#error Expected DN_SIMDHASH_KEY_EQUALS definition with signature: int (KEY_T lhs, KEY_T rhs) that returns 1 for match
 #endif
 
 #ifndef DN_SIMDHASH_BUCKET_CAPACITY
@@ -162,7 +162,7 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T) (bucket_t *bucket, DN_SIMDHASH_K
 	DN_SIMDHASH_KEY_T *key = &bucket->keys[index];
 
 	for (int count = dn_simdhash_bucket_count (suffixes); index < count; index++, key++) {
-		if ((DN_SIMDHASH_KEY_COMPARER (needle, *key)) == 0)
+		if (DN_SIMDHASH_KEY_EQUALS (needle, *key))
 			return index;
 	}
 

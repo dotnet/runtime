@@ -7,13 +7,20 @@
 static int32_t
 dn_simdhash_str_equal (const char * v1, const char * v2)
 {
-	return v1 == v2 || strcmp (v1, v2) == 0;
+	if (v1 == v2)
+		return 1;
+	assert (v1);
+	assert (v2);
+	return strcmp (v1, v2) == 0;
 }
 
 // FIXME: Use a hash function that's fast and avalanches
 static uint32_t
 dn_simdhash_str_hash (const char * v1)
 {
+	if (!v1)
+		return 0;
+
 	uint32_t hash = 0;
 	unsigned char *p = (unsigned char *) v1;
 
@@ -27,7 +34,7 @@ dn_simdhash_str_hash (const char * v1)
 #define DN_SIMDHASH_KEY_T const char *
 #define DN_SIMDHASH_VALUE_T void *
 #define DN_SIMDHASH_KEY_HASHER dn_simdhash_str_hash
-#define DN_SIMDHASH_KEY_COMPARER dn_simdhash_str_equal
+#define DN_SIMDHASH_KEY_EQUALS dn_simdhash_str_equal
 #define DN_SIMDHASH_KEY_IS_POINTER 1
 #define DN_SIMDHASH_VALUE_IS_POINTER 1
 
