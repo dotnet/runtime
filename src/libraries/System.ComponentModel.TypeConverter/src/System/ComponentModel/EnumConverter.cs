@@ -23,7 +23,7 @@ namespace System.ComponentModel
         /// </summary>
         public EnumConverter(Type type)
         {
-            Debug.Assert(type.IsEnum, "type should be an Enum type");
+            Debug.Assert(type.IsEnum || type.Equals(typeof(Enum)), "type should be an Enum type");
             EnumType = type;
         }
 
