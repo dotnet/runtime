@@ -64,15 +64,15 @@ static_assert (DN_SIMDHASH_BUCKET_CAPACITY > 1, "Bucket capacity too low");
 // We set bucket_size_bytes to sizeof() this struct so that we can let the compiler
 //  generate the most optimal code possible when we're manipulating pointers to it -
 //  that is, it can do mul-by-constant instead of mul-by-(hash->meta.etc)
-typedef struct bucket {
+typedef struct bucket_t {
     dn_simdhash_suffixes suffixes;
     DN_SIMDHASH_KEY_T keys[DN_SIMDHASH_BUCKET_CAPACITY];
-} bucket;
+} bucket_t;
 
-static DN_FORCEINLINE(bucket *)
+static DN_FORCEINLINE(bucket_t *)
 address_of_bucket (dn_simdhash_buffers_t buffers, uint32_t bucket_index)
 {
-    return &((bucket *)buffers.buckets)[bucket_index];
+    return &((bucket_t *)buffers.buckets)[bucket_index];
 }
 
 static DN_FORCEINLINE(DN_SIMDHASH_VALUE_T *)
@@ -83,7 +83,7 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 
 // This is split out into a helper so we can eventually reuse it for more efficient add/remove
 static DN_FORCEINLINE(int)
-DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T) (bucket *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_suffixes search_vector)
+DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T) (bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_suffixes search_vector)
 {
     dn_simdhash_suffixes suffixes = bucket->suffixes;
     int index = dn_simdhash_find_first_matching_suffix (search_vector, suffixes);
@@ -102,7 +102,7 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T) (bucket *bucket, DN_SIMDHASH_KEY
 #define BEGIN_SCAN_BUCKETS(initial_index, bucket_index, bucket_address) \
     { \
         uint32_t bucket_index = initial_index; \
-        bucket *bucket_address; \
+        bucket_t *bucket_address; \
         do { \
             bucket_address = address_of_bucket(buffers, bucket_index);
 
@@ -164,7 +164,7 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH
             dn_simdhash_bucket_set_suffix (bucket_address->suffixes, new_index, suffix);
             bucket_address->keys[new_index] = key;
             uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + new_index;
-            ((DN_SIMDHASH_VALUE_T *)hash->buffers.values)[value_slot_index] = value;
+            *address_of_value(buffers, value_slot_index) = value;
             // printf("Inserted [%zd, %zd] in bucket %d at index %d\n", key, value, bucket_index, new_index);
             return DN_SIMDHASH_INSERT_OK;
         }
@@ -184,7 +184,7 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH
 static void
 DN_SIMDHASH_REHASH_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buffers)
 {
-    bucket *bucket_address = address_of_bucket(old_buffers, 0);
+    bucket_t *bucket_address = address_of_bucket(old_buffers, 0);
     for (
         uint32_t i = 0, bc = old_buffers.buckets_length, value_slot_base = 0;
         i < bc; i++, bucket_address++, value_slot_base += DN_SIMDHASH_BUCKET_CAPACITY
@@ -199,7 +199,7 @@ DN_SIMDHASH_REHASH_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, dn_simdhash_buf
             //  be spread out better
             dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T)(
                 hash, key, key_hash,
-                ((DN_SIMDHASH_VALUE_T *)old_buffers.values)[value_slot_base + j],
+                *address_of_value(old_buffers, value_slot_base + j),
                 0
             );
             // FIXME: Why doesn't assert(ok) work here? Clang says it's unused
@@ -222,7 +222,7 @@ dn_simdhash_vtable_t DN_SIMDHASH_T_VTABLE(DN_SIMDHASH_T) = {
 //  that lives inside every hash instance. (TODO: Store it by-reference?)
 dn_simdhash_meta_t DN_SIMDHASH_T_META(DN_SIMDHASH_T) = {
     DN_SIMDHASH_BUCKET_CAPACITY,
-    sizeof(bucket),
+    sizeof(bucket_t),
     sizeof(DN_SIMDHASH_KEY_T),
     sizeof(DN_SIMDHASH_VALUE_T),
     DN_SIMDHASH_KEY_IS_POINTER,
