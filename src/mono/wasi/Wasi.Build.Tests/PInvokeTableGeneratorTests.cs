@@ -22,8 +22,55 @@ public class PInvokeTableGeneratorTests : BuildTestBase
     {
         string config = "Release";
         string id = $"{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "wasinative");
+        string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
+        string code =
+                """
+                using System;
+                using System.Runtime.InteropServices;
+                public unsafe class Test
+                {
+                    [UnmanagedCallersOnly(EntryPoint = "ManagedFunc")]
+                    public static int MyExport(int number)
+                    {
+                        // called from MyImport aka UnmanagedFunc
+                        Console.WriteLine($"MyExport({number}) -> 42");
+                        return 42;
+                    }
 
+                    [DllImport("*", EntryPoint = "UnmanagedFunc")]
+                    public static extern void MyImport(); // calls ManagedFunc aka MyExport
+
+                    public unsafe static int Main(string[] args)
+                    {
+                        Console.WriteLine($"main: {args.Length}");
+                        MyImport();
+                        return 0;
+                    }
+                }
+                """;
+        string cCode =
+                """
+                #include <stdio.h>
+
+                int ManagedFunc(int number);
+
+                void UnmanagedFunc()
+                {
+                    int ret = 0;
+                    printf("UnmanagedFunc calling ManagedFunc\n");
+                    ret = ManagedFunc(123);
+                    printf("ManagedFunc returned %d\n", ret);
+                }
+                """;
+        File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
+        AddItemsPropertiesToProject(projectFile, extraItems: @"<NativeFileReference Include=""local.c"" />");
+        File.WriteAllText(_projectDir + "local.c", cCode);
+        string extraProperties = @"<WasmBuildNative>true</WasmBuildNative>
+                                   <WasmNativeStrip>false</WasmNativeStrip>
+                                   <IsBrowserWasmProject>false</IsBrowserWasmProject>
+                                   <WasmSingleFileBundle>true</WasmSingleFileBundle>
+                                   <AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
+        AddItemsPropertiesToProject(projectFile, extraProperties);
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         var buildArgs = new BuildArgs(projectName, config, AOT: true, ProjectFileContents: id, ExtraBuildArgs: null);
         buildArgs = ExpandBuildArgs(buildArgs);
