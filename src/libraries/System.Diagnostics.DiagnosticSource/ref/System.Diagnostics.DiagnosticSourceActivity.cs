@@ -356,6 +356,7 @@ namespace System.Diagnostics.Metrics
     }
     public sealed class Histogram<T> : Instrument<T> where T : struct
     {
+        public HistogramAdvice<T>? Advice { get { throw null; } }
         internal Histogram(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description) { throw null; }
         public void Record(T value) { throw null; }
         public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag) { throw null; }
@@ -410,7 +411,8 @@ namespace System.Diagnostics.Metrics
         public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit = null, string? description = null) where T : struct  { throw null; }
         public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct  { throw null; }
         public Histogram<T> CreateHistogram<T>(string name, string? unit = null, string? description = null) where T : struct { throw null; }
-        public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
+        public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) where T : struct { throw null; }
+        public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags, HistogramAdvice<T>? advice) where T : struct { throw null; }
         public ObservableCounter<T> CreateObservableCounter<T>(
                             string name,
                             Func<T> observeValue,
@@ -566,5 +568,9 @@ namespace System.Diagnostics.Metrics
         protected ObservableInstrument(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, tags: null) { throw null; }
         protected ObservableInstrument(Meter meter, string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) : base(meter, name, unit, description) { throw null; }
         protected abstract System.Collections.Generic.IEnumerable<Measurement<T>> Observe();
+    }
+    public sealed class HistogramAdvice<T> where T : struct
+    {
+        public System.Collections.Generic.IReadOnlyList<T>? ExplicitBucketBoundaries { get { throw null; } init { throw null; } }
     }
 }

@@ -152,7 +152,8 @@ namespace System.Diagnostics.Metrics
         /// <remarks>
         /// Example uses for Histogram: the request duration and the size of the response payload.
         /// </remarks>
-        public Histogram<T> CreateHistogram<T>(string name, string? unit = null, string? description = null) where T : struct => CreateHistogram<T>(name, unit, description, tags: null);
+        public Histogram<T> CreateHistogram<T>(string name, string? unit = null, string? description = null) where T : struct
+            => CreateHistogram<T>(name, unit, description, tags: null, advice: null);
 
         /// <summary>
         /// Histogram is an Instrument which can be used to report arbitrary values that are likely to be statistically meaningful. It is intended for statistics such as histograms, summaries, and percentile.
@@ -165,7 +166,21 @@ namespace System.Diagnostics.Metrics
         /// Example uses for Histogram: the request duration and the size of the response payload.
         /// </remarks>
         public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags) where T : struct
-                => (Histogram<T>)GetOrCreateInstrument<T>(typeof(Histogram<T>), name, unit, description, tags, () => new Histogram<T>(this, name, unit, description, tags));
+                => CreateHistogram<T>(name, unit, description, tags, advice: null);
+
+        /// <summary>
+        /// Histogram is an Instrument which can be used to report arbitrary values that are likely to be statistically meaningful. It is intended for statistics such as histograms, summaries, and percentile.
+        /// </summary>
+        /// <param name="name">The instrument name. cannot be null.</param>
+        /// <param name="unit">Optional instrument unit of measurements.</param>
+        /// <param name="description">Optional instrument description.</param>
+        /// <param name="tags">tags to attach to the counter.</param>
+        /// <param name="advice"><see cref="HistogramAdvice{T}"/> to attach to the counter.</param>
+        /// <remarks>
+        /// Example uses for Histogram: the request duration and the size of the response payload.
+        /// </remarks>
+        public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags, HistogramAdvice<T>? advice) where T : struct
+                => (Histogram<T>)GetOrCreateInstrument<T>(typeof(Histogram<T>), name, unit, description, tags, () => new Histogram<T>(this, name, unit, description, tags, advice));
 
         /// <summary>
         /// Create a metrics UpDownCounter object.

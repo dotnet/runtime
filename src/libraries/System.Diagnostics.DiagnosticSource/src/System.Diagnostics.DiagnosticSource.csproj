@@ -54,6 +54,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\Metrics\Counter.cs" />
     <Compile Include="System\Diagnostics\Metrics\ExponentialHistogramAggregator.cs" />
     <Compile Include="System\Diagnostics\Metrics\Histogram.cs" />
+    <Compile Include="System\Diagnostics\Metrics\HistogramAdvice.cs" />
     <Compile Include="System\Diagnostics\Metrics\IMeterFactory.cs" />
     <Compile Include="System\Diagnostics\Metrics\Instrument.cs" />
     <Compile Include="System\Diagnostics\Metrics\Instrument.common.cs" />
