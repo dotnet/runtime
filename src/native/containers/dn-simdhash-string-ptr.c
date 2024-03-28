@@ -79,18 +79,21 @@ MurmurHash3_x86_32 (const void * key, int len, uint32_t seed)
 
 	uint32_t k1 = 0;
 
+	// HACK: This was previously a duff's device but clang no longer lets you use those.
+	// Hopefully I didn't break it when manually copy-pasting things.
 	switch(len & 3)
 	{
 		case 3:
 			k1 ^= tail[2] << 16;
-#ifdef __clang__
-			[[clang::fallthrough]];
-#endif
+			k1 ^= tail[1] << 8;
+			k1 ^= tail[0];
+			k1 *= c1; k1 = ROTL32(k1,15); k1 *= c2; h1 ^= k1;
+			break;
 		case 2:
 			k1 ^= tail[1] << 8;
-#ifdef __clang__
-			[[clang::fallthrough]];
-#endif
+			k1 ^= tail[0];
+			k1 *= c1; k1 = ROTL32(k1,15); k1 *= c2; h1 ^= k1;
+			break;
 		case 1:
 			k1 ^= tail[0];
 			k1 *= c1; k1 = ROTL32(k1,15); k1 *= c2; h1 ^= k1;
