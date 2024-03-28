@@ -291,148 +291,36 @@ namespace System.Runtime
 #endif
         }
 
-        // Given an ExceptionID and an address pointing somewhere into a managed module, get
-        // an exception object of a type that the module containing the given address will understand.
-        // This finds the classlib-defined GetRuntimeException function and asks it for the exception object.
-        internal static Exception GetClasslibException(ExceptionIDs id, IntPtr address)
-        {
 #if NATIVEAOT
-            // Find the classlib function that will give us the exception object we want to throw. This
-            // is a RuntimeExport function from the classlib module, and is therefore managed-callable.
-            IntPtr pGetRuntimeExceptionFunction =
-                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(address, ClassLibFunctionId.GetRuntimeException);
-
-            // Return the exception object we get from the classlib.
-            Exception? e = null;
-            try
-            {
-                e = ((delegate*<ExceptionIDs, Exception>)pGetRuntimeExceptionFunction)(id);
-            }
-            catch when (true)
-            {
-                // disallow all exceptions leaking out of callbacks
-            }
-#else
-            Exception? e = id switch
-            {
-                ExceptionIDs.AccessViolation => new AccessViolationException(),
-                ExceptionIDs.Arithmetic => new ArithmeticException(),
-                ExceptionIDs.AmbiguousImplementation => new AmbiguousImplementationException(),
-                ExceptionIDs.ArrayTypeMismatch => new ArrayTypeMismatchException(),
-                ExceptionIDs.DataMisaligned => new DataMisalignedException(),
-                ExceptionIDs.DivideByZero => new DivideByZeroException(),
-                ExceptionIDs.EntrypointNotFound => new EntryPointNotFoundException(),
-                ExceptionIDs.IndexOutOfRange => new IndexOutOfRangeException(),
-                ExceptionIDs.InvalidCast => new InvalidCastException(),
-                ExceptionIDs.NullReference => new NullReferenceException(),
-                ExceptionIDs.OutOfMemory => new OutOfMemoryException(),
-                ExceptionIDs.Overflow => new OverflowException(),
-                _ => null
-            };
-#endif
-            // If the helper fails to yield an object, then we fail-fast.
-            if (e == null)
-            {
-                FailFastViaClasslib(RhFailFastReason.InternalError, null, address);
-            }
-
-            return e;
-        }
-#if NATIVEAOT
-        // Given an ExceptionID and an MethodTable address, get an exception object of a type that the module containing
-        // the given address will understand. This finds the classlib-defined GetRuntimeException function and asks
-        // it for the exception object.
-        internal static Exception GetClasslibExceptionFromEEType(ExceptionIDs id, MethodTable* pEEType)
-        {
-            // Find the classlib function that will give us the exception object we want to throw. This
-            // is a RuntimeExport function from the classlib module, and is therefore managed-callable.
-            IntPtr pGetRuntimeExceptionFunction = IntPtr.Zero;
-            if (pEEType != null)
-            {
-                pGetRuntimeExceptionFunction = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType(pEEType, ClassLibFunctionId.GetRuntimeException);
-            }
-
-            // Return the exception object we get from the classlib.
-            Exception? e = null;
-            try
-            {
-                e = ((delegate*<ExceptionIDs, Exception>)pGetRuntimeExceptionFunction)(id);
-            }
-            catch when (true)
-            {
-                // disallow all exceptions leaking out of callbacks
-            }
-
-            // If the helper fails to yield an object, then we fail-fast.
-            if (e == null)
-            {
-                FailFastViaClasslib(RhFailFastReason.InternalError, null, (IntPtr)pEEType);
-            }
-
-            return e;
-        }
-
+#pragma warning disable IDE0060
         // RhExceptionHandling_ functions are used to throw exceptions out of our asm helpers. We tail-call from
         // the asm helpers to these functions, which performs the throw. The tail-call is important: it ensures that
         // the stack is crawlable from within these functions.
         [RuntimeExport("RhExceptionHandling_ThrowClasslibOverflowException")]
         public static void ThrowClasslibOverflowException(IntPtr address)
         {
-            // Throw the overflow exception defined by the classlib, using the return address of the asm helper
-            // to find the correct classlib.
-
-            throw GetClasslibException(ExceptionIDs.Overflow, address);
+            ThrowHelper.ThrowOverflowException();
         }
 
         [RuntimeExport("RhExceptionHandling_ThrowClasslibDivideByZeroException")]
         public static void ThrowClasslibDivideByZeroException(IntPtr address)
         {
-            // Throw the divide by zero exception defined by the classlib, using the return address of the asm helper
-            // to find the correct classlib.
-
-            throw GetClasslibException(ExceptionIDs.DivideByZero, address);
+            ThrowHelper.ThrowDivideByZeroException();
         }
 
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
         public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)
         {
-            ExceptionIDs exID = fIsOverflow ? ExceptionIDs.Overflow : ExceptionIDs.OutOfMemory;
-
-            // Throw the out of memory exception defined by the classlib, using the input MethodTable*
-            // to find the correct classlib.
-
-            throw pEEType->GetClasslibException(exID);
-        }
-
-#if !INPLACE_RUNTIME
-        private static OutOfMemoryException s_theOOMException = new OutOfMemoryException();
-
-        // MRT exports GetRuntimeException for the few cases where we have a helper that throws an exception
-        // and may be called by either MRT or other classlibs and that helper needs to throw an exception.
-        // There are only a few cases where this happens now (the fast allocation helpers), so we limit the
-        // exception types that MRT will return.
-        [RuntimeExport("GetRuntimeException")]
-        public static Exception GetRuntimeException(ExceptionIDs id)
-        {
-            switch (id)
+            if (fIsOverflow)
             {
-                case ExceptionIDs.OutOfMemory:
-                    // Throw a preallocated exception to avoid infinite recursion.
-                    return s_theOOMException;
-
-                case ExceptionIDs.Overflow:
-                    return new OverflowException();
-
-                case ExceptionIDs.InvalidCast:
-                    return new InvalidCastException();
-
-                default:
-                    Debug.Assert(false, "unexpected ExceptionID");
-                    FallbackFailFast(RhFailFastReason.InternalError, null);
-                    return null;
+                ThrowHelper.ThrowOverflowException();
+            }
+            else
+            {
+                ThrowHelper.ThrowOutOfMemoryException();
             }
         }
-#endif
+#pragma warning restore IDE0060
 #endif // NATIVEAOT
 
         private enum HwExceptionCode : uint
@@ -558,45 +446,44 @@ namespace System.Runtime
 #endif
             IntPtr faultingCodeAddress = exInfo._pExContext->IP;
             bool instructionFault = true;
-            ExceptionIDs exceptionId = default(ExceptionIDs);
             Exception? exceptionToThrow = null;
 
-            switch (exceptionCode)
+            switch ((HwExceptionCode)exceptionCode)
             {
-                case (uint)HwExceptionCode.STATUS_REDHAWK_NULL_REFERENCE:
-                    exceptionId = ExceptionIDs.NullReference;
+                case HwExceptionCode.STATUS_REDHAWK_NULL_REFERENCE:
+                    exceptionToThrow = new NullReferenceException();
                     break;
 
-                case (uint)HwExceptionCode.STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE:
+                case HwExceptionCode.STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE:
                     // The write barrier where the actual fault happened has been unwound already.
                     // The IP of this fault needs to be treated as return address, not as IP of
                     // faulting instruction.
                     instructionFault = false;
-                    exceptionId = ExceptionIDs.NullReference;
+                    exceptionToThrow = new NullReferenceException();
                     break;
 
 #if NATIVEAOT
-                case (uint)HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT:
+                case HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT:
                     exceptionToThrow = InternalCalls.RhpGetThreadAbortException();
                     break;
 #endif
 
-                case (uint)HwExceptionCode.STATUS_DATATYPE_MISALIGNMENT:
-                    exceptionId = ExceptionIDs.DataMisaligned;
+                case HwExceptionCode.STATUS_DATATYPE_MISALIGNMENT:
+                    exceptionToThrow = new DataMisalignedException();
                     break;
 
                 // N.B. -- AVs that have a read/write address lower than 64k are already transformed to
                 //         HwExceptionCode.REDHAWK_NULL_REFERENCE prior to calling this routine.
-                case (uint)HwExceptionCode.STATUS_ACCESS_VIOLATION:
-                    exceptionId = ExceptionIDs.AccessViolation;
+                case HwExceptionCode.STATUS_ACCESS_VIOLATION:
+                    exceptionToThrow = new AccessViolationException();
                     break;
 
-                case (uint)HwExceptionCode.STATUS_INTEGER_DIVIDE_BY_ZERO:
-                    exceptionId = ExceptionIDs.DivideByZero;
+                case HwExceptionCode.STATUS_INTEGER_DIVIDE_BY_ZERO:
+                    exceptionToThrow = new DivideByZeroException();
                     break;
 
-                case (uint)HwExceptionCode.STATUS_INTEGER_OVERFLOW:
-                    exceptionId = ExceptionIDs.Overflow;
+                case HwExceptionCode.STATUS_INTEGER_OVERFLOW:
+                    exceptionToThrow = new OverflowException();
                     break;
 
                 default:
@@ -605,11 +492,6 @@ namespace System.Runtime
                     // this case.
                     FailFastViaClasslib(RhFailFastReason.InternalError, null, faultingCodeAddress);
                     break;
-            }
-
-            if (exceptionId != default(ExceptionIDs))
-            {
-                exceptionToThrow = GetClasslibException(exceptionId, faultingCodeAddress);
             }
 
             exInfo.Init(exceptionToThrow!, instructionFault);
@@ -631,11 +513,7 @@ namespace System.Runtime
             InternalCalls.RhpValidateExInfoStack();
 #endif
             // Transform attempted throws of null to a throw of NullReferenceException.
-            if (exceptionObj == null)
-            {
-                IntPtr faultingCodeAddress = exInfo._pExContext->IP;
-                exceptionObj = GetClasslibException(ExceptionIDs.NullReference, faultingCodeAddress);
-            }
+            exceptionObj ??= new NullReferenceException();
 
             exInfo.Init(exceptionObj);
             DispatchEx(ref exInfo._frameIter, ref exInfo);
@@ -1078,38 +956,9 @@ namespace System.Runtime
             return false;
         }
 
-#if DEBUG && !INPLACE_RUNTIME && NATIVEAOT
-        private static MethodTable* s_pLowLevelObjectType;
-        private static void AssertNotRuntimeObject(MethodTable* pClauseType)
-        {
-            //
-            // The C# try { } catch { } clause expands into a typed catch of System.Object.
-            // Since runtime has its own definition of System.Object, try { } catch { } might not do what
-            // was intended (catch all exceptions).
-            //
-            // This assertion is making sure we don't use try { } catch { } within the runtime.
-            // The runtime codebase should either use try { } catch (Exception) { } for exception types
-            // from the runtime or a try { } catch when (true) { } to catch all exceptions.
-            //
-
-            if (s_pLowLevelObjectType == null)
-            {
-                // Allocating might fail, but since this is just a debug assert, it's probably fine.
-                s_pLowLevelObjectType = new System.Object().MethodTable;
-            }
-
-            Debug.Assert(!pClauseType->IsEquivalentTo(s_pLowLevelObjectType));
-        }
-#endif // DEBUG && !INPLACE_RUNTIME && NATIVEAOT
-
-
         private static bool ShouldTypedClauseCatchThisException(object exception, MethodTable* pClauseType, bool tryUnwrapException)
         {
 #if NATIVEAOT
-#if DEBUG && !INPLACE_RUNTIME
-            AssertNotRuntimeObject(pClauseType);
-#endif
-
             return TypeCast.IsInstanceOfException(pClauseType, exception);
 #else
             if (tryUnwrapException && exception is RuntimeWrappedException ex)

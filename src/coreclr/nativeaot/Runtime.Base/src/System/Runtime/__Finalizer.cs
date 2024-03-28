@@ -19,9 +19,7 @@ namespace System.Runtime
         [UnmanagedCallersOnly(EntryPoint = "ProcessFinalizers")]
         public static void ProcessFinalizers()
         {
-#if INPLACE_RUNTIME
-            System.Runtime.FinalizerInitRunner.DoInitialize();
-#endif
+            FinalizerInitRunner.DoInitialize();
 
             while (true)
             {

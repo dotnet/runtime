@@ -18,10 +18,6 @@
   </PropertyGroup>
   <!-- For now, link Runtime.Base into Test.CoreLib until there is proper multifile build -->
   <PropertyGroup>
-    <InPlaceRuntime>true</InPlaceRuntime>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(InPlaceRuntime)' == 'true'">
-    <DefineConstants>INPLACE_RUNTIME;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(Platform)' == 'arm'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(Platform)' == 'armel'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
 
@@ -31,7 +27,7 @@
   <PropertyGroup>
     <CommonPath>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', 'src'))</CommonPath>
   </PropertyGroup>
-  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
+  <ItemGroup>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs">
       <Link>Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs</Link>
     </Compile>
@@ -72,7 +68,7 @@
       <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
+  <ItemGroup>
     <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Full\AsmOffsets.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -233,6 +229,7 @@
     <Compile Include="System\Array.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
     <Compile Include="System\Object.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\Type.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeManagerHandle.cs">

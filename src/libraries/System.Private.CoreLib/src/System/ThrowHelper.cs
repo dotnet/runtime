@@ -66,6 +66,18 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowAmbiguousImplementationException()
+        {
+            throw new AmbiguousImplementationException();
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowEntryPointNotFoundException()
+        {
+            throw new EntryPointNotFoundException();
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArrayTypeMismatchException()
         {
             throw new ArrayTypeMismatchException();
@@ -75,6 +87,12 @@ namespace System
         internal static void ThrowArrayTypeMismatchException_CantAssignType()
         {
             throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidCastException()
+        {
+            throw new InvalidCastException();
         }
 
         [DoesNotReturn]
@@ -419,7 +437,7 @@ namespace System
         [DoesNotReturn]
         internal static void ThrowNullReferenceException()
         {
-            throw new NullReferenceException(SR.Arg_NullArgumentNullRef);
+            throw new NullReferenceException();
         }
 
         [DoesNotReturn]
