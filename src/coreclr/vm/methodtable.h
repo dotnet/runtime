@@ -329,8 +329,8 @@ struct MethodTableAuxiliaryData
 
         enum_flag_Initialized             = 0x0001,
         enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
+        enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x0004,     // Is any field type or sub field type overrode Equals or GetHashCode
 
-        // enum_unused                      = 0x0004,
         enum_flag_HasApproxParent           = 0x0010,
         // enum_unused                      = 0x0020,
         enum_flag_IsNotFullyLoaded          = 0x0040,
@@ -338,7 +338,7 @@ struct MethodTableAuxiliaryData
 
         enum_flag_IsInitError               = 0x0100,
         enum_flag_IsStaticDataAllocated     = 0x0200,
-        enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x0400,     // Is any field type or sub field type overrode Equals or GetHashCode
+        // unum_unused                      = 0x0400,     // Is any field type or sub field type overrode Equals or GetHashCode
         enum_flag_IsTlsIndexAllocated       = 0x0800,
         enum_flag_MayHaveOpenInterfaceInInterfaceMap = 0x1000,
         // enum_unused                      = 0x2000,
