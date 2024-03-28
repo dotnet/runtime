@@ -1488,6 +1488,114 @@ namespace System
         // IComparisonOperators
         //
 
+        private static void GetMostSignificantDifference(in Guid left, in Guid right, out uint leftDifference, out uint rightDifference)
+        {
+            if (left._a != right._a)
+            {
+                leftDifference = (uint)left._a;
+                rightDifference = (uint)right._a;
+                return;
+            }
+
+            if (left._b != right._b)
+            {
+                leftDifference = (uint)left._b;
+                rightDifference = (uint)right._b;
+                return;
+            }
+
+            if (left._c != right._c)
+            {
+                leftDifference = (uint)left._c;
+                rightDifference = (uint)right._c;
+                return;
+            }
+
+            if (BitConverter.IsLittleEndian)
+            {
+                // Only compare ordered-bytes to avoid expensive Shuffle operations.
+                ulong leftTail = Unsafe.As<byte, ulong>(ref Unsafe.AsRef(in left._d));
+                ulong rightTail = Unsafe.As<byte, ulong>(ref Unsafe.AsRef(in right._d));
+
+                ulong diff = leftTail ^ rightTail;
+                if (diff == 0)
+                {
+                    leftDifference = 0;
+                    rightDifference = 0;
+                    return;
+                }
+
+                int firstDifferentBit = BitOperations.TrailingZeroCount(diff);
+                // The comparisons are per byte, so align our comparison to a byte boundary.
+                firstDifferentBit -= firstDifferentBit % 8;
+                ulong leftDifferentByte = (leftTail >> firstDifferentBit) & 0xFF;
+                ulong rightDifferentByte = (rightTail >> firstDifferentBit) & 0xFF;
+
+                leftDifference = (uint)leftDifferentByte;
+                rightDifference = (uint)rightDifferentByte;
+                return;
+            }
+
+            if (left._d != right._d)
+            {
+                leftDifference = left._d;
+                rightDifference = right._d;
+                return;
+            }
+
+            if (left._e != right._e)
+            {
+                leftDifference = left._e;
+                rightDifference = right._e;
+                return;
+            }
+
+            if (left._f != right._f)
+            {
+                leftDifference = left._f;
+                rightDifference = right._f;
+                return;
+            }
+
+            if (left._g != right._g)
+            {
+                leftDifference = left._g;
+                rightDifference = right._g;
+                return;
+            }
+
+            if (left._h != right._h)
+            {
+                leftDifference = left._h;
+                rightDifference = right._h;
+                return;
+            }
+
+            if (left._i != right._i)
+            {
+                leftDifference = left._i;
+                rightDifference = right._i;
+                return;
+            }
+
+            if (left._j != right._j)
+            {
+                leftDifference = left._j;
+                rightDifference = right._j;
+                return;
+            }
+
+            if (left._k != right._k)
+            {
+                leftDifference = left._k;
+                rightDifference = right._k;
+                return;
+            }
+
+            leftDifference = 0;
+            rightDifference = 0;
+        }
+
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(Guid left, Guid right)
         {
@@ -1613,62 +1721,8 @@ namespace System
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(Guid left, Guid right)
         {
-            if (left._a != right._a)
-            {
-                return (uint)left._a > (uint)right._a;
-            }
-
-            if (left._b != right._b)
-            {
-                return (uint)left._b > (uint)right._b;
-            }
-
-            if (left._c != right._c)
-            {
-                return (uint)left._c > (uint)right._c;
-            }
-
-            if (left._d != right._d)
-            {
-                return left._d > right._d;
-            }
-
-            if (left._e != right._e)
-            {
-                return left._e > right._e;
-            }
-
-            if (left._f != right._f)
-            {
-                return left._f > right._f;
-            }
-
-            if (left._g != right._g)
-            {
-                return left._g > right._g;
-            }
-
-            if (left._h != right._h)
-            {
-                return left._h > right._h;
-            }
-
-            if (left._i != right._i)
-            {
-                return left._i > right._i;
-            }
-
-            if (left._j != right._j)
-            {
-                return left._j > right._j;
-            }
-
-            if (left._k != right._k)
-            {
-                return left._k > right._k;
-            }
-
-            return false;
+            GetMostSignificantDifference(in left, in right, out uint a, out uint b);
+            return a > b;
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
