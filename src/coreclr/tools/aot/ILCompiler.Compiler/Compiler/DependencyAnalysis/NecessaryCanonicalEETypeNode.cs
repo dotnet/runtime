@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
             Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
             Debug.Assert(type == type.ConvertToCanonForm(CanonicalFormKind.Specific));
-            Debug.Assert(!type.IsMdArray || factory.Target.Abi == TargetAbi.CppCodegen);
+            Debug.Assert(!type.IsMdArray);
         }
 
         protected override void OutputInterfaceMap(NodeFactory factory, ref ObjectDataBuilder objData)

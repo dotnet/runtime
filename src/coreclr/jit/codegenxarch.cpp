@@ -6842,19 +6842,6 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     ins     = (op1Type == TYP_FLOAT) ? INS_ucomiss : INS_ucomisd;
     cmpAttr = emitTypeSize(op1Type);
 
-    var_types targetType = treeNode->TypeGet();
-
-    // Clear target reg in advance via "xor reg,reg" to avoid movzx after SETCC
-    if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
-        !varTypeIsByte(targetType))
-    {
-        regMaskTP targetRegMask = genRegMask(targetReg);
-        if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
-        {
-            instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
-            targetType = TYP_UBYTE; // just a tip for inst_SETCC that movzx is not needed
-        }
-    }
     GetEmitter()->emitInsBinary(ins, cmpAttr, op1, op2);
 
     // Are we evaluating this into a register?
@@ -6871,7 +6858,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
             condition = GenCondition(GenCondition::P);
         }
 
-        inst_SETCC(condition, targetType, targetReg);
+        inst_SETCC(condition, treeNode->TypeGet(), targetReg);
         genProduceReg(tree);
     }
 }
@@ -7011,22 +6998,8 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
 
-    var_types targetType = tree->TypeGet();
-
     if (!canReuseFlags || !genCanAvoidEmittingCompareAgainstZero(tree, type))
     {
-        // Clear target reg in advance via "xor reg,reg" to avoid movzx after SETCC
-        if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
-            !varTypeIsByte(targetType))
-        {
-            regMaskTP targetRegMask = genRegMask(targetReg);
-            if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
-            {
-                instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
-                targetType = TYP_UBYTE; // just a tip for inst_SETCC that movzx is not needed
-            }
-        }
-
         emitAttr size    = emitTypeSize(type);
         bool     canSkip = compiler->opts.OptimizationEnabled() && (ins == INS_cmp) && !op1->isUsedFromMemory() &&
                        !op2->isUsedFromMemory() && emit->IsRedundantCmp(size, op1->GetRegNum(), op2->GetRegNum());
@@ -7040,7 +7013,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
     {
-        inst_SETCC(GenCondition::FromIntegralRelop(tree), targetType, targetReg);
+        inst_SETCC(GenCondition::FromIntegralRelop(tree), tree->TypeGet(), targetReg);
         genProduceReg(tree);
     }
 }
