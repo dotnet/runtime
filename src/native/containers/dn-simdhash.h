@@ -120,6 +120,7 @@ typedef const void * dn_simdhash_value_ref;
 typedef struct dn_simdhash_meta_t {
     // type metadata for generic implementation
     uint32_t bucket_capacity, bucket_size_bytes, key_size, value_size;
+    uint8_t key_is_pointer, value_is_pointer;
 } dn_simdhash_meta_t;
 
 typedef enum dn_simdhash_insert_result {
@@ -142,16 +143,14 @@ typedef struct dn_simdhash_vtable_t {
 typedef struct dn_simdhash_t {
     // internal state
     uint32_t count;
-    dn_simdhash_meta_t meta;
     dn_simdhash_buffers_t buffers;
     dn_simdhash_vtable_t vtable;
+    dn_simdhash_meta_t meta;
 } dn_simdhash_t;
 
-typedef void (*dn_simdhash_foreach_func) (dn_simdhash_key_ref key, dn_simdhash_value_ref value, void* user_data);
-
 // These helpers use .values instead of .vec to avoid generating unnecessary
-//  vector loads/stores. Operations that touch these values may not need vectorization
-
+//  vector loads/stores. Operations that touch these values may not need vectorization,
+//  so it's ideal to just do single-byte memory accesses instead.
 static DN_FORCEINLINE(uint8_t)
 dn_simdhash_bucket_count (dn_simdhash_suffixes bucket)
 {
@@ -197,21 +196,23 @@ dn_simdhash_select_bucket_index (dn_simdhash_buffers_t buffers, uint32_t key_has
     return key_hash & (buffers.buckets_length - 1);
 }
 
-static DN_FORCEINLINE(void *)
-dn_simdhash_address_of_bucket (dn_simdhash_meta_t meta, dn_simdhash_buffers_t buffers, uint32_t bucket_index)
-{
-    return buffers.buckets + (bucket_index * meta.bucket_size_bytes);
-}
 
+// Scans a single bucket for a key with a suffix matching the provided search vector, and
+//  returns the index of the first match, if any.
+// If there is no match, the result will be out of range (typically -1 or 32).
 int
 dn_simdhash_find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack);
 
+// Creates a simdhash with the provided configuration metadata, vtable, size, and allocator.
+// Be sure you know what you're doing.
 dn_simdhash_t *
 dn_simdhash_new_internal (dn_simdhash_meta_t meta, dn_simdhash_vtable_t vtable, uint32_t capacity, dn_allocator_t *allocator);
 
+// Frees a simdhash and its associated buffers.
 void
 dn_simdhash_free (dn_simdhash_t *hash);
 
+// Frees a set of simdhash buffers (returned by ensure_capacity_internal).
 void
 dn_simdhash_free_buffers (dn_simdhash_buffers_t buffers);
 
@@ -220,29 +221,43 @@ dn_simdhash_free_buffers (dn_simdhash_buffers_t buffers);
 dn_simdhash_buffers_t
 dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity);
 
+// Erases the contents of the table, but does not shrink it.
 void
 dn_simdhash_clear (dn_simdhash_t *hash);
 
+// Returns the actual number of items the table can currently hold.
+// It may grow automatically before reaching that point if there are hash collisions.
 uint32_t
 dn_simdhash_capacity (dn_simdhash_t *hash);
 
+// Returns the number of items currently stored in the table.
 uint32_t
 dn_simdhash_count (dn_simdhash_t *hash);
 
+// Automatically resizes the table if it is too small to hold the requested number
+//  of items. Will not shrink the table if it is already bigger.
 void
 dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity);
 
+// Returns 1 if a new item was successfully added, and 0 if it already existed.
+// Key and value will be dereferenced unless this is a pointer hash.
 uint8_t
 dn_simdhash_try_add (dn_simdhash_t *hash, dn_simdhash_key_ref key, dn_simdhash_value_ref value);
 
 // This always returns the address of a value, or NULL if no value was found.
+// Key will be dereferenced unless this is a pointer hash.
 void *
 dn_simdhash_find_value_by_key (dn_simdhash_t *hash, dn_simdhash_key_ref key);
 
 // This always returns the address of a value, or NULL if no value was found.
+// Key will be dereferenced unless this is a pointer hash.
 void *
 dn_simdhash_find_value_by_key_with_hash (dn_simdhash_t *hash, dn_simdhash_key_ref key, uint32_t key_hash);
 
+typedef void (*dn_simdhash_foreach_func) (dn_simdhash_key_ref key, dn_simdhash_value_ref value, void* user_data);
+
+// Iterates over all the key/value pairs in the table and passes each one to your provided
+//  callback, along with the user_data pointer you provide.
 void
 dn_simdhash_foreach (dn_simdhash_t *hash, dn_simdhash_foreach_func func, void *user_data);
 
