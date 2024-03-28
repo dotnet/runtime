@@ -395,12 +395,10 @@ void fx_resolver_t::update_newest_references(
 //     FrameworkMissingFailure - the resolution failed because the requested framework doesn't exist on disk.
 //     InvalidConfigFile - reading of a runtime config for some of the processed frameworks has failed.
 StatusCode fx_resolver_t::read_framework(
-    const host_startup_info_t & host_info,
-    bool disable_multilevel_lookup,
-    const runtime_config_t::settings_t& override_settings,
-    const runtime_config_t & config,
-    const fx_reference_t * effective_parent_fx_ref,
-    fx_definition_vector_t & fx_definitions,
+    const pal::string_t& dotnet_root,
+    const runtime_config_t& config,
+    const fx_reference_t* effective_parent_fx_ref,
+    fx_definition_vector_t& fx_definitions,
     resolution_failure_info& resolution_failure)
 {
     // This reconciles duplicate references to minimize the number of resolve retries.
@@ -440,7 +438,7 @@ StatusCode fx_resolver_t::read_framework(
             m_effective_fx_references[fx_name] = new_effective_fx_ref;
 
             // Resolve the effective framework reference against the existing physical framework folders
-            std::unique_ptr<fx_definition_t> fx = resolve_framework_reference(new_effective_fx_ref, m_oldest_fx_references[fx_name].get_fx_version(), host_info.dotnet_root, disable_multilevel_lookup);
+            std::unique_ptr<fx_definition_t> fx = resolve_framework_reference(new_effective_fx_ref, m_oldest_fx_references[fx_name].get_fx_version(), dotnet_root, m_disable_multilevel_lookup);
             if (fx == nullptr)
             {
                 resolution_failure.missing = std::move(new_effective_fx_ref);
@@ -461,7 +459,7 @@ StatusCode fx_resolver_t::read_framework(
             pal::string_t config_file;
             pal::string_t dev_config_file;
             get_runtime_config_paths(fx->get_dir(), fx_name, &config_file, &dev_config_file);
-            fx->parse_runtime_config(config_file, dev_config_file, override_settings);
+            fx->parse_runtime_config(config_file, dev_config_file, m_override_settings);
 
             runtime_config_t new_config = fx->get_runtime_config();
             if (!new_config.is_valid())
@@ -471,7 +469,7 @@ StatusCode fx_resolver_t::read_framework(
             }
 
             fx_definitions.push_back(std::move(fx));
-            rc = read_framework(host_info, disable_multilevel_lookup, override_settings, new_config, &new_effective_fx_ref, fx_definitions, resolution_failure);
+            rc = read_framework(dotnet_root, new_config, &new_effective_fx_ref, fx_definitions, resolution_failure);
             if (rc != StatusCode::Success)
                 return rc;
         }
@@ -496,15 +494,15 @@ StatusCode fx_resolver_t::read_framework(
 }
 
 StatusCode fx_resolver_t::resolve_frameworks_for_app(
-    const host_startup_info_t & host_info,
-    bool disable_multilevel_lookup,
+    const pal::string_t& dotnet_root,
     const runtime_config_t::settings_t& override_settings,
-    const runtime_config_t & app_config,
-    fx_definition_vector_t & fx_definitions,
+    const runtime_config_t& app_config,
+    fx_definition_vector_t& fx_definitions,
     const pal::char_t* app_display_name,
     bool print_errors)
 {
-    fx_resolver_t resolver;
+    bool disable_multilevel_lookup = app_config.get_is_multilevel_lookup_disabled();
+    fx_resolver_t resolver{ disable_multilevel_lookup, override_settings };
 
     // Read the shared frameworks; retry is necessary when a framework is already resolved, but then a newer compatible version is processed.
     resolution_failure_info resolution_failure;
@@ -513,7 +511,7 @@ StatusCode fx_resolver_t::resolve_frameworks_for_app(
     do
     {
         fx_definitions.resize(1); // Erase any existing frameworks for re-try
-        rc = resolver.read_framework(host_info, disable_multilevel_lookup, override_settings, app_config, /*effective_parent_fx_ref*/ nullptr, fx_definitions, resolution_failure);
+        rc = resolver.read_framework(dotnet_root, app_config, /*effective_parent_fx_ref*/ nullptr, fx_definitions, resolution_failure);
     } while (rc == StatusCode::FrameworkCompatRetry && retry_count++ < Max_Framework_Resolve_Retries);
 
     assert(retry_count < Max_Framework_Resolve_Retries);
@@ -532,9 +530,9 @@ StatusCode fx_resolver_t::resolve_frameworks_for_app(
                     _X("\n\n")
                     _X("App: %s\n")
                     _X("Architecture: %s"),
-                    app_display_name != nullptr ? app_display_name : host_info.host_path.c_str(),
+                    app_display_name,
                     get_current_arch_name());
-                display_missing_framework_error(resolution_failure.missing.get_fx_name(), resolution_failure.missing.get_fx_version(), pal::string_t(), host_info.dotnet_root, disable_multilevel_lookup);
+                display_missing_framework_error(resolution_failure.missing.get_fx_name(), resolution_failure.missing.get_fx_version(), pal::string_t(), dotnet_root, disable_multilevel_lookup);
                 break;
             case StatusCode::FrameworkCompatFailure:
                 display_incompatible_framework_error(resolution_failure.incompatible_higher.get_fx_version(), resolution_failure.incompatible_lower);

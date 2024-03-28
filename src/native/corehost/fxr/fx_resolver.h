@@ -24,12 +24,11 @@ public:
 
 public:
     static StatusCode resolve_frameworks_for_app(
-        const host_startup_info_t& host_info,
-        bool disable_multilevel_lookup,
+        const pal::string_t& dotnet_root,
         const runtime_config_t::settings_t& override_settings,
         const runtime_config_t& app_config,
         /*in_out*/ fx_definition_vector_t& fx_definitions,
-        const pal::char_t* app_display_name = nullptr,
+        const pal::char_t* app_display_name,
         bool print_errors = true);
 
     static bool is_config_compatible_with_frameworks(
@@ -37,14 +36,15 @@ public:
         const std::unordered_map<pal::string_t, const fx_ver_t> &existing_framework_versions_by_name);
 
 private:
-    fx_resolver_t() = default;
+    fx_resolver_t(bool disable_multilevel_lookup, const runtime_config_t::settings_t& override_settings)
+        : m_disable_multilevel_lookup{disable_multilevel_lookup}
+        , m_override_settings{override_settings}
+    { }
 
     void update_newest_references(
         const runtime_config_t& config);
     StatusCode read_framework(
-        const host_startup_info_t& host_info,
-        bool disable_multilevel_lookup,
-        const runtime_config_t::settings_t& override_settings,
+        const pal::string_t& dotnet_root,
         const runtime_config_t& config,
         const fx_reference_t * effective_parent_fx_ref,
         fx_definition_vector_t& fx_definitions,
@@ -90,6 +90,9 @@ private:
     // to fill the "oldest reference" for each resolved framework in the end. It does not affect the behavior
     // of the algorithm.
     fx_name_to_fx_reference_map_t m_oldest_fx_references;
+
+    bool m_disable_multilevel_lookup;
+    const runtime_config_t::settings_t& m_override_settings;
 };
 
 #endif // __FX_RESOLVER_H__
