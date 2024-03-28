@@ -87,6 +87,12 @@ typedef struct {
     dn_simdhash_buffers_t buffers;
 } dn_simdhash_t;
 
+typedef enum {
+    DN_SIMDHASH_INSERT_OK,
+    DN_SIMDHASH_INSERT_NEED_TO_GROW,
+    DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT,
+} dn_simdhash_insert_result;
+
 // These helpers use .values instead of .vec to avoid generating unnecessary
 //  vector loads/stores. Operations that touch these values may not need vectorization
 
@@ -100,6 +106,12 @@ static DN_FORCEINLINE(uint8_t)
 dn_simdhash_bucket_is_cascaded (dn_simdhash_suffixes bucket)
 {
     return bucket.values[DN_SIMDHASH_CASCADED_SLOT];
+}
+
+static DN_FORCEINLINE(uint8_t)
+dn_simdhash_bucket_set_suffix (dn_simdhash_suffixes bucket, uint32_t slot, uint8_t value)
+{
+    bucket.values[slot] = value;
 }
 
 static DN_FORCEINLINE(uint8_t)
@@ -135,12 +147,6 @@ dn_simdhash_address_of_bucket (dn_simdhash_meta_t meta, dn_simdhash_buffers_t bu
     return buffers.buckets + (bucket_index * meta.bucket_size_bytes);
 }
 
-static DN_FORCEINLINE(void *)
-dn_simdhash_address_of_value_slot (dn_simdhash_meta_t meta, dn_simdhash_buffers_t buffers, uint32_t slot_index)
-{
-    return buffers.values + (slot_index * meta.value_size);
-}
-
 DN_FORCEINLINE(dn_simdhash_suffixes)
 dn_simdhash_build_search_vector (uint8_t needle);
 
@@ -160,5 +166,8 @@ dn_simdhash_free_buffers (dn_simdhash_buffers_t buffers);
 // You almost certainly want to rehash the table if (result != hash->buffers)
 dn_simdhash_buffers_t
 dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity);
+
+void
+dn_simdhash_clear (dn_simdhash_t *hash);
 
 #endif // __DN_SIMDHASH_H__

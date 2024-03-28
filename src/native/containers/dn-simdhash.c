@@ -141,3 +141,11 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 
     return result;
 }
+
+void
+dn_simdhash_clear (dn_simdhash_t *hash)
+{
+    hash->count = 0;
+    memset(hash->buffers.buckets, 0, hash->buffers.buckets_length * hash->meta.bucket_size_bytes);
+    memset(hash->buffers.values, 0, hash->buffers.values_length * hash->meta.value_size);
+}
