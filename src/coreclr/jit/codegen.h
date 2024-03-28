@@ -442,7 +442,6 @@ protected:
         int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
                                              // (negative)
         int fiSP_to_CalleeSaved_delta;       // CalleeSaved register save offset from SP (positive)
-        int fiCalleeSavedPadding;            // CalleeSaved offset padding (positive)
         int fiSP_to_PSP_slot_delta;          // PSP slot offset from SP (positive)
         int fiCallerSP_to_PSP_slot_delta;    // PSP slot offset from Caller SP (negative)
         int fiSpDelta;                       // Stack pointer delta (negative)
@@ -1281,7 +1280,6 @@ protected:
     void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // TODO: refactor for LA.
     void genCodeForJumpCompare(GenTreeOpCC* tree);
 #endif
 #if defined(TARGET_ARM64)
