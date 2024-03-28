@@ -7208,7 +7208,9 @@ void gc_heap::gc_thread_function ()
             // check if we should do some decommitting
             if (gradual_decommit_in_progress_p)
             {
+                decommit_lock.Enter();
                 gradual_decommit_in_progress_p = decommit_step (DECOMMIT_TIME_STEP_MILLISECONDS);
+                decommit_lock.Leave();
             }
         }
         else
