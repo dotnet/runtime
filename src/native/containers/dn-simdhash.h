@@ -244,15 +244,11 @@ dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity);
 uint8_t
 dn_simdhash_try_add (dn_simdhash_t *hash, dn_simdhash_key_ref key, dn_simdhash_value_ref value);
 
-// This always returns the address of a value, or NULL if no value was found.
-// Key will be dereferenced unless this is a pointer hash.
-void *
-dn_simdhash_find_value_by_key (dn_simdhash_t *hash, dn_simdhash_key_ref key);
+uint8_t
+dn_simdhash_try_get_value (dn_simdhash_t *hash, dn_simdhash_key_ref key, void * result, uint32_t result_size);
 
-// This always returns the address of a value, or NULL if no value was found.
-// Key will be dereferenced unless this is a pointer hash.
-void *
-dn_simdhash_find_value_by_key_with_hash (dn_simdhash_t *hash, dn_simdhash_key_ref key, uint32_t key_hash);
+uint8_t
+dn_simdhash_try_get_value_with_hash (dn_simdhash_t *hash, dn_simdhash_key_ref key, uint32_t key_hash, void * result, uint32_t result_size);
 
 typedef void (*dn_simdhash_foreach_func) (dn_simdhash_key_ref key, dn_simdhash_value_ref value, void* user_data);
 
