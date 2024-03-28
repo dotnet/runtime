@@ -38,8 +38,8 @@ uint8_t tasserteq (size_t actual, size_t expected, const char *msg) {
     return 0;
 }
 
-void foreach_callback (dn_simdhash_key_ref key, dn_simdhash_value_ref value, void * user_data) {
-    printf("[%zd, %zd]\n", key, value);
+void foreach_callback (void * key, void * value, void * user_data) {
+    printf("[%zd, %zd]\n", (size_t)key, (size_t)value);
 }
 
 int main () {
@@ -61,7 +61,7 @@ int main () {
     if (!tasserteq(dn_simdhash_count(test), c, "count did not match"))
         return 1;
 
-    // dn_simdhash_foreach(test, foreach_callback, NULL);
+    dn_simdhash_foreach(test, foreach_callback, NULL);
 
     for (int i = 0; i < c; i++) {
         DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);

@@ -110,13 +110,6 @@ typedef struct dn_simdhash_buffers_t {
 
 typedef struct dn_simdhash_t dn_simdhash_t;
 
-// The address of a key to insert into the hashtable.
-// Unless DN_SIMDHASH_KEY_IS_POINTER, this will be de-referenced.
-typedef const void * dn_simdhash_key_ref;
-// The address of a value to insert into the hashtable.
-// Unless DN_SIMDHASH_VALUE_IS_POINTER, this will be de-referenced.
-typedef const void * dn_simdhash_value_ref;
-
 typedef struct dn_simdhash_meta_t {
     // type metadata for generic implementation
     uint32_t bucket_capacity, bucket_size_bytes, key_size, value_size;
@@ -224,7 +217,7 @@ dn_simdhash_count (dn_simdhash_t *hash);
 void
 dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity);
 
-typedef void (*dn_simdhash_foreach_func) (dn_simdhash_key_ref key, dn_simdhash_value_ref value, void* user_data);
+typedef void (*dn_simdhash_foreach_func) (void * key, void * value, void* user_data);
 
 // Iterates over all the key/value pairs in the table and passes each one to your provided
 //  callback, along with the user_data pointer you provide.
