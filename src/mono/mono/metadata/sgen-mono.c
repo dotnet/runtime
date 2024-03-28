@@ -2730,6 +2730,8 @@ mono_gc_init_icalls (void)
 	mono_register_jit_icall (mono_profiler_raise_gc_allocation, mono_icall_sig_void_object, FALSE);
 }
 
+gboolean andrew_logging = FALSE;
+
 gboolean
 sgen_client_handle_gc_param (const char *opt)
 {
@@ -2749,9 +2751,12 @@ sgen_client_handle_gc_param (const char *opt)
 	} else if (g_str_has_prefix (opt, "toggleref-test")) {
 		/* FIXME: This should probably in MONO_GC_DEBUG */
 		sgen_register_test_toggleref_callback ();
+	} else if (g_str_has_prefix (opt, "andrew-logging")) {
+		/* FIXME: To be removed */
+		andrew_logging = TRUE;
 	} else if (!sgen_bridge_handle_gc_param (opt)) {
 		return FALSE;
-	}
+	} 
 	return TRUE;
 }
 

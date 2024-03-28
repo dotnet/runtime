@@ -130,6 +130,8 @@ sgen_memgov_calculate_minor_collection_allowance (void)
 	}
 }
 
+extern gboolean andrew_logging;
+
 // This can be called while sweep is running to determine earlier if there is so much memory growth
 // that we know we will require a GC once sweep finishes.
 static gboolean
@@ -141,7 +143,15 @@ sgen_need_major_collection_conservative (void)
 	size_t max_allowance = GDOUBLE_TO_SIZE (max_last_collection_heap_size * SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO);
 	max_allowance = MAX (max_allowance, GDOUBLE_TO_SIZE (MIN_MINOR_COLLECTION_ALLOWANCE));
 
-	return min_heap_size > max_allowance;
+	if (min_heap_size > max_allowance)
+	{
+		if (andrew_logging) { fprintf(stdout, "sgen_need_major_collection_conservative %lld > %lld\n", (long long int)min_heap_size, (long long int)max_allowance); fflush(stdout); }
+		return TRUE;
+	}
+	else
+	{
+		return FALSE;
+	}
 }
 
 static size_t
@@ -194,25 +204,42 @@ sgen_need_major_collection (mword space_needed, gboolean *forced)
 		 * we force the finishing of the collection, to avoid increased memory usage.
 		 */
 		if ((heap_size - major_start_heap_size) > major_start_heap_size * SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO)
+		{
+			if (andrew_logging) { fprintf(stdout, "Case 1\n"); fflush(stdout); }
 			return TRUE;
+		}
 		return FALSE;
 	}
 
 	if (!sgen_major_collector.have_swept ()) {
 		if (sgen_need_major_collection_conservative ())
+		{
+			if (andrew_logging) { fprintf(stdout, "Case 2\n"); fflush(stdout); }
 			return TRUE;
+		}
 		return FALSE;
 	}
 
 	if (space_needed > sgen_memgov_available_free_space ())
+	{
+		if (andrew_logging) { fprintf(stdout, "Case 3\n"); fflush(stdout); }
 		return TRUE;
+	}
 
 	sgen_memgov_calculate_minor_collection_allowance ();
 
 	heap_size = get_heap_size ();
 
 	*forced = heap_size > soft_heap_limit;
-	return heap_size > major_collection_trigger_size;
+	if (heap_size > major_collection_trigger_size)
+	{
+		if (andrew_logging) { fprintf(stdout, "The heap_size is %lld, the major_collection_trigger_size is %lld\n", (long long int)heap_size, (long long int)major_collection_trigger_size); fflush(stdout); }
+		return TRUE;
+	}
+	else
+	{
+		return FALSE;
+	}	
 }
 
 void

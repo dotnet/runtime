@@ -2240,9 +2240,12 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 	}
 }
 
+extern gboolean andrew_logging;
+
 static void
 major_start_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason, gboolean concurrent, size_t *old_next_pin_slot)
 {
+	if (andrew_logging) { fprintf(stdout, "The reason is %s\n", reason); fflush(stdout); }
 	SgenObjectOperations *object_ops_nopar, *object_ops_par = NULL;
 
 #ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
@@ -2572,6 +2575,7 @@ major_finish_concurrent_collection (gboolean forced)
 	sgen_current_collection_generation = -1;
 }
 
+
 /*
  * Ensure an allocation request for @size will succeed by freeing enough memory.
  *
@@ -2589,11 +2593,17 @@ sgen_ensure_free_space (size_t size, int generation)
 			reason = "LOS overflow";
 			generation_to_collect = GENERATION_OLD;
 		}
+		else
+		{
+		}
 	} else {
 		if (sgen_degraded_mode) {
 			if (sgen_need_major_collection (size, &forced)) {
 				reason = "Degraded mode overflow";
 				generation_to_collect = GENERATION_OLD;
+			}
+			else
+			{
 			}
 		} else if (sgen_need_major_collection (size, &forced)) {
 			reason = sgen_concurrent_collection_in_progress ? "Forced finish concurrent collection" : "Minor allowance";
@@ -2603,11 +2613,13 @@ sgen_ensure_free_space (size_t size, int generation)
 			reason = "Nursery full";
 		}
 	}
-
 	if (generation_to_collect == -1) {
 		if (sgen_concurrent_collection_in_progress && sgen_workers_all_done ()) {
 			generation_to_collect = GENERATION_OLD;
 			reason = "Finish concurrent collection";
+		}
+		else
+		{
 		}
 	}
 
