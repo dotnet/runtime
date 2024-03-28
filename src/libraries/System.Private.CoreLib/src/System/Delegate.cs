@@ -74,8 +74,8 @@ namespace System
         /// The order of the delegates returned by the enumerator is the same order in which the current delegate invokes the methods that those delegates represent.
         /// The method returns an empty enumerator for null delegate.
         /// </remarks>
-        public static System.Delegate.InvocationListEnumerator<TDelegate> EnumerateInvocationList<TDelegate>(TDelegate? d) where TDelegate : System.Delegate
-            => new InvocationListEnumerator<TDelegate>(Unsafe.As<MulticastDelegate>(d));
+        public static Delegate.InvocationListEnumerator<TDelegate> EnumerateInvocationList<TDelegate>(TDelegate? d) where TDelegate : System.Delegate
+            => new Delegate.InvocationListEnumerator<TDelegate>(Unsafe.As<MulticastDelegate>(d));
 
         /// <summary>
         /// Provides an enumerator for the invocation list of a delegate.
@@ -119,7 +119,7 @@ namespace System
             /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator
             /// </summary>
             [EditorBrowsable(EditorBrowsableState.Never)] // Only here to make foreach work
-            public System.Delegate.InvocationListEnumerator<TDelegate> GetEnumerator() => this;
+            public Delegate.InvocationListEnumerator<TDelegate> GetEnumerator() => this;
         }
 
         public object? DynamicInvoke(params object?[]? args)
