@@ -5,7 +5,6 @@
 
   <PropertyGroup>
     <HWITestsArm64Only>true</HWITestsArm64Only>
-    <BuildAsStandalone>true</BuildAsStandalone>
   </PropertyGroup>
 
 </Project>
