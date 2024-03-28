@@ -677,7 +677,6 @@ namespace System.Net.Sockets
             Debug.Assert(saea.BufferList == null);
             saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
             saea.SocketFlags = socketFlags;
-            saea._socketAddress = null;
             saea.RemoteEndPoint = remoteEP;
             saea.WrapExceptionsForNetworkStream = false;
             return saea.SendToAsync(this, cancellationToken);
@@ -709,8 +708,17 @@ namespace System.Net.Sockets
             saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
             saea.SocketFlags = socketFlags;
             saea._socketAddress = socketAddress;
+            saea.RemoteEndPoint = null;
             saea.WrapExceptionsForNetworkStream = false;
-            return saea.SendToAsync(this, cancellationToken);
+            try
+            {
+                return saea.SendToAsync(this, cancellationToken);
+            }
+            finally
+            {
+                // detach user provided SA so we do not accidentally stomp on it later.
+                saea._socketAddress = null;
+            }
         }
 
         /// <summary>

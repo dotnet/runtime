@@ -895,5 +895,52 @@ namespace System.Net.Sockets.Tests
                 return cwt.Count() == 0; // validate that the cwt becomes empty
             }, 30_000));
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SendTo_DifferentEP_Success(bool ipv4)
+        {
+            IPAddress address = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+            IPEndPoint remoteEp = new IPEndPoint(address, 0);
+
+            using Socket receiver1 = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using Socket receiver2 = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using Socket sender = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+
+            receiver1.BindToAnonymousPort(address);
+            receiver2.BindToAnonymousPort(address);
+
+            byte[] sendBuffer = new byte[32];
+            var receiveInternalBuffer = new byte[sendBuffer.Length];
+            ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(receiveInternalBuffer, 0, receiveInternalBuffer.Length);
+
+            using SocketAsyncEventArgs saea = new SocketAsyncEventArgs();
+            ManualResetEventSlim mres = new ManualResetEventSlim(false); 
+
+            saea.SetBuffer(sendBuffer);
+            saea.RemoteEndPoint = receiver1.LocalEndPoint;
+            saea.Completed += delegate { mres.Set(); };
+            if (sender.SendToAsync(saea))
+            {
+                // did not finish synchronously.
+                mres.Wait();
+            }
+
+            SocketReceiveFromResult result = await receiver1.ReceiveFromAsync(receiveBuffer, remoteEp).WaitAsync(TestSettings.PassingTestTimeout);
+            Assert.Equal(sendBuffer.Length, result.ReceivedBytes);
+            mres.Reset();
+
+
+            saea.RemoteEndPoint = receiver2.LocalEndPoint;
+            if (sender.SendToAsync(saea))
+            {
+                // did not finish synchronously.
+                mres.Wait();
+            }
+
+            result = await receiver2.ReceiveFromAsync(receiveBuffer, remoteEp).WaitAsync(TestSettings.PassingTestTimeout);
+            Assert.Equal(sendBuffer.Length, result.ReceivedBytes);
+        }
     }
 }
