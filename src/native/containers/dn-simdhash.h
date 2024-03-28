@@ -175,12 +175,6 @@ dn_simdhash_select_bucket_index (dn_simdhash_buffers_t buffers, uint32_t key_has
 }
 
 
-// Scans a single bucket for a key with a suffix matching the provided search vector, and
-//  returns the index of the first match, if any.
-// If there is no match, the result will be out of range (typically -1 or 32).
-int
-dn_simdhash_find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack);
-
 // Creates a simdhash with the provided configuration metadata, vtable, size, and allocator.
 // Be sure you know what you're doing.
 dn_simdhash_t *

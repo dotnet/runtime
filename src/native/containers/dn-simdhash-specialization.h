@@ -81,12 +81,85 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 	return &((DN_SIMDHASH_VALUE_T *)buffers.values)[value_slot_index];
 }
 
+
+#if defined(__clang__) || defined (__GNUC__) // use vector intrinsics
+
+#if defined(__wasm_simd128__)
+#include <wasm_simd128.h>
+#elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
+#include <emmintrin.h>
+#elif defined(__ARM_NEON)
+#include <arm_neon.h>
+#elif defined(__wasm)
+#warning Building dn_simdhash for WASM without -msimd128! Performance will be terrible!
+#else
+#warning Unsupported architecture for dn_simdhash! Performance will be terrible!
+#endif
+
+static DN_FORCEINLINE(int)
+find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
+{
+#if defined(__wasm_simd128__)
+	dn_simdhash_suffixes match_vector;
+	match_vector.vec = wasm_i8x16_eq(needle.vec, haystack.vec);
+	return __builtin_ctz(wasm_i8x16_bitmask(match_vector.vec));
+#elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
+	dn_simdhash_suffixes match_vector;
+	// Completely untested.
+	match_vector.vec = _mm_cmpeq_epi8(needle.vec, haystack.vec);
+	return __builtin_ctz(_mm_movemask_epi8(match_vector.vec));
+#elif defined(__ARM_NEON)
+	dn_simdhash_suffixes match_vector;
+	// Completely untested.
+	static const dn_simdhash_suffixes byte_mask = {
+		1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128
+	};
+	union {
+		uint8_t b[4];
+		uint32_t u;
+	} msb;
+	match_vector.vec = vceqq_u8(needle.vec, haystack.vec);
+	dn_simdhash_suffixes masked;
+	masked.vec = vandq_u8(match_vector.vec, byte_mask.vec);
+	_msb.b[0] = vaddv_u8(vget_low_u8(masked.vec));
+	_msb.b[1] = vaddv_u8(vget_high_u8(masked.vec));
+	return __builtin_ctz(_msb.u);
+#else
+	// Completely untested.
+	for (int i = 0; i < dn_simdhash_bucket_count(haystack); i++)
+		if (needle.values[i] == haystack.values[i])
+			return i;
+
+	return 32;
+#endif
+}
+
+#else // __clang__ || __GNUC__
+
+#warning Building dn_simdhash for MSVC without SIMD intrinsics! Performance will be terrible!
+
+int
+find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
+{
+	// FIXME: Do this using intrinsics on MSVC. Seems complicated since there's no __builtin_ctz.
+
+	// Completely untested.
+	for (int i = 0; i < dn_simdhash_bucket_count(haystack); i++)
+		if (needle.values[i] == haystack.values[i])
+			return i;
+
+	return 32;
+}
+
+#endif // __clang__ || __GNUC__
+
+
 // This is split out into a helper so we can eventually reuse it for more efficient add/remove
 static DN_FORCEINLINE(int)
 DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T) (bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_suffixes search_vector)
 {
 	dn_simdhash_suffixes suffixes = bucket->suffixes;
-	int index = dn_simdhash_find_first_matching_suffix (search_vector, suffixes);
+	int index = find_first_matching_suffix (search_vector, suffixes);
 	DN_SIMDHASH_KEY_T *key = &bucket->keys[index];
 
 	for (int count = dn_simdhash_bucket_count (suffixes); index < count; index++, key++) {
