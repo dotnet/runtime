@@ -296,7 +296,7 @@ namespace System.Collections.Tests
             // Caller must check OrdinalIgnoreCase hash code to ensure correctness.
             static string GenerateCollidingStringCandidate(int seed)
             {
-                return string.Create(8, seed, (span, seed) =>
+                return string.Create(16, seed, (span, seed) =>
                 {
                     Span<byte> asBytes = MemoryMarshal.AsBytes(span);
 
