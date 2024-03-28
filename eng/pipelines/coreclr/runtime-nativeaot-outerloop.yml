@@ -57,6 +57,7 @@ extends:
           platforms:
           - windows_x64
           - windows_arm64
+          - windows_x86
           - osx_x64
           - osx_arm64
           - linux_x64
@@ -164,6 +165,7 @@ extends:
           buildConfig: Checked
           platforms:
           - windows_x64
+          - windows_x86
           - linux_x64
           - linux_arm
           variables:
@@ -172,7 +174,7 @@ extends:
           - name: timeoutPerTestCollectionInMinutes
             value: 180
           jobParameters:
-            timeoutInMinutes: 240
+            timeoutInMinutes: 300 # doesn't normally take this long, but we have had Helix queues backed up for over an hour
             nameSuffix: NativeAOT_Pri0
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release /p:RunAnalyzers=false
             postBuildSteps:
