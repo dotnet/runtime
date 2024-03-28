@@ -19038,6 +19038,27 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 // Return Value:
 //    Will set "*pArr" to "nullptr" if this array address is not parseable.
 //
+// Notes:
+// Instead of (or in addition to) parsing the GenTree, maybe we should be parsing the VN
+// "trees": if optimization has replaced the index expression with a CSE def, it's harder
+// to parse, but the VN tree for the CSE def GT_COMMA has all the same info. For example:
+//
+// \--*  ARR_ADDR  byref System.Collections.Hashtable+Bucket[] $80
+//    \--*  ADD       byref
+//       +--*  LCL_VAR   ref    V01 arg1         u:1
+//       \--*  COMMA     long
+//          +--*  STORE_LCL_VAR long   V21 cse2         d:1
+//          |  \--*  ADD       long
+//          |     +--*  MUL       long
+//          |     |  +--*  CAST      long <- uint
+//          |     |  |  \--*  LCL_VAR   int    V07 loc2         u:2
+//          |     |  \--*  CNS_INT   long   24
+//          |     \--*  CNS_INT   long   16
+//          \--*  LCL_VAR   long   V21 cse2         u:1
+//
+// Here, the COMMA represents the index + offset VN, and we could pull out the index VN
+// from the COMMA VN.
+//
 void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum* pInxVN)
 {
     *pArr                 = nullptr;
@@ -19052,13 +19073,23 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
     }
 
     // OK, new we have to figure out if any part of the "offset" is a constant contribution to the index.
-    target_ssize_t elemOffset = GetFirstElemOffset();
-    unsigned       elemSizeUn = (GetElemType() == TYP_STRUCT) ? comp->typGetObjLayout(GetElemClassHandle())->GetSize()
+    target_ssize_t firstElemOffset = GetFirstElemOffset();
+    assert(firstElemOffset > 0);
+
+    // If we didn't parse any offset, or the offset we parsed doesn't make sense, then give up on
+    // parsing the array address. (This can happen with JitOptRepeat.)
+    if (offset < firstElemOffset)
+    {
+        *pArr = nullptr;
+        return;
+    }
+
+    unsigned elemSizeUn = (GetElemType() == TYP_STRUCT) ? comp->typGetObjLayout(GetElemClassHandle())->GetSize()
                                                         : genTypeSize(GetElemType());
 
     assert(FitsIn<target_ssize_t>(elemSizeUn));
     target_ssize_t elemSize         = static_cast<target_ssize_t>(elemSizeUn);
-    target_ssize_t constIndexOffset = offset - elemOffset;
+    target_ssize_t constIndexOffset = offset - firstElemOffset;
 
     // This should be divisible by the element size...
     assert((constIndexOffset % elemSize) == 0);
@@ -19134,6 +19165,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
     if (tree->TypeIs(TYP_REF))
     {
         // This must be the array pointer.
+        assert(*pArr == nullptr);
         *pArr = tree;
         assert(inputMul == 1); // Can't multiply the array pointer by anything.
     }
@@ -19229,7 +19261,10 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
             default:
                 break;
         }
+
         // If we didn't return above, must be a contribution to the non-constant part of the index VN.
+        // We don't get here for GT_CNS_INT, GT_ADD, or GT_SUB, or for GT_MUL by constant, or GT_LSH of
+        // constant shift. Thus, the generated index VN does not include the parsed constant offset.
         ValueNum vn = comp->GetValueNumStore()->VNLiberalNormalValue(tree->gtVNPair);
         if (inputMul != 1)
         {
