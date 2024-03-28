@@ -300,7 +300,6 @@ set(VM_SOURCES_WKS
     comdependenthandle.cpp
     comdynamic.cpp
     commodule.cpp
-    compatibilityswitch.cpp
     comsynchronizable.cpp
     comthreadpool.cpp
     comutilnative.cpp
@@ -359,7 +358,6 @@ set(VM_SOURCES_WKS
     reflectclasswriter.cpp
     reflectioninvocation.cpp
     runtimehandles.cpp
-    safehandle.cpp
     simplerwlock.cpp
     stackingallocator.cpp
     stringliteralmap.cpp
@@ -402,7 +400,6 @@ set(VM_HEADERS_WKS
     comdependenthandle.h
     comdynamic.h
     commodule.h
-    compatibilityswitch.h
     comsynchronizable.h
     comthreadpool.h
     comutilnative.h

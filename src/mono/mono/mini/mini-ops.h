@@ -804,8 +804,6 @@ MINI_OP(OP_LDTOKEN_FIELD, "ldtoken_field", VREG, VREG, NONE)
 
 /* SIMD opcodes. */
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM) || defined(TARGET_ARM64)
-
 MINI_OP(OP_ICONV_TO_R4_RAW, "iconv_to_r4_raw", FREG, IREG, NONE)
 
 /* Extract an element from a vector with a constant lane index.
@@ -852,8 +850,6 @@ MINI_OP(OP_EXPAND_I4, "expand_i4", XREG, IREG, NONE)
 MINI_OP(OP_EXPAND_R4, "expand_r4", XREG, FREG, NONE)
 MINI_OP(OP_EXPAND_I8, "expand_i8", XREG, IREG, NONE)
 MINI_OP(OP_EXPAND_R8, "expand_r8", XREG, FREG, NONE)
-
-#endif
 
 // wasm specific SIMD v128
 

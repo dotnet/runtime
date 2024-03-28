@@ -149,8 +149,8 @@
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ngsharedvt-trampolines=8400" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nftnptr-arg-trampolines=4000" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nrgctx-trampolines=21000" />
-      <MonoAotOption Include="llvm" />
-      <MonoAotOption Include="llvm-path=$(MonoLlvmPath)" />
+      <MonoAotOption Condition="'$(RuntimeVariant)' == 'llvmaot' or '$(RuntimeVariant)' == 'llvmfullaot'" Include="llvm" />
+      <MonoAotOption Condition="'$(RuntimeVariant)' == 'llvmaot' or '$(RuntimeVariant)' == 'llvmfullaot'" Include="llvm-path=$(MonoLlvmPath)" />
       <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />
     </ItemGroup>
     <ItemGroup Condition="'$(MonoFullAot)' == 'true' and '$(TargetOS)' == 'linux'">
@@ -550,6 +550,7 @@
   <Target Name="RestorePackage">
     <PropertyGroup>
       <_ConfigurationProperties>/p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:Configuration=$(Configuration) /p:CrossBuild=$(CrossBuild)</_ConfigurationProperties>
+      <_ConfigurationProperties Condition="'$(UseLocalAppHostPack)' == 'true'">$(_ConfigurationProperties) -p:EnableAppHostPackDownload=false -p:EnableTargetingPackDownload=false -p:EnableRuntimePackDownload=false</_ConfigurationProperties>
       <DotnetRestoreCommand>"$(DotNetTool)" restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>
     <Exec Command="$(DotnetRestoreCommand)"/>

@@ -2867,6 +2867,14 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	if (td->prof_coverage)
 		return FALSE;
 
+	/*
+	 * doesnotreturn methods are not profitable to inline, since they almost certainly will not
+	 * actually run during normal execution, and if they do they will only run once, so the
+	 * upside to inlining them is effectively zero, and we'd waste time doing the inline
+	 */
+	if (has_doesnotreturn_attribute (method))
+		return FALSE;
+
 	if (!is_metadata_update_disabled () && mono_metadata_update_no_inline (td->method, method))
 		return FALSE;
 
@@ -3296,6 +3304,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	int need_null_check = is_virtual;
 	int fp_sreg = -1, first_sreg = -1, dreg = -1;
 	gboolean is_delegate_invoke = FALSE;
+	InterpInst *null_check = NULL;
 
 	guint32 token = read32 (td->ip + 1);
 
@@ -3548,6 +3557,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		interp_ins_set_sreg (td->last_ins, sp->var);
 		set_type_and_var (td, sp, sp->type, sp->klass);
 		interp_ins_set_dreg (td->last_ins, sp->var);
+		// If the call instruction will do a null check, then this instruction
+		// will be transformed into a simple MOV, so it can be optimized out
+		null_check = td->last_ins;
 	}
 
 	/* Offset the function pointer when emitting convert instructions */
@@ -3813,6 +3825,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			} else if (is_virtual) {
 				interp_add_ins (td, MINT_CALLVIRT_FAST);
 				td->last_ins->data [1] = get_virt_method_slot (target_method);
+				null_check->opcode = MINT_MOV_P;
 			} else {
 				interp_add_ins (td, MINT_CALL);
 			}
@@ -4613,6 +4626,33 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 		}
 
 	}
+}
+
+static gboolean
+interp_handle_box_patterns (TransformData *td, MonoClass *box_class, const unsigned char *end, MonoImage *image, MonoGenericContext *generic_context, MonoError *error)
+{
+	const unsigned char *next_ip = td->ip + 5;
+	if (next_ip >= end || !interp_ip_in_cbb (td, GPTRDIFF_TO_INT (next_ip - td->il_code)))
+		return FALSE;
+	MonoMethod *method = td->inlined_method ? td->inlined_method : td->method;
+	MonoMethod *cmethod;
+	if (*next_ip == CEE_CALL &&
+			(cmethod = interp_get_method (method, read32 (next_ip + 1), image, generic_context, error)) &&
+			(cmethod->klass == mono_defaults.object_class) &&
+			(strcmp (cmethod->name, "GetType") == 0)) {
+		MonoType *klass_type = m_class_get_byval_arg (box_class);
+		MonoReflectionType* reflection_type = mono_type_get_object_checked (klass_type, error);
+		return_val_if_nok (error, FALSE);
+
+		td->sp--;
+		interp_add_ins (td, MINT_LDPTR);
+		push_type (td, STACK_TYPE_O, mono_defaults.runtimetype_class);
+		interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+		td->last_ins->data [0] = get_data_item_index (td, reflection_type);
+		td->ip = next_ip + 5;
+		return TRUE;
+	}
+	return FALSE;
 }
 
 static void
@@ -6424,7 +6464,26 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			token = read32 (td->ip + 1);
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
-			interp_handle_isinst (td, klass, isinst_instr);
+
+			if (isinst_instr && td->last_ins && MINT_IS_BOX (td->last_ins->opcode)) {
+				MonoClass *box_class;
+				if (td->last_ins->opcode == MINT_BOX_NULLABLE_PTR)
+					box_class = (MonoClass*)td->data_items [td->last_ins->data [0]];
+				else
+					box_class = ((MonoVTable*)td->data_items [td->last_ins->data [0]])->klass;
+				gboolean isinst = mono_class_is_assignable_from_internal (klass, box_class);
+				if (isinst) {
+					// We just leave boxed instance on the stack, nothing to do
+				} else {
+					td->sp--;
+					interp_add_ins (td, MINT_LDNULL);
+					push_type (td, STACK_TYPE_O, NULL);
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+				}
+				td->ip += 5;
+			} else {
+				interp_handle_isinst (td, klass, isinst_instr);
+			}
 			break;
 		}
 		case CEE_CONV_R_UN:
@@ -6881,6 +6940,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
+			if (interp_handle_box_patterns (td, klass, end, image, generic_context, error))
+				break;
+			goto_if_nok (error, exit);
+
 			if (mono_class_is_nullable (klass)) {
 				MonoMethod *target_method = mono_class_get_method_from_name_checked (klass, "Box", 1, 0, error);
 				goto_if_nok (error, exit);
@@ -6891,8 +6954,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				/* already boxed, do nothing. */
 				td->ip += 5;
 			} else {
-				if (G_UNLIKELY (m_class_is_byreflike (klass))) {
-					mono_error_set_bad_image (error, image, "Cannot box IsByRefLike type '%s.%s'", m_class_get_name_space (klass), m_class_get_name (klass));
+				if (G_UNLIKELY (m_class_is_byreflike (klass)) && !td->optimized) {
+					if (td->verbose_level)
+						g_print ("Box byreflike detected. Retry compilation with full optimization.\n");
+					td->retry_compilation = TRUE;
+					td->retry_with_inlining = TRUE;
 					goto exit;
 				}
 
@@ -8902,9 +8968,10 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 {
 	TransformData transform_data;
 	TransformData *td;
-	gboolean retry_compilation = FALSE;
 	static gboolean verbose_method_inited;
 	static char* verbose_method_name;
+	gboolean retry_compilation = FALSE;
+	gboolean retry_with_inlining = FALSE;
 
 	if (!verbose_method_inited) {
 		verbose_method_name = g_getenv ("MONO_VERBOSE_METHOD");
@@ -8942,7 +9009,8 @@ retry:
 		// Optimizing the method can lead to deadce and better var offset allocation
 		// reducing the likelihood of local space overflow.
 		td->optimized = rtm->optimized = TRUE;
-		td->disable_inlining = TRUE;
+		if (!retry_with_inlining)
+			td->disable_inlining = TRUE;
 	} else {
 		td->optimized = rtm->optimized;
 		td->disable_inlining = !td->optimized;
@@ -8979,7 +9047,8 @@ retry:
 	td->line_numbers = g_array_new (FALSE, TRUE, sizeof (MonoDebugLineNumberEntry));
 	td->current_il_offset = -1;
 
-	generate_code (td, method, header, generic_context, error);
+	if (!generate_code (td, method, header, generic_context, error))
+		goto exit;
 	goto_if_nok (error, exit);
 
 	// Any newly created instructions will have undefined il_offset
@@ -9025,17 +9094,18 @@ retry:
 			g_free (name);
 			mono_error_set_generic_error (error, "System", "InvalidProgramException", "%s", msg);
 			g_free (msg);
-			retry_compilation = FALSE;
+			td->retry_compilation = FALSE;
 			goto exit;
 		} else {
 			// We give the method another chance to compile with inlining disabled and optimization enabled
 			if (td->verbose_level)
 				g_print ("Local space overflow. Retrying compilation\n");
-			retry_compilation = TRUE;
+			td->retry_compilation = TRUE;
+			td->retry_with_inlining = FALSE;
 			goto exit;
 		}
 	} else {
-		retry_compilation = FALSE;
+		td->retry_compilation = FALSE;
 	}
 
 	if (td->verbose_level) {
@@ -9137,8 +9207,11 @@ exit:
 	g_slist_free (td->imethod_items);
 	mono_mempool_destroy (td->mempool);
 	mono_interp_pgo_generate_end ();
-	if (retry_compilation)
+	if (td->retry_compilation) {
+		retry_compilation = TRUE;
+		retry_with_inlining = td->retry_with_inlining;
 		goto retry;
+	}
 }
 
 gboolean

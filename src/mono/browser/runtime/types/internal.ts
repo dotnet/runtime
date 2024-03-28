@@ -64,7 +64,7 @@ export const CharPtrNull: CharPtr = <CharPtr><any>0;
 export const NativePointerNull: NativePointer = <NativePointer><any>0;
 export const PThreadPtrNull: PThreadPtr = <PThreadPtr><any>0;
 
-export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | null | undefined): T {
+export function coerceNull<T extends ManagedPointer | NativePointer> (ptr: T | null | undefined): T {
     if ((ptr === null) || (ptr === undefined))
         return (0 as any) as T;
     else
@@ -80,7 +80,6 @@ export type MonoConfigInternal = MonoConfig & {
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
-    assertAfterExit?: boolean // default true for shell/nodeJS
     interopCleanupOnExit?: boolean
     dumpThreadsOnNonZeroExit?: boolean
     logExitCode?: boolean
@@ -123,7 +122,6 @@ export type LoaderHelpers = {
 
     maxParallelDownloads: number;
     enableDownloadRetry: boolean;
-    assertAfterExit: boolean;
 
     exitCode: number | undefined;
     exitReason: any;
@@ -211,6 +209,7 @@ export type RuntimeHelpers = {
     monoThreadInfo: PThreadInfo,
     proxyGCHandle: GCHandle | undefined,
     managedThreadTID: PThreadPtr,
+    ioThreadTID: PThreadPtr,
     currentThreadTID: PThreadPtr,
     isManagedRunningOnCurrentThread: boolean,
     isPendingSynchronousCall: boolean, // true when we are in the middle of a synchronous call from managed code from same thread
@@ -224,6 +223,7 @@ export type RuntimeHelpers = {
     afterPreRun: PromiseAndController<void>,
     beforeOnRuntimeInitialized: PromiseAndController<void>,
     afterMonoStarted: PromiseAndController<GCHandle | undefined>,
+    afterIOStarted: PromiseAndController<void>,
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
 
@@ -254,7 +254,7 @@ export type DotnetModuleInternal = EmscriptenModule & DotnetModuleConfig & Emscr
 
 // Evaluates whether a value is nullish (same definition used as the ?? operator,
 //  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
-export function is_nullish<T>(value: T | null | undefined): value is null | undefined {
+export function is_nullish<T> (value: T | null | undefined): value is null | undefined {
     return (value === undefined) || (value === null);
 }
 
@@ -299,14 +299,14 @@ export interface ExitStatusError {
 
 /// Always throws. Used to handle unreachable switch branches when TypeScript refines the type of a variable
 /// to 'never' after you handle all the cases it knows about.
-export function assertNever(x: never): never {
+export function assertNever (x: never): never {
     throw new Error("Unexpected value: " + x);
 }
 
 /// returns true if the given value is not Thenable
 ///
 /// Useful if some function returns a value or a promise of a value.
-export function notThenable<T>(x: T | PromiseLike<T>): x is T {
+export function notThenable<T> (x: T | PromiseLike<T>): x is T {
     return typeof x !== "object" || typeof ((<PromiseLike<T>>x).then) !== "function";
 }
 
@@ -497,6 +497,7 @@ export const enum WorkerToMainMessageType {
     deputyCreated = "createdDeputy",
     deputyFailed = "deputyFailed",
     deputyStarted = "monoStarted",
+    ioStarted = "ioStarted",
     preload = "preload",
 }
 
@@ -527,6 +528,7 @@ export interface PThreadInfo {
     isRunning?: boolean,
     isAttached?: boolean,
     isDeputy?: boolean,
+    isIo?: boolean,
     isExternalEventLoop?: boolean,
     isUI?: boolean;
     isBackground?: boolean,
@@ -569,12 +571,14 @@ export interface MonoThreadMessage {
 
 // keep in sync with JSHostImplementation.Types.cs
 export const enum MainThreadingMode {
-    // Running the managed main thread on UI thread. 
-    // Managed GC and similar scenarios could be blocking the UI. 
+    // Running the managed main thread on UI thread.
+    // Managed GC and similar scenarios could be blocking the UI.
     // Easy to deadlock. Not recommended for production.
     UIThread = 0,
     // Running the managed main thread on dedicated WebWorker. Marshaling all JavaScript calls to and from the main thread.
     DeputyThread = 1,
+    // TODO comment
+    DeputyAndIOThreads = 2,
 }
 
 // keep in sync with JSHostImplementation.Types.cs
@@ -582,7 +586,9 @@ export const enum JSThreadBlockingMode {
     // throw PlatformNotSupportedException if blocking .Wait is called on threads with JS interop, like JSWebWorker and Main thread.
     // Avoids deadlocks (typically with pending JS promises on the same thread) by throwing exceptions.
     NoBlockingWait = 0,
-    // allow .Wait on all threads. 
+    // TODO comment
+    AllowBlockingWaitInAsyncCode = 1,
+    // allow .Wait on all threads.
     // Could cause deadlocks with blocking .Wait on a pending JS Task/Promise on the same thread or similar Task/Promise chain.
     AllowBlockingWait = 100,
 }

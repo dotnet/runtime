@@ -257,6 +257,10 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             try
             {
+                if (SynchronizationContext.Current == null)
+                {
+                    SetSynchronizationContext(this);
+                }
                 while (Queue.Reader.TryRead(out var item))
                 {
                     try

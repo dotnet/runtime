@@ -111,6 +111,9 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\FieldLayoutAlgorithm.cs">
       <Link>TypeSystem\Common\FieldLayoutAlgorithm.cs</Link>
     </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\ImpliedRepeatedFieldDesc.cs">
+      <Link>TypeSystem\Common\ImpliedRepeatedFieldDesc.cs</Link>
+    </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\IModuleResolver.cs">
       <Link>TypeSystem\Common\IModuleResolver.cs</Link>
     </Compile>
@@ -251,6 +254,12 @@
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\ThrowHelper.cs">
       <Link>TypeSystem\Common\ThrowHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeWithRepeatedFields.cs">
+      <Link>TypeSystem\Common\TypeWithRepeatedFields.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs">
+      <Link>TypeSystem\Common\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\Utilities\ExceptionTypeNameFormatter.cs">
       <Link>TypeSystem\Common\Utilities\ExceptionTypeNameFormatter.cs</Link>

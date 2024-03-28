@@ -162,6 +162,10 @@
              TaskName="Microsoft.Workload.Build.Tasks.InstallWorkloadFromArtifacts"
              AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
 
+  <UsingTask Condition="'$(WorkloadBuildTasksAssemblyPath)' != ''"
+             TaskName="Microsoft.Workload.Build.Tasks.PatchNuGetConfig"
+             AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
+
   <Target Name="InstallWorkloadUsingArtifacts"
           AfterTargets="$(InstallWorkloadUsingArtifactsAfterThisTarget)"
           DependsOnTargets="$(InstallWorkloadUsingArtifactsDependsOn)"
@@ -201,8 +205,11 @@
                      VersionBandForManifestPackages="$(VersionBandForManifestPackages)"
                      LocalNuGetsPath="$(BuiltNugetsDir)"
                      ExtraWorkloadInstallCommandArguments="$(ExtraWorkloadInstallCommandArguments)"
+                     PackageSourceNameForBuiltPackages="$(PackageSourceNameForBuiltPackages)"
                      TemplateNuGetConfigPath="$(TemplateNuGetConfigPathForWorkloadTesting)"
+                     NuGetConfigPackageSourceMappings="$(NuGetConfigPackageSourceMappingsForWorkloadTesting)"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
+                     WorkloadInstallCommandOutputImportance="$(WorkloadInstallCommandOutputImportance)"
                      IntermediateOutputPath="$(ArtifactsObjDir)"
                      SkipTempDirectoryCleanup="$(SkipTempDirectoryCleanup)"
       />

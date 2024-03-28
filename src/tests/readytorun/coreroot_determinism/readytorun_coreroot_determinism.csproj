@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot'">true</CLRTestTargetUnsupported>
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'minifullaot' or '$(RuntimeVariant)' == 'llvmfullaot')">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="coreroot_determinism.csproj" />

@@ -27,10 +27,23 @@
     private List<string> chatMessages = new List<string>();
     private string wrongQueryError = "Query string with parameters 'message' and 'transport' are required";
 
-    protected override void OnInitialized()
+    // remove when https://github.com/dotnet/runtime/issues/96546 is fixed
+    // log that rendering is about to start in case we hit the issue before OnAfterRender is called
+    protected override bool ShouldRender()
     {
-        Helper.TestOutputWriteLine($"OnInitialized on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
-        GetQueryParameters();
+        bool shouldRender = base.ShouldRender();
+        Helper.TestOutputWriteLine($"ShouldRender = {shouldRender}");
+        return shouldRender;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Helper.TestOutputWriteLine($"OnAfterRender on CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+            GetQueryParameters();
+        }
+        base.OnAfterRender(firstRender);
     }
 
     private void GetQueryParameters()
@@ -47,7 +60,7 @@
         }
         transport = Helper.GetValue(parameters, "transport");
         message = $"{transport} {Helper.GetValue(parameters, "message")}" ;
-        Helper.TestOutputWriteLine($"GetQueryParameters on CurrentManagedThreadId={Environment.CurrentManagedThreadId} finished");
+        Helper.TestOutputWriteLine($"Finished GetQueryParameters on CurrentManagedThreadId={Environment.CurrentManagedThreadId}.");
     }
 
     private async Task Connect()
@@ -86,7 +99,8 @@
     {
         await DisposeHubConnection();
         // exit the client
-        await JSRuntime.InvokeVoidAsync("eval", "import('./dotnet.js').then(module => { module.dotnet; module.exit(0); });");
+        Helper.TestOutputWriteLine($"SendExitSignal by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+        await JSRuntime.InvokeVoidAsync("eval", "setTimeout(() => { getDotnetRuntime(0).exit(0); }, 50);");
     }
 
     private async Task DisposeHubConnection()

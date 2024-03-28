@@ -53,7 +53,7 @@ export const globalObjectsRoot: GlobalObjects = {
 
 setLoaderGlobals(globalObjectsRoot);
 
-export function setLoaderGlobals(
+export function setLoaderGlobals (
     globalObjects: GlobalObjects,
 ) {
     if (_loaderModuleLoaded) {
@@ -76,8 +76,12 @@ export function setLoaderGlobals(
         mono_wasm_bindings_is_ready: false,
         config: globalObjects.module.config,
         diagnosticTracing: false,
-        nativeAbort: (reason: any) => { throw reason || new Error("abort"); },
-        nativeExit: (code: number) => { throw new Error("exit:" + code); }
+        nativeAbort: (reason: any) => {
+            throw reason || new Error("abort");
+        },
+        nativeExit: (code: number) => {
+            throw new Error("exit:" + code);
+        }
     };
     const lh: Partial<LoaderHelpers> = {
         gitHash,
@@ -86,7 +90,6 @@ export function setLoaderGlobals(
 
         maxParallelDownloads: 16,
         enableDownloadRetry: true,
-        assertAfterExit: !ENVIRONMENT_IS_WEB,
 
         _loaded_files: [],
         loadedFiles: [],
@@ -134,7 +137,7 @@ export function setLoaderGlobals(
 // this will abort the program if the condition is false
 // see src\mono\browser\runtime\rollup.config.js
 // we inline the condition, because the lambda could allocate closure on hot path otherwise
-export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
+export function mono_assert (condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (condition) return;
     const message = "Assert failed: " + (typeof messageFactory === "function"
         ? messageFactory()
