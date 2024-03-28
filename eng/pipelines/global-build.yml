@@ -40,138 +40,138 @@ extends:
       - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
         - template: /eng/pipelines/common/evaluate-default-paths.yml
 
-      # #
-      # # Build with Release config and Debug runtimeConfiguration
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     buildConfig: release
-      #     platforms:
-      #     - windows_x86
-      #     - osx_x64
-      #     - osx_arm64
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       nameSuffix: Runtime_Debug
-      #       buildArgs: -c release -runtimeConfiguration debug
-      #       timeoutInMinutes: 120
-      #       condition:
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # Build with Release config and Debug runtimeConfiguration
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x86
+          - osx_x64
+          - osx_arm64
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: Runtime_Debug
+            buildArgs: -c release -runtimeConfiguration debug
+            timeoutInMinutes: 120
+            condition:
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # Build with Release config and runtimeConfiguration with MSBuild generator
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     buildConfig: release
-      #     platforms:
-      #     - windows_x86
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       nameSuffix: MSBuild_CMake
-      #       buildArgs: -c Release -msbuild
-      #       timeoutInMinutes: 120
-      #       condition:
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # Build with Release config and runtimeConfiguration with MSBuild generator
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x86
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: MSBuild_CMake
+            buildArgs: -c Release -msbuild
+            timeoutInMinutes: 120
+            condition:
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # Build with Debug config and Release runtimeConfiguration
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     buildConfig: debug
-      #     platforms:
-      #     - linux_x64_dev_innerloop
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       nameSuffix: Runtime_Release
-      #       buildArgs: -c debug -runtimeConfiguration release
-      #       timeoutInMinutes: 120
-      #       condition:
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # Build with Debug config and Release runtimeConfiguration
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: debug
+          platforms:
+          - linux_x64_dev_innerloop
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: Runtime_Release
+            buildArgs: -c debug -runtimeConfiguration release
+            timeoutInMinutes: 120
+            condition:
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # Build with RuntimeFlavor only. This exercise code paths where only RuntimeFlavor is
-      # # specified. Catches cases where we depend on Configuration also being specified
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     buildConfig: debug
-      #     platforms:
-      #     - linux_x64_dev_innerloop
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       nameSuffix: RuntimeFlavor_Mono
-      #       buildArgs: /p:RuntimeFlavor=Mono
-      #       timeoutInMinutes: 120
-      #       condition:
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # Build with RuntimeFlavor only. This exercise code paths where only RuntimeFlavor is
+      # specified. Catches cases where we depend on Configuration also being specified
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: debug
+          platforms:
+          - linux_x64_dev_innerloop
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: RuntimeFlavor_Mono
+            buildArgs: /p:RuntimeFlavor=Mono
+            timeoutInMinutes: 120
+            condition:
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # Build Mono + Libraries. This exercises the code path where we build libraries without
-      # # first building CoreCLR
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     buildConfig: debug
-      #     platforms:
-      #     - windows_x64
-      #     jobParameters:
-      #       testGroup: innerloop
-      #       nameSuffix: Mono_Libraries
-      #       buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono
-      #       timeoutInMinutes: 120
-      #       condition:
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # Build Mono + Libraries. This exercises the code path where we build libraries without
+      # first building CoreCLR
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: debug
+          platforms:
+          - windows_x64
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: Mono_Libraries
+            buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono
+            timeoutInMinutes: 120
+            condition:
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # Build Libraries AllConfigurations. This exercises the code path where we build libraries for all
-      # # configurations on a non Windows operating system.
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     buildConfig: debug
-      #     platforms:
-      #     - linux_x64_dev_innerloop
-      #     jobParameters:
-      #       nameSuffix: Libraries_AllConfigurations
-      #       buildArgs: -subset libs -allconfigurations
-      #       timeoutInMinutes: 120
-      #       condition:
-      #         or(
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-      #           eq(variables['isRollingBuild'], true))
+      #
+      # Build Libraries AllConfigurations. This exercises the code path where we build libraries for all
+      # configurations on a non Windows operating system.
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: debug
+          platforms:
+          - linux_x64_dev_innerloop
+          jobParameters:
+            nameSuffix: Libraries_AllConfigurations
+            buildArgs: -subset libs -allconfigurations
+            timeoutInMinutes: 120
+            condition:
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
-      # #
-      # # SourceBuild Build
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-      #   parameters:
-      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-      #     buildConfig: Release
-      #     platforms:
-      #     - SourceBuild_linux_x64
-      #     jobParameters:
-      #       nameSuffix: PortableSourceBuild
-      #       timeoutInMinutes: 95
-      #       condition:
-      #           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true)
+      #
+      # SourceBuild Build
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Release
+          platforms:
+          - SourceBuild_linux_x64
+          jobParameters:
+            nameSuffix: PortableSourceBuild
+            timeoutInMinutes: 95
+            condition:
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true)
