@@ -26,6 +26,7 @@ export declare interface EmscriptenModule {
     // this should match emcc -s EXPORTED_FUNCTIONS
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
+    _sbrk(size: number): VoidPtr;
 
     // this should match emcc -s EXPORTED_RUNTIME_METHODS
     out(message: string): void;

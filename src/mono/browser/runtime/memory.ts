@@ -325,7 +325,24 @@ export function withStackAlloc<T1, T2, T3, TResult> (bytesWanted: number, f: (pt
 // @bytes must be a typed array. space is allocated for it in the native heap
 //  and it is copied to that location. returns the address of the allocation.
 export function mono_wasm_load_bytes_into_heap (bytes: Uint8Array): VoidPtr {
-    const memoryOffset = Module._malloc(bytes.length);
+    // pad sizes by 16 bytes for simd
+    const memoryOffset = Module._malloc(bytes.length + 16);
+    const heapBytes = new Uint8Array(localHeapViewU8().buffer, <any>memoryOffset, bytes.length);
+    heapBytes.set(bytes);
+    return memoryOffset;
+}
+
+// @bytes must be a typed array. space is allocated for it in memory
+//  and it is copied to that location. returns the address of the data.
+// the result pointer *cannot* be freed because malloc is bypassed for speed.
+export function mono_wasm_load_bytes_into_heap_persistent (bytes: Uint8Array): VoidPtr {
+    // pad sizes by 16 bytes for simd
+    const desiredSize = bytes.length + 16;
+    // wasm memory page size is 64kb. allocations smaller than that are probably best
+    //  serviced by malloc
+    const memoryOffset = (desiredSize < (64 * 1024))
+        ? Module._malloc(desiredSize)
+        : Module._sbrk(desiredSize);
     const heapBytes = new Uint8Array(localHeapViewU8().buffer, <any>memoryOffset, bytes.length);
     heapBytes.set(bytes);
     return memoryOffset;
