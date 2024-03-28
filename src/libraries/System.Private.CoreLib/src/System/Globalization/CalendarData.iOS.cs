@@ -18,6 +18,15 @@ namespace System.Globalization
             sNativeName = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.NativeName);
             sMonthDay = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.MonthDay);
             saShortDates = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.ShortDates).Split("||");
+            // Handle ShortDatePattern to have "yyyy" year format
+            List<string> shortDatePatternList = new List<string>(saShortDates);
+            for (int i = 0; i < shortDatePatternList.Count; i++)
+            {
+                shortDatePatternList[i] = NormalizeDatePattern(shortDatePatternList[i]);
+            }
+            FixDefaultShortDatePattern(shortDatePatternList);
+            saShortDates = shortDatePatternList.ToArray();
+
             saLongDates = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.LongDates).Split("||");
             saYearMonths = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.YearMonths).Split("||");
             saDayNames = GetCalendarInfoNative(localeName, calendarId, CalendarDataType.DayNames).Split("||");
