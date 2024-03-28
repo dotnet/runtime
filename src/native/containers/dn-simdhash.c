@@ -87,7 +87,7 @@ dn_simdhash_new_internal (dn_simdhash_meta_t meta, dn_simdhash_vtable_t vtable, 
 
     DN_ASSERT((meta.bucket_capacity > 1) && (meta.bucket_capacity <= DN_SIMDHASH_MAX_BUCKET_CAPACITY));
     DN_ASSERT(meta.key_size > 0);
-    DN_ASSERT(meta.bucket_size_bytes > DN_SIMDHASH_VECTOR_WIDTH);
+    DN_ASSERT(meta.bucket_size_bytes >= (DN_SIMDHASH_VECTOR_WIDTH + (meta.bucket_capacity * meta.key_size)));
     result->meta = meta;
     result->vtable = vtable;
     result->buffers.allocator = allocator;
@@ -121,10 +121,13 @@ dn_simdhash_buffers_t
 dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 {
     DN_ASSERT(hash);
-    uint32_t bucket_count = (capacity + hash->bucket_capacity - 1) / hash->bucket_capacity;
+    uint32_t bucket_count = (capacity + hash->meta.bucket_capacity - 1) / hash->meta.bucket_capacity;
+    // FIXME: Only apply this when capacity == 0?
+    if (bucket_count < DN_SIMDHASH_MIN_BUCKET_COUNT)
+        bucket_count = DN_SIMDHASH_MIN_BUCKET_COUNT;
     // Bucket count must be a power of two (this enables more efficient hashcode -> bucket mapping)
     bucket_count = dn_simdhash_next_power_of_two(bucket_count);
-    uint32_t value_count = bucket_count * hash->bucket_capacity;
+    uint32_t value_count = bucket_count * hash->meta.bucket_capacity;
 
     if (bucket_count <= hash->buffers.buckets_length) {
         DN_ASSERT(value_count <= hash->buffers.values_length);
@@ -136,8 +139,8 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 
     hash->buffers.buckets_length = bucket_count;
     hash->buffers.values_length = value_count;
-    hash->buffers.buckets = dn_allocator_alloc(hash->buffers.allocator, bucket_count * hash->bucket_size_bytes);
-    hash->buffers.values = dn_allocator_alloc(hash->buffers.allocator, value_count * hash->value_size);
+    hash->buffers.buckets = dn_allocator_alloc(hash->buffers.allocator, bucket_count * hash->meta.bucket_size_bytes);
+    hash->buffers.values = dn_allocator_alloc(hash->buffers.allocator, value_count * hash->meta.value_size);
 
     return result;
 }

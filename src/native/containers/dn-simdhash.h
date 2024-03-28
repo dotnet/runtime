@@ -18,6 +18,8 @@
 // We need to make sure suffixes are never zero. A bad hash is more likely to collide
 //  at the top bit than at the bottom.
 #define DN_SIMDHASH_SUFFIX_SALT 0b10000000
+// Set a minimum number of buckets when created, regardless of requested capacity
+#define DN_SIMDHASH_MIN_BUCKET_COUNT 4
 
 #ifdef _MSC_VER
 #define DN_FORCEINLINE(RET_TYPE) __forceinline RET_TYPE
@@ -164,7 +166,7 @@ DN_FORCEINLINE(int)
 dn_simdhash_find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack);
 
 dn_simdhash_t *
-dn_simdhash_new_internal (uint32_t bucket_capacity, uint32_t key_size, uint32_t value_size, uint32_t capacity, dn_allocator_t allocator);
+dn_simdhash_new_internal (dn_simdhash_meta_t meta, dn_simdhash_vtable_t vtable, uint32_t capacity, dn_allocator_t *allocator);
 
 void
 dn_simdhash_free (dn_simdhash_t *hash);
