@@ -29,6 +29,9 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #endif
 #include <errno.h>
 #include <unistd.h>
+#if defined(HOST_APPLE) && !defined(HOST_OSX)
+#include <libkern/OSCacheControl.h>
+#endif
 
 extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 
@@ -688,7 +691,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
             FPREG_Xmm(native, i) = lpContext->FltSave.XmmRegisters[i];
         }
 #elif defined(HOST_ARM64)
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
         _STRUCT_ARM_NEON_STATE64* fp = GetNativeSigSimdContext(native);
         fp->__fpsr = lpContext->Fpsr;
         fp->__fpcr = lpContext->Fpcr;
@@ -707,7 +710,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 *(NEON128*) &fp->fp_q[i] = lpContext->V[i];
             }
         }
-#else // TARGET_OSX
+#else // TARGET_APPLE
         fpsimd_context* fp = GetNativeSigSimdContext(native);
         if (fp)
         {
@@ -718,7 +721,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 *(NEON128*) &fp->vregs[i] = lpContext->V[i];
             }
         }
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 #elif defined(HOST_ARM)
         VfpSigFrame* fp = GetNativeSigSimdContext(native);
         if (fp)
@@ -897,7 +900,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->FltSave.XmmRegisters[i] = FPREG_Xmm(native, i);
         }
 #elif defined(HOST_ARM64)
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
         const _STRUCT_ARM_NEON_STATE64* fp = GetConstNativeSigSimdContext(native);
         lpContext->Fpsr = fp->__fpsr;
         lpContext->Fpcr = fp->__fpcr;
@@ -916,7 +919,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
                 lpContext->V[i] = *(NEON128*) &fp->fp_q[i];
             }
         }
-#else // TARGET_OSX
+#else // TARGET_APPLE
         const fpsimd_context* fp = GetConstNativeSigSimdContext(native);
         if (fp)
         {
@@ -927,7 +930,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
                 lpContext->V[i] = *(NEON128*) &fp->vregs[i];
             }
         }
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 #elif defined(HOST_ARM)
         const VfpSigFrame* fp = GetConstNativeSigSimdContext(native);
         if (fp)
@@ -1912,6 +1915,8 @@ DBG_FlushInstructionCache(
 #endif
 
     syscall(__NR_riscv_flush_icache, (char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize), 0 /* all harts */);
+#elif defined(HOST_APPLE) && !defined(HOST_OSX)
+    sys_icache_invalidate((void *)lpBaseAddress, dwSize);
 #else
     __builtin___clear_cache((char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize));
 #endif

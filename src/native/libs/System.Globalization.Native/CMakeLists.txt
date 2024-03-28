@@ -188,6 +188,12 @@ add_library(System.Globalization.Native-Static
     entrypoints.c
 )
 
+if (DEFINED CMAKE_ICU_DIR)
+    include_directories(${CMAKE_ICU_DIR}/include)
+    target_link_libraries(System.Globalization.Native-Static ${CMAKE_ICU_DIR}/lib/libicuuc.a ${CMAKE_ICU_DIR}/lib/libicui18n.a ${CMAKE_ICU_DIR}/lib/libicudata.a)
+    target_link_libraries(System.Globalization.Native-Static stdc++)
+endif()
+
 if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
 endif()

@@ -588,7 +588,7 @@ namespace CorUnix
             m_pNext = pNext;
         };
 
-#if !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS && !defined(TARGET_TVOS)
         BOOL
         EnsureSignalAlternateStack(
             void

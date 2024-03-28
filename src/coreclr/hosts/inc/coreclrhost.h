@@ -19,9 +19,15 @@
 // For each hosting API, we define a function prototype and a function pointer
 // The prototype is useful for implicit linking against the dynamic coreclr
 // library and the pointer for explicit dynamic loading (dlopen, LoadLibrary)
+#ifdef __cplusplus
 #define CORECLR_HOSTING_API(function, ...) \
     extern "C" int CORECLR_CALLING_CONVENTION function(__VA_ARGS__); \
     typedef int (CORECLR_CALLING_CONVENTION *function##_ptr)(__VA_ARGS__)
+#else
+#define CORECLR_HOSTING_API(function, ...) \
+    int CORECLR_CALLING_CONVENTION function(__VA_ARGS__); \
+    typedef int (CORECLR_CALLING_CONVENTION *function##_ptr)(__VA_ARGS__)
+#endif
 
 //
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
