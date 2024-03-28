@@ -297,7 +297,7 @@ namespace System.Threading
             }
         }
 
-        private static bool IsAdaptiveSpinEnabled(short minSpinCount) => minSpinCount <= 0;
+        private static bool IsAdaptiveSpinEnabled(short minSpinCountForAdaptiveSpin) => minSpinCountForAdaptiveSpin <= 0;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private ThreadId TryEnterSlow(int timeoutMs, ThreadId currentThreadId)
@@ -339,20 +339,19 @@ namespace System.Threading
                 goto Locked;
             }
 
-            bool isSingleProcessor = IsSingleProcessor;
             short maxSpinCount = s_maxSpinCount;
             if (maxSpinCount == 0)
             {
                 goto Wait;
             }
 
-            short minSpinCount = s_minSpinCount;
+            short minSpinCountForAdaptiveSpin = s_minSpinCountForAdaptiveSpin;
             short spinCount = _spinCount;
             if (spinCount < 0)
             {
                 // When negative, the spin count serves as a counter for contentions such that a spin-wait can be attempted
                 // periodically to see if it would be beneficial. Increment the spin count and skip spin-waiting.
-                Debug.Assert(IsAdaptiveSpinEnabled(minSpinCount));
+                Debug.Assert(IsAdaptiveSpinEnabled(minSpinCountForAdaptiveSpin));
                 _spinCount = (short)(spinCount + 1);
                 goto Wait;
             }
@@ -377,7 +376,7 @@ namespace System.Threading
 
             for (short spinIndex = 0; ;)
             {
-                LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, isSingleProcessor);
+                LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, isSingleProcessor: false);
 
                 if (++spinIndex >= spinCount)
                 {
@@ -394,7 +393,7 @@ namespace System.Threading
 
                 if (tryLockResult == TryLockResult.Locked)
                 {
-                    if (isFirstSpinner && IsAdaptiveSpinEnabled(minSpinCount))
+                    if (isFirstSpinner && IsAdaptiveSpinEnabled(minSpinCountForAdaptiveSpin))
                     {
                         // Since the first spinner does a full-length spin-wait, and to keep upward and downward changes to the
                         // spin count more balanced, only the first spinner adjusts the spin count
@@ -415,7 +414,7 @@ namespace System.Threading
 
             // Unregister the spinner and try to acquire the lock
             tryLockResult = State.TryLockAfterSpinLoop(this);
-            if (isFirstSpinner && IsAdaptiveSpinEnabled(minSpinCount))
+            if (isFirstSpinner && IsAdaptiveSpinEnabled(minSpinCountForAdaptiveSpin))
             {
                 // Since the first spinner does a full-length spin-wait, and to keep upward and downward changes to the
                 // spin count more balanced, only the first spinner adjusts the spin count
@@ -433,7 +432,7 @@ namespace System.Threading
                     // number of contentions, the first spinner will attempt a spin-wait again to see if it is effective.
                     Debug.Assert(tryLockResult == TryLockResult.Wait);
                     spinCount = _spinCount;
-                    _spinCount = spinCount > 0 ? (short)(spinCount - 1) : minSpinCount;
+                    _spinCount = spinCount > 0 ? (short)(spinCount - 1) : minSpinCountForAdaptiveSpin;
                 }
             }
 
@@ -504,7 +503,7 @@ namespace System.Threading
                             break;
                         }
 
-                        LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, isSingleProcessor);
+                        LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, isSingleProcessor: false);
                     }
 
                     if (acquiredLock)
@@ -648,14 +647,22 @@ namespace System.Threading
 
         internal ulong OwningThreadId => _owningThreadId;
 
-        private static short DetermineMaxSpinCount() =>
-            AppContextConfigHelper.GetInt16Config(
-                "System.Threading.Lock.SpinCount",
-                "DOTNET_Lock_SpinCount",
-                DefaultMaxSpinCount,
-                allowNegative: false);
+        private static short DetermineMaxSpinCount()
+        {
+            if (IsSingleProcessor)
+            {
+                return 0;
+            }
 
-        private static short DetermineMinSpinCount()
+            return
+                AppContextConfigHelper.GetInt16Config(
+                    "System.Threading.Lock.SpinCount",
+                    "DOTNET_Lock_SpinCount",
+                    DefaultMaxSpinCount,
+                    allowNegative: false);
+        }
+
+        private static short DetermineMinSpinCountForAdaptiveSpin()
         {
             // The config var can be set to -1 to disable adaptive spin
             short adaptiveSpinPeriod =
