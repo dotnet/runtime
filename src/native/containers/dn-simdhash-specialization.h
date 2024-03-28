@@ -1,6 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef __DN_SIMDHASH_SPECIALIZATION_H__
+#error Specialization header already included
+#else
+#define __DN_SIMDHASH_SPECIALIZATION_H__
+#endif
+
 #ifndef __DN_SIMDHASH_H__
 #error Include dn-simdhash.h first
 // HACK: for better language server parsing
