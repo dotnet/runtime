@@ -186,6 +186,14 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
         return null;
     }
 
+    if (ws[wasm_ws_close_received]) {
+        const receive_status_ptr = ws[wasm_ws_receive_status_ptr];
+        setI32(receive_status_ptr, 0); // count
+        setI32(<any>receive_status_ptr + 4, 2); // type:close
+        setI32(<any>receive_status_ptr + 8, 1);// end_of_message: true
+        return null;
+    }
+
     const { promise, promise_control } = createPromiseController<void>();
     const receive_promise_control = promise_control as ReceivePromiseControl;
     receive_promise_control.buffer_ptr = buffer_ptr;
