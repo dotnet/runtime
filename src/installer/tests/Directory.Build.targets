@@ -37,7 +37,6 @@
   <Target Name="SetupTestContextVariables"
           Condition="'$(IsTestProject)' == 'true'"
           DependsOnTargets="
-            GetProductVersions;
             GetNETCoreAppRuntimePackVersion;
             DetermineTestOutputDirectory"
           BeforeTargets="Build">

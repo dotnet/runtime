@@ -533,12 +533,20 @@
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/*.js"/>
   </ItemGroup>
 
-  <Target Name="SetMonoRollupEnvironment" DependsOnTargets="GetProductVersions">
+  <Target Name="SetMonoRollupEnvironment">
+    <!-- Retrieve the runtime pack product version. -->
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+             Targets="ReturnProductVersion"
+             Properties="Crossgen2SdkOverridePropsPath=;
+                         Crossgen2SdkOverrideTargetsPath=">
+      <Output TaskParameter="TargetOutputs" PropertyName="RuntimePackProductVersion" />
+    </MSBuild>
+
     <ItemGroup>
       <_MonoRollupEnvironmentVariable Include="Configuration:$(Configuration)" />
       <_MonoRollupEnvironmentVariable Include="NativeBinDir:$(NativeBinDir)" />
       <_MonoRollupEnvironmentVariable Include="WasmObjDir:$(WasmObjDir)" />
-      <_MonoRollupEnvironmentVariable Include="ProductVersion:$(ProductVersion)" />
+      <_MonoRollupEnvironmentVariable Include="ProductVersion:$(RuntimePackProductVersion)" />
       <_MonoRollupEnvironmentVariable Include="WasmEnableThreads:$(WasmEnableThreads)" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_SIMD:1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_SIMD:0" Condition="'$(WasmEnableSIMD)' == 'false'" />

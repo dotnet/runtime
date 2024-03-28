@@ -201,29 +201,4 @@
     </ItemGroup>
   </Target>
 
-  <!--
-    Arcade SDK versioning is defined by static properties in a targets file: work around this by
-    moving properties based on versioning into a target.
-  -->
-  <Target Name="GetProductVersions">
-    <PropertyGroup>
-      <IncludePreReleaseLabelInPackageVersion Condition="'$(DotNetFinalVersionKind)' != 'release'">true</IncludePreReleaseLabelInPackageVersion>
-      <IncludePreReleaseLabelInPackageVersion Condition="'$(SuppressFinalPackageVersion)' == 'true'">true</IncludePreReleaseLabelInPackageVersion>
-      <IncludePreReleaseLabelInPackageVersion Condition="'$(IsShipping)' != 'true'">true</IncludePreReleaseLabelInPackageVersion>
-
-      <IncludeBuildNumberInPackageVersion Condition="'$(StabilizePackageVersion)' != 'true'">true</IncludeBuildNumberInPackageVersion>
-      <IncludeBuildNumberInPackageVersion Condition="'$(SuppressFinalPackageVersion)' == 'true'">true</IncludeBuildNumberInPackageVersion>
-      <IncludeBuildNumberInPackageVersion Condition="'$(IsShipping)' != 'true'">true</IncludeBuildNumberInPackageVersion>
-
-      <ProductVersionSuffix Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">-$(VersionSuffix)</ProductVersionSuffix>
-      <ProductBandVersion Condition="'$(ProductBandVersion)' == ''">$(MajorVersion).$(MinorVersion)</ProductBandVersion>
-      <ProductionVersion Condition="'$(ProductionVersion)' == ''">$(ProductBandVersion).$(PatchVersion)</ProductionVersion>
-      <ProductVersion>$(ProductionVersion)$(ProductVersionSuffix)</ProductVersion>
-
-      <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
-      <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
-      <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</InstallersRelativePath>
-    </PropertyGroup>
-  </Target>
-
 </Project>
