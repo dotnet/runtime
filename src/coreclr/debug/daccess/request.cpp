@@ -5402,9 +5402,9 @@ HRESULT ClrDataAccess::LockedFlush()
     return hr;
 }
 
-HRESULT STDMETHODCALLTYPE ClrDataAccess::GetStaticBaseAddress(CLRDATA_ADDRESS methodTable, BOOL isGCStaticBase, CLRDATA_ADDRESS *address)
+HRESULT STDMETHODCALLTYPE ClrDataAccess::GetStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress)
 {
-    if (!address)
+    if (!nonGCStaticsAddress && !GCStaticsAddress)
         return E_POINTER;
     
     if (!methodTable)
@@ -5421,17 +5421,13 @@ HRESULT STDMETHODCALLTYPE ClrDataAccess::GetStaticBaseAddress(CLRDATA_ADDRESS me
     }
     else
     {
-        if (!mTable->IsDynamicStatics())
+        if (GCStaticsAddress != NULL)
         {
-            *address = 0;
+            *GCStaticsAddress = PTR_CDADDR(mTable->GetGCStaticsBasePointer());
         }
-        if (isGCStaticBase)
+        if (nonGCStaticsAddress != NULL)
         {
-            *address = PTR_CDADDR(mTable->GetGCStaticsBasePointer());
-        }
-        else
-        {
-            *address = PTR_CDADDR(mTable->GetNonGCStaticsBasePointer());
+            *nonGCStaticsAddress = PTR_CDADDR(mTable->GetNonGCStaticsBasePointer());
         }
     }
 
@@ -5440,9 +5436,9 @@ HRESULT STDMETHODCALLTYPE ClrDataAccess::GetStaticBaseAddress(CLRDATA_ADDRESS me
 }
 
 
-HRESULT STDMETHODCALLTYPE ClrDataAccess::GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS threadPtr, BOOL isGCStaticBase, CLRDATA_ADDRESS *address)
+HRESULT STDMETHODCALLTYPE ClrDataAccess::GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS threadPtr, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress)
 {
-    if (!address)
+    if (!nonGCStaticsAddress && !GCStaticsAddress)
         return E_POINTER;
     
     if (!methodTable)
@@ -5466,15 +5462,25 @@ HRESULT STDMETHODCALLTYPE ClrDataAccess::GetThreadStaticBaseAddress(CLRDATA_ADDR
     {
         if (mTable->GetClass()->GetNumThreadStaticFields() == 0)
         {
-            *address = 0;
-        }
-        if (isGCStaticBase)
-        {
-            *address = PTR_CDADDR(mTable->GetGCThreadStaticsBasePointer(thread));
+            if (GCStaticsAddress != NULL)
+            {
+                *GCStaticsAddress = 0;
+            }
+            if (nonGCStaticsAddress != NULL)
+            {
+                *nonGCStaticsAddress = 0;
+            }
         }
         else
         {
-            *address = PTR_CDADDR(mTable->GetNonGCThreadStaticsBasePointer(thread));
+            if (GCStaticsAddress != NULL)
+            {
+                *GCStaticsAddress = PTR_CDADDR(mTable->GetGCThreadStaticsBasePointer(thread));
+            }
+            if (nonGCStaticsAddress != NULL)
+            {
+                *nonGCStaticsAddress = PTR_CDADDR(mTable->GetNonGCThreadStaticsBasePointer(thread));
+            }
         }
     }
 

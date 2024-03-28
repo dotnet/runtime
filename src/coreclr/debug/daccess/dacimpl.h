@@ -1218,8 +1218,8 @@ public:
     virtual HRESULT STDMETHODCALLTYPE LockedFlush();
 
     // ISOSDacInterface14
-    virtual HRESULT STDMETHODCALLTYPE GetStaticBaseAddress(CLRDATA_ADDRESS methodTable, BOOL isGCStaticBase, CLRDATA_ADDRESS *address);
-    virtual HRESULT STDMETHODCALLTYPE GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS thread, BOOL isGCStaticBase, CLRDATA_ADDRESS *address);
+    virtual HRESULT STDMETHODCALLTYPE GetStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
+    virtual HRESULT STDMETHODCALLTYPE GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS thread, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
     virtual HRESULT STDMETHODCALLTYPE GetMethodTableInitializationFlags(CLRDATA_ADDRESS methodTable, MethodTableInitializationFlags *initializationStatus);
     
     //

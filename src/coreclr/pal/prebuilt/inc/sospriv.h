@@ -3361,14 +3361,14 @@ EXTERN_C const IID IID_ISOSDacInterface14;
     public:
         virtual HRESULT STDMETHODCALLTYPE GetStaticBaseAddress( 
             CLRDATA_ADDRESS methodTable,
-            BOOL isGCStaticBase,
-            CLRDATA_ADDRESS *address) = 0;
+            CLRDATA_ADDRESS *nonGCStaticsAddress,
+            CLRDATA_ADDRESS *GCStaticsAddress) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetThreadStaticBaseAddress( 
             CLRDATA_ADDRESS methodTable,
             CLRDATA_ADDRESS thread,
-            BOOL isGCStaticBase,
-            CLRDATA_ADDRESS *address) = 0;
+            CLRDATA_ADDRESS *nonGCStaticsAddress,
+            CLRDATA_ADDRESS *GCStaticsAddress) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetMethodTableInitializationFlags( 
             CLRDATA_ADDRESS methodTable,
@@ -3398,15 +3398,15 @@ EXTERN_C const IID IID_ISOSDacInterface14;
         HRESULT ( STDMETHODCALLTYPE *GetStaticBaseAddress )( 
             ISOSDacInterface14 * This,
             CLRDATA_ADDRESS methodTable,
-            BOOL isGCStaticBase,
-            CLRDATA_ADDRESS *address);
+            CLRDATA_ADDRESS *nonGCStaticsAddress,
+            CLRDATA_ADDRESS *GCStaticsAddress);
         
         HRESULT ( STDMETHODCALLTYPE *GetThreadStaticBaseAddress )( 
             ISOSDacInterface14 * This,
             CLRDATA_ADDRESS methodTable,
             CLRDATA_ADDRESS thread,
-            BOOL isGCStaticBase,
-            CLRDATA_ADDRESS *address);
+            CLRDATA_ADDRESS *nonGCStaticsAddress,
+            CLRDATA_ADDRESS *GCStaticsAddress);
         
         HRESULT ( STDMETHODCALLTYPE *GetMethodTableInitializationFlags )( 
             ISOSDacInterface14 * This,
@@ -3436,11 +3436,11 @@ EXTERN_C const IID IID_ISOSDacInterface14;
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ISOSDacInterface14_GetStaticBaseAddress(This,methodTable,isGCStaticBase,address)	\
-    ( (This)->lpVtbl -> GetStaticBaseAddress(This,methodTable,isGCStaticBase,address) ) 
+#define ISOSDacInterface14_GetStaticBaseAddress(This,methodTable,nonGCStaticsAddress,GCStaticsAddress)	\
+    ( (This)->lpVtbl -> GetStaticBaseAddress(This,methodTable,nonGCStaticsAddress,GCStaticsAddress) ) 
 
-#define ISOSDacInterface14_GetThreadStaticBaseAddress(This,methodTable,thread,isGCStaticBase,address)	\
-    ( (This)->lpVtbl -> GetThreadStaticBaseAddress(This,methodTable,thread,isGCStaticBase,address) ) 
+#define ISOSDacInterface14_GetThreadStaticBaseAddress(This,methodTable,thread,nonGCStaticsAddress,GCStaticsAddress)	\
+    ( (This)->lpVtbl -> GetThreadStaticBaseAddress(This,methodTable,thread,nonGCStaticsAddress,GCStaticsAddress) ) 
 
 #define ISOSDacInterface14_GetMethodTableInitializationFlags(This,methodTable,initializationStatus)	\
     ( (This)->lpVtbl -> GetMethodTableInitializationFlags(This,methodTable,initializationStatus) ) 
