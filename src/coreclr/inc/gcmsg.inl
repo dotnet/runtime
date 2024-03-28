@@ -50,7 +50,7 @@
     static const char* gcDetailedEndMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return "*EGC* %zd(gen0:%zd)(%zd)(%d)(%s)(%s)(%s)(ml: %d->%d)";
+        return "*EGC* %zd(gen0:%zd)(%zd)(%d)(%s)(%s)(%s)(ml: %d->%d)\n";
     }
 
     static const char* gcStartMarkMsg()
