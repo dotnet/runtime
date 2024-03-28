@@ -10,11 +10,13 @@
 enum class NormalizationState : UINT8
 {
     Uninitialized,
+    PartiallyInitialized,
     Initialized,
     Failed
 };
 
 static const int NsPerYieldMeasurementCount = 8;
+static const int PartialInitializationMeasurementCount = 2; // number of measurements to be done during partial initialization
 static const unsigned int MeasurementPeriodMs = 4000;
 
 static const unsigned int NsPerS = 1000 * 1000 * 1000;
@@ -108,6 +110,21 @@ static double MeasureNsPerYield(unsigned int measureDurationUs)
     return Max(MinNsPerYield, Min((double)elapsedTicks * NsPerS / ((double)yieldCount * ticksPerS), MaxNsPerYield));
 }
 
+void YieldProcessorNormalization::NotifyGC()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(GCHeapUtilities::IsGCHeapInitialized());
+
+    GCHeapUtilities::GetGCHeap()->SetYieldProcessorScalingFactor((float)s_yieldsPerNormalizedYield);
+}
+
 void YieldProcessorNormalization::PerformMeasurement()
 {
     CONTRACTL
@@ -118,7 +135,7 @@ void YieldProcessorNormalization::PerformMeasurement()
     }
     CONTRACTL_END;
 
-    _ASSERTE(s_isMeasurementScheduled);
+    _ASSERTE(s_isMeasurementScheduled ^ (s_normalizationState == NormalizationState::Uninitialized));
 
     double latestNsPerYield;
     if (s_normalizationState == NormalizationState::Initialized)
@@ -137,19 +154,32 @@ void YieldProcessorNormalization::PerformMeasurement()
         }
         s_nextMeasurementIndex = nextMeasurementIndex;
     }
-    else if (s_normalizationState == NormalizationState::Uninitialized)
+    else if (s_normalizationState == NormalizationState::Uninitialized || s_normalizationState == NormalizationState::PartiallyInitialized)
     {
-        LARGE_INTEGER li;
-        if (!QueryPerformanceFrequency(&li) || li.QuadPart < 1000 * 1000)
+        int startIndex, endIndex;
+        if (s_normalizationState == NormalizationState::Uninitialized)
         {
-            // High precision clock not available or clock resolution is too low, resort to defaults
-            s_normalizationState = NormalizationState::Failed;
-            return;
+            LARGE_INTEGER li;
+            if (!QueryPerformanceFrequency(&li) || li.QuadPart < 1000 * 1000)
+            {
+                // High precision clock not available or clock resolution is too low, resort to defaults
+                s_normalizationState = NormalizationState::Failed;
+                return;
+            }
+            s_performanceCounterTicksPerS = li.QuadPart;
+
+            startIndex = 0;
+            endIndex = PartialInitializationMeasurementCount;
         }
-        s_performanceCounterTicksPerS = li.QuadPart;
+        else
+        {
+            startIndex = PartialInitializationMeasurementCount;
+            endIndex = NsPerYieldMeasurementCount;
+        }
 
         unsigned int measureDurationUs = DetermineMeasureDurationUs();
-        for (int i = 0; i < NsPerYieldMeasurementCount; ++i)
+        latestNsPerYield = 0;
+        for (int i = startIndex; i < endIndex; ++i)
         {
             latestNsPerYield = MeasureNsPerYield(measureDurationUs);
             AtomicStore(&s_nsPerYieldMeasurements[i], latestNsPerYield);
@@ -158,7 +188,7 @@ void YieldProcessorNormalization::PerformMeasurement()
                 AtomicStore(&s_establishedNsPerYield, latestNsPerYield);
             }
 
-            if (i < NsPerYieldMeasurementCount - 1)
+            if (i < endIndex - 1)
             {
                 FireEtwYieldProcessorMeasurement(GetClrInstanceId(), latestNsPerYield, s_establishedNsPerYield);
             }
@@ -171,7 +201,11 @@ void YieldProcessorNormalization::PerformMeasurement()
     }
 
     double establishedNsPerYield = s_nsPerYieldMeasurements[0];
-    for (int i = 1; i < NsPerYieldMeasurementCount; ++i)
+    int endIndex =
+        (s_normalizationState == NormalizationState::Uninitialized) ?
+        PartialInitializationMeasurementCount :
+        NsPerYieldMeasurementCount;
+    for (int i = 1; i < endIndex; ++i)
     {
         double nsPerYield = s_nsPerYieldMeasurements[i];
         if (nsPerYield < establishedNsPerYield)
@@ -198,10 +232,20 @@ void YieldProcessorNormalization::PerformMeasurement()
         Max(1u, (unsigned int)(TargetMaxNsPerSpinIteration / (yieldsPerNormalizedYield * establishedNsPerYield) + 0.5));
     _ASSERTE(s_optimalMaxNormalizedYieldsPerSpinIteration <= MaxOptimalMaxNormalizedYieldsPerSpinIteration);
 
-    GCHeapUtilities::GetGCHeap()->SetYieldProcessorScalingFactor((float)yieldsPerNormalizedYield);
+    if (GCHeapUtilities::IsGCHeapInitialized())
+    {
+        NotifyGC();
+    }
 
-    s_previousNormalizationTimeMs = GetTickCount();
-    s_normalizationState = NormalizationState::Initialized;
+    if (s_normalizationState != NormalizationState::Uninitialized)
+    {
+        s_previousNormalizationTimeMs = GetTickCount();
+    }
+
+    s_normalizationState =
+        (s_normalizationState == NormalizationState::Uninitialized) ?
+        NormalizationState::PartiallyInitialized :
+        NormalizationState::Initialized;
     s_isMeasurementScheduled = false;
 }
 
@@ -224,7 +268,7 @@ void YieldProcessorNormalization::ScheduleMeasurementIfNecessary()
             return;
         }
     }
-    else if (normalizationState == NormalizationState::Uninitialized)
+    else if (normalizationState == NormalizationState::Uninitialized || normalizationState == NormalizationState::PartiallyInitialized)
     {
     }
     else

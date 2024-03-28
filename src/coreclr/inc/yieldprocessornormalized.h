@@ -43,6 +43,8 @@ public:
         return s_isMeasurementScheduled;
     }
 
+    static void NotifyGC();
+
     static void PerformMeasurement();
 
 private:

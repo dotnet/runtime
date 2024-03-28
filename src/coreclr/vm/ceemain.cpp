@@ -163,6 +163,7 @@
 #include "jithost.h"
 #include "pgo.h"
 #include "pendingload.h"
+#include "yieldprocessornormalized.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -779,6 +780,10 @@ void EEStartupHelper()
         StubPrecode::StaticInitialize();
         FixupPrecode::StaticInitialize();
 
+        // Perform some measurements before garbage collector is initialized
+        // so GC initialization and the first few GCs can use the normalized yield
+        YieldProcessorNormalization::PerformMeasurement();
+
         InitializeGarbageCollector();
 
         if (!GCHandleUtilities::GetGCHandleManager()->Initialize())
@@ -877,6 +882,8 @@ void EEStartupHelper()
         {
             LogErrorToHost("GC heap initialization failed with error 0x%08X", hr);
         }
+
+        YieldProcessorNormalization::NotifyGC();
 
         IfFailGo(hr);
 
