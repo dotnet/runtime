@@ -22,50 +22,18 @@ public class PInvokeTableGeneratorTests : BuildTestBase
     {
         string config = "Release";
         string id = $"{config}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
-        string code =
-                """
-                using System;
-                using System.Runtime.InteropServices;
-                public unsafe class Test
-                {
-                    [UnmanagedCallersOnly(EntryPoint = "ManagedFunc")]
-                    public static int MyExport(int number)
-                    {
-                        // called from MyImport aka UnmanagedFunc
-                        Console.WriteLine($"MyExport({number}) -> 42");
-                        return 42;
-                    }
-
-                    [DllImport("*", EntryPoint = "UnmanagedFunc")]
-                    public static extern void MyImport(); // calls ManagedFunc aka MyExport
-
-                    public unsafe static int Main(string[] args)
-                    {
-                        Console.WriteLine($"main: {args.Length}");
-                        MyImport();
-                        return 0;
-                    }
-                }
-                """;
+        string projectFile = CreateWasmTemplateProject(id, "wasinative");
 
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
-
         var buildArgs = new BuildArgs(projectName, config, AOT: true, ProjectFileContents: id, ExtraBuildArgs: null);
         buildArgs = ExpandBuildArgs(buildArgs);
-        AddItemsPropertiesToProject("<NativeFileReference Include=\"local.c\" />");
-        AddItemsPropertiesToProject(projectFile, "<WasmSingleFileBundle>true</WasmSingleFileBundle>");
-
         BuildProject(buildArgs,
                     id: id,
                     new BuildProjectOptions(
-                        InitProject: () =>
-                        {
-                            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
-                        },
                         DotnetWasmFromRuntimePack: false,
-                        Publish: true,
-                        TargetFramework: BuildTestBase.DefaultTargetFramework));
+                        CreateProject: false,
+                        Publish: true
+                        ));
 
         CommandResult res = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!)
