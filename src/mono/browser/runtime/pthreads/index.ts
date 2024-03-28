@@ -22,7 +22,7 @@ export {
 export { mono_wasm_start_deputy_thread_async } from "./deputy-thread";
 export { mono_wasm_start_io_thread_async } from "./io-thread";
 
-export function mono_wasm_warn_about_blocking_wait(ptr: number, length: number) {
+export function mono_wasm_warn_about_blocking_wait (ptr: number, length: number) {
     const warning = utf16ToString(ptr, ptr + (length * 2));
     mono_log_warn(warning);
 }
