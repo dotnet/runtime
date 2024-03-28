@@ -162,3 +162,25 @@ dn_simdhash_string_ptr_try_remove (dn_simdhash_string_ptr_t *hash, const char *k
 {
 	return dn_simdhash_string_ptr_try_remove_raw(hash, make_key(key));
 }
+
+// FIXME: Find a way to make this easier to define
+void
+dn_simdhash_string_ptr_foreach (dn_simdhash_string_ptr_t *hash, dn_simdhash_foreach_func func, void *user_data)
+{
+	assert(hash);
+	assert(func);
+
+	dn_simdhash_buffers_t buffers = hash->buffers;
+	bucket_t *bucket_address = address_of_bucket(buffers, 0);
+	for (
+		uint32_t i = 0, bc = buffers.buckets_length, value_slot_base = 0;
+		i < bc; i++, bucket_address++, value_slot_base += DN_SIMDHASH_BUCKET_CAPACITY
+	) {
+		uint32_t c = dn_simdhash_bucket_count(bucket_address->suffixes);
+		for (uint32_t j = 0; j < c; j++) {
+			DN_SIMDHASH_KEY_T *key = &bucket_address->keys[j];
+			DN_SIMDHASH_VALUE_T *value = address_of_value(buffers, value_slot_base + j);
+			func((void *)key, (void *)value, user_data);
+		}
+	}
+}

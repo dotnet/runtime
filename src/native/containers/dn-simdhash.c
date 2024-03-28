@@ -101,13 +101,13 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 	hash->grow_at_count = value_count * 100 / DN_SIMDHASH_SIZING_PERCENTAGE;
 	hash->buffers.buckets_length = bucket_count;
 	hash->buffers.values_length = value_count;
-    uint32_t buckets_size_bytes = bucket_count * hash->meta.bucket_size_bytes,
-        values_size_bytes = value_count * hash->meta.value_size;
+	uint32_t buckets_size_bytes = bucket_count * hash->meta.bucket_size_bytes,
+		values_size_bytes = value_count * hash->meta.value_size;
 	// FIXME: 16-byte aligned allocation
 	hash->buffers.buckets = dn_allocator_alloc(hash->buffers.allocator, buckets_size_bytes);
-    memset(hash->buffers.buckets, 0, buckets_size_bytes);
+	memset(hash->buffers.buckets, 0, buckets_size_bytes);
 	hash->buffers.values = dn_allocator_alloc(hash->buffers.allocator, values_size_bytes);
-    memset(hash->buffers.values, 0, values_size_bytes);
+	memset(hash->buffers.values, 0, values_size_bytes);
 
 	return result;
 }
@@ -157,6 +157,8 @@ void
 dn_simdhash_foreach (dn_simdhash_t *hash, dn_simdhash_foreach_func func, void *user_data)
 {
 	assert(hash);
+	assert(func);
+
 	dn_simdhash_meta_t meta = hash->meta;
 
 	uint8_t *bucket = (uint8_t *)hash->buffers.buckets,

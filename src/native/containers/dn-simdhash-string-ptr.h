@@ -6,3 +6,6 @@ dn_simdhash_string_ptr_try_get_value (dn_simdhash_string_ptr_t *hash, const char
 
 uint8_t
 dn_simdhash_string_ptr_try_remove (dn_simdhash_string_ptr_t *hash, const char *key);
+
+void
+dn_simdhash_string_ptr_foreach (dn_simdhash_string_ptr_t *hash, dn_simdhash_foreach_func func, void *user_data);

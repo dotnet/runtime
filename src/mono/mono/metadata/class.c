@@ -3361,12 +3361,12 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 
 		// We're forced to check all matching namespaces, not just the first one found,
 		// because our desired type could be in any of the ones that match case-insensitively.
-		dn_simdhash_foreach (image->name_cache, find_all_nocase, &all_user_data);
+		dn_simdhash_string_ptr_foreach (image->name_cache, find_all_nocase, &all_user_data);
 
 		values = all_user_data.values;
 		while (values && !user_data.value) {
 			nspace_table = (dn_simdhash_string_ptr_t *)values->data;
-			dn_simdhash_foreach (nspace_table, find_nocase, &user_data);
+			dn_simdhash_string_ptr_foreach (nspace_table, find_nocase, &user_data);
 			values = values->next;
 		}
 

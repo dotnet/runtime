@@ -2134,7 +2134,7 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->ptr_cache)
 		g_hash_table_destroy (image->ptr_cache);
 	if (image->name_cache) {
-		dn_simdhash_foreach (image->name_cache, free_simdhash_table, NULL);
+		dn_simdhash_string_ptr_foreach (image->name_cache, free_simdhash_table, NULL);
 		dn_simdhash_free (image->name_cache);
 	}
 
