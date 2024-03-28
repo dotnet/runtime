@@ -22,7 +22,6 @@ import { _zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8 } fro
 import { stringToMonoStringRoot, stringToUTF16 } from "./strings";
 import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
-import { gc_locked } from "./gc-lock";
 
 export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
 
@@ -224,6 +223,7 @@ function _marshal_string_to_cs_impl (arg: JSMarshalerArgument, value: string) {
         set_arg_intptr(arg, buffer);
         set_arg_length(arg, value.length);
     } else {
+        mono_assert(!WasmEnableThreads, "Marshaling strings by reference is not supported in multithreaded mode");
         const root = get_string_root(arg);
         try {
             stringToMonoStringRoot(value, root);
@@ -463,7 +463,7 @@ export function marshal_array_to_cs_impl (arg: JSMarshalerArgument, value: Array
             mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
             if (!WasmEnableJsInteropByValue) {
-                mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when creating a GC root");
+                mono_assert(!WasmEnableThreads, "Marshaling strings by reference is not supported in multithreaded mode");
                 cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
             }
             for (let index = 0; index < length; index++) {
@@ -474,7 +474,7 @@ export function marshal_array_to_cs_impl (arg: JSMarshalerArgument, value: Array
             mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
             if (!WasmEnableJsInteropByValue) {
-                mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when creating a GC root");
+                mono_assert(!WasmEnableThreads, "Marshaling objects by reference is not supported in multithreaded mode");
                 cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
             }
             for (let index = 0; index < length; index++) {
