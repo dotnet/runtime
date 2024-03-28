@@ -44,7 +44,7 @@ function verifyEnvironment () {
     }
 }
 
-export function ws_get_state (ws: WebSocketExtension) : number {
+export function ws_get_state (ws: WebSocketExtension): number {
     if (ws.readyState != WebSocket.CLOSED)
         return ws.readyState ?? -1;
     const receive_event_queue = ws[wasm_ws_pending_receive_event_queue];
@@ -228,8 +228,7 @@ export function ws_wasm_receive (ws: WebSocketExtension, buffer_ptr: VoidPtr, bu
         return resolvedPromise();
     }
 
-    const readyState = ws.readyState;
-    if (readyState == WebSocket.CLOSED) {
+    if (ws[wasm_ws_close_received]) {
         const receive_status_ptr = ws[wasm_ws_receive_status_ptr];
         setI32(receive_status_ptr, 0); // count
         setI32(<any>receive_status_ptr + 4, 2); // type:close
