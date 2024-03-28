@@ -23,7 +23,7 @@ And run it with
 dotnet run
 ```
 
-The `runtimeconfig.template.json` contains `perHostConfig` section where wasm host's can be configured
+The `runtimeconfig.template.json` contains `perHostConfig` section where wasm hosts can be configured
 
 ### Wasi SDK
 
