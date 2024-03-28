@@ -827,7 +827,7 @@ MethodTable* GetMethodTableForRecordInfo(IRecordInfo* recInfo)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(recInfo != NULL);
     }
     CONTRACTL_END;
