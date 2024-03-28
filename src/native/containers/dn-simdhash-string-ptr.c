@@ -4,7 +4,9 @@
 #include "dn-simdhash.h"
 
 typedef struct dn_simdhash_str_key {
-	uint32_t length;
+	// We keep a precomputed hash and length since that makes natural cache line alignment
+	//  possible and speeds up rehashing and scans.
+	uint32_t hash, length;
 	const char *text;
 } dn_simdhash_str_key;
 
@@ -104,17 +106,13 @@ dn_simdhash_str_equal (dn_simdhash_str_key v1, dn_simdhash_str_key v2)
 		return 1;
 	if (v1.length != v2.length)
 		return 0;
-	return memcmp (v1.text, v2.text, v1.length) == 0;
+	return memcmp(v1.text, v2.text, v1.length) == 0;
 }
 
 static uint32_t
 dn_simdhash_str_hash (dn_simdhash_str_key v1)
 {
-	if (!v1.length)
-		return 0;
-
-	// FIXME: Select a good seed.
-	return MurmurHash3_x86_32(v1.text, v1.length, 0);
+	return v1.hash;
 }
 
 #define DN_SIMDHASH_T dn_simdhash_string_ptr
@@ -125,7 +123,8 @@ dn_simdhash_str_hash (dn_simdhash_str_key v1)
 #define DN_SIMDHASH_KEY_IS_POINTER 0
 #define DN_SIMDHASH_VALUE_IS_POINTER 1
 #define DN_SIMDHASH_ACCESSOR_SUFFIX _raw
-#define DN_SIMDHASH_BUCKET_CAPACITY 9
+// Perfect cache alignment (192 bytes)
+#define DN_SIMDHASH_BUCKET_CAPACITY 11
 
 #include "dn-simdhash-specialization.h"
 #include "dn-simdhash-string-ptr.h"
@@ -136,6 +135,11 @@ make_key (const char *text)
 	dn_simdhash_str_key result = { 0, };
 	if (text) {
 		result.length = strlen(text);
+		if (result.length)
+			// FIXME: Select a good seed.
+			result.hash = MurmurHash3_x86_32(text, result.length, 0);
+		else
+			result.hash = 0;
 		result.text = text;
 	}
 	return result;
