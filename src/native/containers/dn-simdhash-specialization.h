@@ -39,6 +39,13 @@
 #define DN_SIMDHASH_BUCKET_CAPACITY DN_SIMDHASH_DEFAULT_BUCKET_CAPACITY
 #endif
 
+// For keys or values of non-pointer-sized types (for example, an int64 key on a 32-bit platform),
+//  we want to store the whole thing inside the hash so that it's not necessary to do tons of mallocs
+//  and frees when managing the contents of the table.
+// For keys or values of pointer-sized types, we can just let the user pass in arbitrary pointer-
+//  sized blobs of data and store those pointers directly instead.
+// Ultimately this is all just to allow you to easily store 'const char *' in this thing.
+
 #if DN_SIMDHASH_KEY_IS_POINTER
 #define KEY_REF DN_SIMDHASH_KEY_T
 #define REF_KEY(K) K
@@ -84,21 +91,34 @@ typedef struct DN_SIMDHASH_BUCKET_T {
     DN_SIMDHASH_KEY_T keys[DN_SIMDHASH_BUCKET_CAPACITY];
 } DN_SIMDHASH_BUCKET_T;
 
+static DN_FORCEINLINE(DN_SIMDHASH_BUCKET_T *)
+address_of_bucket (dn_simdhash_buffers_t buffers, uint32_t bucket_index)
+{
+    return &((DN_SIMDHASH_BUCKET_T *)buffers.buckets)[bucket_index];
+}
+
+static DN_FORCEINLINE(DN_SIMDHASH_VALUE_T *)
+address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
+{
+    return &((DN_SIMDHASH_VALUE_T *)buffers.values)[value_slot_index];
+}
+
 static uint32_t
 DN_SIMDHASH_COMPUTE_HASH_INTERNAL (KEY_REF key_ptr)
 {
     return DN_SIMDHASH_KEY_HASHER(DEREF_KEY(key_ptr));
 }
 
-static int
-DN_SIMDHASH_SCAN_BUCKET_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_BUCKET_T *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_suffixes search_vector)
+// This is split out into a helper so we can eventually reuse it for more efficient add/remove
+static DN_FORCEINLINE(int)
+DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_BUCKET_T *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_suffixes search_vector)
 {
     dn_simdhash_suffixes suffixes = bucket->suffixes;
     int index = dn_simdhash_find_first_matching_suffix (search_vector, suffixes);
     DN_SIMDHASH_KEY_T *key = &bucket->keys[index];
 
     for (int count = dn_simdhash_bucket_count (suffixes); index < count; index++, key++) {
-        if (DN_SIMDHASH_KEY_COMPARER (needle, *key))
+        if ((DN_SIMDHASH_KEY_COMPARER (needle, *key)) == 0)
             return index;
     }
 
@@ -110,15 +130,16 @@ DN_SIMDHASH_FIND_VALUE_INTERNAL (dn_simdhash_t *hash, KEY_REF key_ptr, uint32_t 
 {
     uint8_t suffix = dn_simdhash_select_suffix(key_hash);
     uint32_t bucket_index = dn_simdhash_select_bucket_index(hash->buffers, key_hash);
-    DN_SIMDHASH_BUCKET_T *bucket_address = (DN_SIMDHASH_BUCKET_T *)dn_simdhash_address_of_bucket(hash->meta, hash->buffers, bucket_index);
+    DN_SIMDHASH_BUCKET_T *bucket_address = address_of_bucket(hash->buffers, bucket_index);
     DN_SIMDHASH_KEY_T key = DEREF_KEY(key_ptr);
     dn_simdhash_suffixes search_vector = dn_simdhash_build_search_vector(suffix);
+    dn_simdhash_buffers_t buffers = hash->buffers;
 
-    for (uint32_t c = hash->buffers.buckets_length; bucket_index < c; bucket_index++, bucket_address++) {
-        int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL (hash, bucket_address, key, search_vector);
+    for (uint32_t c = buffers.buckets_length; bucket_index < c; bucket_index++, bucket_address++) {
+        int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(bucket_address, key, search_vector);
         if (index_in_bucket >= 0) {
             uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + index_in_bucket;
-            return &((DN_SIMDHASH_VALUE_T *)hash->buffers.values)[value_slot_index];
+            return address_of_value(buffers, value_slot_index);
         }
 
         if (!dn_simdhash_bucket_is_cascaded(bucket_address->suffixes))
@@ -143,7 +164,7 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (dn_simdhash_t *hash, KEY_REF key_ptr, VALUE_REF
 
     uint8_t suffix = dn_simdhash_select_suffix(key_hash);
     uint32_t bucket_index = dn_simdhash_select_bucket_index(hash->buffers, key_hash);
-    DN_SIMDHASH_BUCKET_T *bucket_address = (DN_SIMDHASH_BUCKET_T *)dn_simdhash_address_of_bucket(hash->meta, hash->buffers, bucket_index);
+    DN_SIMDHASH_BUCKET_T *bucket_address = address_of_bucket(hash->buffers, bucket_index);
 
     for (uint32_t c = hash->buffers.buckets_length; bucket_index < c; bucket_index++, bucket_address++) {
         uint32_t new_index = dn_simdhash_bucket_count (bucket_address->suffixes);
@@ -171,7 +192,7 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (dn_simdhash_t *hash, KEY_REF key_ptr, VALUE_REF
 static void
 DN_SIMDHASH_REHASH_INTERNAL (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buffers)
 {
-    DN_SIMDHASH_BUCKET_T *bucket_address = (void *)old_buffers.buckets;
+    DN_SIMDHASH_BUCKET_T *bucket_address = address_of_bucket(old_buffers, 0);
     for (
         uint32_t i = 0, bc = old_buffers.buckets_length, value_slot_base = 0;
         i < bc; i++, bucket_address++, value_slot_base += DN_SIMDHASH_BUCKET_CAPACITY
@@ -221,6 +242,8 @@ dn_simdhash_meta_t DN_SIMDHASH_T_META = {
     sizeof(DN_SIMDHASH_BUCKET_T),
     sizeof(DN_SIMDHASH_KEY_T),
     sizeof(DN_SIMDHASH_VALUE_T),
+    DN_SIMDHASH_KEY_IS_POINTER,
+    DN_SIMDHASH_VALUE_IS_POINTER
 };
 
 // HACK: We don't expect the caller to pre-declare this in the specialization file
