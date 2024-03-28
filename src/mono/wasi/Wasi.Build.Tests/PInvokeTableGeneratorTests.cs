@@ -63,14 +63,10 @@ public class PInvokeTableGeneratorTests : BuildTestBase
                 }
                 """;
         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
-        AddItemsPropertiesToProject(projectFile, extraItems: @"<NativeFileReference Include=""local.c"" />");
-        File.WriteAllText(_projectDir + "local.c", cCode);
-        string extraProperties = @"<WasmBuildNative>true</WasmBuildNative>
-                                   <WasmNativeStrip>false</WasmNativeStrip>
-                                   <IsBrowserWasmProject>false</IsBrowserWasmProject>
-                                   <WasmSingleFileBundle>true</WasmSingleFileBundle>
+        File.WriteAllText(Path.Combine(_projectDir!, "local.c"), cCode);
+        string extraProperties = @"<WasmNativeStrip>false</WasmNativeStrip>
                                    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
-        AddItemsPropertiesToProject(projectFile, extraProperties);
+        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties, extraItems: @"<NativeFileReference Include=""local.c"" />");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         var buildArgs = new BuildArgs(projectName, config, AOT: true, ProjectFileContents: id, ExtraBuildArgs: null);
         buildArgs = ExpandBuildArgs(buildArgs);
