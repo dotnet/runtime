@@ -67,6 +67,8 @@ int main () {
 	printf ("Calling foreach:\n");
 	dn_simdhash_foreach(test, foreach_callback, NULL);
 
+	uint32_t final_capacity = dn_simdhash_capacity(test);
+
 	for (int i = 0; i < c; i++) {
 		DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
 		DN_SIMDHASH_VALUE_T value, expected_value = *dn_vector_index_t(values, DN_SIMDHASH_VALUE_T, i);
@@ -88,6 +90,8 @@ int main () {
 
 	if (!tasserteq(dn_simdhash_count(test), 0, "was not empty"))
 		return 1;
+	if (!tasserteq(dn_simdhash_capacity(test), final_capacity, "capacity changed by emptying"))
+		return 1;
 
 	printf ("Calling foreach after emptying:\n");
 	dn_simdhash_foreach(test, foreach_callback, NULL);
@@ -98,6 +102,29 @@ int main () {
 		uint8_t ok = dn_simdhash_size_t_size_t_try_get_value(test, key, &value);
 		tassert1(!ok, key, "found key after removal");
 	}
+
+	for (int i = 0; i < c; i++) {
+		DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
+		DN_SIMDHASH_VALUE_T value = *dn_vector_index_t(values, DN_SIMDHASH_VALUE_T, i);
+
+		uint8_t ok = dn_simdhash_size_t_size_t_try_add(test, key, value);
+		tassert1(ok, key, "could not re-insert key after emptying");
+	}
+
+	if (!tasserteq(dn_simdhash_capacity(test), final_capacity, "expected capacity not to change after refilling"))
+		return 1;
+
+	for (int i = 0; i < c; i++) {
+		DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
+		DN_SIMDHASH_VALUE_T value, expected_value = *dn_vector_index_t(values, DN_SIMDHASH_VALUE_T, i);
+
+		uint8_t ok = dn_simdhash_size_t_size_t_try_get_value(test, key, &value);
+		if (tassert1(ok, key, "did not find key after refilling"))
+			tasserteq(value, expected_value, "value did not match after refilling");
+	}
+
+	printf ("Calling foreach after refilling:\n");
+	dn_simdhash_foreach(test, foreach_callback, NULL);
 
 	printf("done\n");
 
