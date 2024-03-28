@@ -131,7 +131,7 @@ namespace System.Collections.Concurrent.Tests
                 Assert.Equal(0, ordinalHashCode); // ensure has a zero hash code Ordinal
 
                 int ordinalIgnoreCaseHashCode = nonRandomizedOrdinalIgnoreCase(candidate);
-                if (ordinalIgnoreCaseHashCode == 0xe05180a0) // ensure has a zero hash code OrdinalIgnoreCase (might not have one)
+                if (ordinalIgnoreCaseHashCode == unchecked((int)0xe05180a0)) // ensure has a zero hash code OrdinalIgnoreCase (might not have one)
                 {
                     collidingStrings.Add(candidate); // success!
                 }
