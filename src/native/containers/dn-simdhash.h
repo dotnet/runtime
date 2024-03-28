@@ -130,14 +130,8 @@ typedef enum dn_simdhash_insert_result {
 } dn_simdhash_insert_result;
 
 typedef struct dn_simdhash_vtable_t {
-    // This returns void*, not value_ref, because it *always* returns the address of a value,
-    //  or it returns NULL if the key was not found
-    void *(*find_value) (dn_simdhash_t *hash, dn_simdhash_key_ref key_ptr, uint32_t key_hash);
-    // Does not update hash->count, that's your job.
-    dn_simdhash_insert_result (*try_insert) (dn_simdhash_t *hash, dn_simdhash_key_ref key_ptr, dn_simdhash_value_ref value_ptr, uint32_t key_hash, uint8_t ensure_not_present);
     // Does not free old_buffers, that's your job.
     void (*rehash) (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buffers);
-    uint32_t (*compute_hash) (dn_simdhash_key_ref key_ptr);
 } dn_simdhash_vtable_t;
 
 typedef struct dn_simdhash_t {
@@ -229,17 +223,6 @@ dn_simdhash_count (dn_simdhash_t *hash);
 //  of items. Will not shrink the table if it is already bigger.
 void
 dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity);
-
-// Returns 1 if a new item was successfully added, and 0 if it already existed.
-// Key and value will be dereferenced unless this is a pointer hash.
-uint8_t
-dn_simdhash_try_add (dn_simdhash_t *hash, dn_simdhash_key_ref key, dn_simdhash_value_ref value);
-
-uint8_t
-dn_simdhash_try_get_value (dn_simdhash_t *hash, dn_simdhash_key_ref key, void * result, uint32_t result_size);
-
-uint8_t
-dn_simdhash_try_get_value_with_hash (dn_simdhash_t *hash, dn_simdhash_key_ref key, uint32_t key_hash, void * result, uint32_t result_size);
 
 typedef void (*dn_simdhash_foreach_func) (dn_simdhash_key_ref key, dn_simdhash_value_ref value, void* user_data);
 

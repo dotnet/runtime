@@ -183,62 +183,6 @@ dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity)
     }
 }
 
-uint8_t
-dn_simdhash_try_add (dn_simdhash_t *hash, dn_simdhash_key_ref key, dn_simdhash_value_ref value)
-{
-    assert(hash);
-    while (true) {
-        uint32_t key_hash = hash->vtable.compute_hash(key);
-        dn_simdhash_insert_result ok = hash->vtable.try_insert(hash, key, value, key_hash, true);
-
-        switch (ok) {
-            case DN_SIMDHASH_INSERT_OK:
-                hash->count++;
-                return 1;
-            case DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT:
-                return 0;
-            case DN_SIMDHASH_INSERT_NEED_TO_GROW: {
-                // We may have already grown once and still not had enough space, due to collisions
-                //  so we want to ensure we increase the *capacity* beyond its current value, not
-                //  ensure a capacity of count + 1
-                // We use ensure_capacity_internal because the public one applies the sizing percentage
-                dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1);
-                if (old_buffers.buckets) {
-                    hash->vtable.rehash(hash, old_buffers);
-                    dn_simdhash_free_buffers(old_buffers);
-                }
-                continue;
-            }
-            default:
-                assert(0);
-                return 0;
-        }
-    }
-}
-
-uint8_t
-dn_simdhash_try_get_value (dn_simdhash_t *hash, dn_simdhash_key_ref key, void * result, uint32_t result_size)
-{
-    assert(hash);
-    uint32_t key_hash = hash->vtable.compute_hash(key);
-    return dn_simdhash_try_get_value_with_hash(hash, key, key_hash, result, result_size);
-}
-
-uint8_t
-dn_simdhash_try_get_value_with_hash (dn_simdhash_t *hash, dn_simdhash_key_ref key, uint32_t key_hash, void * result, uint32_t result_size)
-{
-    assert(hash);
-    assert(!result || (result_size == hash->meta.value_size));
-    const void * value_ptr = hash->vtable.find_value(hash, key, key_hash);
-    if (!value_ptr)
-        return 0;
-    // We always get the address of the value back from find_value, so we always copy
-    //  the value out of its slot into the result buffer, even if it's a pointer
-    if (result)
-        memcpy(result, value_ptr, result_size);
-    return 1;
-}
-
 static DN_FORCEINLINE(void *)
 deref_raw (void * src)
 {
