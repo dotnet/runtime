@@ -28,7 +28,7 @@ The `runtimeconfig.template.json` contains `perHostConfig` section where wasm ho
 ### Wasi SDK
 
 The workload for the time being doesn't include Wasi SDK, which is responsible for native compilation.
-If don't need to modify runtime configuration, you can omit this step, but once get
+If you don't need to modify runtime configuration, you can omit this step. In case you get:
 
 ```
 error : Could not find wasi-sdk. Either set $(WASI_SDK_PATH), or use workloads to get the sdk. SDK is required for building native files.
