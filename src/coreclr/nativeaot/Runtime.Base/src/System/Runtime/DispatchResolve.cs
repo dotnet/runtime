@@ -29,7 +29,7 @@ namespace System.Runtime
                 if (FindImplSlotForCurrentType(
                         pCur, pItfType, itfSlotNumber, fDoDefaultImplementationLookup, &implSlotNumber, ppGenericContext))
                 {
-                    IntPtr targetMethod;
+                    IntPtr targetMethod = IntPtr.Zero;
                     if (implSlotNumber < pCur->NumVtableSlots)
                     {
                         // true virtual - need to get the slot from the target type in case it got overridden
@@ -37,11 +37,11 @@ namespace System.Runtime
                     }
                     else if (implSlotNumber == SpecialDispatchMapSlot.Reabstraction)
                     {
-                        throw pTgtType->GetClasslibException(ExceptionIDs.EntrypointNotFound);
+                        ThrowHelper.ThrowEntryPointNotFoundException();
                     }
                     else if (implSlotNumber == SpecialDispatchMapSlot.Diamond)
                     {
-                        throw pTgtType->GetClasslibException(ExceptionIDs.AmbiguousImplementation);
+                        ThrowHelper.ThrowAmbiguousImplementationException();
                     }
                     else
                     {
