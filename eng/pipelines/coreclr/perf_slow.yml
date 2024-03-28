@@ -1,3 +1,11 @@
+parameters:
+- name: runPrivateJobs
+  type: boolean
+  default: false
+- name: runScheduledJobs
+  type: boolean
+  default: false
+
 trigger:
   batch: true
   branches:
@@ -34,7 +42,7 @@ extends:
     - stage: Build
       jobs:
 
-      - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(in(variables['Build.Reason'], 'Schedule'), parameters.runScheduledJobs)) }}:
         # build coreclr and libraries
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -99,7 +107,7 @@ extends:
               logicalmachine: 'perfampere'
               timeoutInMinutes: 720
 
-      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(notin(variables['Build.Reason'], 'Schedule', 'Manual'), parameters.runPrivateJobs)) }}:
 
         # build coreclr and libraries
         - template: /eng/pipelines/common/platform-matrix.yml
