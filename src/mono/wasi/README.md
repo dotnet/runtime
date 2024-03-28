@@ -39,7 +39,7 @@ you will need to separately download a WASI SDK from https://github.com/WebAssem
 ### Optional build flags
 
 - `WasmSingleFileBundle` - bundle all assets into the `.wasm`. The output file name will match the project name
-- `InvariantGlobalization` - remove globalization support
+- `InvariantGlobalization` - remove globalization support, decrease the publish size.
 - More details can be found in https://github.com/dotnet/runtime/blob/main/src/mono/wasm/build/WasmApp.Common.targets and https://github.com/dotnet/runtime/blob/main/src/mono/wasi/build/WasiApp.targets
 
 ## How it works
