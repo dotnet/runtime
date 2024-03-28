@@ -56,7 +56,6 @@ namespace Microsoft.Win32
             { typeof(DateTime), VarEnum.VT_DATE },
             { typeof(object), VarEnum.VT_UNKNOWN },
             { typeof(decimal), VarEnum.VT_DECIMAL },
-            { typeof(DBNull), VarEnum.VT_NULL },
         };
 
         #endregion
@@ -71,7 +70,7 @@ namespace Microsoft.Win32
          * Variant and the types that CLR supports explicitly in the
          * CLR Variant class.
          */
-        internal static object ChangeType(object source, Type targetClass, short options, CultureInfo culture)
+        internal static object? ChangeType(object source, Type targetClass, short options, CultureInfo culture)
         {
             ArgumentNullException.ThrowIfNull(targetClass);
             ArgumentNullException.ThrowIfNull(culture);
@@ -107,7 +106,7 @@ namespace Microsoft.Win32
                 result = FromOAVariant(ret);
                 if (targetClass == typeof(char))
                 {
-                    result = (char)(uint)result;
+                    result = (char)(uint)result!;
                 }
             }
 
@@ -158,7 +157,7 @@ namespace Microsoft.Win32
                 TimeSpan => throw new NotSupportedException(SR.NotSupported_ChangeType),
                 Enum => throw new NotSupportedException(SR.NotSupported_ChangeType),
                 null => default,
-                Missing missing => ComVariant.Create(missing),
+                Missing => throw new NotSupportedException(SR.NotSupported_ChangeType),
                 DBNull => ComVariant.Null,
                 UnknownWrapper wrapper => GetComIPFromObjectRef(wrapper.WrappedObject),
                 DispatchWrapper wrapper => GetComIPFromObjectRef(wrapper.WrappedObject),
@@ -181,26 +180,28 @@ namespace Microsoft.Win32
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIUnknownOrIDispatchForObject")]
         private static partial IntPtr GetIUnknownOrIDispatchForObject(ObjectHandleOnStack o, [MarshalAs(UnmanagedType.Bool)] out bool isIDispatch);
 
-        private static object FromOAVariant(ComVariant input) =>
+        private static object? FromOAVariant(ComVariant input) =>
             input.VarType switch
             {
-                VarEnum.VT_BSTR => input.As<string>()!,
-                VarEnum.VT_DATE => input.As<DateTime>()!,
-                VarEnum.VT_BOOL => input.As<bool>()!,
-                VarEnum.VT_DECIMAL => input.As<decimal>()!,
-                VarEnum.VT_I1 => input.As<sbyte>()!,
-                VarEnum.VT_UI1 => input.As<byte>()!,
-                VarEnum.VT_I2 => input.As<short>()!,
-                VarEnum.VT_UI2 => input.As<ushort>()!,
-                VarEnum.VT_I4 => input.As<int>()!,
-                VarEnum.VT_UI4 => input.As<uint>()!,
-                VarEnum.VT_I8 => input.As<long>()!,
-                VarEnum.VT_UI8 => input.As<ulong>()!,
-                VarEnum.VT_R4 => input.As<float>()!,
-                VarEnum.VT_R8 => input.As<double>()!,
-                VarEnum.VT_EMPTY => null!,
+                VarEnum.VT_BSTR => input.As<string>(),
+                VarEnum.VT_DATE => input.As<DateTime>(),
+                VarEnum.VT_BOOL => input.As<bool>(),
+                VarEnum.VT_CY => null,
+                VarEnum.VT_DECIMAL => input.As<decimal>(),
+                VarEnum.VT_I1 => input.As<sbyte>(),
+                VarEnum.VT_UI1 => input.As<byte>(),
+                VarEnum.VT_I2 => input.As<short>(),
+                VarEnum.VT_UI2 => input.As<ushort>(),
+                VarEnum.VT_I4 or VarEnum.VT_INT => input.As<int>(),
+                VarEnum.VT_UI4 or VarEnum.VT_UINT => input.As<uint>(),
+                VarEnum.VT_I8 => input.As<long>(),
+                VarEnum.VT_UI8 => input.As<ulong>(),
+                VarEnum.VT_R4 => input.As<float>(),
+                VarEnum.VT_R8 => input.As<double>(),
+                VarEnum.VT_EMPTY => null,
                 VarEnum.VT_NULL => DBNull.Value,
-                VarEnum.VT_UNKNOWN or VarEnum.VT_DISPATCH => Marshal.GetObjectForIUnknown(input.GetRawDataRef<IntPtr>()), // Convert the IUnknown pointer to an OBJECTREF.
+                VarEnum.VT_UNKNOWN or VarEnum.VT_VARIANT => Marshal.GetObjectForIUnknown(input.GetRawDataRef<IntPtr>()),
+                VarEnum.VT_VOID => null,
                 _ => throw new NotSupportedException(SR.NotSupported_ChangeType),
             };
 
