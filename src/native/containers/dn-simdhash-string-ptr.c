@@ -81,10 +81,20 @@ MurmurHash3_x86_32 (const void * key, int len, uint32_t seed)
 
 	switch(len & 3)
 	{
-		case 3: k1 ^= tail[2] << 16;
-		case 2: k1 ^= tail[1] << 8;
-		case 1: k1 ^= tail[0];
-				k1 *= c1; k1 = ROTL32(k1,15); k1 *= c2; h1 ^= k1;
+		case 3:
+			k1 ^= tail[2] << 16;
+#ifdef __clang__
+			[[clang::fallthrough]];
+#endif
+		case 2:
+			k1 ^= tail[1] << 8;
+#ifdef __clang__
+			[[clang::fallthrough]];
+#endif
+		case 1:
+			k1 ^= tail[0];
+			k1 *= c1; k1 = ROTL32(k1,15); k1 *= c2; h1 ^= k1;
+			break;
 	};
 
 	//----------
