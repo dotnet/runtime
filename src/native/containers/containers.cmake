@@ -28,5 +28,6 @@ list(APPEND SHARED_CONTAINER_HEADERS
     dn-vector-types.h
     dn-simdhash.h
     dn-simdhash-specialization.h
+    dn-simdhash-specialization-declarations.h
     dn-simdhash-specializations.h
 )
