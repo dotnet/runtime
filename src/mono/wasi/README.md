@@ -10,10 +10,16 @@ Here is a quick overview of how to consume published artifacts. Assuming .NET SD
 dotnet workload install wasi-experimental
 ```
 
-This will install workload for building .NET based WASI apps + basic template. For the time being, you will need to separately download a WASI SDK from https://github.com/WebAssembly/wasi-sdk and point an environment variable to a location where you extract it
+This will install workload for building .NET based WASI apps + basic template. For the time being, you will need to separately download a WASI SDK from https://github.com/WebAssembly/wasi-sdk and point an environment variable `WASI_SDK_PATH` or MSBuild property `WasiSdkRoot` to a location where you extract it
 
 ```pwsh
-$env:WASI_SDK="LOCATION_OF_WASI_SDK"
+$env:WASI_SDK_PATH="LOCATION_OF_WASI_SDK"
+```
+
+or 
+
+```xml
+<WasiSdkRoot>LOCATION_OF_WASI_SDK</WasiSdkRoot>
 ```
 
 With the environment setup, you can create a new .NET application that targets WASI
