@@ -190,10 +190,10 @@ export function normalizeConfig () {
     if (WasmEnableThreads) {
 
         if (!Number.isInteger(config.pthreadPoolInitialSize)) {
-            config.pthreadPoolInitialSize = 7;
+            config.pthreadPoolInitialSize = 3;
         }
         if (!Number.isInteger(config.pthreadPoolUnusedSize)) {
-            config.pthreadPoolUnusedSize = 3;
+            config.pthreadPoolUnusedSize = 1;
         }
         if (!Number.isInteger(config.finalizerThreadStartDelayMs)) {
             config.finalizerThreadStartDelayMs = 200;
