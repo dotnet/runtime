@@ -3936,6 +3936,7 @@ public:
     int lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs);
 #endif // !UNIX_AMD64_ABI
     void lvaAssignVirtualFrameOffsetsToLocals();
+    bool lvaParamShouldHaveLocalStackSpace(unsigned lclNum);
     int lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs);
 #ifdef TARGET_AMD64
     // Returns true if compCalleeRegsPushed (including RBP if used as frame pointer) is even.
@@ -3994,7 +3995,13 @@ public:
                        CORINFO_ARG_LIST_HANDLE varList,
                        CORINFO_SIG_INFO*       varSig);
 
+    template <typename Classifier>
+    void lvaClassifyParameterABI(Classifier& classifier);
+
+    void lvaClassifyParameterABI();
+
     bool lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd);
+    bool lvaHasAnySwiftStackParamToReassemble();
 
     var_types lvaGetActualType(unsigned lclNum);
     var_types lvaGetRealType(unsigned lclNum);
@@ -5792,10 +5799,10 @@ public:
     // isVarArg is passed for use on Windows Arm64 to change the decision returned regarding
     // hfa types.
     //
-    var_types getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
-                                  structPassingKind*   wbPassStruct,
-                                  bool                 isVarArg,
-                                  unsigned             structSize);
+    var_types getArgTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
+                                  structPassingKind*       wbPassStruct,
+                                  bool                     isVarArg,
+                                  unsigned                 structSize);
 
     // Get the type that is used to return values of the given struct type.
     // If the size is unknown, pass 0 and it will be determined from 'clsHnd'.
