@@ -288,7 +288,7 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
                 runtimeHelpers.ioThreadTID = tcwraps.mono_wasm_create_io_thread();
             }
 
-            // TODO make UI thread not managed
+            // TODO make UI thread not managed/attached https://github.com/dotnet/runtime/issues/100411
             tcwraps.mono_wasm_register_ui_thread();
             monoThreadInfo.isAttached = true;
             monoThreadInfo.isRegistered = true;
