@@ -1,11 +1,4 @@
 <linker>
   <assembly fullname="TestLoadAssembly" />
   <assembly fullname="TestILAssembly" />
-  <assembly fullname="mscorlib" />
-  <assembly fullname="System.Threading.Overlapped" />
-  <assembly fullname="System.Reflection.TestModule" />
-  <assembly fullname="System.TestStructs" />
-  <assembly fullname="System.Runtime" />
-  <assembly fullname="System.Runtime.Tests" />
-  <assembly fullname="System.Private.CoreLib" />
 </linker>
