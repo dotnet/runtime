@@ -19,11 +19,6 @@ namespace System.Text.Json
         public IEnumerator? CollectionEnumerator;
 
         /// <summary>
-        /// The enumerator for resumable disposables.
-        /// </summary>
-        public IDisposable? Disposable;
-
-        /// <summary>
         /// The enumerator for resumable async disposables.
         /// </summary>
         public IAsyncDisposable? AsyncDisposable;
