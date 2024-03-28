@@ -110,7 +110,6 @@ public abstract class AppTestBase : BlazorWasmTestBase
                 CheckCounter: false,
                 Config: options.Configuration,
                 ServerEnvironment: options.ServerEnvironment,
-                OnPageLoaded: options.OnPageLoaded,
                 OnConsoleMessage: OnConsoleMessage,
                 OnServerMessage: OnServerMessage,
                 BrowserPath: options.BrowserPath,
@@ -170,7 +169,6 @@ public abstract class AppTestBase : BlazorWasmTestBase
         string? TestScenario = null,
         Dictionary<string, string> BrowserQueryString = null,
         Dictionary<string, string> ServerEnvironment = null,
-        Action<IPage> OnPageLoaded = null,
         Action<IPage, IConsoleMessage> OnConsoleMessage = null,
         Action<string> OnServerMessage = null,
         int? ExpectedExitCode = 0

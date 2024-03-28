@@ -26,7 +26,6 @@
 
 #if defined(HOST_64BIT)
 // TODO: bump up the windows CODE_ALIGN to 16 and iron out any nibble map bugs that exist.
-// TODO: there is something wrong with USE_INDIRECT_CODEHEADER with CODE_ALIGN=16
 # define CODE_ALIGN             4
 # define LOG2_CODE_ALIGN        2
 #else

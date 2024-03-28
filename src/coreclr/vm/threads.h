@@ -638,7 +638,7 @@ public:
         TS_ReportDead             = 0x00010000,    // in WaitForOtherThreads()
         TS_FullyInitialized       = 0x00020000,    // Thread is fully initialized and we are ready to broadcast its existence to external clients
 
-        TS_TaskReset              = 0x00040000,    // The task is reset
+        // unused                 = 0x00040000,
 
         TS_SyncSuspended          = 0x00080000,    // Suspended via WaitSuspendEvent
         TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync
@@ -700,7 +700,7 @@ public:
         // unused                       = 0x00000040,
         TSNC_CLRCreatedThread           = 0x00000080, // The thread was created through Thread::CreateNewThread
         TSNC_ExistInThreadStore         = 0x00000100, // For dtor to know if it needs to be removed from ThreadStore
-        TSNC_UnsafeSkipEnterCooperative = 0x00000200, // This is a "fix" for deadlocks caused when cleaning up COM
+        // unused                       = 0x00000200,
         TSNC_OwnsSpinLock               = 0x00000400, // The thread owns a spinlock.
         TSNC_PreparingAbort             = 0x00000800, // Preparing abort.  This avoids recursive HandleThreadAbort call.
         TSNC_OSAlertableWait            = 0x00001000, // Preparing abort.  This avoids recursive HandleThreadAbort call.
@@ -753,7 +753,7 @@ public:
     void InternalReset (BOOL fNotFinalizerThread=FALSE, BOOL fThreadObjectResetNeeded=TRUE, BOOL fResetAbort=TRUE);
     INT32 ResetManagedThreadObject(INT32 nPriority);
     INT32 ResetManagedThreadObjectInCoopMode(INT32 nPriority);
-    BOOL  IsRealThreadPoolResetNeeded();
+
 public:
     HRESULT DetachThread(BOOL fDLLThreadDetach);
 
@@ -2453,18 +2453,6 @@ public:
     // can't figure out how to expand the ThreadList template type without
     // making m_Link public.
     SLink       m_Link;
-
-    // For N/Direct calls with the "setLastError" bit, this field stores
-    // the errorcode from that call.
-    DWORD       m_dwLastError;
-
-#ifdef FEATURE_INTERPRETER
-    // When we're interpreting IL stubs for N/Direct calls with the "setLastError" bit,
-    // the interpretation will trash the last error before we get to the call to "SetLastError".
-    // Therefore, we record it here immediately after the calli, and treat "SetLastError" as an
-    // intrinsic that transfers the value stored here into the field above.
-    DWORD       m_dwLastErrorInterp;
-#endif
 
     // Debugger per-thread flag for enabling notification on "manual"
     // method calls,  for stepping logic
@@ -4210,26 +4198,15 @@ private:
     // m_DeadThreadCount is the subset of m_ThreadCount which have died.  The Win32
     // thread has disappeared, but something (like the exposed object) has kept the
     // refcount non-zero so we can't destruct yet.
-    //
-    // m_MaxThreadCount is the maximum value of m_ThreadCount. ie. the largest number
-    // of simultaneously active threads
 
 protected:
     LONG        m_ThreadCount;
-    LONG        m_MaxThreadCount;
 public:
     LONG        ThreadCountInEE ()
     {
         LIMITED_METHOD_CONTRACT;
         return m_ThreadCount;
     }
-#if defined(_DEBUG) || defined(DACCESS_COMPILE)
-    LONG        MaxThreadCountInEE ()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_MaxThreadCount;
-    }
-#endif
 private:
     LONG        m_UnstartedThreadCount;
     LONG        m_BackgroundThreadCount;
