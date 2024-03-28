@@ -4,25 +4,26 @@
 
 trigger: none
 
-pr:
-  branches:
-    include:
-    - main
-    - release/*.*
-  paths:
-    include:
-    - '*'
-    - eng/pipelines/global-build.yml
-    exclude:
-    - '**.md'
-    - .devcontainer/*
-    - .github/*
-    - docs/*
-    - eng/pipelines/coreclr/*.*
-    - eng/pipelines/libraries/*.*
-    - eng/pipelines/installer/*.*
-    - PATENTS.TXT
-    - THIRD-PARTY-NOTICES.TXT
+pr: none
+# pr:
+#   branches:
+#     include:
+#     - main
+#     - release/*.*
+#   paths:
+#     include:
+#     - '*'
+#     - eng/pipelines/global-build.yml
+#     exclude:
+#     - '**.md'
+#     - .devcontainer/*
+#     - .github/*
+#     - docs/*
+#     - eng/pipelines/coreclr/*.*
+#     - eng/pipelines/libraries/*.*
+#     - eng/pipelines/installer/*.*
+#     - PATENTS.TXT
+#     - THIRD-PARTY-NOTICES.TXT
 
 variables:
   - template: /eng/pipelines/common/variables.yml
