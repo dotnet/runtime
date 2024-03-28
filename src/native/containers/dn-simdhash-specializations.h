@@ -6,7 +6,18 @@
 
 #include "dn-simdhash.h"
 
-dn_simdhash_t *
-dn_simdhash_string_ptr_new (uint32_t capacity, dn_allocator_t *allocator);
+#define DN_SIMDHASH_T dn_simdhash_string_ptr
+#define DN_SIMDHASH_KEY_T const char *
+#define DN_SIMDHASH_VALUE_T void *
+#define DN_SIMDHASH_KEY_IS_POINTER 1
+#define DN_SIMDHASH_VALUE_IS_POINTER 1
+
+#include "dn-simdhash-specialization-declarations.h"
+
+#undef DN_SIMDHASH_T
+#undef DN_SIMDHASH_KEY_T
+#undef DN_SIMDHASH_VALUE_T
+#undef DN_SIMDHASH_KEY_IS_POINTER
+#undef DN_SIMDHASH_VALUE_IS_POINTER
 
 #endif
