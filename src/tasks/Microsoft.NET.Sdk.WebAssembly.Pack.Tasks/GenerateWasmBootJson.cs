@@ -77,6 +77,8 @@ public class GenerateWasmBootJson : Task
 
     public bool IsPublish { get; set; }
 
+    public bool IsAot { get; set; }
+
     public override bool Execute()
     {
         using var fileStream = File.Create(OutputPath);
@@ -209,7 +211,7 @@ public class GenerateWasmBootJson : Task
                     }
                     else
                     {
-                        if (IsTargeting90OrLater() && helper.IsCoreAssembly(resourceName))
+                        if (IsTargeting90OrLater() && (IsAot || helper.IsCoreAssembly(resourceName)))
                         {
                             Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as core symbols file.", resource.ItemSpec);
                             resourceData.corePdb ??= new ResourceHashesByNameDictionary();
@@ -225,7 +227,7 @@ public class GenerateWasmBootJson : Task
                 }
                 else if (string.Equals("runtime", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (IsTargeting90OrLater() && helper.IsCoreAssembly(resourceName))
+                    if (IsTargeting90OrLater() && (IsAot || helper.IsCoreAssembly(resourceName)))
                     {
                         Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as core assembly.", resource.ItemSpec);
                         resourceList = resourceData.coreAssembly;

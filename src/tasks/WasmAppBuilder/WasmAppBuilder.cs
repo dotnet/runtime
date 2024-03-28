@@ -31,6 +31,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     public string? RuntimeAssetsLocation { get; set; }
     public bool CacheBootResources { get; set; }
     public int DebugLevel { get; set; }
+    public bool IsAot { get; set; }
 
     private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions
     {
@@ -207,7 +208,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 }
 
                 var assemblyName = Path.GetFileName(assemblyPath);
-                bool isCoreAssembly = helper.IsCoreAssembly(assemblyName);
+                bool isCoreAssembly = IsAot || helper.IsCoreAssembly(assemblyName);
 
                 var assemblyList = isCoreAssembly ? bootConfig.resources.coreAssembly : bootConfig.resources.assembly;
                 assemblyList[assemblyName] = Utils.ComputeIntegrity(bytes);
