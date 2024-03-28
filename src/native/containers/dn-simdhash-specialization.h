@@ -369,3 +369,62 @@ DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMD
 		*result = *value_ptr;
 	return 1;
 }
+
+uint8_t
+DN_SIMDHASH_TRY_REMOVE(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key)
+{
+	uint32_t key_hash = DN_SIMDHASH_KEY_HASHER(key);
+	return DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T)(hash, key, key_hash);
+}
+
+uint8_t
+DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash)
+{
+	assert(hash);
+
+	dn_simdhash_buffers_t buffers = hash->buffers;
+	uint8_t suffix = dn_simdhash_select_suffix(key_hash);
+	uint32_t first_bucket_index = dn_simdhash_select_bucket_index(buffers, key_hash);
+	dn_simdhash_suffixes search_vector = dn_simdhash_build_search_vector(suffix);
+
+	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
+		int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T)(bucket_address, key, search_vector);
+		if (index_in_bucket >= 0) {
+			// We found the item. Replace it with the last item in the bucket, then erase
+			//  the last item in the bucket. This ensures sequential scans still work.
+			uint32_t bucket_count = dn_simdhash_bucket_count(bucket_address->suffixes),
+				replacement_index_in_bucket = bucket_count - 1;
+			uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + index_in_bucket,
+				replacement_value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + replacement_index_in_bucket;
+
+			hash->count--;
+
+			// Update count first
+			dn_simdhash_bucket_set_count(bucket_address->suffixes, bucket_count - 1);
+			// Rotate replacement suffix from the end of the bucket to here
+			dn_simdhash_bucket_set_suffix(
+				bucket_address->suffixes, index_in_bucket,
+				bucket_address->suffixes.values[replacement_index_in_bucket]
+			);
+			// Zero replacement suffix's old slot so it won't produce false positives in scans
+			dn_simdhash_bucket_set_suffix(
+				bucket_address->suffixes, replacement_index_in_bucket, 0
+			);
+			// Rotate replacement value from the end of the bucket to here
+			*address_of_value(buffers, value_slot_index) = *address_of_value(buffers, replacement_value_slot_index);
+			// Rotate replacement key from the end of the bucket to here
+			bucket_address->keys[index_in_bucket] = bucket_address->keys[replacement_index_in_bucket];
+			// Erase replacement key/value's old slots
+			// TODO: Skip these for performance?
+			memset(&bucket_address->keys[replacement_index_in_bucket], 0, sizeof(DN_SIMDHASH_KEY_T));
+			memset(address_of_value(buffers, replacement_value_slot_index), 0, sizeof(DN_SIMDHASH_VALUE_T));
+
+			return 1;
+		}
+
+		if (!dn_simdhash_bucket_is_cascaded(bucket_address->suffixes))
+			return 0;
+	END_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
+
+	return 0;
+}
