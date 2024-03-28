@@ -3,13 +3,11 @@
   <PropertyGroup>
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
     <AssemblyName>HostActivation.Tests</AssemblyName>
-    <PackageId>HostActivation.Tests</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->
     <TestsOutputName>ha</TestsOutputName>
-    <UsesTestAssets>true</UsesTestAssets>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
     <ProjectReference Include="..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />

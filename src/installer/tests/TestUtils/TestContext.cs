@@ -10,7 +10,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static string BuildArchitecture { get; }
         public static string BuildRID { get; }
         public static string Configuration { get; }
-        public static string TargetRID { get; }
 
         public static string MicrosoftNETCoreAppVersion { get; }
         public static string Tfm { get; }
@@ -36,9 +35,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     StringComparer.OrdinalIgnoreCase);
 
             BuildArchitecture = GetTestContextVariable("BUILD_ARCHITECTURE");
-            BuildRID = GetTestContextVariable("BUILDRID");
+            BuildRID = GetTestContextVariable("BUILD_RID");
             Configuration = GetTestContextVariable("BUILD_CONFIGURATION");
-            TargetRID = GetTestContextVariable("TEST_TARGETRID");
 
             MicrosoftNETCoreAppVersion = GetTestContextVariable("MNA_VERSION");
             Tfm = GetTestContextVariable("MNA_TFM");

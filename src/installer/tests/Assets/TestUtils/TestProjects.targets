@@ -1,7 +1,0 @@
-<Project>
-  <!--
-    This file is imported by the test projects from the artifacts dir or the src/installer/tests dir. It
-    provides basic info needed for restore and build with the vanilla SDK.
-  -->
-
-</Project>
