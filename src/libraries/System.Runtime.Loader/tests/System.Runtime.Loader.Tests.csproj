@@ -68,7 +68,7 @@
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField\System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows\System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' or ('$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true')">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
 
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
@@ -87,7 +87,7 @@
       <ManagedAssemblyToLink Condition="'%(FileName)%(Extension)' == '@(IntermediateAssembly->'%(FileName)%(Extension)')'">
         <TrimMode>copy</TrimMode>
       </ManagedAssemblyToLink>
-    </ItemGroup> 
+    </ItemGroup>
   </Target>
 
   <Target Name="IncludeDeltasInWasmBundle" BeforeTargets="PrepareForWasmBuildApp" Condition="'$(TargetOS)' == 'browser'">

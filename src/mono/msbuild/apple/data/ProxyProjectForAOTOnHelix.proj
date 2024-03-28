@@ -7,7 +7,13 @@
     <ExtraFilesPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'extraFiles'))</ExtraFilesPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'obj'))</BaseIntermediateOutputPath>
 
-    <AppleBuildDependsOn>_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
+    <OriginalPublishDir>$([System.IO.Path]::GetFullPath('$(TestRootDir)..\publish\'))</OriginalPublishDir>
+    <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
+    <AppleBuildDependsOn Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">ConfigureTrimming;_TrimApp;$(AppleBuildDependsOn)</AppleBuildDependsOn>
+    <AppleBuildDependsOn>_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
+    <!-- Forced by ILLink targets -->
+    <SelfContained>true</SelfContained>
+    <PublishDir>$(OriginalPublishDir)</PublishDir>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
@@ -23,7 +29,7 @@
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(_UseNativeAOTLibraryModeBundling)' != 'true'">
+  <PropertyGroup Condition="'$(_UseNativeAOTLibraryModeBundling)' != 'true' and '$(UseNativeAOTRuntime)' == 'true'">
     <!-- TODO: we probably want to recreate everything in the intermediate directory instead (see library mode bellow) -->
     <IntermediateOutputPath>$(OriginalPublishDir)</IntermediateOutputPath>
     <NativeLib>static</NativeLib>
@@ -46,10 +52,11 @@
   </ItemGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
+  <Import Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Project="$(ILLinkPropsPath)" />
 
   <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuild" />
 
-  <Target Name="_PrepareForAppleBuildAppOnHelix" DependsOnTargets="_PublishRuntimePack">
+  <Target Name="_PrepareForAppleBuildAppOnHelix">
     <Message Text="** Building a proxy for the original test project, to AOT on helix. In order to do that, this recreates the original inputs for the *iOS/tvOS* part of the build. See $(MSBuildThisFileFullPath), and $(_PropsFile). **"
              Importance="High" />
 
@@ -89,6 +96,13 @@
       <RuntimeComponents Include="marshal-ilgen" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">
+       <TrimmerRootDescriptor Include="$(ExtraFilesPath)**\*.xml" />
+
+       <!-- To recreate the state of feature flags (RuntimeHostConfigurationOption) during app build-time we need to discard the default setting, coming from SDK, and used the values passed in ProxyProjectForAOTOnHelix.props -->
+       <RuntimeHostConfigurationOption Remove="@(_AppleUsedRuntimeHostConfigurationOption)" />
+       <RuntimeHostConfigurationOption Include="@(_AppleUsedRuntimeHostConfigurationOption)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_PublishRuntimePack"
@@ -99,8 +113,21 @@
       <_RuntimePackFiles Condition="%(_AppleUsedRuntimePackFiles.Extension) != '.dll' or %(_AppleUsedRuntimePackFiles.FileName) == 'System.Private.CoreLib'" Include="@(_AppleUsedRuntimePackFiles->'$(MicrosoftNetCoreAppRuntimePackNativeDir)%(FileName)%(Extension)')" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ReferencePath Include="@(AppleReferenceSharedPathFiles->'$(MicrosoftNetCoreAppRuntimePackLibDir)%(FileName)%(Extension)')" />
+      <ReferencePath Include="@(AppleReferenceExtraPathFiles->'$(ExtraFilesPath)%(FileName)%(Extension)')" />
+    </ItemGroup>
+
     <Copy SourceFiles="@(_RuntimePackFiles)"
           DestinationFolder="$(OriginalPublishDir)" />
+  </Target>
+
+  <Target Name="_TrimApp" DependsOnTargets="ILLink;CopyFilesToPublishDirectory">
+    <Delete Files="@(_RemovedManagedAssembly)" />
+    <ItemGroup>
+      <AppleAssembliesToBundle Remove="@(AppleAssembliesToBundle)" />
+      <AppleAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" Exclude="$(OriginalPublishDir)\**\*.resources.dll" />
+    </ItemGroup>
   </Target>
 
   <!-- Move the app to where the xharness runner expects it. -->
