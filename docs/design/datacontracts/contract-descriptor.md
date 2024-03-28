@@ -25,7 +25,7 @@ struct DotNetRuntimeContractDescriptor
     uint32_t aux_data_count;
     uint32_t descriptor_size;
     uint32_t reserved;
-    char *descriptor;
+    const char *descriptor;
     uint64_t *aux_data;
 };
 
@@ -51,7 +51,7 @@ If `ptrSize` is 0, the architecture is 64-bit.  If it is 1, the architecture is 
 reserved bits should be written as zero.  Diagnostic tooling may ignore non-zero reserved bits.
 
 If `isList` is 1, the descriptor is actually a `DotNetRuntimeContractDescriptorList` (that is, it
-has a `next_runtime` field at the end. See "Unix symbol", below.) If `isList` is 0, the descriptor
+has a `next_runtime` field at the end. See "Non-Windows", below.) If `isList` is 0, the descriptor
 does not have a `next_runtime` field.
 
 The `descriptor` is a pointer to a json string described in [data descriptor physical layout](./data_descriptor.md#Physical_JSON_descriptor).  The total length (including nul terminator character) is given by `descriptor_size`.
@@ -90,7 +90,7 @@ a JSON integer constant.
   {
     "FEATURE_COMINTEROP": 0,
     "s_pThreadStore": [ 0 ] // indirect from aux data offset 0
-  }
+  },
   "contracts": {"Thread": 1,"GCHandle": 1, "ThreadStore": 1}
 }
 ```
@@ -116,7 +116,7 @@ on platforms where such symbols typically have an `_` prepended, this symbol sho
 `_DotNetRuntimeContractDescriptor`) with a null initial value.  As each .NET runtime in the process starts
 up, it shall atomically store a pointer to a `struct DotNetRuntimeContractDescriptorList` in
 `DotNetRuntimeContractDescriptor` where `next_runtime` points to the previous value of
-`DotNetRuntimeContractDescriptor` as if by the following C code:
+`DotNetRuntimeContractDescriptor` as by the C code below.
 
 The `runtime_name` is an arbitrary identifier to aid diagnostic tooling in identifying the current
 runtime.  (For example hosted runtimes may want to embed the name of the host; a desktop runtime may
