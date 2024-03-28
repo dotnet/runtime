@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import WasmEnableThreads from "consts:wasmEnableThreads";
+
 import { mono_wasm_new_root, mono_wasm_new_root_buffer } from "./roots";
 import { MonoString, MonoStringNull, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { Module } from "./globals";
@@ -118,6 +120,7 @@ export function stringToUTF16Ptr (str: string): VoidPtr {
 }
 
 export function monoStringToString (root: WasmRoot<MonoString>): string | null {
+    if (WasmEnableThreads) return null as any;
     if (root.value === MonoStringNull)
         return null;
 
@@ -152,6 +155,7 @@ export function monoStringToString (root: WasmRoot<MonoString>): string | null {
 }
 
 export function stringToMonoStringRoot (string: string, result: WasmRoot<MonoString>): void {
+    if (WasmEnableThreads) return;
     result.clear();
 
     if (string === null)

@@ -296,6 +296,8 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
             runtimeHelpers.runtimeReady = true;
             update_thread_info();
             bindings_init();
+
+            runtimeHelpers.disableManagedTransition = true;
         } else {
             // load mono runtime and apply environment settings (if necessary)
             await start_runtime();
