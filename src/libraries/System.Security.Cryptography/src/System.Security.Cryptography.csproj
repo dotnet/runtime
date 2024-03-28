@@ -371,6 +371,7 @@
     <Compile Include="System\Security\Cryptography\CngProvider.cs" />
     <Compile Include="System\Security\Cryptography\CngUIPolicy.cs" />
     <Compile Include="System\Security\Cryptography\CngUIProtectionLevels.cs" />
+    <Compile Include="System\Security\Cryptography\ConcurrentSafeKmac.cs" />
     <Compile Include="System\Security\Cryptography\CryptoConfigForwarder.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicOperations.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicUnexpectedOperationException.cs" />
