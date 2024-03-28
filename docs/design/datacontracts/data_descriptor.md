@@ -12,7 +12,7 @@ manifestation.
 The physical format is used for two purposes:
 
 1. To publish well-known data descriptors in the `dotnet/runtime` repository in a machine- and
-human-readable form.  This datamay be used for visualization, diagnostics, etc.  These data
+human-readable form.  This data may be used for visualization, diagnostics, etc.  These data
 descriptors may be written by hand or with the aid of tooling.
 
 2. To embed a data descriptor blob within a particular instance of a target runtime.  The data
@@ -166,11 +166,11 @@ For pointer and nuint globals, the value may be assumed to fit in a 64-bit unsig
 nint globals, the value may be assumed to fit in a 64-bit signed integer.
 
 If the value is given as `{"indirect": int}` then the value is stored in an auxiliary array that is
-part of the data contrat descriptor.  Only in-memory data descriptors may have indirect values; baseline data descriptors may not have indirect values.
+part of the data contract descriptor.  Only in-memory data descriptors may have indirect values; baseline data descriptors may not have indirect values.
 
 Rationale: This allows tooling to generate the in-memory data descriptor as a single constant
 string.  For pointers, the address can be stored at a known offset in an in-proc
-array of pointers and the offset written into the constant json string.
+array of pointers and the offset written into the constant JSON string.
 
 The indirection array is not part of the data descriptor spec.  It is expected that the data
 contract descriptor will include it. (The data contract descriptor must contain: the data
