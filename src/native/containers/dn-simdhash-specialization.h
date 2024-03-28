@@ -105,7 +105,6 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 	return __builtin_ctz(wasm_i8x16_bitmask(match_vector.vec));
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
 	dn_simdhash_suffixes match_vector;
-	// Completely untested.
 	match_vector.vec = _mm_cmpeq_epi8(needle.vec, haystack.vec);
 	return __builtin_ctz(_mm_movemask_epi8(match_vector.vec));
 #elif defined(__ARM_NEON)
@@ -188,7 +187,7 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T) (bucket_t *bucket, DN_SIMDHASH_K
 	}
 
 static DN_SIMDHASH_VALUE_T *
-DN_SIMDHASH_FIND_VALUE_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash)
+DN_SIMDHASH_FIND_VALUE_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash)
 {
 	dn_simdhash_buffers_t buffers = hash->buffers;
 	uint8_t suffix = dn_simdhash_select_suffix(key_hash);
@@ -210,7 +209,7 @@ DN_SIMDHASH_FIND_VALUE_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH
 }
 
 static dn_simdhash_insert_result
-DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value, uint8_t ensure_not_present)
+DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value, uint8_t ensure_not_present)
 {
 	// HACK: Early out. Better to grow without scanning here.
 	// We're comparing with the computed grow_at_count threshold to maintain an appropriate load factor
@@ -259,7 +258,7 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH
 }
 
 static void
-DN_SIMDHASH_REHASH_INTERNAL(DN_SIMDHASH_T) (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buffers)
+DN_SIMDHASH_REHASH_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, dn_simdhash_buffers_t old_buffers)
 {
 	bucket_t *bucket_address = address_of_bucket(old_buffers, 0);
 	for (
@@ -306,21 +305,21 @@ dn_simdhash_meta_t DN_SIMDHASH_T_META(DN_SIMDHASH_T) = {
 	DN_SIMDHASH_VALUE_IS_POINTER
 };
 
-dn_simdhash_t *
+DN_SIMDHASH_T_PTR(DN_SIMDHASH_T)
 DN_SIMDHASH_NEW(DN_SIMDHASH_T) (uint32_t capacity, dn_allocator_t *allocator)
 {
 	return dn_simdhash_new_internal(DN_SIMDHASH_T_META(DN_SIMDHASH_T), DN_SIMDHASH_T_VTABLE(DN_SIMDHASH_T), capacity, allocator);
 }
 
 uint8_t
-DN_SIMDHASH_TRY_ADD(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T value)
+DN_SIMDHASH_TRY_ADD(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T value)
 {
 	uint32_t key_hash = DN_SIMDHASH_KEY_HASHER(key);
 	return DN_SIMDHASH_TRY_ADD_WITH_HASH(DN_SIMDHASH_T)(hash, key, key_hash, value);
 }
 
 uint8_t
-DN_SIMDHASH_TRY_ADD_WITH_HASH(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value)
+DN_SIMDHASH_TRY_ADD_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value)
 {
 	assert(hash);
 	while (true) {
@@ -352,14 +351,14 @@ DN_SIMDHASH_TRY_ADD_WITH_HASH(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_K
 }
 
 uint8_t
-DN_SIMDHASH_TRY_GET_VALUE(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T *result)
+DN_SIMDHASH_TRY_GET_VALUE(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T *result)
 {
 	uint32_t key_hash = DN_SIMDHASH_KEY_HASHER(key);
 	return DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(DN_SIMDHASH_T)(hash, key, key_hash, result);
 }
 
 uint8_t
-DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T *result)
+DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T *result)
 {
 	assert(hash);
 	DN_SIMDHASH_VALUE_T *value_ptr = DN_SIMDHASH_FIND_VALUE_INTERNAL(DN_SIMDHASH_T)(hash, key, key_hash);
@@ -371,14 +370,14 @@ DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMD
 }
 
 uint8_t
-DN_SIMDHASH_TRY_REMOVE(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key)
+DN_SIMDHASH_TRY_REMOVE(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key)
 {
 	uint32_t key_hash = DN_SIMDHASH_KEY_HASHER(key);
 	return DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T)(hash, key, key_hash);
 }
 
 uint8_t
-DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T) (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash)
+DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash)
 {
 	assert(hash);
 
