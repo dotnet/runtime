@@ -70,10 +70,13 @@ namespace System
         internal static Variant Missing => new Variant(CV_MISSING, Type.Missing, 0);
         internal static Variant DBNull => new Variant(CV_NULL, System.DBNull.Value, 0);
 
-        internal static bool IsSystemDrawingColor(Type type) => type.Name == "System.Drawing.Color"; // Matches the behavior of IsTypeRefOrDef
+        internal static bool IsSystemDrawingColor(Type type) => type.FullName == "System.Drawing.Color"; // Matches the behavior of IsTypeRefOrDef
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertSystemColorToOleColor")]
         internal static partial uint ConvertSystemColorToOleColor(ObjectHandleOnStack obj);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertOleColorToSystemColor")]
+        internal static partial void ConvertOleColorToSystemColor(ObjectHandleOnStack objret, uint value, IntPtr pMT);
 
         //
         // Native Methods

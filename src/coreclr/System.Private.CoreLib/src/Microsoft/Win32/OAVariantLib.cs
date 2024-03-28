@@ -84,7 +84,7 @@ namespace Microsoft.Win32
                 {
                     uint sourceData = source.GetType() == typeof(int) ? (uint)(int)source : (uint)source;
                     // Int32/UInt32 can be converted to System.Drawing.Color
-                    ConvertOleColorToSystemColor(ObjectHandleOnStack.Create(ref result), sourceData, targetClass.TypeHandle.Value);
+                    Variant.ConvertOleColorToSystemColor(ObjectHandleOnStack.Create(ref result), sourceData, targetClass.TypeHandle.Value);
                     Debug.Assert(result != null);
                     return result;
                 }
@@ -203,9 +203,6 @@ namespace Microsoft.Win32
                 VarEnum.VT_UNKNOWN or VarEnum.VT_DISPATCH => Marshal.GetObjectForIUnknown(input.GetRawDataRef<IntPtr>()), // Convert the IUnknown pointer to an OBJECTREF.
                 _ => throw new NotSupportedException(SR.NotSupported_ChangeType),
             };
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertOleColorToSystemColor")]
-        private static partial void ConvertOleColorToSystemColor(ObjectHandleOnStack objret, uint value, IntPtr pMT);
 
         #endregion
     }
