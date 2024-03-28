@@ -4,7 +4,7 @@ This directory contains a build configuration for WASI support, plus a basic sam
 
 ## Try it out
 
-Before diving into how to build latest bits from runtime repository, here is a quick overview of how to consume published artifacts. Assuming .NET SDK is already installed
+Here is a quick overview of how to consume published artifacts. Assuming .NET SDK is already installed
 
 ```
 dotnet workload install wasi-experimental
@@ -28,11 +28,13 @@ And run it with
 dotnet run
 ```
 
+The `runtimeconfig.template.json` contains `perHostConfig` section where wasm host's can be configured
+
 ### Optional build flags
 
 - `WasmSingleFileBundle` - bundle all assets into the `.wasm`. The output file name will match the project name
 - `InvariantGlobalization` - remove globalization support
-- More details can be found in https://github.com/dotnet/runtime/blob/main/src/mono/wasm/build/WasmApp.Common.targets
+- More details can be found in https://github.com/dotnet/runtime/blob/main/src/mono/wasm/build/WasmApp.Common.targets and https://github.com/dotnet/runtime/blob/main/src/mono/wasi/build/WasiApp.targets
 
 ## How it works
 
