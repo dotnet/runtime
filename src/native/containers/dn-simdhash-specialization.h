@@ -3,6 +3,10 @@
 
 #include "dn-simdhash.h"
 
+#ifndef DN_SIMDHASH_T
+#error Expected DN_SIMDHASH_T definition
+#endif
+
 #ifndef DN_SIMDHASH_KEY_T
 #error Expected DN_SIMDHASH_KEY_T definition
 #endif
@@ -24,6 +28,7 @@
 #endif
 
 #define DN_SIMDHASH_BUCKET_T (DN_SIMDHASH_T ## _bucket)
+#define DN_SIMDHASH_T_VTABLE (DN_SIMDHASH_T ## _vtable)
 #define DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T ## _scan_bucket_internal)
 #define DN_SIMDHASH_FIND_VALUE_INTERNAL (DN_SIMDHASH_T ## _find_value_internal)
 #define DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T ## _try_insert_internal)
@@ -33,6 +38,12 @@ typedef struct {
     dn_simdhash_suffixes suffixes;
     DN_SIMDHASH_KEY_T keys[DN_SIMDHASH_BUCKET_CAPACITY];
 } DN_SIMDHASH_BUCKET_T;
+
+static uint32_t
+DN_SIMDHASH_COMPUTE_HASH_INTERNAL (DN_SIMDHASH_KEY_T *key_ptr)
+{
+    return DN_SIMDHASH_KEY_HASHER(*key_ptr);
+}
 
 static int
 DN_SIMDHASH_SCAN_BUCKET_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_BUCKET_T *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_suffixes search_vector)
@@ -50,11 +61,12 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_BUCKET_T *buc
 }
 
 static DN_SIMDHASH_VALUE_T *
-DN_SIMDHASH_FIND_VALUE_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash)
+DN_SIMDHASH_FIND_VALUE_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T *key_ptr, uint32_t key_hash)
 {
     uint8_t suffix = dn_simdhash_select_suffix(key_hash);
     uint32_t bucket_index = dn_simdhash_select_bucket_index(hash->buffers, key_hash);
     DN_SIMDHASH_BUCKET_T *bucket_address = (DN_SIMDHASH_BUCKET_T *)dn_simdhash_address_of_bucket(hash->meta, hash->buffers, bucket_index);
+    DN_SIMDHASH_KEY_T key = *key_ptr;
     dn_simdhash_suffixes search_vector = dn_simdhash_build_search_vector(suffix);
 
     for (uint32_t c = hash->buffers.buckets_length; bucket_index < c; bucket_index++, bucket_address++) {
@@ -73,7 +85,7 @@ DN_SIMDHASH_FIND_VALUE_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, uin
 
 // Does not update hash->count, that's your job.
 static dn_simdhash_insert_result
-DN_SIMDHASH_TRY_INSERT_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T value, uint32_t key_hash, uint8_t ensure_not_present)
+DN_SIMDHASH_TRY_INSERT_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T *key_ptr, DN_SIMDHASH_VALUE_T *value_ptr, uint32_t key_hash, uint8_t ensure_not_present)
 {
     // HACK: Early out. Better to grow without scanning here.
     if (hash->count >= hash->buffers.values_length)
@@ -82,7 +94,7 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, DN_
     // TODO: Optimize this to do a single scan that either locates an existing item or chooses
     //  a slot for the new item
     if (ensure_not_present)
-        if (DN_SIMDHASH_FIND_VALUE_INTERNAL(hash, key, key_hash))
+        if (DN_SIMDHASH_FIND_VALUE_INTERNAL(hash, key_ptr, key_hash))
             return DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT;
 
     uint8_t suffix = dn_simdhash_select_suffix(key_hash);
@@ -95,9 +107,9 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (dn_simdhash_t *hash, DN_SIMDHASH_KEY_T key, DN_
             // We found a bucket with space, so claim the first free slot
             dn_simdhash_bucket_set_count (bucket_address->suffixes, new_index + 1);
             dn_simdhash_bucket_set_suffix (bucket_address->suffixes, new_index, suffix);
-            bucket_address->keys[new_index] = key;
+            bucket_address->keys[new_index] = *key_ptr;
             uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + new_index;
-            ((DN_SIMDHASH_VALUE_T *)hash->buffers.values)[value_slot_index] = value;
+            ((DN_SIMDHASH_VALUE_T *)hash->buffers.values)[value_slot_index] = *value_ptr;
             return DN_SIMDHASH_INSERT_OK;
         }
 
@@ -136,3 +148,10 @@ DN_SIMDHASH_REHASH_INTERNAL (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buff
 
     dn_simdhash_free_buffers (old_buffers);
 }
+
+dn_simdhash_vtable_t DN_SIMDHASH_T_VTABLE = {
+    DN_SIMDHASH_FIND_VALUE_INTERNAL,
+    DN_SIMDHASH_TRY_INSERT_INTERNAL,
+    DN_SIMDHASH_REHASH_INTERNAL,
+    DN_SIMDHASH_COMPUTE_HASH_INTERNAL,
+};
