@@ -8027,6 +8027,7 @@ BOOL Debugger::ShouldSendCatchHandlerFound(Thread* pThread)
     }
     CONTRACTL_END;
 
+    ThreadExceptionState* pExState = pThread->GetExceptionState();
     if (m_sendExceptionsOutsideOfJMC || pExState->GetFlags()->SentDebugUserFirstChance())
     {
         return TRUE;
@@ -8034,7 +8035,6 @@ BOOL Debugger::ShouldSendCatchHandlerFound(Thread* pThread)
     else
     {
         BOOL forceSendCatchHandlerFound = FALSE;
-        ThreadExceptionState* pExState = pThread->GetExceptionState();
         OBJECTHANDLE objHandle = pThread->GetThrowableAsHandle();
         OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle); //destroy handle
         if (retrievedHandle != NULL)
