@@ -129,6 +129,10 @@ The toplevel dictionary will contain:
 * `"types": TYPES_DESCRIPTOR` see below
 * `"globals": GLOBALS_DESCRIPTOR` see below
 
+Additional toplevel keys may be present. For example, the in-memory data descriptor will contain a
+`"contracts"` key (see [contract descriptor](./contract_descriptor.md#Compatible_contracts)) for the
+set of compatible contracts.
+
 ### Types descriptor
 
 **Regular format**:
