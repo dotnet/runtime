@@ -413,7 +413,8 @@ get_context (void)
 		context = g_new0 (ThreadContext, 1);
 		context->stack_start = (guchar*)mono_valloc_aligned (INTERP_STACK_SIZE, MINT_STACK_ALIGNMENT, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_INTERP_STACK);
 		// A bit for every pointer sized slot in the stack. FIXME don't allocate whole bit array
-		context->no_ref_slots = (guchar*)mono_valloc (NULL, INTERP_STACK_SIZE / (8 * sizeof (gpointer)), MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_INTERP_STACK);
+		if (mono_interp_opt & INTERP_OPT_PRECISE_GC)
+			context->no_ref_slots = (guchar*)mono_valloc (NULL, INTERP_STACK_SIZE / (8 * sizeof (gpointer)), MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_INTERP_STACK);
 		context->stack_end = context->stack_start + INTERP_STACK_SIZE - INTERP_REDZONE_SIZE;
 		context->stack_real_end = context->stack_start + INTERP_STACK_SIZE;
 		/* We reserve a stack slot at the top of the interp stack to make temp objects visible to GC */
@@ -8013,6 +8014,8 @@ interp_parse_options (const char *options)
 #endif
 			else if (strncmp (arg, "ssa", 3) == 0)
 				opt = INTERP_OPT_SSA;
+			else if (strncmp (arg, "precise", 7) == 0)
+				opt = INTERP_OPT_PRECISE_GC;
 			else if (strncmp (arg, "all", 3) == 0)
 				opt = ~INTERP_OPT_NONE;
 
@@ -8558,13 +8561,15 @@ interp_mark_stack (gpointer thread_data, GcScanFunc func, gpointer gc_data, gboo
 	if (!context || !context->stack_start)
 		return;
 
-	MonoLMF **lmf_addr = (MonoLMF**)info->tls [TLS_KEY_LMF_ADDR];
-	if (lmf_addr)
-		interp_mark_no_ref_slots (context, *lmf_addr);
+	if (mono_interp_opt & INTERP_OPT_PRECISE_GC) {
+		MonoLMF **lmf_addr = (MonoLMF**)info->tls [TLS_KEY_LMF_ADDR];
+		if (lmf_addr)
+			interp_mark_no_ref_slots (context, *lmf_addr);
+	}
 
 	int slot_index = 0;
 	for (gpointer *p = (gpointer*)context->stack_start; p < (gpointer*)context->stack_pointer; p++) {
-		if (context->no_ref_slots [slot_index / 8] & (1 << (slot_index % 8)))
+		if (context->no_ref_slots && (context->no_ref_slots [slot_index / 8] & (1 << (slot_index % 8))))
 			;// This slot is marked as no ref, we don't scan it
 		else
 			func (p, gc_data);

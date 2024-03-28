@@ -8547,6 +8547,9 @@ retry:
 void
 interp_mark_ref_slots_for_var (TransformData *td, int var)
 {
+	if (!(mono_interp_opt & INTERP_OPT_PRECISE_GC))
+		return;
+
 	g_assert (td->vars [var].offset != -1);
 
 	gsize max_index = (td->vars [var].offset + td->vars [var].size) / sizeof (gpointer);
