@@ -302,14 +302,18 @@ namespace System.Collections.Tests
 
                     uint hash1 = (5381 << 16) + 5381;
                     uint hash2 = BitOperations.RotateLeft(hash1, 5) + hash1;
+                    uint hash3 = BitOperations.RotateLeft(hash1, 5) + hash1;
+                    uint hash4 = BitOperations.RotateLeft(hash1, 5) + hash1;
 
                     MemoryMarshal.Write(asBytes, in seed);
-                    MemoryMarshal.Write(asBytes.Slice(4), in hash2); // set hash2 := 0 (for Ordinal)
+                    MemoryMarshal.Write(asBytes.Slice(12), in hash2); // set hash2 := 0 (for Ordinal)
+                    MemoryMarshal.Write(asBytes.Slice(8), in hash3); // set hash3 := 0 (for Ordinal)
+                    MemoryMarshal.Write(asBytes.Slice(4), in hash4); // set hash4 := 0 (for Ordinal)
 
                     hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (uint)seed;
                     hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1);
 
-                    MemoryMarshal.Write(asBytes.Slice(8), in hash1); // set hash1 := 0 (for Ordinal)
+                    MemoryMarshal.Write(asBytes.Slice(16), in hash1); // set hash1 := 0 (for Ordinal)
                 });
             }
         }

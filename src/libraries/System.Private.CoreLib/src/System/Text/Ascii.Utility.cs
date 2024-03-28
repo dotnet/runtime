@@ -1517,7 +1517,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
+        internal static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
             // prefer architecture specific intrinsic as they offer better perf
             if (Sse2.IsSupported)
