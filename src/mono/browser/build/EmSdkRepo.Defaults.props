@@ -4,15 +4,11 @@
 
   <PropertyGroup>
     <EmscriptenSdkToolsPath>$([MSBuild]::EnsureTrailingSlash($(EMSDK_PATH)))</EmscriptenSdkToolsPath>
-    <EmscriptenUpstreamBinPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'bin'))</EmscriptenUpstreamBinPath>
-    <EmscriptenUpstreamEmscriptenPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'emscripten'))</EmscriptenUpstreamEmscriptenPath>
-
-    <_NodeToolsBasePath>$(EmscriptenSdkToolsPath)node</_NodeToolsBasePath>
+    <EmscriptenUpstreamBinPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'bin'))</EmscriptenUpstreamBinPath>
+    <EmscriptenUpstreamEmscriptenPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'emscripten'))</EmscriptenUpstreamEmscriptenPath>
 
     <!-- gets the path like emsdk/python/3.7.4-2_64bit -->
-    <_NodeToolsVersionedPath Condition="Exists($(_NodeToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_NodeToolsBasePath)))</_NodeToolsVersionedPath>
-    <EmscriptenNodeToolsPath Condition="'$(_NodeToolsVersionedPath)' != ''">$(_NodeToolsVersionedPath)</EmscriptenNodeToolsPath>
-    <EmscriptenNodeToolsPath Condition="'$(EmscriptenNodeToolsPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
+    <EmscriptenNodeToolsPath Condition="'$(EmscriptenNodeToolsPath)' == ''">$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'node', 'bin'))</EmscriptenNodeToolsPath>
 
     <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
   </PropertyGroup>
@@ -31,9 +27,9 @@
   <ItemGroup>
     <EmscriptenPrependPATH Include="$(EmscriptenSdkToolsPath)" />
     <EmscriptenPrependPATH Include="$(EmscriptenUpstreamBinPath)" />
-    <EmscriptenPrependPATH Include="$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'emscripten'))" />
+    <EmscriptenPrependPATH Include="$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'emscripten'))" />
 
-    <EmscriptenPrependPATH Include="$(EmscriptenNodeToolsPath)bin" />
+    <EmscriptenPrependPATH Include="$(EmscriptenNodeToolsPath)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(EmscriptenPythonToolsPath)' != ''">
