@@ -103,8 +103,8 @@ typedef struct dn_simdhash_buffers_t {
     // sizes of current allocations in items (not bytes)
     // so values_length should == (buckets_length * bucket_capacity)
     uint32_t buckets_length, values_length;
-    uint8_t *buckets;
-    uint8_t *values;
+    void *buckets;
+    void *values;
     dn_allocator_t *allocator;
 } dn_simdhash_buffers_t;
 
