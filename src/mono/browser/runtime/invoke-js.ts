@@ -4,8 +4,8 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
-import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid, get_sync_done_semaphore_ptr } from "./marshal";
+import { marshal_exception_to_cs, bind_arg_marshal_to_cs, marshal_task_to_cs } from "./marshal-to-cs";
+import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid, get_sync_done_semaphore_ptr, get_arg } from "./marshal";
 import { forceThreadMemoryViewRefresh } from "./memory";
 import { JSFunctionSignature, JSMarshalerArguments, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType, VoidPtrNull } from "./types/internal";
 import { VoidPtr } from "./types/emscripten";
@@ -28,7 +28,6 @@ export function mono_wasm_bind_js_import_ST (signature: JSFunctionSignature): Vo
         bind_js_import(signature);
         return VoidPtrNull;
     } catch (ex: any) {
-        Module.err(ex.toString());
         return stringToUTF16Ptr(normalize_exception(ex));
     }
 }
@@ -45,9 +44,25 @@ export function mono_wasm_invoke_jsimport_MT (signature: JSFunctionSignature, ar
         try {
             bound_fn = bind_js_import(signature);
         } catch (ex: any) {
-            Module.err(ex.toString());
-            marshal_exception_to_cs(<any>args, ex);
-            return;
+            // propagate the exception back to caller, which could be on different thread and the async Task
+            try {
+                const res_sig = get_sig(signature, 1);
+                const res_type = get_signature_type(res_sig);
+                if (res_type === MarshalerType.Task) {
+                    const res = get_arg(args, 1);
+                    marshal_task_to_cs(res, Promise.reject(ex));
+                } else {
+                    marshal_exception_to_cs(<any>args, ex);
+                    if (monoThreadInfo.isUI) {
+                        const done_semaphore = get_sync_done_semaphore_ptr(args);
+                        tcwraps.mono_threads_wasm_sync_run_in_target_thread_done(done_semaphore);
+                    }
+                }
+                return;
+            } catch (ex2: any) {
+                runtimeHelpers.nativeExit(ex2);
+                return;
+            }
         }
     }
     mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
