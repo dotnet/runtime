@@ -8760,6 +8760,8 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
 void Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
 {
     assert(node->Data()->IsCnsVec());
+    assert(node->Data()->AsVecCon()->TypeIs(TYP_SIMD32, TYP_SIMD64));
+
     GenTreeVecCon*      vecCon    = node->Data()->AsVecCon();
     GenTreeHWIntrinsic* broadcast = nullptr;
 

@@ -417,6 +417,18 @@ public:
         return fShouldParentFrameUseUnwindTargetPCforGCReporting;
     }
 
+    bool ShouldParentToFuncletReportSavedFuncletSlots()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return fShouldParentToFuncletReportSavedFuncletSlots;
+    }
+
+    bool ShouldSaveFuncletInfo()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return fShouldSaveFuncletInfo;
+    }
+
     const EE_ILEXCEPTION_CLAUSE& GetEHClauseForCatch()
     {
         return ehClauseForCatch;
@@ -469,6 +481,8 @@ private:
     bool              fShouldParentToFuncletSkipReportingGCReferences;
     bool              fShouldCrawlframeReportGCReferences;
     bool              fShouldParentFrameUseUnwindTargetPCforGCReporting;
+    bool              fShouldSaveFuncletInfo;
+    bool              fShouldParentToFuncletReportSavedFuncletSlots;
     EE_ILEXCEPTION_CLAUSE ehClauseForCatch;
 #endif //FEATURE_EH_FUNCLETS
     Thread*           pThread;
@@ -584,6 +598,13 @@ public:
 
     // advance to the next frame according to the stackwalk flags
     StackWalkAction Next(void);
+
+#ifndef DACCESS_COMPILE
+#ifdef FEATURE_EH_FUNCLETS
+    // advance to the position that the other iterator is currently at
+    void SkipTo(StackFrameIterator *pOtherStackFrameIterator);
+#endif // FEATURE_EH_FUNCLETS
+#endif // DACCESS_COMPILE
 
 #ifdef FEATURE_EH_FUNCLETS
     void ResetNextExInfoForSP(TADDR SP);
@@ -701,7 +722,6 @@ private:
 
         if (!ResetOnlyIntermediaryState)
         {
-            m_fFuncletNotSeen = false;
             m_sfFuncletParent = StackFrame();
             m_fProcessNonFilterFunclet = false;
         }
@@ -754,6 +774,9 @@ private:
     bool          m_movedPastFirstExInfo;
     // Indicates that no funclet was seen during the current stack walk yet
     bool          m_fFuncletNotSeen;
+    // Indicates that the stack walk has moved past a funclet
+    bool          m_fFoundFirstFunclet;
+
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     LPVOID m_pvResumableFrameTargetSP;
 #endif // RECORD_RESUMABLE_FRAME_SP
