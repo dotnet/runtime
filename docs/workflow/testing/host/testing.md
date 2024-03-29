@@ -36,7 +36,7 @@ dotnet build src\installer\tests\HostActivation.Tests
 ## Test context
 
 The host tests depend on:
-  1. Pre-built [test project](/src/installer/tests/Assets/Projects) output which will be copied and run by the tests
+  1. Pre-built [test project](/src/installer/tests/Assets/Projects) output which will be copied and run by the tests. The `host.pretest` subset builds these projects.
   2. Product binaries in a directory layout matching that of a .NET install
   3. TestContextVariables.txt file with property and value pairs which will be read by the tests
 
