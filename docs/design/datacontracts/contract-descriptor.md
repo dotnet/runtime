@@ -31,7 +31,7 @@ struct DotNetRuntimeContractDescriptor
 
 struct DotNetRuntimeContractDescriptorList
 {
-    struct DotNetRuntimeContractDescriptor descriptor;
+    const struct DotNetRuntimeContractDescriptor *descriptor;
     const char *runtime_name;
     struct DotNetRuntimeContractDescriptorList *next_runtime;
 }
@@ -129,15 +129,21 @@ typedef _Atomic(DescPtr) AtomicDescPtr;
 // global weak symbol
 AtomicDescPtr  __attribute__((weak)) DotNetRuntimeContractDescriptor;
 
-static const struct DotNetRuntimeContractDescriptor g_private_descriptor = { ... }; // predefined descriptor for current runtime
+// predefined descriptor for current runtime
+static const struct DotNetRuntimeContractDescriptor g_private_descriptor = { ... };
+
+// install_descriptor will try to assign the address of s_runtime_descriptor to the global symbol
+static struct DotNetRuntimeContractDescriptorList s_runtime_descriptor = {
+    .descriptor = &g_private_descriptor,
+    .runtime_name = NULL,
+    .next_runtime = NULL
+};
 
 // to be called at startup
 void
 install_descriptor(const char *runtime_name)
 {
-    DescPtr descriptor = malloc(sizeof(struct DotNetRuntimeContractDescriptorList));
-    assert (descriptor != NULL);
-    descriptor->descriptor = g_private_descriptor; // copy the constant values
+    DescPtr descriptor = &s_runtime_descriptor;
     descriptor->runtime_name = runtime_name;
     descriptor->next_runtime = NULL;
 
@@ -145,7 +151,8 @@ install_descriptor(const char *runtime_name)
     do
     {
         descriptor->next_runtime = prev;
-    } while (!atomic_compare_exchange_weak(&DotNetRuntimeConctractDescriptor, &prev, descriptor));
+    }
+    while (!atomic_compare_exchange_weak(&DotNetRuntimeContractDescriptor, &prev, descriptor));
 }
 ```
 
