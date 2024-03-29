@@ -1172,6 +1172,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_62692/Runtime_62692_*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/100368</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/Reabstraction/**">
             <Issue>https://github.com/dotnet/runtime/issues/88775</Issue>
         </ExcludeList>
