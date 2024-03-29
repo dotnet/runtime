@@ -35,7 +35,10 @@
 typedef struct dn_simdhash_buffers_t {
 	// sizes of current allocations in items (not bytes)
 	// so values_length should == (buckets_length * bucket_capacity)
-	uint32_t buckets_length, values_length;
+	uint32_t buckets_length, values_length,
+    // The number of bytes we pushed the buckets ptr forward after allocating it.
+    // We'll need to subtract this from the ptr before freeing.
+        buckets_bias;
 	void *buckets;
 	void *values;
 	dn_allocator_t *allocator;

@@ -11,7 +11,7 @@ next_power_of_two (uint32_t value) {
 	return 1u << (32 - __builtin_clz (value - 1));
 }
 #else // __clang__ || __GNUC__
-static uint32_t
+static DN_FORCEINLINE(uint32_t)
 next_power_of_two (uint32_t value) {
 	if (value < 2)
 		return 2;
@@ -66,7 +66,7 @@ void
 dn_simdhash_free_buffers (dn_simdhash_buffers_t buffers)
 {
 	if (buffers.buckets)
-		dn_allocator_free(buffers.allocator, buffers.buckets);
+		dn_allocator_free(buffers.allocator, (void *)(((uint8_t *)buffers.buckets) - buffers.buckets_bias));
 	if (buffers.values)
 		dn_allocator_free(buffers.allocator, buffers.values);
 }
@@ -102,11 +102,20 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 	hash->grow_at_count = value_count * 100 / DN_SIMDHASH_SIZING_PERCENTAGE;
 	hash->buffers.buckets_length = bucket_count;
 	hash->buffers.values_length = value_count;
-	uint32_t buckets_size_bytes = bucket_count * hash->meta.bucket_size_bytes,
+
+	// pad buckets allocation by the width of one vector so we can align it
+	uint32_t buckets_size_bytes = (bucket_count * hash->meta.bucket_size_bytes) + DN_SIMDHASH_VECTOR_WIDTH,
 		values_size_bytes = value_count * hash->meta.value_size;
-	// FIXME: 16-byte aligned allocation
+
 	hash->buffers.buckets = dn_allocator_alloc(hash->buffers.allocator, buckets_size_bytes);
 	memset(hash->buffers.buckets, 0, buckets_size_bytes);
+
+	// Calculate necessary bias for alignment
+	hash->buffers.buckets_bias = (uint32_t)(DN_SIMDHASH_VECTOR_WIDTH - (((size_t)hash->buffers.buckets) % DN_SIMDHASH_VECTOR_WIDTH));
+	// Apply bias
+	hash->buffers.buckets = (void *)(((uint8_t *)hash->buffers.buckets) + hash->buffers.buckets_bias);
+
+	// No need to go out of our way to align values
 	hash->buffers.values = dn_allocator_alloc(hash->buffers.allocator, values_size_bytes);
 	memset(hash->buffers.values, 0, values_size_bytes);
 
