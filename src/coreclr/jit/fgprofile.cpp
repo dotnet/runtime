@@ -2934,28 +2934,23 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     {
         // If for some reason we have both block and edge counts, prefer the edge counts.
         //
-        bool dataIsGood = false;
-
         if (haveEdgeCounts)
         {
-            dataIsGood = fgIncorporateEdgeCounts();
+            fgIncorporateEdgeCounts();
         }
         else if (haveBlockCounts)
         {
-            dataIsGood = fgIncorporateBlockCounts();
+            fgIncorporateBlockCounts();
         }
 
-        // If profile incorporation hit fixable problems, run synthesis in blend mode.
+        // We now always run repair, to get consistent initial counts
         //
-        if (fgPgoHaveWeights && !dataIsGood)
-        {
-            JITDUMP("\nIncorporated count data had inconsistencies; repairing profile...\n");
-            ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
-        }
+        JITDUMP("\n%Repairing profile...\n", opts.IsOSR() ? "blending" : "repairing");
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
     }
 
 #ifdef DEBUG
-    // Optionally synthesize & blend
+    // Optionally blend and recompute counts.
     //
     if (JitConfig.JitSynthesizeCounts() == 3)
     {
@@ -5210,26 +5205,37 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
-// fgDebugCheckProfileWeights: verify profile weights are self-consistent
+// fgDebugCheckProfile: verify profile data on flow graph is self-consistent
 //   (or nearly so)
 //
+// Arguments:
+//   checks -- [optional] phase checks in force
+//
 // Notes:
-//   By default, just checks for each flow edge having likelihood.
+//   Will check full profile or just likelihoods, depending on the phase check arg.
+//
 //   Can be altered via external config.
 //
-void Compiler::fgDebugCheckProfileWeights()
+void Compiler::fgDebugCheckProfile(PhaseChecks checks)
 {
     const bool configEnabled = (JitConfig.JitProfileChecks() >= 0) && fgHaveProfileWeights() && fgPredsComputed;
+
+    assert(checks != PhaseChecks::CHECK_NONE);
 
     if (configEnabled)
     {
         fgDebugCheckProfileWeights((ProfileChecks)JitConfig.JitProfileChecks());
     }
-    else
+    else if (hasFlag(checks, PhaseChecks::CHECK_PROFILE))
     {
-        ProfileChecks checks =
+        ProfileChecks profileChecks = ProfileChecks::CHECK_LIKELY | ProfileChecks::RAISE_ASSERT;
+        fgDebugCheckProfileWeights(profileChecks);
+    }
+    else if (hasFlag(checks, PhaseChecks::CHECK_LIKELIHOODS))
+    {
+        ProfileChecks profileChecks =
             ProfileChecks::CHECK_HASLIKELIHOOD | ProfileChecks::CHECK_LIKELIHOODSUM | ProfileChecks::RAISE_ASSERT;
-        fgDebugCheckProfileWeights(checks);
+        fgDebugCheckProfileWeights(profileChecks);
     }
 }
 
