@@ -834,7 +834,7 @@ namespace System
                 {
                     Vector128<uint> hashVector = Vector128.Create(hash1);
 
-                    while (length > 8)
+                    while (length >= 8)
                     {
                         Vector128<uint> srcVec = Vector128.Load(ptr);
                         length -= 8;
@@ -847,7 +847,7 @@ namespace System
                     uint hashed3 = hashVector.GetElement(2);
                     uint hashed4 = hashVector.GetElement(3);
 
-                    while (length > 4)
+                    if (length >= 4)
                     {
                         uint p0 = ptr[0];
                         uint p1 = ptr[1];
@@ -872,7 +872,7 @@ namespace System
                 }
 
 
-                while (length > 8)
+                while (length >= 8)
                 {
                     uint p0 = ptr[0];
                     uint p1 = ptr[1];
@@ -887,7 +887,7 @@ namespace System
                     ptr += 4;
                 }
 
-                while (length > 4)
+                if (length >= 4)
                 {
                     uint p0 = ptr[0];
                     uint p1 = ptr[1];
@@ -937,7 +937,7 @@ namespace System
                     Vector128<uint> hashVector = Vector128.Create(hash1);
                     Vector128<uint> NormalizeToLowercaseVec = Vector128.Create(NormalizeToLowercase);
 
-                    while (length > 8)
+                    while (length >= 8)
                     {
                         Vector128<uint> srcVec = Vector128.Load(ptr);
                         if (Ascii.VectorContainsNonAsciiChar(srcVec.AsUInt16()))
@@ -954,7 +954,7 @@ namespace System
                     uint hashed3 = hashVector.GetElement(2);
                     uint hashed4 = hashVector.GetElement(3);
 
-                    while (length > 4)
+                    if (length >= 4)
                     {
                         uint p0 = ptr[0];
                         uint p1 = ptr[1];
@@ -968,6 +968,7 @@ namespace System
                         hashed4 = (BitOperations.RotateLeft(hashed4, 5) + hashed4) ^ (p1 | NormalizeToLowercase);
                         ptr += 2;
                     }
+
                     while (length > 0)
                     {
                         uint p0 = ptr[0];
@@ -984,7 +985,7 @@ namespace System
                     return (int)res;
                 }
 
-                while (length > 8)
+                while (length >= 8)
                 {
                     uint p0 = ptr[0];
                     uint p1 = ptr[1];
@@ -1002,7 +1003,8 @@ namespace System
                     hash4 = (BitOperations.RotateLeft(hash4, 5) + hash4) ^ (p3 | NormalizeToLowercase);
                     ptr += 4;
                 }
-                while (length > 4)
+
+                if (length >= 4)
                 {
                     uint p0 = ptr[0];
                     uint p1 = ptr[1];
@@ -1061,7 +1063,7 @@ namespace System
                 fixed (char* src = scratch)
                 {
                     uint* ptr = (uint*)src;
-                    while (length > 8)
+                    while (length >= 8)
                     {
                         length -= 8;
                         // hashVector = (hashVector + RotateLeft(hashVector, 5)) ^ srcVec;
@@ -1072,7 +1074,7 @@ namespace System
                         ptr += 4;
                     }
 
-                    while (length > 4)
+                    if (length >= 4)
                     {
                         length -= 4;
                         hash3 = (BitOperations.RotateLeft(hash3, 5) + hash3) ^ (ptr[0] | NormalizeToLowercase);

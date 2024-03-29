@@ -220,7 +220,7 @@ namespace System.Collections.Tests
             {
                 string newKey = _collidingStrings[i];
                 Assert.Equal(0, _lazyGetNonRandomizedHashCodeDel.Value(newKey)); // ensure has a zero hash code Ordinal
-                Assert.Equal(unchecked((int)0xe05180a0), _lazyGetNonRandomizedOrdinalIgnoreCaseHashCodeDel.Value(newKey)); // ensure has a zero hash code OrdinalIgnoreCase
+                Assert.Equal(unchecked((int)0x9B0D9421), _lazyGetNonRandomizedOrdinalIgnoreCaseHashCodeDel.Value(newKey)); // ensure has a zero hash code OrdinalIgnoreCase
 
                 addKeyCallback(collection, newKey);
                 allKeys.Add(newKey);
@@ -279,7 +279,7 @@ namespace System.Collections.Tests
                 Assert.Equal(0, ordinalHashCode); // ensure has a zero hash code Ordinal
 
                 int ordinalIgnoreCaseHashCode = _lazyGetNonRandomizedOrdinalIgnoreCaseHashCodeDel.Value(candidate);
-                if (ordinalIgnoreCaseHashCode == unchecked((int)0xe05180a0)) // ensure has a zero hash code OrdinalIgnoreCase (might not have one)
+                if (ordinalIgnoreCaseHashCode == unchecked((int)0x9B0D9421)) // ensure has a zero hash code OrdinalIgnoreCase (might not have one)
                 {
                     collidingStrings.Add(candidate); // success!
                 }
@@ -291,7 +291,7 @@ namespace System.Collections.Tests
 
             // Generates a possible string with a well-known non-randomized hash code:
             // - string.GetNonRandomizedHashCode returns 0.
-            // - string.GetNonRandomizedHashCodeOrdinalIgnoreCase returns 0xe05180a0.
+            // - string.GetNonRandomizedHashCodeOrdinalIgnoreCase returns 0x9B0D9421.
             // Provide a different seed to produce a different string.
             // Caller must check OrdinalIgnoreCase hash code to ensure correctness.
             static string GenerateCollidingStringCandidate(int seed)
