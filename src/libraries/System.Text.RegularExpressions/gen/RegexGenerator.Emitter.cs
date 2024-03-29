@@ -397,7 +397,7 @@ namespace System.Text.RegularExpressions.Generator
             // - There are more than 5 characters in the needle, or
             // - There are only 4 or 5 characters in the needle and they're all ASCII.
 
-            return (chars.Length > 5 || (chars.Length > 3 && RegexCharClass.IsAscii(chars)))
+            return chars.Length > 5 || RegexCharClass.IsAscii(chars)
                 ? EmitSearchValues(chars.ToArray(), requiredHelpers)
                 : Literal(chars.ToString());
         }
