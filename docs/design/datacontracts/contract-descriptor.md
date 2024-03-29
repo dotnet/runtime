@@ -31,7 +31,7 @@ struct DotNetRuntimeContractDescriptor
 
 struct DotNetRuntimeContractDescriptorList
 {
-    const struct DotNetRuntimeContractDescriptor *descriptor;
+    struct DotNetRuntimeContractDescriptor descriptor;
     const char *runtime_name;
     struct DotNetRuntimeContractDescriptorList *next_runtime;
 }
@@ -133,17 +133,15 @@ AtomicDescPtr  __attribute__((weak)) DotNetRuntimeContractDescriptor;
 static const struct DotNetRuntimeContractDescriptor g_private_descriptor = { ... };
 
 // install_descriptor will try to assign the address of s_runtime_descriptor to the global symbol
-static struct DotNetRuntimeContractDescriptorList s_runtime_descriptor = {
-    .descriptor = &g_private_descriptor,
-    .runtime_name = NULL,
-    .next_runtime = NULL
-};
+static struct DotNetRuntimeContractDescriptorList s_runtime_descriptor = {0,};
 
 // to be called at startup
 void
 install_descriptor(const char *runtime_name)
 {
     DescPtr descriptor = &s_runtime_descriptor;
+    // initialize with a copy of the predefined descriptor data
+    descriptor->descriptor = g_private_descriptor;
     descriptor->runtime_name = runtime_name;
     descriptor->next_runtime = NULL;
 
