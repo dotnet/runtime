@@ -38,13 +38,13 @@ typedef union {
 } dn_simdhash_suffixes;
 
 
-static DN_FORCEINLINE(int)
+static DN_FORCEINLINE(uint32_t)
 ctz (uint32_t value)
 {
 	// __builtin_ctz is undefined for 0
 	if (value == 0)
 		return 32;
-	return __builtin_ctz(value);
+	return (uint32_t)__builtin_ctz(value);
 }
 
 static DN_FORCEINLINE(dn_simdhash_suffixes)
@@ -67,7 +67,8 @@ build_search_vector (uint8_t needle)
 	return result;
 }
 
-static DN_FORCEINLINE(int)
+// returns an index in range 0-14 on match, 32 if no match
+static DN_FORCEINLINE(uint32_t)
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
 #if defined(__wasm_simd128__)
@@ -106,7 +107,7 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 // neither clang or gcc, but we have SSE2 available, so assume this is MSVC on x86 or x86-64
 // msvc neon intrinsics don't seem to expose a 128-bit wide vector so there's no neon in here
 
-static DN_FORCEINLINE(int)
+static DN_FORCEINLINE(uint32_t)
 ctz (uint32_t value)
 {
 	uint32_t result = 0;
@@ -137,7 +138,8 @@ build_search_vector (uint8_t needle)
 	return result;
 }
 
-static DN_FORCEINLINE(int)
+// returns an index in range 0-14 on match, 32 if no match
+static DN_FORCEINLINE(uint32_t)
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
 	// FIXME: Completely untested.
@@ -162,7 +164,8 @@ build_search_vector (uint8_t needle)
 	return result;
 }
 
-static DN_FORCEINLINE(int)
+// returns an index in range 0-14 on match, 32 if no match
+static DN_FORCEINLINE(uint32_t)
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
 	for (uint32_t i = 0, c = dn_simdhash_bucket_count(haystack); i < c; i++)

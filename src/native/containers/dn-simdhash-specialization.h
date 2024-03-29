@@ -74,10 +74,10 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn
 	//  and our bucket size may not be properly aligned either :(
 	memcpy(&suffixes, &bucket->suffixes, sizeof(dn_simdhash_suffixes));
 
-	int index = find_first_matching_suffix(search_vector, suffixes);
+	uint32_t index = find_first_matching_suffix(search_vector, suffixes);
 	DN_SIMDHASH_KEY_T *key = &bucket->keys[index];
 
-	for (int count = dn_simdhash_bucket_count(suffixes); index < count; index++, key++) {
+	for (uint32_t count = dn_simdhash_bucket_count(suffixes); index < count; index++, key++) {
 		if (DN_SIMDHASH_KEY_EQUALS(needle, *key))
 			return index;
 	}
