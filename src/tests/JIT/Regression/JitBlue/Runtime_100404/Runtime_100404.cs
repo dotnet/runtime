@@ -6,10 +6,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using Xunit;
 
-public static class Runtime_98068
+public static class Runtime_100404
 {
     [Fact]
-    public static void Main(string[] args)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void TestMultiplyVector128DoubleByConstant()
     {
         Vector128<double> result = Map(Vector128<double>.One, new FloatPoint(2.0, 3.0));
         Assert.Equal(2.0, result[0]);
