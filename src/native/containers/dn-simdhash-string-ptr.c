@@ -192,7 +192,7 @@ dn_simdhash_string_ptr_try_remove (dn_simdhash_string_ptr_t *hash, const char *k
 
 // FIXME: Find a way to make this easier to define
 void
-dn_simdhash_string_ptr_foreach (dn_simdhash_string_ptr_t *hash, dn_simdhash_foreach_func func, void *user_data)
+dn_simdhash_string_ptr_foreach (dn_simdhash_string_ptr_t *hash, dn_simdhash_string_ptr_foreach_func func, void *user_data)
 {
 	assert(hash);
 	assert(func);
@@ -207,7 +207,7 @@ dn_simdhash_string_ptr_foreach (dn_simdhash_string_ptr_t *hash, dn_simdhash_fore
 		for (uint32_t j = 0; j < c; j++) {
 			DN_SIMDHASH_KEY_T *key = &bucket_address->keys[j];
 			DN_SIMDHASH_VALUE_T value = *address_of_value(buffers, value_slot_base + j);
-			func((void *)key->text, value, user_data);
+			func(key->text, value, user_data);
 		}
 	}
 }

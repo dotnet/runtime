@@ -532,3 +532,21 @@ DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T
 
 	return 0;
 }
+
+void
+DN_SIMDHASH_FOREACH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_FOREACH_FUNC(DN_SIMDHASH_T) func, void *user_data)
+{
+	assert(hash);
+	assert(func);
+
+	dn_simdhash_buffers_t buffers = hash->buffers;
+	bucket_t *bucket_address = address_of_bucket(buffers, 0);
+	for (
+		uint32_t i = 0, bc = buffers.buckets_length, value_slot_base = 0;
+		i < bc; i++, bucket_address++, value_slot_base += DN_SIMDHASH_BUCKET_CAPACITY
+	) {
+		uint32_t c = dn_simdhash_bucket_count(bucket_address->suffixes);
+		for (uint32_t j = 0; j < c; j++)
+			func(bucket_address->keys[j], *address_of_value(buffers, value_slot_base + j), user_data);
+	}
+}

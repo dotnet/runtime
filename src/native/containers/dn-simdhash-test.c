@@ -41,8 +41,8 @@ uint8_t tasserteq (size_t actual, size_t expected, const char *msg) {
 	return 0;
 }
 
-void foreach_callback (void * key, void * value, void * user_data) {
-	printf("[%zd, %zd]\n", (size_t)key, (size_t)value);
+void foreach_callback (size_t key, size_t value, void * user_data) {
+	printf("[%zd, %zd]\n", key, value);
 }
 
 int main () {
@@ -65,7 +65,7 @@ int main () {
 		return 1;
 
 	printf ("Calling foreach:\n");
-	dn_simdhash_foreach(test, foreach_callback, NULL);
+	dn_simdhash_size_t_size_t_foreach(test, foreach_callback, NULL);
 
 	uint32_t final_capacity = dn_simdhash_capacity(test);
 
@@ -94,7 +94,7 @@ int main () {
 		return 1;
 
 	printf ("Calling foreach after emptying:\n");
-	dn_simdhash_foreach(test, foreach_callback, NULL);
+	dn_simdhash_size_t_size_t_foreach(test, foreach_callback, NULL);
 
 	for (int i = 0; i < c; i++) {
 		DN_SIMDHASH_KEY_T key = *dn_vector_index_t(keys, DN_SIMDHASH_KEY_T, i);
@@ -124,7 +124,7 @@ int main () {
 	}
 
 	printf ("Calling foreach after refilling:\n");
-	dn_simdhash_foreach(test, foreach_callback, NULL);
+	dn_simdhash_size_t_size_t_foreach(test, foreach_callback, NULL);
 
 	printf("done\n");
 

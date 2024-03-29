@@ -138,6 +138,4 @@ dn_simdhash_count (dn_simdhash_t *hash);
 void
 dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity);
 
-typedef void (*dn_simdhash_foreach_func) (void * key, void * value, void* user_data);
-
 #endif // __DN_SIMDHASH_H__
