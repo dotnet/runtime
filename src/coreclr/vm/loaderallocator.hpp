@@ -641,6 +641,7 @@ public:
 
     // The default implementation is a no-op. Only collectible loader allocators implement this method.
     virtual void RegisterHandleForCleanup(OBJECTHANDLE /* objHandle */) { }
+    virtual void RegisterHandleForCleanupLocked(OBJECTHANDLE /* objHandle*/ ) {}
     virtual void UnregisterHandleFromCleanup(OBJECTHANDLE /* objHandle */) { }
     virtual void CleanupHandles() { }
 
@@ -896,6 +897,7 @@ public:
 
 #if !defined(DACCESS_COMPILE)
     virtual void RegisterHandleForCleanup(OBJECTHANDLE objHandle);
+    virtual void RegisterHandleForCleanupLocked(OBJECTHANDLE objHandle);
     virtual void UnregisterHandleFromCleanup(OBJECTHANDLE objHandle);
     virtual void CleanupHandles();
     CustomAssemblyBinder* GetBinder()
