@@ -213,6 +213,8 @@ namespace ILCompiler.ObjectWriter
             IDictionary<string, SymbolDefinition> definedSymbols,
             SortedSet<string> undefinedSymbols)
         {
+            Feat00Flags feat00Flags = Feat00Flags.SafeSEH;
+
             foreach (var (symbolName, symbolDefinition) in definedSymbols)
             {
                 if (_symbolNameToIndex.TryGetValue(symbolName, out uint symbolIndex))
@@ -253,15 +255,17 @@ namespace ILCompiler.ObjectWriter
                     gfidsSectionWriter.WriteLittleEndian<uint>(_symbolNameToIndex[symbolName]);
                 }
 
-                // Emit the feat.00 symbol that controls various linker behaviors
-                _symbols.Add(new CoffSymbol
-                {
-                    Name = "@feat.00",
-                    StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
-                    SectionIndex = uint.MaxValue, // IMAGE_SYM_ABSOLUTE
-                    Value = 0x800, // cfGuardCF flags this object as control flow guard aware
-                });
+                feat00Flags |= Feat00Flags.ControlFlowGuard;
             }
+
+            // Emit the feat.00 symbol that controls various linker behaviors
+            _symbols.Add(new CoffSymbol
+            {
+                Name = "@feat.00",
+                StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
+                SectionIndex = uint.MaxValue, // IMAGE_SYM_ABSOLUTE
+                Value = (uint)feat00Flags,
+            });
         }
 
         private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
@@ -1117,6 +1121,15 @@ namespace ILCompiler.ObjectWriter
                 }
                 return crc;
             }
+        }
+
+        private enum Feat00Flags : uint
+        {
+            SafeSEH = 1,
+            StackGuard = 0x100,
+            SoftwareDevelopmentLifecycle = 0x200,
+            ControlFlowGuard = 0x800,
+            ExceptionContinuationMetadata = 0x4000,
         }
     }
 }
