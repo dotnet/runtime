@@ -49,7 +49,7 @@ static_assert (DN_SIMDHASH_BUCKET_CAPACITY > 1, "Bucket capacity too low");
 // FIXME: Is it already implicitly aligned due to hosting dn_simdhash_suffixes?
 
 #ifdef _MSC_VER
-typedef struct alignas(DN_SIMDHASH_VECTOR_WIDTH) bucket_t {
+typedef struct __declspec(align(DN_SIMDHASH_VECTOR_WIDTH)) bucket_t {
 #else
 typedef struct bucket_t {
 #endif
