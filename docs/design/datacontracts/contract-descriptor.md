@@ -21,7 +21,7 @@ The contract descriptor consists of the follow structure.  All multi-byte values
 struct DotNetRuntimeContractDescriptor
 {
     uint64_t magic;
-    uint32_t size_and_flags;
+    uint32_t flags;
     uint32_t aux_data_count;
     uint32_t descriptor_size;
     uint32_t reserved;
@@ -41,7 +41,7 @@ The `magic` is `0x44_4e_43_43_44_41_43_00` ("DNCCDAC\0") stored using the target
 endianness. (N.B. this is sufficient to discover the target architecture endianness by comparing the
 value in memory to `0x44_4e_43_43_44_41_43_00` and to `0x00_43_41_44_43_43_4e_44`)
 
-Flags.  The following bits are defined:
+The following `flags` bits are defined:
 
 | Bits 31-3 | Bit 2  | Bit 1   | Bit 0 |
 | --------- | ------ | ------- | ----- |
@@ -58,7 +58,7 @@ The `descriptor` is a pointer to a json string described in [data descriptor phy
 
 The auxiliary data for the JSON descriptor is stored at the location `aux_data` in `aux_data_count` 64-bit slots.
 
-The `next_runtime` field is used to support multiple .NET runtimes in a single process.  See below.
+The `runtime_name` and `next_runtime` fields are used to support multiple .NET runtimes in a single process.  See below.
 
 ### Compatible contracts
 
