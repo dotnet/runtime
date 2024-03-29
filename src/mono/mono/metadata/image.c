@@ -1970,7 +1970,7 @@ free_hash_table (gpointer key, gpointer val, gpointer user_data)
 }
 
 static void
-free_simdhash_table (gpointer key, gpointer val, gpointer user_data)
+free_simdhash_table (const char *key, gpointer val, gpointer user_data)
 {
 	dn_simdhash_free ((dn_simdhash_t*)val);
 }

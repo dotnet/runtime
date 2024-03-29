@@ -3160,9 +3160,8 @@ typedef struct {
 } FindAllUserData;
 
 static void
-find_all_nocase (gpointer key, gpointer value, gpointer user_data)
+find_all_nocase (const char *name, gpointer value, gpointer user_data)
 {
-	char *name = (char*)key;
 	FindAllUserData *data = (FindAllUserData*)user_data;
 	if (mono_utf8_strcasecmp (name, (char*)data->key) == 0)
 		data->values = g_slist_prepend (data->values, value);
@@ -3174,9 +3173,8 @@ typedef struct {
 } FindUserData;
 
 static void
-find_nocase (gpointer key, gpointer value, gpointer user_data)
+find_nocase (const char *name, gpointer value, gpointer user_data)
 {
-	char *name = (char*)key;
 	FindUserData *data = (FindUserData*)user_data;
 
 	if (!data->value && (mono_utf8_strcasecmp (name, (char*)data->key) == 0))
