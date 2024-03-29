@@ -126,8 +126,33 @@ compact.  The in-memory descriptor will typically be compact.
 The toplevel dictionary will contain:
 
 * `"version": 0`
+* optional `"baseline": "BASELINE_ID"` see below
 * `"types": TYPES_DESCRIPTOR` see below
 * `"globals": GLOBALS_DESCRIPTOR` see below
+
+### Baseline data descriptor identifier
+
+The in-memory descriptor may contain an optional string identifying a well-known baseline
+descriptor.  The identifier is an arbitrary string, that could be used, for example to tag a
+collection of globals and data structure layouts present in a particular release of a .NET runtime
+for a certain architecture (for example `net9.0/coreclr/linux-arm64`).  Global values and data structure
+layouts present in the data contract descriptor take precedence over the baseline contract.  This
+way variant builds can be specified as a delta over a baseline.  For example, debug builds of
+CoreCLR that include additional fields in a `MethodTable` data structure could be based on the same
+baseline as Release builds, but with the in-memory data descriptor augmented with new `MethodTable`
+fields and additional structure descriptors.
+
+It is not a requirement that the baseline is chosen so that additional "delta" is the smallest
+possible size, although for practical purposes that may be desired.
+
+Data descriptors are registered as "well known" by checking them into the main branch of
+`dotnet/runtime` in the `docs/design/datacontracts/data/` directory in the JSON format specified
+in the [data descriptor spec](./data_descriptor.md#Physical_JSON_Descriptor).  The relative path name (with `/` as the path separator, if any) of the descriptor without
+any extension is the identifier.  (for example:
+`/docs/design/datacontracts/data/net9.0/coreclr/linux-arm64.json` is the filename for the data
+descriptor with identifier `net9.0/coreclr/linux-arm64`)
+
+The baseline descriptors themselves must not have a baseline.
 
 ### Types descriptor
 
@@ -161,10 +186,10 @@ If the key is any other string, the value may be one of:
 
 Unknown offsets are not supported in the compact format.
 
-Rationale: the compact format is expected ot be used for the in-memory data descriptor. In the
+Rationale: the compact format is expected to be used for the in-memory data descriptor. In the
 common case the field type is known from the baseline descriptor. As a result, a field descriptor
 like `"field_name": 36` is the minimum necessary information to be conveyed.  If the field is not
-present in the baseline, then `"field_name": [12, "uint16"]` may be used.
+present in the baseline, then `"field_name": [12, "uint16"]` must be used.
 
 **Both formats**:
 
@@ -199,7 +224,7 @@ The global values will be in a dictionary, with each key being the name of a glo
 As in the regular format, `VALUE` is a numeric constant or a string containing an integer constant.
 
 Note that a two element array is unambiguously "type and value", whereas a one-element array is
-unambiguosly "indirect value".
+unambiguously "indirect value".
 
 **Both formats**
 
@@ -306,7 +331,7 @@ And the globals will be:
 | s_pThreadStore      | pointer | 0x0100ffe0 |
 
 The `FEATURE_EH_FUNCLETS` global's value comes from the baseline - not the in-memory data
-descriptor.  By contrast, `FEATUER_COMINTEROP` comes from the in-memory data descriptor - with the
+descriptor.  By contrast, `FEATURE_COMINTEROP` comes from the in-memory data descriptor - with the
 value embedded directly in the json since it is known at build time and does not vary.  Finally the
 value of the pointer `s_pThreadStore` comes from the auxiliary vector's offset 0 since it is an
 execution-time value that is only known to the running process.

@@ -24,33 +24,16 @@ relevant to one or more algorithmic contracts.
 
 More details are provided in the [data descriptor spec](./data_descriptor.md).  We highlight some important aspects below:
 
-#### Baseline data descriptor identifier
-
-An optional string identifying a well-known record of global values and data structure layouts.  The
-identifier is an arbitrary string, that could be used, for example to tag a collection of globals
-and data structure layouts present in a particular release of a .NET runtime for a certain
-architecture (for example `net9.0-rc1/Release/linux-arm64`).  Global values and data structure
-layouts present in the data contract descriptor take precedence over the baseline contract.  This
-way variant builds can be specified as a delta over a baseline.  For example, debug builds of
-CoreCLR that include additional fields in a `MethodTable` data structure could be based on the
-Release data descriptor augmented with new `MethodTable` and other structure descriptors.
-
-It is not a requirement that the baseline is chosen so that additional "delta" is the smallest
-possible size, although for practical purposes that may be desired.
-
-Data descriptors are registered as "well known" by checking them into the main branch of
-`dotnet/runtime` in the `docs/design/datacontracts/data/` directory in the JSON format specified
-in the [data descriptor spec](./data_descriptor.md#Physical_JSON_Descriptor).  The relative path name (with `/` as the path separator, if any) of the descriptor without
-any extension is the identifier.  (for example:
-`/docs/design/datacontracts/data/net9.0/coreclr/linux-arm64.json` is the filename for the data
-descriptor with identifier `net9.0/coreclr/linux-arm64`)
-
 #### Global Values
-Global values which can be of types (int8, uint8, int16, uint16, int32, uint32, int64, uint64, pointer, nint, nuint)
+
+Global values which can be either primitive integer constants or pointers.
 All global values have a string describing their name, a type, and a value of one of the above types.
 
 #### Data Structure Layout
-Each data structure layout has a name for the type, followed by a list of fields. These fields can be of primitive types (int8, uint8, int16, uint16, int32, uint32, int64, uint64, nint, nuint, pointer) or of another named data structure type. Each field descriptor provides the offset of the field, the name of the field, and the type of the field.
+
+Each data structure layout has a name for the type, followed by a list of fields. These fields can
+be primitive integer types or pointers or another named data structure type. Each field descriptor
+provides the offset of the field, the name of the field, and the type of the field.
 
 Data structures may have a determinate size, specified in the descriptor, or an indeterminate size.
 Determinate sizes are used by contracts for pointer arithmetic such as for iterating over arrays.
@@ -75,7 +58,7 @@ Algorithmic contracts define how to process a given set of data structures to pr
 
 It is entirely reasonable for an algorithmic contract to have multiple entrypoints which take different inputs. For example imagine a contract which provides information about a `MethodTable`. It may provide the an api to get the `BaseSize` of a `MethodTable`, and an api to get the `DynamicTypeID` of a `MethodTable`. However, while the set of contracts which describe an older version of .NET may provide a means by which the `DynamicTypeID` may be acquired for a `MethodTable`, a newer runtime may not have that concept. In such a case, it is very reasonable to define that the `GetDynamicTypeID` api portion of that contract is defined to simply `throw new NotSupportedException();`
 
-For simplicity, as it can be expected that all developers who work on the .NET runtime understand C# to a fair degree, it is preferred that the algorithms be defined in C#, or at least psuedocode that looks like C#. It is also condsidered entirely permissable to refer to other specifications if the algorithm is a general purpose one which is well defined by the OS or some other body. (For example, it is expected that the unwinding algorithms will be defined by references into either the DWARF spec, or various Windows Unwind specifications.)
+For simplicity, as it can be expected that all developers who work on the .NET runtime understand C# to a fair degree, it is preferred that the algorithms be defined in C#, or at least psuedocode that looks like C#. It is also considered entirely permissible to refer to other specifications if the algorithm is a general purpose one which is well defined by the OS or some other body. (For example, it is expected that the unwinding algorithms will be defined by references into either the DWARF spec, or various Windows Unwind specifications.)
 
 For working with data from the target process/other contracts, the following C# interface is intended to be used within the algorithmic descriptions:
 
@@ -84,16 +67,16 @@ Best practice is to either write the algorithm in C# like psuedocode working on 
 Algorithmic contracts may include specifications for numbers which can be referred to in the contract or by other contracts. The intention is that these global values represent magic numbers and values which are useful for the operation of algorithmic contracts.
 
 While not all versions of a data structure are required to have the same fields/type of fields,
-algorithms may be built targetting the union of the set of field types defined in the data structure
+algorithms may be built targeting the union of the set of field types defined in the data structure
 descriptors of possible target runtimes. Access to a field which isn't defined on the current
 runtime will produce an error.
 
 
 ## Arrangement of contract specifications in the repo
 
-Specs shall be stored in the repo in a set of directories. `docs/design/datacontracts` Each one of them shall be a seperate markdown file named with the name of contract. `docs/design/datacontracts/<contract_name>.md` Every version of each contract shall be located in the same file to facilitate understanding how variations between different contracts work.
+Specs shall be stored in the repo in a set of directories. `docs/design/datacontracts` Each one of them shall be a separate markdown file named with the name of contract. `docs/design/datacontracts/<contract_name>.md` Every version of each contract shall be located in the same file to facilitate understanding how variations between different contracts work.
 
-### Algorthmic Contract
+### Algorithmic Contract
 
 Algorithmic contracts describe how an algorithm that processes over data layouts work. Every version of an algorithmic contract presents a consistent api to consumers of the contract.
 
