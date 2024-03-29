@@ -46,6 +46,7 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
             CrstHolder ch(&m_Crst);
 
             _ASSERT(type != nullptr);
+            _ASSERT(!type->Collectible());
             _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
 
             // Currently we don't support frozen objects with special alignment requirements
