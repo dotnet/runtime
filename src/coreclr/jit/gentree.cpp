@@ -24520,18 +24520,11 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
             assert(elementSize <= 2);
 
-            // if we have elementSize > 1, we need to convert op2 (short/long indices) to byte indices
+            // if we have elementSize > 1, we need to convert op2 (short indices) to byte indices
             if (elementSize > 1)
             {
-                // the below is implemented for integral types
-                if (varTypeIsFloating(simdBaseType))
-                {
-                    assert(elementSize == 8);
-                    simdBaseJitType = CORINFO_TYPE_ULONG;
-                }
-
-                // shift all indices to the left by tzcnt(size)
-                cnsNode = gtNewIconNode(BitOperations::TrailingZeroCount(static_cast<uint64_t>(elementSize)), TYP_INT);
+                // shift all indices to the left by tzcnt(size) = 1
+                cnsNode = gtNewIconNode(1, TYP_INT);
                 op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_AVX2_ShiftLeftLogical, simdBaseJitType, simdSize);
 
                 // the below are implemented with byte/sbyte
@@ -24552,8 +24545,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
                 op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
 
-                // or every second index with 1 (short), or 0, 1, 2, 3, 4, 5, 6, 7 repeating for long
-
+                // or every second index with 1 (short)
                 simd_t orCns = {};
                 for (size_t index = 0; index < simdSize; index++)
                 {
@@ -24579,8 +24571,13 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             cnsNode                        = gtNewVconNode(type);
             cnsNode->AsVecCon()->gtSimdVal = xorCns;
 
+            GenTree* op2Dup1 = fgMakeMultiUse(&op2);
+            GenTree* op2Dup2 = fgMakeMultiUse(&op2Dup1);
+            GenTree* op1Dup1 = fgMakeMultiUse(&op1);
+            GenTree* op1Dup2 = fgMakeMultiUse(&op1Dup1);
+
             GenTree* indicesXord =
-                gtNewSimdBinOpNode(GT_XOR, type, fgMakeMultiUse(&op2), cnsNode, simdBaseJitType, simdSize);
+                gtNewSimdBinOpNode(GT_XOR, type, op2Dup2, cnsNode, simdBaseJitType, simdSize);
             cnsNode = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(0x9F, TYP_INT), CORINFO_TYPE_UBYTE, simdSize);
             indicesXord = gtNewSimdBinOpNode(GT_AND, type, indicesXord, cnsNode, simdBaseJitType, simdSize);
 
@@ -24589,15 +24586,15 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             // Vector256<byte> swap = Avx2.Permute2x128(vector, vector, 0b00000001);
             uint8_t control = 1;
             cnsNode         = gtNewIconNode(control, TYP_INT);
-            GenTree* swap   = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&op1), fgMakeMultiUse(&op1), cnsNode,
+            GenTree* swap   = gtNewSimdHWIntrinsicNode(type, op1Dup1, op1Dup2, cnsNode,
                                                      NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
 
             // shuffle with both the normal and swapped values
             // Vector256<byte> shuf1 = Avx2.Shuffle(vector, indices);
             // Vector256<byte> shuf2 = Avx2.Shuffle(swap, indices);
             GenTree* shuf1 =
-                gtNewSimdHWIntrinsicNode(type, op1, fgMakeMultiUse(&op2), NI_AVX2_Shuffle, simdBaseJitType, simdSize);
-            GenTree* shuf2 = gtNewSimdHWIntrinsicNode(type, swap, op2, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
+                gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
+            GenTree* shuf2 = gtNewSimdHWIntrinsicNode(type, swap, op2Dup1, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
 
             // compare our modified indices to 0x0F (highest value not swapping lane), we get 0xFF when we are swapping
             // lane and 0x00 otherwise
@@ -25003,9 +25000,11 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                 // create the permutation node
                 // if we have 16, then we don't need to actually permute, since that's what we start with
                 if (control != 16)
-                {
+                {  
+                    GenTree* retNodeDup = fgMakeMultiUse(&retNode);
+
                     cnsNode = gtNewIconNode(control);
-                    retNode = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&retNode), retNode, cnsNode,
+                    retNode = gtNewSimdHWIntrinsicNode(type, retNode, retNodeDup, cnsNode,
                                                        NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
                 }
 
@@ -25015,16 +25014,19 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                     op2                        = gtNewVconNode(type);
                     op2->AsVecCon()->gtSimdVal = vecCns;
 
-                    retNode = gtNewSimdHWIntrinsicNode(type, retNode, fgMakeMultiUse(&op2), NI_AVX2_Shuffle,
+                    retNode = gtNewSimdHWIntrinsicNode(type, retNode, op2, NI_AVX2_Shuffle,
                                                        simdBaseJitType, simdSize);
                 }
             }
             else
             {
+                GenTree* op1Dup1 = fgMakeMultiUse(&op1);
+                GenTree* op1Dup2 = fgMakeMultiUse(&op1Dup1);
+
                 // create the control for swapping
                 uint8_t control = 1; // 0b00000001
                 cnsNode         = gtNewIconNode(control);
-                GenTree* swap   = gtNewSimdHWIntrinsicNode(type, fgMakeMultiUse(&op1), fgMakeMultiUse(&op1), cnsNode,
+                GenTree* swap   = gtNewSimdHWIntrinsicNode(type, op1, op1Dup1, cnsNode,
                                                          NI_AVX2_Permute2x128, simdBaseJitType, simdSize);
 
                 // if we have non-default shuffle mask
@@ -25034,10 +25036,12 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                     op2                        = gtNewVconNode(type);
                     op2->AsVecCon()->gtSimdVal = vecCns;
 
+                    GenTree* op2Dup = fgMakeMultiUse(&op2);
+
                     // shuffle both op1 and swap(op1)
-                    op1 = gtNewSimdHWIntrinsicNode(type, op1, fgMakeMultiUse(&op2), NI_AVX2_Shuffle, simdBaseJitType,
+                    op1 = gtNewSimdHWIntrinsicNode(type, op1Dup2, op2, NI_AVX2_Shuffle, simdBaseJitType,
                                                    simdSize);
-                    swap = gtNewSimdHWIntrinsicNode(type, swap, op2, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
+                    swap = gtNewSimdHWIntrinsicNode(type, swap, op2Dup, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
                 }
 
                 // select the appropriate values
