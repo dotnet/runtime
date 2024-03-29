@@ -15,6 +15,81 @@ namespace Internal.Runtime.CompilerHelpers
     [StackTraceHidden]
     internal static partial class MathHelpers
     {
+        private const double IntMaxValueOffset = 2147483648.0; // 2^31, int.MaxValue + 1
+        private const double UIntMaxValueOffset = 4294967296.0; // 2^32, uint.MaxValue + 1
+
+        [RuntimeExport("Dbl2IntOvf")]
+        public static int Dbl2IntOvf(double value)
+        {
+            // Note that this expression also works properly for val = NaN case
+            if (value is > -IntMaxValueOffset - 1 and < IntMaxValueOffset)
+            {
+                int ret = (int)value;
+                // since no overflow can occur, the value always has to be within 1
+                Debug.Assert(value - 1.0 <= ret);
+                Debug.Assert(ret <= value + 1.0);
+                return ret;
+            }
+
+            ThrowHelper.ThrowOverflowException();
+            return 0;
+        }
+
+        [RuntimeExport("Dbl2UIntOvf")]
+        public static uint Dbl2UIntOvf(double value)
+        {
+            // Note that this expression also works properly for val = NaN case
+            if (value is > -1.0 and < UIntMaxValueOffset)
+            {
+                uint ret = (uint)value;
+                // since no overflow can occur, the value always has to be within 1
+                Debug.Assert(value - 1.0 <= ret);
+                Debug.Assert(ret <= value + 1.0);
+                return ret;
+            }
+
+            ThrowHelper.ThrowOverflowException();
+            return 0;
+        }
+
+        [RuntimeExport("Dbl2LngOvf")]
+        public static long Dbl2LngOvf(double value)
+        {
+            const double two63 = IntMaxValueOffset * UIntMaxValueOffset;
+
+            // Note that this expression also works properly for val = NaN case
+            // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
+            if (value is > -two63 - 0x402 and < two63)
+            {
+                long ret = (long)value;
+                // since no overflow can occur, the value always has to be within 1
+                Debug.Assert(value - 1.0 <= ret);
+                Debug.Assert(ret <= value + 1.0);
+                return ret;
+            }
+
+            ThrowHelper.ThrowOverflowException();
+            return 0;
+        }
+
+        [RuntimeExport("Dbl2ULngOvf")]
+        public static ulong Dbl2ULngOvf(double value)
+        {
+            const double two64 = UIntMaxValueOffset * UIntMaxValueOffset;
+            // Note that this expression also works properly for val = NaN case
+            if (value is > -1.0 and < two64)
+            {
+                ulong ret = (ulong)value;
+                // since no overflow can occur, the value always has to be within 1
+                Debug.Assert(value - 1.0 <= ret);
+                Debug.Assert(ret <= value + 1.0);
+                return ret;
+            }
+
+            ThrowHelper.ThrowOverflowException();
+            return 0;
+        }
+
 #if !TARGET_64BIT
         //
         // 64-bit checked multiplication for 32-bit platforms
