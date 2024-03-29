@@ -513,9 +513,11 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 
     // The initial validation is copied from AllocateSzArray impl
 
-    if (pArrayMT->ContainsPointers() && cElements > 0)
+    if (pArrayMT->Collectible() || (pArrayMT->ContainsPointers() && cElements > 0))
     {
-        // For arrays with GC pointers we can only work with empty arrays
+        // We cannot allocate in the frozen heap if:
+        // - the array type is collectible
+        // - or for non empty arrays with GC pointers
         return NULL;
     }
 
@@ -1122,7 +1124,7 @@ OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT)
 
     SetTypeHandleOnThreadForAlloc(TypeHandle(pObjMT));
 
-    if (pObjMT->ContainsPointers() || pObjMT->IsComObjectType())
+    if (pObjMT->Collectible() || pObjMT->ContainsPointers() || pObjMT->IsComObjectType())
     {
         return NULL;
     }
