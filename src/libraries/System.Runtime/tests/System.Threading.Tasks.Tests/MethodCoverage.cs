@@ -1030,7 +1030,6 @@ namespace TaskCoverage
                 Assert.False(moveNext.IsCompleted);
                 tcs.SetResult(42);
                 Assert.True(await moveNext);
-                Assert.True(moveNext.Result);
                 Assert.Same(tcs.Task, e.Current);
             }
 
