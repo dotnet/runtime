@@ -24838,7 +24838,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
     // we want to match ShuffleUnsafe behaviour with constants to with variable,
     // therefore we need to make sure we treat where we should get 0s the same as what ShuffleUnsafe uses
-    uint64_t preCmpValueMask = (static_cast<uint64_t>(1) << (static_cast<uint64_t>(elementSize) * 8)) - 1;
+    uint64_t preCmpValueMask = (static_cast<uint64_t>(1) << (elementSize * 8 - 1)) * 2 - 1;
     uint64_t maxNonZeroIndex = static_cast<uint64_t>(elementCount); // exclusive
     uint64_t valueMask       = static_cast<uint64_t>(elementCount - 1);
     if (isUnsafe)
