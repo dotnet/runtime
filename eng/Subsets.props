@@ -500,7 +500,7 @@
 
   <!-- Host.pretest subset (consumes live built libraries assets so needs to come after libraries) -->
   <ItemGroup Condition="$(_subset.Contains('+host.pretest+'))">
-    <ProjectToBuild Include="$(InstallerProjectRoot)tests\Assets\Projects\**\*.csproj" Category="host" />
+    <ProjectToBuild Include="$(InstallerProjectRoot)tests\pretest.proj" Category="host" />
   </ItemGroup>
 
   <!-- Host.tests subset (consumes live built libraries assets so needs to come after libraries) -->
