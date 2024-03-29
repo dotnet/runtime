@@ -225,10 +225,12 @@ dn_simdhash_meta_t DN_SIMDHASH_T_META = {
 DN_SIMDHASH_T_PTR
 DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator)
 {
-	bucket_t buckets[2];
-	const ptrdiff_t bucket_gap = (uint8_t *)&buckets[1] - (uint8_t *)&buckets[0];
 	// If this isn't satisfied, the generic code will allocate incorrectly sized buffers
-	assert(bucket_gap == sizeof(bucket_t));
+	// HACK: Use static_assert because for some reason assert produces unused variable warnings only on CI
+	static_assert(
+		sizeof(struct { bucket_t a, b; }) == (sizeof(bucket_t) * 2),
+		"Inconsistent spacing/sizing for bucket_t"
+	);
 
 	return dn_simdhash_new_internal(DN_SIMDHASH_T_META, DN_SIMDHASH_T_VTABLE, capacity, allocator);
 }
