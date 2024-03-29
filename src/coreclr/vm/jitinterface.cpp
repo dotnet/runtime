@@ -7799,8 +7799,8 @@ static void getMethodInfoHelper(
             {
                 methInfo->options = CorInfoOptions(methInfo->options|CORINFO_GENERICS_CTXT_KEEP_ALIVE);
             }
-        }
 #endif // defined(PROFILING_SUPPORTED)
+        }
     }
 
     PCCOR_SIGNATURE pSig = NULL;
