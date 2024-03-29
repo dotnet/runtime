@@ -8,7 +8,7 @@ scenario, a diagnostic tool such as a debugger may have access to a target .NET 
 dump of such a process) from which it may request to read and write certain regions of memory.
 
 This document describes a mechanism by which a diagnostic tool may acquire the following information:
-* some details about the target process' architecture 
+* some details about the target process' architecture
 * a collection of types and their sizes and/or the offsets of certain fields within each type
 * a collection of global values
 * a collection of /algorithmic contracts/ that are satisfied by the target process
@@ -16,7 +16,7 @@ This document describes a mechanism by which a diagnostic tool may acquire the f
 ## Contract descriptor
 
 The contract descriptor consists of the follow structure.  All multi-byte values are in target architecture endianness.
-    
+
 ```c
 struct DotNetRuntimeContractDescriptor
 {
