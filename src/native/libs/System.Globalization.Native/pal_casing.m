@@ -11,7 +11,7 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 /**
  * Is this code unit a lead surrogate (U+d800..U+dbff)?
  * @param c 16-bit code unit

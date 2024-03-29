@@ -64,6 +64,7 @@ public class AssetsComputingHelper
             ".dat" when invariantGlobalization && fileName.StartsWith("icudt") => "invariant globalization is enabled",
             ".dat" when loadFullICUData && fileName != "icudt" => "full ICU data is enabled",
             ".dat" when hybridGlobalization && fileName != "icudt_hybrid" => "hybrid globalization is enabled",
+            ".json" when !hybridGlobalization && fileName == "segmentation-rules" => "segmentation-rules.json file is only used when hybrid globalization is enabled",
             ".dat" when !string.IsNullOrEmpty(customIcuCandidateFilename) && fileName != customIcuCandidateFilename => "custom icu file either from absolute path or from runtime pack path will be used",
             ".dat" when IsDefaultIcuMode() && !(icuShardsFromRuntimePack.Any(f => f == fileName)) => "automatic icu shard selection, based on application culture, is enabled",
             ".json" when fromMonoPackage && (fileName == "wasm-props" || fileName == "package") => $"{fileName}{extension} is not used by Blazor",

@@ -518,6 +518,7 @@ void Compiler::gsParamsToShadows()
         GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
 
         fgEnsureFirstBBisScratch();
+        compCurBB = fgFirstBB; // Needed by some morphing
         (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
     }
 

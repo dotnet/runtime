@@ -3,12 +3,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
@@ -788,16 +786,10 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Stores additional data for tracking capture start and end positions.</summary>
         /// <remarks>The NFA simulation based third phase has one of these for each current state in the current set of live states.</remarks>
-        internal struct Registers
+        internal struct Registers(int[] captureStarts, int[] captureEnds)
         {
-            public Registers(int[] captureStarts, int[] captureEnds)
-            {
-                CaptureStarts = captureStarts;
-                CaptureEnds = captureEnds;
-            }
-
-            public int[] CaptureStarts { get; set; }
-            public int[] CaptureEnds { get; set; }
+            public int[] CaptureStarts { get; set; } = captureStarts;
+            public int[] CaptureEnds { get; set; } = captureEnds;
 
             /// <summary>
             /// Applies a list of effects in order to these registers at the provided input position. The order of effects

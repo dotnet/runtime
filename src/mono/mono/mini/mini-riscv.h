@@ -62,6 +62,7 @@ extern gboolean riscv_stdext_a, riscv_stdext_b, riscv_stdext_c, riscv_stdext_d, 
 #define MONO_ARCH_CALLEE_REGS        (0b11110000000000111111110000000000)
 #define MONO_ARCH_CALLEE_SAVED_REGS  (0b00001111111111000000001100000000)
 #define MONO_ARCH_IS_CALLEE_SAVED_REG(reg) (MONO_ARCH_CALLEE_SAVED_REGS & (1 << (reg)))
+#define MONO_ARCH_EXC_ADDR_REG             (RISCV_T1)
 
 /**
  * callee saved regs + sp
@@ -111,7 +112,7 @@ extern gboolean riscv_stdext_a, riscv_stdext_b, riscv_stdext_c, riscv_stdext_d, 
 
 #endif
 
-#define MONO_ARCH_RGCTX_REG  (RISCV_T6)
+#define MONO_ARCH_RGCTX_REG  (RISCV_T2)
 #define MONO_ARCH_IMT_REG    MONO_ARCH_RGCTX_REG
 #define MONO_ARCH_VTABLE_REG (RISCV_A0)
 
@@ -166,7 +167,7 @@ extern gboolean riscv_stdext_a, riscv_stdext_b, riscv_stdext_c, riscv_stdext_d, 
 #define MONO_ARCH_GSHARED_SUPPORTED     (1)
 #define MONO_ARCH_INTERPRETER_SUPPORTED (1)
 //#define MONO_ARCH_AOT_SUPPORTED         (1)
-//#define MONO_ARCH_LLVM_SUPPORTED        (1)
+#define MONO_ARCH_LLVM_SUPPORTED        (1)
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED  (1)
 #define MONO_ARCH_FLOAT32_SUPPORTED		(1)
 
@@ -232,23 +233,27 @@ typedef struct {
 } CallContext;
 
 typedef enum {
+	ArgNone, // only in void return type
 	ArgInIReg = 0x01,
-	ArgOnStack,
 	ArgInFReg,
+	ArgR4InIReg,
+	ArgR8InIReg,
 #ifdef TARGET_RISCV64
 	ArgInFRegR4,
 #endif
+	ArgOnStack,
 	ArgOnStackR4,
 	ArgOnStackR8,
+	ArgHFA,
+
 	/*
 	 * Vtype passed in consecutive int registers.
 	 */
+	ArgVtypeInIReg,
 	ArgVtypeByRef,
 	ArgVtypeByRefOnStack,
 	ArgVtypeOnStack,
-	ArgVtypeInIReg,
-	ArgVtypeInMixed,
-	ArgNone // only in void return type
+	ArgVtypeInMixed
 } ArgStorage;
 
 typedef struct {
@@ -256,11 +261,18 @@ typedef struct {
 	/* ArgVtypeInIRegs */
 	guint8 reg;
 	int size;
-	guint8 is_regpair;
+	/* ArgVtypeInIRegs/ArgHFA */
+	guint8 nregs;
 	/* ArgOnStack */
 	int slot_size;
 	gint32 offset;
 	guint8 is_signed : 1;
+	/* ArgHFA */
+	int esize;
+	/* The offsets of the float values inside the arg */
+	guint16 foffsets [4];
+	int nfregs_to_skip;
+	gboolean hfa;
 } ArgInfo;
 
 struct CallInfo {
@@ -294,6 +306,11 @@ mono_riscv_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_reg
 
 __attribute__ ((warn_unused_result)) guint8 *
 mono_riscv_emit_imm (guint8 *code, int rd, gsize imm);
+
+__attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_float_imm (guint8 *code,
+                                                                        int rd,
+                                                                        gsize f_imm,
+                                                                        gboolean isSingle);
 
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_float_imm (guint8 *code,
                                                                         int rd,

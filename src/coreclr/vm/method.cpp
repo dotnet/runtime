@@ -89,18 +89,6 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
     METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(NativeCodeSlot)),
     METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot)),
     METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot)),
-
-#ifdef FEATURE_COMINTEROP
-    METHOD_DESC_SIZES(sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(ComPlusCallInfo)),
-
-    METHOD_DESC_SIZES(sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(ComPlusCallInfo))
-#endif
 };
 
 #ifndef FEATURE_COMINTEROP
@@ -203,21 +191,6 @@ CHECK MethodDesc::CheckActivated()
     WRAPPER_NO_CONTRACT;
     CHECK(GetModule()->CheckActivated());
     CHECK_OK;
-}
-
-//*******************************************************************************
-BaseDomain *MethodDesc::GetDomain()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return AppDomain::GetCurrentDomain();
 }
 
 #ifndef DACCESS_COMPILE
@@ -1060,7 +1033,7 @@ BOOL MethodDesc::IsVarArg()
 }
 
 //*******************************************************************************
-COR_ILMETHOD* MethodDesc::GetILHeader(BOOL fAllowOverrides /*=FALSE*/)
+COR_ILMETHOD* MethodDesc::GetILHeader()
 {
     CONTRACTL
     {
@@ -1073,9 +1046,8 @@ COR_ILMETHOD* MethodDesc::GetILHeader(BOOL fAllowOverrides /*=FALSE*/)
 
     Module *pModule = GetModule();
 
-    // Always pickup 'permanent' overrides like reflection emit, EnC, etc.
-    // but only grab temporary overrides (like profiler rewrites) if asked to
-    TADDR pIL = pModule->GetDynamicIL(GetMemberDef(), fAllowOverrides);
+    // Always pickup overrides like reflection emit, EnC, etc.
+    TADDR pIL = pModule->GetDynamicIL(GetMemberDef());
 
     if (pIL == NULL)
     {
@@ -2994,7 +2966,7 @@ bool MethodDesc::DetermineIsEligibleForTieredCompilationInvariantForAllMethodsIn
 #ifndef FEATURE_CODE_VERSIONING
     #error Tiered compilation requires code versioning
 #endif
-    return 
+    return
         // Policy
         g_pConfig->TieredCompilation() &&
 
@@ -3082,9 +3054,7 @@ bool MethodDesc::IsJitOptimizationDisabledForAllMethodsInChunk()
 
     return
         g_pConfig->JitMinOpts() ||
-#ifdef _DEBUG
         g_pConfig->GenDebuggableCode() ||
-#endif
         CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits());
 }
 
@@ -3593,8 +3563,10 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
     const void *target = GetModule()->GetInternalPInvokeTarget(GetRVA());
     _ASSERTE(target != 0);
 
+#ifdef FEATURE_IJW
     if (HeuristicDoesThisLookLikeAGetLastErrorCall((LPBYTE)target))
         target = (BYTE*)FalseGetLastError;
+#endif
 
     // As long as we've set the NDirect target field we don't need to backpatch the import thunk glue.
     // All NDirect calls all through the NDirect target, so if it's updated, then we won't go into

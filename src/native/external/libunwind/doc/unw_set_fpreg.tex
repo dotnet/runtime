@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\begin{Name}{3}{unw\_set\_fpreg}{David Mosberger-Tang}{Programming Library}{unw\_set\_fpreg}unw\_set\_fpreg -- set contents of floating-point register
+\begin{Name}{3libunwind}{unw\_set\_fpreg}{David Mosberger-Tang}{Programming Library}{unw\_set\_fpreg}unw\_set\_fpreg -- set contents of floating-point register
 \end{Name}
 
 \section{Synopsis}
@@ -21,28 +21,28 @@ The \Func{unw\_set\_fpreg}() routine sets the value of register
 value passed in \Var{val}.
 
 The register numbering is target-dependent and described in separate
-manual pages (e.g., libunwind-ia64(3) for the IA-64 target).
+manual pages (e.g., libunwind-ia64(3libunwind) for the IA-64 target).
 Furthermore, the exact set of accessible registers may depend on the
 type of frame that \Var{cp} is referring to.  For ordinary stack
 frames, it is normally possible to access only the preserved
 (``callee-saved'') registers and frame-related registers (such as the
 stack-pointer).  However, for signal frames (see
-\Func{unw\_is\_signal\_frame}(3)), it is usually possible to access
+\Func{unw\_is\_signal\_frame}(3libunwind)), it is usually possible to access
 all registers.
 
 Note that \Func{unw\_set\_fpreg}() can only write the contents of
-floating-point registers.  See \Func{unw\_set\_reg}(3) for a way to
+floating-point registers.  See \Func{unw\_set\_reg}(3libunwind) for a way to
 write registers which fit in a single word.
 
 \section{Return Value}
 
 On successful completion, \Func{unw\_set\_fpreg}() returns 0.
-Otherwise the negative value of one of the error-codes below is
+Otherwise the negative value of one of the error codes below is
 returned.
 
 \section{Thread and Signal Safety}
 
-\Func{unw\_set\_fpreg}() is thread-safe as well as safe to use
+\Func{unw\_set\_fpreg}() is thread safe as well as safe to use
 from a signal handler.
 
 \section{Errors}
@@ -56,17 +56,17 @@ from a signal handler.
 \end{Description}
 In addition, \Func{unw\_set\_fpreg}() may return any error returned by
 the \Func{access\_mem}(), \Func{access\_reg}(), and
-\Func{access\_fpreg}() call-backs (see
-\Func{unw\_create\_addr\_space}(3)).
+\Func{access\_fpreg}() callbacks (see
+\Func{unw\_create\_addr\_space}(3libunwind)).
 
 \section{See Also}
 
-\SeeAlso{libunwind(3)},
-\SeeAlso{libunwind-ia64(3)},
-\SeeAlso{unw\_get\_fpreg(3)},
-\SeeAlso{unw\_is\_fpreg(3)},
-\SeeAlso{unw\_is\_signal\_frame(3)},
-\SeeAlso{unw\_set\_reg(3)}
+\SeeAlso{libunwind}(3libunwind),
+\SeeAlso{libunwind-ia64}(3libunwind),
+\SeeAlso{unw\_get\_fpreg}(3libunwind),
+\SeeAlso{unw\_is\_fpreg}(3libunwind),
+\SeeAlso{unw\_is\_signal\_frame}(3libunwind),
+\SeeAlso{unw\_set\_reg}(3libunwind)
 
 \section{Author}
 

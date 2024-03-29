@@ -51,7 +51,7 @@ namespace System.Data.Tests
             AssertExtensions.Throws<ArgumentNullException>("source", () => DataTableExtensions.AsDataView<DataRow>(null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void AsDataView_Source_Succeeds()
         {
             DataView dv = _dt.AsEnumerable().Where(r => r.Field<string>("alias").Length > 6).AsDataView();

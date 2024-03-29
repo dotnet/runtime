@@ -548,7 +548,7 @@ namespace
                                                                              pTypeContext,
                                                                              ClassLoader::LoadTypes,
                                                                              CLASS_LOAD_APPROXPARENTS,
-                                                                             TRUE, NULL, NULL, NULL, 
+                                                                             TRUE, NULL, NULL, NULL,
                                                                              &recursiveControl);
 
                     if (typeHandleMaybe.IsNull())
@@ -828,7 +828,7 @@ void EEClassNativeLayoutInfo::InitializeNativeLayoutFieldMetadataThrowing(Method
     if (pClass->GetNativeLayoutInfo() == nullptr)
     {
         GCX_PREEMP();
-        ListLockHolder nativeTypeLoadLock(pMT->GetDomain()->GetNativeTypeLoadLock());
+        ListLockHolder nativeTypeLoadLock(AppDomain::GetCurrentDomain()->GetNativeTypeLoadLock());
         ListLockEntryHolder entry(ListLockEntry::Find(nativeTypeLoadLock, pMT->GetClass()));
         ListLockEntryLockHolder pEntryLock(entry, FALSE);
         nativeTypeLoadLock.Release();
@@ -1023,7 +1023,6 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
     {
         // The intrinsic Vector<T> type has a special size. Copy the native size and alignment
         // from the managed size and alignment.
-        // Crossgen scenarios block Vector<T> from even being loaded, so only do this check when not in crossgen.
         if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)))
         {
             pNativeLayoutInfo->m_size = pEEClassLayoutInfo->GetManagedSize();

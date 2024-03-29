@@ -83,7 +83,7 @@ mono_riscv_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_reg
 	}
 
 	/* Adjust pc so it points into the call instruction */
-	pc -= 4;
+	pc--;
 
 	/* Initialize a ctx based on the arguments */
 	memset (&ctx, 0, sizeof (MonoContext));
@@ -114,7 +114,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *code;
 	guint8 *start;
-	int i, size, offset, gregs_offset, fregs_offset, ctx_offset, num_fregs, frame_size;
+	int size, offset, gregs_offset, fregs_offset, ctx_offset, frame_size;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
 

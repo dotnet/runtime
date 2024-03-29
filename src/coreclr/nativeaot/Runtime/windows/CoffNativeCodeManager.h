@@ -65,7 +65,12 @@ public:
     PTR_VOID GetFramePointer(MethodInfo *   pMethodInfo,
                              REGDISPLAY *   pRegisterSet);
 
-    uint32_t GetCodeOffset(MethodInfo * pMethodInfo, PTR_VOID address, /*out*/ PTR_UInt8* gcInfo);
+#ifdef TARGET_X86
+    uintptr_t GetResumeSp(MethodInfo *   pMethodInfo,
+                          REGDISPLAY *   pRegisterSet);
+#endif
+
+    uint32_t GetCodeOffset(MethodInfo * pMethodInfo, PTR_VOID address, /*out*/ PTR_uint8_t* gcInfo);
 
     bool IsSafePoint(PTR_VOID pvAddress);
 

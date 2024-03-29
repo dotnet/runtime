@@ -4,10 +4,6 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Timeout on Arm64 -->
     <GCStressIncompatible>true</GCStressIncompatible>
-
-    <!-- The test is too complex to compile on macOS where secondary threads have small stack size by default
-         and that is not enough for Roslyn, see https://github.com/dotnet/runtime/issues/87879 -->
-    <DisableProjectBuild Condition="'$(HostOS)' == 'osx'">true</DisableProjectBuild>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

@@ -179,7 +179,7 @@ CrashInfo::InitializeOtherMappings()
     // to include all the native and managed module regions.
     for (const MemoryRegion& region : m_allMemoryRegions)
     {
-        std::set<MemoryRegion>::iterator found = m_moduleMappings.find(region);
+        std::set<ModuleRegion>::iterator found = m_moduleMappings.find(ModuleRegion(region));
         if (found == m_moduleMappings.end())
         {
             m_otherMappings.insert(region);
@@ -256,7 +256,7 @@ void CrashInfo::VisitModule(MachOModule& module)
                 m_runtimeBaseAddress = module.BaseAddress();
 
                 RuntimeInfo runtimeInfo { };
-                if (ReadMemory((void*)(module.BaseAddress() + symbolOffset), &runtimeInfo, sizeof(RuntimeInfo)))
+                if (ReadMemory(module.BaseAddress() + symbolOffset, &runtimeInfo, sizeof(RuntimeInfo)))
                 {
                     if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
                     {
@@ -274,7 +274,7 @@ void CrashInfo::VisitModule(MachOModule& module)
                 m_runtimeBaseAddress = module.BaseAddress();
 
                 uint8_t cookie[sizeof(g_debugHeaderCookie)];
-                if (ReadMemory((void*)(module.BaseAddress() + symbolOffset), cookie, sizeof(cookie)))
+                if (ReadMemory(module.BaseAddress() + symbolOffset, cookie, sizeof(cookie)))
                 {
                     if (memcmp(cookie, g_debugHeaderCookie, sizeof(g_debugHeaderCookie)) == 0)
                     {
@@ -315,8 +315,8 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
             assert(end > 0);
 
             // Add module memory region if not already on the list
-            MemoryRegion newModule(regionFlags, start, end, offset, module.Name());
-            std::set<MemoryRegion>::iterator existingModule = m_moduleMappings.find(newModule);
+            ModuleRegion newModule(regionFlags, start, end, offset, module.Name());
+            std::set<ModuleRegion>::iterator existingModule = m_moduleMappings.find(newModule);
             if (existingModule == m_moduleMappings.end())
             {
                 if (g_diagnosticsVerbose)
@@ -340,7 +340,7 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                     uint64_t numberPages = newModule.SizeInPages();
                     for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE, offset += PAGE_SIZE)
                     {
-                        MemoryRegion gap(newModule.Flags(), start, start + PAGE_SIZE, offset, newModule.FileName());
+                        ModuleRegion gap(newModule.Flags(), start, start + PAGE_SIZE, offset, newModule.FileName());
 
                         const auto& found = m_moduleMappings.find(gap);
                         if (found != m_moduleMappings.end())
@@ -375,12 +375,14 @@ CrashInfo::VisitSection(MachOModule& module, const section_64& section)
 uint32_t
 CrashInfo::GetMemoryRegionFlags(uint64_t start)
 {
+    assert(start == CONVERT_FROM_SIGN_EXTENDED(start));
+
     MemoryRegion search(0, start, start + PAGE_SIZE, 0);
     const MemoryRegion* region = SearchMemoryRegions(m_allMemoryRegions, search);
     if (region != nullptr) {
         return region->Flags();
     }
-    TRACE("GetMemoryRegionFlags: %016llx FAILED\n", start);
+    TRACE_VERBOSE("GetMemoryRegionFlags: %016llx FAILED\n", start);
     return PF_R | PF_W | PF_X;
 }
 
@@ -388,7 +390,7 @@ CrashInfo::GetMemoryRegionFlags(uint64_t start)
 // Read raw memory
 //
 bool
-CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* read)
+CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read)
 {
     assert(buffer != nullptr);
     assert(read != nullptr);
@@ -411,7 +413,7 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
         {
             g_readProcessMemoryResult = result;
             TRACE_VERBOSE("ReadProcessMemory(%p %d): vm_read_overwrite failed bytesLeft %d bytesRead %d from %p: %s (%x)\n",
-                address, size, bytesLeft, bytesRead, (void*)addressAligned, mach_error_string(result), result);
+                (void*)address, size, bytesLeft, bytesRead, (void*)addressAligned, mach_error_string(result), result);
             break;
         }
         ssize_t bytesToCopy = PAGE_SIZE - offset;

@@ -847,7 +847,6 @@ public:
 
     //------------------------------------------------------------------------
     static void CreateEncodedMapping(
-        MethodTable *        pMT,
         DispatchMapBuilder * pMapBuilder,
         StackingAllocator *  pAllocator,
         BYTE **              ppbMap,

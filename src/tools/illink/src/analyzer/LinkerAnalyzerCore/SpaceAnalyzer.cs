@@ -68,9 +68,9 @@ namespace LinkerAnalyzer.Core
 			return $"{td.MetadataToken.TokenType}:{td}{addition}";
 		}
 
-		static string GetKey (IMetadataTokenProvider provider)
+		static string GetKey (MethodDefinition method)
 		{
-			return $"{provider.MetadataToken.TokenType}:{provider}";
+			return $"{method.MetadataToken.TokenType}:{method}";
 		}
 
 		int GetMethodSize (MethodDefinition method)

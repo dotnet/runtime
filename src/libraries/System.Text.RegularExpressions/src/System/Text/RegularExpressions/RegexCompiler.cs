@@ -34,74 +34,74 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_isMatchedMethod = RegexRunnerMethod("IsMatched");
         private static readonly MethodInfo s_matchLengthMethod = RegexRunnerMethod("MatchLength");
         private static readonly MethodInfo s_matchIndexMethod = RegexRunnerMethod("MatchIndex");
-        private static readonly MethodInfo s_isBoundaryMethod = typeof(RegexRunner).GetMethod("IsBoundary", BindingFlags.NonPublic | BindingFlags.Static, new[] { typeof(ReadOnlySpan<char>), typeof(int) })!;
+        private static readonly MethodInfo s_isBoundaryMethod = typeof(RegexRunner).GetMethod("IsBoundary", BindingFlags.NonPublic | BindingFlags.Static, [typeof(ReadOnlySpan<char>), typeof(int)])!;
         private static readonly MethodInfo s_isWordCharMethod = RegexRunnerMethod("IsWordChar");
-        private static readonly MethodInfo s_isECMABoundaryMethod = typeof(RegexRunner).GetMethod("IsECMABoundary", BindingFlags.NonPublic | BindingFlags.Static, new[] { typeof(ReadOnlySpan<char>), typeof(int) })!;
+        private static readonly MethodInfo s_isECMABoundaryMethod = typeof(RegexRunner).GetMethod("IsECMABoundary", BindingFlags.NonPublic | BindingFlags.Static, [typeof(ReadOnlySpan<char>), typeof(int)])!;
         private static readonly MethodInfo s_crawlposMethod = RegexRunnerMethod("Crawlpos");
         private static readonly MethodInfo s_charInClassMethod = RegexRunnerMethod("CharInClass");
         private static readonly MethodInfo s_checkTimeoutMethod = RegexRunnerMethod("CheckTimeout");
 
         private static readonly MethodInfo s_regexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod = typeof(RegexCaseEquivalences).GetMethod("TryFindCaseEquivalencesForCharWithIBehavior", BindingFlags.Static | BindingFlags.Public)!;
-        private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsControlMethod = typeof(char).GetMethod("IsControl", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsLetterMethod = typeof(char).GetMethod("IsLetter", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsAsciiDigitMethod = typeof(char).GetMethod("IsAsciiDigit", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsAsciiLetterMethod = typeof(char).GetMethod("IsAsciiLetter", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsAsciiLetterLowerMethod = typeof(char).GetMethod("IsAsciiLetterLower", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsAsciiLetterUpperMethod = typeof(char).GetMethod("IsAsciiLetterUpper", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsAsciiLetterOrDigitMethod = typeof(char).GetMethod("IsAsciiLetterOrDigit", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsAsciiHexDigitMethod = typeof(char).GetMethod("IsAsciiHexDigit", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsAsciiHexDigitLowerMethod = typeof(char).GetMethod("IsAsciiHexDigitLower", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsAsciiHexDigitUpperMethod = typeof(char).GetMethod("IsAsciiHexDigitUpper", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsLetterOrDigitMethod = typeof(char).GetMethod("IsLetterOrDigit", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsLowerMethod = typeof(char).GetMethod("IsLower", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsUpperMethod = typeof(char).GetMethod("IsUpper", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsNumberMethod = typeof(char).GetMethod("IsNumber", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsPunctuationMethod = typeof(char).GetMethod("IsPunctuation", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsSeparatorMethod = typeof(char).GetMethod("IsSeparator", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charIsSymbolMethod = typeof(char).GetMethod("IsSymbol", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_charGetUnicodeInfo = typeof(char).GetMethod("GetUnicodeCategory", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
+        private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsControlMethod = typeof(char).GetMethod("IsControl", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsLetterMethod = typeof(char).GetMethod("IsLetter", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsAsciiDigitMethod = typeof(char).GetMethod("IsAsciiDigit", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsAsciiLetterMethod = typeof(char).GetMethod("IsAsciiLetter", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsAsciiLetterLowerMethod = typeof(char).GetMethod("IsAsciiLetterLower", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsAsciiLetterUpperMethod = typeof(char).GetMethod("IsAsciiLetterUpper", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsAsciiLetterOrDigitMethod = typeof(char).GetMethod("IsAsciiLetterOrDigit", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsAsciiHexDigitMethod = typeof(char).GetMethod("IsAsciiHexDigit", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsAsciiHexDigitLowerMethod = typeof(char).GetMethod("IsAsciiHexDigitLower", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsAsciiHexDigitUpperMethod = typeof(char).GetMethod("IsAsciiHexDigitUpper", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsLetterOrDigitMethod = typeof(char).GetMethod("IsLetterOrDigit", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsLowerMethod = typeof(char).GetMethod("IsLower", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsUpperMethod = typeof(char).GetMethod("IsUpper", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsNumberMethod = typeof(char).GetMethod("IsNumber", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsPunctuationMethod = typeof(char).GetMethod("IsPunctuation", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsSeparatorMethod = typeof(char).GetMethod("IsSeparator", [typeof(char)])!;
+        private static readonly MethodInfo s_charIsSymbolMethod = typeof(char).GetMethod("IsSymbol", [typeof(char)])!;
+        private static readonly MethodInfo s_charGetUnicodeInfo = typeof(char).GetMethod("GetUnicodeCategory", [typeof(char)])!;
+        private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", [typeof(int)])!;
         private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
-        private static readonly MethodInfo s_spanIndexOfChar = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfSpan = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfSpanStringComparison = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison) })!;
-        private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnySearchValues = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnySearchValuesString = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<char>), typeof(SearchValues<string>) })!;
-        private static readonly MethodInfo s_spanIndexOfAnyExceptChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyExceptCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyExceptCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyExceptSpan = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyExceptSearchValues = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyInRange = typeof(MemoryExtensions).GetMethod("IndexOfAnyInRange", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyExceptInRange = typeof(MemoryExtensions).GetMethod("IndexOfAnyExceptInRange", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfChar = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnySearchValues = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfSpan = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyExceptChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyExceptCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyExceptCharCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyExceptSpan = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyExceptSearchValues = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyInRange = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyInRange", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyExceptInRange = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExceptInRange", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
-        private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
-        private static readonly MethodInfo s_spanStartsWithSpan = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanStartsWithSpanComparison = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison) })!;
-        private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string) })!;
-        private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
+        private static readonly MethodInfo s_spanIndexOfChar = typeof(MemoryExtensions).GetMethod("IndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfSpan = typeof(MemoryExtensions).GetMethod("IndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfSpanStringComparison = typeof(MemoryExtensions).GetMethod("IndexOf", [typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison)])!;
+        private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnySearchValues = typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnySearchValuesString = typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<char>), typeof(SearchValues<string>)])!;
+        private static readonly MethodInfo s_spanIndexOfAnyExceptChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyExceptCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyExceptCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyExceptSpan = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyExceptSearchValues = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyInRange = typeof(MemoryExtensions).GetMethod("IndexOfAnyInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyExceptInRange = typeof(MemoryExtensions).GetMethod("IndexOfAnyExceptInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfChar = typeof(MemoryExtensions).GetMethod("LastIndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnySearchValues = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfSpan = typeof(MemoryExtensions).GetMethod("LastIndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyExceptChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyExceptCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyExceptCharCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyExceptSpan = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyExceptSearchValues = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyInRange = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyExceptInRange = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExceptInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", [typeof(int)])!;
+        private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", [typeof(int), typeof(int)])!;
+        private static readonly MethodInfo s_spanStartsWithSpan = typeof(MemoryExtensions).GetMethod("StartsWith", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanStartsWithSpanComparison = typeof(MemoryExtensions).GetMethod("StartsWith", [typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison)])!;
+        private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", [typeof(string)])!;
+        private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", [typeof(int)])!;
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
-        private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", new Type[] { typeof(int), typeof(int) })!;
-        private static readonly MethodInfo s_memoryMarshalGetArrayDataReferenceSearchValues = typeof(MemoryMarshal).GetMethod("GetArrayDataReference", new Type[] { Type.MakeGenericMethodParameter(0).MakeArrayType() })!.MakeGenericMethod(typeof(SearchValues<char>))!;
-        private static readonly MethodInfo s_unsafeAs = typeof(Unsafe).GetMethod("As", new Type[] { typeof(object) })!;
+        private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", [typeof(int), typeof(int)])!;
+        private static readonly MethodInfo s_memoryMarshalGetArrayDataReferenceSearchValues = typeof(MemoryMarshal).GetMethod("GetArrayDataReference", [Type.MakeGenericMethodParameter(0).MakeArrayType()])!.MakeGenericMethod(typeof(SearchValues<char>))!;
+        private static readonly MethodInfo s_unsafeAs = typeof(Unsafe).GetMethod("As", [typeof(object)])!;
         // Note:
         // Single-range helpers like IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those
         // single-range checks is as cheap as the method call, and there's no readability issue as with the source generator.
@@ -460,6 +460,8 @@ namespace System.Text.RegularExpressions
             {
                 case FindNextStartingPositionMode.LeadingString_LeftToRight:
                 case FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight:
+                case FindNextStartingPositionMode.LeadingStrings_LeftToRight:
+                case FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight:
                 case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
                     EmitIndexOfString_LeftToRight();
                     break;
@@ -745,15 +747,19 @@ namespace System.Text.RegularExpressions
                 return false;
             }
 
-            // Emits a case-sensitive left-to-right search for a substring.
+            // Emits a case-sensitive left-to-right search for a substring or substrings.
             void EmitIndexOfString_LeftToRight()
             {
                 RegexFindOptimizations opts = _regexTree.FindOptimizations;
-                Debug.Assert(opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight or FindNextStartingPositionMode.FixedDistanceString_LeftToRight);
+                Debug.Assert(opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or
+                                              FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight or
+                                              FindNextStartingPositionMode.FixedDistanceString_LeftToRight or
+                                              FindNextStartingPositionMode.LeadingStrings_LeftToRight or
+                                              FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight);
 
                 using RentedLocalBuilder i = RentInt32Local();
 
-                // int i = inputSpan.Slice(pos).IndexOf(prefix);
+                // int i = inputSpan.Slice(pos)...
                 Ldloca(inputSpan);
                 Ldloc(pos);
                 if (opts.FindMode is FindNextStartingPositionMode.FixedDistanceString_LeftToRight &&
@@ -763,11 +769,21 @@ namespace System.Text.RegularExpressions
                     Add();
                 }
                 Call(s_spanSliceIntMethod);
-                string literalString = opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ?
-                    opts.LeadingPrefix :
-                    opts.FixedDistanceLiteral.String!;
-                LoadSearchValues([literalString], opts.FindMode is FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-                Call(s_spanIndexOfAnySearchValuesString);
+
+                // ...IndexOf(prefix);
+                if (opts.FindMode is FindNextStartingPositionMode.LeadingStrings_LeftToRight or FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight)
+                {
+                    LoadSearchValues(opts.LeadingPrefixes, opts.FindMode is FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                    Call(s_spanIndexOfAnySearchValuesString);
+                }
+                else
+                {
+                    string literalString = opts.FindMode is FindNextStartingPositionMode.LeadingString_LeftToRight or FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ?
+                        opts.LeadingPrefix :
+                        opts.FixedDistanceLiteral.String!;
+                    LoadSearchValues([literalString], opts.FindMode is FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                    Call(s_spanIndexOfAnySearchValuesString);
+                }
                 Stloc(i);
 
                 // if (i < 0) goto ReturnFalse;
@@ -920,20 +936,10 @@ namespace System.Text.RegularExpressions
                                 Call(primarySet.Negated ? s_spanIndexOfAnyExceptCharCharChar : s_spanIndexOfAnyCharCharChar);
                                 break;
 
-                            case 4 or 5:
-                                // tmp = ...IndexOfAny("abcd");
-                                // Note that this case differs slightly from the source generator, where it might choose to use
-                                // SearchValues instead of a literal, but there's extra cost to doing so for RegexCompiler so
-                                // it just always uses IndexOfAny(span).
-                                Ldstr(new string(primarySet.Chars));
-                                Call(s_stringAsSpanMethod);
-                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptSpan : s_spanIndexOfAnySpan);
-                                break;
-
                             default:
+                                // tmp = ...IndexOfAny(setChars);
                                 // tmp = ...IndexOfAny(s_searchValues);
-                                LoadSearchValues(primarySet.Chars);
-                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptSearchValues : s_spanIndexOfAnySearchValues);
+                                EmitIndexOfAnyWithSearchValuesOrLiteral(new string(primarySet.Chars), except: primarySet.Negated);
                                 break;
                         }
                     }
@@ -952,6 +958,14 @@ namespace System.Text.RegularExpressions
                             Ldc(primarySet.Range.Value.HighInclusive);
                             Call(primarySet.Negated ? s_spanIndexOfAnyExceptInRange : s_spanIndexOfAnyInRange);
                         }
+                    }
+                    else if (RegexCharClass.IsUnicodeCategoryOfSmallCharCount(primarySet.Set, out char[]? setChars, out bool negated, out _))
+                    {
+                        // We have a known set of small number of characters; we can use IndexOfAny{Except}(searchValues).
+
+                        // tmp = ...IndexOfAny(s_searchValues);
+                        LoadSearchValues(setChars);
+                        Call(negated ? s_spanIndexOfAnyExceptSearchValues : s_spanIndexOfAnySearchValues);
                     }
                     else
                     {
@@ -2225,9 +2239,18 @@ namespace System.Text.RegularExpressions
                 Stloc(startingPos);
                 int startingSliceStaticPos = sliceStaticPos;
 
-                // Emit the child. The condition expression is a zero-width assertion, which is atomic,
+                // Emit the condition. The condition expression is a zero-width assertion, which is atomic,
                 // so prevent backtracking into it.
-                EmitNode(condition);
+                if (analysis.MayBacktrack(condition))
+                {
+                    // Condition expressions are treated like positive lookarounds and thus are implicitly atomic,
+                    // so we need to emit the node as atomic if it might backtrack.
+                    EmitAtomic(node, null);
+                }
+                else
+                {
+                    EmitNode(condition);
+                }
                 doneLabel = originalDoneLabel;
 
                 // After the condition completes successfully, reset the text positions.
@@ -2569,8 +2592,41 @@ namespace System.Text.RegularExpressions
                 // technically backtracking, it's appropriate to have a timeout check.
                 EmitTimeoutCheckIfNeeded();
 
-                // Emit the child.
                 RegexNode child = node.Child(0);
+
+                // Ensure we're able to uncapture anything captured by the child.
+                // Note that this differs ever so slightly from the source generator.  The source
+                // generator only defines a local for capturePos if not in a loop (as it calls to a helper
+                // method where the argument acts implicitly as a local), but the compiler
+                // needs to store the popped stack value somewhere so that it can repeatedly compare
+                // that value against Crawlpos, so capturePos is always declared if there are captures.
+                bool isInLoop = false;
+                LocalBuilder? capturePos = analysis.MayContainCapture(child) ? DeclareInt32() : null;
+                if (capturePos is not null)
+                {
+                    // If we're inside a loop, push the current crawl position onto the stack,
+                    // so that each iteration tracks its own value. Otherwise, store it into a local.
+                    isInLoop = analysis.IsInLoop(node);
+                    if (isInLoop)
+                    {
+                        EmitStackResizeIfNeeded(1);
+                        EmitStackPush(() =>
+                        {
+                            // base.Crawlpos();
+                            Ldthis();
+                            Call(s_crawlposMethod);
+                        });
+                    }
+                    else
+                    {
+                        // capturePos = base.Crawlpos();
+                        Ldthis();
+                        Call(s_crawlposMethod);
+                        Stloc(capturePos);
+                    }
+                }
+
+                // Emit the child.
                 if (analysis.MayBacktrack(child))
                 {
                     // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
@@ -2584,6 +2640,15 @@ namespace System.Text.RegularExpressions
                 // If the generated code ends up here, it matched the lookaround, which actually
                 // means failure for a _negative_ lookaround, so we need to jump to the original done.
                 // goto originalDoneLabel;
+                if (capturePos is not null && isInLoop)
+                {
+                    // Pop the crawl position from the stack.
+                    // stackpos--;
+                    Ldloc(stackpos);
+                    Ldc(1);
+                    Sub();
+                    Stloc(stackpos);
+                }
                 BrFar(originalDoneLabel);
 
                 // Failures (success for a negative lookaround) jump here.
@@ -2599,6 +2664,20 @@ namespace System.Text.RegularExpressions
                 Stloc(pos);
                 SliceInputSpan();
                 sliceStaticPos = startingTextSpanPos;
+
+                // And uncapture anything if necessary. Negative lookaround captures don't persist beyond the lookaround.
+                if (capturePos is not null)
+                {
+                    if (isInLoop)
+                    {
+                        // capturepos = base.runstack[--stackpos];
+                        EmitStackPop();
+                        Stloc(capturePos);
+                    }
+
+                    // while (base.Crawlpos() > capturepos) base.Uncapture();
+                    EmitUncaptureUntil(capturePos);
+                }
 
                 doneLabel = originalDoneLabel;
             }
@@ -2748,8 +2827,8 @@ namespace System.Text.RegularExpressions
             // Emits the node for an atomic.
             void EmitAtomic(RegexNode node, RegexNode? subsequent)
             {
-                Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround, $"Unexpected type: {node.Kind}");
-                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
+                Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or RegexNodeKind.ExpressionConditional, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.Kind is RegexNodeKind.ExpressionConditional ? node.ChildCount() >= 1 : node.ChildCount() == 1, $"Unexpected number of children: {node.ChildCount()}");
 
                 RegexNode child = node.Child(0);
 
@@ -3564,9 +3643,7 @@ namespace System.Text.RegularExpressions
 
                             case (true, _):
                                 // startingPos = slice.IndexOfAny(literal.SetChars);
-                                Ldstr(literal.SetChars);
-                                Call(s_stringAsSpanMethod);
-                                Call(s_spanIndexOfAnySpan);
+                                EmitIndexOfAnyWithSearchValuesOrLiteral(literal.SetChars);
                                 break;
 
                             case (false, 2):
@@ -3579,9 +3656,7 @@ namespace System.Text.RegularExpressions
 
                             case (false, _):
                                 // startingPos = slice.IndexOfAny($"{node.Ch}{literal.SetChars}");
-                                Ldstr($"{node.Ch}{literal.SetChars}");
-                                Call(s_stringAsSpanMethod);
-                                Call(s_spanIndexOfAnySpan);
+                                EmitIndexOfAnyWithSearchValuesOrLiteral($"{node.Ch}{literal.SetChars}");
                                 break;
                         }
                     }
@@ -3595,8 +3670,7 @@ namespace System.Text.RegularExpressions
                             Array.Resize(ref asciiChars, asciiChars.Length + 1);
                             asciiChars[^1] = node.Ch;
                         }
-                        LoadSearchValues(asciiChars);
-                        Call(s_spanIndexOfAnySearchValues);
+                        EmitIndexOfAnyWithSearchValuesOrLiteral(new string(asciiChars));
                     }
                     else if (literal.Range.LowInclusive == literal.Range.HighInclusive) // single char from a RegexNode.One
                     {
@@ -4079,6 +4153,8 @@ namespace System.Text.RegularExpressions
                     // Determine where to branch, either back to the lazy loop body to add an additional iteration,
                     // or to the last backtracking label.
 
+                    Label jumpToDone = DefineLabel();
+
                     if (iterationMayBeEmpty)
                     {
                         // if (sawEmpty != 0)
@@ -4097,7 +4173,7 @@ namespace System.Text.RegularExpressions
                         Ldc(0);
                         Stloc(sawEmpty!);
 
-                        BrFar(doneLabel);
+                        Br(jumpToDone);
                         MarkLabel(sawEmptyZero);
                     }
 
@@ -4106,11 +4182,31 @@ namespace System.Text.RegularExpressions
                         // if (iterationCount >= maxIterations) goto doneLabel;
                         Ldloc(iterationCount);
                         Ldc(maxIterations);
-                        BgeFar(doneLabel);
+                        Bge(jumpToDone);
                     }
 
                     // goto body;
                     BrFar(body);
+
+                    MarkLabel(jumpToDone);
+
+                    // We're backtracking, which could either be to something prior to the lazy loop or to something
+                    // inside of the lazy loop.  If it's to something inside of the lazy loop, then either the loop
+                    // will eventually succeed or we'll eventually end up unwinding back through the iterations all
+                    // the way back to the loop not matching at all, in which case the state we first pushed on at the
+                    // beginning of the !isAtomic section will get popped off. But if here we're instead going to jump
+                    // to something prior to the lazy loop, then we need to pop off that state here.
+                    if (doneLabel == originalDoneLabel)
+                    {
+                        // stackpos -= entriesPerIteration;
+                        Ldloc(stackpos);
+                        Ldc(entriesPerIteration);
+                        Sub();
+                        Stloc(stackpos);
+                    }
+
+                    // goto done;
+                    BrFar(doneLabel);
 
                     doneLabel = backtrack;
                     MarkLabel(skipBacktrack);
@@ -5197,15 +5293,7 @@ namespace System.Text.RegularExpressions
                                 return;
 
                             default:
-                                Ldstr(setChars.ToString());
-                                Call(s_stringAsSpanMethod);
-                                Call((useLast, negated) switch
-                                {
-                                    (false, false) => s_spanIndexOfAnySpan,
-                                    (false, true) => s_spanIndexOfAnyExceptSpan,
-                                    (true, false) => s_spanLastIndexOfAnySpan,
-                                    (true, true) => s_spanLastIndexOfAnyExceptSpan,
-                                });
+                                EmitIndexOfAnyWithSearchValuesOrLiteral(setChars.ToString(), last: useLast, except: negated);
                                 return;
                         }
                     }
@@ -5213,14 +5301,7 @@ namespace System.Text.RegularExpressions
                     // IndexOfAny{Except}(SearchValues<char>)
                     if (RegexCharClass.TryGetAsciiSetChars(node.Str, out char[]? asciiChars))
                     {
-                        LoadSearchValues(asciiChars);
-                        Call((useLast, negated) switch
-                        {
-                            (false, false) => s_spanIndexOfAnySearchValues,
-                            (false, true) => s_spanIndexOfAnyExceptSearchValues,
-                            (true, false) => s_spanLastIndexOfAnySearchValues,
-                            (true, true) => s_spanLastIndexOfAnyExceptSearchValues,
-                        });
+                        EmitIndexOfAnyWithSearchValuesOrLiteral(new string(asciiChars), last: useLast, except: negated);
                         return;
                     }
                 }
@@ -5305,7 +5386,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        protected void EmitScan(RegexOptions options, DynamicMethod tryFindNextStartingPositionMethod, DynamicMethod tryMatchAtCurrentPositionMethod)
+        protected void EmitScan(RegexOptions options, MethodInfo tryFindNextStartingPositionMethod, MethodInfo tryMatchAtCurrentPositionMethod)
         {
             // As with the source generator, we can emit special code for common circumstances rather than always emitting
             // the most general purpose scan loop.  Unlike the source generator, however, code appearance isn't important
@@ -6112,6 +6193,38 @@ namespace System.Text.RegularExpressions
                 // base.CheckTimeout();
                 Ldthis();
                 Call(s_checkTimeoutMethod);
+            }
+        }
+
+        /// <summary>Emits a call to either IndexOfAny("abcd") or IndexOfAny(SearchValues) depending on the <paramref name="chars"/>.</summary>
+        private void EmitIndexOfAnyWithSearchValuesOrLiteral(string chars, bool last = false, bool except = false)
+        {
+            Debug.Assert(chars.Length > 3);
+
+            // SearchValues<char> is faster than a regular IndexOfAny("abcd") for sets of 4/5 values iff they are ASCII.
+            // Only emit SearchValues instances when we know they'll be faster to avoid increasing the startup cost too much.
+            if (chars.Length is 4 or 5 && !RegexCharClass.IsAscii(chars))
+            {
+                Ldstr(chars);
+                Call(s_stringAsSpanMethod);
+                Call((last, except) switch
+                {
+                    (false, false) => s_spanIndexOfAnySpan,
+                    (false, true) => s_spanIndexOfAnyExceptSpan,
+                    (true, false) => s_spanLastIndexOfAnySpan,
+                    (true, true) => s_spanLastIndexOfAnyExceptSpan,
+                });
+            }
+            else
+            {
+                LoadSearchValues(chars.ToCharArray());
+                Call((last, except) switch
+                {
+                    (false, false) => s_spanIndexOfAnySearchValues,
+                    (false, true) => s_spanIndexOfAnyExceptSearchValues,
+                    (true, false) => s_spanLastIndexOfAnySearchValues,
+                    (true, true) => s_spanLastIndexOfAnyExceptSearchValues,
+                });
             }
         }
 

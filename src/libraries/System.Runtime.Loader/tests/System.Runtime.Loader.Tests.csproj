@@ -2,6 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.Runtime.Loader.Tests</RootNamespace>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- Some tests rely on no deps.json file being present. -->
@@ -16,6 +17,7 @@
   <ItemGroup>
     <Compile Include="ApplyUpdateTest.cs" />
     <Compile Include="ApplyUpdateUtil.cs" />
+    <Compile Include="AssemblyExtensionsTest.cs" />
     <Compile Include="AssemblyLoadContextTest.cs" />
     <Compile Include="CollectibleAssemblyLoadContextTest.cs" />
     <Compile Include="ContextualReflection.cs" />
@@ -72,19 +74,20 @@
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 
-  <Target Name="PreserveEnCAssembliesFromLinking" Condition="'$(TargetOS)' == 'browser' and '$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="ConfigureTrimming">
+  <Target Name="PreserveEnCAssembliesFromLinking" Condition="'$(TargetOS)' == 'browser' and '$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="PrepareForILLink">
     <ItemGroup>
-      <!-- want to compute the intersection: apply update test assemblies that are also resolved to publish.
+      <!-- want to compute the intersection: apply update test assemblies that are also resolved to link.
         -->
       <ApplyUpdateTestProjectReference Include="@(ProjectReference)" Condition="$([System.String]::new('%(FileName)').StartsWith('$(ApplyUpdateTestPrefix)'))" />
       <ApplyUpdateTestAssemblyName Include="@(ApplyUpdateTestProjectReference->'%(FileName).dll')" />
-      <ResolvedFileToPublishNoDirName Include="%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)">
-        <ResolvedFileToPublish>%(ResolvedFileToPublish.FullPath)</ResolvedFileToPublish>
-      </ResolvedFileToPublishNoDirName>
-      <ResolvedApplyUpdateAssembly Include="@(ResolvedFileToPublishNoDirName)" Condition="'@(ResolvedFileToPublishNoDirName)' == '@(ApplyUpdateTestAssemblyName)' and %(Identity) != ''" />
       <!-- Don't let the IL linker modify EnC test assemblies -->
-      <TrimmerRootAssembly Include="%(ResolvedApplyUpdateAssembly.ResolvedFileToPublish)" />
-    </ItemGroup>
+      <ManagedAssemblyToLink Condition="'%(FileName)%(Extension)' == '@(ApplyUpdateTestAssemblyName)'">
+        <TrimMode>copy</TrimMode>
+      </ManagedAssemblyToLink>
+      <ManagedAssemblyToLink Condition="'%(FileName)%(Extension)' == '@(IntermediateAssembly->'%(FileName)%(Extension)')'">
+        <TrimMode>copy</TrimMode>
+      </ManagedAssemblyToLink>
+    </ItemGroup> 
   </Target>
 
   <Target Name="IncludeDeltasInWasmBundle" BeforeTargets="PrepareForWasmBuildApp" Condition="'$(TargetOS)' == 'browser'">

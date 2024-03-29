@@ -38,12 +38,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#define panic(args...)				\
-	{ fprintf (stderr, args); exit (-1); }
+#define panic(...)				\
+	{ fprintf (stderr, __VA_ARGS__); exit (-1); }
 
 void * stack_start;
+long page_size;
 
-#define PAGE_SIZE 4096
+#define	STEPS		5
+#define	STACK_SLICE	(sizeof(unw_cursor_t) + sizeof(unw_context_t))
 
 void do_backtrace (void)
 {
@@ -52,8 +54,7 @@ void do_backtrace (void)
     (steps > 5) before touching the forbidden region in the stack,
     at which point the unwinding should stop gracefully.
   */
-  mprotect((void*)((uintptr_t)stack_start & ~(PAGE_SIZE - 1)),
-           PAGE_SIZE, PROT_NONE);
+  mprotect(stack_start, page_size, PROT_NONE);
 
   unw_cursor_t cursor;
   unw_word_t ip, sp;
@@ -71,7 +72,7 @@ void do_backtrace (void)
       unw_get_reg (&cursor, UNW_REG_SP, &sp);
 
       ret = unw_step (&cursor);
-	  printf("ip=%lx, sp=%lx -> %d\n", ip, sp, ret);
+	  printf("ip=%p, sp=%p -> %d\n", (void *)ip, (void *)sp, ret);
       if (ret < 0)
 	{
 	  unw_get_reg (&cursor, UNW_REG_IP, &ip);
@@ -80,24 +81,23 @@ void do_backtrace (void)
     }
   while (ret > 0);
 
-  if (steps < 5)
+  if (steps < STEPS)
     {
-      printf("not enough steps: %d, need 5\n", steps);
+      printf("not enough steps: %d, need %d\n", steps, STEPS);
       exit(-1);
     }
   printf("success, steps: %d\n", steps);
 
-  mprotect((void*)((uintptr_t)stack_start & ~(PAGE_SIZE - 1)),
-           PAGE_SIZE, PROT_READ|PROT_WRITE);
+  mprotect(stack_start, page_size, PROT_READ|PROT_WRITE);
 }
 
 void NOINLINE consume_and_run (int depth)
 {
   unw_cursor_t cursor;
   unw_context_t uc;
-  char string[1024];
+  char string[64];
 
-  sprintf (string, "hello %p %p\n", &cursor, &uc);
+  sprintf (string, "hello %p %p\n", (void *)&cursor, (void *)&uc);
   if (depth == 0) {
     do_backtrace();
   } else {
@@ -105,22 +105,39 @@ void NOINLINE consume_and_run (int depth)
   }
 }
 
-int
-main (int argc, char **argv UNUSED)
+static int NOINLINE is_stack_downward (int *val)
 {
   int start;
+
+  return val > &start;
+}
+
+int
+main (int argc UNUSED, char **argv UNUSED)
+{
+  int start, count;
   unw_context_t uc;
   unw_cursor_t cursor;
 
-  stack_start = &start;
-
   /*
-    We need to make the frame at least the size protected by
-    the mprotect call so we are not forbidding access to
-    unrelated regions.
-  */
-  char string[PAGE_SIZE];
-  sprintf (string, "hello\n");
+   * We need to make the frame at least the size protected by
+   * the mprotect call so we are not forbidding access to
+   * unrelated regions.
+   * mprotect consume_and_run stack area.
+   * Check whether stack grows downward or upward.
+   */
+  page_size = sysconf(_SC_PAGESIZE);
+  if (is_stack_downward(&start))
+    {
+      stack_start = (void *)(((uintptr_t)&start & ~(page_size - 1)) - page_size);
+      count  = (uintptr_t)&start - (uintptr_t)stack_start;
+    }
+  else
+    {
+      stack_start = (void *)(((uintptr_t)&start & ~(page_size - 1)) + page_size);
+      count  = (uintptr_t)stack_start - (uintptr_t)&start;
+    }
+    count = count / STACK_SLICE + STEPS;
 
   // Initialize pipe mem validate check, opens file descriptors
   unw_getcontext(&uc);
@@ -149,7 +166,7 @@ main (int argc, char **argv UNUSED)
         }
       else
         {
-          consume_and_run (10);
+          consume_and_run (count);
 
           return 0;
         }

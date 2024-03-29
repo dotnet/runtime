@@ -16,8 +16,6 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TargetsWindows</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'browser'">$(DefineConstants);TARGETS_BROWSER</DefineConstants>
-    <!-- Active issue https://github.com/dotnet/runtime/issues/96173 -->
-    <_XUnitBackgroundExec>false</_XUnitBackgroundExec>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
@@ -26,7 +24,7 @@
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
-    <WasmXHarnessMonoArgs>--setenv=XHARNESS_LOG_TEST_START=true --no-memory-snapshot</WasmXHarnessMonoArgs>
+    <XunitShowProgress>true</XunitShowProgress>
     <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
   </PropertyGroup>

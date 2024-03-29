@@ -35,7 +35,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         // public OrderedDictionary(IEqualityComparer comparer);
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void PassingEqualityComparers()
         {
             var d1 = new OrderedDictionary(StringComparer.InvariantCultureIgnoreCase);
@@ -55,7 +55,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         // public OrderedDictionary(int capacity, IEqualityComparer comparer);
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void PassingCapacityAndIEqualityComparer()
         {
             var d1 = new OrderedDictionary(-1000, StringComparer.InvariantCultureIgnoreCase);
@@ -626,7 +626,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Throws<NotSupportedException>(() => list.RemoveAt(0));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void IListedKeysPropertyCanUseCustomEqualityComparer()
         {
             var orderedDictionary = new OrderedDictionary(StringComparer.InvariantCultureIgnoreCase);

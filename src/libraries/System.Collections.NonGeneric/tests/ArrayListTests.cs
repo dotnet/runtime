@@ -84,17 +84,8 @@ namespace System.Collections.Tests
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new ArrayList());
             DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ArrayList() { "a", 1, "b", 2 });
 
-            bool threwNull = false;
-            try
-            {
-                DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ArrayList), null);
-            }
-            catch (TargetInvocationException ex)
-            {
-                threwNull = ex.InnerException is ArgumentNullException;
-            }
-
-            Assert.True(threwNull);
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(ArrayList)));
+            Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
         [Fact]

@@ -344,7 +344,7 @@ namespace Microsoft.Interop
                 pinvokeStub.SignatureContext.ElementTypeInformation,
                 pinvokeStub.LibraryImportData.SetLastError && !options.GenerateForwarders,
                 diagnostics,
-                LibraryImportGeneratorHelpers.CreateGeneratorFactory(pinvokeStub.TargetFramework, pinvokeStub.Options, pinvokeStub.EnvironmentFlags),
+                LibraryImportGeneratorHelpers.CreateGeneratorResolver(pinvokeStub.TargetFramework, pinvokeStub.Options, pinvokeStub.EnvironmentFlags),
                 new CodeEmitOptions(SkipInit: pinvokeStub.TargetFramework is (TargetFramework.Net, _)));
 
             // Check if the generator should produce a forwarder stub - regular DllImport.

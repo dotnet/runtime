@@ -272,9 +272,9 @@ public:
     void dmpIsSDArray(DWORDLONG key, DWORD value);
     bool repIsSDArray(CORINFO_CLASS_HANDLE cls);
 
-    void recExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult);
-    void dmpExpandRawHandleIntrinsic(const Agnostic_CORINFO_RESOLVED_TOKENin& key, const Agnostic_CORINFO_GENERICHANDLE_RESULT& result);
-    void repExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult);
+    void recExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult);
+    void dmpExpandRawHandleIntrinsic(const Agnostic_ExpandRawHandleIntrinsic& key, const Agnostic_CORINFO_GENERICHANDLE_RESULT& result);
+    void repExpandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult);
 
     void recIsIntrinsicType(CORINFO_CLASS_HANDLE cls, bool result);
     void dmpIsIntrinsicType(DWORDLONG key, DWORD value);
@@ -315,23 +315,27 @@ public:
     void recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                 CorInfoHelpFunc         id,
+                                CORINFO_METHOD_HANDLE   callerHandle,
                                 CORINFO_CONST_LOOKUP*   pLookup,
                                 bool                    result);
     void dmpGetReadyToRunHelper(GetReadyToRunHelper_TOKENin key, GetReadyToRunHelper_TOKENout value);
     bool repGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                 CorInfoHelpFunc         id,
+                                CORINFO_METHOD_HANDLE   callerHandle,
                                 CORINFO_CONST_LOOKUP*   pLookup);
 
     void recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
                                             mdToken                 targetConstraint,
                                             CORINFO_CLASS_HANDLE    delegateType,
+                                            CORINFO_METHOD_HANDLE   callerHandle,
                                             CORINFO_LOOKUP*         pLookup);
     void dmpGetReadyToRunDelegateCtorHelper(GetReadyToRunDelegateCtorHelper_TOKENIn key,
                                             Agnostic_CORINFO_LOOKUP                 pLookup);
     void repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
                                             mdToken                 targetConstraint,
                                             CORINFO_CLASS_HANDLE    delegateType,
+                                            CORINFO_METHOD_HANDLE   callerHandle,
                                             CORINFO_LOOKUP*         pLookup);
 
     void recGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection, void* result);
@@ -423,11 +427,13 @@ public:
 
     void recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
                                bool                          fEmbedParent,
+                               CORINFO_METHOD_HANDLE         callerHandle,
                                CORINFO_GENERICHANDLE_RESULT* pResult);
     void dmpEmbedGenericHandle(const Agnostic_EmbedGenericHandle&           key,
                                const Agnostic_CORINFO_GENERICHANDLE_RESULT& value);
     void repEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
                                bool                          fEmbedParent,
+                               CORINFO_METHOD_HANDLE         callerHandle,
                                CORINFO_GENERICHANDLE_RESULT* pResult);
 
     void recGetEHinfo(CORINFO_METHOD_HANDLE ftn, unsigned EHnumber, CORINFO_EH_CLAUSE* clause);
@@ -481,6 +487,10 @@ public:
     void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
     void dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value);
     void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
+
+    void recGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo);
+    void dmpGetThreadLocalStaticInfo_NativeAOT(DWORDLONG key, const Agnostic_GetThreadStaticInfo_NativeAOT& value);
+    void repGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo);
 
     void recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection, CORINFO_METHOD_HANDLE result);
     void dmpEmbedMethodHandle(DWORDLONG key, DLDL value);
@@ -623,12 +633,6 @@ public:
                                 CORINFO_CLASS_HANDLE* structType,
                                 CORINFO_CLASS_HANDLE  memberParent);
 
-    void recCanInlineTypeCheck(CORINFO_CLASS_HANDLE         cls,
-                               CorInfoInlineTypeCheckSource source,
-                               CorInfoInlineTypeCheck       result);
-    void dmpCanInlineTypeCheck(DLD key, DWORD value);
-    CorInfoInlineTypeCheck repCanInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
-
     void recSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method, bool result);
     void dmpSatisfiesMethodConstraints(DLDL key, DWORD value);
     bool repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method);
@@ -715,6 +719,10 @@ public:
     void dmpIsMoreSpecificType(DLDL key, DWORD value);
     bool repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
+    void recIsExactType(CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpIsExactType(DWORDLONG key, DWORD value);
+    bool repIsExactType(CORINFO_CLASS_HANDLE cls);
+
     void recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE underlyingType, TypeCompareState result);
     void dmpIsEnum(DWORDLONG key, DLD value);
     TypeCompareState repIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType);
@@ -754,6 +762,10 @@ public:
         DWORDLONG key, const Agnostic_GetSystemVAmd64PassStructInRegisterDescriptor& value);
     bool repGetSystemVAmd64PassStructInRegisterDescriptor(
         CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
+
+    void recGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
+    void dmpGetSwiftLowering(DWORDLONG key, const Agnostic_GetSwiftLowering& value);
+    void repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
 
     void recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value);
     void dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
@@ -883,6 +895,13 @@ public:
     Environment cloneEnvironment();
 
     bool WasEnvironmentChanged(const Environment& prevEnv);
+
+    void Reset()
+    {
+        delete cr;
+        FreeTempAllocations();
+        cr = new CompileResult();
+    }
 
     CompileResult* cr;
     CompileResult* originalCR;
@@ -1042,7 +1061,7 @@ enum mcPackets
     //Packet_SatisfiesClassConstraints = 110,
     Packet_SatisfiesMethodConstraints = 111,
     Packet_DoesFieldBelongToClass = 112,
-    PacketCR_AddressMap = 113,
+    //PacketCR_AddressMap = 113,
     PacketCR_AllocGCInfo = 114,
     PacketCR_AllocMem = 115,
     PacketCR_CallLog = 116,
@@ -1102,7 +1121,7 @@ enum mcPackets
     Packet_GetHeapClassSize = 170,
     Packet_CanAllocateOnStack = 171,
     Packet_GetStaticFieldCurrentClass = 172,
-    Packet_CanInlineTypeCheck = 173,
+    // Packet_CanInlineTypeCheck = 173,
     Packet_IsMoreSpecificType = 174,
     Packet_GetStringLiteral = 175,
     PacketCR_SetPatchpointInfo = 176,
@@ -1138,11 +1157,14 @@ enum mcPackets
     Packet_GetStaticBaseAddress = 206,
     Packet_GetThreadLocalFieldInfo = 207,
     Packet_GetThreadLocalStaticBlocksInfo = 208,
-    Packet_GetRISCV64PassStructInRegisterFlags = 209,
-    Packet_GetObjectContent = 210,
-    Packet_GetTypeLayout = 211,
-    Packet_HaveSameMethodDefinition = 212,
-    Packet_NotifyMethodInfoUsage = 213,
+    Packet_GetThreadLocalStaticInfo_NativeAOT = 209,
+    Packet_GetRISCV64PassStructInRegisterFlags = 210,
+    Packet_GetObjectContent = 211,
+    Packet_GetTypeLayout = 212,
+    Packet_HaveSameMethodDefinition = 213,
+    Packet_NotifyMethodInfoUsage = 214,
+    Packet_IsExactType = 215,
+    Packet_GetSwiftLowering = 216,
 };
 
 void SetDebugDumpVariables();

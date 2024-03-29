@@ -13,8 +13,6 @@
                                         >true</InstallWasmtimeForTests>
 
     <!--<InstallWorkloadUsingArtifactsDependsOn>_GetWorkloadsToInstall;$(InstallWorkloadUsingArtifactsDependsOn)</InstallWorkloadUsingArtifactsDependsOn>-->
-    <GetWorkloadInputsDependsOn>_GetWorkloadsToInstall;$(GetWorkloadInputsDependsOn)</GetWorkloadInputsDependsOn>
-    <GetNuGetsToBuildForWorkloadTestingDependsOn>_GetNugetsForAOT;$(GetNuGetsToBuildForWorkloadTestingDependsOn)</GetNuGetsToBuildForWorkloadTestingDependsOn>
     <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
 
     <_BundleAOTTestWasmAppForHelixDependsOn>$(_BundleAOTTestWasmAppForHelixDependsOn);PrepareForWasiBuildApp;_PrepareForAOTOnHelix</_BundleAOTTestWasmAppForHelixDependsOn>
@@ -33,7 +31,7 @@
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) -- $(WasmTestAppArgs)</_AppArgs>
 
     <!-- FIXME: wasttime specific param name -->
-    <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --env=XHARNESS_LOG_TEST_START=1</WasmXHarnessMonoArgs>
+    <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --env=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RunScriptCommand)' == ''">
@@ -53,7 +51,7 @@
 
     <_InvariantGlobalization Condition="'$(InvariantGlobalization)' == 'true'">--env=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true</_InvariantGlobalization>
 
-    <!-- There two flavors of WasmXHarnessArgs and WasmXHarnessMonoArgs, one is MSBuild property and the other is environment variable -->
+    <!-- There are two flavors of WasmXHarnessArgs and WasmXHarnessMonoArgs, one is MSBuild property and the other is environment variable -->
     <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$HARNESS_RUNNER $(_XHarnessArgs) %24XHARNESS_ARGS %24WasmXHarnessArgs -- $(WasmXHarnessMonoArgs) %24WasmXHarnessMonoArgs $(_InvariantGlobalization) %24_InvariantGlobalization  $(_AppArgs) %24WasmTestAppArgs</RunScriptCommand>
     <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">%HARNESS_RUNNER% $(_XHarnessArgs) %XHARNESS_ARGS% %WasmXHarnessArgs%  -- $(WasmXHarnessMonoArgs) %WasmXHarnessMonoArgs% $(_InvariantGlobalization) %_InvariantGlobalization% $(_AppArgs) %WasmTestAppArgs%</RunScriptCommand>
   </PropertyGroup>
@@ -156,21 +154,6 @@
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="set PREPEND_PATH=$(WasmtimeDir)" />
       <SetScriptCommands Condition="'$(IsWasiProject)' == 'true'" Include="set RuntimeIdentifier=wasi-wasm" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="_GetWorkloadsToInstall" DependsOnTargets="_SetPackageVersionForWorkloadsTesting" Returns="@(WorkloadIdForTesting);@(WorkloadCombinationsToInstall)">
-    <ItemGroup>
-      <WorkloadIdForTesting Include="wasi-experimental"
-                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
-                            Variant="latest"
-                            Version="$(PackageVersionForWorkloadManifests)" />
-
-      <WorkloadIdForTesting Include="wasi-experimental-net8;wasi-experimental"
-                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net8"
-                            Variant="net8"
-                            Version="$(PackageVersionForWorkloadManifests)" />
-      <WorkloadCombinationsToInstall Include="latest" Variants="latest;net8" />
     </ItemGroup>
   </Target>
 </Project>

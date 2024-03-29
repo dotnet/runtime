@@ -33,10 +33,19 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         public JsonObject(IEnumerable<KeyValuePair<string, JsonNode?>> properties, JsonNodeOptions? options = null) : this(options)
         {
+            bool isCaseInsensitive = IsCaseInsensitive(options);
+
+            JsonPropertyDictionary<JsonNode?> dictionary = properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection
+                ? new(isCaseInsensitive, propertiesCollection.Count)
+                : new(isCaseInsensitive);
+
             foreach (KeyValuePair<string, JsonNode?> node in properties)
             {
-                Add(node.Key, node.Value);
+                dictionary.Add(node.Key, node.Value);
+                node.Value?.AssignParent(this);
             }
+
+            _dictionary = dictionary;
         }
 
         /// <summary>
@@ -67,7 +76,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         /// Gets or creates the underlying dictionary containing the properties of the object.
         /// </summary>
-        internal JsonPropertyDictionary<JsonNode?> Dictionary => _dictionary is { } dictionary ? dictionary : InitializeDictionary();
+        internal JsonPropertyDictionary<JsonNode?> Dictionary => _dictionary ?? InitializeDictionary();
 
         internal override JsonNode DeepCloneCore()
         {
@@ -80,7 +89,7 @@ namespace System.Text.Json.Nodes
                     : new JsonObject(Options);
             }
 
-            bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
+            bool caseInsensitive = IsCaseInsensitive(Options);
             var jObject = new JsonObject(Options)
             {
                 _dictionary = new JsonPropertyDictionary<JsonNode?>(caseInsensitive, dictionary.Count)

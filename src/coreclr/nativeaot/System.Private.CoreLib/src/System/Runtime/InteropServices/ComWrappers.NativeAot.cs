@@ -9,6 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading;
 
+using Internal.Runtime;
+
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -42,7 +44,7 @@ namespace System.Runtime.InteropServices
         private static readonly List<GCHandle> s_referenceTrackerNativeObjectWrapperCache = new List<GCHandle>();
 
         private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _ccwTable = new ConditionalWeakTable<object, ManagedObjectWrapperHolder>();
-        private readonly Lock _lock = new Lock();
+        private readonly Lock _lock = new Lock(useTrivialWaits: true);
         private readonly Dictionary<IntPtr, GCHandle> _rcwCache = new Dictionary<IntPtr, GCHandle>();
 
         internal static bool TryGetComInstanceForIID(object obj, Guid iid, out IntPtr unknown, out long wrapperId)
@@ -417,7 +419,7 @@ namespace System.Runtime.InteropServices
             static ManagedObjectWrapperHolder()
             {
                 delegate* unmanaged<IntPtr, bool> callback = &IsRootedCallback;
-                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, EETypePtr.EETypePtrOf<ManagedObjectWrapperHolder>()))
+                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, MethodTable.Of<ManagedObjectWrapperHolder>()))
                 {
                     throw new OutOfMemoryException();
                 }

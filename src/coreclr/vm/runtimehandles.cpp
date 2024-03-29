@@ -2933,7 +2933,7 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
     pName.SuppressRelease();
 
     // create a handle to hold the resolver objectref
-    OBJECTHANDLE resolverHandle = pDomainModule->GetAppDomain()->CreateLongWeakHandle(gc.resolverRef);
+    OBJECTHANDLE resolverHandle = AppDomain::GetCurrentDomain()->CreateLongWeakHandle(gc.resolverRef);
     pNewMD->GetLCGMethodResolver()->SetManagedResolver(resolverHandle);
     gc.retMethod = pNewMD->GetStubMethodInfo();
     gc.retMethod->SetKeepAlive(gc.resolverRef);

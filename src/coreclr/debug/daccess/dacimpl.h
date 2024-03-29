@@ -816,7 +816,8 @@ class ClrDataAccess
       public ISOSDacInterface10,
       public ISOSDacInterface11,
       public ISOSDacInterface12,
-      public ISOSDacInterface13
+      public ISOSDacInterface13,
+      public ISOSDacInterface14
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1216,6 +1217,11 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetGCFreeRegions(ISOSMemoryEnum **ppEnum);
     virtual HRESULT STDMETHODCALLTYPE LockedFlush();
 
+    // ISOSDacInterface14
+    virtual HRESULT STDMETHODCALLTYPE GetStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
+    virtual HRESULT STDMETHODCALLTYPE GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS thread, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
+    virtual HRESULT STDMETHODCALLTYPE GetMethodTableInitializationFlags(CLRDATA_ADDRESS methodTable, MethodTableInitializationFlags *initializationStatus);
+    
     //
     // ClrDataAccess.
     //
@@ -3393,7 +3399,7 @@ private:
 //----------------------------------------------------------------------------
 
 #ifdef FEATURE_EH_FUNCLETS
-typedef ExceptionTracker ClrDataExStateType;
+typedef ExceptionTrackerBase ClrDataExStateType;
 #else // FEATURE_EH_FUNCLETS
 typedef ExInfo ClrDataExStateType;
 #endif // FEATURE_EH_FUNCLETS

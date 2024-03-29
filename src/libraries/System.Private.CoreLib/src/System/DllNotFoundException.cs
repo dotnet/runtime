@@ -21,13 +21,13 @@ namespace System
         }
 
         public DllNotFoundException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_DllNotFoundException)
         {
             HResult = HResults.COR_E_DLLNOTFOUND;
         }
 
         public DllNotFoundException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_DllNotFoundException, inner)
         {
             HResult = HResults.COR_E_DLLNOTFOUND;
         }

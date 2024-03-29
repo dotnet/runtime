@@ -1656,3 +1656,32 @@ public class GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClassTha
 
     public int myField;
 }
+
+namespace DebuggerBreakpointTests
+{
+    public partial class BreakpointTestsClass
+    {
+        public BreakpointTestsClass()
+        {
+            // cctr defined in different file than members
+            int localVar = 123;
+        }
+    }
+
+    public class CreateGoodBreakpointAtTheEndOfFileAndHit
+    {
+        public static void Run()
+        {
+            BreakpointTestsClass bpTest = new();
+        }
+    }
+}
+
+public class SpanByte
+{
+    public static void Run()
+    {
+        System.Span<byte> span = new ();
+        System.Diagnostics.Debugger.Break();
+    }
+}

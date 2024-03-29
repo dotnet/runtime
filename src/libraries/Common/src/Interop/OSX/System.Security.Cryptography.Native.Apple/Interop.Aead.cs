@@ -3,9 +3,12 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
+
+#pragma warning disable CS3016 // Arrays as attribute arguments are not CLS Compliant
 
 internal static partial class Interop
 {
@@ -164,6 +167,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.AppleCryptoNative)]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial int AppleCryptoNative_ChaCha20Poly1305Encrypt(
             byte* keyPtr,
             int keyLength,
@@ -179,6 +183,7 @@ internal static partial class Interop
             int aadLength);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial int AppleCryptoNative_ChaCha20Poly1305Decrypt(
             byte* keyPtr,
             int keyLength,
@@ -194,6 +199,7 @@ internal static partial class Interop
             int aadLength);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial int AppleCryptoNative_AesGcmEncrypt(
             byte* keyPtr,
             int keyLength,
@@ -209,6 +215,7 @@ internal static partial class Interop
             int aadLength);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial int AppleCryptoNative_AesGcmDecrypt(
             byte* keyPtr,
             int keyLength,

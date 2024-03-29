@@ -166,7 +166,7 @@ namespace System.Collections.Frozen
                 {
                     if (key.Length < minLength) minLength = key.Length;
                     if (key.Length > maxLength) maxLength = key.Length;
-                    lengthFilter |= (1UL << (key.Length & 0x3F));
+                    lengthFilter |= (1UL << (key.Length % 64));
                 }
                 Debug.Assert(minLength >= 0 && maxLength >= minLength);
 
@@ -461,7 +461,7 @@ namespace System.Collections.Frozen
 
                 if (Unsafe.IsNullRef(ref Unsafe.AsRef(in valueRef)))
                 {
-                    ThrowHelper.ThrowKeyNotFoundException();
+                    ThrowHelper.ThrowKeyNotFoundException(key);
                 }
 
                 return ref valueRef;

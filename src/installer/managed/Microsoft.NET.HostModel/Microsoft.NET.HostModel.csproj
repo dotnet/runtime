@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <Description>Abstractions for modifying .NET host binaries</Description>
     <IsShipping>false</IsShipping>
-    <IsPackable Condition="'$(PgoInstrument)' == ''">true</IsPackable>
+    <IsPackable Condition="'$(BuildOnlyPgoInstrumentedAssets)' != 'true'">true</IsPackable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
@@ -19,8 +19,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- we need to keep the version of System.Reflection.Metadata in sync with dotnet/msbuild and dotnet/sdk -->
-    <PackageReference Include="System.Reflection.Metadata" Version="6.0.0" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>
 

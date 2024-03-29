@@ -49,12 +49,5 @@ namespace Internal.Runtime.CompilerServices
     public unsafe struct RuntimeMethodHandleInfo
     {
         public IntPtr NativeLayoutInfoSignature;
-
-        public static unsafe RuntimeMethodHandle InfoToHandle(RuntimeMethodHandleInfo* info)
-        {
-            RuntimeMethodHandle returnValue = default(RuntimeMethodHandle);
-            *(RuntimeMethodHandleInfo**)&returnValue = info;
-            return returnValue;
-        }
     }
 }

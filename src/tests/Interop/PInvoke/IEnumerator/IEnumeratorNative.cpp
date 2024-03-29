@@ -26,6 +26,7 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyIntegerEnumerator(IEnumVAR
     HRESULT hr = S_OK;
 
     VARIANT element;
+    VariantInit(&element);
     ULONG numFetched;
 
     for (int i = start; i < start + count; ++i)
@@ -68,6 +69,7 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyIntegerEnumeration(IDispat
 {
     DISPPARAMS params{};
     VARIANT result;
+    VariantInit(&result);
     HRESULT hr = pDisp->Invoke(
         DISPID_NEWENUM,
         IID_NULL,

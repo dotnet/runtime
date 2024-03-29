@@ -843,6 +843,7 @@ ssse3_shuffle: dest:x src1:x src2:x len:6 clob:1
 sse41_dpps_imm: dest:x src1:x src2:x len:7 clob:1
 sse41_dppd_imm: dest:x src1:x src2:x len:7 clob:1
 vector_andnot: dest:x src1:x src2:x len:7 clob:1
+vector_integer_abs: dest:x src1:x len:6
 
 roundp: dest:x src1:x len:10
 
@@ -855,6 +856,7 @@ gc_param_slot_liveness_def: len:0
 
 generic_class_init: src1:A len:32 clob:c
 get_last_error: dest:i len:32
+init_mrgctx: src1:A src2:i len:64 clob:c
 
 fill_prof_call_ctx: src1:i len:128
 

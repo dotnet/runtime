@@ -31,9 +31,6 @@ BOOL TypeHandle::Verify()
     if (IsNull())
         return(TRUE);
 
-    if (!IsRestored())
-        return TRUE;
-
     if (IsArray())
     {
         GetArrayElementTypeHandle().Verify();
@@ -275,17 +272,6 @@ PTR_Module TypeHandle::GetLoaderModule() const
         return AsTypeDesc()->GetLoaderModule();
     else
         return AsMethodTable()->GetLoaderModule();
-}
-
-PTR_BaseDomain TypeHandle::GetDomain() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (IsTypeDesc())
-        return AsTypeDesc()->GetDomain();
-    else
-        return AsMethodTable()->GetDomain();
-
 }
 
 PTR_LoaderAllocator TypeHandle::GetLoaderAllocator() const
@@ -1014,31 +1000,6 @@ BOOL TypeHandle::IsFnPtrType() const
             (GetSignatureCorElementType() == ELEMENT_TYPE_FNPTR));
 }
 
-BOOL TypeHandle::IsRestored() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (!IsTypeDesc())
-    {
-        return AsMethodTable()->IsRestored();
-    }
-    else
-    {
-        return AsTypeDesc()->IsRestored();
-    }
-}
-
-BOOL TypeHandle::HasUnrestoredTypeKey()  const
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    if (IsTypeDesc())
-        return AsTypeDesc()->HasUnrestoredTypeKey();
-    else
-        return AsMethodTable()->HasUnrestoredTypeKey();
-}
-
 void TypeHandle::CheckRestore() const
 {
     CONTRACTL
@@ -1516,7 +1477,7 @@ TypeKey TypeHandle::GetTypeKey() const
 
 #ifdef _DEBUG
 // Check that a type handle matches the key provided
-CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
+CHECK TypeHandle::CheckMatchesKey(const TypeKey *pKey) const
 {
     WRAPPER_NO_CONTRACT;
     CONTRACT_VIOLATION(TakesLockViolation);        // this is debug-only code
@@ -1587,8 +1548,6 @@ CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
 const char * const classLoadLevelName[] =
 {
     "BEGIN",
-    "UNRESTOREDTYPEKEY",
-    "UNRESTORED",
     "APPROXPARENTS",
     "EXACTPARENTS",
     "DEPENDENCIES_LOADED",
@@ -1614,8 +1573,6 @@ CHECK TypeHandle::CheckLoadLevel(ClassLoadLevel requiredLevel)
         //                   ("Type has not been sufficiently loaded (actual level is %d, required level is %d)",
         //                    /* debugTypeName.GetUnicode(), */ actualLevel, requiredLevel /* classLoadLevelName[actualLevel], classLoadLevelName[requiredLevel] */));
     }
-    CONSISTENCY_CHECK((actualLevel > CLASS_LOAD_UNRESTORED) == IsRestored());
-    CONSISTENCY_CHECK((actualLevel == CLASS_LOAD_UNRESTOREDTYPEKEY) == HasUnrestoredTypeKey());
     CHECK_OK;
 }
 

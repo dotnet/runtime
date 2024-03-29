@@ -51,19 +51,9 @@ namespace System.Text.Json
         private int _continuationCount;
 
         /// <summary>
-        /// Bytes consumed in the current loop.
-        /// </summary>
-        public long BytesConsumed;
-
-        /// <summary>
         /// Indicates that the state still contains suspended frames waiting re-entry.
         /// </summary>
-        public bool IsContinuation => _continuationCount != 0;
-
-        /// <summary>
-        /// Internal flag to let us know that we need to read ahead in the inner read loop.
-        /// </summary>
-        public bool ReadAhead;
+        public readonly bool IsContinuation => _continuationCount != 0;
 
         // The bag of preservable references.
         public ReferenceResolver ReferenceResolver;
@@ -125,7 +115,7 @@ namespace System.Text.Json
             {
                 if (_count == 0)
                 {
-                    // Performance optimization: reuse the first stackframe on the first push operation.
+                    // Performance optimization: reuse the first stack frame on the first push operation.
                     // NB need to be careful when making writes to Current _before_ the first `Push`
                     // operation is performed.
                     _count = 1;

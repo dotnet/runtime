@@ -114,7 +114,7 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
 
 #ifndef DACCESS_COMPILE
 
-TypeHandle ClassLoader::LoadCanonicalGenericInstantiation(TypeKey *pTypeKey,
+TypeHandle ClassLoader::LoadCanonicalGenericInstantiation(const TypeKey *pTypeKey,
                                                           LoadTypesFlag fLoadTypes/*=LoadTypes*/,
                                                           ClassLoadLevel level/*=CLASS_LOADED*/)
 {
@@ -157,7 +157,7 @@ TypeHandle ClassLoader::LoadCanonicalGenericInstantiation(TypeKey *pTypeKey,
 /* static */
 TypeHandle
 ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
-    TypeKey         *pTypeKey,
+    const TypeKey         *pTypeKey,
     AllocMemTracker *pamTracker)
 {
     CONTRACT(TypeHandle)
@@ -235,18 +235,11 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     DWORD cbIMap = pOldMT->GetInterfaceMapSize();
     InterfaceInfo_t * pOldIMap = (InterfaceInfo_t *)pOldMT->GetInterfaceMap();
 
-    DWORD dwMultipurposeSlotsMask = 0;
-    dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasPerInstInfo;
-    if (wNumInterfaces != 0)
-        dwMultipurposeSlotsMask |= MethodTable::enum_flag_HasInterfaceMap;
-
-    // NonVirtualSlots, DispatchMap and ModuleOverride multipurpose slots are used
+    // NonVirtualSlots, and DispatchMap are used
     // from the canonical methodtable, so we do not need to store them here.
 
     // We need space for the optional members.
-    DWORD cbOptional = MethodTable::GetOptionalMembersAllocationSize(dwMultipurposeSlotsMask,
-                                                      fHasGenericsStaticsInfo,
-                                                      pOldMT->HasTokenOverflow());
+    DWORD cbOptional = MethodTable::GetOptionalMembersAllocationSize(wNumInterfaces != 0);
 
     // We need space for the PerInstInfo, i.e. the generic dictionary pointers...
     DWORD cbPerInst = sizeof(GenericsDictInfo) + pOldMT->GetPerInstInfoSize();
@@ -284,30 +277,23 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // Copy of GC
     memcpy((BYTE*)pMT - cbGC, (BYTE*) pOldMT - cbGC, cbGC);
 
-    // Allocate the private data block ("private" during runtime in the ngen'ed case)
-    MethodTableWriteableData * pMTWriteableData = (MethodTableWriteableData *) (BYTE *)
-        pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodTableWriteableData))));
-    // Note: Memory allocated on loader heap is zero filled
-    pMT->SetWriteableData(pMTWriteableData);
+    // Allocate the private data block
+    pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo);
+    pMT->SetModule(pOldMT->GetModule());
 
-    // This also disables IBC logging until the type is sufficiently initialized so
-    // it needs to be done early
-    pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
+    pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
     // <TODO> this is incredibly fragile.  We should just construct the MT all over agin. </TODO>
     pMT->CopyFlags(pOldMT);
 
-    pMT->ClearFlag(MethodTable::enum_flag_MultipurposeSlotsMask);
-    pMT->SetMultipurposeSlotsMask(dwMultipurposeSlotsMask);
+    pMT->SetFlag(MethodTable::enum_flag_HasPerInstInfo);
+    pMT->ClearFlag(MethodTable::enum_flag_HasDispatchMapSlot);
 
     // Set generics flags
     pMT->ClearFlag(MethodTable::enum_flag_GenericsMask);
     pMT->SetFlag(MethodTable::enum_flag_GenericsMask_GenericInst);
 
     pMT->m_pParentMethodTable = NULL;
-
-    // Non non-virtual slots
-    pMT->ClearFlag(MethodTable::enum_flag_HasSingleNonVirtualSlot);
 
     pMT->SetBaseSize(pOldMT->GetBaseSize());
     pMT->SetParentMethodTable(pOldMT->GetParentMethodTable());
@@ -425,9 +411,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
             pMT->SetInterfaceDeclaredOnClass(i);
     }
 
-    pMT->SetLoaderModule(pLoaderModule);
     pMT->SetLoaderAllocator(pAllocator);
-
 
 #ifdef _DEBUG
     // Name for debugging
@@ -495,8 +479,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
     // We never have non-virtual slots in this method table (set SetNumVtableSlots and SetNumVirtuals above)
     _ASSERTE(!pMT->HasNonVirtualSlots());
-
-    pMTWriteableData->SetIsRestoredForBuildMethodTable();
 
     RETURN(TypeHandle(pMT));
 } // ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation
@@ -928,8 +910,7 @@ BOOL GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
             // the specified function so walk up the parent chain to make sure we return
             // an exact instantiation of the CORRECT parent class.
             pMT = pMD->GetExactDeclaringType(dac_cast<PTR_MethodTable>(pExactGenericArgsToken));
-            _ASSERTE(pMT != NULL);
-            retVal = TRUE;
+            retVal = pMT != NULL ? TRUE : FALSE;
         }
         else
         {

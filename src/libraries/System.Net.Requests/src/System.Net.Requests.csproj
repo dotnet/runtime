@@ -29,6 +29,7 @@
     <Compile Include="System\Net\IWebRequestCreate.cs" />
     <Compile Include="System\Net\ProtocolViolationException.cs" />
     <Compile Include="System\Net\RequestStream.cs" />
+    <Compile Include="System\Net\RequestBufferingStream.cs" />
     <Compile Include="System\Net\TaskExtensions.cs" />
     <Compile Include="System\Net\WebException.cs" />
     <Compile Include="System\Net\WebExceptionStatus.cs" />
@@ -48,6 +49,7 @@
     <Compile Include="System\Net\NetRes.cs" />
     <Compile Include="System\Net\NetworkStreamWrapper.cs" />
     <Compile Include="System\Net\TimerThread.cs" />
+    <Compile Include="System\Net\RequestStreamContent.cs" />
     <Compile Include="System\Net\Cache\HttpCacheAgeControl.cs" />
     <Compile Include="System\Net\Cache\HttpRequestCacheLevel.cs" />
     <Compile Include="System\Net\Cache\HttpRequestCachePolicy.cs" />
@@ -110,6 +112,7 @@
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.Sockets" />

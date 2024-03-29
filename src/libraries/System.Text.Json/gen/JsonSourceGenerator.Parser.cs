@@ -263,6 +263,7 @@ namespace System.Text.Json.SourceGeneration
                 JsonSourceGenerationMode? generationMode = null;
                 List<TypeRef>? converters = null;
                 JsonSerializerDefaults? defaults = null;
+                bool? allowOutOfOrderMetadataProperties = null;
                 bool? allowTrailingCommas = null;
                 int? defaultBufferSize = null;
                 JsonIgnoreCondition? defaultIgnoreCondition = null;
@@ -280,6 +281,8 @@ namespace System.Text.Json.SourceGeneration
                 JsonUnmappedMemberHandling? unmappedMemberHandling = null;
                 bool? useStringEnumConverter = null;
                 bool? writeIndented = null;
+                char? indentCharacter = null;
+                int? indentSize = null;
 
                 if (attributeData.ConstructorArguments.Length > 0)
                 {
@@ -291,6 +294,10 @@ namespace System.Text.Json.SourceGeneration
                 {
                     switch (namedArg.Key)
                     {
+                        case nameof(JsonSourceGenerationOptionsAttribute.AllowOutOfOrderMetadataProperties):
+                            allowOutOfOrderMetadataProperties = (bool)namedArg.Value.Value!;
+                            break;
+
                         case nameof(JsonSourceGenerationOptionsAttribute.AllowTrailingCommas):
                             allowTrailingCommas = (bool)namedArg.Value.Value!;
                             break;
@@ -373,6 +380,14 @@ namespace System.Text.Json.SourceGeneration
                             writeIndented = (bool)namedArg.Value.Value!;
                             break;
 
+                        case nameof(JsonSourceGenerationOptionsAttribute.IndentCharacter):
+                            indentCharacter = (char)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.IndentSize):
+                            indentSize = (int)namedArg.Value.Value!;
+                            break;
+
                         case nameof(JsonSourceGenerationOptionsAttribute.GenerationMode):
                             generationMode = (JsonSourceGenerationMode)namedArg.Value.Value!;
                             break;
@@ -386,6 +401,7 @@ namespace System.Text.Json.SourceGeneration
                 {
                     GenerationMode = generationMode,
                     Defaults = defaults,
+                    AllowOutOfOrderMetadataProperties = allowOutOfOrderMetadataProperties,
                     AllowTrailingCommas = allowTrailingCommas,
                     DefaultBufferSize = defaultBufferSize,
                     Converters = converters?.ToImmutableEquatableArray(),
@@ -404,6 +420,8 @@ namespace System.Text.Json.SourceGeneration
                     UnmappedMemberHandling = unmappedMemberHandling,
                     UseStringEnumConverter = useStringEnumConverter,
                     WriteIndented = writeIndented,
+                    IndentCharacter = indentCharacter,
+                    IndentSize = indentSize,
                 };
             }
 
@@ -739,6 +757,11 @@ namespace System.Text.Json.SourceGeneration
                     Debug.Assert(arraySymbol.Rank == 1, "multi-dimensional arrays should have been handled earlier.");
                     collectionType = CollectionType.Array;
                     valueType = arraySymbol.ElementType;
+                }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.KeyedCollectionType)) != null)
+                {
+                    collectionType = CollectionType.ICollectionOfT;
+                    valueType = actualTypeToConvert.TypeArguments[1];
                 }
                 else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ListOfTType)) != null)
                 {
@@ -1419,6 +1442,7 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
+                HashSet<string>? memberInitializerNames = null;
                 List<PropertyInitializerGenerationSpec>? propertyInitializers = null;
                 int paramCount = constructorParameters?.Length ?? 0;
 
@@ -1432,6 +1456,18 @@ namespace System.Text.Json.SourceGeneration
 
                     if ((property.IsRequired && !constructorSetsRequiredMembers) || property.IsInitOnlySetter)
                     {
+                        if (!(memberInitializerNames ??= new()).Add(property.MemberName))
+                        {
+                            // We've already added another member initializer with the same name to our spec list.
+                            // Duplicates can occur here because the provided list of properties includes shadowed members.
+                            // This is because we generate metadata for *all* members, including shadowed or ignored ones,
+                            // since we need to re-run the deduplication algorithm taking run-time configuration into account.
+                            // This is a simple deduplication that keeps the first result for each member name --
+                            // this should be fine since the properties are listed from most derived to least derived order,
+                            // so the second instance of a member name is always shadowed by the first.
+                            continue;
+                        }
+
                         ParameterGenerationSpec? matchingConstructorParameter = GetMatchingConstructorParameter(property, constructorParameters);
 
                         if (property.IsRequired || matchingConstructorParameter is null)

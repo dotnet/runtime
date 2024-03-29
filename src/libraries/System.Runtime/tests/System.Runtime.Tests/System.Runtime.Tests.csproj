@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
@@ -14,6 +14,10 @@
 
     <!-- The test is looking for debugger attributes we would have stripped with NativeAOT -->
     <IlcKeepManagedDebuggerSupport>true</IlcKeepManagedDebuggerSupport>
+    <!-- Same for ILLink -->
+    <DebuggerSupport>true</DebuggerSupport>
+    <!-- Active issue: https://github.com/dotnet/runtime/issues/97809 -->
+    <ShouldILStrip>false</ShouldILStrip>
   </PropertyGroup>
 
   <!--
@@ -192,6 +196,8 @@
     <Compile Include="System\Diagnostics\CodeAnalysis\ConstantExpectedAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\DynamicDependencyAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\FeatureGuardAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresAssemblyFilesAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttributeTests.cs" />
@@ -262,6 +268,7 @@
     <Compile Include="System\Runtime\CompilerServices\DefaultInterpolatedStringHandlerTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\FormattableStringFactoryTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\StrongBoxTests.cs" />
+    <Compile Include="System\Runtime\CompilerServices\ParamCollectionAttributeTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.cs" />
     <Compile Include="System\Runtime\ConstrainedExecution\PrePrepareMethodAttributeTests.cs" />
     <Compile Include="System\Runtime\ExceptionServices\HandleProcessCorruptedStateExceptions.cs" />
@@ -288,6 +295,7 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
+    <Compile Include="System\Numerics\DimTests.GenericMath.cs" />
     <Compile Include="System\Numerics\GenericMathDimHelpers.cs" />
     <Compile Include="System\Numerics\IBinaryNumberTests.cs" />
     <Compile Include="System\ByteTests.GenericMath.cs" />

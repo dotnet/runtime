@@ -399,17 +399,50 @@ namespace System
 
         // BindToMethodName is annotated as DynamicallyAccessedMemberTypes.All because it will bind to non-public methods
         // on a base type of methodType. Using All is currently the only way ILLinker will preserve these methods.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool BindToMethodName(object? target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] RuntimeType methodType, string method, DelegateBindingFlags flags);
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:ParameterDoesntMeetParameterRequirements",
+            Justification = "The parameter 'methodType' is passed by ref to QCallTypeHandle")]
+        private bool BindToMethodName(object? target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] RuntimeType methodType, string method, DelegateBindingFlags flags)
+        {
+            Delegate d = this;
+            return BindToMethodName(ObjectHandleOnStack.Create(ref d), ObjectHandleOnStack.Create(ref target),
+                new QCallTypeHandle(ref methodType), method, flags);
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool BindToMethodInfo(object? target, IRuntimeMethodInfo method, RuntimeType methodType, DelegateBindingFlags flags);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodName", StringMarshalling = StringMarshalling.Utf8)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool BindToMethodName(ObjectHandleOnStack d, ObjectHandleOnStack target, QCallTypeHandle methodType, string method, DelegateBindingFlags flags);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern MulticastDelegate InternalAlloc(RuntimeType type);
+        private bool BindToMethodInfo(object? target, IRuntimeMethodInfo method, RuntimeType methodType, DelegateBindingFlags flags)
+        {
+            Delegate d = this;
+            bool ret = BindToMethodInfo(ObjectHandleOnStack.Create(ref d), ObjectHandleOnStack.Create(ref target),
+                method.Value, new QCallTypeHandle(ref methodType), flags);
+            GC.KeepAlive(method);
+            return ret;
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern MulticastDelegate InternalAllocLike(Delegate d);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodInfo")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool BindToMethodInfo(ObjectHandleOnStack d, ObjectHandleOnStack target, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags);
+
+        private static MulticastDelegate InternalAlloc(RuntimeType type)
+        {
+            MulticastDelegate? d = null;
+            InternalAlloc(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref d));
+            return d!;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InternalAlloc")]
+        private static partial void InternalAlloc(QCallTypeHandle type, ObjectHandleOnStack d);
+
+        internal static MulticastDelegate InternalAllocLike(MulticastDelegate d)
+        {
+            InternalAllocLike(ObjectHandleOnStack.Create(ref d));
+            return d;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InternalAllocLike")]
+        private static partial void InternalAllocLike(ObjectHandleOnStack d);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe bool InternalEqualTypes(object a, object b)
@@ -445,17 +478,42 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern IntPtr GetInvokeMethod();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern IRuntimeMethodInfo FindMethodHandle();
+        internal IRuntimeMethodInfo FindMethodHandle()
+        {
+            Delegate d = this;
+            IRuntimeMethodInfo? methodInfo = null;
+            FindMethodHandle(ObjectHandleOnStack.Create(ref d), ObjectHandleOnStack.Create(ref methodInfo));
+            return methodInfo!;
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool InternalEqualMethodHandles(Delegate left, Delegate right);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_FindMethodHandle")]
+        private static partial void FindMethodHandle(ObjectHandleOnStack d, ObjectHandleOnStack retMethodInfo);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern IntPtr AdjustTarget(object target, IntPtr methodPtr);
+        private static bool InternalEqualMethodHandles(Delegate left, Delegate right)
+        {
+            return InternalEqualMethodHandles(ObjectHandleOnStack.Create(ref left), ObjectHandleOnStack.Create(ref right));
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern IntPtr GetCallStub(IntPtr methodPtr);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InternalEqualMethodHandles")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool InternalEqualMethodHandles(ObjectHandleOnStack left, ObjectHandleOnStack right);
+
+        internal static IntPtr AdjustTarget(object target, IntPtr methodPtr)
+        {
+            return AdjustTarget(ObjectHandleOnStack.Create(ref target), methodPtr);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_AdjustTarget")]
+        private static partial IntPtr AdjustTarget(ObjectHandleOnStack target, IntPtr methodPtr);
+
+        internal void InitializeVirtualCallStub(IntPtr methodPtr)
+        {
+            Delegate d = this;
+            InitializeVirtualCallStub(ObjectHandleOnStack.Create(ref d), methodPtr);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InitializeVirtualCallStub")]
+        private static partial void InitializeVirtualCallStub(ObjectHandleOnStack d, IntPtr methodPtr);
 
         internal virtual object? GetTarget()
         {

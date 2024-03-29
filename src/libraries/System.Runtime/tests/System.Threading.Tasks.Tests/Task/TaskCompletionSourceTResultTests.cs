@@ -202,5 +202,114 @@ namespace System.Threading.Tasks.Tests.Status
             Assert.False(tcs.TrySetCanceled());
             Assert.False(tcs.TrySetCanceled(default));
         }
+
+        [Fact]
+        public void SetFromTask_InvalidArgument_Throws()
+        {
+            TaskCompletionSource<object> tcs = new();
+            AssertExtensions.Throws<ArgumentNullException>("completedTask", () => tcs.SetFromTask(null));
+            AssertExtensions.Throws<ArgumentException>("completedTask", () => tcs.SetFromTask(new TaskCompletionSource<object>().Task));
+            Assert.False(tcs.Task.IsCompleted);
+
+            tcs.SetResult(null);
+            Assert.True(tcs.Task.IsCompletedSuccessfully);
+
+            AssertExtensions.Throws<ArgumentNullException>("completedTask", () => tcs.SetFromTask(null));
+            AssertExtensions.Throws<ArgumentException>("completedTask", () => tcs.SetFromTask(new TaskCompletionSource<object>().Task));
+            Assert.True(tcs.Task.IsCompletedSuccessfully);
+        }
+
+        [Fact]
+        public void SetFromTask_AlreadyCompleted_ReturnsFalseOrThrows()
+        {
+            object result = new();
+            TaskCompletionSource<object> tcs = new();
+            tcs.SetResult(result);
+
+            Assert.False(tcs.TrySetFromTask(Task.FromResult(new object())));
+            Assert.False(tcs.TrySetFromTask(Task.FromException<object>(new Exception())));
+            Assert.False(tcs.TrySetFromTask(Task.FromCanceled<object>(new CancellationToken(canceled: true))));
+
+            Assert.Throws<InvalidOperationException>(() => tcs.SetFromTask(Task.FromResult(new object())));
+            Assert.Throws<InvalidOperationException>(() => tcs.SetFromTask(Task.FromException<object>(new Exception())));
+            Assert.Throws<InvalidOperationException>(() => tcs.SetFromTask(Task.FromCanceled<object>(new CancellationToken(canceled: true))));
+
+            Assert.True(tcs.Task.IsCompletedSuccessfully);
+            Assert.Same(result, tcs.Task.Result);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SetFromTask_CompletedSuccessfully(bool tryMethod)
+        {
+            TaskCompletionSource<object> tcs = new();
+            Task<object> source = Task.FromResult(new object());
+
+            if (tryMethod)
+            {
+                Assert.True(tcs.TrySetFromTask(source));
+            }
+            else
+            {
+                tcs.SetFromTask(source);
+            }
+
+            Assert.Same(source.Result, tcs.Task.Result);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SetFromTask_Faulted(bool tryMethod)
+        {
+            TaskCompletionSource<object> tcs = new();
+
+            var source = new TaskCompletionSource<object>();
+            source.SetException([new FormatException(), new DivideByZeroException()]);
+
+            if (tryMethod)
+            {
+                Assert.True(tcs.TrySetFromTask(source.Task));
+            }
+            else
+            {
+                tcs.SetFromTask(source.Task);
+            }
+
+            Assert.True(tcs.Task.IsFaulted);
+            Assert.True(tcs.Task.Exception.InnerExceptions.Count == 2);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SetFromTask_Canceled(bool tryMethod)
+        {
+            TaskCompletionSource<object> tcs = new();
+
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            Task<object> source = Task.FromCanceled<object>(cts.Token);
+
+            if (tryMethod)
+            {
+                Assert.True(tcs.TrySetFromTask(source));
+            }
+            else
+            {
+                tcs.SetFromTask(source);
+            }
+
+            Assert.True(tcs.Task.IsCanceled);
+            try
+            {
+                tcs.Task.GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException oce)
+            {
+                Assert.Equal(cts.Token, oce.CancellationToken);
+            }
+        }
     }
 }

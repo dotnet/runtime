@@ -454,7 +454,7 @@ PhaseStatus Compiler::optVnCopyProp()
 
     VarSetOps::AssignNoCopy(this, compCurLife, VarSetOps::MakeEmpty(this));
 
-    class CopyPropDomTreeVisitor : public NewDomTreeVisitor<CopyPropDomTreeVisitor>
+    class CopyPropDomTreeVisitor : public DomTreeVisitor<CopyPropDomTreeVisitor>
     {
         // The map from lclNum to its recently live definitions as a stack.
         LclNumToLiveDefsMap m_curSsaName;
@@ -462,7 +462,7 @@ PhaseStatus Compiler::optVnCopyProp()
 
     public:
         CopyPropDomTreeVisitor(Compiler* compiler)
-            : NewDomTreeVisitor(compiler), m_curSsaName(compiler->getAllocator(CMK_CopyProp)), m_madeChanges(false)
+            : DomTreeVisitor(compiler), m_curSsaName(compiler->getAllocator(CMK_CopyProp)), m_madeChanges(false)
         {
         }
 

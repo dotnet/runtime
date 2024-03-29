@@ -573,7 +573,7 @@ namespace BrowserDebugProxy
                 // 0th id is for the object itself, and then its ancestors
                 bool isOwn = i == 0;
 
-                IReadOnlyList<FieldTypeClass> thisTypeFields = await sdbHelper.GetTypeFields(typeId, token);
+                List<FieldTypeClass> thisTypeFields = await sdbHelper.GetTypeFields(typeId, token);
                 if (!includeStatic)
                     thisTypeFields = thisTypeFields.Where(f => !f.Attributes.HasFlag(FieldAttributes.Static)).ToList();
 

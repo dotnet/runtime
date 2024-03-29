@@ -526,8 +526,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 #ifdef TARGET_ARM64
         if (binOp->OperIs(GT_AND, GT_OR))
         {
-            GenTree* next = TryLowerAndOrToCCMP(binOp);
-            if (next != nullptr)
+            GenTree* next;
+            if (TryLowerAndOrToCCMP(binOp, &next))
             {
                 return next;
             }
@@ -536,8 +536,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         if (binOp->OperIs(GT_SUB))
         {
             // Attempt to optimize for umsubl/smsubl.
-            GenTree* next = TryLowerAddSubToMulLongOp(binOp);
-            if (next != nullptr)
+            GenTree* next;
+            if (TryLowerAddSubToMulLongOp(binOp, &next))
             {
                 return next;
             }
@@ -564,14 +564,28 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
     if (blkNode->OperIsInitBlkOp())
     {
+#ifdef DEBUG
+        // Use BlkOpKindLoop for more cases under stress mode
+        if (comp->compStressCompile(Compiler::STRESS_STORE_BLOCK_UNROLLING, 50) && blkNode->OperIs(GT_STORE_BLK) &&
+            ((blkNode->GetLayout()->GetSize() % TARGET_POINTER_SIZE) == 0) && src->IsIntegralConst(0))
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+#ifdef TARGET_ARM64
+            // On ARM64 we can just use REG_ZR instead of having to load
+            // the constant into a real register like on ARM32.
+            src->SetContained();
+#endif
+            return;
+        }
+#endif
+
         if (src->OperIs(GT_INIT_VAL))
         {
             src->SetContained();
             src = src->AsUnOp()->gtGetOp1();
         }
 
-        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) &&
-            src->OperIs(GT_CNS_INT))
+        if ((size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) && src->OperIs(GT_CNS_INT))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -608,9 +622,19 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
         }
+        else if (blkNode->IsZeroingGcPointersOnHeap())
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+#ifdef TARGET_ARM64
+            // On ARM64 we can just use REG_ZR instead of having to load
+            // the constant into a real register like on ARM32.
+            src->SetContained();
+#endif
+        }
         else
         {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            LowerBlockStoreAsHelperCall(blkNode);
+            return;
         }
     }
     else
@@ -626,7 +650,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
 
         ClassLayout* layout               = blkNode->GetLayout();
-        bool         doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && layout->HasGCPtr();
+        bool         doCpObj              = layout->HasGCPtr();
         unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
 
         if (doCpObj && (size <= copyBlockUnrollLimit))
@@ -661,9 +685,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         else
         {
-            assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
-
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            assert(blkNode->OperIs(GT_STORE_BLK));
+            LowerBlockStoreAsHelperCall(blkNode);
         }
     }
 }
@@ -682,7 +705,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIs(GT_LCL_ADDR))
+    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size))
     {
         addr->SetContained();
         return;
@@ -938,25 +961,29 @@ void Lowering::LowerModPow2(GenTree* node)
 //
 // Arguments:
 //    node - the node to lower
+//    next - [out] Next node to lower if this function returns true
 //
-GenTree* Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next)
 {
     assert(node->OperIs(GT_ADD));
 
     if (!comp->opts.OptimizationEnabled())
-        return nullptr;
+        return false;
 
     if (node->isContained())
-        return nullptr;
+        return false;
 
     if (!varTypeIsIntegral(node))
-        return nullptr;
+        return false;
 
     if (node->gtFlags & GTF_SET_FLAGS)
-        return nullptr;
+        return false;
 
     if (node->gtOverflow())
-        return nullptr;
+        return false;
 
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
@@ -965,7 +992,7 @@ GenTree* Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
     // then we do not want to risk moving it around
     // in this transformation.
     if (IsContainableImmed(node, op2))
-        return nullptr;
+        return false;
 
     GenTree* mul = nullptr;
     GenTree* c   = nullptr;
@@ -999,7 +1026,8 @@ GenTree* Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
 
             ContainCheckNode(node);
 
-            return node->gtNext;
+            *next = node->gtNext;
+            return true;
         }
         // Transform "a * -b + c" to "c - a * b"
         else if (b->OperIs(GT_NEG) && !(b->gtFlags & GTF_SET_FLAGS) && !a->OperIs(GT_NEG) && !b->isContained() &&
@@ -1013,7 +1041,8 @@ GenTree* Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
 
             ContainCheckNode(node);
 
-            return node->gtNext;
+            *next = node->gtNext;
+            return true;
         }
         // Transform "a * b + c" to "c + a * b"
         else if (op1->OperIs(GT_MUL))
@@ -1023,11 +1052,12 @@ GenTree* Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
 
             ContainCheckNode(node);
 
-            return node->gtNext;
+            *next = node->gtNext;
+            return true;
         }
     }
 
-    return nullptr;
+    return false;
 }
 #endif
 
@@ -2030,7 +2060,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
             MakeSrcContained(indirNode, addr);
         }
     }
-    else if (addr->OperIs(GT_LCL_ADDR))
+    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->Size()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
@@ -2330,14 +2360,18 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //
 // Arguments:
 //    tree - pointer to the node
+//    next - [out] Next node to lower if this function returns true
 //
-GenTree* Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree)
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
 {
     assert(tree->OperIs(GT_AND, GT_OR));
 
     if (!comp->opts.OptimizationEnabled())
     {
-        return nullptr;
+        return false;
     }
 
     GenTree* op1 = tree->gtGetOp1();
@@ -2376,7 +2410,7 @@ GenTree* Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree)
     {
         JITDUMP("  ..could not turn [%06u] or [%06u] into a def of flags, bailing\n", Compiler::dspTreeID(op1),
                 Compiler::dspTreeID(op2));
-        return nullptr;
+        return false;
     }
 
     BlockRange().Remove(op2);
@@ -2418,7 +2452,8 @@ GenTree* Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree)
     DISPTREERANGE(BlockRange(), tree);
     JITDUMP("\n");
 
-    return tree->gtNext;
+    *next = tree->gtNext;
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -2762,32 +2797,33 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
 // - One op is a MUL_LONG containing two integer operands, and the other is a long.
 //
 // Arguments:
-//     op - The ADD or SUB node to attempt an optimisation on.
+//    op   - The ADD or SUB node to attempt an optimisation on.
+//    next - [out] Next node to lower if this function returns true
 //
-// Returns:
-//     A pointer to the next node to evaluate. On no operation, returns nullptr.
+// Return Value:
+//    false if no changes were made
 //
-GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
+bool Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next)
 {
     assert(op->OperIs(GT_ADD, GT_SUB));
 
     if (!comp->opts.OptimizationEnabled())
-        return nullptr;
+        return false;
 
     if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
-        return nullptr;
+        return false;
 
     if (op->isContained())
-        return nullptr;
+        return false;
 
     if (!varTypeIsIntegral(op))
-        return nullptr;
+        return false;
 
     if ((op->gtFlags & GTF_SET_FLAGS) != 0)
-        return nullptr;
+        return false;
 
     if (op->gtOverflow())
-        return nullptr;
+        return false;
 
     GenTree* op1 = op->gtGetOp1();
     GenTree* op2 = op->gtGetOp2();
@@ -2801,7 +2837,7 @@ GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
         // addValue - (mulValue1 * mulValue2)
         if (op->OperIs(GT_SUB))
         {
-            return nullptr;
+            return false;
         }
 
         mul    = op1->AsOp();
@@ -2815,20 +2851,20 @@ GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
     else
     {
         // Exit if neither operation are GT_MUL_LONG.
-        return nullptr;
+        return false;
     }
 
     // Additional value must be of long size.
     if (!addVal->TypeIs(TYP_LONG))
-        return nullptr;
+        return false;
 
     // Mul values must both be integers.
     if (!genActualTypeIsInt(mul->gtOp1) || !genActualTypeIsInt(mul->gtOp2))
-        return nullptr;
+        return false;
 
     // The multiply must evaluate to the same thing if moved.
     if (!IsInvariantInRange(mul, op))
-        return nullptr;
+        return false;
 
     // Create the new node and replace the original.
     NamedIntrinsic intrinsicId =
@@ -2851,14 +2887,13 @@ GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
     BlockRange().Remove(mul);
     BlockRange().Remove(op);
 
-#ifdef DEBUG
     JITDUMP("Converted to HW_INTRINSIC 'NI_ArmBase_Arm64_MultiplyLong[Add/Sub]'.\n");
     JITDUMP(":\n");
     DISPTREERANGE(BlockRange(), outOp);
     JITDUMP("\n");
-#endif
 
-    return outOp;
+    *next = outOp;
+    return true;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -2868,44 +2903,45 @@ GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
 // - op1 is a MUL_LONG containing two integer operands.
 //
 // Arguments:
-//     op - The NEG node to attempt an optimisation on.
+//    op   - The NEG node to attempt an optimisation on.
+//    next - [out] Next node to lower if this function returns true
 //
-// Returns:
-//     A pointer to the next node to evaluate. On no operation, returns nullptr.
+// Return Value:
+//    false if no changes were made
 //
-GenTree* Lowering::TryLowerNegToMulLongOp(GenTreeOp* op)
+bool Lowering::TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next)
 {
     assert(op->OperIs(GT_NEG));
 
     if (!comp->opts.OptimizationEnabled())
-        return nullptr;
+        return false;
 
     if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
-        return nullptr;
+        return false;
 
     if (op->isContained())
-        return nullptr;
+        return false;
 
     if (!varTypeIsIntegral(op))
-        return nullptr;
+        return false;
 
     if ((op->gtFlags & GTF_SET_FLAGS) != 0)
-        return nullptr;
+        return false;
 
     GenTree* op1 = op->gtGetOp1();
 
     // Ensure the negated operand is a MUL_LONG.
     if (!op1->OperIs(GT_MUL_LONG))
-        return nullptr;
+        return false;
 
     // Ensure the MUL_LONG contains two integer parameters.
     GenTreeOp* mul = op1->AsOp();
     if (!genActualTypeIsInt(mul->gtOp1) || !genActualTypeIsInt(mul->gtOp2))
-        return nullptr;
+        return false;
 
     // The multiply must evaluate to the same thing if evaluated at 'op'.
     if (!IsInvariantInRange(mul, op))
-        return nullptr;
+        return false;
 
     // Able to optimise, create the new node and replace the original.
     GenTreeHWIntrinsic* outOp =
@@ -2934,7 +2970,8 @@ GenTree* Lowering::TryLowerNegToMulLongOp(GenTreeOp* op)
     JITDUMP("\n");
 #endif
 
-    return outOp;
+    *next = outOp;
+    return true;
 }
 #endif // TARGET_ARM64
 
@@ -3149,6 +3186,24 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
             }
+
+            case NI_Sve_CreateTrueMaskByte:
+            case NI_Sve_CreateTrueMaskDouble:
+            case NI_Sve_CreateTrueMaskInt16:
+            case NI_Sve_CreateTrueMaskInt32:
+            case NI_Sve_CreateTrueMaskInt64:
+            case NI_Sve_CreateTrueMaskSByte:
+            case NI_Sve_CreateTrueMaskSingle:
+            case NI_Sve_CreateTrueMaskUInt16:
+            case NI_Sve_CreateTrueMaskUInt32:
+            case NI_Sve_CreateTrueMaskUInt64:
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op1));
+                if (intrin.op1->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op1);
+                }
+                break;
 
             default:
                 unreached();

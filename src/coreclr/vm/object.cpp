@@ -211,7 +211,6 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pInterfaceMT));
-        PRECONDITION(pObj->GetMethodTable()->IsRestored());
         PRECONDITION(pInterfaceMT->IsInterface());
     }
     CONTRACTL_END

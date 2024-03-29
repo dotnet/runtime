@@ -200,5 +200,112 @@ namespace System.Threading.Tasks.Tests.Status
             Assert.False(tcs.TrySetCanceled());
             Assert.False(tcs.TrySetCanceled(default));
         }
+
+        [Fact]
+        public void SetFromTask_InvalidArgument_Throws()
+        {
+            TaskCompletionSource tcs = new();
+            AssertExtensions.Throws<ArgumentNullException>("completedTask", () => tcs.SetFromTask(null));
+            AssertExtensions.Throws<ArgumentException>("completedTask", () => tcs.SetFromTask(new TaskCompletionSource().Task));
+            Assert.False(tcs.Task.IsCompleted);
+
+            tcs.SetResult();
+            Assert.True(tcs.Task.IsCompletedSuccessfully);
+
+            AssertExtensions.Throws<ArgumentNullException>("completedTask", () => tcs.SetFromTask(null));
+            AssertExtensions.Throws<ArgumentException>("completedTask", () => tcs.SetFromTask(new TaskCompletionSource().Task));
+            Assert.True(tcs.Task.IsCompletedSuccessfully);
+        }
+
+        [Fact]
+        public void SetFromTask_AlreadyCompleted_ReturnsFalseOrThrows()
+        {
+            TaskCompletionSource tcs = new();
+            tcs.SetResult();
+
+            Assert.False(tcs.TrySetFromTask(Task.CompletedTask));
+            Assert.False(tcs.TrySetFromTask(Task.FromException(new Exception())));
+            Assert.False(tcs.TrySetFromTask(Task.FromCanceled(new CancellationToken(canceled: true))));
+
+            Assert.Throws<InvalidOperationException>(() => tcs.SetFromTask(Task.CompletedTask));
+            Assert.Throws<InvalidOperationException>(() => tcs.SetFromTask(Task.FromException(new Exception())));
+            Assert.Throws<InvalidOperationException>(() => tcs.SetFromTask(Task.FromCanceled(new CancellationToken(canceled: true))));
+
+            Assert.True(tcs.Task.IsCompletedSuccessfully);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SetFromTask_CompletedSuccessfully(bool tryMethod)
+        {
+            TaskCompletionSource tcs = new();
+            Task source = Task.CompletedTask;
+
+            if (tryMethod)
+            {
+                Assert.True(tcs.TrySetFromTask(source));
+            }
+            else
+            {
+                tcs.SetFromTask(source);
+            }
+
+            Assert.True(tcs.Task.IsCompletedSuccessfully);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SetFromTask_Faulted(bool tryMethod)
+        {
+            TaskCompletionSource tcs = new();
+
+            var source = new TaskCompletionSource();
+            source.SetException([new FormatException(), new DivideByZeroException()]);
+
+            if (tryMethod)
+            {
+                Assert.True(tcs.TrySetFromTask(source.Task));
+            }
+            else
+            {
+                tcs.SetFromTask(source.Task);
+            }
+
+            Assert.True(tcs.Task.IsFaulted);
+            Assert.True(tcs.Task.Exception.InnerExceptions.Count == 2);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SetFromTask_Canceled(bool tryMethod)
+        {
+            TaskCompletionSource tcs = new();
+
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            Task source = Task.FromCanceled(cts.Token);
+
+            if (tryMethod)
+            {
+                Assert.True(tcs.TrySetFromTask(source));
+            }
+            else
+            {
+                tcs.SetFromTask(source);
+            }
+
+            Assert.True(tcs.Task.IsCanceled);
+            try
+            {
+                tcs.Task.GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException oce)
+            {
+                Assert.Equal(cts.Token, oce.CancellationToken);
+            }
+        }
     }
 }

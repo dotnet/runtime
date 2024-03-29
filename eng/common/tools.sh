@@ -68,6 +68,9 @@ fi
 runtime_source_feed=${runtime_source_feed:-''}
 runtime_source_feed_key=${runtime_source_feed_key:-''}
 
+# True if the build is a product build
+product_build=${product_build:-false}
+
 # Resolve any symlinks in the given path.
 function ResolvePath {
   local path=$1
@@ -123,11 +126,6 @@ function InitializeDotNetCli {
   # so it doesn't output warnings to the console.
   export LTTNG_HOME="$HOME"
 
-  # Source Build uses DotNetCoreSdkDir variable
-  if [[ -n "${DotNetCoreSdkDir:-}" ]]; then
-    export DOTNET_INSTALL_DIR="$DotNetCoreSdkDir"
-  fi
-
   # Find the first path on $PATH that contains the dotnet.exe
   if [[ "$use_installed_dotnet_cli" == true && $global_json_has_runtimes == false && -z "${DOTNET_INSTALL_DIR:-}" ]]; then
     local dotnet_path=`command -v dotnet`
@@ -146,7 +144,7 @@ function InitializeDotNetCli {
   if [[ $global_json_has_runtimes == false && -n "${DOTNET_INSTALL_DIR:-}" && -d "$DOTNET_INSTALL_DIR/sdk/$dotnet_sdk_version" ]]; then
     dotnet_root="$DOTNET_INSTALL_DIR"
   else
-    dotnet_root="$repo_root/.dotnet"
+    dotnet_root="${repo_root}.dotnet"
 
     export DOTNET_INSTALL_DIR="$dotnet_root"
 
@@ -343,7 +341,7 @@ function InitializeBuildTool {
   _InitializeBuildToolCommand="msbuild"
   # use override if it exists - commonly set by source-build
   if [[ "${_OverrideArcadeInitializeBuildToolFramework:-x}" == "x" ]]; then
-    _InitializeBuildToolFramework="net8.0"
+    _InitializeBuildToolFramework="net9.0"
   else
     _InitializeBuildToolFramework="${_OverrideArcadeInitializeBuildToolFramework}"
   fi
@@ -458,12 +456,10 @@ function MSBuild {
     local possiblePaths=()
     possiblePaths+=( "$toolset_dir/$_InitializeBuildToolFramework/Microsoft.DotNet.ArcadeLogging.dll" )
     possiblePaths+=( "$toolset_dir/$_InitializeBuildToolFramework/Microsoft.DotNet.Arcade.Sdk.dll" )
-    possiblePaths+=( "$toolset_dir/netcoreapp2.1/Microsoft.DotNet.ArcadeLogging.dll" )
-    possiblePaths+=( "$toolset_dir/netcoreapp2.1/Microsoft.DotNet.Arcade.Sdk.dll" )
-    possiblePaths+=( "$toolset_dir/netcoreapp3.1/Microsoft.DotNet.ArcadeLogging.dll" )
-    possiblePaths+=( "$toolset_dir/netcoreapp3.1/Microsoft.DotNet.Arcade.Sdk.dll" )
     possiblePaths+=( "$toolset_dir/net7.0/Microsoft.DotNet.ArcadeLogging.dll" )
     possiblePaths+=( "$toolset_dir/net7.0/Microsoft.DotNet.Arcade.Sdk.dll" )
+    possiblePaths+=( "$toolset_dir/net8.0/Microsoft.DotNet.ArcadeLogging.dll" )
+    possiblePaths+=( "$toolset_dir/net8.0/Microsoft.DotNet.Arcade.Sdk.dll" )
     for path in "${possiblePaths[@]}"; do
       if [[ -f $path ]]; then
         selectedPath=$path
@@ -510,7 +506,8 @@ function MSBuild-Core {
       echo "Build failed with exit code $exit_code. Check errors above."
 
       # When running on Azure Pipelines, override the returned exit code to avoid double logging.
-      if [[ "$ci" == "true" && -n ${SYSTEM_TEAMPROJECT:-} ]]; then
+      # Skip this when the build is a child of the VMR orchestrator build.
+      if [[ "$ci" == true && -n ${SYSTEM_TEAMPROJECT:-} && "$product_build" != true && "$properties" != *"DotNetBuildRepo=true"* ]]; then
         Write-PipelineSetResult -result "Failed" -message "msbuild execution failed."
         # Exiting with an exit code causes the azure pipelines task to log yet another "noise" error
         # The above Write-PipelineSetResult will cause the task to be marked as failure without adding yet another error

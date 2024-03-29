@@ -37,3 +37,17 @@ namespace System.Diagnostics
         public static System.Diagnostics.DebugProvider SetProvider(System.Diagnostics.DebugProvider provider) { throw null; }
     }
 }
+
+#if FEATURE_WASM_MANAGED_THREADS
+namespace System.Threading
+{
+    public partial class Thread
+    {
+        [ThreadStatic]
+        public static bool ThrowOnBlockingWaitOnJSInteropThread;
+
+        public static void AssureBlockingPossible() { throw null; }
+        public static void ForceBlockingWait(Action<object?> action, object? state) { throw null; }
+    }
+}
+#endif

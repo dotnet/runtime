@@ -418,12 +418,12 @@ namespace System.Reflection.Emit
 
             EmitOpcode(opcode);
             UpdateStackSize(stackChange);
-            WriteOrReserveToken(_moduleBuilder.GetMethodMetadataToken(con), con);
+            WriteOrReserveToken(_moduleBuilder.TryGetConstructorHandle(con), con);
         }
 
-        private void WriteOrReserveToken(int token, object member)
+        private void WriteOrReserveToken(EntityHandle handle, object member)
         {
-            if (token == -1)
+            if (handle.IsNil)
             {
                 // The member is a `***BuilderImpl` and its token is not yet defined.
                 // Reserve the token bytes and write them later when its ready
@@ -432,7 +432,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                _il.Token(token);
+                _il.Token(MetadataTokens.GetToken(handle));
             }
         }
 
@@ -553,7 +553,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(field);
 
             EmitOpcode(opcode);
-            WriteOrReserveToken(_moduleBuilder.GetFieldMetadataToken(field), field);
+            WriteOrReserveToken(_moduleBuilder.TryGetFieldHandle(field), field);
         }
 
         public override void Emit(OpCode opcode, MethodInfo meth)
@@ -567,7 +567,7 @@ namespace System.Reflection.Emit
             else
             {
                 EmitOpcode(opcode);
-                WriteOrReserveToken(_moduleBuilder.GetMethodMetadataToken(meth), meth);
+                WriteOrReserveToken(_moduleBuilder.TryGetMethodHandle(meth), meth);
             }
         }
 
@@ -576,7 +576,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(cls);
 
             EmitOpcode(opcode);
-            WriteOrReserveToken(_moduleBuilder.GetTypeMetadataToken(cls), cls);
+            WriteOrReserveToken(_moduleBuilder.TryGetTypeHandle(cls), cls);
         }
 
         public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
@@ -592,11 +592,11 @@ namespace System.Reflection.Emit
             UpdateStackSize(GetStackChange(opcode, methodInfo, optionalParameterTypes));
             if (optionalParameterTypes == null || optionalParameterTypes.Length == 0)
             {
-                WriteOrReserveToken(_moduleBuilder.GetMethodMetadataToken(methodInfo), methodInfo);
+                WriteOrReserveToken(_moduleBuilder.TryGetMethodHandle(methodInfo), methodInfo);
             }
             else
             {
-                WriteOrReserveToken(_moduleBuilder.GetMethodMetadataToken(methodInfo, optionalParameterTypes),
+                WriteOrReserveToken(_moduleBuilder.TryGetMethodHandle(methodInfo, optionalParameterTypes),
                     new KeyValuePair<MethodInfo, Type[]>(methodInfo, optionalParameterTypes));
             }
         }
@@ -615,6 +615,10 @@ namespace System.Reflection.Emit
             if (methodInfo is MethodBuilderImpl builder)
             {
                 stackChange -= builder.ParameterCount;
+            }
+            else if (methodInfo is ArrayMethod sm)
+            {
+                stackChange -= sm.ParameterTypes.Length;
             }
             else
             {

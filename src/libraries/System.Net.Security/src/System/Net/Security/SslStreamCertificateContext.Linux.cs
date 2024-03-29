@@ -17,6 +17,10 @@ namespace System.Net.Security
 {
     public partial class SslStreamCertificateContext
     {
+        internal static TimeSpan DefaultOcspRefreshInterval => TimeSpan.FromHours(24);
+        internal static TimeSpan MinRefreshBeforeExpirationInterval => TimeSpan.FromMinutes(5);
+        internal static TimeSpan RefreshAfterFailureBackOffInterval => TimeSpan.FromSeconds(5);
+
         private const bool TrimRootCertificate = true;
         internal readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> SslContexts;
         internal readonly SafeX509Handle CertificateHandle;
@@ -26,13 +30,30 @@ namespace System.Net.Security
         private byte[]? _ocspResponse;
         private DateTimeOffset _ocspExpiration;
         private DateTimeOffset _nextDownload;
+        // Private copy of the intermediate certificates, in case the user decides to dispose the
+        // instances reachable through IntermediateCertificates property.
+        private X509Certificate2[] _privateIntermediateCertificates;
+        private X509Certificate2? _rootCertificate;
         private Task<byte[]?>? _pendingDownload;
         private List<string>? _ocspUrls;
-        private X509Certificate2? _ca;
 
         private SslStreamCertificateContext(X509Certificate2 target, ReadOnlyCollection<X509Certificate2> intermediates, SslCertificateTrust? trust)
         {
             IntermediateCertificates = intermediates;
+            if (intermediates.Count > 0)
+            {
+                _privateIntermediateCertificates = new X509Certificate2[intermediates.Count];
+
+                for (int i = 0; i < intermediates.Count; i++)
+                {
+                    _privateIntermediateCertificates[i] = new X509Certificate2(intermediates[i]);
+                }
+            }
+            else
+            {
+                _privateIntermediateCertificates = Array.Empty<X509Certificate2>();
+            }
+
             TargetCertificate = target;
             Trust = trust;
             SslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
@@ -76,15 +97,8 @@ namespace System.Net.Security
 
         partial void AddRootCertificate(X509Certificate2? rootCertificate, ref bool transferredOwnership)
         {
-            if (IntermediateCertificates.Count == 0)
-            {
-                _ca = rootCertificate;
-                transferredOwnership = true;
-            }
-            else
-            {
-                _ca = IntermediateCertificates[0];
-            }
+            _rootCertificate = rootCertificate;
+            transferredOwnership = rootCertificate != null;
 
             if (!_staplingForbidden)
             {
@@ -140,6 +154,17 @@ namespace System.Net.Security
             return ValueTask.FromResult(_ocspResponse);
         }
 
+        internal ValueTask<byte[]?> WaitForPendingOcspFetchAsync()
+        {
+            Task<byte[]?>? pending = _pendingDownload;
+            if (pending is not null && !pending.IsFaulted)
+            {
+                return new ValueTask<byte[]?>(pending);
+            }
+
+            return ValueTask.FromResult(DateTimeOffset.UtcNow <= _ocspExpiration ? _ocspResponse : null);
+        }
+
         private ValueTask<byte[]?> DownloadOcspAsync()
         {
             Task<byte[]?>? pending = _pendingDownload;
@@ -149,7 +174,7 @@ namespace System.Net.Security
                 return new ValueTask<byte[]?>(pending);
             }
 
-            if (_ocspUrls is null && _ca is not null)
+            if (_ocspUrls is null && _rootCertificate is not null)
             {
                 foreach (X509Extension ext in TargetCertificate.Extensions)
                 {
@@ -192,7 +217,9 @@ namespace System.Net.Security
 
         private async Task<byte[]?> FetchOcspAsync()
         {
-            X509Certificate2? caCert = _ca;
+            Debug.Assert(_rootCertificate != null);
+            X509Certificate2? caCert = _privateIntermediateCertificates.Length > 0 ? _privateIntermediateCertificates[0] : _rootCertificate;
+
             Debug.Assert(_ocspUrls is not null);
             Debug.Assert(_ocspUrls.Count > 0);
             Debug.Assert(caCert is not null);
@@ -211,6 +238,13 @@ namespace System.Net.Security
                 return null;
             }
 
+            IntPtr[] issuerHandles = ArrayPool<IntPtr>.Shared.Rent(_privateIntermediateCertificates.Length + 1);
+            for (int i = 0; i < _privateIntermediateCertificates.Length; i++)
+            {
+                issuerHandles[i] = _privateIntermediateCertificates[i].Handle;
+            }
+            issuerHandles[_privateIntermediateCertificates.Length] = _rootCertificate.Handle;
+
             using (SafeOcspRequestHandle ocspRequest = Interop.Crypto.X509BuildOcspRequest(subject, issuer))
             {
                 byte[] rentedBytes = ArrayPool<byte>.Shared.Rent(Interop.Crypto.GetOcspRequestDerSize(ocspRequest));
@@ -227,7 +261,7 @@ namespace System.Net.Security
 
                     if (ret is not null)
                     {
-                        if (!Interop.Crypto.X509DecodeOcspToExpiration(ret, ocspRequest, subject, issuer, out DateTimeOffset expiration))
+                        if (!Interop.Crypto.X509DecodeOcspToExpiration(ret, ocspRequest, subject, issuerHandles.AsSpan(0, _privateIntermediateCertificates.Length + 1), out DateTimeOffset expiration))
                         {
                             ret = null;
                             continue;
@@ -241,21 +275,33 @@ namespace System.Net.Security
                             _ocspUrls[i] = tmp;
                         }
 
-                        DateTimeOffset nextCheckA = DateTimeOffset.UtcNow.AddDays(1);
-                        DateTimeOffset nextCheckB = expiration.AddMinutes(-5);
+                        DateTimeOffset nextCheckA = DateTimeOffset.UtcNow.Add(DefaultOcspRefreshInterval);
+                        DateTimeOffset nextCheckB = expiration.Subtract(MinRefreshBeforeExpirationInterval);
 
                         _ocspResponse = ret;
                         _ocspExpiration = expiration;
                         _nextDownload = nextCheckA < nextCheckB ? nextCheckA : nextCheckB;
-                        _pendingDownload = null;
                         break;
                     }
                 }
 
+                issuerHandles.AsSpan().Clear();
+                ArrayPool<IntPtr>.Shared.Return(issuerHandles);
                 ArrayPool<byte>.Shared.Return(rentedBytes);
                 ArrayPool<char>.Shared.Return(rentedChars.Array!);
                 GC.KeepAlive(TargetCertificate);
+                GC.KeepAlive(_privateIntermediateCertificates);
+                GC.KeepAlive(_rootCertificate);
                 GC.KeepAlive(caCert);
+
+                _pendingDownload = null;
+                if (ret == null)
+                {
+                    // All download attempts failed, don't try again for 5 seconds.
+                    // This backoff will be applied only if the OCSP staple is not expired.
+                    // If it is expired, we will force-refresh it during next GetOcspResponseAsync call.
+                    _nextDownload = DateTimeOffset.UtcNow.Add(RefreshAfterFailureBackOffInterval);
+                }
                 return ret;
             }
         }

@@ -647,29 +647,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 //
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
-    assert(treeNode->OperGet() == GT_JMPTABLE);
-
-    unsigned     jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
-    unsigned     jmpTabBase;
-
-    jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, false);
-
-    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
-
-    for (unsigned i = 0; i < jumpCount; i++)
-    {
-        BasicBlock* target = *jumpTable++;
-        noway_assert(target->HasFlag(BBF_HAS_LABEL));
-
-        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
-
-        GetEmitter()->emitDataGenData(i, target);
-    }
-
-    GetEmitter()->emitDataGenEnd();
-
+    unsigned jmpTabBase = genEmitJumpTable(treeNode, false);
     genMov32RelocatableDataLabel(jmpTabBase, treeNode->GetRegNum());
 
     genProduceReg(treeNode);
@@ -1317,6 +1295,13 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
     regNumber reg = genConsumeReg(op);
     inst_RV_RV(INS_tst, reg, reg, genActualType(op));
     inst_JMP(EJ_ne, compiler->compCurBB->GetTrueTarget());
+
+    // If we cannot fall into the false target, emit a jump to it
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    {
+        inst_JMP(EJ_jmp, falseTarget);
+    }
 }
 
 //------------------------------------------------------------------------

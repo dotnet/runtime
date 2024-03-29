@@ -326,16 +326,23 @@ main(int argc UNUSED, char **argv)
       if (ret < 0)
         error_msg_and_die("unw_get_proc_info(ip=0x%lx) failed: ret=%d\n", (long) ip, ret);
 
-      if (!testcase) {
-        char proc_name[128];
-        unw_word_t off;
-        unw_get_proc_name(&c, proc_name, sizeof(proc_name), &off);
+      if (!testcase)
+        {
+          char proc_name[128];
+          unw_word_t off;
+          unw_get_proc_name(&c, proc_name, sizeof(proc_name), &off);
 
-        printf("\tip=0x%08lx proc=%08lx-%08lx handler=0x%08lx lsda=0x%08lx %s\n",
-				(long) ip,
-				(long) pi.start_ip, (long) pi.end_ip,
-				(long) pi.handler, (long) pi.lsda, proc_name);
-	  }
+          printf("\tip=0x%08lx proc=%08lx-%08lx handler=0x%08lx lsda=0x%08lx %s\n",
+                 (long) ip,
+                 (long) pi.start_ip, (long) pi.end_ip,
+                 (long) pi.handler, (long) pi.lsda, proc_name);
+
+          char filename[PATH_MAX];
+          unw_word_t file_offset;
+          ret = unw_get_elf_filename (&c, filename, sizeof (filename), &file_offset);
+          if (ret == UNW_ESUCCESS)
+              printf ("\t[%s+0x%lx]\n", filename, (long) file_offset);
+        }
 
       if (testcase && test_cur < TEST_FRAMES)
         {

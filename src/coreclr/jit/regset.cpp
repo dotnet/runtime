@@ -895,7 +895,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 regNumber genRegArgNext(regNumber argReg)
 {
-    assert(isValidIntArgReg(argReg) || isValidFloatArgReg(argReg));
+    assert(isValidIntArgReg(argReg, CorInfoCallConvExtension::Managed) || isValidFloatArgReg(argReg));
 
     switch (argReg)
     {

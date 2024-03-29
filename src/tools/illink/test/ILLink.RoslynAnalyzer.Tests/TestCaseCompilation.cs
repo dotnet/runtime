@@ -22,7 +22,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				new RequiresUnreferencedCodeAnalyzer (),
 				new DynamicallyAccessedMembersAnalyzer ());
 
-		public static Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics)> CreateCompilation (
+		public static (CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics) CreateCompilation (
 			string src,
 			bool consoleApplication,
 			(string, string)[]? globalAnalyzerOptions = null,
@@ -31,7 +31,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			IEnumerable<AdditionalText>? additionalFiles = null)
 			=> CreateCompilation (CSharpSyntaxTree.ParseText (src), consoleApplication, globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles);
 
-		public static async Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics)> CreateCompilation (
+		public static (CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics) CreateCompilation (
 			SyntaxTree src,
 			bool consoleApplication,
 			(string, string)[]? globalAnalyzerOptions = null,
@@ -46,7 +46,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var comp = CSharpCompilation.Create (
 				assemblyName: Guid.NewGuid ().ToString ("N"),
 				syntaxTrees: sources,
-				references: (await TestCaseUtils.GetDotNetReferences ()).Add (mdRef).AddRange (additionalReferences),
+				references: SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences().Add(mdRef).AddRange(additionalReferences),
 				new CSharpCompilationOptions (consoleApplication ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary));
 			var analyzerOptions = new AnalyzerOptions (
 				additionalFiles: additionalFiles?.ToImmutableArray () ?? ImmutableArray<AdditionalText>.Empty,

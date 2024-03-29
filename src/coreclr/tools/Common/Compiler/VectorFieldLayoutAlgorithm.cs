@@ -58,6 +58,13 @@ namespace ILCompiler
                     // 16-byte alignment for __m256.
                     alignment = new LayoutInt(16);
                 }
+                else if (defType.Context.Target.Architecture == TargetArchitecture.RiscV64)
+                {
+                    // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
+                    // RISC-V Vector Extenstion Intrinsic Document
+                    // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/vector_type_infos.adoc
+                    alignment = new LayoutInt(16);
+                }
                 else
                 {
                     alignment = new LayoutInt(32);
@@ -77,6 +84,13 @@ namespace ILCompiler
                 {
                     // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to
                     // 16-byte alignment for __m256.
+                    alignment = new LayoutInt(16);
+                }
+                else if (defType.Context.Target.Architecture == TargetArchitecture.RiscV64)
+                {
+                    // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
+                    // RISC-V Vector Extenstion Intrinsic Document
+                    // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/vector_type_infos.adoc
                     alignment = new LayoutInt(16);
                 }
                 else

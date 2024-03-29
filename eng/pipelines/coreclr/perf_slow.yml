@@ -36,24 +36,28 @@ extends:
 
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
 
-        # build mono
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
-            jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+            jobTemplate: /eng/pipelines/common/global-build-job.yml
+            buildConfig: release
             runtimeFlavor: mono
-            buildConfig: release
-            platforms:
-            - linux_arm64
-
-        # build coreclr and libraries
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
-            buildConfig: release
+            runtimeVariant: monointerpreter
             platforms:
             - linux_arm64
             jobParameters:
-              testGroup: perf
+              nameSuffix: mono
+              buildArgs: -s mono+clr.iltools+clr.hosts+libs+host+packs -c $(_BuildConfig)
+              isOfficialBuild: false
+              postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_mono
+                  displayName: Build Assets
 
         # run arm64 interpreter jobs for mono
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -79,7 +83,7 @@ extends:
         # build coreclr and libraries
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
-            jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+            jobTemplate: /eng/pipelines/common/global-build-job.yml
             buildConfig: release
             platforms:
             - linux_x64
@@ -87,7 +91,19 @@ extends:
             - linux_arm64
             - windows_arm64
             jobParameters:
-              testGroup: perf
+              nameSuffix: coreclr
+              buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
+              isOfficialBuild: false
+              postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
+                  displayName: Build Assets
 
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -148,43 +164,41 @@ extends:
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
 
-      # run coreclr Linux arm64 ampere no dynamic pgo microbenchmarks perf job
-        # disabled because of: https://github.com/dotnet/performance/issues/3565
-        # - template: /eng/pipelines/common/platform-matrix.yml
-        #   parameters:
-        #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-        #     buildConfig: release
-        #     runtimeFlavor: coreclr
-        #     platforms:
-        #     - linux_arm64
-        #     jobParameters:
-        #       testGroup: perf
-        #       liveLibrariesBuildConfig: Release
-        #       projectFile: microbenchmarks.proj
-        #       runKind: micro
-        #       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        #       logicalmachine: 'perfampere'
-        #       timeoutInMinutes: 780
-        #       pgoRunType: --nodynamicpgo
+      #run coreclr Linux arm64 ampere no dynamic pgo microbenchmarks perf job
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+            buildConfig: release
+            runtimeFlavor: coreclr
+            platforms:
+            - linux_arm64
+            jobParameters:
+              testGroup: perf
+              liveLibrariesBuildConfig: Release
+              projectFile: microbenchmarks.proj
+              runKind: micro
+              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+              logicalmachine: 'perfampere'
+              timeoutInMinutes: 780
+              pgoRunType: --nodynamicpgo
 
-      # run coreclr Linux arm64 ampere no R2R microbenchmarks perf job
-        # disabled because of: https://github.com/dotnet/performance/issues/3565
-        # - template: /eng/pipelines/common/platform-matrix.yml
-        #   parameters:
-        #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-        #     buildConfig: release
-        #     runtimeFlavor: coreclr
-        #     platforms:
-        #     - linux_arm64
-        #     jobParameters:
-        #       testGroup: perf
-        #       liveLibrariesBuildConfig: Release
-        #       projectFile: microbenchmarks.proj
-        #       runKind: micro
-        #       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        #       logicalmachine: 'perfampere'
-        #       timeoutInMinutes: 780
-        #       r2rRunType: --nor2r
+      #run coreclr Linux arm64 ampere no R2R microbenchmarks perf job
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+            buildConfig: release
+            runtimeFlavor: coreclr
+            platforms:
+            - linux_arm64
+            jobParameters:
+              testGroup: perf
+              liveLibrariesBuildConfig: Release
+              projectFile: microbenchmarks.proj
+              runKind: micro
+              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+              logicalmachine: 'perfampere'
+              timeoutInMinutes: 780
+              r2rRunType: --nor2r
 
       # run coreclr Windows arm64 microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml

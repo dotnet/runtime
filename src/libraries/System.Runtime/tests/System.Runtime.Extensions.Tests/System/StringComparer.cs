@@ -87,14 +87,15 @@ namespace System.Tests
             yield return new object[] { "abcd",             "ABCD",         "en-US" };
             yield return new object[] { "latin i",          "LATIN I",      "en-US" };
 
-            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
+            // https://github.com/dotnet/runtime/issues/95503
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnBrowser && !PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
                 yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(UpperLowerCasing_TestData))]
         public static void CreateWithCulturesTest(string lowerForm, string upperForm, string cultureName)
         {
@@ -112,7 +113,7 @@ namespace System.Tests
             Assert.Equal(sc.GetHashCode((object) lowerForm), sc.GetHashCode((object) upperForm));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void InvariantTest()
         {
             Assert.True(StringComparer.InvariantCulture.Equals("test", "test"), "Same casing strings with StringComparer.InvariantCulture should be equal");
@@ -179,7 +180,7 @@ namespace System.Tests
                 yield return new object[] { "turky i", "TURKY \u0130", "tr-TR", CompareOptions.IgnoreCase, true};
             }
 
-            if (PlatformDetection.IsNotHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 bool ignoreSymbolsIgnoresOnlyPunctuation = PlatformDetection.IsHybridGlobalizationOnBrowser;
                 yield return new object[] { "abcd", "ab cd", "en-US", CompareOptions.IgnoreSymbols, true };

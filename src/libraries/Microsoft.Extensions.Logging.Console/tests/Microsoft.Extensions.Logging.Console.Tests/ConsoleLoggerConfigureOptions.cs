@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(3, typeof(ConsoleFormatterOptions).GetProperties(flags).Length);
             Assert.Equal(5, typeof(SimpleConsoleFormatterOptions).GetProperties(flags).Length);
             Assert.Equal(4, typeof(JsonConsoleFormatterOptions).GetProperties(flags).Length);
-            Assert.Equal(4, typeof(JsonWriterOptions).GetProperties(flags).Length);
+            Assert.Equal(6, typeof(JsonWriterOptions).GetProperties(flags).Length);
         }
 
         [Theory]

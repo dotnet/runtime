@@ -9,17 +9,6 @@ namespace System.Buffers.Text.Tests
 {
     internal static class TestUtils
     {
-        public static MutableDecimal ToMutableDecimal(this decimal d)
-        {
-            int[] bits = decimal.GetBits(d);
-            return new MutableDecimal() { High = (uint)bits[0], Low = (uint)bits[1], Mid = (uint)bits[2], Flags = (uint)bits[3] };
-        }
-
-        public static decimal ToDecimal(this MutableDecimal md)
-        {
-            return new decimal(new int[] { (int)md.High, (int)md.Low, (int)md.Mid, (int)md.Flags });
-        }
-
         //
         // Generate test output that's unmabiguous and convenient for investigations.
         //
@@ -50,9 +39,8 @@ namespace System.Buffers.Text.Tests
             }
             else if (value is decimal dec)
             {
-                MutableDecimal mutableDecimal = dec.ToMutableDecimal();
-                bool isNegative = mutableDecimal.IsNegative;
-                int scale = mutableDecimal.Scale;
+                bool isNegative = decimal.IsNegative(dec);
+                int scale = dec.Scale;
 
                 if (isNegative)
                 {

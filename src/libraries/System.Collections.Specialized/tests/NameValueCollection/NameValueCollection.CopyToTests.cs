@@ -7,7 +7,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameValueCollectionCopyToTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0, 0)]
         [InlineData(0, 1)]
         [InlineData(5, 0)]
@@ -37,7 +37,7 @@ namespace System.Collections.Specialized.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void CopyTo_MultipleValues_SameName()
         {
             NameValueCollection nameValueCollection = new NameValueCollection();
@@ -51,7 +51,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Equal(nameValueCollection[0], dest[0]);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0)]
         [InlineData(5)]
         public void CopyTo_Invalid(int count)

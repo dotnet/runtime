@@ -2003,7 +2003,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
         public static void Parse_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
         {
@@ -2464,7 +2464,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
         public static void Parse_Span_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
         {

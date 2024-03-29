@@ -1482,7 +1482,7 @@ namespace System.Runtime.Serialization.DataContracts
                 int iParam = typeName.IndexOf('[');
                 if (iParam >= 0)
                     typeName = typeName.Substring(0, iParam);
-                IList<int> nestedParamCounts = GetDataContractNameForGenericName(typeName, localName);
+                List<int> nestedParamCounts = GetDataContractNameForGenericName(typeName, localName);
                 bool isTypeOpenGeneric = type.IsGenericTypeDefinition;
                 Type[] genParams = type.GetGenericArguments();
                 for (int i = 0; i < genParams.Length; i++)

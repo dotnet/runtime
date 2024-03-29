@@ -473,7 +473,6 @@ mono_atomic_store_ptr (volatile gpointer *dst, gpointer val)
 	InterlockedExchangePointer ((PVOID volatile *)dst, (PVOID)val);
 }
 
-
 #elif defined(MONO_USE_GCC_ATOMIC)
 
 /*
@@ -726,6 +725,7 @@ static inline void mono_atomic_store_i64(volatile gint64 *dst, gint64 val)
 
 #define WAPI_NO_ATOMIC_ASM
 
+/* Fallbacks seem to not be used anymore, they should be removed. */
 extern gint32 mono_atomic_cas_i32(volatile gint32 *dest, gint32 exch, gint32 comp);
 extern gint64 mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp);
 extern gpointer mono_atomic_cas_ptr(volatile gpointer *dest, gpointer exch, gpointer comp);

@@ -67,7 +67,7 @@ namespace System.Web
                         {
                             if (!string.IsNullOrEmpty(key))
                             {
-                                sb.Append(key).Append('=');
+                                sb.Append(UrlEncode(key)).Append('=');
                             }
                             sb.Append(UrlEncode(value)).Append('&');
                         }

@@ -104,25 +104,14 @@ namespace Internal.Runtime.TypeLoader
             return result;
         }
 
-        public static unsafe void Memset(IntPtr destination, int length, byte value)
+        public static unsafe void* AllocateMemory(int cbBytes)
         {
-            byte* pbDest = (byte*)destination.ToPointer();
-            while (length > 0)
-            {
-                *pbDest = value;
-                pbDest++;
-                length--;
-            }
+            return NativeMemory.Alloc((nuint)cbBytes);
         }
 
-        public static unsafe IntPtr AllocateMemory(int cbBytes)
+        public static unsafe void FreeMemory(void* memoryPtrToFree)
         {
-            return (IntPtr)NativeMemory.Alloc((nuint)cbBytes);
-        }
-
-        public static unsafe void FreeMemory(IntPtr memoryPtrToFree)
-        {
-            NativeMemory.Free((void*)memoryPtrToFree);
+            NativeMemory.Free(memoryPtrToFree);
         }
     }
 
@@ -132,12 +121,12 @@ namespace Internal.Runtime.TypeLoader
             int arity, TypeBuilderState state)
         {
             bool successful = false;
-            IntPtr eeTypePtrPlusGCDesc = IntPtr.Zero;
-            IntPtr writableDataPtr = IntPtr.Zero;
-            IntPtr gcStaticData = IntPtr.Zero;
-            IntPtr nonGcStaticData = IntPtr.Zero;
-            IntPtr genericComposition = IntPtr.Zero;
-            IntPtr threadStaticIndex = IntPtr.Zero;
+            void* eeTypePlusGCDesc = null;
+            void* writableData = null;
+            void* nonGcStaticData = null;
+            void* genericComposition = null;
+            void* threadStaticIndex = null;
+            nint gcStaticData = 0;
 
             try
             {
@@ -266,10 +255,10 @@ namespace Internal.Runtime.TypeLoader
                     int cbGCDescAligned = MemoryHelpers.AlignUp(cbGCDesc, IntPtr.Size);
 
                     // Allocate enough space for the MethodTable + gcDescSize
-                    eeTypePtrPlusGCDesc = MemoryHelpers.AllocateMemory(cbGCDescAligned + cbEEType + cbOptionalFieldsSize);
+                    eeTypePlusGCDesc = MemoryHelpers.AllocateMemory(cbGCDescAligned + cbEEType + cbOptionalFieldsSize);
 
                     // Get the MethodTable pointer, and the template MethodTable pointer
-                    pEEType = (MethodTable*)(eeTypePtrPlusGCDesc + cbGCDescAligned);
+                    pEEType = (MethodTable*)((byte*)eeTypePlusGCDesc + cbGCDescAligned);
                     state.HalfBakedRuntimeTypeHandle = pEEType->ToRuntimeTypeHandle();
 
                     // Set basic MethodTable fields
@@ -319,12 +308,9 @@ namespace Internal.Runtime.TypeLoader
                     *((void**)((byte*)pEEType + cbSealedVirtualSlotsTypeOffset)) = pTemplateEEType->GetSealedVirtualTable();
                 }
 
-                if (MethodTable.SupportsWritableData)
-                {
-                    writableDataPtr = MemoryHelpers.AllocateMemory(WritableData.GetSize(IntPtr.Size));
-                    MemoryHelpers.Memset(writableDataPtr, WritableData.GetSize(IntPtr.Size), 0);
-                    pEEType->WritableData = (void*)writableDataPtr;
-                }
+                writableData = MemoryHelpers.AllocateMemory(WritableData.GetSize(IntPtr.Size));
+                NativeMemory.Clear(writableData, (nuint)WritableData.GetSize(IntPtr.Size));
+                pEEType->WritableData = writableData;
 
                 pEEType->DynamicTemplateType = pTemplateEEType;
 
@@ -343,13 +329,13 @@ namespace Internal.Runtime.TypeLoader
                     if (arity > 1)
                     {
                         genericComposition = MemoryHelpers.AllocateMemory(MethodTable.GetGenericCompositionSize(arity));
-                        pEEType->SetGenericComposition(genericComposition);
+                        pEEType->SetGenericComposition((IntPtr)genericComposition);
                     }
 
                     if (allocatedNonGCDataSize > 0)
                     {
                         nonGcStaticData = MemoryHelpers.AllocateMemory(allocatedNonGCDataSize);
-                        MemoryHelpers.Memset(nonGcStaticData, allocatedNonGCDataSize, 0);
+                        NativeMemory.Clear(nonGcStaticData, (nuint)allocatedNonGCDataSize);
                         Debug.Assert(nonGCStaticDataOffset <= allocatedNonGCDataSize);
                         pEEType->DynamicNonGcStaticsData = (IntPtr)((byte*)nonGcStaticData + nonGCStaticDataOffset);
                     }
@@ -362,7 +348,7 @@ namespace Internal.Runtime.TypeLoader
                     threadStaticIndex = MemoryHelpers.AllocateMemory(IntPtr.Size * 2);
                     *(IntPtr*)threadStaticIndex = pEEType->PointerToTypeManager;
                     *(((IntPtr*)threadStaticIndex) + 1) = (IntPtr)state.ThreadStaticOffset;
-                    pEEType->DynamicThreadStaticsIndex = threadStaticIndex;
+                    pEEType->DynamicThreadStaticsIndex = (IntPtr)threadStaticIndex;
                 }
 
                 if (state.GcDataSize != 0)
@@ -371,7 +357,7 @@ namespace Internal.Runtime.TypeLoader
                     object obj = RuntimeAugments.RawNewObject(((MethodTable*)state.GcStaticDesc)->ToRuntimeTypeHandle());
                     gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
 
-                    pEEType->DynamicGcStaticsData = gcStaticData;
+                    pEEType->DynamicGcStaticsData = (IntPtr)gcStaticData;
                 }
 
                 if (state.Dictionary != null)
@@ -386,20 +372,16 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (!successful)
                 {
-                    if (eeTypePtrPlusGCDesc != IntPtr.Zero)
-                        MemoryHelpers.FreeMemory(eeTypePtrPlusGCDesc);
-                    if (state.HalfBakedDictionary != IntPtr.Zero)
-                        MemoryHelpers.FreeMemory(state.HalfBakedDictionary);
-                    if (gcStaticData != IntPtr.Zero)
+                    if (gcStaticData != 0)
                         RuntimeAugments.RhHandleFree(gcStaticData);
-                    if (genericComposition != IntPtr.Zero)
-                        MemoryHelpers.FreeMemory(genericComposition);
-                    if (nonGcStaticData != IntPtr.Zero)
-                        MemoryHelpers.FreeMemory(nonGcStaticData);
-                    if (writableDataPtr != IntPtr.Zero)
-                        MemoryHelpers.FreeMemory(writableDataPtr);
-                    if (threadStaticIndex != IntPtr.Zero)
-                        MemoryHelpers.FreeMemory(threadStaticIndex);
+
+                    MemoryHelpers.FreeMemory((void*)state.HalfBakedDictionary);
+
+                    MemoryHelpers.FreeMemory(threadStaticIndex);
+                    MemoryHelpers.FreeMemory(nonGcStaticData);
+                    MemoryHelpers.FreeMemory(genericComposition);
+                    MemoryHelpers.FreeMemory(writableData);
+                    MemoryHelpers.FreeMemory(eeTypePlusGCDesc);
                 }
             }
         }

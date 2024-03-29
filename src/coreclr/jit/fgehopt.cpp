@@ -167,12 +167,10 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 fgPrepareCallFinallyRetForRemoval(leaveBlock);
                 fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
-                currentBlock->SetKindAndTarget(BBJ_ALWAYS, postTryFinallyBlock);
-                currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
-
                 // Ref count updates.
-                fgAddRefPred(postTryFinallyBlock, currentBlock);
-                fgRemoveRefPred(firstBlock, currentBlock);
+                fgRedirectTargetEdge(currentBlock, postTryFinallyBlock);
+                currentBlock->SetKind(BBJ_ALWAYS);
+                currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
 
                 // Cleanup the postTryFinallyBlock
                 fgCleanupContinuation(postTryFinallyBlock);
@@ -524,8 +522,8 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     GenTree*   finallyRetExpr = finallyRet->GetRootNode();
                     assert(finallyRetExpr->gtOper == GT_RETFILT);
                     fgRemoveStmt(block, finallyRet);
-                    block->SetKindAndTarget(BBJ_ALWAYS, continuation);
-                    fgAddRefPred(continuation, block);
+                    FlowEdge* const newEdge = fgAddRefPred(continuation, block);
+                    block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
                 }
             }
 
@@ -1008,7 +1006,6 @@ PhaseStatus Compiler::fgCloneFinally()
         const unsigned  finallyTryIndex = firstBlock->bbTryIndex;
         BasicBlock*     insertAfter     = nullptr;
         BlockToBlockMap blockMap(getAllocator());
-        bool            clonedOk       = true;
         unsigned        cloneBBCount   = 0;
         weight_t const  originalWeight = firstBlock->hasProfileWeight() ? firstBlock->bbWeight : BB_ZERO_WEIGHT;
 
@@ -1046,12 +1043,7 @@ PhaseStatus Compiler::fgCloneFinally()
             insertAfter = newBlock;
             blockMap.Set(block, newBlock);
 
-            clonedOk = BasicBlock::CloneBlockState(this, newBlock, block);
-
-            if (!clonedOk)
-            {
-                break;
-            }
+            BasicBlock::CloneBlockState(this, newBlock, block);
 
             // Update block flags. Note a block can be both first and last.
             if (block == firstBlock)
@@ -1077,13 +1069,6 @@ PhaseStatus Compiler::fgCloneFinally()
             assert(!newBlock->HasInitializedTarget());
         }
 
-        if (!clonedOk)
-        {
-            // TODO: cleanup the partial clone?
-            JITDUMP("Unable to clone the finally; skipping.\n");
-            continue;
-        }
-
         // We should have cloned all the finally region blocks.
         assert(cloneBBCount == regionBBCount);
 
@@ -1106,14 +1091,13 @@ PhaseStatus Compiler::fgCloneFinally()
                 GenTree*   finallyRetExpr = finallyRet->GetRootNode();
                 assert(finallyRetExpr->gtOper == GT_RETFILT);
                 fgRemoveStmt(newBlock, finallyRet);
-                newBlock->SetKindAndTarget(BBJ_ALWAYS, normalCallFinallyReturn);
 
-                fgAddRefPred(normalCallFinallyReturn, newBlock);
+                FlowEdge* const newEdge = fgAddRefPred(normalCallFinallyReturn, newBlock);
+                newBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
             }
             else
             {
-                newBlock->CopyTarget(this, block);
-                optRedirectBlock(newBlock, &blockMap, RedirectBlockOption::AddToPredLists);
+                optSetMappedBlockTargets(block, newBlock, &blockMap);
             }
         }
 
@@ -1149,13 +1133,12 @@ PhaseStatus Compiler::fgCloneFinally()
                     fgPrepareCallFinallyRetForRemoval(leaveBlock);
                     fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
-                    // This call returns to the expected spot, so retarget it to branch to the clone.
-                    currentBlock->SetKindAndTarget(BBJ_ALWAYS, firstCloneBlock);
-                    currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
-
                     // Ref count updates.
-                    fgAddRefPred(firstCloneBlock, currentBlock);
-                    fgRemoveRefPred(firstBlock, currentBlock);
+                    fgRedirectTargetEdge(currentBlock, firstCloneBlock);
+
+                    // This call returns to the expected spot, so retarget it to branch to the clone.
+                    currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
+                    currentBlock->SetKind(BBJ_ALWAYS);
 
                     // Make sure iteration isn't going off the deep end.
                     assert(leaveBlock != endCallFinallyRangeBlock);
@@ -1771,10 +1754,8 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     JITDUMP("Redirecting branch in " FMT_BB " from " FMT_BB " to " FMT_BB ".\n", block->bbNum, callFinally->bbNum,
             canonicalCallFinally->bbNum);
 
-    block->SetTarget(canonicalCallFinally);
-    fgAddRefPred(canonicalCallFinally, block);
     assert(callFinally->bbRefs > 0);
-    fgRemoveRefPred(callFinally, block);
+    fgRedirectTargetEdge(block, canonicalCallFinally);
 
     // Update profile counts
     //
@@ -2021,40 +2002,16 @@ PhaseStatus Compiler::fgTailMergeThrows()
 
         // Walk pred list of the non canonical block, updating flow to target
         // the canonical block instead.
-        for (FlowEdge* predEdge = nonCanonicalBlock->bbPreds; predEdge != nullptr; predEdge = nextPredEdge)
+        for (BasicBlock* const predBlock : nonCanonicalBlock->PredBlocksEditing())
         {
-            BasicBlock* const predBlock = predEdge->getSourceBlock();
-            nextPredEdge                = predEdge->getNextPredEdge();
-
             switch (predBlock->GetKind())
             {
                 case BBJ_ALWAYS:
-                {
-                    fgTailMergeThrowsJumpToHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
-                    updated = true;
-                }
-                break;
-
                 case BBJ_COND:
-                {
-                    // Flow to non canonical block could be via fall through or jump or both.
-                    if (predBlock->FalseTargetIs(nonCanonicalBlock))
-                    {
-                        fgTailMergeThrowsFallThroughHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
-                    }
-
-                    if (predBlock->TrueTargetIs(nonCanonicalBlock))
-                    {
-                        fgTailMergeThrowsJumpToHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
-                    }
-                    updated = true;
-                }
-                break;
-
                 case BBJ_SWITCH:
                 {
                     JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
-                    fgReplaceSwitchJumpTarget(predBlock, canonicalBlock, nonCanonicalBlock);
+                    fgReplaceJumpTarget(predBlock, nonCanonicalBlock, canonicalBlock);
                     updated = true;
                 }
                 break;
@@ -2092,88 +2049,4 @@ PhaseStatus Compiler::fgTailMergeThrows()
     assert(fgModified);
     fgModified = false;
     return PhaseStatus::MODIFIED_EVERYTHING;
-}
-
-//------------------------------------------------------------------------
-// fgTailMergeThrowsFallThroughHelper: fixup flow for fall throughs to mergeable throws
-//
-// Arguments:
-//    predBlock - block falling through to the throw helper
-//    nonCanonicalBlock - original fall through target
-//    canonicalBlock - new (jump) target
-//    predEdge - original flow edge
-//
-// Notes:
-//    Alters fall through flow of predBlock so it jumps to the
-//    canonicalBlock via a new basic block.  Does not try and fix
-//    jump-around flow; we leave that to optOptimizeFlow which runs
-//    just afterwards.
-//
-void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
-                                                  BasicBlock* nonCanonicalBlock,
-                                                  BasicBlock* canonicalBlock,
-                                                  FlowEdge*   predEdge)
-{
-    assert(predBlock->KindIs(BBJ_COND));
-    assert(predBlock->FalseTargetIs(nonCanonicalBlock));
-
-    BasicBlock* const newBlock = fgNewBBafter(BBJ_ALWAYS, predBlock, true, canonicalBlock);
-    predBlock->SetFalseTarget(newBlock);
-
-    JITDUMP("*** " FMT_BB " now falling through to empty " FMT_BB " and then to " FMT_BB "\n", predBlock->bbNum,
-            newBlock->bbNum, canonicalBlock->bbNum);
-
-    // Remove the old flow
-    fgRemoveRefPred(nonCanonicalBlock, predBlock);
-
-    // Wire up the new flow
-    fgAddRefPred(newBlock, predBlock, predEdge);
-
-    fgAddRefPred(canonicalBlock, newBlock, predEdge);
-
-    // If nonCanonicalBlock has only one pred, all its flow transfers.
-    // If it has multiple preds, then we need edge counts or likelihoods
-    // to figure things out.
-    //
-    // For now just do a minimal update.
-    //
-    newBlock->inheritWeight(nonCanonicalBlock);
-}
-
-//------------------------------------------------------------------------
-// fgTailMergeThrowsJumpToHelper: fixup flow for jumps to mergeable throws
-//
-// Arguments:
-//    predBlock - block jumping to the throw helper
-//    nonCanonicalBlock - original jump target
-//    canonicalBlock - new jump target
-//    predEdge - original flow edge
-//
-// Notes:
-//    Alters jumpDest of predBlock so it jumps to the canonicalBlock.
-//
-void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
-                                             BasicBlock* nonCanonicalBlock,
-                                             BasicBlock* canonicalBlock,
-                                             FlowEdge*   predEdge)
-{
-    JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
-
-    // Remove the old flow
-    fgRemoveRefPred(nonCanonicalBlock, predBlock);
-
-    // Wire up the new flow
-    if (predBlock->KindIs(BBJ_ALWAYS))
-    {
-        assert(predBlock->TargetIs(nonCanonicalBlock));
-        predBlock->SetTarget(canonicalBlock);
-    }
-    else
-    {
-        assert(predBlock->KindIs(BBJ_COND));
-        assert(predBlock->TrueTargetIs(nonCanonicalBlock));
-        predBlock->SetTrueTarget(canonicalBlock);
-    }
-
-    fgAddRefPred(canonicalBlock, predBlock, predEdge);
 }

@@ -39,6 +39,18 @@ namespace ILCompiler.DependencyAnalysis
 
             // Load the generic dictionary cell
             encoder.EmitLDR(result, context, dictionarySlot * factory.Target.PointerSize);
+
+            // If there's any invalid entries, we need to test for them
+            //
+            // Skip this in relocsOnly to make it easier to weed out bugs - the _hasInvalidEntries
+            // flag can change over the course of compilation and the bad slot helper dependency
+            // should be reported by someone else - the system should not rely on it coming from here.
+            if (!relocsOnly && _hasInvalidEntries)
+            {
+                encoder.EmitCMP(result, 0);
+                encoder.EmitRETIfNotEqual();
+                encoder.EmitJMP(GetBadSlotHelper(factory));
+            }
         }
 
         protected sealed override void EmitCode(NodeFactory factory, ref ARMEmitter encoder, bool relocsOnly)

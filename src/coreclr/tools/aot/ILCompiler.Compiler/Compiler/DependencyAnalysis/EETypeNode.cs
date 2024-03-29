@@ -94,7 +94,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
-            _writableDataNode = SupportsWritableData(factory.Target) && !_type.IsCanonicalSubtype(CanonicalFormKind.Any) ? new WritableDataNode(this) : null;
+            _writableDataNode = !_type.IsCanonicalSubtype(CanonicalFormKind.Any) ? new WritableDataNode(this) : null;
             _hasConditionalDependenciesFromMetadataManager = factory.MetadataManager.HasConditionalDependenciesDueToEETypePresence(type);
 
             if (EmitVirtualSlots)
@@ -102,12 +102,6 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.TypeSystemContext.EnsureLoadableType(type);
         }
-
-        public static bool SupportsWritableData(TargetDetails target)
-            => target.SupportsRelativePointers;
-
-        public static bool SupportsFrozenRuntimeTypeInstances(TargetDetails target)
-            => SupportsWritableData(target);
 
         private static VirtualMethodAnalysisFlags AnalyzeVirtualMethods(TypeDesc type)
         {
@@ -305,6 +299,12 @@ namespace ILCompiler.DependencyAnalysis
                     return true;
                 }
 
+                // If the type implements at least one interface, calls against that interface could result in this type's
+                // implementation being used.
+                // It might also be necessary for casting purposes.
+                if (_type.RuntimeInterfaces.Length > 0)
+                    return true;
+
                 if (!EmitVirtualSlots)
                     return false;
 
@@ -333,11 +333,6 @@ namespace ILCompiler.DependencyAnalysis
 
                     currentType = currentType.BaseType;
                 }
-
-                // If the type implements at least one interface, calls against that interface could result in this type's
-                // implementation being used.
-                if (_type.RuntimeInterfaces.Length > 0)
-                    return true;
 
                 return _hasConditionalDependenciesFromMetadataManager;
             }
@@ -373,13 +368,25 @@ namespace ILCompiler.DependencyAnalysis
                     "Information about static bases for type with template"));
             }
 
+            if (!_type.IsGenericDefinition && !_type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                foreach (DefType iface in _type.RuntimeInterfaces)
+                {
+                    var ifaceDefinition = (DefType)iface.GetTypeDefinition();
+                    result.Add(new CombinedDependencyListEntry(
+                        GetInterfaceTypeNode(factory, iface),
+                        factory.InterfaceUse(ifaceDefinition),
+                        "Interface definition was visible"));
+                }
+            }
+
             if (!EmitVirtualSlots)
                 return result;
 
             DefType defType = _type.GetClosestDefType();
 
             // If we're producing a full vtable, none of the dependencies are conditional.
-            if (!factory.VTable(defType).HasFixedSlots)
+            if (!factory.VTable(defType).HasKnownVirtualMethodUse)
             {
                 bool isNonInterfaceAbstractType = !defType.IsInterface && ((MetadataType)defType).IsAbstract;
 
@@ -413,7 +420,7 @@ namespace ILCompiler.DependencyAnalysis
                         // We don't do this if the method can be placed in the sealed vtable since
                         // those can never be overriden by children anyway.
                         bool canUseTentativeMethod = isNonInterfaceAbstractType
-                            && !decl.CanMethodBeInSealedVTable()
+                            && !decl.CanMethodBeInSealedVTable(factory)
                             && factory.CompilationModuleGroup.AllowVirtualMethodOnAbstractTypeOptimization(canonImpl);
                         IMethodNode implNode = canUseTentativeMethod ?
                             factory.TentativeMethodEntrypoint(canonImpl, impl.OwningType.IsValueType) :
@@ -531,7 +538,15 @@ namespace ILCompiler.DependencyAnalysis
                                 if (!isStaticInterfaceMethod && defaultIntfMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                                 {
                                     // Canonical instance default methods need to go through a thunk that adds the right generic context
-                                    defaultIntfMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(defaultIntfMethod, _type.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType);
+                                    defaultIntfMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(defaultIntfMethod, defType.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType);
+
+                                    // The above thunk will index into interface list to find the right context. Make sure to keep all interfaces prior to this one
+                                    for (int i = 0; i < interfaceIndex; i++)
+                                    {
+                                        result.Add(new CombinedDependencyListEntry(
+                                            factory.InterfaceUse(defTypeRuntimeInterfaces[i].GetTypeDefinition()),
+                                            factory.VirtualMethodUse(interfaceMethod), "Interface with shared default methods folows this"));
+                                    }
                                 }
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
 
@@ -585,6 +600,9 @@ namespace ILCompiler.DependencyAnalysis
             // generate any relocs to it, and the optional fields node will instruct the object writer to skip
             // emitting it.
             dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
+
+            if (_type.IsInterface)
+                dependencies.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
 
             if (EmitVirtualSlots)
             {
@@ -696,7 +714,11 @@ namespace ILCompiler.DependencyAnalysis
 
             // Emit interface map
             SlotCounter interfaceSlotCounter = SlotCounter.BeginCounting(ref /* readonly */ objData);
-            OutputInterfaceMap(factory, ref objData);
+
+            if (!relocsOnly)
+            {
+                OutputInterfaceMap(factory, ref objData);
+            }
 
             // Update slot count
             int numberOfInterfaceSlots = interfaceSlotCounter.CountSlots(ref /* readonly */ objData);
@@ -1013,7 +1035,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // It's only okay to touch the actual list of slots if we're in the final emission phase
             // or the vtable is not built lazily.
-            if (relocsOnly && !declVTable.HasFixedSlots)
+            if (relocsOnly && !declVTable.HasKnownVirtualMethodUse)
                 return;
 
             // Interface types don't place anything else in their physical vtable.
@@ -1041,12 +1063,18 @@ namespace ILCompiler.DependencyAnalysis
                 // No generic virtual methods can appear in the vtable!
                 Debug.Assert(!declMethod.HasInstantiation);
 
-                MethodDesc implMethod = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
-
                 // Final NewSlot methods cannot be overridden, and therefore can be placed in the sealed-vtable to reduce the size of the vtable
                 // of this type and any type that inherits from it.
-                if (declMethod.CanMethodBeInSealedVTable() && !declType.IsArrayTypeWithoutGenericInterfaces())
+                if (declMethod.CanMethodBeInSealedVTable(factory) && !declType.IsArrayTypeWithoutGenericInterfaces())
                     continue;
+
+                if (!declVTable.IsSlotUsed(declMethod))
+                {
+                    objData.EmitZeroPointer();
+                    continue;
+                }
+
+                MethodDesc implMethod = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
                 bool shouldEmitImpl = !implMethod.IsAbstract;
 
@@ -1096,7 +1124,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             foreach (var itf in _type.RuntimeInterfaces)
             {
-                objData.EmitPointerReloc(GetInterfaceTypeNode(factory, itf));
+                IEETypeNode interfaceTypeNode = GetInterfaceTypeNode(factory, itf);
+
+                // Only emit interfaces that were not optimized away.
+                if (interfaceTypeNode.Marked)
+                {
+                    objData.EmitPointerReloc(interfaceTypeNode);
+                }
             }
         }
 
@@ -1125,11 +1159,17 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (_writableDataNode != null)
             {
-                objData.EmitReloc(_writableDataNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitReloc(_writableDataNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    objData.EmitPointerReloc(_writableDataNode);
             }
-            else if (SupportsWritableData(factory.Target))
+            else
             {
-                objData.EmitInt(0);
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitInt(0);
+                else
+                    objData.EmitZeroPointer();
             }
         }
 
@@ -1423,7 +1463,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public WritableDataNode(EETypeNode type) => _type = type;
             public override ObjectNodeSection GetSection(NodeFactory factory)
-                => SupportsFrozenRuntimeTypeInstances(factory.Target) && _type.GetFrozenRuntimeTypeNode(factory).Marked
+                => _type.GetFrozenRuntimeTypeNode(factory).Marked
                 ? (factory.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection)
                 : ObjectNodeSection.BssSection;
 
@@ -1444,8 +1484,7 @@ namespace ILCompiler.DependencyAnalysis
                 // If the whole program view contains a reference to a preallocated RuntimeType
                 // instance for this type, generate a reference to it.
                 // Otherwise, generate as zero to save size.
-                if (SupportsFrozenRuntimeTypeInstances(factory.Target)
-                    && _type.GetFrozenRuntimeTypeNode(factory) is { Marked: true } runtimeTypeObject)
+                if (_type.GetFrozenRuntimeTypeNode(factory) is { Marked: true } runtimeTypeObject)
                 {
                     builder.EmitPointerReloc(runtimeTypeObject);
                 }

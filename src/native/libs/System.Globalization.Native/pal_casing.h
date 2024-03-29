@@ -6,7 +6,6 @@
 
 PALEXPORT void GlobalizationNative_InitOrdinalCasingPage(int32_t pageNumber, UChar* pTarget);
 
-#if !defined(__APPLE__) || (defined(__APPLE__) && !(TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS))
 PALEXPORT void GlobalizationNative_ChangeCase(const UChar* lpSrc,
                                               int32_t cwSrcLength,
                                               UChar* lpDst,
@@ -24,7 +23,7 @@ PALEXPORT void GlobalizationNative_ChangeCaseTurkish(const UChar* lpSrc,
                                                      UChar* lpDst,
                                                      int32_t cwDstLength,
                                                      int32_t bToUpper);
-#else
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 PALEXPORT int32_t GlobalizationNative_ChangeCaseNative(const uint16_t* localeName,
                                                        int32_t lNameLength,
                                                        const uint16_t* lpSrc,

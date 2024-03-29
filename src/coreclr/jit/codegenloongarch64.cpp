@@ -2418,7 +2418,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         // Floating point divide never raises an exception
         assert(varTypeIsFloating(tree->gtOp1));
         assert(varTypeIsFloating(tree->gtOp2));
-        assert(tree->gtOper == GT_DIV);
+        assert(tree->OperIs(GT_DIV));
 
         instruction ins = genGetInsForOper(tree);
         emit->emitIns_R_R_R(ins, emitActualTypeSize(targetType), tree->GetRegNum(), tree->gtOp1->GetRegNum(),
@@ -2480,7 +2480,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         }
 
         // check (MinInt / -1) => ArithmeticException
-        if (tree->gtOper == GT_DIV || tree->gtOper == GT_MOD)
+        if (tree->OperIs(GT_DIV, GT_MOD))
         {
             if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
             {
@@ -2514,55 +2514,20 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             // Generate the sdiv instruction
             if (size == EA_4BYTE)
             {
-                if (tree->OperGet() == GT_DIV)
-                {
-                    ins = INS_div_w;
-                }
-                else
-                {
-                    ins = INS_mod_w;
-                }
+                ins = tree->OperIs(GT_DIV) ? INS_div_w : INS_mod_w;
             }
             else
             {
-                if (tree->OperGet() == GT_DIV)
-                {
-                    ins = INS_div_d;
-                }
-                else
-                {
-                    ins = INS_mod_d;
-                }
+                ins = tree->OperIs(GT_DIV) ? INS_div_d : INS_mod_d;
             }
 
             emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
         }
-        else // if (tree->gtOper == GT_UDIV) GT_UMOD
+        else // tree->OperIs(GT_UDIV, GT_UMOD)
         {
-            // Only one possible exception
-            //     (AnyVal /  0) => DivideByZeroException
-            //
-            // Note that division by the constant 0 was already checked for above by the
-            // op2->IsIntegralConst(0) check
-            //
-
-            if (!divisorOp->IsCnsIntOrI())
-            {
-                // divisorOp is not a constant, so it could be zero
-                //
-                genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
-            }
-
             if (size == EA_4BYTE)
             {
-                if (tree->OperGet() == GT_UDIV)
-                {
-                    ins = INS_div_wu;
-                }
-                else
-                {
-                    ins = INS_mod_wu;
-                }
+                ins = tree->OperIs(GT_UDIV) ? INS_div_wu : INS_mod_wu;
 
                 // TODO-LOONGARCH64: here is just for signed-extension ?
                 emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, Reg1, Reg1, 0);
@@ -2570,14 +2535,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             }
             else
             {
-                if (tree->OperGet() == GT_UDIV)
-                {
-                    ins = INS_div_du;
-                }
-                else
-                {
-                    ins = INS_mod_du;
-                }
+                ins = tree->OperIs(GT_UDIV) ? INS_div_du : INS_mod_du;
             }
 
             emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
@@ -2927,32 +2885,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
-    assert(treeNode->OperGet() == GT_JMPTABLE);
-
-    unsigned     jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
-    unsigned     jmpTabOffs;
-    unsigned     jmpTabBase;
-
-    jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, true);
-
-    jmpTabOffs = 0;
-
-    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
-
-    for (unsigned i = 0; i < jumpCount; i++)
-    {
-        BasicBlock* target = *jumpTable++;
-        noway_assert(target->HasFlag(BBF_HAS_LABEL));
-
-        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
-
-        GetEmitter()->emitDataGenData(i, target);
-    };
-
-    GetEmitter()->emitDataGenEnd();
-
+    unsigned jmpTabBase = genEmitJumpTable(treeNode, true);
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
@@ -4330,6 +4263,13 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     assert(regs != 0);
 
     emit->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs); // 5-bits;
+
+    // If we cannot fall into the false target, emit a jump to it
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    {
+        inst_JMP(EJ_jmp, falseTarget);
+    }
 }
 
 //---------------------------------------------------------------------
@@ -4884,6 +4824,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             assert(jcc->gtCondition.Is(GenCondition::EQ, GenCondition::NE));
             instruction ins = jcc->gtCondition.Is(GenCondition::EQ) ? INS_bceqz : INS_bcnez;
             emit->emitIns_J(ins, tgtBlock, (int)1 /* cc */);
+
+            if (compiler->compCurBB->KindIs(BBJ_COND))
+            {
+                // If we cannot fall into the false target, emit a jump to it
+                BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+                if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+                {
+                    inst_JMP(EJ_jmp, falseTarget);
+                }
+            }
         }
         break;
 
@@ -4991,7 +4941,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & ~fullIntArgRegMask()) == 0);
+            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
+                          ~fullIntArgRegMask(compiler->info.compCallConv)) == 0);
 
 // the runtime side requires the codegen here to be consistent
 #ifdef PSEUDORANDOM_NOP_INSERTION
@@ -5004,7 +4955,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld_d, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
-        case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -5299,7 +5249,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                 // addrNode can either be a GT_LCL_ADDR<0> or an address expression
                 //
-                if (addrNode->IsLclVarAddr())
+                if (addrNode->isContained() && addrNode->IsLclVarAddr())
                 {
                     // We have a GT_BLK(GT_LCL_ADDR<0>)
                     //
@@ -5572,7 +5522,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
         // addrNode can either be a GT_LCL_ADDR<0> or an address expression
         //
-        if (addrNode->IsLclVarAddr())
+        if (addrNode->isContained() && addrNode->IsLclVarAddr())
         {
             // We have a GT_BLK(GT_LCL_ADDR<0>)
             //
@@ -6114,37 +6064,6 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 }
 
 //----------------------------------------------------------------------------------
-// genCodeForCpBlkHelper - Generate code for a CpBlk node by the means of the VM memcpy helper call
-//
-// Arguments:
-//    cpBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
-{
-    // Destination address goes in arg0, source address goes in arg1, and size goes in arg2.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
-
-    if (cpBlkNode->IsVolatile())
-    {
-        // issue a full memory barrier before a volatile CpBlk operation
-        instGen_MemoryBarrier();
-    }
-
-    genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
-
-    if (cpBlkNode->IsVolatile())
-    {
-        // issue a INS_BARRIER_RMB after a volatile CpBlk operation
-        instGen_MemoryBarrier(BARRIER_FULL);
-    }
-}
-
-//----------------------------------------------------------------------------------
 // genCodeForCpBlkUnroll: Generates CpBlk code by performing a loop unroll
 //
 // Arguments:
@@ -6327,20 +6246,18 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 }
 
 //------------------------------------------------------------------------
-// genCodeForInitBlkHelper - Generate code for an InitBlk node by the means of the VM memcpy helper call
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
+//    It's needed for cases when size is too big to unroll and we're not allowed
+//    to use memset call due to atomicity requirements.
 //
 // Arguments:
-//    initBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
+//    initBlkNode - the GT_STORE_BLK node
 //
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
+void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 {
-    // Size goes in arg2, source address goes in arg1, and size goes in arg2.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
+    GenTree* const dstNode = initBlkNode->Addr();
+    genConsumeReg(dstNode);
+    const regNumber dstReg = dstNode->GetRegNum();
 
     if (initBlkNode->IsVolatile())
     {
@@ -6348,27 +6265,31 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
         instGen_MemoryBarrier();
     }
 
-    genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
-}
+    const unsigned size = initBlkNode->GetLayout()->GetSize();
+    assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
 
-// Generate code for a load from some address + offset
-//   base: tree node which can be either a local address or arbitrary node
-//   offset: distance from the base from which to load
-void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset)
-{
-    emitter* emit = GetEmitter();
+    // The loop is reversed - it makes it smaller.
+    // Although, we zero the first pointer before the loop (the loop doesn't zero it)
+    // it works as a nullcheck, otherwise the first iteration would try to access
+    // "null + potentially large offset" and hit AV.
+    GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_R0, dstReg, 0);
+    if (size > TARGET_POINTER_SIZE)
+    {
+        // Extend liveness of dstReg in case if it gets killed by the store.
+        gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
 
-    if (base->OperIs(GT_LCL_ADDR))
-    {
-        if (base->gtOper == GT_LCL_ADDR)
-        {
-            offset += base->AsLclFld()->GetLclOffs();
-        }
-        emit->emitIns_R_S(ins, size, dst, base->AsLclVarCommon()->GetLclNum(), offset);
-    }
-    else
-    {
-        emit->emitIns_R_R_I(ins, size, dst, base->GetRegNum(), offset);
+        const regNumber offsetReg = initBlkNode->GetSingleTempReg();
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
+
+        // loop begin:
+        // *(dstReg + offsetReg) = 0
+        GetEmitter()->emitIns_R_R_R(INS_stx_d, EA_PTRSIZE, REG_R0, dstReg, offsetReg);
+        // offsetReg = offsetReg - 8
+        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, offsetReg, offsetReg, -8);
+        // if (offsetReg != 0) goto loop;
+        GetEmitter()->emitIns_R_I(INS_bnez, EA_8BYTE, offsetReg, -2 << 2);
+
+        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
     }
 }
 
@@ -6516,7 +6437,7 @@ void CodeGen::genCall(GenTreeCall* call)
             for (unsigned i = 0; i < regCount; ++i)
             {
                 var_types regType      = pRetTypeDesc->GetReturnRegType(i);
-                returnReg              = pRetTypeDesc->GetABIReturnReg(i);
+                returnReg              = pRetTypeDesc->GetABIReturnReg(i, call->GetUnmanagedCallConv());
                 regNumber allocatedReg = call->GetRegNumByIdx(i);
                 inst_Mov(regType, allocatedReg, returnReg, /* canSkip */ true);
             }
@@ -7239,14 +7160,14 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
 }
 
 //------------------------------------------------------------------------
-// genCodeForStoreBlk: Produce code for a GT_STORE_DYN_BLK/GT_STORE_BLK node.
+// genCodeForStoreBlk: Produce code for a GT_STORE_BLK node.
 //
 // Arguments:
 //    tree - the node
 //
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
-    assert(blkOp->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
+    assert(blkOp->OperIs(GT_STORE_BLK));
 
     if (blkOp->gtBlkOpGcUnsafe)
     {
@@ -7262,15 +7183,9 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
             genCodeForCpObj(blkOp->AsBlk());
             break;
 
-        case GenTreeBlk::BlkOpKindHelper:
-            if (isCopyBlk)
-            {
-                genCodeForCpBlkHelper(blkOp);
-            }
-            else
-            {
-                genCodeForInitBlkHelper(blkOp);
-            }
+        case GenTreeBlk::BlkOpKindLoop:
+            assert(!isCopyBlk);
+            genCodeForInitBlkLoop(blkOp);
             break;
 
         case GenTreeBlk::BlkOpKindUnroll:
@@ -7596,6 +7511,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
 #ifdef DEBUG
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            assert(add->acdUsed);
             assert(excpRaisingBlock == add->acdDstBlk);
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());
@@ -7608,6 +7524,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
             PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+            assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());

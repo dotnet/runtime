@@ -12,10 +12,6 @@
     <ExpectedExitCode>42</ExpectedExitCode>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true"/>
-  </ItemGroup>
-
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, '$(MSBuildThisFileDirectory)..'))" />
 
   <ItemGroup Condition="'$(IsWasmTestProject)' != 'false'">

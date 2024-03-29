@@ -9,7 +9,6 @@
           $(WasmAppDir)/_framework/dotnet.native.js;
           $(WasmAppDir)/_framework/dotnet.native.wasm;
           $(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts;
-          $(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet-legacy.d.ts;
           $(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json;" Outputs="bin/dotnet-runtime/.npm-stamp">
     <ItemGroup>
       <NpmPackageFiles Include="$(WasmAppDir)/_framework/dotnet.js"/>
@@ -17,7 +16,6 @@
       <NpmPackageFiles Include="$(WasmAppDir)/_framework/dotnet.native.js"/>
       <NpmPackageFiles Include="$(WasmAppDir)/_framework/dotnet.native.wasm"/>
       <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts"/>
-      <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet-legacy.d.ts"/>
       <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json"/>
     </ItemGroup>
     <Copy SourceFiles="@(NpmPackageFiles)" DestinationFolder="bin/dotnet-runtime" />

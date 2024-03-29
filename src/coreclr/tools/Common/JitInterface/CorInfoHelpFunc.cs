@@ -187,11 +187,11 @@ namespace Internal.JitInterface
         CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE,
         CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE,
         CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR,
-        CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
         CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
-        CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
         CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS,
         CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS,
+        CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
+        CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
 
         /* Debugger */
 
@@ -214,7 +214,10 @@ namespace Internal.JitInterface
         CORINFO_HELP_INIT_PINVOKE_FRAME,   // initialize an inlined PInvoke Frame for the JIT-compiler
 
         CORINFO_HELP_MEMSET,                // Init block of memory
+        CORINFO_HELP_MEMZERO,               // Init block of memory with zeroes
         CORINFO_HELP_MEMCPY,                // Copy block of memory
+        CORINFO_HELP_NATIVE_MEMSET,         // Init block of memory using native memset (not safe for pDst being null,
+                                            // not safe for unbounded size, does not trigger GC)
 
         CORINFO_HELP_RUNTIMEHANDLE_METHOD,  // determine a type/field/method handle at run-time
         CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG, // determine a type/field/method handle at run-time, with IBC logging
@@ -238,6 +241,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_READYTORUN_GCSTATIC_BASE,
         CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE,
         CORINFO_HELP_READYTORUN_THREADSTATIC_BASE,
+        CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR,
         CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE,
         CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
         CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
@@ -300,6 +304,8 @@ namespace Internal.JitInterface
         CORINFO_HELP_VTABLEPROFILE64,           // Update 64-bit method profile for a vtable call site
         CORINFO_HELP_COUNTPROFILE32,            // Update 32-bit block or edge count profile
         CORINFO_HELP_COUNTPROFILE64,            // Update 64-bit block or edge count profile
+        CORINFO_HELP_VALUEPROFILE32,            // Update 32-bit value profile
+        CORINFO_HELP_VALUEPROFILE64,            // Update 64-bit value profile
 
         CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
         CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer

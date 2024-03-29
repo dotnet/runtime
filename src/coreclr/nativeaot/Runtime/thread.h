@@ -94,9 +94,13 @@ struct ThreadBuffer
     HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
-    uintptr_t               m_uHijackedReturnValueFlags;            
+    uintptr_t               m_uHijackedReturnValueFlags;
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
+#ifdef TARGET_X86
+    PCODE                   m_LastRedirectIP;
+    uint64_t                m_SpinCount;
+#endif
     Object*                 m_pThreadLocalStatics;
     InlinedThreadStaticRoot* m_pInlinedThreadLocalStatics;
     GCFrameRegistration*    m_pGCFrameRegistrations;
@@ -171,7 +175,7 @@ private:
     // Hijack funcs are not called, they are "returned to". And when done, they return to the actual caller.
     // Thus they cannot have any parameters or return anything.
     //
-    typedef void HijackFunc();
+    typedef void FASTCALL HijackFunc();
 
     void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
@@ -317,6 +321,11 @@ public:
 
     bool                IsActivationPending();
     void                SetActivationPending(bool isPending);
+
+#ifdef TARGET_X86
+    void                SetPendingRedirect(PCODE eip);
+    bool                CheckPendingRedirect(PCODE eip);
+#endif
 };
 
 #ifndef __GCENV_BASE_INCLUDED__

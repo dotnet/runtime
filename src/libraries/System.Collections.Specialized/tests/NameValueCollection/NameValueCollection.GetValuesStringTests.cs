@@ -7,7 +7,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameValueCollectionGetValuesStringTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0)]
         [InlineData(5)]
         public void GetValues_NoSuchName_ReturnsNull(int count)

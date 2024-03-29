@@ -278,7 +278,7 @@ namespace System.Data.Tests
             };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(Equals_TestData))]
         public void Equals_Rows_ReturnsExpected(DataRow row1, DataRow row2, bool expected)
         {
@@ -286,7 +286,7 @@ namespace System.Data.Tests
             Assert.Equal(expected, DataRowComparer.Default.Equals(row2, row1));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Equals_NullStringValueInStringArray_CanBeCompared()
         {
             var table = new DataTable("Table");
@@ -307,7 +307,7 @@ namespace System.Data.Tests
             Assert.False(DataRowComparer.Default.Equals(row3, row2));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Equals_DeletedRow_ThrowsInvalidOperationException()
         {
             var table = new DataTable("Table");
@@ -342,7 +342,7 @@ namespace System.Data.Tests
             yield return new object[] { multidimensionalArray, multidimensionalArray.GetHashCode() };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(GetHashCode_TestData))]
         public void GetHashCode_HasColumns_ReturnsExpected(object value, int expected)
         {
@@ -362,7 +362,7 @@ namespace System.Data.Tests
             Assert.Equal(0, DataRowComparer.Default.GetHashCode(table.NewRow()));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void GetHashCode_OneColumn_DoesNotReturnZero()
         {
             var comparer = DataRowComparer<DataRow>.Default;
@@ -379,7 +379,7 @@ namespace System.Data.Tests
             AssertExtensions.Throws<ArgumentNullException>("row", () => DataRowComparer<DataRow>.Default.GetHashCode(null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void GetHashCode_DeletedRow_ThrowsInvalidOperationException()
         {
             var table = new DataTable("Table");

@@ -64,8 +64,8 @@
 
       So, set those parameters explicitly here.
       -->
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(BrowserProjectRoot)build\ILLink.Substitutions.WasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(BrowserProjectRoot)build\ILLink.Substitutions.NoWasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <ItemGroup>
@@ -185,31 +185,5 @@
 
   <Target Name="DeployHelixTargetsFile" AfterTargets="ArchiveTests" Condition="'$(HelixTargetsFile)' != ''">
     <Copy SourceFiles="$(HelixTargetsFile)" DestinationFiles="$(TestArchiveTestsDir)$(TestProjectName).helix.targets" SkipUnchangedFiles="true" />
-  </Target>
-
-  <Target Name="_GetNugetsForAOT" Returns="@(_NuGetsToBuild)">
-    <PropertyGroup>
-      <!-- Eg. Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm.6.0.0-dev.nupkg -->
-      <_AOTCrossNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RuntimeIdentifier).$(PackageVersionForWorkloadManifests).nupkg</_AOTCrossNuGetPath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Ref.$(PackageVersionForWorkloadManifests).nupkg"
-                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
-                      Properties="@(_DefaultPropsForNuGetBuild, ';')"
-                      Descriptor="Ref pack"/>
-
-      <!-- AOT Cross compiler -->
-      <_PropsForAOTCrossBuild Include="@(_DefaultPropsForNuGetBuild)" />
-      <_PropsForAOTCrossBuild Include="TestingWorkloads=true" />
-      <_PropsForAOTCrossBuild Include="RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)" />
-      <_PropsForAOTCrossBuild Include="TargetCrossRid=$(RuntimeIdentifier)" />
-      <_PropsForAOTCrossBuild Include="DisableSourceLink=true" />
-
-      <_NuGetsToBuild Include="$(_AOTCrossNuGetPath)"
-                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
-                      Properties="@(_PropsForAOTCrossBuild,';')"
-                      Descriptor="AOT Cross compiler"/>
-    </ItemGroup>
   </Target>
 </Project>

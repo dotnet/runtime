@@ -22,7 +22,6 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     public static (string propertyName, bool triggerValue)[] PropertiesWithTriggerValues = new[]
     {
         ("RunAOTCompilation", true),
-        ("WasmEnableLegacyJsInterop", false),
         ("WasmEnableSIMD", false),
         ("WasmEnableExceptionHandling", false),
         ("InvariantTimezone", true),
@@ -121,7 +120,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         {
             Config = config,
             Host = publish ? BlazorRunHost.WebServer : BlazorRunHost.DotnetRun,
-            OnConsoleMessage = msg =>
+            OnConsoleMessage = (_, msg) =>
             {
                 sbOutput.AppendLine(msg.Text);
             }
@@ -145,7 +144,8 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
             Assert.DoesNotContain("Could not create es-ES culture", output);
             Assert.DoesNotContain("invalid culture", output);
             Assert.DoesNotContain("CurrentCulture.NativeName: Invariant Language (Invariant Country)", output);
-            Assert.Contains("es-ES: Is-LCID-InvariantCulture: False, NativeName: es (ES)", output);
+            Assert.Contains("es-ES: Is-LCID-InvariantCulture: False", output);
+            Assert.Contains("NativeName: espa\u00F1ol (Espa\u00F1a)", output);
 
             // ignoring the last line of the output which prints the current culture
         }

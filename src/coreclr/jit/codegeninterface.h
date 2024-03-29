@@ -113,6 +113,7 @@ public:
     // move it to Lower
     virtual bool genCreateAddrMode(GenTree*  addr,
                                    bool      fold,
+                                   unsigned  naturalMul,
                                    bool*     revPtr,
                                    GenTree** rv1Ptr,
                                    GenTree** rv2Ptr,
@@ -172,6 +173,10 @@ public:
     bool genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf);
     bool genUseOptimizedWriteBarriers(GenTreeStoreInd* store);
     CorInfoHelpFunc genWriteBarrierHelperForWriteBarrierForm(GCInfo::WriteBarrierForm wbf);
+
+#ifdef DEBUG
+    bool genWriteBarrierUsed;
+#endif
 
     // The following property indicates whether the current method sets up
     // an explicit stack frame or not.

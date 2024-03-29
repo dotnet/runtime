@@ -32,7 +32,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, getResult(obj));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(LateSetComplex_TestData))]
         public void LateSetComplex(object obj, Type objType, string name, object[] args, string[] paramNames, bool missing, bool valueType)
         {
@@ -74,7 +74,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, getResult(obj));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(LateIndexSet_MissingMember_TestData))]
         public void LateIndexSet_MissingMember(object obj, object[] args, string[] paramNames)
         {

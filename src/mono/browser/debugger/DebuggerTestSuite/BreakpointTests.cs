@@ -132,6 +132,15 @@ namespace DebuggerTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/96734")]
+        public async Task CreateGoodBreakpointAtPartialClass()
+        {
+            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 1667, 8);
+            Assert.NotEmpty(bp.Value["locations"]);
+             // ToDo: add hit action like in CreateGoodBreakpointAndHit when bp works
+        }
+
+        [Fact]
         public async Task CreateGoodBreakpointAndHit()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -163,7 +172,7 @@ namespace DebuggerTests
 
                     foreach (var frame in pause_location["callFrames"])
                     {
-                        Assert.Equal(false, frame["url"].Value<string>().Contains(".wasm"));
+                        Assert.Equal(false, frame["url"].Value<string>().EndsWith(".wasm", StringComparison.Ordinal));
                         Assert.Equal(false, frame["url"].Value<string>().Contains("wasm://"));
                     }
                     return Task.CompletedTask;

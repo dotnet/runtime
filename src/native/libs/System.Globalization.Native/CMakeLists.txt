@@ -74,6 +74,14 @@ if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CM
     )
 endif()
 
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    add_definitions(-DAPPLE_HYBRID_GLOBALIZATION)
+    set(NATIVEGLOBALIZATION_SOURCES
+        ${NATIVEGLOBALIZATION_SOURCES}
+        pal_placeholders.c
+    )
+endif()
+
 if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND DEFINED CMAKE_ICU_DIR)
     include_directories(${CMAKE_ICU_DIR}/include)
     link_libraries(${CMAKE_ICU_DIR}/lib/libicuuc.a ${CMAKE_ICU_DIR}/lib/libicui18n.a ${CMAKE_ICU_DIR}/lib/libicudata.a)
@@ -124,7 +132,8 @@ if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE
 endif()
 
 if (MSVC)
-    set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)
+    # on VS < 17.9 we need to force compile sources as C++ since msvc doesn't support __typeof__ there
+    set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES COMPILE_FLAGS "/TP")
 endif()
 
 include_directories("../Common")
@@ -135,11 +144,21 @@ if (GEN_SHARED_LIB)
         find_library(FOUNDATION Foundation REQUIRED)
     endif()
 
-    add_library(System.Globalization.Native
-        SHARED
-        ${NATIVEGLOBALIZATION_SOURCES}
-        ${VERSION_FILE_PATH}
-    )
+    if (CLR_CMAKE_TARGET_WIN32)
+        add_definitions(-DVER_FILEDESCRIPTION_STR="System.Globalization.Native")
+        add_library(System.Globalization.Native
+            SHARED
+            ${NATIVEGLOBALIZATION_SOURCES}
+            System.Globalization.Native.def
+            ${VERSION_FILE_RC_PATH}
+        )
+    else()
+        add_library(System.Globalization.Native
+            SHARED
+            ${NATIVEGLOBALIZATION_SOURCES}
+            ${VERSION_FILE_PATH}
+        )
+    endif()
 
     target_link_libraries(System.Globalization.Native
         PRIVATE
@@ -147,7 +166,20 @@ if (GEN_SHARED_LIB)
         ${FOUNDATION}
     )
 
-    install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
+    if(CLR_CMAKE_TARGET_WIN32)
+        include(GenerateExportHeader)
+        GENERATE_EXPORT_HEADER( System.Globalization.Native
+         BASE_NAME System.Globalization.Native
+         EXPORT_MACRO_NAME System.Globalization.Native_EXPORT
+         EXPORT_FILE_NAME System.Globalization.Native_Export.h
+         STATIC_DEFINE System.Globalization.Native_BUILT_AS_STATIC
+        )
+
+        install (TARGETS System.Globalization.Native DESTINATION .)
+        install (FILES $<TARGET_PDB_FILE:System.Globalization.Native> DESTINATION .)
+    else()
+        install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
+    endif()
 endif()
 
 add_library(System.Globalization.Native-Static
@@ -162,7 +194,7 @@ endif()
 
 install (TARGETS System.Globalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_LINUX_MUSL AND NOT CLR_CMAKE_TARGET_HAIKU)
+if(NOT CLR_CMAKE_TARGET_WIN32 AND NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_LINUX_MUSL AND NOT CLR_CMAKE_TARGET_HAIKU)
     if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"

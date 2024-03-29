@@ -135,3 +135,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/env)
 
 install_clr(TARGETS clrgc DESTINATIONS . sharedFramework COMPONENT runtime)
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+  install_clr(TARGETS clrgcexp DESTINATIONS . sharedFramework COMPONENT runtime)
+endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)

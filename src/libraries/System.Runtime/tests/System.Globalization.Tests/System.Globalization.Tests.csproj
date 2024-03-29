@@ -22,6 +22,8 @@
     <Compile Include="CompareInfo\CompareInfoTests.Compare.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IsSuffix.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.LastIndexOf.cs" />
+    <Compile Include="CompareInfo\CompareInfoTests.HashCode.cs" />
+    <Compile Include="CompareInfo\CompareInfoTests.SortKey.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCurrentInfo.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoValidateParseStyle.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoData.cs" />

@@ -21,9 +21,12 @@ class DeadCodeElimination
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeEquals.Run();
+        TestTypeIsValueType.Run();
         TestBranchesInGenericCodeRemoval.Run();
         TestUnmodifiableStaticFieldOptimization.Run();
         TestUnmodifiableInstanceFieldOptimization.Run();
+        TestGetMethodOptimization.Run();
+        TestTypeOfCodegenBranchElimination.Run();
 
         return 100;
     }
@@ -338,6 +341,8 @@ class DeadCodeElimination
 
     class TestTypeEquals
     {
+        sealed class Gen<T> { }
+
         sealed class Never { }
 
         static Type s_type = null;
@@ -348,9 +353,37 @@ class DeadCodeElimination
             // despite the typeof
             Console.WriteLine(s_type == typeof(Never));
 
+            // This was a compiler crash
+            Console.WriteLine(typeof(object) == typeof(Gen<>));
+
 #if !DEBUG
             ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
 #endif
+        }
+    }
+
+    class TestTypeIsValueType
+    {
+        class Never { }
+
+        class Ever { }
+
+        static void Generic<T>()
+        {
+            if (typeof(T).IsValueType)
+            {
+                Activator.CreateInstance(typeof(Never));
+            }
+
+            Activator.CreateInstance(typeof(Ever));
+        }
+
+        public static void Run()
+        {
+            Generic<object>();
+
+            ThrowIfPresent(typeof(TestTypeIsValueType), nameof(Never));
+            ThrowIfNotPresent(typeof(TestTypeIsValueType), nameof(Ever));
         }
     }
 
@@ -539,6 +572,205 @@ class DeadCodeElimination
         }
     }
 
+    class TestGetMethodOptimization
+    {
+        delegate void ReflectedOnDelegate();
+        delegate void NotReflectedOnDelegate();
+        delegate void ReflectedOnGenericDelegate<T>();
+        delegate void NotReflectedOnGenericDelegate<T>();
+        delegate void AnotherReflectedOnDelegate();
+
+        static class Delegates
+        {
+            public static void Method1() { }
+            public static ReflectedOnDelegate GetReflectedOnDelegate() => Method1;
+
+            public static void Method2() { }
+            public static NotReflectedOnDelegate GetNotReflectedOnDelegate() => Method2;
+
+            public static void Method3() { }
+            public static ReflectedOnGenericDelegate<T> GetReflectedOnGenericDelegate<T>() => Method3;
+
+            public static void Method4() { }
+            public static NotReflectedOnGenericDelegate<T> GetNotReflectedOnGenericDelegate<T>() => Method4;
+
+            public static void Method5() { }
+            public static AnotherReflectedOnDelegate GetAnotherReflectedOnDelegate() => Method5;
+        }
+
+        static MethodInfo GetReflectedOnGenericDelegate<T>() => Delegates.GetReflectedOnGenericDelegate<T>().Method;
+
+        static NotReflectedOnGenericDelegate<T> GetNotReflectedOnGenericDelegate<T>() => Delegates.GetNotReflectedOnGenericDelegate<T>();
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "That's the point")]
+        public static void Run()
+        {
+            Type t = GetTypeSecretly(typeof(TestGetMethodOptimization), nameof(Delegates));
+
+            {
+                ReflectedOnDelegate del = Delegates.GetReflectedOnDelegate();
+                MethodInfo mi = t.GetMethod(nameof(Delegates.Method1));
+                if (del.Method != mi)
+                    throw new Exception();
+            }
+
+            {
+                NotReflectedOnDelegate del = Delegates.GetNotReflectedOnDelegate();
+                MethodInfo mi = t.GetMethod(nameof(Delegates.Method2));
+                if (mi != null)
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo m = GetReflectedOnGenericDelegate<string>();
+                MethodInfo mi = t.GetMethod(nameof(Delegates.Method3));
+                if (m != mi)
+                    throw new Exception();
+            }
+
+            {
+                NotReflectedOnGenericDelegate<string> del = GetNotReflectedOnGenericDelegate<string>();
+                MethodInfo mi = t.GetMethod(nameof(Delegates.Method4));
+                if (mi != null)
+                    throw new Exception();
+            }
+
+            {
+                AnotherReflectedOnDelegate del = Delegates.GetAnotherReflectedOnDelegate();
+                MethodInfo mi = t.GetMethod(nameof(Delegates.Method5));
+                if (del.GetMethodInfo() != mi)
+                    throw new Exception();
+            }
+        }
+    }
+
+    class TestTypeOfCodegenBranchElimination
+    {
+        class Never1 { }
+        class Never2 { }
+        class Never3 { }
+        class Never4<T> { }
+        class Never5<T> { }
+        class Never6<T> { }
+
+        class Canary1 { }
+        class Canary2 { }
+        class Canary3 { }
+        class Canary4 { }
+        class Canary5 { }
+        class Canary6 { }
+
+        class Maybe1<T> { }
+
+        class Marker1 { }
+
+        class Atom1 { }
+
+        interface IDynamicCastableImplemented { void A(); }
+        [DynamicInterfaceCastableImplementation]
+        interface IDynamicCastableImplementedImpl : IDynamicCastableImplemented { void IDynamicCastableImplemented.A() { } }
+        class DynamicInterfaceCastable : IDynamicInterfaceCastable
+        {
+            RuntimeTypeHandle IDynamicInterfaceCastable.GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => typeof(IDynamicCastableImplementedImpl).TypeHandle;
+            bool IDynamicInterfaceCastable.IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented) => true;
+        }
+
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:UnrecognizedAotPattern",
+            Justification = "That's the point")]
+        public static void Run()
+        {
+            if (GetUnknownType().GetType() == typeof(Never1))
+            {
+                Consume(new Canary1());
+            }
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary1));
+#endif
+
+            if (GetUnknownType() is Never2)
+            {
+                Consume(new Canary2());
+            }
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary2));
+#endif
+
+            IsNever3<object>(new object());
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void IsNever3<T>(object o)
+            {
+                if (typeof(T) == typeof(Never3))
+                {
+                    Consume(new Canary3());
+                }
+            }
+#if false // This optimization is disabled for now, don't check.
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary3));
+#endif
+
+            // *********
+
+            if (GetUnknownType().GetType() == typeof(Never4<object>))
+            {
+                Consume(new Canary4());
+            }
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary4));
+#endif
+
+            if (GetUnknownType() is Never5<object>)
+            {
+                Consume(new Canary5());
+            }
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary5));
+#endif
+
+            IsNever6<object>(new object());
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void IsNever6<T>(object o)
+            {
+                if (typeof(T) == typeof(Never6<object>))
+                {
+                    Consume(new Canary6());
+                }
+            }
+#if false // This optimization is disabled for now, don't check.
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary6));
+#endif
+
+            // ************
+
+            Activator.CreateInstance(typeof(Maybe1<>).MakeGenericType(GetAtom1()));
+
+            if (GetUnknownType().GetType() == typeof(Maybe1<object>))
+            {
+                // This should not be optimized away because Maybe1<object> is possible
+                // with the type loader template for MakeGeneric above.
+                Consume(new Marker1());
+            }
+            ThrowIfNotPresent(typeof(TestTypeOfCodegenBranchElimination), nameof(Marker1));
+
+            // ************
+
+            if (GetDynamicInterfaceCastableType() is not IDynamicCastableImplemented)
+               throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static object GetDynamicInterfaceCastableType() => new DynamicInterfaceCastable();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void Consume(object o) { }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static object GetUnknownType() => new object();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom1() => typeof(Atom1);
+        }
+    }
+
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
         Justification = "That's the point")]
     private static Type GetTypeSecretly(Type testType, string typeName) => testType.GetNestedType(typeName, BindingFlags.NonPublic | BindingFlags.Public);
@@ -551,6 +783,8 @@ class DeadCodeElimination
         }
     }
 
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+        Justification = "That's the point")]
     private static void ThrowIfPresentWithUsableMethodTable(Type testType, string typeName)
     {
         Type t = GetTypeSecretly(testType, typeName);

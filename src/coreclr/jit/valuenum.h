@@ -374,6 +374,7 @@ public:
 #if defined(TARGET_XARCH)
     simd32_t GetConstantSimd32(ValueNum argVN);
     simd64_t GetConstantSimd64(ValueNum argVN);
+    simdmask_t GetConstantSimdMask(ValueNum argVN);
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -402,8 +403,6 @@ private:
 
     // returns true iff vn is known to be a constant int32 that is > 0
     bool IsVNPositiveInt32Constant(ValueNum vn);
-
-    GenTreeFlags GetFoldedArithOpResultHandleFlags(ValueNum vn);
 
 public:
     // Validate that the new initializer for s_vnfOpAttribs matches the old code.
@@ -459,6 +458,7 @@ public:
 #if defined(TARGET_XARCH)
     ValueNum VNForSimd32Con(simd32_t cnsVal);
     ValueNum VNForSimd64Con(simd64_t cnsVal);
+    ValueNum VNForSimdMaskCon(simdmask_t cnsVal);
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
     ValueNum VNForGenericCon(var_types typ, uint8_t* cnsVal);
@@ -491,6 +491,11 @@ public:
         m_embeddedToCompileTimeHandleMap.AddOrUpdate(embeddedHandle, compileTimeHandle);
     }
 
+    bool EmbeddedHandleMapLookup(ssize_t embeddedHandle, ssize_t* compileTimeHandle)
+    {
+        return m_embeddedToCompileTimeHandleMap.TryGetValue(embeddedHandle, compileTimeHandle);
+    }
+
     void AddToFieldAddressToFieldSeqMap(ValueNum fldAddr, FieldSeq* fldSeq)
     {
         m_fieldAddressToFieldSeqMap.AddOrUpdate(fldAddr, fldSeq);
@@ -505,6 +510,8 @@ public:
         }
         return nullptr;
     }
+
+    CORINFO_CLASS_HANDLE GetObjectType(ValueNum vn, bool* pIsExact, bool* pIsNonNull);
 
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
@@ -682,6 +689,8 @@ public:
 
     // Skip all folding checks.
     ValueNum VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx);
+
+    ValueNum VNForCast(VNFunc func, ValueNum castToVN, ValueNum objVN);
 
     ValueNum VNForMapSelect(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
 
@@ -1020,8 +1029,14 @@ public:
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
 
+    // Returns true iff the VN represents a specific handle constant.
+    bool IsVNHandle(ValueNum vn, GenTreeFlags flag);
+
     // Returns true iff the VN represents an object handle constant.
     bool IsVNObjHandle(ValueNum vn);
+
+    // Returns true iff the VN represents a Type handle constant.
+    bool IsVNTypeHandle(ValueNum vn);
 
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
@@ -1084,14 +1099,15 @@ private:
         switch (c->m_typ)
         {
             case TYP_REF:
-                assert(0 <= offset && offset <= 1); // Null or exception.
+                assert((offset <= 1) || IsVNObjHandle(vn)); // Null, exception or nongc obj handle
                 FALLTHROUGH;
 
             case TYP_BYREF:
 
 #ifdef _MSC_VER
 
-                assert(&typeid(T) == &typeid(size_t)); // We represent ref/byref constants as size_t's.
+                assert((&typeid(T) == &typeid(size_t)) ||
+                       (&typeid(T) == &typeid(ssize_t))); // We represent ref/byref constants as size_t/ssize_t
 
 #endif // _MSC_VER
 
@@ -1744,6 +1760,35 @@ private:
         }
         return m_simd64CnsMap;
     }
+
+    struct SimdMaskPrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simdmask_t>
+    {
+        static bool Equals(simdmask_t x, simdmask_t y)
+        {
+            return x == y;
+        }
+
+        static unsigned GetHashCode(const simdmask_t val)
+        {
+            unsigned hash = 0;
+
+            hash = static_cast<unsigned>(hash ^ val.u32[0]);
+            hash = static_cast<unsigned>(hash ^ val.u32[1]);
+
+            return hash;
+        }
+    };
+
+    typedef VNMap<simdmask_t, SimdMaskPrimitiveKeyFuncs> SimdMaskToValueNumMap;
+    SimdMaskToValueNumMap* m_simdMaskCnsMap;
+    SimdMaskToValueNumMap* GetSimdMaskCnsMap()
+    {
+        if (m_simdMaskCnsMap == nullptr)
+        {
+            m_simdMaskCnsMap = new (m_alloc) SimdMaskToValueNumMap(m_alloc);
+        }
+        return m_simdMaskCnsMap;
+    }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -1926,6 +1971,13 @@ struct ValueNumStore::VarTypConv<TYP_SIMD64>
     typedef simd64_t Type;
     typedef simd64_t Lang;
 };
+
+template <>
+struct ValueNumStore::VarTypConv<TYP_MASK>
+{
+    typedef simdmask_t Type;
+    typedef simdmask_t Lang;
+};
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -2002,6 +2054,13 @@ FORCEINLINE simd64_t ValueNumStore::SafeGetConstantValue<simd64_t>(Chunk* c, uns
     assert(c->m_typ == TYP_SIMD64);
     return reinterpret_cast<VarTypConv<TYP_SIMD64>::Lang*>(c->m_defs)[offset];
 }
+
+template <>
+FORCEINLINE simdmask_t ValueNumStore::SafeGetConstantValue<simdmask_t>(Chunk* c, unsigned offset)
+{
+    assert(c->m_typ == TYP_MASK);
+    return reinterpret_cast<VarTypConv<TYP_MASK>::Lang*>(c->m_defs)[offset];
+}
 #endif // TARGET_XARCH
 
 template <>
@@ -2073,6 +2132,20 @@ FORCEINLINE simd64_t ValueNumStore::ConstantValueInternal<simd64_t>(ValueNum vn 
     assert(!coerce);
 
     return SafeGetConstantValue<simd64_t>(c, offset);
+}
+
+template <>
+FORCEINLINE simdmask_t ValueNumStore::ConstantValueInternal<simdmask_t>(ValueNum vn DEBUGARG(bool coerce))
+{
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    assert(c->m_attribs == CEA_Const);
+
+    unsigned offset = ChunkOffset(vn);
+
+    assert(c->m_typ == TYP_MASK);
+    assert(!coerce);
+
+    return SafeGetConstantValue<simdmask_t>(c, offset);
 }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD

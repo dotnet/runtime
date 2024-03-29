@@ -355,7 +355,7 @@ void ThreadLocalBlock::AllocateThreadStaticBoxes(MethodTable * pMT)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(pMT->GetNumBoxedThreadStatics() > 0);
+        PRECONDITION(pMT->HasBoxedThreadStatics());
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -566,7 +566,7 @@ void ThreadLocalModule::PopulateClass(MethodTable *pMT)
     // We need to allocate boxes any value-type statics that are not
     // primitives or enums, because these statics may contain references
     // to objects on the GC heap
-    if (pMT->GetNumBoxedThreadStatics() > 0)
+    if (pMT->HasBoxedThreadStatics())
     {
         PTR_ThreadLocalBlock pThreadLocalBlock = ThreadStatics::GetCurrentTLB();
         _ASSERTE(pThreadLocalBlock != NULL);
