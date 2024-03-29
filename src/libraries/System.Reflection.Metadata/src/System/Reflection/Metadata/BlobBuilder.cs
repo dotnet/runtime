@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
@@ -33,7 +32,6 @@ namespace System.Reflection.Metadata
         // This structure optimizes for append write operations and sequential enumeration from the start of the chain.
         // Data can only be written to the head node. Other nodes are "frozen".
         private BlobBuilder _nextOrPrevious;
-        private List<BlobBuilder> _emptyChildBlobs;
         private BlobBuilder FirstChunk => _nextOrPrevious._nextOrPrevious;
 
         // The sum of lengths of all preceding chunks (not including the current chunk),
@@ -63,7 +61,6 @@ namespace System.Reflection.Metadata
 
             _nextOrPrevious = this;
             _buffer = new byte[Math.Max(MinChunkSize, capacity)];
-            _emptyChildBlobs = new();
         }
 
         protected virtual BlobBuilder AllocateChunk(int minimalSize)
@@ -100,21 +97,8 @@ namespace System.Reflection.Metadata
             {
                 if (chunk != this)
                 {
-                    chunk.ClearChunk();
-                    chunk.FreeChunk();
+                    chunk.ClearAndFreeChunk();
                 }
-            }
-
-            if (_emptyChildBlobs.Count > 0)
-            {
-                foreach (BlobBuilder chunk in _emptyChildBlobs)
-                {
-                    chunk.ClearChunk();
-                    chunk.FreeChunk();
-                }
-
-                _emptyChildBlobs.Clear();
-                _emptyChildBlobs.TrimExcess();
             }
 
             ClearChunk();
@@ -411,7 +395,7 @@ namespace System.Reflection.Metadata
             // avoid chaining empty chunks:
             if (prefix.Count == 0)
             {
-                _emptyChildBlobs.Add(prefix);
+                prefix.ClearAndFreeChunk();
                 return;
             }
 
@@ -472,7 +456,7 @@ namespace System.Reflection.Metadata
             // avoid chaining empty chunks:
             if (suffix.Count == 0)
             {
-                _emptyChildBlobs.Add(suffix);
+                suffix.ClearAndFreeChunk();
                 return;
             }
 
@@ -1193,6 +1177,12 @@ namespace System.Reflection.Metadata
             return (length <= MaxDisplaySize) ?
                 BitConverter.ToString(bytes, 0, length) :
                 BitConverter.ToString(bytes, 0, MaxDisplaySize / 2) + "-...-" + BitConverter.ToString(bytes, length - MaxDisplaySize / 2, MaxDisplaySize / 2);
+        }
+
+        private void ClearAndFreeChunk()
+        {
+            ClearChunk();
+            FreeChunk();
         }
     }
 }
