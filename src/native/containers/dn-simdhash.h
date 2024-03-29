@@ -21,7 +21,7 @@
 //  at the top bit than at the bottom.
 #define DN_SIMDHASH_SUFFIX_SALT 0b10000000
 // Set a minimum number of buckets when created, regardless of requested capacity
-#define DN_SIMDHASH_MIN_BUCKET_COUNT 4
+#define DN_SIMDHASH_MIN_BUCKET_COUNT 2
 // User-specified capacity values will be increased to this percentage in order
 //  to maintain an ideal load factor. FIXME: 120 isn't right
 #define DN_SIMDHASH_SIZING_PERCENTAGE 120
@@ -31,25 +31,6 @@
 #else
 #define DN_FORCEINLINE(RET_TYPE) inline RET_TYPE __attribute__((always_inline))
 #endif
-
-#if defined(__clang__) || defined (__GNUC__) // vector intrinsics
-typedef uint8_t dn_u8x16 __attribute__ ((vector_size (DN_SIMDHASH_VECTOR_WIDTH)));
-
-// extract/replace lane opcodes require constant indices on some target architectures,
-//  and in some cases it is profitable to do a single-byte memory load/store instead of
-//  a full vector load/store, so we expose both layouts as a union
-typedef union {
-	dn_u8x16 vec;
-	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
-} dn_simdhash_suffixes;
-
-#else // __clang__ || __GNUC__
-
-typedef struct {
-	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
-} dn_simdhash_suffixes;
-
-#endif // __clang__ || __GNUC__
 
 typedef struct dn_simdhash_buffers_t {
 	// sizes of current allocations in items (not bytes)
@@ -90,17 +71,11 @@ typedef struct dn_simdhash_t {
 // These helpers use .values instead of .vec to avoid generating unnecessary
 //  vector loads/stores. Operations that touch these values may not need vectorization,
 //  so it's ideal to just do single-byte memory accesses instead.
-static DN_FORCEINLINE(uint8_t)
-dn_simdhash_bucket_count (dn_simdhash_suffixes bucket)
-{
-	return bucket.values[DN_SIMDHASH_COUNT_SLOT];
-}
+#define dn_simdhash_bucket_count(suffixes) \
+	(suffixes).values[DN_SIMDHASH_COUNT_SLOT]
 
-static DN_FORCEINLINE(uint8_t)
-dn_simdhash_bucket_is_cascaded (dn_simdhash_suffixes bucket)
-{
-	return bucket.values[DN_SIMDHASH_CASCADED_SLOT];
-}
+#define dn_simdhash_bucket_is_cascaded(suffixes) \
+	(suffixes).values[DN_SIMDHASH_CASCADED_SLOT]
 
 #define dn_simdhash_bucket_set_suffix(suffixes, slot, value) \
 	(suffixes).values[(slot)] = (value)
@@ -164,10 +139,5 @@ void
 dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity);
 
 typedef void (*dn_simdhash_foreach_func) (void * key, void * value, void* user_data);
-
-// Iterates over all the key/value pairs in the table and passes each one to your provided
-//  callback, along with the user_data pointer you provide.
-void
-dn_simdhash_foreach (dn_simdhash_t *hash, dn_simdhash_foreach_func func, void *user_data);
 
 #endif // __DN_SIMDHASH_H__

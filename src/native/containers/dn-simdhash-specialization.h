@@ -67,26 +67,6 @@ static_assert(sizeof(DN_SIMDHASH_VALUE_T) == sizeof(void *), "You said your valu
 static_assert (DN_SIMDHASH_BUCKET_CAPACITY < DN_SIMDHASH_MAX_BUCKET_CAPACITY, "Maximum bucket capacity exceeded");
 static_assert (DN_SIMDHASH_BUCKET_CAPACITY > 1, "Bucket capacity too low");
 
-// We set bucket_size_bytes to sizeof() this struct so that we can let the compiler
-//  generate the most optimal code possible when we're manipulating pointers to it -
-//  that is, it can do mul-by-constant instead of mul-by-(hash->meta.etc)
-typedef struct bucket_t {
-	dn_simdhash_suffixes suffixes;
-	DN_SIMDHASH_KEY_T keys[DN_SIMDHASH_BUCKET_CAPACITY];
-} bucket_t;
-
-static DN_FORCEINLINE(bucket_t *)
-address_of_bucket (dn_simdhash_buffers_t buffers, uint32_t bucket_index)
-{
-	return &((bucket_t *)buffers.buckets)[bucket_index];
-}
-
-static DN_FORCEINLINE(DN_SIMDHASH_VALUE_T *)
-address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
-{
-	return &((DN_SIMDHASH_VALUE_T *)buffers.values)[value_slot_index];
-}
-
 
 #if defined(__clang__) || defined (__GNUC__) // use vector intrinsics
 
@@ -101,6 +81,20 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 #else
 #pragma message("WARNING: Unsupported architecture for dn_simdhash! Performance will be terrible!")
 #endif
+
+// extract/replace lane opcodes require constant indices on some target architectures,
+//  and in some cases it is profitable to do a single-byte memory load/store instead of
+//  a full vector load/store, so we expose both layouts as a union
+
+typedef uint8_t dn_u8x16 __attribute__ ((vector_size (DN_SIMDHASH_VECTOR_WIDTH), aligned(DN_SIMDHASH_VECTOR_WIDTH)));
+typedef union {
+	dn_u8x16 vec;
+#ifndef __wasm
+    __m128i m128;
+#endif
+	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
+} dn_simdhash_suffixes;
+
 
 static DN_FORCEINLINE(int)
 ctz (uint32_t value)
@@ -135,13 +129,9 @@ static DN_FORCEINLINE(int)
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
 #if defined(__wasm_simd128__)
-	dn_simdhash_suffixes match_vector;
-	match_vector.vec = wasm_i8x16_eq(needle.vec, haystack.vec);
-	return ctz(wasm_i8x16_bitmask(match_vector.vec));
+	return ctz(wasm_i8x16_bitmask(wasm_i8x16_eq(needle.vec, haystack.vec)));
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
-	dn_simdhash_suffixes match_vector;
-	match_vector.vec = _mm_cmpeq_epi8(needle.vec, haystack.vec);
-	return ctz(_mm_movemask_epi8(match_vector.vec));
+	return ctz(_mm_movemask_epi8(_mm_cmpeq_epi8(needle.m128, haystack.m128)));
 #elif defined(__ARM_NEON)
 	dn_simdhash_suffixes match_vector;
 	// Completely untested.
@@ -167,9 +157,56 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 #endif
 }
 
-#else // __clang__ || __GNUC__
+#elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
+// neither clang or gcc, but we have SSE2 available, so assume this is MSVC on x86 or x86-64
+// msvc neon intrinsics don't seem to expose a 128-bit wide vector so there's no neon in here
 
-#pragma message("WARNING: Building dn_simdhash for MSVC without SIMD intrinsics! Performance will be terrible!")
+static DN_FORCEINLINE(int)
+ctz (uint32_t value)
+{
+    uint32_t result = 0;
+    if (_BitScanForward(&result, value))
+        return result;
+    else
+        return 32;
+}
+
+#include <emmintrin.h>
+
+typedef struct {
+    __m128i m128;
+	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
+} dn_simdhash_suffixes;
+
+static DN_FORCEINLINE(dn_simdhash_suffixes)
+build_search_vector (uint8_t needle)
+{
+    dn_simdhash_suffixes result;
+    // FIXME: Completely untested.
+    result.m128 = _mm_set1_epi8(needle);
+    __m128i mask = _mm_set_epi8( // FIXME: setr not set?
+        0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu,
+        0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0x00u, 0x00u
+    );
+    result.m128 = _mm_and_si128(result.m128, mask);
+    return result;
+}
+
+int
+find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
+{
+    // FIXME: Completely untested.
+	__m128i match_vector = _mm_cmpeq_epi8(needle.m128, haystack.m128);
+	return ctz(_mm_movemask_epi8(match_vector));
+}
+
+#else // unknown compiler and/or unknown non-simd arch
+
+#pragma message("WARNING: Unsupported architecture/compiler for dn_simdhash! Performance will be terrible!")
+
+typedef struct {
+	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
+} dn_simdhash_suffixes;
 
 static DN_FORCEINLINE(dn_simdhash_suffixes)
 build_search_vector (uint8_t needle)
@@ -191,7 +228,28 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 	return 32;
 }
 
-#endif // __clang__ || __GNUC__
+#endif // end of clang/gcc or msvc or fallback
+
+
+// We set bucket_size_bytes to sizeof() this struct so that we can let the compiler
+//  generate the most optimal code possible when we're manipulating pointers to it -
+//  that is, it can do mul-by-constant instead of mul-by-(hash->meta.etc)
+typedef struct bucket_t {
+	dn_simdhash_suffixes suffixes;
+	DN_SIMDHASH_KEY_T keys[DN_SIMDHASH_BUCKET_CAPACITY];
+} bucket_t;
+
+static DN_FORCEINLINE(bucket_t *)
+address_of_bucket (dn_simdhash_buffers_t buffers, uint32_t bucket_index)
+{
+	return &((bucket_t *)buffers.buckets)[bucket_index];
+}
+
+static DN_FORCEINLINE(DN_SIMDHASH_VALUE_T *)
+address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
+{
+	return &((DN_SIMDHASH_VALUE_T *)buffers.values)[value_slot_index];
+}
 
 
 // This is split out into a helper so we can eventually reuse it for more efficient add/remove
@@ -369,7 +427,7 @@ uint8_t
 DN_SIMDHASH_TRY_ADD_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value)
 {
 	assert(hash);
-	while (true) {
+	while (1) {
 		dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T)(hash, key, key_hash, value, 1);
 
 		switch (ok) {

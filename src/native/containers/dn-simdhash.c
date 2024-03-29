@@ -153,37 +153,3 @@ deref_raw (void * src)
 {
 	return *((void**)src);
 }
-
-void
-dn_simdhash_foreach (dn_simdhash_t *hash, dn_simdhash_foreach_func func, void *user_data)
-{
-	assert(hash);
-	assert(func);
-
-	dn_simdhash_meta_t meta = hash->meta;
-
-	uint8_t *bucket = (uint8_t *)hash->buffers.buckets,
-		*values = (uint8_t *)hash->buffers.values;
-	uint32_t values_step = meta.value_size * meta.bucket_capacity;
-
-	for (
-		uint32_t i = 0; i < hash->buffers.buckets_length;
-		i++, bucket += meta.bucket_size_bytes, values += values_step
-	) {
-		uint32_t count = dn_simdhash_bucket_count(*(dn_simdhash_suffixes *)bucket);
-		uint8_t *keys = bucket + sizeof(dn_simdhash_suffixes);
-		if (meta.key_is_pointer && meta.value_is_pointer) {
-			for (uint32_t j = 0; j < count; j++)
-				func(deref_raw(keys + (j * meta.key_size)), deref_raw(values + (j * meta.value_size)), user_data);
-		} else if (meta.key_is_pointer) {
-			for (uint32_t j = 0; j < count; j++)
-				func(deref_raw(keys + (j * meta.key_size)), values + (j * meta.value_size), user_data);
-		} else if (meta.value_is_pointer) {
-			for (uint32_t j = 0; j < count; j++)
-				func(keys + (j * meta.key_size), deref_raw(values + (j * meta.value_size)), user_data);
-		} else {
-			for (uint32_t j = 0; j < count; j++)
-				func(keys + (j * meta.key_size), values + (j * meta.value_size), user_data);
-		}
-	}
-}
