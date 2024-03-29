@@ -101,7 +101,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
     // so if we're importing a Swift call, look for this type in the signature
     CallArg*  swiftErrorArg = nullptr;
-    CallArgs* callArgs;
+    CallArgs* callArgs = nullptr;
 
     /*-------------------------------------------------------------------------
      * First create the call node
