@@ -31,7 +31,7 @@
 typedef uint8_t dn_u8x16 __attribute__ ((vector_size (DN_SIMDHASH_VECTOR_WIDTH), aligned(DN_SIMDHASH_VECTOR_WIDTH)));
 typedef union {
 	dn_u8x16 vec;
-#ifndef __wasm
+#if defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
 	__m128i m128;
 #endif
 	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
