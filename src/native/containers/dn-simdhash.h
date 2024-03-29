@@ -21,7 +21,7 @@
 //  at the top bit than at the bottom.
 #define DN_SIMDHASH_SUFFIX_SALT 0b10000000
 // Set a minimum number of buckets when created, regardless of requested capacity
-#define DN_SIMDHASH_MIN_BUCKET_COUNT 2
+#define DN_SIMDHASH_MIN_BUCKET_COUNT 1
 // User-specified capacity values will be increased to this percentage in order
 //  to maintain an ideal load factor. FIXME: 120 isn't right
 #define DN_SIMDHASH_SIZING_PERCENTAGE 120
@@ -36,9 +36,9 @@ typedef struct dn_simdhash_buffers_t {
 	// sizes of current allocations in items (not bytes)
 	// so values_length should == (buckets_length * bucket_capacity)
 	uint32_t buckets_length, values_length,
-    // The number of bytes we pushed the buckets ptr forward after allocating it.
-    // We'll need to subtract this from the ptr before freeing.
-        buckets_bias;
+	// The number of bytes we pushed the buckets ptr forward after allocating it.
+	// We'll need to subtract this from the ptr before freeing.
+		buckets_bias;
 	void *buckets;
 	void *values;
 	dn_allocator_t *allocator;
@@ -73,6 +73,7 @@ typedef struct dn_simdhash_t {
 // These helpers use .values instead of .vec to avoid generating unnecessary
 //  vector loads/stores. Operations that touch these values may not need vectorization,
 //  so it's ideal to just do single-byte memory accesses instead.
+// These unfortunately have to be macros because the suffixes type isn't defined yet
 #define dn_simdhash_bucket_count(suffixes) \
 	(suffixes).values[DN_SIMDHASH_COUNT_SLOT]
 
@@ -126,12 +127,12 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity);
 void
 dn_simdhash_clear (dn_simdhash_t *hash);
 
-// Returns the actual number of items the table can currently hold.
-// It may grow automatically before reaching that point if there are hash collisions.
+// Returns the actual number of values the table can currently hold.
+// It may grow automatically before reaching that point.
 uint32_t
 dn_simdhash_capacity (dn_simdhash_t *hash);
 
-// Returns the number of items currently stored in the table.
+// Returns the number of value currently stored in the table.
 uint32_t
 dn_simdhash_count (dn_simdhash_t *hash);
 

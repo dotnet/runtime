@@ -14,7 +14,7 @@ next_power_of_two (uint32_t value) {
 static DN_FORCEINLINE(uint32_t)
 next_power_of_two (uint32_t value) {
 	if (value < 2)
-		return 2;
+		return 1;
 	value--;
 	value |= value >> 1;
 	value |= value >> 2;
@@ -38,13 +38,6 @@ dn_simdhash_new_internal (dn_simdhash_meta_t meta, dn_simdhash_vtable_t vtable, 
 	result->meta = meta;
 	result->vtable = vtable;
 	result->buffers.allocator = allocator;
-
-	// FIXME: Why does clang insist old_buffers is unused here?
-	/*
-	dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(result, capacity);
-	assert(old_buffers.buckets == NULL);
-	assert(old_buffers.values == NULL);
-	*/
 
 	capacity = capacity * DN_SIMDHASH_SIZING_PERCENTAGE / 100;
 	dn_simdhash_ensure_capacity_internal(result, capacity);
@@ -155,10 +148,4 @@ dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity)
 		hash->vtable.rehash(hash, old_buffers);
 		dn_simdhash_free_buffers(old_buffers);
 	}
-}
-
-static DN_FORCEINLINE(void *)
-deref_raw (void * src)
-{
-	return *((void**)src);
 }
