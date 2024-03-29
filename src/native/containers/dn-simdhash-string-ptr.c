@@ -119,7 +119,12 @@ dn_simdhash_str_equal (dn_simdhash_str_key v1, dn_simdhash_str_key v2)
 		return 1;
 	if (v1.length != v2.length)
 		return 0;
-	return memcmp(v1.text, v2.text, v1.length) == 0;
+	// HACK: If the string was more than 4gb long for some reason, we don't know how long
+	//  it actually is, so we have to use strcmp.
+	if (v1.length == 0xFFFFFFFFu)
+		return strcmp(v1.text, v2.text) == 0;
+	else
+		return memcmp(v1.text, v2.text, v1.length) == 0;
 }
 
 static uint32_t
@@ -147,9 +152,18 @@ make_key (const char *text)
 {
 	dn_simdhash_str_key result = { 0, };
 	if (text) {
-		result.length = strlen(text);
+		size_t length = strlen(text);
+		// HACK: On 64-bit platforms, the string could theoretically be Very Long.
+		// In that scenario, we store the maximum representable length and the comparer
+		//  will fall back to strcmp
+		if (length > 0xFFFFFFFFu)
+			result.length = 0xFFFFFFFFu;
+		else
+			result.length = (uint32_t)length;
+
 		if (result.length)
 			// FIXME: Select a good seed.
+			// FIXME: If string is bigger than 4gb we're only hashing the first 4gb.
 			result.hash = MurmurHash3_x86_32(text, result.length, 0);
 		else
 			result.hash = 0;
