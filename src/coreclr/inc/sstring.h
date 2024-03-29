@@ -477,7 +477,7 @@ private:
 
     // Converts/copies into the given output string
     void ConvertToUnicode(SString &dest) const;
-    COUNT_T ConvertToUTF8(SString &dest) const;
+    void ConvertToUTF8(SString &dest) const;
 
     //-------------------------------------------------------------------
     // Accessing the string contents directly

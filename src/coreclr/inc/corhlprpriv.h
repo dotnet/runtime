@@ -228,30 +228,42 @@ public:
     // Convert UTF8 string to UNICODE string, optimized for speed
     void ConvertUtf8_Unicode(const char * utf8str)
     {
-        size_t sourceLen = strlen(utf8str);
-        size_t destLen = minipal_get_length_utf8_to_utf16(utf8str, sourceLen, 0);
+        size_t sourceLen = 0;
+        size_t destLen = 0;
+        if (utf8str != NULL)
+        {
+            sourceLen = strlen(utf8str) + 1;
+            destLen = minipal_get_length_utf8_to_utf16(utf8str, sourceLen, /* flags */ 0);
+        }
 
         CHAR16_T* buffer = (CHAR16_T*) AllocThrows((destLen + 1) * sizeof(CHAR16_T));
         buffer[destLen] = W('\0');
 
-        if (!minipal_convert_utf8_to_utf16(utf8str, sourceLen, buffer, destLen, 0))
+        if (destLen > 0
+            && !minipal_convert_utf8_to_utf16(utf8str, sourceLen, buffer, destLen, /* flags */ 0))
         {
-            ThrowHR(EMAKEHR(errno));
+            ThrowHR(EMAKEHR(GetLastError()));
         }
     }
 
     // Convert UNICODE string to UTF8 string, optimized for speed
     void ConvertUnicode_Utf8(const WCHAR * pString)
     {
-        size_t sourceLen = u16_strlen(pString);
-        size_t destLen = minipal_get_length_utf16_to_utf8((const CHAR16_T*)pString, sourceLen, 0);
+        size_t sourceLen = 0;
+        size_t destLen = 0;
+        if (pString != NULL)
+        {
+            sourceLen = u16_strlen(pString) + 1;
+            destLen = minipal_get_length_utf16_to_utf8((const CHAR16_T*)pString, sourceLen, /* flags */ 0);
+        }
 
         LPSTR buffer = (LPSTR) AllocThrows((destLen + 1) * sizeof(char));
         buffer[destLen] = '\0';
 
-        if (!minipal_convert_utf16_to_utf8((const CHAR16_T*)pString, sourceLen, buffer, destLen, 0))
+        if (destLen > 0
+            && !minipal_convert_utf16_to_utf8((const CHAR16_T*)pString, sourceLen, buffer, destLen, /* flags */ 0))
         {
-            ThrowHR(EMAKEHR(errno));
+            ThrowHR(EMAKEHR(GetLastError()));
         }
     }
 

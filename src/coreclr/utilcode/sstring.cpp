@@ -796,8 +796,6 @@ void SString::ConvertToUnicode(SString &s) const
     }
     CONTRACT_END;
 
-    int page = 0;
-
     switch (GetRepresentation())
     {
     case REPRESENTATION_EMPTY:
@@ -809,7 +807,6 @@ void SString::ConvertToUnicode(SString &s) const
         RETURN;
 
     case REPRESENTATION_UTF8:
-        page = CP_UTF8;
         break;
 
     case REPRESENTATION_ASCII:
@@ -820,13 +817,13 @@ void SString::ConvertToUnicode(SString &s) const
         UNREACHABLE();
     }
 
-    COUNT_T length = WszMultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, 0, 0);
+    COUNT_T length = WszMultiByteToWideChar(CP_UTF8, 0, GetRawANSI(), GetRawCount()+1, NULL, 0);
     if (length == 0)
         ThrowLastError();
 
     s.Resize(length-1, REPRESENTATION_UNICODE);
 
-    length = WszMultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, s.GetRawUnicode(), length);
+    length = WszMultiByteToWideChar(CP_UTF8, 0, GetRawANSI(), GetRawCount()+1, s.GetRawUnicode(), length);
     if (length == 0)
         ThrowLastError();
 
@@ -836,9 +833,9 @@ void SString::ConvertToUnicode(SString &s) const
 //-----------------------------------------------------------------------------
 // Set s to be a copy of this string's contents, but in the utf8 format.
 //-----------------------------------------------------------------------------
-COUNT_T SString::ConvertToUTF8(SString &s) const
+void SString::ConvertToUTF8(SString &s) const
 {
-    CONTRACT(COUNT_T)
+    CONTRACT_VOID
     {
         PRECONDITION(s.Check());
         POSTCONDITION(s.IsRepresentation(REPRESENTATION_UTF8));
@@ -851,12 +848,12 @@ COUNT_T SString::ConvertToUTF8(SString &s) const
     {
     case REPRESENTATION_EMPTY:
         s.Clear();
-        RETURN 1;
+        RETURN;
 
     case REPRESENTATION_ASCII:
     case REPRESENTATION_UTF8:
         s.Set(*this);
-        RETURN s.GetRawCount()+1;
+        RETURN;
 
     case REPRESENTATION_UNICODE:
         break;
@@ -865,25 +862,17 @@ COUNT_T SString::ConvertToUTF8(SString &s) const
         UNREACHABLE();
     }
 
-    size_t length = minipal_get_length_utf16_to_utf8((CHAR16_T*)GetRawUnicode(), GetCount(), MINIPAL_MB_NO_REPLACE_INVALID_CHARS);
+    COUNT_T length = WszWideCharToMultiByte(CP_UTF8, 0, GetRawUnicode(), GetRawCount()+1, NULL, 0, NULL, NULL);
+    if (length == 0)
+        ThrowLastError();
 
-    if (length >= COUNT_T_MAX)
-    {
-        ThrowHR(COR_E_OVERFLOW);
-    }
+    s.Resize(length-1, REPRESENTATION_UTF8);
 
-    s.Resize((COUNT_T)length, REPRESENTATION_UTF8);
+    length = WszWideCharToMultiByte(CP_UTF8, 0, GetRawUnicode(), GetRawCount()+1, s.GetRawUTF8(), length, NULL, NULL);
+    if (length == 0)
+        ThrowLastError();
 
-    //we optimize the empty string by replacing it with null for SString above in Resize
-    if (length > 0)
-    {
-        if (!minipal_convert_utf16_to_utf8((CHAR16_T*)GetRawUnicode(), GetCount(), s.GetRawUTF8(), length, MINIPAL_MB_NO_REPLACE_INVALID_CHARS))
-        {
-            ThrowHR(EMAKEHR(errno));
-        }
-    }
-
-    RETURN (COUNT_T)length + 1;
+    RETURN;
 }
 
 //-----------------------------------------------------------------------------
