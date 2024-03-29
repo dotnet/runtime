@@ -1,11 +1,11 @@
-#ifndef __DN_SIMDHASH_H__
-#error Include dn-simdhash.h first
-// HACK: for better language server parsing
-#include "dn-simdhash.h"
-#endif
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 #ifndef __DN_SIMDHASH_ARCH_H__
 #define __DN_SIMDHASH_ARCH_H__
+
+// HACK: for better language server parsing
+#include "dn-simdhash.h"
 
 #if defined(__clang__) || defined (__GNUC__) // use vector intrinsics
 
@@ -159,7 +159,6 @@ build_search_vector (uint8_t needle)
 static DN_FORCEINLINE(int)
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
-	// FIXME: Do this using intrinsics on MSVC. Seems complicated since there's no __builtin_ctz.
 	for (uint32_t i = 0, c = dn_simdhash_bucket_count(haystack); i < c; i++)
 		if (needle.values[i] == haystack.values[i])
 			return i;

@@ -7,12 +7,7 @@
 #define __DN_SIMDHASH_SPECIALIZATION_H__
 #endif
 
-#ifndef __DN_SIMDHASH_H__
-#error Include dn-simdhash.h first
-// HACK: for better language server parsing
 #include "dn-simdhash.h"
-#endif
-
 #include "dn-simdhash-arch.h"
 
 #ifndef DN_SIMDHASH_T
@@ -24,7 +19,7 @@
 #endif
 
 #ifndef DN_SIMDHASH_VALUE_T
-#error Expected DN_SIMDHASH_VALUE_T definition
+#error Expected DN_SIMDHASH_VALUE_T definition i.e. int
 #endif
 
 #ifndef DN_SIMDHASH_KEY_HASHER
