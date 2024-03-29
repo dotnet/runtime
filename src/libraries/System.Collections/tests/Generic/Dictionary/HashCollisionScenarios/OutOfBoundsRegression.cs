@@ -220,7 +220,7 @@ namespace System.Collections.Tests
             {
                 string newKey = _collidingStrings[i];
                 Assert.Equal(0, _lazyGetNonRandomizedHashCodeDel.Value(newKey)); // ensure has a zero hash code Ordinal
-                Assert.Equal(0x24716ca0, _lazyGetNonRandomizedOrdinalIgnoreCaseHashCodeDel.Value(newKey)); // ensure has a zero hash code OrdinalIgnoreCase
+                Assert.Equal(unchecked((int)0xe05180a0), _lazyGetNonRandomizedOrdinalIgnoreCaseHashCodeDel.Value(newKey)); // ensure has a zero hash code OrdinalIgnoreCase
 
                 addKeyCallback(collection, newKey);
                 allKeys.Add(newKey);
