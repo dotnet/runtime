@@ -15,8 +15,6 @@
 #define DN_SIMDHASH_VALUE_T size_t
 #define DN_SIMDHASH_KEY_HASHER(key) (uint32_t)(key & 0xFFFFFFFFu)
 #define DN_SIMDHASH_KEY_EQUALS(lhs, rhs) (lhs == rhs)
-#define DN_SIMDHASH_KEY_IS_POINTER 1
-#define DN_SIMDHASH_VALUE_IS_POINTER 1
 
 #include "dn-simdhash-specialization.h"
 

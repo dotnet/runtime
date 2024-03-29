@@ -138,8 +138,6 @@ dn_simdhash_str_hash (dn_simdhash_str_key v1)
 #define DN_SIMDHASH_VALUE_T void *
 #define DN_SIMDHASH_KEY_HASHER dn_simdhash_str_hash
 #define DN_SIMDHASH_KEY_EQUALS dn_simdhash_str_equal
-#define DN_SIMDHASH_KEY_IS_POINTER 0
-#define DN_SIMDHASH_VALUE_IS_POINTER 1
 #define DN_SIMDHASH_ACCESSOR_SUFFIX _raw
 // Perfect cache alignment (192 bytes)
 #define DN_SIMDHASH_BUCKET_CAPACITY 11

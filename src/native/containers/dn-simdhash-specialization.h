@@ -16,23 +16,15 @@
 #include "dn-simdhash-arch.h"
 
 #ifndef DN_SIMDHASH_T
-#error Expected DN_SIMDHASH_T definition
+#error Expected DN_SIMDHASH_T definition i.e. dn_simdhash_string_ptr
 #endif
 
 #ifndef DN_SIMDHASH_KEY_T
-#error Expected DN_SIMDHASH_KEY_T definition
-#endif
-
-#ifndef DN_SIMDHASH_KEY_IS_POINTER
-#error Expected DN_SIMDHASH_KEY_IS_POINTER to be 0 or 1
+#error Expected DN_SIMDHASH_KEY_T definition i.e. const char *
 #endif
 
 #ifndef DN_SIMDHASH_VALUE_T
 #error Expected DN_SIMDHASH_VALUE_T definition
-#endif
-
-#ifndef DN_SIMDHASH_VALUE_IS_POINTER
-#error Expected DN_SIMDHASH_VALUE_IS_POINTER to be 0 or 1
 #endif
 
 #ifndef DN_SIMDHASH_KEY_HASHER
@@ -45,23 +37,6 @@
 
 #ifndef DN_SIMDHASH_BUCKET_CAPACITY
 #define DN_SIMDHASH_BUCKET_CAPACITY DN_SIMDHASH_DEFAULT_BUCKET_CAPACITY
-#endif
-
-// For keys or values of non-pointer-sized types (for example, an int64 key on a 32-bit platform),
-//  we want to store the whole thing inside the hash so that it's not necessary to do tons of mallocs
-//  and frees when managing the contents of the table.
-// For keys or values of pointer-sized types, we can just let the user pass in arbitrary pointer-
-//  sized blobs of data and store those pointers directly instead.
-// Ultimately this is all just to allow you to easily store 'const char *' in this thing.
-
-#if DN_SIMDHASH_KEY_IS_POINTER
-static_assert(sizeof(DN_SIMDHASH_KEY_T) == sizeof(void *), "You said your key is a pointer, but it's not!");
-#else
-#endif
-
-#if DN_SIMDHASH_VALUE_IS_POINTER
-static_assert(sizeof(DN_SIMDHASH_VALUE_T) == sizeof(void *), "You said your value is a pointer, but it's not!");
-#else
 #endif
 
 #include "dn-simdhash-specialization-declarations.h"
@@ -244,8 +219,6 @@ dn_simdhash_meta_t DN_SIMDHASH_T_META(DN_SIMDHASH_T) = {
 	sizeof(bucket_t),
 	sizeof(DN_SIMDHASH_KEY_T),
 	sizeof(DN_SIMDHASH_VALUE_T),
-	DN_SIMDHASH_KEY_IS_POINTER,
-	DN_SIMDHASH_VALUE_IS_POINTER
 };
 
 DN_SIMDHASH_T_PTR(DN_SIMDHASH_T)

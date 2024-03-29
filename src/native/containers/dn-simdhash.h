@@ -46,7 +46,6 @@ typedef struct dn_simdhash_t dn_simdhash_t;
 typedef struct dn_simdhash_meta_t {
 	// type metadata for generic implementation
 	uint32_t bucket_capacity, bucket_size_bytes, key_size, value_size;
-	uint8_t key_is_pointer, value_is_pointer;
 } dn_simdhash_meta_t;
 
 typedef enum dn_simdhash_insert_result {
