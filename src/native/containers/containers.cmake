@@ -31,4 +31,6 @@ list(APPEND SHARED_CONTAINER_HEADERS
     dn-simdhash-specialization.h
     dn-simdhash-specialization-declarations.h
     dn-simdhash-specializations.h
+    dn-simdhash-arch.h
+    dn-simdhash-string-ptr.h
 )
