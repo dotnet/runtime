@@ -20,5 +20,7 @@ namespace Microsoft.Win32.SafeHandles
             NTSTATUS ntStatus = Interop.BCrypt.BCryptDestroyHash(handle);
             return ntStatus == NTSTATUS.STATUS_SUCCESS;
         }
+
+        public static SafeBCryptHashHandle InvalidHandle { get; } = new SafeBCryptHashHandle();
     }
 }

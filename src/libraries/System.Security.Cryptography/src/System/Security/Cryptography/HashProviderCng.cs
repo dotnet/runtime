@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
 using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
@@ -63,47 +64,57 @@ namespace System.Security.Cryptography
         public sealed override unsafe void AppendHashData(ReadOnlySpan<byte> source)
         {
             Debug.Assert(_hHash != null);
-            NTSTATUS ntStatus = Interop.BCrypt.BCryptHashData(_hHash, source, source.Length, 0);
-            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-            {
-                throw Interop.BCrypt.CreateCryptographicException(ntStatus);
-            }
 
-            _running = true;
+            using (ConcurrencyBlock.Enter(ref _block))
+            {
+                NTSTATUS ntStatus = Interop.BCrypt.BCryptHashData(_hHash, source, source.Length, 0);
+                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                {
+                    throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                }
+
+                _running = true;
+            }
         }
 
         public override int FinalizeHashAndReset(Span<byte> destination)
         {
             Debug.Assert(destination.Length >= _hashSize);
-
-            Debug.Assert(_hHash != null);
-            NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(_hHash, destination, _hashSize, 0);
-            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-            {
-                throw Interop.BCrypt.CreateCryptographicException(ntStatus);
-            }
-
-            _running = false;
-            Reset();
-            return _hashSize;
-        }
-
-        public override int GetCurrentHash(Span<byte> destination)
-        {
-            Debug.Assert(destination.Length >= _hashSize);
-
             Debug.Assert(_hHash != null);
 
-            using (SafeBCryptHashHandle tmpHash = Interop.BCrypt.BCryptDuplicateHash(_hHash))
+            using (ConcurrencyBlock.Enter(ref _block))
             {
-                NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(tmpHash, destination, _hashSize, 0);
+                NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(_hHash, destination, _hashSize, 0);
 
                 if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                 {
                     throw Interop.BCrypt.CreateCryptographicException(ntStatus);
                 }
 
+                _running = false;
+                Reset();
                 return _hashSize;
+            }
+        }
+
+        public override int GetCurrentHash(Span<byte> destination)
+        {
+            Debug.Assert(destination.Length >= _hashSize);
+            Debug.Assert(_hHash != null);
+
+            using (ConcurrencyBlock.Enter(ref _block))
+            {
+                using (SafeBCryptHashHandle tmpHash = Interop.BCrypt.BCryptDuplicateHash(_hHash))
+                {
+                    NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(tmpHash, destination, _hashSize, 0);
+
+                    if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                    {
+                        throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                    }
+
+                    return _hashSize;
+                }
             }
         }
 
@@ -125,10 +136,11 @@ namespace System.Security.Cryptography
 
         public override void Reset()
         {
+            // Reset does not need to use ConcurrencyBlock. It either no-ops, or creates an entirely new handle, exchanges
+            // them, and disposes of the old handle. We don't need to block concurrency on the Dispose because SafeHandle
+            // does that.
             if (_reusable && !_running)
                 return;
-
-            DestroyHash();
 
             BCryptCreateHashFlags flags = _reusable ?
                 BCryptCreateHashFlags.BCRYPT_HASH_REUSABLE_FLAG :
@@ -136,10 +148,15 @@ namespace System.Security.Cryptography
 
             SafeBCryptHashHandle hHash;
             NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(_hAlgorithm, out hHash, IntPtr.Zero, 0, _key, _key == null ? 0 : _key.Length, flags);
-            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                throw Interop.BCrypt.CreateCryptographicException(ntStatus);
 
-            _hHash = hHash;
+            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+            {
+                hHash.Dispose();
+                throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+            }
+
+            SafeBCryptHashHandle? previousHash = Interlocked.Exchange(ref _hHash, hHash);
+            previousHash?.Dispose();
         }
 
         private void DestroyHash()
@@ -161,5 +178,6 @@ namespace System.Security.Cryptography
 
         private readonly int _hashSize;
         private bool _running;
+        private ConcurrencyBlock _block;
     }
 }
