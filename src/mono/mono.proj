@@ -233,14 +233,13 @@ JS_ENGINES = [NODE_JS]
                     Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
     </ItemGroup>
 
-
-    <Copy SourceFiles="@(EmsdkFiles)" DestinationFolder="$(EMSDK_PATH)\%(RecursiveDir)">
+    <Copy SourceFiles="@(EmsdkFiles)" DestinationFolder="$(EMSDK_PATH)/%(RecursiveDir)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
-    <Copy SourceFiles="@(NodeFiles)" DestinationFolder="$(EMSDK_PATH)\node\%(RecursiveDir)">
+    <Copy SourceFiles="@(NodeFiles)" DestinationFolder="$(EMSDK_PATH)node/%(RecursiveDir)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
-    <Copy Condition="'$(HostOS)' == 'windows'" SourceFiles="@(PythonFiles)" DestinationFolder="$(EMSDK_PATH)\python\%(RecursiveDir)">
+    <Copy Condition="'$(HostOS)' == 'windows'" SourceFiles="@(PythonFiles)" DestinationFolder="$(EMSDK_PATH)python/%(RecursiveDir)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
     <ReadLinesFromFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)">
@@ -694,7 +693,7 @@ JS_ENGINES = [NODE_JS]
       <_MonoCMakeConfigureCommand Condition="'$(TargetsWasi)' == 'true'">$(_MonoCMakeConfigureCommand) -DWASI_SDK_PREFIX=$(WASI_SDK_PATH) -DCMAKE_SYSROOT=$(WASI_SDK_PATH)share/wasi-sysroot -DCMAKE_TOOLCHAIN_FILE=$(WASI_SDK_PATH)share/cmake/wasi-sdk.cmake -DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK_PATH)share/wasi-sysroot"</_MonoCMakeConfigureCommand>
 
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' != 'windows'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' != 'windows'">bash -c 'source $(EMSDK_PATH)emsdk_env.sh 2>&amp;1 &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env$(ScriptExt)'))&quot; &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsWasi)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; cmake $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
 
