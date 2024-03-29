@@ -518,7 +518,7 @@ public:
 #endif
 
     OBJECTREF GetManagedClassObject() const;
-    OBJECTREF GetManagedClassObjectFast() const;
+    OBJECTREF GetManagedClassObjectIfExists() const;
 
     static TypeHandle MergeArrayTypeHandlesToCommonParent(
         TypeHandle ta, TypeHandle tb);
