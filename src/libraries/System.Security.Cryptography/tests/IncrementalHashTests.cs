@@ -652,7 +652,7 @@ namespace System.Security.Cryptography.Tests
                 {
                     if (items is [HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm])
                     {
-                         referenceAlgorithm.Dispose();
+                        referenceAlgorithm.Dispose();
 
                         using (IncrementalHash hash = IncrementalHash.CreateHash(hashAlgorithm))
                         {
@@ -702,7 +702,7 @@ namespace System.Security.Cryptography.Tests
                 {
                     if (items is [HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm])
                     {
-                         referenceAlgorithm.Dispose();
+                        referenceAlgorithm.Dispose();
 
                         using (IncrementalHash hash = IncrementalHash.CreateHMAC(hashAlgorithm, [1, 2, 3, 4]))
                         {
