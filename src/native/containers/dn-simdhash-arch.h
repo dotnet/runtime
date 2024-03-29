@@ -106,13 +106,14 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
 // neither clang or gcc, but we have SSE2 available, so assume this is MSVC on x86 or x86-64
 // msvc neon intrinsics don't seem to expose a 128-bit wide vector so there's no neon in here
+#include <intrin.h> // for _BitScanForward
 
 static DN_FORCEINLINE(uint32_t)
 ctz (uint32_t value)
 {
-	uint32_t result = 0;
+	unsigned long result = 0;
 	if (_BitScanForward(&result, value))
-		return result;
+		return (uint32_t)result;
 	else
 		return 32;
 }

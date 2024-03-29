@@ -226,8 +226,9 @@ DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator)
 {
 	// If this isn't satisfied, the generic code will allocate incorrectly sized buffers
 	// HACK: Use static_assert because for some reason assert produces unused variable warnings only on CI
+	struct silence_nuisance_msvc_warning { bucket_t a, b; };
 	static_assert(
-		sizeof(struct { bucket_t a, b; }) == (sizeof(bucket_t) * 2),
+		sizeof(struct silence_nuisance_msvc_warning) == (sizeof(bucket_t) * 2),
 		"Inconsistent spacing/sizing for bucket_t"
 	);
 
