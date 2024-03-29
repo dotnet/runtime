@@ -1193,12 +1193,14 @@ void ProfileSynthesis::GaussSeidelSolver()
             //
             if (block->bbPreds != nullptr)
             {
-                // Leverage Cp for existing loop headers.
+                // Leverage Cp for existing loop headers, provided that
+                // all contained loops are proper.
+                //
                 // This is an optimization to speed convergence.
                 //
                 FlowGraphNaturalLoop* const loop = m_loops->GetLoopByHeader(block);
 
-                if (loop != nullptr)
+                if ((loop != nullptr) && !loop->ContainsImproperHeader())
                 {
                     // Sum all entry edges that aren't EH flow
                     //
