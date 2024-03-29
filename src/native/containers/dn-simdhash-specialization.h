@@ -62,7 +62,7 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 
 // This is split out into a helper so we can eventually reuse it for more efficient add/remove
 static DN_FORCEINLINE(int)
-DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T) (bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_suffixes search_vector)
+DN_SIMDHASH_SCAN_BUCKET_INTERNAL (bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_suffixes search_vector)
 {
 	dn_simdhash_suffixes suffixes;
 	// HACK: Source address may not be aligned, because allocator may not have aligned our buffer,
@@ -100,7 +100,7 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T) (bucket_t *bucket, DN_SIMDHASH_K
 	}
 
 static DN_SIMDHASH_VALUE_T *
-DN_SIMDHASH_FIND_VALUE_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash)
+DN_SIMDHASH_FIND_VALUE_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash)
 {
 	dn_simdhash_buffers_t buffers = hash->buffers;
 	uint8_t suffix = dn_simdhash_select_suffix(key_hash);
@@ -108,7 +108,7 @@ DN_SIMDHASH_FIND_VALUE_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T)
 	dn_simdhash_suffixes search_vector = build_search_vector(suffix);
 
 	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
-		int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T)(bucket_address, key, search_vector);
+		int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(bucket_address, key, search_vector);
 		if (index_in_bucket >= 0) {
 			uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + index_in_bucket;
 			return address_of_value(buffers, value_slot_index);
@@ -122,7 +122,7 @@ DN_SIMDHASH_FIND_VALUE_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T)
 }
 
 static dn_simdhash_insert_result
-DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value, uint8_t ensure_not_present)
+DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value, uint8_t ensure_not_present)
 {
 	// HACK: Early out. Better to grow without scanning here.
 	// We're comparing with the computed grow_at_count threshold to maintain an appropriate load factor
@@ -139,7 +139,7 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T)
 	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 		// If necessary, check the current bucket for the key
 		if (ensure_not_present) {
-			int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T)(bucket_address, key, search_vector);
+			int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(bucket_address, key, search_vector);
 			if (index_in_bucket >= 0)
 				return DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT;
 		}
@@ -171,7 +171,7 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T)
 }
 
 static void
-DN_SIMDHASH_REHASH_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, dn_simdhash_buffers_t old_buffers)
+DN_SIMDHASH_REHASH_INTERNAL (DN_SIMDHASH_T_PTR hash, dn_simdhash_buffers_t old_buffers)
 {
 	bucket_t *bucket_address = address_of_bucket(old_buffers, 0);
 	for (
@@ -186,7 +186,7 @@ DN_SIMDHASH_REHASH_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) has
 			// But I'm not sure it's possible in practice, since we just grew the table -
 			//  we should have double the previous number of buckets and the items should
 			//  be spread out better
-			dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T)(
+			dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(
 				hash, key, key_hash,
 				*address_of_value(old_buffers, value_slot_base + j),
 				0
@@ -202,39 +202,39 @@ DN_SIMDHASH_REHASH_INTERNAL(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) has
 //  them directly for some reason
 
 // TODO: Store this by-reference instead of inline in the hash?
-dn_simdhash_vtable_t DN_SIMDHASH_T_VTABLE(DN_SIMDHASH_T) = {
-	DN_SIMDHASH_REHASH_INTERNAL(DN_SIMDHASH_T),
+dn_simdhash_vtable_t DN_SIMDHASH_T_VTABLE = {
+	DN_SIMDHASH_REHASH_INTERNAL,
 };
 
 // While we've inlined these constants into the specialized code generated above,
 //  the generic code in dn-simdhash.c needs them, so we put them in this meta header
 //  that lives inside every hash instance. (TODO: Store it by-reference?)
-dn_simdhash_meta_t DN_SIMDHASH_T_META(DN_SIMDHASH_T) = {
+dn_simdhash_meta_t DN_SIMDHASH_T_META = {
 	DN_SIMDHASH_BUCKET_CAPACITY,
 	sizeof(bucket_t),
 	sizeof(DN_SIMDHASH_KEY_T),
 	sizeof(DN_SIMDHASH_VALUE_T),
 };
 
-DN_SIMDHASH_T_PTR(DN_SIMDHASH_T)
-DN_SIMDHASH_NEW(DN_SIMDHASH_T) (uint32_t capacity, dn_allocator_t *allocator)
+DN_SIMDHASH_T_PTR
+DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator)
 {
-	return dn_simdhash_new_internal(DN_SIMDHASH_T_META(DN_SIMDHASH_T), DN_SIMDHASH_T_VTABLE(DN_SIMDHASH_T), capacity, allocator);
+	return dn_simdhash_new_internal(DN_SIMDHASH_T_META, DN_SIMDHASH_T_VTABLE, capacity, allocator);
 }
 
 uint8_t
-DN_SIMDHASH_TRY_ADD(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T value)
+DN_SIMDHASH_TRY_ADD (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T value)
 {
 	uint32_t key_hash = DN_SIMDHASH_KEY_HASHER(key);
-	return DN_SIMDHASH_TRY_ADD_WITH_HASH(DN_SIMDHASH_T)(hash, key, key_hash, value);
+	return DN_SIMDHASH_TRY_ADD_WITH_HASH(hash, key, key_hash, value);
 }
 
 uint8_t
-DN_SIMDHASH_TRY_ADD_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value)
+DN_SIMDHASH_TRY_ADD_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value)
 {
 	assert(hash);
 	while (1) {
-		dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(DN_SIMDHASH_T)(hash, key, key_hash, value, 1);
+		dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, 1);
 
 		switch (ok) {
 			case DN_SIMDHASH_INSERT_OK:
@@ -249,7 +249,7 @@ DN_SIMDHASH_TRY_ADD_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) h
 				// We use ensure_capacity_internal because the public one applies the sizing percentage
 				dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1);
 				if (old_buffers.buckets) {
-					DN_SIMDHASH_REHASH_INTERNAL(DN_SIMDHASH_T)(hash, old_buffers);
+					DN_SIMDHASH_REHASH_INTERNAL(hash, old_buffers);
 					dn_simdhash_free_buffers(old_buffers);
 				}
 				continue;
@@ -262,17 +262,17 @@ DN_SIMDHASH_TRY_ADD_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) h
 }
 
 uint8_t
-DN_SIMDHASH_TRY_GET_VALUE(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T *result)
+DN_SIMDHASH_TRY_GET_VALUE (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T *result)
 {
 	uint32_t key_hash = DN_SIMDHASH_KEY_HASHER(key);
-	return DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(DN_SIMDHASH_T)(hash, key, key_hash, result);
+	return DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(hash, key, key_hash, result);
 }
 
 uint8_t
-DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T *result)
+DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T *result)
 {
 	assert(hash);
-	DN_SIMDHASH_VALUE_T *value_ptr = DN_SIMDHASH_FIND_VALUE_INTERNAL(DN_SIMDHASH_T)(hash, key, key_hash);
+	DN_SIMDHASH_VALUE_T *value_ptr = DN_SIMDHASH_FIND_VALUE_INTERNAL(hash, key, key_hash);
 	if (!value_ptr)
 		return 0;
 	if (result)
@@ -281,14 +281,14 @@ DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHAS
 }
 
 uint8_t
-DN_SIMDHASH_TRY_REMOVE(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key)
+DN_SIMDHASH_TRY_REMOVE (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key)
 {
 	uint32_t key_hash = DN_SIMDHASH_KEY_HASHER(key);
-	return DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T)(hash, key, key_hash);
+	return DN_SIMDHASH_TRY_REMOVE_WITH_HASH(hash, key, key_hash);
 }
 
 uint8_t
-DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash)
+DN_SIMDHASH_TRY_REMOVE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash)
 {
 	assert(hash);
 
@@ -298,7 +298,7 @@ DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T
 	dn_simdhash_suffixes search_vector = build_search_vector(suffix);
 
 	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
-		int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(DN_SIMDHASH_T)(bucket_address, key, search_vector);
+		int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(bucket_address, key, search_vector);
 		if (index_in_bucket >= 0) {
 			// We found the item. Replace it with the last item in the bucket, then erase
 			//  the last item in the bucket. This ensures sequential scans still work.
@@ -340,7 +340,7 @@ DN_SIMDHASH_TRY_REMOVE_WITH_HASH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T
 }
 
 void
-DN_SIMDHASH_FOREACH(DN_SIMDHASH_T) (DN_SIMDHASH_T_PTR(DN_SIMDHASH_T) hash, DN_SIMDHASH_FOREACH_FUNC(DN_SIMDHASH_T) func, void *user_data)
+DN_SIMDHASH_FOREACH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_FOREACH_FUNC func, void *user_data)
 {
 	assert(hash);
 	assert(func);
