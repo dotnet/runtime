@@ -31,6 +31,8 @@
 #endif
 
 #ifndef DN_SIMDHASH_BUCKET_CAPACITY
+// TODO: Find some way to automatically select an ideal bucket capacity based on key size.
+// Some sort of trick using _Generic?
 #define DN_SIMDHASH_BUCKET_CAPACITY DN_SIMDHASH_DEFAULT_BUCKET_CAPACITY
 #endif
 
@@ -42,6 +44,9 @@ static_assert (DN_SIMDHASH_BUCKET_CAPACITY > 1, "Bucket capacity too low");
 // We set bucket_size_bytes to sizeof() this struct so that we can let the compiler
 //  generate the most optimal code possible when we're manipulating pointers to it -
 //  that is, it can do mul-by-constant instead of mul-by-(hash->meta.etc)
+// FIXME: It would be nice to decorate this with an alignment attribute, but that
+//  would do mysterious things to size and address calculations.
+// FIXME: Is it already implicitly aligned due to hosting dn_simdhash_suffixes?
 typedef struct bucket_t {
 	dn_simdhash_suffixes suffixes;
 	DN_SIMDHASH_KEY_T keys[DN_SIMDHASH_BUCKET_CAPACITY];
@@ -59,8 +64,8 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 	return &((DN_SIMDHASH_VALUE_T *)buffers.values)[value_slot_index];
 }
 
-
-// This is split out into a helper so we can eventually reuse it for more efficient add/remove
+// This helper is used to locate the first matching key in a given bucket, so that add
+//  operations don't potentially have to scan the whole table twice when hashes collide
 static DN_FORCEINLINE(int)
 DN_SIMDHASH_SCAN_BUCKET_INTERNAL (bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_suffixes search_vector)
 {
@@ -68,22 +73,19 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn
 	// HACK: Source address may not be aligned, because allocator may not have aligned our buffer,
 	//  and our bucket size may not be properly aligned either :(
 	memcpy(&suffixes, &bucket->suffixes, sizeof(dn_simdhash_suffixes));
-	int index = find_first_matching_suffix (search_vector, suffixes);
-	// FIXME: This shouldn't be necessary.
-	if (index > DN_SIMDHASH_BUCKET_CAPACITY)
-		return -1;
+
+	int index = find_first_matching_suffix(search_vector, suffixes);
 	DN_SIMDHASH_KEY_T *key = &bucket->keys[index];
 
-	for (int count = dn_simdhash_bucket_count (suffixes); index < count; index++, key++) {
-		if (DN_SIMDHASH_KEY_EQUALS (needle, *key))
+	for (int count = dn_simdhash_bucket_count(suffixes); index < count; index++, key++) {
+		if (DN_SIMDHASH_KEY_EQUALS(needle, *key))
 			return index;
 	}
 
 	return -1;
 }
 
-// Helper macro so that we can optimize and change scan logic more easily
-
+// Helper macros so that we can optimize and change scan logic more easily
 #define BEGIN_SCAN_BUCKETS(initial_index, bucket_index, bucket_address) \
 	{ \
 		uint32_t bucket_index = initial_index; \
@@ -96,6 +98,7 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn
 			/* Wrap around if we hit the last bucket. */ \
 			if (bucket_index >= buffers.buckets_length) \
 				bucket_index = 0; \
+		/* if bucket_index == initial_index, we reached our starting point */ \
 		} while (bucket_index != initial_index); \
 	}
 
@@ -162,11 +165,6 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, 
 		dn_simdhash_bucket_set_cascaded (bucket_address->suffixes, 1);
 	END_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
 
-	// If we got here, we had so many hash collisions that we hit the last bucket without finding
-	//  a spot for our new item. It's best to just grow and rehash the whole table now.
-	// TODO: Wrap around to the first bucket, like S.C.G.Dictionary does? I don't like it, but it
-	//  would reduce memory usage for the worst case scenario.
-	// printf("Scanned from bucket %d without finding space, growing\n", first_bucket_index);
 	return DN_SIMDHASH_INSERT_NEED_TO_GROW;
 }
 
@@ -182,10 +180,8 @@ DN_SIMDHASH_REHASH_INTERNAL (DN_SIMDHASH_T_PTR hash, dn_simdhash_buffers_t old_b
 		for (uint32_t j = 0; j < c; j++) {
 			DN_SIMDHASH_KEY_T key = bucket_address->keys[j];
 			uint32_t key_hash = DN_SIMDHASH_KEY_HASHER(key);
-			// FIXME: If there are too many collisions, this could theoretically fail
-			// But I'm not sure it's possible in practice, since we just grew the table -
-			//  we should have double the previous number of buckets and the items should
-			//  be spread out better
+			// This theoretically can't fail, since we just grew the container and we
+			//  wrap around to the beginning when there's a collision in the last bucket.
 			dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(
 				hash, key, key_hash,
 				*address_of_value(old_buffers, value_slot_base + j),
@@ -206,7 +202,7 @@ dn_simdhash_vtable_t DN_SIMDHASH_T_VTABLE = {
 	DN_SIMDHASH_REHASH_INTERNAL,
 };
 
-// While we've inlined these constants into the specialized code generated above,
+// While we've inlined these constants into the specialized code we're generating,
 //  the generic code in dn-simdhash.c needs them, so we put them in this meta header
 //  that lives inside every hash instance. (TODO: Store it by-reference?)
 dn_simdhash_meta_t DN_SIMDHASH_T_META = {
@@ -233,31 +229,27 @@ uint8_t
 DN_SIMDHASH_TRY_ADD_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value)
 {
 	assert(hash);
-	while (1) {
-		dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, 1);
-
-		switch (ok) {
-			case DN_SIMDHASH_INSERT_OK:
-				hash->count++;
-				return 1;
-			case DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT:
-				return 0;
-			case DN_SIMDHASH_INSERT_NEED_TO_GROW: {
-				// We may have already grown once and still not had enough space, due to collisions
-				//  so we want to ensure we increase the *capacity* beyond its current value, not
-				//  ensure a capacity of count + 1
-				// We use ensure_capacity_internal because the public one applies the sizing percentage
-				dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1);
-				if (old_buffers.buckets) {
-					DN_SIMDHASH_REHASH_INTERNAL(hash, old_buffers);
-					dn_simdhash_free_buffers(old_buffers);
-				}
-				continue;
-			}
-			default:
-				assert(0);
-				return 0;
+	dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, 1);
+	if (ok == DN_SIMDHASH_INSERT_NEED_TO_GROW) {
+		dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1);
+		if (old_buffers.buckets) {
+			DN_SIMDHASH_REHASH_INTERNAL(hash, old_buffers);
+			dn_simdhash_free_buffers(old_buffers);
 		}
+		ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, 1);
+	}
+
+	switch (ok) {
+		case DN_SIMDHASH_INSERT_OK:
+			hash->count++;
+			return 1;
+		case DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT:
+			return 0;
+		case DN_SIMDHASH_INSERT_NEED_TO_GROW:
+			// We should always have enough space after growing once.
+		default:
+			assert(0);
+			return 0;
 	}
 }
 
@@ -328,6 +320,11 @@ DN_SIMDHASH_TRY_REMOVE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key,
 			// TODO: Skip these for performance?
 			memset(&bucket_address->keys[replacement_index_in_bucket], 0, sizeof(DN_SIMDHASH_KEY_T));
 			memset(address_of_value(buffers, replacement_value_slot_index), 0, sizeof(DN_SIMDHASH_VALUE_T));
+
+			// FIXME: If we cascaded into this bucket from another bucket, the
+			//  origin bucket's cascaded flag will stay set forever. We could fix this
+			//  by turning the cascaded flag into some sort of a counter and then
+			//  scanning backwards to decrement the counter(s).
 
 			return 1;
 		}
