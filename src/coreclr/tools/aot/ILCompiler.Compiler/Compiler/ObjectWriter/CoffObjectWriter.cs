@@ -213,7 +213,7 @@ namespace ILCompiler.ObjectWriter
             IDictionary<string, SymbolDefinition> definedSymbols,
             SortedSet<string> undefinedSymbols)
         {
-            Feat00Flags feat00Flags = Feat00Flags.SafeSEH;
+            Feat00Flags feat00Flags = _machine is Machine.I386 ? Feat00Flags.SafeSEH : 0;
 
             foreach (var (symbolName, symbolDefinition) in definedSymbols)
             {
@@ -258,14 +258,17 @@ namespace ILCompiler.ObjectWriter
                 feat00Flags |= Feat00Flags.ControlFlowGuard;
             }
 
-            // Emit the feat.00 symbol that controls various linker behaviors
-            _symbols.Add(new CoffSymbol
+            if (feat00Flags != 0)
             {
-                Name = "@feat.00",
-                StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
-                SectionIndex = uint.MaxValue, // IMAGE_SYM_ABSOLUTE
-                Value = (uint)feat00Flags,
-            });
+                // Emit the feat.00 symbol that controls various linker behaviors
+                _symbols.Add(new CoffSymbol
+                {
+                    Name = "@feat.00",
+                    StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
+                    SectionIndex = uint.MaxValue, // IMAGE_SYM_ABSOLUTE
+                    Value = (uint)feat00Flags,
+                });
+            }
         }
 
         private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
