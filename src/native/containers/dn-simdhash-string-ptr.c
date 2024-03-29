@@ -4,10 +4,13 @@
 #include "dn-simdhash.h"
 
 typedef struct dn_simdhash_str_key {
-	// We keep a precomputed hash and length since that makes natural cache line alignment
-	//  possible and speeds up rehashing and scans.
+	// We keep a precomputed hash and length since that speeds up rehashing and scans.
 	uint32_t hash, length;
 	const char *text;
+#if SIZEOF_VOID_P == 4
+	// HACK: Perfect cache alignment isn't possible for a 12-byte struct, so pad it to 16 bytes
+	uint32_t padding;
+#endif
 } dn_simdhash_str_key;
 
 // MurmurHash3 was written by Austin Appleby, and is placed in the public

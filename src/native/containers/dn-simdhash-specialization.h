@@ -38,7 +38,7 @@
 
 #include "dn-simdhash-specialization-declarations.h"
 
-static_assert (DN_SIMDHASH_BUCKET_CAPACITY < DN_SIMDHASH_MAX_BUCKET_CAPACITY, "Maximum bucket capacity exceeded");
+static_assert (DN_SIMDHASH_BUCKET_CAPACITY <= DN_SIMDHASH_MAX_BUCKET_CAPACITY, "Maximum bucket capacity exceeded");
 static_assert (DN_SIMDHASH_BUCKET_CAPACITY > 1, "Bucket capacity too low");
 
 // We set bucket_size_bytes to sizeof() this struct so that we can let the compiler
@@ -47,10 +47,20 @@ static_assert (DN_SIMDHASH_BUCKET_CAPACITY > 1, "Bucket capacity too low");
 // FIXME: It would be nice to decorate this with an alignment attribute, but that
 //  would do mysterious things to size and address calculations.
 // FIXME: Is it already implicitly aligned due to hosting dn_simdhash_suffixes?
+
+#ifdef _MSC_VER
+typedef struct alignas(DN_SIMDHASH_VECTOR_WIDTH) bucket_t {
+#else
 typedef struct bucket_t {
+#endif
 	dn_simdhash_suffixes suffixes;
 	DN_SIMDHASH_KEY_T keys[DN_SIMDHASH_BUCKET_CAPACITY];
-} bucket_t;
+}
+#if defined(__clang__) || defined (__GNUC__)
+__attribute__((__aligned__(DN_SIMDHASH_VECTOR_WIDTH))) bucket_t;
+#else
+bucket_t;
+#endif
 
 static DN_FORCEINLINE(bucket_t *)
 address_of_bucket (dn_simdhash_buffers_t buffers, uint32_t bucket_index)
@@ -215,6 +225,11 @@ dn_simdhash_meta_t DN_SIMDHASH_T_META = {
 DN_SIMDHASH_T_PTR
 DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator)
 {
+	bucket_t buckets[2];
+	const ptrdiff_t bucket_gap = (uint8_t *)&buckets[1] - (uint8_t *)&buckets[0];
+	// If this isn't satisfied, the generic code will allocate incorrectly sized buffers
+	assert(bucket_gap == sizeof(bucket_t));
+
 	return dn_simdhash_new_internal(DN_SIMDHASH_T_META, DN_SIMDHASH_T_VTABLE, capacity, allocator);
 }
 
