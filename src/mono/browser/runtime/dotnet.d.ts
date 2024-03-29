@@ -486,6 +486,10 @@ type APIType = {
     /**
      * Writes to the WASM linear memory
      */
+    setHeapB8: (offset: NativePointer, value: number | boolean) => void;
+    /**
+     * Writes to the WASM linear memory
+     */
     setHeapU8: (offset: NativePointer, value: number) => void;
     /**
      * Writes to the WASM linear memory
@@ -531,6 +535,10 @@ type APIType = {
      * Reads from the WASM linear memory
      */
     getHeapB32: (offset: NativePointer) => boolean;
+    /**
+     * Reads from the WASM linear memory
+     */
+    getHeapB8: (offset: NativePointer) => boolean;
     /**
      * Reads from the WASM linear memory
      */

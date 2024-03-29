@@ -386,7 +386,7 @@ namespace ILCompiler.DependencyAnalysis
             DefType defType = _type.GetClosestDefType();
 
             // If we're producing a full vtable, none of the dependencies are conditional.
-            if (!factory.VTable(defType).HasFixedSlots)
+            if (!factory.VTable(defType).HasKnownVirtualMethodUse)
             {
                 bool isNonInterfaceAbstractType = !defType.IsInterface && ((MetadataType)defType).IsAbstract;
 
@@ -1035,7 +1035,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // It's only okay to touch the actual list of slots if we're in the final emission phase
             // or the vtable is not built lazily.
-            if (relocsOnly && !declVTable.HasFixedSlots)
+            if (relocsOnly && !declVTable.HasKnownVirtualMethodUse)
                 return;
 
             // Interface types don't place anything else in their physical vtable.
@@ -1063,12 +1063,18 @@ namespace ILCompiler.DependencyAnalysis
                 // No generic virtual methods can appear in the vtable!
                 Debug.Assert(!declMethod.HasInstantiation);
 
-                MethodDesc implMethod = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
-
                 // Final NewSlot methods cannot be overridden, and therefore can be placed in the sealed-vtable to reduce the size of the vtable
                 // of this type and any type that inherits from it.
                 if (declMethod.CanMethodBeInSealedVTable(factory) && !declType.IsArrayTypeWithoutGenericInterfaces())
                     continue;
+
+                if (!declVTable.IsSlotUsed(declMethod))
+                {
+                    objData.EmitZeroPointer();
+                    continue;
+                }
+
+                MethodDesc implMethod = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
                 bool shouldEmitImpl = !implMethod.IsAbstract;
 

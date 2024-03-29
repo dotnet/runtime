@@ -1631,9 +1631,9 @@ NDirectStubLinker::NDirectStubLinker(
     }
 #endif // FEATURE_COMINTEROP
 
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
     m_dwCopyCtorChainLocalNum = (DWORD)-1;
-#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 }
 
 void NDirectStubLinker::SetCallingConvention(CorInfoCallConvExtension unmngCallConv, BOOL fIsVarArg)
@@ -1846,7 +1846,7 @@ DWORD NDirectStubLinker::GetReturnValueLocalNum()
     return m_dwRetValLocalNum;
 }
 
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
 DWORD NDirectStubLinker::GetCopyCtorChainLocalNum()
 {
     STANDARD_VM_CONTRACT;
@@ -1861,7 +1861,7 @@ DWORD NDirectStubLinker::GetCopyCtorChainLocalNum()
 
     return m_dwCopyCtorChainLocalNum;
 }
-#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
 BOOL NDirectStubLinker::IsCleanupNeeded()
 {
@@ -2179,7 +2179,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         }
     }
 
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
     if (m_dwCopyCtorChainLocalNum != (DWORD)-1)
     {
         // If we have a copy constructor chain local, we need to call the copy constructor stub
@@ -2192,7 +2192,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         pcsEmit->EmitCALL(METHOD__COPY_CONSTRUCTOR_CHAIN__INSTALL, 2, 0);
         pcsEmit->EmitLDC((DWORD_PTR)&CopyConstructorCallStub);
     }
-#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
     // For managed-to-native calls, the rest of the work is done by the JIT. It will
     // erect InlinedCallFrame, flip GC mode, and use the specified calling convention
@@ -2867,6 +2867,7 @@ static LPBYTE FollowIndirect(LPBYTE pTarget)
 }
 #endif // !TARGET_UNIX
 
+#ifdef FEATURE_IJW
 BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget)
 {
     CONTRACTL
@@ -2877,7 +2878,6 @@ BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget)
     }
     CONTRACTL_END;
 
-#if !defined(TARGET_UNIX)
     static LPBYTE pGetLastError = NULL;
     if (!pGetLastError)
     {
@@ -2912,18 +2912,10 @@ BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget)
         // jmp [xxxx] - could be an import thunk
         return pTarget2 == pGetLastError;
     }
-#endif // !TARGET_UNIX
 
     return FALSE;
 }
-
-DWORD STDMETHODCALLTYPE FalseGetLastError()
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetThread()->m_dwLastError;
-}
-
+#endif // FEATURE_IJW
 
 CorInfoCallConvExtension GetDefaultCallConv(BOOL bIsVarArg)
 {
@@ -6141,7 +6133,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     RETURN pVASigCookie->pNDirectILStub;
 }
 
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
 // Copy constructor support for C++/CLI
 EXTERN_C void* STDCALL CallCopyConstructorsWorker(void* esp)
 {
@@ -6156,6 +6148,6 @@ EXTERN_C void* STDCALL CallCopyConstructorsWorker(void* esp)
 
     return pExecute(esp);
 }
-#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
 #endif // #ifndef DACCESS_COMPILE
