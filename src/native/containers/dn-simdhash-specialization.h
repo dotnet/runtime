@@ -192,7 +192,7 @@ build_search_vector (uint8_t needle)
 	return result;
 }
 
-int
+static DN_FORCEINLINE(int)
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
 	// FIXME: Completely untested.
@@ -217,7 +217,7 @@ build_search_vector (uint8_t needle)
 	return result;
 }
 
-int
+static DN_FORCEINLINE(int)
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
 	// FIXME: Do this using intrinsics on MSVC. Seems complicated since there's no __builtin_ctz.
