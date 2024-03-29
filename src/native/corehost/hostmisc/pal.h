@@ -152,6 +152,7 @@ namespace pal
     inline int strcasecmp(const char_t* str1, const char_t* str2) { return ::_wcsicmp(str1, str2); }
     inline int strncmp(const char_t* str1, const char_t* str2, size_t len) { return ::wcsncmp(str1, str2, len); }
     inline int strncasecmp(const char_t* str1, const char_t* str2, size_t len) { return ::_wcsnicmp(str1, str2, len); }
+    inline errno_t strcpy_s(char_t* dest, rsize_t destsz, const char_t* src) { return ::wcscpy_s(dest, destsz, src); }
     inline int pathcmp(const pal::string_t& path1, const pal::string_t& path2) { return strcasecmp(path1.c_str(), path2.c_str()); }
     inline string_t to_string(int value) { return std::to_wstring(value); }
 
@@ -220,6 +221,7 @@ namespace pal
     inline int strcasecmp(const char_t* str1, const char_t* str2) { return ::strcasecmp(str1, str2); }
     inline int strncmp(const char_t* str1, const char_t* str2, int len) { return ::strncmp(str1, str2, len); }
     inline int strncasecmp(const char_t* str1, const char_t* str2, int len) { return ::strncasecmp(str1, str2, len); }
+    inline errno_t strcpy_s(char_t* dest, rsize_t destsz, const char_t* src) { return ::strcpy_s(dest, destsz, src); }
     inline int pathcmp(const pal::string_t& path1, const pal::string_t& path2) { return strcmp(path1.c_str(), path2.c_str()); }
     inline string_t to_string(int value) { return std::to_string(value); }
 

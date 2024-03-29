@@ -604,8 +604,8 @@ bool deps_resolver_t::resolve_tpa_list(
 
         tpa_list->basenames[item_count] = new pal::char_t[base_length];
         tpa_list->assembly_filepaths[item_count] = new pal::char_t[assembly_name_length];
-        wcscpy_s(tpa_list->basenames[item_count], base_length, base_name.c_str());
-        wcscpy_s(tpa_list->assembly_filepaths[item_count], assembly_name_length, item->second.resolved_path.c_str());
+        pal::strcpy_s(tpa_list->basenames[item_count], base_length, base_name.c_str());
+        pal::strcpy_s(tpa_list->assembly_filepaths[item_count], assembly_name_length, item->second.resolved_path.c_str());
 
         output->append(item->second.resolved_path);
         output->push_back(PATH_SEPARATOR);

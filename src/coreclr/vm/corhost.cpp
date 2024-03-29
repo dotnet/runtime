@@ -40,6 +40,7 @@
 
 #ifndef DACCESS_COMPILE
 
+#include "hostinformation.h"
 #include <corehost/host_runtime_contract.h>
 
 extern void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading);
@@ -313,9 +314,10 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
     if (g_EntryAssemblyPath == NULL)
     {
         // Store the entry assembly path for diagnostic purposes (for example, dumps)
-        size_t len = u16_strlen(pwzAssemblyPath) + 1;
+        LPCWSTR pEntryAssembly = HostInformation::GetEntryAssembly();
+        size_t len = u16_strlen(pEntryAssembly) + 1;
         NewArrayHolder<WCHAR> path { new WCHAR[len] };
-        wcscpy_s(path, len, pwzAssemblyPath);
+        wcscpy_s(path, len, pEntryAssembly);
         g_EntryAssemblyPath = path.Extract();
     }
 

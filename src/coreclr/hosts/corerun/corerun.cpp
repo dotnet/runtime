@@ -9,7 +9,6 @@
 #include "dotenv.hpp"
 
 #include <fstream>
-#include <wchar.h>
 #include <unordered_map>
 
 using char_t = pal::char_t;
