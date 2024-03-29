@@ -90,7 +90,7 @@ typedef uint8_t dn_u8x16 __attribute__ ((vector_size (DN_SIMDHASH_VECTOR_WIDTH),
 typedef union {
 	dn_u8x16 vec;
 #ifndef __wasm
-    __m128i m128;
+	__m128i m128;
 #endif
 	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
 } dn_simdhash_suffixes;
@@ -164,38 +164,38 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 static DN_FORCEINLINE(int)
 ctz (uint32_t value)
 {
-    uint32_t result = 0;
-    if (_BitScanForward(&result, value))
-        return result;
-    else
-        return 32;
+	uint32_t result = 0;
+	if (_BitScanForward(&result, value))
+		return result;
+	else
+		return 32;
 }
 
 #include <emmintrin.h>
 
 typedef struct {
-    __m128i m128;
+	__m128i m128;
 	uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
 } dn_simdhash_suffixes;
 
 static DN_FORCEINLINE(dn_simdhash_suffixes)
 build_search_vector (uint8_t needle)
 {
-    dn_simdhash_suffixes result;
-    // FIXME: Completely untested.
-    result.m128 = _mm_set1_epi8(needle);
-    __m128i mask = _mm_set_epi8( // FIXME: setr not set?
-        0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu,
-        0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0x00u, 0x00u
-    );
-    result.m128 = _mm_and_si128(result.m128, mask);
-    return result;
+	dn_simdhash_suffixes result;
+	// FIXME: Completely untested.
+	result.m128 = _mm_set1_epi8(needle);
+	__m128i mask = _mm_set_epi8( // FIXME: setr not set?
+		0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu,
+		0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0x00u, 0x00u
+	);
+	result.m128 = _mm_and_si128(result.m128, mask);
+	return result;
 }
 
 int
 find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes haystack)
 {
-    // FIXME: Completely untested.
+	// FIXME: Completely untested.
 	__m128i match_vector = _mm_cmpeq_epi8(needle.m128, haystack.m128);
 	return ctz(_mm_movemask_epi8(match_vector));
 }
