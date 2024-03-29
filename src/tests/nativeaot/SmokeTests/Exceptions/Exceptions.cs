@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Text;
-using Xunit;
 
 public class BringUpTest
 {
@@ -24,8 +23,7 @@ public class BringUpTest
 
     static int finallyCounter = 0;
 
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         // This test also doubles as server GC test
         if (!System.Runtime.GCSettings.IsServerGC)

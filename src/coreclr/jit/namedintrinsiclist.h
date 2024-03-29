@@ -37,7 +37,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_Cosh,
     NI_System_Math_Exp,
     NI_System_Math_Floor,
-    NI_System_Math_FMod,
     NI_System_Math_FusedMultiplyAdd,
     NI_System_Math_ILogB,
     NI_System_Math_Log,

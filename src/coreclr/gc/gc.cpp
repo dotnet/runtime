@@ -24211,6 +24211,9 @@ size_t gc_heap::get_promoted_bytes()
 
     dprintf (3, ("h%d getting surv", heap_number));
     size_t promoted = 0;
+#ifdef _MSC_VER
+#pragma loop(no_vector)
+#endif
     for (size_t i = 0; i < region_count; i++)
     {
         if (survived_per_region[i] > 0)

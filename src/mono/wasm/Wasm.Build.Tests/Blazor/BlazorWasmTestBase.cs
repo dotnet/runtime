@@ -202,7 +202,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         var page = await runner.RunAsync(
             runCommand,
             runArgs,
-            onPageLoaded: runOptions.OnPageLoaded,
             onConsoleMessage: OnConsoleMessage,
             onServerMessage: runOptions.OnServerMessage,
             onError: OnErrorMessage,

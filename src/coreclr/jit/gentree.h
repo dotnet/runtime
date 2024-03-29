@@ -5248,24 +5248,7 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) != 0;
     }
 
-    //-------------------------------------------------------------------------
-    // TreatAsShouldHaveRetBufArg:
-    //
-    // Arguments:
-    //     compiler, the compiler instance so that we can call eeGetHelperNum
-    //
-    // Return Value:
-    //     Returns true if we treat the call as if it has a retBuf argument
-    //     This method may actually have a retBuf argument
-    //     or it could be a JIT helper that we are still transforming during
-    //     the importer phase.
-    //
-    // Notes:
-    //     On ARM64 marking the method with the GTF_CALL_M_RETBUFFARG flag
-    //     will make ShouldHaveRetBufArg() return true, but will also force the
-    //     use of register x8 to pass the RetBuf argument.
-    //
-    bool TreatAsShouldHaveRetBufArg(Compiler* compiler) const;
+    bool TreatAsShouldHaveRetBufArg() const;
 
     //-----------------------------------------------------------------------------------------
     // HasMultiRegRetVal: whether the call node returns its value in multiple return registers.
@@ -5290,7 +5273,7 @@ struct GenTreeCall final : public GenTree
         }
 #endif
 
-        if (!varTypeIsStruct(gtType) || ShouldHaveRetBufArg())
+        if (!varTypeIsStruct(gtType) || TreatAsShouldHaveRetBufArg())
         {
             return false;
         }
@@ -9279,7 +9262,6 @@ inline GenTree* GenTree::gtGetOp1() const
         case GT_QMARK:
         case GT_COLON:
         case GT_INDEX_ADDR:
-        case GT_MKREFANY:
             return true;
         default:
             return false;

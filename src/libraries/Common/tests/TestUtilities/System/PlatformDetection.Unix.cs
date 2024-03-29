@@ -20,13 +20,13 @@ namespace System
         public static bool IsUbuntu2004 => IsDistroAndVersion("ubuntu", 20, 4);
         public static bool IsDebian => IsDistroAndVersion("debian");
         public static bool IsAlpine => IsDistroAndVersion("alpine");
-        public static bool IsDebian10 => IsDistroAndVersion("debian", 10);
         public static bool IsRaspbian10 => IsDistroAndVersion("raspbian", 10);
         public static bool IsMariner => IsDistroAndVersion("mariner");
         public static bool IsSLES => IsDistroAndVersion("sles");
         public static bool IsTizen => IsDistroAndVersion("tizen");
         public static bool IsFedora => IsDistroAndVersion("fedora");
         public static bool IsLinuxBionic => IsBionic();
+        public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
 
         public static bool IsMonoLinuxArm64 => IsMonoRuntime && IsLinux && IsArm64Process;
         public static bool IsNotMonoLinuxArm64 => !IsMonoLinuxArm64;
@@ -39,14 +39,6 @@ namespace System
         public static bool IsNotMacOsAppleSilicon => !IsMacOsAppleSilicon;
         public static bool IsAppSandbox => Environment.GetEnvironmentVariable("APP_SANDBOX_CONTAINER_ID") != null;
         public static bool IsNotAppSandbox => !IsAppSandbox;
-
-        // RedHat family covers RedHat and CentOS
-        public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
-        public static bool IsNotRedHatFamily => !IsRedHatFamily;
-        public static bool IsRedHatFamily7 => IsRedHatFamilyAndVersion(7);
-        public static bool IsCentos7 => IsDistroAndVersion("centos", 7);
-        public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
-        public static bool IsNotDebian10 => !IsDebian10;
 
         public static Version OpenSslVersion => !IsApplePlatform && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :

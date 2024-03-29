@@ -1414,9 +1414,6 @@ void SystemDomain::LoadBaseSystemClasses()
         g_profControlBlock.fBaseSystemClassesLoaded = TRUE;
     #endif // PROFILING_SUPPORTED
 
-        // Perform any once-only SafeHandle initialization.
-        SafeHandle::Init();
-
     #if defined(_DEBUG)
         g_CoreLib.Check();
         g_CoreLib.CheckExtended();

@@ -188,9 +188,6 @@ DEFINE_METHOD(LICENSE_INTEROP_PROXY, SAVEKEYINCURRENTCONTEXT, SaveKeyInCurrentCo
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
 
-DEFINE_CLASS_U(Interop,                CriticalHandle,             CriticalHandle)
-DEFINE_FIELD_U(handle,                     CriticalHandle,     m_handle)
-DEFINE_FIELD_U(_isClosed,                  CriticalHandle,     m_isClosed)
 DEFINE_CLASS(CRITICAL_HANDLE,       Interop,                CriticalHandle)
 DEFINE_FIELD(CRITICAL_HANDLE,       HANDLE,                 handle)
 DEFINE_METHOD(CRITICAL_HANDLE,      RELEASE_HANDLE,         ReleaseHandle,              IM_RetBool)
@@ -261,6 +258,12 @@ DEFINE_METHOD(DELEGATE,             GET_INVOKE_METHOD,      GetInvokeMethod,    
 
 DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)
+
+DEFINE_CLASS(MATH,                  System,                 Math)
+DEFINE_METHOD(MATH,                 ROUND,                  Round,                      SM_Dbl_RetDbl)
+
+DEFINE_CLASS(MATHF,                 System,                 MathF)
+DEFINE_METHOD(MATHF,                ROUND,                  Round,                      SM_Flt_RetFlt)
 
 DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
 
@@ -725,12 +728,6 @@ DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSup
 DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
 DEFINE_CLASS(CALLCONV_SWIFT,                 CompilerServices,       CallConvSwift)
 
-DEFINE_CLASS_U(Interop,                SafeHandle,         SafeHandle)
-DEFINE_FIELD_U(_ctorStackTrace,            SafeHandle,            m_ctorStackTrace)
-DEFINE_FIELD_U(handle,                     SafeHandle,            m_handle)
-DEFINE_FIELD_U(_state,                     SafeHandle,            m_state)
-DEFINE_FIELD_U(_ownsHandle,                SafeHandle,            m_ownsHandle)
-DEFINE_FIELD_U(_fullyInitialized,          SafeHandle,            m_fullyInitialized)
 DEFINE_CLASS(SAFE_HANDLE,         Interop,                SafeHandle)
 DEFINE_FIELD(SAFE_HANDLE,           HANDLE,                 handle)
 DEFINE_METHOD(SAFE_HANDLE,          GET_IS_INVALID,         get_IsInvalid,              IM_RetBool)
@@ -888,9 +885,6 @@ DEFINE_CLASS_U(System,              WeakReference,          WeakReferenceObject)
 DEFINE_FIELD_U(_taggedHandle,       WeakReferenceObject,    m_taggedHandle)
 DEFINE_CLASS(WEAKREFERENCE,         System,                 WeakReference)
 DEFINE_CLASS(WEAKREFERENCEGENERIC,  System,                 WeakReference`1)
-
-DEFINE_CLASS_U(Threading,           WaitHandle,             WaitHandleBase)
-DEFINE_FIELD_U(_waitHandle,         WaitHandleBase,         m_safeHandle)
 
 DEFINE_CLASS(DEBUGGER,              Diagnostics,            Debugger)
 DEFINE_METHOD(DEBUGGER,             BREAK,                  Break,                  SM_RetVoid)

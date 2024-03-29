@@ -5270,6 +5270,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Copied from rpPredictRegUse()
     SetFullPtrRegMapRequired(codeGen->GetInterruptible() || !codeGen->isFramePointerUsed());
 
+    if (opts.OptimizationEnabled())
+    {
+        // LSRA and stack level setting can modify the flowgraph.
+        // Now that it won't change, run post-layout optimizations.
+        DoPhase(this, PHASE_OPTIMIZE_POST_LAYOUT, &Compiler::optOptimizePostLayout);
+    }
+
 #if FEATURE_LOOP_ALIGN
     // Place loop alignment instructions
     DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::placeLoopAlignInstructions);

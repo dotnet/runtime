@@ -93,6 +93,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 set( JIT_SOURCES
+  abi.cpp
   alloc.cpp
   assertionprop.cpp
   bitset.cpp
@@ -289,6 +290,7 @@ set( JIT_HEADERS
   ../inc/corjitflags.h
   ../inc/corjithost.h
   _typeinfo.h
+  abi.h
   alloc.h
   arraystack.h
   bitset.h
