@@ -291,25 +291,59 @@ namespace System.Runtime
 #endif
         }
 
+        // Given an ExceptionID and an address pointing somewhere into a managed module, get
+        // an exception object of a type that the module containing the given address will understand.
+        // This finds the classlib-defined GetRuntimeException function and asks it for the exception object.
+        internal static Exception GetClasslibException(ExceptionIDs id, IntPtr address)
+        {
 #if NATIVEAOT
-#pragma warning disable IDE0060
-        // RhExceptionHandling_ functions are used to throw exceptions out of our asm helpers. We tail-call from
-        // the asm helpers to these functions, which performs the throw. The tail-call is important: it ensures that
-        // the stack is crawlable from within these functions.
-        [RuntimeExport("RhExceptionHandling_ThrowClasslibOverflowException")]
-        public static void ThrowClasslibOverflowException(IntPtr address)
-        {
-            ThrowHelper.ThrowOverflowException();
+            // Find the classlib function that will give us the exception object we want to throw. This
+            // is a RuntimeExport function from the classlib module, and is therefore managed-callable.
+            IntPtr pGetRuntimeExceptionFunction =
+                (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(address, ClassLibFunctionId.GetRuntimeException);
+
+            // Return the exception object we get from the classlib.
+            Exception? e = null;
+            try
+            {
+                e = ((delegate*<ExceptionIDs, Exception>)pGetRuntimeExceptionFunction)(id);
+            }
+            catch when (true)
+            {
+                // disallow all exceptions leaking out of callbacks
+            }
+#else
+            Exception? e = id switch
+            {
+                ExceptionIDs.AccessViolation => new AccessViolationException(),
+                ExceptionIDs.Arithmetic => new ArithmeticException(),
+                ExceptionIDs.AmbiguousImplementation => new AmbiguousImplementationException(),
+                ExceptionIDs.ArrayTypeMismatch => new ArrayTypeMismatchException(),
+                ExceptionIDs.DataMisaligned => new DataMisalignedException(),
+                ExceptionIDs.DivideByZero => new DivideByZeroException(),
+                ExceptionIDs.EntrypointNotFound => new EntryPointNotFoundException(),
+                ExceptionIDs.IndexOutOfRange => new IndexOutOfRangeException(),
+                ExceptionIDs.InvalidCast => new InvalidCastException(),
+                ExceptionIDs.NullReference => new NullReferenceException(),
+                ExceptionIDs.OutOfMemory => new OutOfMemoryException(),
+                ExceptionIDs.Overflow => new OverflowException(),
+                _ => null
+            };
+#endif
+            // If the helper fails to yield an object, then we fail-fast.
+            if (e == null)
+            {
+                FailFastViaClasslib(RhFailFastReason.InternalError, null, address);
+            }
+
+            return e;
         }
 
-        [RuntimeExport("RhExceptionHandling_ThrowClasslibDivideByZeroException")]
-        public static void ThrowClasslibDivideByZeroException(IntPtr address)
-        {
-            ThrowHelper.ThrowDivideByZeroException();
-        }
-
+#if NATIVEAOT
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
+#pragma warning disable IDE0060
         public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)
+#pragma warning restore IDE0060
         {
             if (fIsOverflow)
             {
@@ -320,7 +354,6 @@ namespace System.Runtime
                 ThrowHelper.ThrowOutOfMemoryException();
             }
         }
-#pragma warning restore IDE0060
 #endif // NATIVEAOT
 
         private enum HwExceptionCode : uint
@@ -446,12 +479,13 @@ namespace System.Runtime
 #endif
             IntPtr faultingCodeAddress = exInfo._pExContext->IP;
             bool instructionFault = true;
+            ExceptionIDs exceptionId = 0;
             Exception? exceptionToThrow = null;
 
             switch ((HwExceptionCode)exceptionCode)
             {
                 case HwExceptionCode.STATUS_REDHAWK_NULL_REFERENCE:
-                    exceptionToThrow = new NullReferenceException();
+                    exceptionId = ExceptionIDs.NullReference;
                     break;
 
                 case HwExceptionCode.STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE:
@@ -459,7 +493,7 @@ namespace System.Runtime
                     // The IP of this fault needs to be treated as return address, not as IP of
                     // faulting instruction.
                     instructionFault = false;
-                    exceptionToThrow = new NullReferenceException();
+                    exceptionId = ExceptionIDs.NullReference;
                     break;
 
 #if NATIVEAOT
@@ -469,21 +503,21 @@ namespace System.Runtime
 #endif
 
                 case HwExceptionCode.STATUS_DATATYPE_MISALIGNMENT:
-                    exceptionToThrow = new DataMisalignedException();
+                    exceptionId = ExceptionIDs.DataMisaligned;
                     break;
 
                 // N.B. -- AVs that have a read/write address lower than 64k are already transformed to
                 //         HwExceptionCode.REDHAWK_NULL_REFERENCE prior to calling this routine.
                 case HwExceptionCode.STATUS_ACCESS_VIOLATION:
-                    exceptionToThrow = new AccessViolationException();
+                    exceptionId = ExceptionIDs.AccessViolation;
                     break;
 
                 case HwExceptionCode.STATUS_INTEGER_DIVIDE_BY_ZERO:
-                    exceptionToThrow = new DivideByZeroException();
+                    exceptionId = ExceptionIDs.DivideByZero;
                     break;
 
                 case HwExceptionCode.STATUS_INTEGER_OVERFLOW:
-                    exceptionToThrow = new OverflowException();
+                    exceptionId = ExceptionIDs.Overflow;
                     break;
 
                 default:
@@ -492,6 +526,11 @@ namespace System.Runtime
                     // this case.
                     FailFastViaClasslib(RhFailFastReason.InternalError, null, faultingCodeAddress);
                     break;
+            }
+
+            if (exceptionId != 0)
+            {
+                exceptionToThrow = GetClasslibException(exceptionId, faultingCodeAddress);
             }
 
             exInfo.Init(exceptionToThrow!, instructionFault);
