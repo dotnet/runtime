@@ -1806,11 +1806,7 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
         case WellKnownArg::RetBuffer:
             if (hasFixedRetBuffReg(cc))
             {
-                // Windows does not use fixed ret buff arg for instance calls, but does otherwise.
-                if (!TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(cc))
-                {
-                    return theFixedRetBuffReg(cc);
-                }
+                return theFixedRetBuffReg(cc);
             }
 
             break;
@@ -5615,7 +5611,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Cosh:
                         case NI_System_Math_Exp:
                         case NI_System_Math_Floor:
-                        case NI_System_Math_FMod:
                         case NI_System_Math_FusedMultiplyAdd:
                         case NI_System_Math_ILogB:
                         case NI_System_Math_Log:
@@ -12757,9 +12752,6 @@ void Compiler::gtDispTree(GenTree*     tree,
                 case NI_System_Math_Floor:
                     printf(" floor");
                     break;
-                case NI_System_Math_FMod:
-                    printf(" fmod");
-                    break;
                 case NI_System_Math_FusedMultiplyAdd:
                     printf(" fma");
                     break;
@@ -14128,13 +14120,13 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         objOp = opOther->AsCall()->gtArgs.GetThisArg()->GetNode();
     }
 
-    bool                 pIsExact   = false;
-    bool                 pIsNonNull = false;
-    CORINFO_CLASS_HANDLE objCls     = gtGetClassHandle(objOp, &pIsExact, &pIsNonNull);
+    bool                 isExact   = false;
+    bool                 isNonNull = false;
+    CORINFO_CLASS_HANDLE objCls    = gtGetClassHandle(objOp, &isExact, &isNonNull);
 
     // if both classes are "final" (e.g. System.String[]) we can replace the comparison
     // with `true/false` + null check.
-    if ((objCls != NO_CLASS_HANDLE) && (pIsExact || info.compCompHnd->isExactType(objCls)))
+    if ((objCls != NO_CLASS_HANDLE) && (isExact || info.compCompHnd->isExactType(objCls)))
     {
         TypeCompareState tcs = info.compCompHnd->compareTypesForEquality(objCls, clsHnd);
         if (tcs != TypeCompareState::May)
@@ -14143,7 +14135,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
             const bool typesAreEqual = tcs == TypeCompareState::Must;
             GenTree*   compareResult = gtNewIconNode((operatorIsEQ ^ typesAreEqual) ? 0 : 1);
 
-            if (!pIsNonNull)
+            if (!isNonNull)
             {
                 // we still have to emit a null-check
                 // obj.GetType == typeof() -> (nullcheck) true/false
@@ -18402,24 +18394,23 @@ bool Compiler::gtStoreDefinesField(
 //        otherwise actual type may be a subtype.
 //    *pIsNonNull set true if tree value is known not to be null,
 //        otherwise a null value is possible.
-
+//
 CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, bool* pIsNonNull)
 {
     // Set default values for our out params.
-    *pIsNonNull                   = false;
-    *pIsExact                     = false;
-    CORINFO_CLASS_HANDLE objClass = nullptr;
+    *pIsNonNull = false;
+    *pIsExact   = false;
 
     // Bail out if the tree is not a ref type.
-    var_types treeType = tree->TypeGet();
-    if (treeType != TYP_REF)
+    if (!tree->TypeIs(TYP_REF))
     {
-        return objClass;
+        return NO_CLASS_HANDLE;
     }
 
     // Tunnel through commas.
-    GenTree*         obj   = tree->gtEffectiveVal();
-    const genTreeOps objOp = obj->OperGet();
+    GenTree*             obj      = tree->gtEffectiveVal();
+    const genTreeOps     objOp    = obj->OperGet();
+    CORINFO_CLASS_HANDLE objClass = NO_CLASS_HANDLE;
 
     switch (objOp)
     {
@@ -18568,7 +18559,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 assert(runtimeType != NO_CLASS_HANDLE);
 
                 objClass    = runtimeType;
-                *pIsExact   = false;
                 *pIsNonNull = true;
             }
 
@@ -18612,9 +18602,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 {
                     objClass = gtGetArrayElementClassHandle(base->AsArrElem()->gtArrObj);
                 }
-
-                *pIsExact   = false;
-                *pIsNonNull = false;
             }
             else if (base->OperGet() == GT_ADD)
             {
@@ -18651,7 +18638,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 FieldSeq* fldSeq = base->AsIntCon()->gtFieldSeq;
                 if ((fldSeq != nullptr) && (fldSeq->GetOffset() == base->AsIntCon()->IconValue()))
                 {
-                    CORINFO_FIELD_HANDLE fldHandle = base->AsIntCon()->gtFieldSeq->GetFieldHandle();
+                    CORINFO_FIELD_HANDLE fldHandle = fldSeq->GetFieldHandle();
                     objClass                       = gtGetFieldClassHandle(fldHandle, pIsExact, pIsNonNull);
                 }
             }
@@ -18718,7 +18705,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 // Return Value:
 //    nullptr if helper call result is not a ref class, or the class handle
 //    is unknown, otherwise the class handle.
-
+//
 CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, bool* pIsExact, bool* pIsNonNull)
 {
     assert(call->gtCallType == CT_HELPER);
@@ -18860,7 +18847,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
 //
 // Return Value:
 //    nullptr if element class handle is unknown, otherwise the class handle.
-
+//
 CORINFO_CLASS_HANDLE Compiler::gtGetArrayElementClassHandle(GenTree* array)
 {
     bool                 isArrayExact   = false;
@@ -18902,9 +18889,12 @@ CORINFO_CLASS_HANDLE Compiler::gtGetArrayElementClassHandle(GenTree* array)
 //    is unknown, otherwise the class handle.
 //
 //    May examine runtime state of static field instances.
-
+//
 CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull)
 {
+    *pIsExact   = false;
+    *pIsNonNull = false;
+
     CORINFO_CLASS_HANDLE fieldClass   = NO_CLASS_HANDLE;
     CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass);
 
@@ -18917,11 +18907,14 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
         if (queryForCurrentClass)
         {
 #if DEBUG
-            char fieldNameBuffer[128];
-            char classNameBuffer[128];
-            JITDUMP("\nQuerying runtime about current class of field %s (declared as %s)\n",
-                    eeGetFieldName(fieldHnd, true, fieldNameBuffer, sizeof(fieldNameBuffer)),
-                    eeGetClassName(fieldClass, classNameBuffer, sizeof(classNameBuffer)));
+            if (verbose || JitConfig.EnableExtraSuperPmiQueries())
+            {
+                char        fieldNameBuffer[128];
+                char        classNameBuffer[128];
+                const char* fieldName = eeGetFieldName(fieldHnd, true, fieldNameBuffer, sizeof(fieldNameBuffer));
+                const char* className = eeGetClassName(fieldClass, classNameBuffer, sizeof(classNameBuffer));
+                JITDUMP("\nQuerying runtime about current class of field %s (declared as %s)\n", fieldName, className);
+            }
 #endif // DEBUG
 
             // Is this a fully initialized init-only static field?
@@ -18936,10 +18929,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
                 *pIsExact   = true;
                 *pIsNonNull = true;
 #ifdef DEBUG
-                char buffer[128];
-                JITDUMP("Runtime reports field is init-only and initialized and has class %s\n",
-                        eeGetClassName(fieldClass, buffer, sizeof(buffer)));
-#endif
+                if (verbose || JitConfig.EnableExtraSuperPmiQueries())
+                {
+                    char        classNameBuffer2[128];
+                    const char* className2 = eeGetClassName(fieldClass, classNameBuffer2, sizeof(classNameBuffer2));
+                    JITDUMP("Runtime reports field is init-only and initialized and has class %s\n", className2);
+                }
+#endif // DEBUG
             }
             else
             {

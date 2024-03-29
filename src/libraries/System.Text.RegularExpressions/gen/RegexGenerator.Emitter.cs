@@ -416,7 +416,7 @@ namespace System.Text.RegularExpressions.Generator
                         bitmap[c >> 3] |= (byte)(1 << (c & 7));
                     }
 
-                    string hexBitmap = BitConverter.ToString(bitmap).Replace("-", string.Empty);
+                    string hexBitmap = ToHexStringNoDashes(bitmap);
 
                     fieldName = hexBitmap switch
                     {
@@ -5427,7 +5427,7 @@ namespace System.Text.RegularExpressions.Generator
         {
 #pragma warning disable CA1850 // SHA256.HashData isn't available on netstandard2.0
             using SHA256 sha = SHA256.Create();
-            return $"{prefix}{BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(toEncode))).Replace("-", "")}";
+            return $"{prefix}{ToHexStringNoDashes(Encoding.UTF8.GetBytes(toEncode))}";
 #pragma warning restore CA1850
         }
 
@@ -5622,6 +5622,13 @@ namespace System.Text.RegularExpressions.Generator
 
             return style + bounds;
         }
+
+        private static string ToHexStringNoDashes(byte[] bytes) =>
+#if NETCOREAPP
+            Convert.ToHexString(bytes);
+#else
+            BitConverter.ToString(bytes).Replace("-", "");
+#endif
 
         private static FinishEmitBlock EmitBlock(IndentedTextWriter writer, string? clause, bool faux = false)
         {
