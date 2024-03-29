@@ -26,7 +26,6 @@
 
 #include "shimload.h"
 #include "debuginfostore.h"
-#include "strsafe.h"
 
 #include "configuration.h"
 
