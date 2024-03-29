@@ -14,7 +14,7 @@ namespace System.Numerics.Tensors
           IEquatable<TSelf>,
           IEqualityOperators<TSelf, TSelf, bool>
         where TSelf : ITensor<TSelf, T>
-        where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        where T : IEquatable<T>
     {
         // TODO: Determine if we can implement `IEqualityOperators<TSelf, T, bool>`.
         // It looks like C#/.NET currently hits limitations here as it believes TSelf and T could be the same type

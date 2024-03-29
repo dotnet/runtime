@@ -106,6 +106,16 @@ namespace System.Numerics.Tensors.Tests
                 Assert.True(ex is E, $"Wrong exception thrown. Expected: {typeof(E)} Actual: {ex.GetType()}");
             }
         }
+
+        public static void AdjustIndices(int curIndex, nint addend, ref nint[] curIndices, ReadOnlySpan<nint> lengths)
+        {
+            if (addend == 0 || curIndex < 0)
+                return;
+            curIndices[curIndex] += addend;
+            AdjustIndices(curIndex - 1, curIndices[curIndex] / lengths[curIndex], ref curIndices, lengths);
+            curIndices[curIndex] = curIndices[curIndex] % lengths[curIndex];
+        }
+
 #endif
     }
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -51,7 +52,7 @@ namespace System.Numerics.Tensors
                 return; // returns default
             }
 
-            _linearLength = SpanHelpers.CalculateTotalLength(ref lengths);
+            _linearLength = SpanHelpers.CalculateTotalLength(lengths);
             if (_linearLength != array.Length)
                 ThrowHelper.ThrowArgument_LengthsMustEqualArrayLength();
 
@@ -75,7 +76,7 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySpanND(T[]? array, nint start, ReadOnlySpan<nint> lengths)
         {
-            _linearLength = SpanHelpers.CalculateTotalLength(ref lengths);
+            _linearLength = SpanHelpers.CalculateTotalLength(lengths);
             if (array == null)
             {
                 if (start != 0 || _linearLength != 0)
@@ -92,7 +93,7 @@ namespace System.Numerics.Tensors
             if ((uint)start > (uint)array.Length || (uint)_linearLength > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 #endif
-            if (_linearLength != SpanHelpers.CalculateTotalLength(ref lengths))
+            if (_linearLength != SpanHelpers.CalculateTotalLength(lengths))
                 ThrowHelper.ThrowArgument_LengthsMustEqualArrayLength();
 
             _reference = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */);
@@ -121,13 +122,13 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe ReadOnlySpanND(void* pointer, ReadOnlySpan<nint> lengths, bool isPinned, ReadOnlySpan<nint> strides = default)
         {
-            _linearLength = SpanHelpers.CalculateTotalLength(ref lengths);
+            _linearLength = SpanHelpers.CalculateTotalLength(lengths);
 
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             if (_linearLength < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
-            if (_linearLength != SpanHelpers.CalculateTotalLength(ref lengths))
+            if (_linearLength != SpanHelpers.CalculateTotalLength(lengths))
                 ThrowHelper.ThrowArgument_LengthsMustEqualArrayLength();
 
             _isPinned = isPinned;
@@ -144,7 +145,7 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ReadOnlySpanND(ref T reference, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool isPinned)
         {
-            _linearLength = SpanHelpers.CalculateTotalLength(ref lengths);
+            _linearLength = SpanHelpers.CalculateTotalLength(lengths);
             Debug.Assert(_linearLength >= 0);
 
             _reference = ref reference;
@@ -462,7 +463,7 @@ namespace System.Numerics.Tensors
                 index += Strides[i] * (offsets[i]);
             }
 
-            return new SpanND<T>(ref Unsafe.Add(ref _reference, index), lengths.AsSpan(), _strides, _isPinned);
+            return new ReadOnlySpanND<T>(ref Unsafe.Add(ref _reference, index), lengths.AsSpan(), _strides, _isPinned);
         }
 
         /// <summary>

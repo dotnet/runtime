@@ -15,6 +15,15 @@ namespace System.Numerics.Tensors
 {
     internal static partial class SpanHelpers // .T
     {
+        public static unsafe void Memmove<T>(Span<T> destination, ReadOnlySpan<T> source, nint length, nint dstOffset = 0)
+        {
+            fixed (T* dst = destination)
+            fixed (T* src = source)
+            {
+                NativeMemory.Copy(src, dst + dstOffset, (nuint)length * (nuint)sizeof(T));
+            }
+        }
+
         public static unsafe void Memmove<T>(ref T[] destination, ref T source, nint length)
         {
             fixed (T* dst = destination)

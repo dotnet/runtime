@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Microsoft.VisualBasic;
@@ -373,7 +375,7 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static nint CalculateTotalLength(ref ReadOnlySpan<nint> lengths)
+        public static nint CalculateTotalLength(ReadOnlySpan<nint> lengths)
         {
             nint totalLength = 1;
             for (int i = 0; i < lengths.Length; i++)
@@ -432,6 +434,19 @@ namespace System.Numerics.Tensors
             curIndices[curIndex] += addend;
             AdjustIndices(curIndex - 1, curIndices[curIndex] / lengths[curIndex], ref curIndices, lengths);
             curIndices[curIndex] = curIndices[curIndex] % lengths[curIndex];
+        }
+
+        public static nint CountTrueElements(Tensor<bool> filter)
+        {
+            var filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)filter._linearLength);
+            nint count = 0;
+            for (int i = 0; i < filterSpan.Length; i++)
+            {
+                if (filterSpan[i])
+                    count++;
+            }
+
+            return count;
         }
     }
 }
