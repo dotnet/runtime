@@ -242,7 +242,7 @@ public:
         if (destLen > 0
             && !minipal_convert_utf8_to_utf16(utf8str, sourceLen, buffer, destLen, /* flags */ 0))
         {
-            ThrowHR(EMAKEHR(GetLastError()));
+            ThrowHR(EMAKEHR(errno));
         }
     }
 
@@ -263,7 +263,7 @@ public:
         if (destLen > 0
             && !minipal_convert_utf16_to_utf8((const CHAR16_T*)pString, sourceLen, buffer, destLen, /* flags */ 0))
         {
-            ThrowHR(EMAKEHR(GetLastError()));
+            ThrowHR(EMAKEHR(errno));
         }
     }
 
