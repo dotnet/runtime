@@ -3037,13 +3037,15 @@ mono_image_init_name_cache (MonoImage *image)
 	const char *name;
 	const char *nspace;
 	guint32 visib, nspace_index;
-	GHashTable *name_cache2;
+	dn_simdhash_u32_ptr_t *name_cache2;
 	dn_simdhash_string_ptr_t *nspace_table, *the_name_cache;
 
 	if (image->name_cache)
 		return;
 
-	// FIXME: Compute an appropriate capacity for this table to avoid growing it
+	// TODO: Figure out a good initial capacity for this table by doing a scan,
+	//  or just pre-reserve a reasonable amount of space based on how many nspaces
+	//  an image typically has
 	the_name_cache = dn_simdhash_string_ptr_new (0, NULL);
 
 	if (image_is_dynamic (image)) {
@@ -3059,7 +3061,7 @@ mono_image_init_name_cache (MonoImage *image)
 	}
 
 	/* Temporary hash table to avoid lookups in the nspace_table */
-	name_cache2 = g_hash_table_new (NULL, NULL);
+	name_cache2 = dn_simdhash_u32_ptr_new (0, NULL);
 
 	/* FIXME: metadata-update */
 	int rows = table_info_get_rows (t);
@@ -3076,13 +3078,11 @@ mono_image_init_name_cache (MonoImage *image)
 		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 
 		nspace_index = cols [MONO_TYPEDEF_NAMESPACE];
-		nspace_table = (dn_simdhash_string_ptr_t *)g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
-		if (!nspace_table) {
+		if (!dn_simdhash_u32_ptr_try_get_value (name_cache2, nspace_index, (void **)&nspace_table)) {
 			// FIXME: Compute an appropriate capacity for this table to avoid growing it
 			nspace_table = dn_simdhash_string_ptr_new (0, NULL);
 			dn_simdhash_string_ptr_try_add (the_name_cache, nspace, nspace_table);
-			g_hash_table_insert (name_cache2, GUINT_TO_POINTER (nspace_index),
-								 nspace_table);
+			dn_simdhash_u32_ptr_try_add (name_cache2, nspace_index, nspace_table);
 		}
 		dn_simdhash_string_ptr_try_add (nspace_table, name, GUINT_TO_POINTER (i));
 	}
@@ -3105,19 +3105,17 @@ mono_image_init_name_cache (MonoImage *image)
 			nspace = mono_metadata_string_heap (image, exptype_cols [MONO_EXP_TYPE_NAMESPACE]);
 
 			nspace_index = exptype_cols [MONO_EXP_TYPE_NAMESPACE];
-			nspace_table = (dn_simdhash_string_ptr_t *)g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
-			if (!nspace_table) {
+			if (!dn_simdhash_u32_ptr_try_get_value (name_cache2, nspace_index, (void **)&nspace_table)) {
 				// FIXME: Compute an appropriate capacity for this table to avoid growing it
 				nspace_table = dn_simdhash_string_ptr_new (0, NULL);
 				dn_simdhash_string_ptr_try_add (the_name_cache, nspace, nspace_table);
-				g_hash_table_insert (name_cache2, GUINT_TO_POINTER (nspace_index),
-									 nspace_table);
+				dn_simdhash_u32_ptr_try_add (name_cache2, nspace_index, nspace_table);
 			}
 			dn_simdhash_string_ptr_try_add (nspace_table, name, GUINT_TO_POINTER (mono_metadata_make_token (MONO_TABLE_EXPORTEDTYPE, i + 1)));
 		}
 	}
 
-	g_hash_table_destroy (name_cache2);
+	dn_simdhash_free (name_cache2);
 
 	mono_image_lock (image);
 	if (image->name_cache) {

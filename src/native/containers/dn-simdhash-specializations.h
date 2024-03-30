@@ -22,4 +22,14 @@ typedef struct dn_simdhash_str_key dn_simdhash_str_key;
 
 #include "dn-simdhash-string-ptr.h"
 
+#define DN_SIMDHASH_T dn_simdhash_u32_ptr
+#define DN_SIMDHASH_KEY_T uint32_t
+#define DN_SIMDHASH_VALUE_T void *
+
+#include "dn-simdhash-specialization-declarations.h"
+
+#undef DN_SIMDHASH_T
+#undef DN_SIMDHASH_KEY_T
+#undef DN_SIMDHASH_VALUE_T
+
 #endif

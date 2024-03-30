@@ -11,6 +11,7 @@ list(APPEND SHARED_CONTAINER_SOURCES
     # FIXME: Including these here causes a linker collision with sgen metadata
     # dn-simdhash.c
     # dn-simdhash-string-ptr.c
+    # dn-simdhash-u32-ptr.c
 )
 
 list(APPEND SHARED_CONTAINER_HEADERS

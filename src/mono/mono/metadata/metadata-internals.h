@@ -19,7 +19,7 @@
 #include <mono/utils/mono-error.h>
 #include "mono/utils/mono-conc-hashtable.h"
 #include "mono/utils/refcount.h"
-// for dn_simdhash_string_ptr_t
+// for dn_simdhash_string_ptr_t and dn_simdhash_u32_ptr_t
 #include "../native/containers/dn-simdhash-specializations.h"
 
 struct _MonoType {
