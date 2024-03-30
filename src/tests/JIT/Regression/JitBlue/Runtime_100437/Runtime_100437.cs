@@ -36,9 +36,40 @@ public class Runtime_100437
         return (result & 100) | 100;
     }
 
+    [Fact]
+    public static int TestCollectibleReadOnlyStaticWithGeneric()
+    {
+        string assemblyPath = typeof(Runtime_100437).Assembly.Location;
+
+        // Skip this test for single file
+        if (string.IsNullOrEmpty(assemblyPath))
+            return 100;
+
+        WeakReference[] wrs = new WeakReference[10];
+        for (int i = 0; i < wrs.Length; i++)
+        {
+            var alc = new MyAssemblyLoadContext();
+            var a = alc.LoadFromAssemblyPath(assemblyPath);
+            wrs[i] = (WeakReference)a.GetType(nameof(Runtime_100437)).GetMethod(nameof(WorkForGenericCase)).Invoke(null, null);
+            GC.Collect();
+        }
+
+        int result = 0;
+        foreach (var wr in wrs)
+        {
+            result += wr.Target?.ToString()?.GetHashCode() ?? 0;
+        }
+        return (result & 100) | 100;
+    }
+
     public static WeakReference Work()
     {
         return new WeakReference(Array.Empty<Runtime_100437>());
+    }
+
+    public static WeakReference WorkForGenericCase()
+    {
+        return new WeakReference(GenericHolder<Runtime_100437>.Singleton);
     }
 
     private class MyAssemblyLoadContext : AssemblyLoadContext
@@ -47,5 +78,10 @@ public class Runtime_100437
             : base(isCollectible: true)
         {
         }
+    }
+
+    private class GenericHolder<T>
+    {
+        public static readonly object Singleton = new object();
     }
 }
