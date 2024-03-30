@@ -2874,8 +2874,8 @@ inline var_types Compiler::mangleVarArgsType(var_types type)
 
         if (varTypeIsSIMD(type))
         {
-            // Vectors also get passed in int registers. Use TYP_INT.
-            return TYP_INT;
+            // Vectors should be considered like passing a struct
+            return TYP_STRUCT;
         }
     }
 #endif // defined(TARGET_ARMARCH)
@@ -3349,11 +3349,11 @@ inline int getJitStressLevel()
  * we return the fixed return buffer register
  */
 
-inline regNumber genMapIntRegArgNumToRegNum(unsigned argNum)
+inline regNumber genMapIntRegArgNumToRegNum(unsigned argNum, CorInfoCallConvExtension callConv)
 {
-    if (hasFixedRetBuffReg() && (argNum == theFixedRetBuffArgNum()))
+    if (hasFixedRetBuffReg(callConv) && (argNum == theFixedRetBuffArgNum(callConv)))
     {
-        return theFixedRetBuffReg();
+        return theFixedRetBuffReg(callConv);
     }
 
     assert(argNum < ArrLen(intArgRegs));
@@ -3373,7 +3373,7 @@ inline regNumber genMapFloatRegArgNumToRegNum(unsigned argNum)
 #endif
 }
 
-__forceinline regNumber genMapRegArgNumToRegNum(unsigned argNum, var_types type)
+__forceinline regNumber genMapRegArgNumToRegNum(unsigned argNum, var_types type, CorInfoCallConvExtension callConv)
 {
     if (varTypeUsesFloatArgReg(type))
     {
@@ -3381,7 +3381,7 @@ __forceinline regNumber genMapRegArgNumToRegNum(unsigned argNum, var_types type)
     }
     else
     {
-        return genMapIntRegArgNumToRegNum(argNum);
+        return genMapIntRegArgNumToRegNum(argNum, callConv);
     }
 }
 
@@ -3436,9 +3436,9 @@ __forceinline regMaskOnlyOne genMapArgNumToRegMask(unsigned argNum, var_types ty
  * If we have a fixed return buffer register we return theFixedRetBuffArgNum
  */
 
-inline unsigned genMapIntRegNumToRegArgNum(regNumber regNum)
+inline unsigned genMapIntRegNumToRegArgNum(regNumber regNum, CorInfoCallConvExtension callConv)
 {
-    assert(genRegMask(regNum) & fullIntArgRegMask());
+    assert(genRegMask(regNum) & fullIntArgRegMask(callConv));
 
     switch (regNum)
     {
@@ -3474,9 +3474,9 @@ inline unsigned genMapIntRegNumToRegArgNum(regNumber regNum)
 #endif
         default:
             // Check for the Arm64 fixed return buffer argument register
-            if (hasFixedRetBuffReg() && (regNum == theFixedRetBuffReg()))
+            if (hasFixedRetBuffReg(callConv) && (regNum == theFixedRetBuffReg(callConv)))
             {
-                return theFixedRetBuffArgNum();
+                return theFixedRetBuffArgNum(callConv);
             }
             else
             {
@@ -3534,7 +3534,7 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
 #endif // !arm
 }
 
-inline unsigned genMapRegNumToRegArgNum(regNumber regNum, var_types type)
+inline unsigned genMapRegNumToRegArgNum(regNumber regNum, var_types type, CorInfoCallConvExtension callConv)
 {
     if (varTypeUsesFloatArgReg(type))
     {
@@ -3542,7 +3542,7 @@ inline unsigned genMapRegNumToRegArgNum(regNumber regNum, var_types type)
     }
     else
     {
-        return genMapIntRegNumToRegArgNum(regNum);
+        return genMapIntRegNumToRegArgNum(regNum, callConv);
     }
 }
 

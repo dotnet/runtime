@@ -4436,10 +4436,6 @@ struct CallArgABIInformation
         , ByteOffset(0)
         , ByteSize(0)
         , ByteAlignment(0)
-#ifdef UNIX_AMD64_ABI
-        , StructIntRegs(0)
-        , StructFloatRegs(0)
-#endif
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         , StructFloatFieldType()
 #endif
@@ -4475,8 +4471,6 @@ public:
     // Unix amd64 will split floating point types and integer types in structs
     // between floating point and general purpose registers. Keep track of that
     // information so we do not need to recompute it later.
-    unsigned                                            StructIntRegs;
-    unsigned                                            StructFloatRegs;
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
 #endif // UNIX_AMD64_ABI
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -4584,7 +4578,7 @@ public:
     bool IsMismatchedArgType() const
     {
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        return isValidIntArgReg(GetRegNum()) && varTypeUsesFloatReg(ArgType);
+        return genIsValidIntReg(GetRegNum()) && varTypeUsesFloatReg(ArgType);
 #else
         return false;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
@@ -5255,24 +5249,7 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) != 0;
     }
 
-    //-------------------------------------------------------------------------
-    // TreatAsShouldHaveRetBufArg:
-    //
-    // Arguments:
-    //     compiler, the compiler instance so that we can call eeGetHelperNum
-    //
-    // Return Value:
-    //     Returns true if we treat the call as if it has a retBuf argument
-    //     This method may actually have a retBuf argument
-    //     or it could be a JIT helper that we are still transforming during
-    //     the importer phase.
-    //
-    // Notes:
-    //     On ARM64 marking the method with the GTF_CALL_M_RETBUFFARG flag
-    //     will make ShouldHaveRetBufArg() return true, but will also force the
-    //     use of register x8 to pass the RetBuf argument.
-    //
-    bool TreatAsShouldHaveRetBufArg(Compiler* compiler) const;
+    bool TreatAsShouldHaveRetBufArg() const;
 
     //-----------------------------------------------------------------------------------------
     // HasMultiRegRetVal: whether the call node returns its value in multiple return registers.
@@ -5297,7 +5274,7 @@ struct GenTreeCall final : public GenTree
         }
 #endif
 
-        if (!varTypeIsStruct(gtType) || ShouldHaveRetBufArg())
+        if (!varTypeIsStruct(gtType) || TreatAsShouldHaveRetBufArg())
         {
             return false;
         }
@@ -6401,6 +6378,28 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsCreateScalarUnsafe() const;
     bool OperIsBitwiseHWIntrinsic() const;
     bool OperIsEmbRoundingEnabled() const;
+
+    bool OperIsConvertMaskToVector() const
+    {
+#if defined(TARGET_XARCH)
+        return GetHWIntrinsicId() == NI_AVX512F_ConvertMaskToVector;
+#elif defined(TARGET_ARM64)
+        return GetHWIntrinsicId() == NI_Sve_ConvertMaskToVector;
+#else
+        return false;
+#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
+    }
+
+    bool OperIsConvertVectorToMask() const
+    {
+#if defined(TARGET_XARCH)
+        return GetHWIntrinsicId() == NI_AVX512F_ConvertVectorToMask;
+#elif defined(TARGET_ARM64)
+        return GetHWIntrinsicId() == NI_Sve_ConvertVectorToMask;
+#else
+        return false;
+#endif
+    }
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
@@ -9264,7 +9263,6 @@ inline GenTree* GenTree::gtGetOp1() const
         case GT_QMARK:
         case GT_COLON:
         case GT_INDEX_ADDR:
-        case GT_MKREFANY:
             return true;
         default:
             return false;

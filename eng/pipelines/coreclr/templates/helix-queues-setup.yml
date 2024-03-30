@@ -8,7 +8,6 @@ parameters:
   pool: ''
   platform: ''
   shouldContinueOnError: false
-  dependOnEvaluatePaths: false
   jobParameters: {}
 
 # parameters.jobParameters.helixQueueGroup values:
@@ -31,7 +30,6 @@ jobs:
     pool: ${{ parameters.pool }}
     platform: ${{ parameters.platform }}
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     helixQueues:
 
     # iOS Simulator/Mac Catalyst arm64

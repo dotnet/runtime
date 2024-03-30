@@ -85,11 +85,17 @@ inline bool varTypeIsSIMD(T vt)
 template <class T>
 inline bool varTypeIsMask(T vt)
 {
-#ifdef HAS_PREDICATE_REGS
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     return (TypeGet(vt) == TYP_MASK);
-#else
+#else // FEATURE_MASKED_HW_INTRINSICS
     return false;
 #endif
+}
+
+template <class T>
+inline bool varTypeIsSIMDOrMask(T vt)
+{
+    return varTypeIsSIMD(vt) || varTypeIsMask(vt);
 }
 
 template <class T>

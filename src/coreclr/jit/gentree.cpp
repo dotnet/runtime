@@ -731,10 +731,6 @@ ClassLayout* GenTree::GetLayout(Compiler* compiler) const
             return AsHWIntrinsic()->GetLayout(compiler);
 #endif // FEATURE_HW_INTRINSICS
 
-        case GT_MKREFANY:
-            structHnd = compiler->impGetRefAnyClass();
-            break;
-
         case GT_CALL:
             structHnd = AsCall()->gtRetClsHnd;
             break;
@@ -1883,23 +1879,10 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
             return REG_LNGARG_HI;
 #endif
         case WellKnownArg::RetBuffer:
-            if (hasFixedRetBuffReg())
+            if (hasFixedRetBuffReg(cc))
             {
-                // Windows does not use fixed ret buff arg for instance calls, but does otherwise.
-                if (!TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(cc))
-                {
-                    return theFixedRetBuffReg();
-                }
+                return theFixedRetBuffReg(cc);
             }
-
-#if defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
-            // TODO-Cleanup: Unify this with hasFixedRetBuffReg. That will
-            // likely be necessary for the reverse pinvoke support regardless.
-            if (cc == CorInfoCallConvExtension::Swift)
-            {
-                return REG_SWIFT_ARG_RET_BUFF;
-            }
-#endif
 
             break;
 
@@ -2586,9 +2569,6 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 //-------------------------------------------------------------------------
 // TreatAsShouldHaveRetBufArg:
 //
-// Arguments:
-//     compiler, the compiler instance so that we can call eeGetHelperNum
-//
 // Return Value:
 //     Returns true if we treat the call as if it has a retBuf argument
 //     This method may actually have a retBuf argument
@@ -2604,7 +2584,7 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 //     aren't actually defined to return a struct, so they don't expect
 //     their RetBuf to be passed in x8, instead they  expect it in x0.
 //
-bool GenTreeCall::TreatAsShouldHaveRetBufArg(Compiler* compiler) const
+bool GenTreeCall::TreatAsShouldHaveRetBufArg() const
 {
     if (ShouldHaveRetBufArg())
     {
@@ -2616,27 +2596,22 @@ bool GenTreeCall::TreatAsShouldHaveRetBufArg(Compiler* compiler) const
     //
     if (IsHelperCall() && (gtReturnType == TYP_STRUCT))
     {
-        // There are three possible helper calls that use this path:
-        //  CORINFO_HELP_GETFIELDSTRUCT,  CORINFO_HELP_UNBOX_NULLABLE
-        //  CORINFO_HELP_PINVOKE_CALLI
-        CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(gtCallMethHnd);
+        // There are two helpers that return structs through an argument,
+        // ignoring the ABI, but where we want to handle them during import as
+        // if they have return buffers:
+        //   - CORINFO_HELP_GETFIELDSTRUCT
+        //   - CORINFO_HELP_UNBOX_NULLABLE
+        //
+        // Other TYP_STRUCT returning helpers follow the ABI normally and
+        // should return true for `ShouldHaveRetBufArg` if they need a retbuf
+        // arg, so when we get here, those cases never need retbufs. They
+        // include:
+        //   - CORINFO_HELP_PINVOKE_CALLI
+        //   - CORINFO_HELP_DISPATCH_INDIRECT_CALL
+        //
+        CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(gtCallMethHnd);
 
-        if (helpFunc == CORINFO_HELP_GETFIELDSTRUCT)
-        {
-            return true;
-        }
-        else if (helpFunc == CORINFO_HELP_UNBOX_NULLABLE)
-        {
-            return true;
-        }
-        else if (helpFunc == CORINFO_HELP_PINVOKE_CALLI)
-        {
-            return false;
-        }
-        else
-        {
-            assert(!"Unexpected JIT helper in TreatAsShouldHaveRetBufArg");
-        }
+        return (helpFunc == CORINFO_HELP_GETFIELDSTRUCT) || (helpFunc == CORINFO_HELP_UNBOX_NULLABLE);
     }
     return false;
 }
@@ -5712,7 +5687,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Cosh:
                         case NI_System_Math_Exp:
                         case NI_System_Math_Floor:
-                        case NI_System_Math_FMod:
                         case NI_System_Math_FusedMultiplyAdd:
                         case NI_System_Math_ILogB:
                         case NI_System_Math_Log:
@@ -5801,9 +5775,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 2;
                     break;
 
-                case GT_MKREFANY:
                 case GT_BLK:
-                    // We estimate the cost of a GT_BLK or GT_MKREFANY to be two loads (GT_INDs)
+                    // We estimate the cost of a GT_BLK to be two loads (GT_INDs)
                     costEx = 2 * IND_COST_EX;
                     costSz = 2 * 2;
                     break;
@@ -6247,7 +6220,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                     case GT_QMARK:
                     case GT_COLON:
-                    case GT_MKREFANY:
                         break;
 
                     default:
@@ -12856,9 +12828,6 @@ void Compiler::gtDispTree(GenTree*     tree,
                 case NI_System_Math_Floor:
                     printf(" floor");
                     break;
-                case NI_System_Math_FMod:
-                    printf(" fmod");
-                    break;
                 case NI_System_Math_FusedMultiplyAdd:
                     printf(" fma");
                     break;
@@ -13299,8 +13268,9 @@ void Compiler::gtGetArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned
                 }
                 else
                 {
-                    unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg) + arg->AbiInfo.NumRegs - 1;
-                    lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
+                    unsigned lastRegNum =
+                        genMapIntRegNumToRegArgNum(firstReg, call->GetUnmanagedCallConv()) + arg->AbiInfo.NumRegs - 1;
+                    lastReg = genMapIntRegArgNumToRegNum(lastRegNum, call->GetUnmanagedCallConv());
                 }
                 sprintf_s(bufp, bufLength, " %s%c%s out+%02x", compRegVarName(firstReg), separator,
                           compRegVarName(lastReg), arg->AbiInfo.ByteOffset);
@@ -13363,8 +13333,9 @@ void Compiler::gtGetLateArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsi
                 }
                 else
                 {
-                    unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg) + arg->AbiInfo.NumRegs - 1;
-                    lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
+                    unsigned lastRegNum =
+                        genMapIntRegNumToRegArgNum(firstReg, call->GetUnmanagedCallConv()) + arg->AbiInfo.NumRegs - 1;
+                    lastReg = genMapIntRegArgNumToRegNum(lastRegNum, call->GetUnmanagedCallConv());
                 }
                 sprintf_s(bufp, bufLength, " %s%c%s out+%02x", compRegVarName(firstReg), separator,
                           compRegVarName(lastReg), arg->AbiInfo.ByteOffset);
@@ -14193,6 +14164,18 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return tree;
     }
 
+    // Check if an object of this type can even exist
+    if (info.compCompHnd->getExactClasses(clsHnd, 0, nullptr) == 0)
+    {
+        JITDUMP("Runtime reported %p (%s) is never allocated\n", dspPtr(clsHnd), eeGetClassName(clsHnd));
+
+        const bool operatorIsEQ  = (oper == GT_EQ);
+        const int  compareResult = operatorIsEQ ? 0 : 1;
+        JITDUMP("Runtime reports comparison is known at jit time: %u\n", compareResult);
+        GenTree* result = gtNewIconNode(compareResult);
+        return result;
+    }
+
     // We're good to go.
     JITDUMP("Optimizing compare of obj.GetType()"
             " and type-from-handle to compare method table pointer\n");
@@ -14213,13 +14196,13 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         objOp = opOther->AsCall()->gtArgs.GetThisArg()->GetNode();
     }
 
-    bool                 pIsExact   = false;
-    bool                 pIsNonNull = false;
-    CORINFO_CLASS_HANDLE objCls     = gtGetClassHandle(objOp, &pIsExact, &pIsNonNull);
+    bool                 isExact   = false;
+    bool                 isNonNull = false;
+    CORINFO_CLASS_HANDLE objCls    = gtGetClassHandle(objOp, &isExact, &isNonNull);
 
     // if both classes are "final" (e.g. System.String[]) we can replace the comparison
     // with `true/false` + null check.
-    if ((objCls != NO_CLASS_HANDLE) && (pIsExact || info.compCompHnd->isExactType(objCls)))
+    if ((objCls != NO_CLASS_HANDLE) && (isExact || info.compCompHnd->isExactType(objCls)))
     {
         TypeCompareState tcs = info.compCompHnd->compareTypesForEquality(objCls, clsHnd);
         if (tcs != TypeCompareState::May)
@@ -14228,7 +14211,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
             const bool typesAreEqual = tcs == TypeCompareState::Must;
             GenTree*   compareResult = gtNewIconNode((operatorIsEQ ^ typesAreEqual) ? 0 : 1);
 
-            if (!pIsNonNull)
+            if (!isNonNull)
             {
                 // we still have to emit a null-check
                 // obj.GetType == typeof() -> (nullcheck) true/false
@@ -15731,7 +15714,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
         case TYP_INT:
 
-            assert(tree->TypeIs(TYP_INT) || varTypeIsGC(tree) || tree->OperIs(GT_MKREFANY));
+            assert(tree->TypeIs(TYP_INT) || varTypeIsGC(tree));
             // No GC pointer types should be folded here...
             assert(!varTypeIsGC(op1->TypeGet()) && !varTypeIsGC(op2->TypeGet()));
 
@@ -18487,24 +18470,23 @@ bool Compiler::gtStoreDefinesField(
 //        otherwise actual type may be a subtype.
 //    *pIsNonNull set true if tree value is known not to be null,
 //        otherwise a null value is possible.
-
+//
 CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, bool* pIsNonNull)
 {
     // Set default values for our out params.
-    *pIsNonNull                   = false;
-    *pIsExact                     = false;
-    CORINFO_CLASS_HANDLE objClass = nullptr;
+    *pIsNonNull = false;
+    *pIsExact   = false;
 
     // Bail out if the tree is not a ref type.
-    var_types treeType = tree->TypeGet();
-    if (treeType != TYP_REF)
+    if (!tree->TypeIs(TYP_REF))
     {
-        return objClass;
+        return NO_CLASS_HANDLE;
     }
 
     // Tunnel through commas.
-    GenTree*         obj   = tree->gtEffectiveVal();
-    const genTreeOps objOp = obj->OperGet();
+    GenTree*             obj      = tree->gtEffectiveVal();
+    const genTreeOps     objOp    = obj->OperGet();
+    CORINFO_CLASS_HANDLE objClass = NO_CLASS_HANDLE;
 
     switch (objOp)
     {
@@ -18653,7 +18635,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 assert(runtimeType != NO_CLASS_HANDLE);
 
                 objClass    = runtimeType;
-                *pIsExact   = false;
                 *pIsNonNull = true;
             }
 
@@ -18697,9 +18678,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 {
                     objClass = gtGetArrayElementClassHandle(base->AsArrElem()->gtArrObj);
                 }
-
-                *pIsExact   = false;
-                *pIsNonNull = false;
             }
             else if (base->OperGet() == GT_ADD)
             {
@@ -18736,7 +18714,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 FieldSeq* fldSeq = base->AsIntCon()->gtFieldSeq;
                 if ((fldSeq != nullptr) && (fldSeq->GetOffset() == base->AsIntCon()->IconValue()))
                 {
-                    CORINFO_FIELD_HANDLE fldHandle = base->AsIntCon()->gtFieldSeq->GetFieldHandle();
+                    CORINFO_FIELD_HANDLE fldHandle = fldSeq->GetFieldHandle();
                     objClass                       = gtGetFieldClassHandle(fldHandle, pIsExact, pIsNonNull);
                 }
             }
@@ -18803,7 +18781,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 // Return Value:
 //    nullptr if helper call result is not a ref class, or the class handle
 //    is unknown, otherwise the class handle.
-
+//
 CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, bool* pIsExact, bool* pIsNonNull)
 {
     assert(call->gtCallType == CT_HELPER);
@@ -18945,7 +18923,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
 //
 // Return Value:
 //    nullptr if element class handle is unknown, otherwise the class handle.
-
+//
 CORINFO_CLASS_HANDLE Compiler::gtGetArrayElementClassHandle(GenTree* array)
 {
     bool                 isArrayExact   = false;
@@ -18987,9 +18965,12 @@ CORINFO_CLASS_HANDLE Compiler::gtGetArrayElementClassHandle(GenTree* array)
 //    is unknown, otherwise the class handle.
 //
 //    May examine runtime state of static field instances.
-
+//
 CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull)
 {
+    *pIsExact   = false;
+    *pIsNonNull = false;
+
     CORINFO_CLASS_HANDLE fieldClass   = NO_CLASS_HANDLE;
     CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass);
 
@@ -19002,11 +18983,14 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
         if (queryForCurrentClass)
         {
 #if DEBUG
-            char fieldNameBuffer[128];
-            char classNameBuffer[128];
-            JITDUMP("\nQuerying runtime about current class of field %s (declared as %s)\n",
-                    eeGetFieldName(fieldHnd, true, fieldNameBuffer, sizeof(fieldNameBuffer)),
-                    eeGetClassName(fieldClass, classNameBuffer, sizeof(classNameBuffer)));
+            if (verbose || JitConfig.EnableExtraSuperPmiQueries())
+            {
+                char        fieldNameBuffer[128];
+                char        classNameBuffer[128];
+                const char* fieldName = eeGetFieldName(fieldHnd, true, fieldNameBuffer, sizeof(fieldNameBuffer));
+                const char* className = eeGetClassName(fieldClass, classNameBuffer, sizeof(classNameBuffer));
+                JITDUMP("\nQuerying runtime about current class of field %s (declared as %s)\n", fieldName, className);
+            }
 #endif // DEBUG
 
             // Is this a fully initialized init-only static field?
@@ -19021,10 +19005,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
                 *pIsExact   = true;
                 *pIsNonNull = true;
 #ifdef DEBUG
-                char buffer[128];
-                JITDUMP("Runtime reports field is init-only and initialized and has class %s\n",
-                        eeGetClassName(fieldClass, buffer, sizeof(buffer)));
-#endif
+                if (verbose || JitConfig.EnableExtraSuperPmiQueries())
+                {
+                    char        classNameBuffer2[128];
+                    const char* className2 = eeGetClassName(fieldClass, classNameBuffer2, sizeof(classNameBuffer2));
+                    JITDUMP("Runtime reports field is init-only and initialized and has class %s\n", className2);
+                }
+#endif // DEBUG
             }
             else
             {
@@ -19127,6 +19114,27 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 // Return Value:
 //    Will set "*pArr" to "nullptr" if this array address is not parseable.
 //
+// Notes:
+// Instead of (or in addition to) parsing the GenTree, maybe we should be parsing the VN
+// "trees": if optimization has replaced the index expression with a CSE def, it's harder
+// to parse, but the VN tree for the CSE def GT_COMMA has all the same info. For example:
+//
+// \--*  ARR_ADDR  byref System.Collections.Hashtable+Bucket[] $80
+//    \--*  ADD       byref
+//       +--*  LCL_VAR   ref    V01 arg1         u:1
+//       \--*  COMMA     long
+//          +--*  STORE_LCL_VAR long   V21 cse2         d:1
+//          |  \--*  ADD       long
+//          |     +--*  MUL       long
+//          |     |  +--*  CAST      long <- uint
+//          |     |  |  \--*  LCL_VAR   int    V07 loc2         u:2
+//          |     |  \--*  CNS_INT   long   24
+//          |     \--*  CNS_INT   long   16
+//          \--*  LCL_VAR   long   V21 cse2         u:1
+//
+// Here, the COMMA represents the index + offset VN, and we could pull out the index VN
+// from the COMMA VN.
+//
 void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum* pInxVN)
 {
     *pArr                 = nullptr;
@@ -19141,13 +19149,23 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
     }
 
     // OK, new we have to figure out if any part of the "offset" is a constant contribution to the index.
-    target_ssize_t elemOffset = GetFirstElemOffset();
-    unsigned       elemSizeUn = (GetElemType() == TYP_STRUCT) ? comp->typGetObjLayout(GetElemClassHandle())->GetSize()
+    target_ssize_t firstElemOffset = GetFirstElemOffset();
+    assert(firstElemOffset > 0);
+
+    // If we didn't parse any offset, or the offset we parsed doesn't make sense, then give up on
+    // parsing the array address. (This can happen with JitOptRepeat.)
+    if (offset < firstElemOffset)
+    {
+        *pArr = nullptr;
+        return;
+    }
+
+    unsigned elemSizeUn = (GetElemType() == TYP_STRUCT) ? comp->typGetObjLayout(GetElemClassHandle())->GetSize()
                                                         : genTypeSize(GetElemType());
 
     assert(FitsIn<target_ssize_t>(elemSizeUn));
     target_ssize_t elemSize         = static_cast<target_ssize_t>(elemSizeUn);
-    target_ssize_t constIndexOffset = offset - elemOffset;
+    target_ssize_t constIndexOffset = offset - firstElemOffset;
 
     // This should be divisible by the element size...
     assert((constIndexOffset % elemSize) == 0);
@@ -19223,6 +19241,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
     if (tree->TypeIs(TYP_REF))
     {
         // This must be the array pointer.
+        assert(*pArr == nullptr);
         *pArr = tree;
         assert(inputMul == 1); // Can't multiply the array pointer by anything.
     }
@@ -19318,7 +19337,10 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
             default:
                 break;
         }
+
         // If we didn't return above, must be a contribution to the non-constant part of the index VN.
+        // We don't get here for GT_CNS_INT, GT_ADD, or GT_SUB, or for GT_MUL by constant, or GT_LSH of
+        // constant shift. Thus, the generated index VN does not include the parsed constant offset.
         ValueNum vn = comp->GetValueNumStore()->VNLiberalNormalValue(tree->gtVNPair);
         if (inputMul != 1)
         {

@@ -686,27 +686,27 @@ namespace Internal.IL.Stubs
 
         public ILToken NewToken(TypeDesc value)
         {
-            return NewToken(value, 0x01000000);
+            return NewToken(value, 0x01000000); // mdtTypeRef
         }
 
         public ILToken NewToken(MethodDesc value)
         {
-            return NewToken(value, 0x0a000000);
+            return NewToken(value, 0x0a000000); // mdtMemberRef
         }
 
         public ILToken NewToken(FieldDesc value)
         {
-            return NewToken(value, 0x0a000000);
+            return NewToken(value, 0x0a000000); // mdtMemberRef
         }
 
         public ILToken NewToken(string value)
         {
-            return NewToken(value, 0x70000000);
+            return NewToken(value, 0x70000000); // mdtString
         }
 
         public ILToken NewToken(MethodSignature value)
         {
-            return NewToken(value, 0x11000000);
+            return NewToken(value, 0x11000000); // mdtSignature
         }
 
         public ILLocalVariable NewLocal(TypeDesc localType, bool isPinned = false)
