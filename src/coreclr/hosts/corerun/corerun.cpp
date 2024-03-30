@@ -148,21 +148,16 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
     }
 
     tpa_items->assembly_count = static_cast<uint32_t>(name_path_map.size());
-    tpa_items->assembly_filepaths = new char_t*[tpa_items->assembly_count];
-    tpa_items->basenames = new char_t*[tpa_items->assembly_count];
+    tpa_items->assembly_filepaths = new char*[tpa_items->assembly_count];
+    tpa_items->basenames = new char*[tpa_items->assembly_count];
 
     // Convert the paths into a string and return it
     int32_t item_count = 0;
     for (auto item = name_path_map.begin(); item != name_path_map.end(); ++item)
     {
         string_t base_name = item->first;
-        size_t base_length = base_name.size() + 1;
-        size_t assembly_name_length = item->second.size() + 1;
-
-        tpa_items->basenames[item_count] = new char_t[base_length];
-        tpa_items->assembly_filepaths[item_count] = new char_t[assembly_name_length];
-        wcscpy_s(tpa_items->basenames[item_count], base_length, base_name.c_str());
-        wcscpy_s(tpa_items->assembly_filepaths[item_count], assembly_name_length, item->second.c_str());
+        tpa_items->basenames[item_count] = (char*)pal::convert_to_utf8(base_name.c_str()).c_str();
+        tpa_items->assembly_filepaths[item_count] = (char*)pal::convert_to_utf8(item->second.c_str()).c_str();
 
         item_count++;
     }
@@ -277,9 +272,8 @@ static int run(const configuration& config)
     host_contract.bundle_probe = nullptr;
     host_contract.pinvoke_override = nullptr;
 
-    host_contract.entry_assembly = new char_t[config.entry_assembly_fullpath.size() + 1];
-    wcscpy_s(host_contract.entry_assembly, config.entry_assembly_fullpath.size() + 1, config.entry_assembly_fullpath.c_str());
-    
+    host_contract.entry_assembly = (char*)pal::convert_to_utf8(config.entry_assembly_fullpath.c_str()).c_str();
+
     config.dotenv_configuration.load_into_current_process();
     
     string_t exe_path = pal::get_exe_path();
@@ -334,15 +328,14 @@ static int run(const configuration& config)
     probing_lookup_paths* native_paths = &host_contract.probing_paths.native_dll_search_directories;
 
     native_paths->dir_count = static_cast<uint32_t>(native_search_dirs_set.size());
-    native_paths->dirs = new char_t*[native_paths->dir_count];
+    native_paths->dirs = new char*[native_paths->dir_count];
 
     int dir_count = 0;
     for (const auto& native_dir : native_search_dirs_set)
     {
-        native_paths->dirs[dir_count] = new char_t[native_dir.size() + 1];
-        wcscpy_s(native_paths->dirs[dir_count], native_dir.size() + 1, native_dir.c_str());
+        native_paths->dirs[dir_count] = (char*)pal::convert_to_utf8(native_dir.c_str()).c_str();
+        dir_count++;
     }
-
 
     {
         // Load hostpolicy if requested.

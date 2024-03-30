@@ -40,19 +40,3 @@ bool HostInformation::GetProperty(_In_z_ const char* name, SString& value)
 
     return lenActual > 0 && lenActual <= len;
 }
-
-LPCWSTR HostInformation::GetEntryAssembly()
-{
-    if (s_hostContract == nullptr)
-        return nullptr;
-
-    return s_hostContract->entry_assembly;
-}
-
-trusted_platform_assemblies* HostInformation::GetTrustedPlatformAssemblies()
-{
-    if (s_hostContract == nullptr)
-        return nullptr;
-
-    return &s_hostContract->probing_paths.trusted_platform_assemblies;
-}

@@ -6,6 +6,7 @@
 
 #include "pal.h"
 #include "trace.h"
+#include "host_runtime_contract.h"
 #include <type_traits>
 #include <runtime_version.h>
 #include <minipal/utils.h>
@@ -120,6 +121,9 @@ pal::string_t get_host_version_description();
 
 pal::string_t to_lower(const pal::char_t* in);
 pal::string_t to_upper(const pal::char_t* in);
+
+void destroy_tpa_list(trusted_platform_assemblies* tpa_list);
+void destroy_probing_path_list(probing_lookup_paths* probing_paths);
 
 // Retrieves environment variable which is only used for testing.
 // This will return the value of the variable only if the product binary is stamped

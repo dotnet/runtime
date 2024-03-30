@@ -5,6 +5,7 @@
 #define DEPS_RESOLVER_H
 
 #include <vector>
+#include <deque>
 
 #include "pal.h"
 #include "args.h"
@@ -192,6 +193,11 @@ private:
     void setup_probe_config(
         const std::vector<pal::string_t>& shared_stores,
         const std::vector<pal::string_t>& additional_probe_paths);
+
+    void create_probing_paths(const std::deque<pal::string_t>& probing_items, 
+        probing_lookup_paths& probing_paths);
+    
+    void create_tpa_list(const name_to_resolved_asset_map_t& items, trusted_platform_assemblies& tpa_list, pal::string_t& output);
 
     void init_known_entry_path(
         const deps_entry_t& entry,

@@ -9,14 +9,8 @@
 
 #if defined(_WIN32)
     #define HOST_CONTRACT_CALLTYPE __stdcall
-    #ifdef _WCHAR_T_DEFINED
-        typedef wchar_t char_t;
-    #else
-        typedef unsigned char char_t;
-    #endif
 #else
     #define HOST_CONTRACT_CALLTYPE
-    typedef unsigned char char_t;
 #endif
 
 // Known host property names
@@ -32,14 +26,14 @@
 struct trusted_platform_assemblies
 {
 	uint32_t assembly_count;
-	char_t** basenames; /* Foo.dll */
-	char_t** assembly_filepaths; /* /blah/blah/blah/Foo.dll */
+	char** basenames; /* Foo.dll */
+	char** assembly_filepaths; /* /blah/blah/blah/Foo.dll */
 };
 
 struct probing_lookup_paths 
 {
 	uint32_t dir_count;
-	char_t** dirs;
+	char** dirs;
 };
 
 struct probing_path_properties
@@ -56,7 +50,7 @@ struct host_runtime_contract
     // Context for the contract. Pass to functions taking a contract context.
     void* context;
 
-    char_t* entry_assembly;
+    char* entry_assembly;
 
     probing_path_properties probing_paths;
 

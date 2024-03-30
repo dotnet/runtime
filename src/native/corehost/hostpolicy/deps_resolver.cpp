@@ -214,6 +214,47 @@ pal::string_t deps_resolver_t::get_lookup_probe_directories()
     return directories;
 }
 
+void deps_resolver_t::create_probing_paths(const std::deque<pal::string_t>& probing_items, probing_lookup_paths& probing_paths)
+{
+    // Add the probing paths to piece of the host_runtime_contract
+    probing_paths.dir_count = static_cast<uint32_t>(probing_items.size());
+    probing_paths.dirs = new char*[probing_paths.dir_count];
+
+    int dir_count = 0;
+    for (const auto& probing_item : probing_items)
+    {
+        probing_paths.dirs[dir_count] = new char[probing_item.size() + 1];
+        pal::pal_utf8string(probing_item, probing_paths.dirs[dir_count], probing_item.size() + 1);
+        dir_count++;
+    }
+}
+
+void deps_resolver_t::create_tpa_list(const name_to_resolved_asset_map_t& items, trusted_platform_assemblies& tpa_list, pal::string_t& output)
+{
+    tpa_list.assembly_count = static_cast<uint32_t>(items.size());
+    tpa_list.assembly_filepaths = new char*[tpa_list.assembly_count];
+    tpa_list.basenames = new char*[tpa_list.assembly_count];
+
+    // Convert the paths into a string and return it
+    int32_t item_count = 0;
+    for (auto item = items.begin(); item != items.end(); ++item)
+    {
+        pal::string_t base_name = get_filename(item->second.resolved_path);
+        size_t base_length = base_name.size() + 1;
+        size_t assembly_name_length = item->second.resolved_path.size() + 1;
+
+        tpa_list.basenames[item_count] = new char[base_length];
+        tpa_list.assembly_filepaths[item_count] = new char[assembly_name_length];
+
+        pal::pal_utf8string(base_name, tpa_list.basenames[item_count], base_length);
+        pal::pal_utf8string(item->second.resolved_path, tpa_list.assembly_filepaths[item_count], assembly_name_length);
+
+        output.append(item->second.resolved_path);
+        output.push_back(PATH_SEPARATOR);
+        item_count++;
+    }
+}
+
 void deps_resolver_t::setup_probe_config(
     const std::vector<pal::string_t>& shared_stores,
     const std::vector<pal::string_t>& additional_probe_paths)
@@ -590,27 +631,8 @@ bool deps_resolver_t::resolve_tpa_list(
         }
     }
 
-    tpa_list->assembly_count = static_cast<uint32_t>(items.size());
-    tpa_list->assembly_filepaths = new pal::char_t*[tpa_list->assembly_count];
-    tpa_list->basenames = new pal::char_t*[tpa_list->assembly_count];
-
-    // Convert the paths into a string and return it
-    int32_t item_count = 0;
-    for (auto item = items.begin(); item != items.end(); ++item)
-    {
-        pal::string_t base_name = get_filename(item->second.resolved_path);
-        size_t base_length = base_name.size() + 1;
-        size_t assembly_name_length = item->second.resolved_path.size() + 1;
-
-        tpa_list->basenames[item_count] = new pal::char_t[base_length];
-        tpa_list->assembly_filepaths[item_count] = new pal::char_t[assembly_name_length];
-        pal::strcpy_s(tpa_list->basenames[item_count], base_length, base_name.c_str());
-        pal::strcpy_s(tpa_list->assembly_filepaths[item_count], assembly_name_length, item->second.resolved_path.c_str());
-
-        output->append(item->second.resolved_path);
-        output->push_back(PATH_SEPARATOR);
-        item_count++;
-    }
+    // Now that we have the complete list, store it in the host_runtime_contract and as a ; delimted string.
+    create_tpa_list(items, *tpa_list, *output);
 
     return true;
 }
@@ -910,15 +932,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     }
 
     // Add the probing paths to piece of the host_runtime_contract
-    probing_paths->dir_count = static_cast<uint32_t>(probing_items.size());
-    probing_paths->dirs = new pal::char_t*[probing_paths->dir_count];
-
-    int dir_count = 0;
-    for (const auto& probing_item : probing_items)
-    {
-        probing_paths->dirs[dir_count] = new pal::char_t[probing_item.size() + 1];
-        wcscpy_s(probing_paths->dirs[dir_count], probing_item.size() + 1, probing_item.c_str());
-    }
+    create_probing_paths(probing_items, *probing_paths);
 
     output->append(non_serviced);
 

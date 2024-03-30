@@ -69,7 +69,6 @@ namespace pal
     inline int strcmp(const char_t* str1, const char_t* str2) { return wcscmp(str1, str2); }
     inline size_t strlen(const char_t* str) { return wcslen(str); }
     inline char_t* strdup(const char_t* str) { return ::_wcsdup(str); }
-    inline errno_t strcpy_s(char_t* dest, rsize_t destsz, const char_t* src) { return ::wcscpy_s(dest, destsz, src); }
     inline int fprintf(FILE* fd, const char_t* const fmt, ...)
     {
         va_list args;
@@ -358,7 +357,6 @@ namespace pal
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::strcmp(str1, str2); }
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
     inline char_t* strdup(const char_t* str) { return ::strdup(str); }
-    inline errno_t strcpy_s(char_t* dest, rsize_t destsz, const char_t* src) { return ::strcpy_s(dest, destsz, src); }
     inline int fprintf(FILE* fd, const char_t* const fmt, ...)
     {
         va_list args;

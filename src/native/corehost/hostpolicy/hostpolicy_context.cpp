@@ -188,8 +188,10 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
 #endif
         }
 
-        host_contract.entry_assembly = new pal::char_t[application.size() + 1];
-        wcscpy_s(host_contract.entry_assembly, application.size() + 1, application.c_str());
+        size_t entry_assembly_length = application.size() + 1;
+
+        host_contract.entry_assembly = new char[entry_assembly_length];
+        pal::pal_utf8string(application, host_contract.entry_assembly, entry_assembly_length);
 
         host_contract.get_runtime_property = &get_runtime_property;
         pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff")];
