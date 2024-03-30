@@ -4,33 +4,23 @@
 #include "dn-simdhash.h"
 
 typedef struct dn_simdhash_str_key {
-	// We keep a precomputed hash and length since that speeds up rehashing and scans.
-	uint32_t hash, length;
 	const char *text;
-#if SIZEOF_VOID_P == 4
+	// We keep a precomputed hash to speed up rehashing and scans.
+	uint32_t hash;
+#if SIZEOF_VOID_P == 8
 	// HACK: Perfect cache alignment isn't possible for a 12-byte struct, so pad it to 16 bytes
 	uint32_t padding;
 #endif
 } dn_simdhash_str_key;
 
+
 // MurmurHash3 was written by Austin Appleby, and is placed in the public
 // domain. The author hereby disclaims copyright to this source code.
-//
-// Implementation was copied from https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp
-// with changes around strict-aliasing/unaligned reads
 
 inline static uint32_t
 ROTL32 (uint32_t x, int8_t r)
 {
 	return (x << r) | (x >> (32 - r));
-}
-
-inline static uint32_t
-getblock32 (const uint32_t* ptr, int i)
-{
-	uint32_t val = 0;
-	memcpy(&val, ptr + i, sizeof(uint32_t));
-	return val;
 }
 
 // Finalization mix - force all bits of a hash block to avalanche
@@ -46,91 +36,102 @@ fmix32 (uint32_t h)
 	return h;
 }
 
-inline static uint32_t
-MurmurHash3_x86_32 (const void * key, int len, uint32_t seed)
+// end of murmurhash
+
+
+#if defined(__clang__) || defined (__GNUC__)
+#define unlikely(expr) __builtin_expect(!!(expr), 0)
+#define likely(expr)   __builtin_expect(!!(expr), 1)
+#else
+#define unlikely(expr) (expr)
+#define likely(expr) (expr)
+#endif
+
+// FNV has bad properties for simdhash even though it's a fairly fast/good hash,
+//  but the overhead of having to do strlen() first before passing a string key to
+//  MurmurHash3 is significant and annoying. This is an attempt to reformulate the
+//  32-bit version of MurmurHash3 into a 1-pass version for null terminated strings.
+// The output of this will probably be different from regular MurmurHash3. I don't
+//  see that as a problem, since you shouldn't rely on the exact bit patterns of
+//  a non-cryptographic hash anyway.
+typedef struct scan_result_t {
+	union {
+		uint32_t u32;
+		uint8_t bytes[4];
+	} result;
+	const uint8_t *next;
+} scan_result_t;
+
+static inline scan_result_t
+scan_forward (const uint8_t *ptr)
 {
-	const uint8_t * data = (const uint8_t*)key;
-	const int nblocks = len / 4;
+	// TODO: On wasm we could do a single u32 load then scan the bytes,
+	//  as long as we're sure ptr isn't up against the end of memory
+	scan_result_t result = { 0, };
 
-	uint32_t h1 = seed;
+	// I tried to get a loop to auto-unroll, but GCC only unrolls at O3 and MSVC never does.
+#define SCAN_1(i) \
+	result.result.bytes[i] = ptr[i]; \
+	if (unlikely(!result.result.bytes[i])) \
+		return result;
 
-	const uint32_t c1 = 0xcc9e2d51;
-	const uint32_t c2 = 0x1b873593;
+	SCAN_1(0);
+	SCAN_1(1);
+	SCAN_1(2);
+	SCAN_1(3);
+#undef SCAN_1
 
-	//----------
-	// body
+	// doing ptr[i] 4 times then computing here produces better code than ptr++ especially on wasm
+	result.next = ptr + 4;
+	return result;
+}
 
-	const uint32_t * blocks = (const uint32_t *)(data + nblocks*4);
+static inline uint32_t
+MurmurHash3_32_streaming (const uint8_t *key, uint32_t seed)
+{
+	uint32_t h1 = seed, block_count = 0;
+	const uint32_t c1 = 0xcc9e2d51, c2 = 0x1b873593;
 
-	for(int i = -nblocks; i; i++)
-	{
-		uint32_t k1 = getblock32(blocks,i);
+	// Scan forward through the buffer collecting up to 4 bytes at a time, then hash
+	scan_result_t block = scan_forward(key);
+	// As long as the scan found at least one nonzero byte, u32 will be != 0
+	while (block.result.u32) {
+		block_count += 1;
 
+		uint32_t k1 = block.result.u32;
 		k1 *= c1;
-		k1 = ROTL32(k1,15);
+		k1 = ROTL32(k1, 15);
 		k1 *= c2;
-
 		h1 ^= k1;
-		h1 = ROTL32(h1,13);
-		h1 = h1*5+0xe6546b64;
+		h1 = ROTL32(h1, 13);
+		h1 = h1 * 5 + 0xe6546b64;
+
+		// If the scan found a null byte next will be 0, so we stop scanning
+		if (!block.next)
+			break;
+		block = scan_forward(block.next);
 	}
 
-	//----------
-	// tail
-
-	const uint8_t * tail = (const uint8_t*)(data + nblocks*4);
-
-	uint32_t k1 = 0;
-
-	// HACK: This was previously a duff's device but clang no longer lets you use those.
-	// Hopefully I didn't break it when manually copy-pasting things.
-	switch(len & 3)
-	{
-		case 3:
-			k1 ^= tail[2] << 16;
-			k1 ^= tail[1] << 8;
-			k1 ^= tail[0];
-			k1 *= c1; k1 = ROTL32(k1,15); k1 *= c2; h1 ^= k1;
-			break;
-		case 2:
-			k1 ^= tail[1] << 8;
-			k1 ^= tail[0];
-			k1 *= c1; k1 = ROTL32(k1,15); k1 *= c2; h1 ^= k1;
-			break;
-		case 1:
-			k1 ^= tail[0];
-			k1 *= c1; k1 = ROTL32(k1,15); k1 *= c2; h1 ^= k1;
-			break;
-	};
-
-	//----------
-	// finalization
-
-	h1 ^= len;
-
+	// finalize. we don't have an exact byte length but we have a block count
+	// it would be ideal to figure out a cheap way to produce an exact byte count,
+	//  since then we can compute the length and hash in one go and use memcmp later,
+	// since emscripten/musl strcmp isn't optimized at all
+	h1 ^= block_count;
 	h1 = fmix32(h1);
-
 	return h1;
 }
 
-// end of murmurhash
+// end of reformulated murmur3-32
 
-static int32_t
+static inline int32_t
 dn_simdhash_str_equal (dn_simdhash_str_key v1, dn_simdhash_str_key v2)
 {
 	if (v1.text == v2.text)
 		return 1;
-	if (v1.length != v2.length)
-		return 0;
-	// HACK: If the string was more than 4gb long for some reason, we don't know how long
-	//  it actually is, so we have to use strcmp.
-	if (v1.length == 0xFFFFFFFFu)
-		return strcmp(v1.text, v2.text) == 0;
-	else
-		return memcmp(v1.text, v2.text, v1.length) == 0;
+	return strcmp(v1.text, v2.text) == 0;
 }
 
-static uint32_t
+static inline uint32_t
 dn_simdhash_str_hash (dn_simdhash_str_key v1)
 {
 	return v1.hash;
@@ -142,8 +143,13 @@ dn_simdhash_str_hash (dn_simdhash_str_key v1)
 #define DN_SIMDHASH_KEY_HASHER dn_simdhash_str_hash
 #define DN_SIMDHASH_KEY_EQUALS dn_simdhash_str_equal
 #define DN_SIMDHASH_ACCESSOR_SUFFIX _raw
-// Perfect cache alignment (192 bytes)
+
+// perfect cache alignment. 32-bit ptrs: 8-byte keys. 64-bit: 16-byte keys.
+#if SIZEOF_VOID_P == 8
 #define DN_SIMDHASH_BUCKET_CAPACITY 11
+#else
+#define DN_SIMDHASH_BUCKET_CAPACITY 12
+#endif
 
 #include "dn-simdhash-specialization.h"
 #include "dn-simdhash-string-ptr.h"
@@ -153,21 +159,8 @@ make_key (const char *text)
 {
 	dn_simdhash_str_key result = { 0, };
 	if (text) {
-		size_t length = strlen(text);
-		// HACK: On 64-bit platforms, the string could theoretically be Very Long.
-		// In that scenario, we store the maximum representable length and the comparer
-		//  will fall back to strcmp
-		if (length > 0xFFFFFFFFu)
-			result.length = 0xFFFFFFFFu;
-		else
-			result.length = (uint32_t)length;
-
-		if (result.length)
-			// FIXME: Select a good seed.
-			// FIXME: If string is bigger than 4gb we're only hashing the first 4gb.
-			result.hash = MurmurHash3_x86_32(text, result.length, 0);
-		else
-			result.hash = 0;
+		// FIXME: Select a good seed.
+		result.hash = MurmurHash3_32_streaming((uint8_t *)text, 0);
 		result.text = text;
 	}
 	return result;
