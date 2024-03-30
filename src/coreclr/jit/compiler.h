@@ -2091,6 +2091,9 @@ class FlowGraphNaturalLoop
     // Can be used to store additional annotations for this loop on the side.
     unsigned m_index = 0;
 
+    // True if this loop contains an improper loop header
+    bool m_containsImproperHeader = false;
+
     FlowGraphNaturalLoop(const FlowGraphDfsTree* dfsTree, BasicBlock* head);
 
     unsigned LoopBlockBitVecIndex(BasicBlock* block);
@@ -2178,6 +2181,11 @@ public:
 
     bool ContainsBlock(BasicBlock* block);
     bool ContainsLoop(FlowGraphNaturalLoop* childLoop);
+
+    bool ContainsImproperHeader() const
+    {
+        return m_containsImproperHeader;
+    }
 
     unsigned NumLoopBlocks();
 
