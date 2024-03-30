@@ -48,7 +48,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static NamedCall CurrentCallback;
         public static CancellationToken CurrentCancellationToken = CancellationToken.None;
         public static Exception? LastException = null;
-        
+
         [JSExport]
         public static void CallCurrentCallback()
         {
@@ -333,7 +333,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
                 catch (Exception ex)
                 {
-                    if(ex is AggregateException agg)
+                    if (ex is AggregateException agg)
                     {
                         tcs.TrySetException(agg.InnerException);
                     }

@@ -10,7 +10,7 @@ import { Module, loaderHelpers, runtimeHelpers } from "../globals";
 import { start_runtime } from "../startup";
 import { WorkerToMainMessageType } from "../types/internal";
 
-export function mono_wasm_start_deputy_thread_async() {
+export function mono_wasm_start_deputy_thread_async () {
     if (!WasmEnableThreads) return;
 
     if (BuildConfiguration === "Debug" && globalThis.setInterval) globalThis.setInterval(() => {
@@ -36,8 +36,7 @@ export function mono_wasm_start_deputy_thread_async() {
                     info: monoThreadInfo,
                     deputyProxyGCHandle: runtimeHelpers.proxyGCHandle,
                 });
-            }
-            catch (err) {
+            } catch (err) {
                 postMessageToMain({
                     monoCmd: WorkerToMainMessageType.deputyFailed,
                     info: monoThreadInfo,
@@ -48,8 +47,7 @@ export function mono_wasm_start_deputy_thread_async() {
                 throw err;
             }
         }, 0);
-    }
-    catch (err) {
+    } catch (err) {
         mono_log_error("mono_wasm_start_deputy_thread_async() failed", err);
         loaderHelpers.mono_exit(1, err);
         throw err;

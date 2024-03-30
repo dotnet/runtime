@@ -13,15 +13,13 @@ using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection;
-using Xunit;
 
 [assembly: TestAssembly]
 [module: TestModule]
 
-public static class ReflectionTest
+internal static class ReflectionTest
 {
-    [Fact]
-    public static int TestEntryPoint()
+    private static int Main()
     {
         // Things I would like to test, but we don't fully support yet:
         // * Interface method is reflectable if we statically called it through a constrained call
@@ -90,7 +88,7 @@ public static class ReflectionTest
         TestByRefReturnInvoke.Run();
         TestAssemblyLoad.Run();
         TestBaseOnlyUsedFromCode.Run();
-        TestStartPoint.Run();
+        TestEntryPoint.Run();
 
         return 100;
     }
@@ -1044,7 +1042,9 @@ public static class ReflectionTest
     {
         interface IUnreferenced { }
 
-        class UnreferencedBaseType : IUnreferenced { }
+        interface IReferenced { }
+
+        class UnreferencedBaseType : IUnreferenced, IReferenced { }
         class UnreferencedMidType : UnreferencedBaseType { }
         class ReferencedDerivedType : UnreferencedMidType { }
 
@@ -1063,8 +1063,9 @@ public static class ReflectionTest
 
             Assert.Equal(count, 3);
 
-            // This one could in theory fail if we start trimming interface lists
+            // We expect to see only IReferenced but not IUnreferenced
             Assert.Equal(1, mi.GetParameters()[0].ParameterType.GetInterfaces().Length);
+            Assert.Equal(typeof(IReferenced), mi.GetParameters()[0].ParameterType.GetInterfaces()[0]);
         }
     }
 
@@ -2539,11 +2540,11 @@ public static class ReflectionTest
         }
     }
 
-    class TestStartPoint
+    class TestEntryPoint
     {
         public static void Run()
         {
-            Console.WriteLine(nameof(TestStartPoint));
+            Console.WriteLine(nameof(TestEntryPoint));
             if (Assembly.GetEntryAssembly().EntryPoint == null)
                 throw new Exception();
         }

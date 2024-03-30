@@ -3,7 +3,7 @@
 
 /// A Promise<T> that guards against multiple-resolve, multiple-reject, reject-after-accept and accept-after-reject.
 class GuardedPromise<T> extends Promise<T> {
-    constructor(executor: (resolve: (value: T | PromiseLike<T>) => void, reject: (reason?: any) => void) => void) {
+    constructor (executor: (resolve: (value: T | PromiseLike<T>) => void, reject: (reason?: any) => void) => void) {
         super((resolve, reject) => {
             let resolved = false;
             let rejected = false;
