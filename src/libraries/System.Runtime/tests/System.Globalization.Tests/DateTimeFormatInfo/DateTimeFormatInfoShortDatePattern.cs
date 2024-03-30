@@ -8,12 +8,18 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoShortDatePattern
     {
+        public static IEnumerable<object[]> ShortDatePattern_Get_TestData()
+        {
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo, "MM/dd/yyyy", "invariant" };
+            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "M/d/yyyy", "en-US" };
+            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, "dd/MM/yyyy", "fr-FR" };
+        }
         public static IEnumerable<object[]> ShortDatePattern_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
-            yield return new object[] { "ar-SA", PlatformDetection.IsHybridGlobalizationOnBrowser ? "d\u200f/M\u200f/yyyy" : "d MMM\u060c yyyy g" }; // "d\u200f/M\u200f/yyyy g"
+            yield return new object[] { "ar-SA", "d\u200f/M\u200f/yyyy" }; // "d\u200f/M\u200f/yyyy g"
             yield return new object[] { "am-ET", "dd/MM/yyyy" };
-            yield return new object[] { "bg-BG", PlatformDetection.IsHybridGlobalizationOnBrowser ? "d.MM.yyyy г." : "d.MM.yyyy 'г'." }; // "d.MM.yyyy 'г'."
+            yield return new object[] { "bg-BG", "d.MM.yyyy г." }; // "d.MM.yyyy 'г'."
             yield return new object[] { "bn-BD", "d/M/yyyy" };
             yield return new object[] { "bn-IN", "d/M/yyyy" };
             yield return new object[] { "ca-AD", "d/M/yyyy" };
@@ -33,7 +39,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "en-AG", "dd/MM/yyyy" };
             yield return new object[] { "en-AI", "dd/MM/yyyy" };
             yield return new object[] { "en-AS", "M/d/yyyy" };
-            yield return new object[] { "en-AT", PlatformDetection.IsHybridGlobalizationOnBrowser ? "dd/MM/yyyy" : "dd.MM.yyyy" }; // "dd/MM/yyyy"
+            yield return new object[] { "en-AT", "dd/MM/yyyy" };
             yield return new object[] { "en-AU", "d/M/yyyy" };
             yield return new object[] { "en-BB", "dd/MM/yyyy" };
             yield return new object[] { "en-BE", "dd/MM/yyyy" };
@@ -49,11 +55,11 @@ namespace System.Globalization.Tests
             yield return new object[] { "en-CM", "dd/MM/yyyy" };
             yield return new object[] { "en-CX", "dd/MM/yyyy" };
             yield return new object[] { "en-CY", "dd/MM/yyyy" };
-            yield return new object[] { "en-DE", PlatformDetection.IsHybridGlobalizationOnBrowser ? "dd/MM/yyyy" : "dd.MM.yyyy" }; // "dd/MM/yyyy"
+            yield return new object[] { "en-DE", "dd/MM/yyyy" };
             yield return new object[] { "en-DK", "dd/MM/yyyy" };
             yield return new object[] { "en-DM", "dd/MM/yyyy" };
             yield return new object[] { "en-ER", "dd/MM/yyyy" };
-            yield return new object[] { "en-FI", PlatformDetection.IsHybridGlobalizationOnBrowser ? "dd/MM/yyyy" : "d.M.yyyy" }; // "dd/MM/yyyy"
+            yield return new object[] { "en-FI", "dd/MM/yyyy" };
             yield return new object[] { "en-FJ", "dd/MM/yyyy" };
             yield return new object[] { "en-FK", "dd/MM/yyyy" };
             yield return new object[] { "en-FM", "dd/MM/yyyy" };
@@ -95,7 +101,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "en-NL", "dd/MM/yyyy" };
             yield return new object[] { "en-NR", "dd/MM/yyyy" };
             yield return new object[] { "en-NU", "dd/MM/yyyy" };
-            yield return new object[] { "en-NZ", PlatformDetection.IsHybridGlobalizationOnBrowser ? "d/MM/yyyy" : "dd/MM/yyyy" }; // "d/MM/yyyy"
+            yield return new object[] { "en-NZ", "d/MM/yyyy" };
             yield return new object[] { "en-PG", "dd/MM/yyyy" };
             yield return new object[] { "en-PH", "M/d/yyyy" }; // "dd/MM/yyyy"
             yield return new object[] { "en-PK", "dd/MM/yyyy" };
@@ -109,7 +115,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "en-SE", "yyyy-MM-dd" };
             yield return new object[] { "en-SG", "d/M/yyyy" };
             yield return new object[] { "en-SH", "dd/MM/yyyy" };
-            yield return new object[] { "en-SI", PlatformDetection.IsHybridGlobalizationOnBrowser ? "dd/MM/yyyy" : "d. M. yyyy" }; // "dd/MM/yyyy"
+            yield return new object[] { "en-SI", "dd/MM/yyyy" };
             yield return new object[] { "en-SL", "dd/MM/yyyy" };
             yield return new object[] { "en-SS", "dd/MM/yyyy" };
             yield return new object[] { "en-SX", "dd/MM/yyyy" };
@@ -131,7 +137,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "en-ZA", "yyyy/MM/dd" };
             yield return new object[] { "en-ZM", "dd/MM/yyyy" };
             yield return new object[] { "en-ZW", "d/M/yyyy" };
-            yield return new object[] { "en-US", "M/d/yyyy" };
             yield return new object[] { "es-419", "d/M/yyyy" };
             yield return new object[] { "es-ES", "d/M/yyyy" };
             yield return new object[] { "es-MX", "dd/MM/yyyy" };
@@ -147,7 +152,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "he-IL", "d.M.yyyy" };
             yield return new object[] { "hi-IN", "d/M/yyyy" };
             yield return new object[] { "hr-BA", "d. M. yyyy." };
-            yield return new object[] { "hr-HR", PlatformDetection.IsHybridGlobalizationOnBrowser ? "dd. MM. yyyy." : "dd.MM.yyyy." }; // "dd. MM. yyyy."
+            yield return new object[] { "hr-HR", "dd. MM. yyyy." };
             yield return new object[] { "hu-HU", "yyyy. MM. dd." };
             yield return new object[] { "id-ID", "dd/MM/yyyy" };
             yield return new object[] { "it-CH", "dd.MM.yyyy" };
@@ -173,8 +178,8 @@ namespace System.Globalization.Tests
             yield return new object[] { "pt-PT", "dd/MM/yyyy" };
             yield return new object[] { "ro-RO", "dd.MM.yyyy" };
             yield return new object[] { "ru-RU", "dd.MM.yyyy" };
-            yield return new object[] { "sk-SK", PlatformDetection.IsHybridGlobalizationOnBrowser ? "d. M. yyyy" : "d.M.yyyy" }; // "d. M. yyyy"
-            yield return new object[] { "sl-SI", PlatformDetection.IsHybridGlobalizationOnBrowser ? "d. MM. yyyy" : "d. M. yyyy" }; // "d. MM. yyyy"
+            yield return new object[] { "sk-SK", "d. M. yyyy" };
+            yield return new object[] { "sl-SI", "d. MM. yyyy" };
             yield return new object[] { "sr-Cyrl-RS", "d.M.yyyy." };
             yield return new object[] { "sr-Latn-RS", "d.M.yyyy." };
             yield return new object[] { "sv-AX", "yyyy-MM-dd" };
@@ -192,7 +197,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "tr-CY", "d.MM.yyyy" };
             yield return new object[] { "tr-TR", "d.MM.yyyy" };
             yield return new object[] { "uk-UA", "dd.MM.yyyy" };
-            yield return new object[] { "vi-VN", PlatformDetection.IsHybridGlobalizationOnBrowser ? "dd/MM/yyyy" : "d/M/yyyy" }; // "dd/MM/yyyy"
+            yield return new object[] { "vi-VN", "dd/MM/yyyy" };
             yield return new object[] { "zh-CN", "yyyy/M/d" };
             yield return new object[] { "zh-Hans-HK", "d/M/yyyy" };
             yield return new object[] { "zh-SG", "dd/MM/yyyy" };
@@ -200,7 +205,14 @@ namespace System.Globalization.Tests
             yield return new object[] { "zh-TW", "yyyy/M/d" };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalization))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [MemberData(nameof(ShortDatePattern_Get_TestData))]
+        public void ShortDatePattern_Get_ReturnsExpected(DateTimeFormatInfo format, string expected, string cultureName)
+        {
+            Assert.True(expected == format.ShortDatePattern, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {format.ShortDatePattern}");
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         [MemberData(nameof(ShortDatePattern_Get_TestData_HybridGlobalization))]
         public void ShortDatePattern_Get_ReturnsExpected_HybridGlobalization(string cultureName, string expected)
         {
