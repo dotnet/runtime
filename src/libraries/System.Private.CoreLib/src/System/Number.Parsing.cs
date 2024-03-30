@@ -87,6 +87,12 @@ namespace System
         static abstract ulong FloatToBits(TSelf value);
     }
 
+    internal interface IDecimalIeee754ParseAndFormatInfo<TSelf>
+        where TSelf : unmanaged, IDecimalIeee754ParseAndFormatInfo<TSelf>
+    {
+        static abstract int NumberDigitsPrecision { get; }
+    }
+
     internal static partial class Number
     {
         private const int Int32Precision = 10;
@@ -981,6 +987,22 @@ namespace System
             return result;
         }
 
+        internal static Decimal32 ParseDecimal32<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            ParsingStatus status = TryParseDecimal32(value, styles, info, out Decimal32 result);
+            if (status != ParsingStatus.OK)
+            {
+                if (status == ParsingStatus.Failed)
+                {
+                    ThrowFormatException(value);
+                }
+                ThrowOverflowException(SR.Overflow_Decimal);
+            }
+
+            return result;
+        }
+
         internal static unsafe bool TryNumberToDecimal(ref NumberBuffer number, ref decimal value)
         {
             number.CheckConsistency();
@@ -1101,6 +1123,65 @@ namespace System
             return true;
         }
 
+        internal static unsafe bool TryNumberToDecimalIeee754<TDecimal, TSignificand>(ref NumberBuffer number, out TSignificand significand, out int exponent)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal>
+            where TSignificand : unmanaged, IBinaryInteger<TSignificand>
+        {
+            number.CheckConsistency();
+
+            byte* p = number.GetDigitsPointer();
+            int c = *p;
+            significand = TSignificand.Zero;
+            exponent = 0;
+
+            if (c == 0)
+            {
+                return true;
+            }
+
+            int digitIndex = 0;
+
+            while (digitIndex < TDecimal.NumberDigitsPrecision && c != 0)
+            {
+                digitIndex++;
+                significand *= TSignificand.CreateTruncating(10);
+                significand += TSignificand.CreateTruncating(c - '0');
+                c = *++p;
+            }
+
+            exponent = number.Scale - digitIndex;
+
+            if (digitIndex < number.DigitsCount)
+            {
+                if (c == '5')
+                {
+                    int lastDigitSignificand = *(p - 1);
+                    c = *++p;
+                    bool tiedToEvenRounding = true;
+                    while (digitIndex < number.DigitsCount && c != 0)
+                    {
+                        if (c != '0')
+                        {
+                            significand += TSignificand.One;
+                            tiedToEvenRounding = false;
+                            break;
+                        }
+                        c = *++p;
+                    }
+                    if (tiedToEvenRounding && lastDigitSignificand % 2 == 1)
+                    {
+                        significand += TSignificand.One;
+                    }
+                }
+                else if (c > '5')
+                {
+                    significand += TSignificand.One;
+                }
+            }
+
+            return true;
+        }
+
         internal static TFloat ParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
             where TChar : unmanaged, IUtfChar<TChar>
             where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
@@ -1128,6 +1209,28 @@ namespace System
             {
                 return ParsingStatus.Overflow;
             }
+
+            return ParsingStatus.OK;
+        }
+
+        internal static ParsingStatus TryParseDecimal32<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out Decimal32 result)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[DecimalNumberBufferLength]);
+
+            result = new Decimal32(0, 0);
+
+            if (!TryStringToNumber(value, styles, ref number, info))
+            {
+                return ParsingStatus.Failed;
+            }
+
+            if (!TryNumberToDecimalIeee754<Decimal32, int>(ref number, out int significand, out int exponent))
+            {
+                return ParsingStatus.Overflow;
+            }
+
+            result = new Decimal32(number.IsNegative ? -significand : significand, exponent);
 
             return ParsingStatus.OK;
         }
