@@ -159,11 +159,9 @@
     #define DBG_ADDR(ptr)      (DWORD)((UINT_PTR)(ptr))
 #endif // HOST_64BIT
 
-#ifndef ALIGN_ACCESS
 #if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     #define ALIGN_ACCESS        ((1<<LOG2_PTRSIZE)-1)
 #endif // TARGET_ARM || TARGET_RISCV64
-#endif // ALIGN_ACCESS
 
 
 #ifndef ALLOC_ALIGN_CONSTANT
