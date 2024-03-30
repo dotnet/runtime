@@ -3734,9 +3734,6 @@
   <data name="Arg_ElementsInSourceIsGreaterThanDestination" xml:space="preserve">
     <value>Number of elements in source vector is greater than the destination array</value>
   </data>
-  <data name="Arg_NullArgumentNullRef" xml:space="preserve">
-    <value>The method was called with a null array argument.</value>
-  </data>
   <data name="Argument_AggressiveGCRequiresMaxGeneration" xml:space="preserve">
     <value>AggressiveGC requires setting the generation parameter to MaxGeneration</value>
   </data>

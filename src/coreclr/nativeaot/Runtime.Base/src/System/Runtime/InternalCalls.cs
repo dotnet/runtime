@@ -41,7 +41,7 @@ namespace System.Runtime
         // UnhandledExceptionHandler = 2, // unused
         AppendExceptionStackFrame = 3,
         // unused = 4,
-        GetSystemArrayEEType = 5,
+        // GetSystemArrayEEType = 5, // unused
         OnFirstChance = 6,
         OnUnhandledException = 7,
         IDynamicCastableIsInterfaceImplemented = 8,

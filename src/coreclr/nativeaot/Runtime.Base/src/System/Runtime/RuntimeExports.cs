@@ -174,6 +174,7 @@ namespace System.Runtime
                 }
                 else
                 {
+                    // This will throw NullReferenceException if obj is null.
                     isValid = UnboxAnyTypeCompare(o.GetMethodTable(), pUnboxToEEType);
                 }
 
@@ -201,6 +202,7 @@ namespace System.Runtime
         [RuntimeExport("RhUnbox2")]
         public static unsafe ref byte RhUnbox2(MethodTable* pUnboxToEEType, object obj)
         {
+            // This will throw NullReferenceException if obj is null.
             if (!UnboxAnyTypeCompare(obj.GetMethodTable(), pUnboxToEEType))
             {
                 ThrowHelper.ThrowInvalidCastException();

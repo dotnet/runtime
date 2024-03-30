@@ -345,14 +345,8 @@ namespace System.Runtime
         public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)
 #pragma warning restore IDE0060
         {
-            if (fIsOverflow)
-            {
-                ThrowHelper.ThrowOverflowException();
-            }
-            else
-            {
-                ThrowHelper.ThrowOutOfMemoryException();
-            }
+            ExceptionIDs exID = fIsOverflow ? ExceptionIDs.Overflow : ExceptionIDs.OutOfMemory;
+            throw RuntimeExceptionHelpers.GetRuntimeException(exID)!;
         }
 #endif // NATIVEAOT
 
@@ -552,7 +546,11 @@ namespace System.Runtime
             InternalCalls.RhpValidateExInfoStack();
 #endif
             // Transform attempted throws of null to a throw of NullReferenceException.
-            exceptionObj ??= new NullReferenceException();
+            if (exceptionObj == null)
+            {
+                IntPtr faultingCodeAddress = exInfo._pExContext->IP;
+                exceptionObj = GetClasslibException(ExceptionIDs.NullReference, faultingCodeAddress);
+            }
 
             exInfo.Init(exceptionObj);
             DispatchEx(ref exInfo._frameIter, ref exInfo);
