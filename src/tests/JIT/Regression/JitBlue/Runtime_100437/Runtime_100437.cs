@@ -11,18 +11,18 @@ public class Runtime_100437
     [Fact]
     public static int TestCollectibleEmptyArrayNotInFrozenHeap()
     {
-        string assemblyPath = typeof(Runtime_100437).Assembly.Location
+        string assemblyPath = typeof(Runtime_100437).Assembly.Location;
 
         // Skip this test for single file
         if (string.IsNullOrEmpty(assemblyPath))
-            return;
+            return 100;
 
         WeakReference[] wrs = new WeakReference[10];
         for (int i = 0; i < wrs.Length; i++)
         {
             var alc = new MyAssemblyLoadContext();
             var a = alc.LoadFromAssemblyPath(assemblyPath);
-            wrs[i] = (WeakReference)a.GetType("Runtime_100437").GetMethod("Work").Invoke(null, null);
+            wrs[i] = (WeakReference)a.GetType(nameof(Runtime_100437)).GetMethod(nameof(Work)).Invoke(null, null);
             GC.Collect();
         }
 
@@ -33,7 +33,7 @@ public class Runtime_100437
             // otherwise it will result in a random crash.
             result += wr.Target?.ToString()?.GetHashCode() ?? 0;
         }
-        return (result & 0) + 100;
+        return (result & 100) | 100;
     }
 
     public static WeakReference Work()
