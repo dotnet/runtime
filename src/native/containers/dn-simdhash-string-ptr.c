@@ -155,7 +155,7 @@ dn_simdhash_str_hash (dn_simdhash_str_key v1)
 #include "dn-simdhash-string-ptr.h"
 
 static dn_simdhash_str_key
-make_key (const char *text)
+dn_simdhash_make_str_key (const char *text)
 {
 	dn_simdhash_str_key result = { 0, };
 	if (text) {
@@ -169,19 +169,19 @@ make_key (const char *text)
 uint8_t
 dn_simdhash_string_ptr_try_add (dn_simdhash_string_ptr_t *hash, const char *key, void *value)
 {
-	return dn_simdhash_string_ptr_try_add_raw(hash, make_key(key), value);
+	return dn_simdhash_string_ptr_try_add_raw(hash, dn_simdhash_make_str_key(key), value);
 }
 
 uint8_t
 dn_simdhash_string_ptr_try_get_value (dn_simdhash_string_ptr_t *hash, const char *key, void **result)
 {
-	return dn_simdhash_string_ptr_try_get_value_raw(hash, make_key(key), result);
+	return dn_simdhash_string_ptr_try_get_value_raw(hash, dn_simdhash_make_str_key(key), result);
 }
 
 uint8_t
 dn_simdhash_string_ptr_try_remove (dn_simdhash_string_ptr_t *hash, const char *key)
 {
-	return dn_simdhash_string_ptr_try_remove_raw(hash, make_key(key));
+	return dn_simdhash_string_ptr_try_remove_raw(hash, dn_simdhash_make_str_key(key));
 }
 
 // FIXME: Find a way to make this easier to define
