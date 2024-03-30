@@ -5411,9 +5411,6 @@ void CodeGen::genFinalizeFrame()
     noway_assert(!regSet.rsRegsModified(RBM_FPBASE));
 #endif
 
-#ifdef TARGET_ARM
-// TODO-ARM64-Bug?: enable some variant of this for FP on ARM64?
-#endif
     regMaskFloat maskPushRegsInt   = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
     regMaskGpr   maskPushRegsFloat = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
 #ifdef HAS_PREDICATE_REGS
@@ -5438,6 +5435,7 @@ void CodeGen::genFinalizeFrame()
     maskPushRegsInt |= RBM_LR;
 
 #if defined(TARGET_ARM)
+    // TODO-ARM64-Bug?: enable some variant of this for FP on ARM64?
     if ((maskPushRegsFloat != RBM_NONE) ||
         (compiler->opts.MinOpts() && (regSet.rsMaskResvd & maskPushRegsInt & RBM_OPT_RSVD)))
     {

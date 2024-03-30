@@ -2053,7 +2053,6 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
             return ins_Copy(dstType);
         }
 
-#ifdef TARGET_XARCH
         // mask to int
         assert(genIsValidIntOrFakeReg(srcReg));
 #if defined(TARGET_XARCH)
