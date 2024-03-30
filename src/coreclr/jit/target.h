@@ -221,13 +221,13 @@ enum _regMask_enum : unsigned
 // be lost.
 
 typedef unsigned __int32 RegBitSet32;
-typedef unsigned __int64 RegBitSet64;
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
 typedef unsigned __int64 regMaskGpr;
 typedef unsigned __int64 regMaskFloat;
 typedef unsigned __int64 regMaskPredicate;
+typedef unsigned __int64 RegBitSet64;
 
 // Design:
 // 1. Reduce regMaskGpr to 32-bit
@@ -261,6 +261,8 @@ typedef unsigned __int64 singleRegMask;
 #else
 // x86 and arm
 typedef unsigned         regMaskTP;
+typedef unsigned RegBitSet64;
+
 #define regMaskGpr regMaskTP
 #define regMaskFloat regMaskTP
 #define regMaskPredicate regMaskTP
@@ -351,6 +353,8 @@ public:
 #else
 #ifdef TARGET_AMD64
         return _allRegisters & 0xFFFFFFFF0000;
+#elif defined(TARGET_ARM64)
+        return _allRegisters & 0xFFFFFFFF00000000;
 #else
         //TODO: Fix this for ARM and x86
         return _allRegisters;
