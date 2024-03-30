@@ -24,11 +24,7 @@ namespace Internal.Runtime.CompilerHelpers
             // Note that this expression also works properly for val = NaN case
             if (value is > -IntMaxValueOffset - 1 and < IntMaxValueOffset)
             {
-                int ret = (int)value;
-                // since no overflow can occur, the value always has to be within 1
-                Debug.Assert(value - 1.0 <= ret);
-                Debug.Assert(ret <= value + 1.0);
-                return ret;
+                return (int)value;
             }
 
             ThrowHelper.ThrowOverflowException();
@@ -41,11 +37,7 @@ namespace Internal.Runtime.CompilerHelpers
             // Note that this expression also works properly for val = NaN case
             if (value is > -1.0 and < UIntMaxValueOffset)
             {
-                uint ret = (uint)value;
-                // since no overflow can occur, the value always has to be within 1
-                Debug.Assert(value - 1.0 <= ret);
-                Debug.Assert(ret <= value + 1.0);
-                return ret;
+                return (uint)value;
             }
 
             ThrowHelper.ThrowOverflowException();
@@ -61,11 +53,7 @@ namespace Internal.Runtime.CompilerHelpers
             // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
             if (value is > -two63 - 0x402 and < two63)
             {
-                long ret = (long)value;
-                // since no overflow can occur, the value always has to be within 1
-                Debug.Assert(value - 1.0 <= ret);
-                Debug.Assert(ret <= value + 1.0);
-                return ret;
+                return (long)value;
             }
 
             ThrowHelper.ThrowOverflowException();
@@ -79,11 +67,7 @@ namespace Internal.Runtime.CompilerHelpers
             // Note that this expression also works properly for val = NaN case
             if (value is > -1.0 and < two64)
             {
-                ulong ret = (ulong)value;
-                // since no overflow can occur, the value always has to be within 1
-                Debug.Assert(value - 1.0 <= ret);
-                Debug.Assert(ret <= value + 1.0);
-                return ret;
+                return (ulong)value;
             }
 
             ThrowHelper.ThrowOverflowException();
@@ -128,21 +112,21 @@ namespace Internal.Runtime.CompilerHelpers
             if (val1High == 0)
             {
                 // Compute the 'middle' bits of the long multiplication
-                valMid = Math.BigMul(val2High, (uint)left);
+                valMid = (ulong)val2High * (uint)left;
             }
             else
             {
                 if (val2High != 0)
                     goto Overflow;
                 // Compute the 'middle' bits of the long multiplication
-                valMid = Math.BigMul(val1High, (uint)right);
+                valMid = (ulong)val1High * (uint)right;
             }
 
             // See if any bits after bit 32 are set
             if (High32Bits(valMid) != 0)
                 goto Overflow;
 
-            long ret = (long)(Math.BigMul((uint)left, (uint)right) + (valMid << 32));
+            long ret = (long)(((ulong)(uint)left * (uint)right) + (valMid << 32));
 
             // check for overflow
             if (High32Bits((ulong)ret) < (uint)valMid)
@@ -190,23 +174,23 @@ namespace Internal.Runtime.CompilerHelpers
             if (val1High == 0)
             {
                 if (val2High == 0)
-                    return Math.BigMul((uint)left, (uint)right);
+                    return (ulong)(uint)left * (uint)right;
                 // Compute the 'middle' bits of the long multiplication
-                valMid = Math.BigMul(val2High, (uint)left);
+                valMid = (ulong)val2High * (uint)left;
             }
             else
             {
                 if (val2High != 0)
                     goto Overflow;
                 // Compute the 'middle' bits of the long multiplication
-                valMid = Math.BigMul(val1High, (uint)right);
+                valMid = (ulong)val1High * (uint)right;
             }
 
             // See if any bits after bit 32 are set
             if (High32Bits(valMid) != 0)
                 goto Overflow;
 
-            ulong ret = Math.BigMul((uint)left, (uint)right) + (valMid << 32);
+            ulong ret = ((ulong)(uint)left * (uint)right) + (valMid << 32);
 
             // check for overflow
             if (High32Bits(ret) < (uint)valMid)
