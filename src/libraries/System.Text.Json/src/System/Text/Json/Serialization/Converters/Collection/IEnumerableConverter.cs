@@ -62,14 +62,12 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (ShouldFlush(writer, ref state))
                 {
-                    state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
 
                 object? element = enumerator.Current;
                 if (!converter.TryWrite(writer, element, options, ref state))
                 {
-                    state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
 

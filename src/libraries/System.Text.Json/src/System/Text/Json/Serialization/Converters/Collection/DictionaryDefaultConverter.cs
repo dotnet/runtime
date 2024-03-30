@@ -48,7 +48,6 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (ShouldFlush(writer, ref state))
                 {
-                    state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
 
@@ -62,7 +61,6 @@ namespace System.Text.Json.Serialization.Converters
                 TValue element = enumerator.Current.Value;
                 if (!_valueConverter.TryWrite(writer, element, options, ref state))
                 {
-                    state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
 
