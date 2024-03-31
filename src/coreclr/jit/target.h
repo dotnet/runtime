@@ -253,7 +253,7 @@ typedef unsigned __int64 singleRegMask;
 
 #else
 // x86 and arm
-typedef unsigned         regMaskTP;
+typedef unsigned regMaskTP;
 typedef unsigned RegBitSet64;
 
 #define regMaskGpr regMaskTP
@@ -273,32 +273,30 @@ typedef struct _regMaskAll
 {
 private:
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    union
-    {
+    union {
         RegBitSet32 _registers[3];
         struct
         {
             RegBitSet64 _float_gpr;
             RegBitSet32 _predicateRegs;
-            //RegBitSet32 _predicateRegs : 28;
-            //bool _hasPredicateRegister : 8;
-
+            // RegBitSet32 _predicateRegs : 28;
+            // bool _hasPredicateRegister : 8;
         };
         struct
         {
             // This one is just to have uniform code when `if(_hasPredicateRegister)` is used
             RegBitSet64 _allRegisters;
             RegBitSet32 _predicateRegs;
-            //RegBitSet32 _predicateRegs : 28;
-            //bool        _hasPredicateRegister : 8;
+            // RegBitSet32 _predicateRegs : 28;
+            // bool        _hasPredicateRegister : 8;
         };
         struct
         {
             RegBitSet32 _gprRegs;
             RegBitSet32 _floatRegs;
             RegBitSet32 _predicateRegs;
-            //RegBitSet32 _predicateRegs : 28;
-            //bool        _hasPredicateRegister : 8;
+            // RegBitSet32 _predicateRegs : 28;
+            // bool        _hasPredicateRegister : 8;
         };
     };
     // TODO: This can be moved inside the union by trimming the size of _predicateRegs: 28
@@ -308,10 +306,10 @@ private:
     // when the predicateReg is updated.
     bool _hasPredicateRegister;
 #else
-    RegBitSet64 _allRegisters;
+    RegBitSet64  _allRegisters;
 #endif
 
-    regMaskOnlyOne  operator[](int index) const;
+    regMaskOnlyOne operator[](int index) const;
     regMaskOnlyOne& operator[](int index);
     // This method shifts the high-32 bits of float to low-32 bits and return.
     // For gpr and predicate registers, it returns the same value.
@@ -349,11 +347,10 @@ public:
 #elif defined(TARGET_ARM64)
         return _allRegisters & 0xFFFFFFFF00000000;
 #else
-        //TODO: Fix this for ARM and x86
+        // TODO: Fix this for ARM and x86
         return _allRegisters;
 #endif // TARGET_AMD64
 #endif // HAS_MORE_THAN_64_REGISTERS
-
     }
 
 #ifdef FEATURE_MASKED_HW_INTRINSICS

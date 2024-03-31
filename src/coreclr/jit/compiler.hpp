@@ -1038,7 +1038,7 @@ inline regNumber genFirstRegNumFromMask(regMaskOnlyOne mask)
 //    The number of the first register contained in the mask and updates the `mask` to toggle
 //    the bit.
 //
-//TODO: We can make certain methods on compiler object and check if predicate is needed
+// TODO: We can make certain methods on compiler object and check if predicate is needed
 // and if yes, use optimize path
 inline regNumber genFirstRegNumFromMaskAndToggle(AllRegsMask& mask)
 {
@@ -5129,7 +5129,7 @@ AllRegsMask AllRegsMask::operator~()
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
     AllRegsMask result;
-    result._float_gpr = ~_float_gpr;
+    result._float_gpr     = ~_float_gpr;
     result._predicateRegs = ~_predicateRegs;
     return result;
 #else
@@ -5253,7 +5253,7 @@ regMaskOnlyOne AllRegsMask::operator[](int index) const
     }
 }
 
-//regMaskOnlyOne& AllRegsMask::operator[](int index)
+// regMaskOnlyOne& AllRegsMask::operator[](int index)
 //{
 //    assert(index <= REGISTER_TYPE_COUNT);
 //    return _registers[index];
@@ -5359,7 +5359,7 @@ void AllRegsMask::AddRegNumInMask(regNumber reg ARM_ARG(var_types type))
     if (_hasPredicateRegister)
     {
         RegBitSet64 value = genRegMask(reg ARM_ARG(type));
-        int         index = regIndexForRegister(reg);
+        int index         = regIndexForRegister(reg);
         _registers[index] |= encodeForIndex(index, value);
     }
     else
@@ -5375,7 +5375,7 @@ void AllRegsMask::RemoveRegNumFromMask(regNumber reg ARM_ARG(var_types type))
     if (_hasPredicateRegister)
     {
         RegBitSet64 regMaskToRemove = genRegMask(reg ARM_ARG(type));
-        int         index           = regIndexForRegister(reg);
+        int index                   = regIndexForRegister(reg);
         _registers[index] &= ~encodeForIndex(index, regMaskToRemove);
     }
     else
@@ -5455,8 +5455,8 @@ regMaskTP AllRegsMask::GetGprFloatCombinedMask() const
     // Moving this definition to lsra might work, but this is temporary so
     // just create gprMAsk. Eventually, we will use the `<< 32` mentioned in
     // the comment above.
-    //regMaskTP gprMask = (1ULL << REG_INT_COUNT) - 1;
-    //return (floatRegs() & ~gprMask) | (gprRegs() & gprMask);
+    // regMaskTP gprMask = (1ULL << REG_INT_COUNT) - 1;
+    // return (floatRegs() & ~gprMask) | (gprRegs() & gprMask);
     return _float_gpr;
 #else
     return _allRegisters;

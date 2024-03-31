@@ -2833,7 +2833,7 @@ void           LinearScan::buildIntervals()
     else
     {
         actualRegistersMask = AllRegsMask(~RBM_NONE);
-    }   
+    }
 #endif // HAS_MORE_THAN_64_REGISTERS
 
 #ifdef DEBUG
