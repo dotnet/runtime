@@ -988,7 +988,7 @@ inline regNumber genFirstRegNumFromMask(AllRegsMask& mask)
 
     regMaskTP gprOrFloatMask = mask.GetGprFloatCombinedMask();
 
-#ifdef HAS_PREDICATE_REGS
+#ifdef HAS_MORE_THAN_64_REGISTERS
     // Only check this condition if there are predicate register support
     // is present.
     // If not, then gprOrFloatMask should be non-empty, and we will hit the
@@ -1038,7 +1038,8 @@ inline regNumber genFirstRegNumFromMask(regMaskOnlyOne mask)
 //    The number of the first register contained in the mask and updates the `mask` to toggle
 //    the bit.
 //
-
+//TODO: We can make certain methods on compiler object and check if predicate is needed
+// and if yes, use optimize path
 inline regNumber genFirstRegNumFromMaskAndToggle(AllRegsMask& mask)
 {
     regNumber regNum = genFirstRegNumFromMask(mask);
@@ -4512,10 +4513,10 @@ inline void printRegMask(AllRegsMask mask)
     printf(" ");
     printf(REG_MASK_ALL_FMT, mask.floatRegs());
 
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     printf(" ");
     printf(REG_MASK_ALL_FMT, mask.predicateRegs());
-#endif // HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
 }
 
 inline void printRegMaskInt(regMaskGpr mask)
@@ -5058,8 +5059,11 @@ template <class T>
 FORCEINLINE int regIndexForType(T vt)
 {
     int type = varTypeRegister[TypeGet(vt)];
-    assert(type <= REGISTER_TYPE_COUNT);
-#ifndef HAS_PREDICATE_REGS
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    assert(type <= 2);
+#endif
+
+#ifndef FEATURE_MASKED_HW_INTRINSICS
     assert(type != VTR_MASK);
 #endif
     return (type - 1);
@@ -5238,7 +5242,7 @@ regMaskOnlyOne AllRegsMask::operator[](int index) const
 #ifdef HAS_MORE_THAN_64_REGISTERS
     if (_hasPredicateRegister)
     {
-        assert(index <= REGISTER_TYPE_COUNT);
+        assert(index <= 2);
         RegBitSet32 value = _registers[index];
         return decodeForIndex(index, value);
     }
@@ -5436,7 +5440,6 @@ regMaskOnlyOne AllRegsMask::GetRegMaskForType(var_types type) const
     {
         return _allRegisters;
     }
-
 }
 
 regMaskTP AllRegsMask::GetGprFloatCombinedMask() const
@@ -5464,6 +5467,13 @@ bool AllRegsMask::IsGprOrFloatPresent() const
 {
     return GetGprFloatCombinedMask() != RBM_NONE;
 }
+
+#ifndef HAS_MORE_THAN_64_REGISTERS
+regMaskTP AllRegsMask::GetAllRegistersMask() const
+{
+    return _allRegisters;
+}
+#endif
 
 /*****************************************************************************/
 #endif //_COMPILER_HPP_

@@ -101,13 +101,13 @@ public:
         return rsModifiedRegsMask.floatRegs();
     }
 
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     regMaskPredicate rsGetModifiedPredicateRegsMask() const
     {
         assert(rsModifiedRegsMaskInitialized);
         return rsModifiedRegsMask.predicateRegs();
     }
-#endif // HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     regMaskGpr rsGetModifiedRegsMask(var_types type) const
     {
@@ -183,7 +183,7 @@ private:
     regMaskMixed rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_LOONGARCH64
 
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     regMaskPredicate rsPredicateMaskCalleeSaved;
 #endif
 

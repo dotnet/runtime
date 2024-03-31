@@ -3518,7 +3518,7 @@ void emitter::emitDispRegSet(AllRegsMask regs)
 {
     emitDispGprRegSet(regs.gprRegs());
     emitDispGprRegSet(regs.floatRegs());
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     emitDispGprRegSet(regs.predicateRegs());
 #endif
 }

@@ -869,9 +869,9 @@ AllRegsMask LinearScan::getKillSetForCall(GenTreeCall* call)
     if (!compiler->compFloatingPointUsed)
     {
         killMask.RemoveRegTypeFromMask(RBM_FLT_CALLEE_TRASH, TYP_FLOAT);
-#if defined(TARGET_XARCH) || defined(HAS_PREDICATE_REGS)
+#ifdef FEATURE_MASKED_HW_INTRINSICS
         killMask.RemoveRegTypeFromMask(RBM_MSK_CALLEE_TRASH, TYP_MASK);
-#endif // TARGET_XARCH || HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
     }
 #ifdef TARGET_ARM
     if (call->IsVirtualStub())
@@ -1126,9 +1126,9 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
 {
     assert(compiler->IsGprRegMask(killMask.gprRegs()));
     assert(compiler->IsFloatRegMask(killMask.floatRegs()));
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     assert(compiler->IsPredicateRegMask(killMask.predicateRegs()));
-#endif // HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     bool insertedKills = false;
 
@@ -1383,7 +1383,7 @@ RefPosition* LinearScan::buildInternalFloatRegisterDefForNode(GenTree* tree, reg
     return defRefPosition;
 }
 
-#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+#ifdef FEATURE_MASKED_HW_INTRINSICS
 RefPosition* LinearScan::buildInternalMaskRegisterDefForNode(GenTree* tree, regMaskPredicate internalCands)
 {
     // The candidate set should contain only float registers.
@@ -1391,7 +1391,7 @@ RefPosition* LinearScan::buildInternalMaskRegisterDefForNode(GenTree* tree, regM
 
     return defineNewInternalTemp(tree, MaskRegisterType, internalCands);
 }
-#endif
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // buildInternalRegisterUses - adds use positions for internal
@@ -2759,12 +2759,12 @@ void           LinearScan::buildIntervals()
                     {
                         calleeSaveCount = CNT_CALLEE_ENREG;
                     }
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                     else if (varTypeUsesMaskReg(interval->registerType))
                     {
                         calleeSaveCount = CNT_CALLEE_SAVED_MASK;
                     }
-#endif // HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
                     else
                     {
                         assert(varTypeUsesFloatReg(interval->registerType));
@@ -2822,14 +2822,19 @@ void           LinearScan::buildIntervals()
         // availableMaskRegs   = RBM_NONE; // Is this also needed?
     }
 
-    //TODO: Fix this for x86 and arm
-    actualRegistersMask = AllRegsMask(availableIntRegs, availableFloatRegs
-#ifdef HAS_PREDICATE_REGS
-                                      ,
-                                      availableMaskRegs
-#endif // HAS_PREDICATE_REGS
-    );
-    
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    actualRegistersMask = AllRegsMask(availableIntRegs, availableFloatRegs, availableMaskRegs);
+#else
+    if (availableRegCount < (sizeof(regMaskTP) * 8))
+    {
+        // Mask out the bits that are between 64 ~ availableRegCount
+        actualRegistersMask = AllRegsMask((1ULL << availableRegCount) - 1);
+    }
+    else
+    {
+        actualRegistersMask = AllRegsMask(~RBM_NONE);
+    }   
+#endif // HAS_MORE_THAN_64_REGISTERS
 
 #ifdef DEBUG
     // Make sure we don't have any blocks that were not visited
@@ -4110,12 +4115,12 @@ int LinearScan::BuildReturn(GenTree* tree)
                             {
                                 buildInternalIntRegisterDefForNode(tree, dstRegMask);
                             }
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                             else if (varTypeUsesMaskReg(dstType))
                             {
                                 buildInternalMaskRegisterDefForNode(tree, dstRegMask);
                             }
-#endif // HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
                             else
                             {
                                 assert(varTypeUsesFloatReg(dstType));

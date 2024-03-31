@@ -2012,13 +2012,20 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
             return ins_Copy(dstType);
         }
 
-#if defined(TARGET_XARCH) && defined(HAS_PREDICATE_REGS)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         if (genIsValidMaskReg(srcReg))
         {
+#if defined(TARGET_XARCH)
             // mask to int
             return INS_kmovq_gpr;
+#elif defined(TARGET_ARM64)
+            unreached();
+            return INS_mov; // TODO-SVE: needs testing
+#else
+            unreached();
+#endif
         }
-#endif // TARGET_XARCH && HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         // float to int
         assert(genIsValidFloatReg(srcReg));
@@ -2255,13 +2262,13 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
             return ins_Store(dstType, aligned);
         }
 
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
         if (genIsValidMaskReg(srcReg))
         {
             // mask to int, treat as mask so it works on 32-bit
             return ins_Store(TYP_MASK, aligned);
         }
-#endif // HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         // float to int, treat as float to float
         assert(genIsValidFloatReg(srcReg));

@@ -3529,9 +3529,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         regMaskGpr   trashedGprByEpilog   = RBM_INT_CALLEE_SAVED;
         regMaskFloat trashedFloatByEpilog = RBM_FLT_CALLEE_SAVED;
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
         regMaskPredicate trashedPredicateByEpilog = RBM_MSK_CALLEE_SAVED;
-#endif // HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         // The epilog may use and trash REG_GSCOOKIE_TMP_0/1. Make sure we have no
         // non-standard args that may be trash if this is a tailcall.
@@ -3560,7 +3560,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     JITDUMP("Float Register used: %s\n", getRegName(reg));
                     assert(!"Argument to tailcall may be trashed by epilog");
                 }
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                 else if ((trashedPredicateByEpilog & genRegMask(reg)) != 0)
                 {
                     JITDUMP("Tail call node:\n");
@@ -3568,7 +3568,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     JITDUMP("Mask Register used: %s\n", getRegName(reg));
                     assert(!"Argument to tailcall may be trashed by epilog");
                 }
-#endif // HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
             }
         }
     }
@@ -4905,6 +4905,9 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     regMaskGpr   rsPushGprRegs   = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
     regMaskFloat rsPushFloatRegs = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    regMaskPredicate rsPushPredicateRegs = regSet.rsGetModifiedPredicateRegsMask() & RBM_MSK_CALLEE_SAVED;
+#endif
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -4940,17 +4943,24 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     regSet.rsGprMaskCalleeSaved   = rsPushGprRegs;
     regSet.rsFloatMaskCalleeSaved = rsPushFloatRegs;
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    regSet.rsPredicateMaskCalleeSaved = rsPushPredicateRegs;
+#endif
 
 #ifdef DEBUG
     unsigned pushRegsCnt = genCountBits(rsPushGprRegs) + genCountBits(rsPushFloatRegs);
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    pushRegsCnt += genCountBits(rsPushPredicateRegs);
+#endif
+
     if (compiler->compCalleeRegsPushed != pushRegsCnt)
     {
         printf("Error: unexpected number of callee-saved registers to push. Expected: %d. Got: %d ",
                compiler->compCalleeRegsPushed, pushRegsCnt);
         dspRegMask(AllRegsMask(rsPushGprRegs, rsPushFloatRegs
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                                ,
-                               RBM_NONE
+                               rsPushPredicateRegs
 #endif
                                ));
         printf("\n");

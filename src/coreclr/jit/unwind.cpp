@@ -182,12 +182,12 @@ void Compiler::unwindPushPopCFI(regNumber reg)
     {
         shouldCreateCfiCode = (RBM_FLT_CALLEE_SAVED & mask);
     }
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     else if (emitter::isMaskReg(reg) && (RBM_MSK_CALLEE_SAVED & mask))
     {
         shouldCreateCfiCode = (RBM_MSK_CALLEE_SAVED & mask);
     }
-#endif // HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     if (shouldCreateCfiCode)
     {

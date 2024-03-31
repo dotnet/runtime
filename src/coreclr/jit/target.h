@@ -198,13 +198,6 @@ enum _regMask_enum : unsigned
 
 #define AVAILABLE_REG_COUNT get_AVAILABLE_REG_COUNT()
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
-#define HAS_PREDICATE_REGS
-#define REGISTER_TYPE_COUNT 3
-#else
-#define REGISTER_TYPE_COUNT 2
-#endif
-
 #ifdef TARGET_ARM64
 #define HAS_MORE_THAN_64_REGISTERS 1
 #endif
@@ -282,7 +275,7 @@ private:
 #ifdef HAS_MORE_THAN_64_REGISTERS
     union
     {
-        RegBitSet32 _registers[REGISTER_TYPE_COUNT];
+        RegBitSet32 _registers[3];
         struct
         {
             RegBitSet64 _float_gpr;
@@ -309,7 +302,7 @@ private:
         };
     };
     // TODO: This can be moved inside the union by trimming the size of _predicateRegs: 28
-    // and have this as 8 bits. However, there are chances of accidently overwritting it
+    // and have this as 8 bits. However, there are chances of accidently overwriting it
     // when updating the predicateReg mask. Evaluation this option on how we can secure it.
     // Find out if the TP cost is more by having this field separately vs. adding extra checks
     // when the predicateReg is updated.
@@ -363,22 +356,16 @@ public:
 
     }
 
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     inline regMaskPredicate predicateRegs() const
     {
-        static_assert((REGISTER_TYPE_COUNT == 3), "There should be 3 types of registers");
-#ifdef HAS_MORE_THAN_64_REGISTERS
+#if defined(HAS_MORE_THAN_64_REGISTERS)
         return _predicateRegs;
 #else
-#ifdef TARGET_AMD64
-        return _allRegisters & 0xFF000000000000;
-#else
-        // TODO: Fix this for ARM and x86
-        return _allRegisters;
-#endif // TARGET_AMD64
+        return _allRegisters & 0xFF000000000000; // TODO: Fix the mask
 #endif // HAS_MORE_THAN_64_REGISTERS
     }
-#endif
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
@@ -424,15 +411,6 @@ public:
 #endif
     }
 
-//    _regMaskAll(int (&_registers)[REGISTER_TYPE_COUNT])
-//    {
-////        registers[0] = _registers[0];
-////        registers[1] = _registers[1];
-////#ifdef HAS_PREDICATE_REGS
-////        registers[2] = _registers[2];
-////#endif
-//    }
-
 #ifdef TARGET_ARM
     _regMaskAll(regNumber reg) : _regMaskAll()
     {
@@ -472,6 +450,9 @@ public:
     // TODO: this might go away once we have just `regMaskTP` gpr_float field
     FORCEINLINE bool IsGprOrFloatPresent() const;
     FORCEINLINE regMaskTP GetGprFloatCombinedMask() const;
+#ifndef HAS_MORE_THAN_64_REGISTERS
+    FORCEINLINE regMaskTP GetAllRegistersMask() const;
+#endif // !HAS_MORE_THAN_64_REGISTERS
 
     FORCEINLINE void operator|=(const _regMaskAll& other);
     FORCEINLINE void operator&=(const _regMaskAll& other);
@@ -532,12 +513,12 @@ typedef unsigned __int64 regMaskSmall;
   #error Unsupported or unset target architecture
 #endif
 
-#ifdef HAS_PREDICATE_REGS
+#ifdef HAS_MORE_THAN_64_REGISTERS
   #define AllRegsMask_CALLEE_SAVED AllRegsMask(RBM_INT_CALLEE_SAVED, RBM_FLT_CALLEE_SAVED, RBM_MSK_CALLEE_SAVED)
   #define AllRegsMask_CALLEE_TRASH AllRegsMask(RBM_INT_CALLEE_TRASH, RBM_FLT_CALLEE_TRASH, RBM_MSK_CALLEE_TRASH)
 #else
-    #define AllRegsMask_CALLEE_SAVED AllRegsMask(RBM_INT_CALLEE_SAVED, RBM_FLT_CALLEE_SAVED)
-    #define AllRegsMask_CALLEE_TRASH AllRegsMask(RBM_INT_CALLEE_TRASH, RBM_FLT_CALLEE_TRASH)
+    #define AllRegsMask_CALLEE_SAVED AllRegsMask(RBM_CALLEE_SAVED)
+    #define AllRegsMask_CALLEE_TRASH AllRegsMask(RBM_CALLEE_TRASH)
 #endif
 
 #ifdef TARGET_XARCH
@@ -609,7 +590,6 @@ const char* getRegName(regNumber reg);
 
 #ifdef DEBUG
 const char* getRegNameFloat(regNumber reg, var_types type);
-extern void dspRegMask(regMaskOnlyOne mask, size_t minSiz = 0);
 extern void dspRegMask(AllRegsMask mask, size_t minSiz = 0);
 #endif
 

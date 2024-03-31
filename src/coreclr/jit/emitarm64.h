@@ -1169,6 +1169,14 @@ inline static bool isGeneralRegisterOrSP(regNumber reg)
     return isGeneralRegister(reg) || (reg == REG_SP);
 } // Includes REG_SP, Excludes REG_ZR
 
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+inline static bool isMaskReg(regNumber reg)
+{
+    // TODO: This assert will no longer be true
+    return (reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST);
+}
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
 inline static bool isVectorRegister(regNumber reg)
 {
     return (reg >= REG_FP_FIRST && reg <= REG_FP_LAST);

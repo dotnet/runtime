@@ -564,7 +564,7 @@ regMaskOnlyOne LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskOnly
         }
         else
         {
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
             assert(varTypeUsesMaskReg(regtype));
             calleeSaved = RBM_MSK_CALLEE_SAVED;
             calleeTrash = RBM_MSK_CALLEE_TRASH;
@@ -4743,12 +4743,13 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     // Only focus on actual registers present
     deadCandidates &= actualRegistersMask;
 
-    regMaskTP deadGprFloatCandidates = deadCandidates.GetGprFloatCombinedMask();
-
-    updateDeadCandidatesAtBlockStart(deadGprFloatCandidates, inVarToRegMap);
-#ifdef HAS_PREDICATE_REGS
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    updateDeadCandidatesAtBlockStart(deadCandidates.GetGprFloatCombinedMask(), inVarToRegMap);
     updateDeadCandidatesAtBlockStart(deadCandidates.predicateRegs(), inVarToRegMap);
-#endif // HAS_PREDICATE_REGS
+#else
+    updateDeadCandidatesAtBlockStart(deadCandidates.GetAllRegistersMask(), inVarToRegMap);
+#endif // HAS_MORE_THAN_64_REGISTERS
+
 #endif // TARGET_ARM
 }
 
@@ -4924,10 +4925,12 @@ void LinearScan::freeRegisters(AllRegsMask regsToFree)
 
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FREE_REGS));
     makeRegsAvailable(regsToFree);
+#ifdef HAS_MORE_THAN_64_REGISTERS
     freeRegisterMask(regsToFree.GetGprFloatCombinedMask());
-#ifdef HAS_PREDICATE_REGS
     freeRegisterMask(regsToFree.predicateRegs());
-#endif // HAS_PREDICATE_REGS
+#else
+    freeRegisterMask(regsToFree.GetAllRegistersMask());
+#endif // HAS_MORE_THAN_64_REGISTERS
 }
 
 void LinearScan::freeRegisterMask(regMaskTP freeMask)
@@ -5021,10 +5024,12 @@ void LinearScan::allocateRegistersMinimal()
         // mess with the dump, since this was previously being done before the call below
         // to dumpRegRecords.
         AllRegsMask tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
+#ifdef HAS_MORE_THAN_64_REGISTERS
         inActivateRegisters(tempRegsToMakeInactive.GetGprFloatCombinedMask());
-#ifdef HAS_PREDICATE_REGS
         inActivateRegisters(tempRegsToMakeInactive.predicateRegs());
-#endif
+#else
+        inActivateRegisters(tempRegsToMakeInactive.GetAllRegistersMask());
+#endif // HAS_MORE_THAN_64_REGISTERS
 
         if (currentRefPosition.nodeLocation > prevLocation)
         {
@@ -5709,10 +5714,12 @@ void LinearScan::allocateRegisters()
         // mess with the dump, since this was previously being done before the call below
         // to dumpRegRecords. TODO: Do not do anything if tempRegsToMakeInactive == RBM_NONE
         AllRegsMask tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
+#ifdef HAS_MORE_THAN_64_REGISTERS
         inActivateRegisters(tempRegsToMakeInactive.GetGprFloatCombinedMask());
-#ifdef HAS_PREDICATE_REGS
         inActivateRegisters(tempRegsToMakeInactive.predicateRegs());
-#endif
+#else
+        inActivateRegisters(tempRegsToMakeInactive.GetAllRegistersMask());
+#endif // HAS_MORE_THAN_64_REGISTERS
 
         if (currentRefPosition.nodeLocation > prevLocation)
         {
@@ -11773,7 +11780,7 @@ void LinearScan::verifyFreeRegisters(AllRegsMask regsToFree)
             regsMaskToFree    = regsToFree.floatRegs();
             availableRegsMask = availableFloatRegs;
         }
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
         else if (reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST)
         {
             regsMaskToFree    = regsToFree.predicateRegs();

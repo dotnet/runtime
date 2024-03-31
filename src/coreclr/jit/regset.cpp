@@ -227,14 +227,14 @@ void RegSet::rsSetRegModified(regNumber reg DEBUGARG(bool suppressDump))
         printModifiedRegsMask(rsModifiedRegsMask.floatRegs(),
                               genRegMask(reg) DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_FLT_CALLEE_SAVED));
     }
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     else
     {
         assert(genIsValidMaskReg(reg));
         printModifiedRegsMask(rsModifiedRegsMask.predicateRegs(),
                               genRegMask(reg) DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_MSK_CALLEE_SAVED));
     }
-#endif // HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // DEBUG
 
     rsModifiedRegsMask.AddRegNumInMask(reg);
@@ -252,10 +252,10 @@ void RegSet::rsSetRegsModified(AllRegsMask& modifiedMask DEBUGARG(bool suppressD
                           modifiedMask.gprRegs() DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_INT_CALLEE_SAVED));
     printModifiedRegsMask(rsModifiedRegsMask.floatRegs(),
                           modifiedMask.floatRegs() DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_FLT_CALLEE_SAVED));
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     printModifiedRegsMask(rsModifiedRegsMask.predicateRegs(),
                           modifiedMask.predicateRegs() DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_MSK_CALLEE_SAVED));
-#endif // HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // DEBUG
 
     rsModifiedRegsMask |= modifiedMask;
@@ -364,9 +364,9 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_r
     rsMaskCalleeSaved = RBM_NONE;
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     rsPredicateMaskCalleeSaved = RBM_NONE;
-#endif // HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 #ifdef TARGET_ARM
     rsMaskPreSpillRegArg = RBM_NONE;

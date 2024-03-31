@@ -51,12 +51,12 @@ RegisterType regType(T type)
     {
         return IntRegisterType;
     }
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     else if (varTypeUsesMaskReg(type))
     {
         return MaskRegisterType;
     }
-#endif // HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
     else
     {
         assert(varTypeUsesFloatReg(type));
@@ -498,13 +498,13 @@ public:
         {
             registerType = FloatRegisterType;
         }
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
         else
         {
             assert(emitter::isMaskReg(reg));
             registerType = MaskRegisterType;
         }
-#endif // HAS_PREDICATE_REGS
+#endif // FEATURE_MASKED_HW_INTRINSICS
         regNum       = reg;
         isCalleeSave = ((RBM_CALLEE_SAVED & genRegMask(reg)) != 0);
     }
@@ -1128,7 +1128,7 @@ private:
     RefPosition* defineNewInternalTemp(GenTree* tree, RegisterType regType, regMaskOnlyOne candidates);
     RefPosition* buildInternalIntRegisterDefForNode(GenTree* tree, regMaskGpr internalCands = RBM_NONE);
     RefPosition* buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskFloat internalCands = RBM_NONE);
-#if defined(FEATURE_SIMD)
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     RefPosition* buildInternalMaskRegisterDefForNode(GenTree* tree, regMaskPredicate internalCands = RBM_NONE);
 #endif
     void buildInternalRegisterUses();
@@ -1768,12 +1768,11 @@ private:
 
     void resetAvailableRegs()
     {
-        m_AvailableRegs = AllRegsMask(availableIntRegs, availableFloatRegs
-#ifdef HAS_PREDICATE_REGS
-                                      ,
-                                      availableMaskRegs
-#endif
-                                      );
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        m_AvailableRegs = AllRegsMask(availableIntRegs, availableFloatRegs, availableMaskRegs);
+#else
+        m_AvailableRegs = AllRegsMask(allAvailableRegs);
+#endif // HAS_MORE_THAN_64_REGISTERS
         m_RegistersWithConstants.Clear();
     }
 
@@ -1795,12 +1794,13 @@ private:
     void makeRegsAvailable(AllRegsMask regMask)
     {
         m_AvailableRegs |= regMask;
+#ifdef HAS_MORE_THAN_64_REGISTERS
         assert(compiler->IsGprRegMask(m_AvailableRegs.gprRegs()));
         assert(compiler->IsFloatRegMask(m_AvailableRegs.floatRegs()));
-#ifdef HAS_PREDICATE_REGS
         assert(compiler->IsPredicateRegMask(m_AvailableRegs.predicateRegs()));
 #endif
     }
+
     void makeRegAvailable(regNumber reg, var_types regType)
     {
         m_AvailableRegs.AddRegNumInMask(reg ARM_ARG(regType));

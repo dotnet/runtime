@@ -5377,9 +5377,9 @@ void CodeGen::genFinalizeFrame()
         noway_assert(
             (regSet.rsGetModifiedGprRegsMask() & ~(RBM_INT_CALLEE_TRASH | RBM_FPBASE | RBM_ENC_CALLEE_SAVED)) == 0);
         noway_assert((regSet.rsGetModifiedFloatRegsMask() & ~RBM_FLT_CALLEE_TRASH) == 0);
-#ifdef TARGET_AMD64
+#ifdef FEATURE_MASKED_HW_INTRINSICS
         noway_assert((regSet.rsGetModifiedPredicateRegsMask() & ~RBM_MSK_CALLEE_TRASH) == 0);
-#endif // TARGET_AMD64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #else  // !TARGET_AMD64 && !TARGET_ARM64
         // On x86 we save all callee saved regs so the saved reg area size is consistent
         regSet.rsSetGprRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
@@ -5413,7 +5413,7 @@ void CodeGen::genFinalizeFrame()
 
     regMaskFloat maskPushRegsInt   = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
     regMaskGpr   maskPushRegsFloat = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     regMaskPredicate maskPushRegsPredicate = regSet.rsGetModifiedPredicateRegsMask() & RBM_MSK_CALLEE_SAVED;
 #endif
 
@@ -5504,13 +5504,16 @@ void CodeGen::genFinalizeFrame()
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     compiler->compCalleeRegsPushed = genCountBits(maskPushRegsInt) + genCountBits(maskPushRegsFloat);
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    compiler->compCalleeRegsPushed += genCountBits(maskPushRegsPredicate);
+#endif
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("Callee-saved registers pushed: %d ", compiler->compCalleeRegsPushed);
         dspRegMask(AllRegsMask(maskPushRegsInt, maskPushRegsFloat
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                                ,
                                maskPushRegsPredicate
 #endif

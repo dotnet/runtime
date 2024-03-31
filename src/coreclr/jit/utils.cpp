@@ -298,7 +298,7 @@ const char* getRegNameFloat(regNumber reg, var_types type)
  */
 const char* dspRegRange(regMaskOnlyOne regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
 {
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
            ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)) ||
            ((regFirst == REG_MASK_FIRST) && (regLast == REG_MASK_LAST)));
@@ -442,17 +442,6 @@ const char* dspRegRange(regMaskOnlyOne regMask, size_t& minSiz, const char* sep,
     }
 
     return sep;
-}
-
-void dspRegMask(regMaskOnlyOne mask, size_t minSiz)
-{
-    dspRegMask(AllRegsMask(mask, mask
-#ifdef HAS_PREDICATE_REGS
-                           ,
-                           mask
-#endif
-                           ),
-               minSiz);
 }
 
 /*****************************************************************************

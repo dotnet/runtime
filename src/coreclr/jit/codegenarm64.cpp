@@ -1746,7 +1746,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     regMaskGpr       rsMaskSaveGprRegs       = regSet.rsGprMaskCalleeSaved;
     regMaskFloat     rsMaskSaveFloatRegs     = regSet.rsFloatMaskCalleeSaved;
     regMaskPredicate rsMaskSavePredicateRegs = RBM_NONE;
-#ifdef HAS_PREDICATE_REGS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     rsMaskSavePredicateRegs = regSet.rsPredicateMaskCalleeSaved;
 #endif
 
