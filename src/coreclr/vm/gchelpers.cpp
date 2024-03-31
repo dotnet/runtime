@@ -513,7 +513,7 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 
     // The initial validation is copied from AllocateSzArray impl
 
-    if (pArrayMT->Collectible() || (pArrayMT->ContainsPointers() && cElements > 0))
+    if (pArrayMT->ContainsPointers() && cElements > 0)
     {
         // We cannot allocate in the frozen heap if:
         // - the array type is collectible
