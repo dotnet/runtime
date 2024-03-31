@@ -36,7 +36,7 @@ public class Runtime_100437
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            if (wr.Target == null)
+            if (!IsTargetAlive(wr))
                 return;
         }
 
@@ -48,6 +48,12 @@ public class Runtime_100437
             AssemblyLoadContext alc = new CollectibleAssemblyLoadContext();
             Assembly a = alc.LoadFromAssemblyPath(assemblyPath);
             return (WeakReference)a.GetType(nameof(Runtime_100437)).GetMethod(methodName).Invoke(null, new object[] { typeof(Runtime_100437).Assembly });
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        bool IsTargetAlive(WeakReference wr)
+        {
+            return wr.Target != null;
         }
     }
 
