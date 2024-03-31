@@ -1,31 +1,37 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Xunit;
 
 public static class Runtime_100466
 {
     [Fact]
-    public static int Test()
+    public static int TestBoxingDoesNotTriggerStaticTypeInitializers()
     {
-        var foo = new Foo();
-        return (Bar.X == 0) ? 100 : -1;
+        Foo foo = new Foo();
+        ((object)foo).ToString();
+        return s_cctorTriggered ? -1 : 100;
     }
 
-    struct Foo
+    [Fact]
+    public static int TestNullableBoxingDoesNotTriggerStaticTypeInitializers()
     {
-        static Foo()
-        {
-            Bar.Set();
-        }
+        FooNullable? nullable = new FooNullable();
+        ((object)nullable).ToString();
+        return s_cctorTriggeredNullable ? -1 : 100;
     }
 
-    struct Bar
+    private static bool s_cctorTriggered;
+    private static bool s_cctorTriggeredNullable;
+
+    private struct Foo
     {
-        public static int X;
-        public static void Set()
-        {
-            X = 42;
-        }
+        static Foo() => s_cctorTriggered = true;
+    }
+
+    private struct FooNullable
+    {
+        static FooNullable() => s_cctorTriggeredNullable = true;
     }
 }
