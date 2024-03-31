@@ -1122,7 +1122,7 @@ OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT)
 
     SetTypeHandleOnThreadForAlloc(TypeHandle(pObjMT));
 
-    if pObjMT->ContainsPointers() || pObjMT->IsComObjectType())
+    if (pObjMT->ContainsPointers() || pObjMT->IsComObjectType())
     {
         return NULL;
     }
