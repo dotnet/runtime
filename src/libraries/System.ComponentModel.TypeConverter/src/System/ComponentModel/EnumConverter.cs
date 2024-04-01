@@ -24,6 +24,11 @@ namespace System.ComponentModel
         public EnumConverter(Type type)
         {
             Debug.Assert(type.IsEnum || type.Equals(typeof(Enum)), "type should be an Enum type");
+            if (!type.IsEnum && !type.Equals(typeof(Enum)))
+            {
+                throw new ArgumentException(SR.Format(SR.EnumInvalidValue, nameof(type)));
+            }
+
             EnumType = type;
         }
 
@@ -116,7 +121,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to the specified destination type.
         /// </summary>
-        [UnconditionalSuppressMessage("Trimming", "IL2075:", Justification = "Trimmer does not trim enums")]
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             ArgumentNullException.ThrowIfNull(destinationType);
@@ -158,7 +162,10 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    FieldInfo? info = EnumType.GetField(enumName);
+                    [UnconditionalSuppressMessage("Trimming", "IL2075:", Justification = "Trimmer does not trim enums")]
+                    FieldInfo? GetEnumField(string name) => EnumType.GetField(name);
+
+                    FieldInfo? info = GetEnumField(enumName);
                     if (info != null)
                     {
                         return new InstanceDescriptor(info, null);
@@ -222,8 +229,6 @@ namespace System.ComponentModel
         /// Gets a collection of standard values for the data type this validator is
         /// designed for.
         /// </summary>
-        [UnconditionalSuppressMessage("Trimming", "IL2075:", Justification = "Trimmer does not trim enums")]
-        [UnconditionalSuppressMessage("Trimming", "IL2072:", Justification = "Trimmer does not trim enums")]
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
         {
             if (Values == null)
@@ -231,9 +236,15 @@ namespace System.ComponentModel
                 // We need to get the enum values in this rather round-about way so we can filter
                 // out fields marked Browsable(false). Note that if multiple fields have the same value,
                 // the behavior is undefined, since what we return are just enum values, not names.
-                Type reflectType = TypeDescriptor.GetReflectionType(EnumType) ?? EnumType;
+                [UnconditionalSuppressMessage("Trimming", "IL2067:", Justification = "Trimmer does not trim enums")]
+                static Type GetTypeDescriptorReflectionType(Type enumType) => TypeDescriptor.GetReflectionType(enumType);
 
-                FieldInfo[]? fields = reflectType.GetFields(BindingFlags.Public | BindingFlags.Static);
+                Type reflectType = GetTypeDescriptorReflectionType(EnumType) ?? EnumType;
+
+                [UnconditionalSuppressMessage("Trimming", "IL2070:", Justification = "Trimmer does not trim enums")]
+                static FieldInfo[]? GetPublicStaticEnumFields(Type type) => type.GetFields(BindingFlags.Public | BindingFlags.Static);
+
+                FieldInfo[]? fields = GetPublicStaticEnumFields(reflectType);
                 ArrayList? objValues = null;
 
                 if (fields != null && fields.Length > 0)
