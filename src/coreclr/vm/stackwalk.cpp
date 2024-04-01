@@ -695,7 +695,7 @@ PCODE Thread::VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, KNONVOLATILE_CO
             return NULL;
         }
     }
-
+    LOG((LF_CORDB, LL_EVERYTHING, "RVU: in VirtualUnwindNonLeafCallFrame in stackwalk.cpp, ControlPc=0x%p\n", uControlPc));
     RtlVirtualUnwind(NULL,
                      uImageBase,
                      uControlPc,

@@ -157,11 +157,13 @@ RtlVirtualUnwind (
     CONTRACTL_END;
 
     // The indirection should be taken care of by the caller
+    LOG((LF_CORDB, LL_INFO100000, "Inside RtlVirtualUnwind with ControlPc: %llu.\n", ControlPc));
     _ASSERTE((FunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0);
 
 #ifdef DEBUGGING_SUPPORTED
     if (CORDebuggerAttached())
     {
+        LOG((LF_CORDB, LL_INFO100000, "Right before we call the RtlVirtualUnwind_Worker with ControlPc: %llu.\n", ControlPc));
         return RtlVirtualUnwind_Worker(HandlerType, ImageBase, ControlPc, FunctionEntry, ContextRecord, HandlerData, EstablisherFrame, ContextPointers);
     }
     else
