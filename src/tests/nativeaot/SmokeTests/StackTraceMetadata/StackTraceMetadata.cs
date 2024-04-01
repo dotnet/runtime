@@ -3,13 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
 
-public class Program
+class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         string stackTrace = Environment.StackTrace;
 
@@ -20,7 +18,7 @@ public class Program
 #else
         const bool expected = true;
 #endif
-        bool actual = stackTrace.Contains(nameof(TestEntryPoint)) && stackTrace.Contains(nameof(Program));
+        bool actual = stackTrace.Contains(nameof(Main)) && stackTrace.Contains(nameof(Program));
         return expected == actual ? 100 : 1;
     }
 

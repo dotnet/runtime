@@ -20,6 +20,14 @@ jobs:
   - name: SignType
     value: $[ coalesce(variables.OfficialSignType, 'real') ]
 
+  templateContext:
+    outputs:
+    - output: pipelineArtifact
+      displayName: 'Publish BuildLogs'
+      condition: succeededOrFailed()
+      targetPath: '$(Build.StagingDirectory)\BuildLogs'
+      artifactName: ${{ parameters.logArtifactName }}
+
   steps:
   - checkout: self
     clean: true
@@ -65,11 +73,4 @@ jobs:
         **/*.binlog
       TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
     continueOnError: true
-    condition: succeededOrFailed()
-
-  - task: PublishPipelineArtifact@1
-    displayName: Publish BuildLogs
-    inputs:
-      targetPath: '$(Build.StagingDirectory)\BuildLogs'
-      artifactName: ${{ parameters.logArtifactName }}
     condition: succeededOrFailed()

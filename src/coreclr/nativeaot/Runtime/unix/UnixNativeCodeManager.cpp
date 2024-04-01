@@ -212,14 +212,11 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     ASSERT(((uintptr_t)codeOffset & 1) == 0);
 #endif
 
-    if (!isActiveStackFrame)
+    bool executionAborted = ((UnixNativeMethodInfo*)pMethodInfo)->executionAborted;
+
+    if (!isActiveStackFrame && !executionAborted)
     {
-        // If we are not in the active method, we are currently pointing
-        // to the return address. That may not be reachable after a call (if call does not return)
-        // or reachable via a jump and thus have a different live set.
-        // Therefore we simply adjust the offset to inside of call instruction.
-        // NOTE: The GcInfoDecoder depends on this; if you change it, you must
-        // revisit the GcInfoEncoder/Decoder
+        // the reasons for this adjustment are explained in EECodeManager::EnumGcRefs
         codeOffset--;
     }
 
@@ -230,7 +227,7 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     );
 
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
-    if (((UnixNativeMethodInfo*)pMethodInfo)->executionAborted)
+    if (executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
 
     if (IsFilter(pMethodInfo))
