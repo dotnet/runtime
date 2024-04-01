@@ -372,13 +372,13 @@
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>77372c66fd54927312b5b0a2e399e192f74445c9</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.24170.2">
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.24177.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>29bdbf5df540dc13d4fe440a1ca7076c6ed65864</Sha>
+      <Sha>ad732e236e7ffcb66de4b45a1b736aad4ccdcd83</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.24170.2">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.24177.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>29bdbf5df540dc13d4fe440a1ca7076c6ed65864</Sha>
+      <Sha>ad732e236e7ffcb66de4b45a1b736aad4ccdcd83</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
     <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="4.10.0-2.24114.13">
@@ -410,9 +410,9 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-preview.3.24161.2">
+    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-preview.4.24175.5">
       <Uri>https://github.com/dotnet/installer</Uri>
-      <Sha>e911f5c82cc02aea96e227596e16c830d54cf03a</Sha>
+      <Sha>dc43d363d284c26cb1b463683d6ebb2c88ab0b58</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

@@ -227,7 +227,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(MibcFile->'--mibc:%(Identity)')" />
       <IlcArg Condition="$(IlcGenerateMetadataLog) == 'true'" Include="--metadatalog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).metadata.csv" />
       <IlcArg Condition="$(_targetOS) != ''" Include="--targetos:$(_targetOS)" />
-      <IlcArg Condition="$(_targetArchitecture) != ''" Include="--targetarch:$(_targetArchitecture)" />
+      <IlcArg Condition="$(_targetArchitectureWithAbi) != ''" Include="--targetarch:$(_targetArchitectureWithAbi)" />
       <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
       <IlcArg Condition="$(IlcMultiModule) != 'true' and '$(IlcDehydrate)' != 'false' and '$(ControlFlowGuard)' != 'Guard'" Include="--dehydrate" />
       <IlcArg Condition="$(Optimize) == 'true'" Include="-O" />

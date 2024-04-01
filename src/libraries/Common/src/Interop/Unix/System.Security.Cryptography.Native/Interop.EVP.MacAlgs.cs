@@ -12,8 +12,19 @@ internal static partial class Interop
     {
         internal static partial class EvpMacAlgs
         {
-            internal static SafeEvpMacHandle? Kmac128 { get; } = EvpMacFetch(HashAlgorithmNames.KMAC128);
-            internal static SafeEvpMacHandle? Kmac256 { get; } = EvpMacFetch(HashAlgorithmNames.KMAC256);
+            internal static SafeEvpMacHandle? Kmac128 { get; }
+            internal static SafeEvpMacHandle? Kmac256 { get; }
+
+            static EvpMacAlgs()
+            {
+                CryptoInitializer.Initialize();
+
+                // Do not use property initializers for these because we need to ensure CryptoInitializer.Initialize
+                // is called first. Property initializers happen before cctors, so instead set the property after the
+                // initializer is run.
+                Kmac128 = EvpMacFetch(HashAlgorithmNames.KMAC128);
+                Kmac256 = EvpMacFetch(HashAlgorithmNames.KMAC256);
+            }
 
             [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacFetch", StringMarshalling = StringMarshalling.Utf8)]
             private static partial SafeEvpMacHandle CryptoNative_EvpMacFetch(string algorithm, out int haveFeature);

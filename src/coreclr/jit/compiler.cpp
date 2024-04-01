@@ -2903,9 +2903,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disCodeBytes = false;
 
 #ifdef OPT_CONFIG
-    opts.optRepeat      = false;
-    opts.optRepeatCount = 1;
+    opts.optRepeat = false;
 #endif // OPT_CONFIG
+
+    opts.optRepeatIteration = 0;
+    opts.optRepeatCount     = 1;
+    opts.optRepeatActive    = false;
 
 #ifdef DEBUG
     opts.dspInstrs       = false;
@@ -4993,7 +4996,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doVNBasedIntrinExpansion  = true;
         bool doRangeAnalysis           = true;
         bool doVNBasedDeadStoreRemoval = true;
-        int  iterations                = 1;
 
 #if defined(OPT_CONFIG)
         doSsa                     = (JitConfig.JitDoSsa() != 0);
@@ -5008,15 +5010,25 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doVNBasedIntrinExpansion  = doValueNum;
         doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
-
-        if (opts.optRepeat)
-        {
-            iterations = opts.optRepeatCount;
-        }
 #endif // defined(OPT_CONFIG)
 
-        while (iterations > 0)
+#ifdef DEBUG
+        if (opts.optRepeat)
         {
+            opts.optRepeatActive = true;
+        }
+#endif // DEBUG
+
+        while (++opts.optRepeatIteration <= opts.optRepeatCount)
+        {
+#ifdef DEBUG
+            if (verbose && opts.optRepeat)
+            {
+                printf("\n*************** JitOptRepeat: iteration %d of %d\n\n", opts.optRepeatIteration,
+                       opts.optRepeatCount);
+            }
+#endif // DEBUG
+
             fgModified = false;
 
             if (doSsa)
@@ -5128,18 +5140,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_COMPUTE_EDGE_WEIGHTS2, &Compiler::fgComputeEdgeWeights);
             }
 
-#ifdef DEBUG
-            if (verbose && opts.optRepeat)
-            {
-                printf("\n*************** JitOptRepeat: iterations remaining: %d\n\n", iterations - 1);
-            }
-#endif // DEBUG
-
             // Iterate if requested, resetting annotations first.
-            if (--iterations == 0)
+            if (opts.optRepeatIteration == opts.optRepeatCount)
             {
                 break;
             }
+
+            assert(opts.optRepeat);
 
             // We may have optimized away the canonical entry BB that SSA
             // depends on above, so if we are going for another iteration then
@@ -5158,6 +5165,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             }
 #endif // DEBUG
         }
+
+#ifdef DEBUG
+        if (opts.optRepeat)
+        {
+            opts.optRepeatActive = false;
+        }
+#endif // DEBUG
     }
 
     optLoopsCanonical = false;
