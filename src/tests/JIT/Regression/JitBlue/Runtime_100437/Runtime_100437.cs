@@ -10,15 +10,19 @@ using Xunit;
 public class Runtime_100437
 {
     [Fact]
+    [SkipOnMono("PlatformDetection.IsPreciseGcSupported false on mono", TestPlatforms.Any)]
     public static void TestNonCollectibleType() => TestCollectibleReadOnlyStatics(nameof(NonCollectibleType));
 
     [Fact]
+    [SkipOnMono("PlatformDetection.IsPreciseGcSupported false on mono", TestPlatforms.Any)]
     public static void TestNonCollectibleTypeInSharedGenericCode() => TestCollectibleReadOnlyStatics(nameof(NonCollectibleTypeInSharedGenericCode));
 
     [Fact]
+    [SkipOnMono("PlatformDetection.IsPreciseGcSupported false on mono", TestPlatforms.Any)]
     public static void TestNonCollectibleArrayTypeInSharedGenericCode() => TestCollectibleReadOnlyStatics(nameof(NonCollectibleArrayTypeInSharedGenericCode));
 
     [Fact]
+    [SkipOnMono("PlatformDetection.IsPreciseGcSupported false on mono", TestPlatforms.Any)]
     public static void TestCollectibleEmptyArray() => TestCollectibleReadOnlyStatics(nameof(CollectibleEmptyArray));
 
     private static void TestCollectibleReadOnlyStatics(string methodName)
