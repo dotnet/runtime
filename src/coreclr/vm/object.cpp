@@ -1637,7 +1637,8 @@ OBJECTREF Nullable::Box(void* srcPtr, MethodTable* nullableMT)
     GCPROTECT_BEGININTERIOR (src);
     MethodTable* argMT = nullableMT->GetInstantiation()[0].AsMethodTable();
 
-    // Allocate without triggering cctors - boxing should not trigger cctors
+    // MethodTable::Allocate() triggers cctors, so to avoid that we
+    // allocate directly without triggering cctors - boxing should not trigger cctors.
     argMT->EnsureInstanceActive();
     obj = AllocateObject(argMT);
 
