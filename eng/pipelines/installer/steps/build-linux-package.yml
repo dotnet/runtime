@@ -7,9 +7,10 @@ parameters:
 
 steps:
 ## Run NuGet Authentication for each of the side containers
-- ${{ if ne(variables['System.TeamProject'], 'public') }}:
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(parameters.target, '')) }}:
   - task: NuGetAuthenticate@1
     target: ${{ parameters.target }}
+    condition: ${{ parameters.condition }}
 
 - template: /eng/pipelines/common/templates/global-build-step.yml
   parameters:
@@ -26,3 +27,4 @@ steps:
 # in particular the SBOM tooling, breaks on broken symlinks.
 - script: find . -xtype l -delete
   displayName: Remove broken symbolic links
+  condition: ${{ parameters.condition }}
