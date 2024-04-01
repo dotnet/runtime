@@ -999,7 +999,7 @@ inline regNumber genFirstRegNumFromMask(AllRegsMask& mask)
     }
     else
     {
-        regNum = (regNumber)BitOperations::BitScanForward(mask.predicateRegs());
+        regNum = (regNumber)(64 + BitOperations::BitScanForward(mask.predicateRegs()));
     }
 #else
     regNum = (regNumber)BitOperations::BitScanForward(gprOrFloatMask);
@@ -5060,7 +5060,7 @@ FORCEINLINE int regIndexForType(T vt)
 {
     int type = varTypeRegister[TypeGet(vt)];
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    assert(type <= 2);
+    assert(type <= 3);
 #endif
 
 #ifndef FEATURE_MASKED_HW_INTRINSICS

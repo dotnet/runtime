@@ -94,28 +94,31 @@ REGDEF(V29,  29+VBASE, VMASK(29), "d29", "s29", 1)
 REGDEF(V30,  30+VBASE, VMASK(30), "d30", "s30", 1)
 REGDEF(V31,  31+VBASE, VMASK(31), "d31", "s31", 1)
 
-// TODO-SVE: Fix once we add predicate registers
-REGALIAS(P0, V0)
-REGALIAS(P1, V1)
-REGALIAS(P2, V2)
-REGALIAS(P3, V3)
-REGALIAS(P4, V4)
-REGALIAS(P5, V5)
-REGALIAS(P6, V6)
-REGALIAS(P7, V7)
-REGALIAS(P8, V8)
-REGALIAS(P9, V9)
-REGALIAS(P10, V10)
-REGALIAS(P11, V11)
-REGALIAS(P12, V12)
-REGALIAS(P13, V13)
-REGALIAS(P14, V14)
-REGALIAS(P15, V15)
+#define PBASE 64
+#define PMASK(x) (1ULL << x)
+
+/*
+REGDEF(name,  rnum,         mask,  xname,  wname, regTypeTag) */
+REGDEF(P0,    0+PBASE,  PMASK(0),  "p0" ,  "na",  2)
+REGDEF(P1,    1+PBASE,  PMASK(1),  "p1" ,  "na",  2)
+REGDEF(P2,    2+PBASE,  PMASK(2),  "p2" ,  "na",  2)
+REGDEF(P3,    3+PBASE,  PMASK(3),  "p3" ,  "na",  2)
+REGDEF(P4,    4+PBASE,  PMASK(4),  "p4" ,  "na",  2)
+REGDEF(P5,    5+PBASE,  PMASK(5),  "p5" ,  "na",  2)
+REGDEF(P6,    6+PBASE,  PMASK(6),  "p6" ,  "na",  2)
+REGDEF(P7,    7+PBASE,  PMASK(7),  "p7" ,  "na",  2)
+REGDEF(P8,    8+PBASE,  PMASK(8),  "p8" ,  "na",  2)
+REGDEF(P9,    9+PBASE,  PMASK(9),  "p9" ,  "na",  2)
+REGDEF(P10,  10+PBASE, PMASK(10),  "p10",  "na",  2)
+REGDEF(P11,  11+PBASE, PMASK(11),  "p11",  "na",  2)
+REGDEF(P12,  12+PBASE, PMASK(12),  "p12",  "na",  2)
+REGDEF(P13,  13+PBASE, PMASK(13),  "p13",  "na",  2)
+REGDEF(P14,  14+PBASE, PMASK(14),  "p14",  "na",  2)
+REGDEF(P15,  15+PBASE, PMASK(15),  "p15",  "na",  2)
 
 
-
-// The registers with values 64 (NBASE) and above are not real register numbers
-#define NBASE 64
+// The registers with values 80 (NBASE) and above are not real register numbers
+#define NBASE 80
 
 REGDEF(SP,    0+NBASE, 0x0000,    "sp",  "wsp?", -1)
 // This must be last!
