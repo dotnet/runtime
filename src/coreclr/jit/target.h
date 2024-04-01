@@ -299,12 +299,6 @@ private:
             // bool        _hasPredicateRegister : 8;
         };
     };
-    // TODO: This can be moved inside the union by trimming the size of _predicateRegs: 28
-    // and have this as 8 bits. However, there are chances of accidently overwriting it
-    // when updating the predicateReg mask. Evaluation this option on how we can secure it.
-    // Find out if the TP cost is more by having this field separately vs. adding extra checks
-    // when the predicateReg is updated.
-    bool _hasPredicateRegister;
 #else
     RegBitSet64  _allRegisters;
 #endif
@@ -351,20 +345,22 @@ public:
 #endif // HAS_MORE_THAN_64_REGISTERS
     }
 
+//#ifdef DEBUG
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     inline regMaskPredicate predicateRegs() const
     {
-#if defined(HAS_MORE_THAN_64_REGISTERS)
+#ifdef HAS_MORE_THAN_64_REGISTERS
         return _predicateRegs;
 #else
         return _allRegisters & 0xFF000000000000; // TODO: Fix the mask
 #endif // HAS_MORE_THAN_64_REGISTERS
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
+//#endif // DEBUG
 
     _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _float_gpr(floatRegMask | gprRegMask), _predicateRegs(RBM_NONE), _hasPredicateRegister(true)
+        : _float_gpr(floatRegMask | gprRegMask), _predicateRegs(RBM_NONE)
 #else
         : _allRegisters(floatRegMask | gprRegMask)
 #endif
@@ -374,7 +370,7 @@ public:
     // TODO: See if we can avoid the '|' operation here.
     _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask, RegBitSet64 predicateRegs)
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _float_gpr(floatRegMask | gprRegMask), _predicateRegs((RegBitSet32)predicateRegs), _hasPredicateRegister(true)
+        : _float_gpr(floatRegMask | gprRegMask), _predicateRegs((RegBitSet32)predicateRegs)
 #else
         : _allRegisters(predicateRegs | floatRegMask | gprRegMask)
 #endif
@@ -383,7 +379,7 @@ public:
 
     _regMaskAll()
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _float_gpr(RBM_NONE), _predicateRegs(RBM_NONE), _hasPredicateRegister(true)
+        : _float_gpr(RBM_NONE), _predicateRegs(RBM_NONE)
 #else
         : _allRegisters(RBM_NONE)
 #endif
@@ -392,18 +388,11 @@ public:
 
     _regMaskAll(RegBitSet64 allRegistersMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _float_gpr(allRegistersMask), _predicateRegs(RBM_NONE), _hasPredicateRegister(true)
+        : _float_gpr(allRegistersMask), _predicateRegs(RBM_NONE)
 #else
         : _allRegisters(allRegistersMask)
 #endif
     {
-    }
-
-    FORCEINLINE void NeedPredicateRegisterTracking()
-    {
-#ifdef HAS_MORE_THAN_64_REGISTERS
-        _hasPredicateRegister = true;
-#endif
     }
 
 #ifdef TARGET_ARM
@@ -449,7 +438,7 @@ public:
     FORCEINLINE regMaskTP GetAllRegistersMask() const;
 #endif // !HAS_MORE_THAN_64_REGISTERS
 
-    regMaskOnlyOne  operator[](int index) const;
+    FORCEINLINE regMaskOnlyOne  operator[](int index) const;
     FORCEINLINE void operator|=(const _regMaskAll& other);
     FORCEINLINE void operator&=(const _regMaskAll& other);
     FORCEINLINE void operator|=(const regNumber reg);
