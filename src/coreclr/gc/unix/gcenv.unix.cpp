@@ -818,7 +818,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 #endif
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
-    if (cacheSize == 0)
+    if (cacheSize == 0 || cacheSize == UINTMAX_MAX)
     {
         //
         // Fallback to retrieve cachesize via /sys/.. if sysconf was not available
