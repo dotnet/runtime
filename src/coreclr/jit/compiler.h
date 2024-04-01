@@ -50,6 +50,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "codegeninterface.h"
 #include "regset.h"
+#include "abi.h"
 #include "jitgcinfo.h"
 
 #if DUMP_GC_TABLES && defined(JIT32_GCENCODER)
@@ -2090,6 +2091,9 @@ class FlowGraphNaturalLoop
     // Can be used to store additional annotations for this loop on the side.
     unsigned m_index = 0;
 
+    // True if this loop contains an improper loop header
+    bool m_containsImproperHeader = false;
+
     FlowGraphNaturalLoop(const FlowGraphDfsTree* dfsTree, BasicBlock* head);
 
     unsigned LoopBlockBitVecIndex(BasicBlock* block);
@@ -2177,6 +2181,11 @@ public:
 
     bool ContainsBlock(BasicBlock* block);
     bool ContainsLoop(FlowGraphNaturalLoop* childLoop);
+
+    bool ContainsImproperHeader() const
+    {
+        return m_containsImproperHeader;
+    }
 
     unsigned NumLoopBlocks();
 
@@ -3782,6 +3791,8 @@ public:
 
     LclVarDsc* lvaTable;    // variable descriptor table
     unsigned   lvaTableCnt; // lvaTable size (>= lvaCount)
+
+    ABIPassingInformation* lvaParameterPassingInfo;
 
     unsigned lvaTrackedCount;             // actual # of locals being tracked
     unsigned lvaTrackedCountInSizeTUnits; // min # of size_t's sufficient to hold a bit for all the locals being tracked
@@ -5588,6 +5599,8 @@ public:
     void fgValueNumberFieldStore(
         GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value);
 
+    static bool fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* byteOffset, FieldSeq** pFseq);
+
     bool fgValueNumberConstLoad(GenTreeIndir* tree);
 
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
@@ -6858,6 +6871,7 @@ public:
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
+    PhaseStatus optOptimizePostLayout(); // Run optimizations after block layout is finalized
     PhaseStatus optSetBlockWeights();
     PhaseStatus optFindLoopsPhase(); // Finds loops and records them in the loop table
 
@@ -8136,7 +8150,7 @@ public:
     var_types eeGetArgType(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig, bool* isPinned);
     CORINFO_CLASS_HANDLE eeGetArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE list);
     CORINFO_CLASS_HANDLE eeGetClassFromContext(CORINFO_CONTEXT_HANDLE context);
-    unsigned eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig);
+    unsigned eeGetArgSize(CorInfoType corInfoType, CORINFO_CLASS_HANDLE typeHnd);
     static unsigned eeGetArgSizeAlignment(var_types type, bool isFloatHfa);
 
     // VOM info, method sigs
@@ -9861,9 +9875,14 @@ public:
         bool altJit;     // True if we are an altjit and are compiling this method
 
 #ifdef OPT_CONFIG
-        bool optRepeat;      // Repeat optimizer phases k times
-        int  optRepeatCount; // How many times to repeat. By default, comes from JitConfig.JitOptRepeatCount().
+        bool optRepeat; // Repeat optimizer phases k times
 #endif
+
+        int optRepeatIteration; // The current optRepeat iteration: from 0 to optRepeatCount. optRepeatCount can be
+                                // zero, in which case no optimizations in the set of repeated optimizations are
+                                // performed. optRepeatIteration will only be zero if optRepeatCount is zero.
+        int  optRepeatCount;    // How many times to repeat. By default, comes from JitConfig.JitOptRepeatCount().
+        bool optRepeatActive;   // `true` if we are in the range of phases being repeated.
 
         bool disAsm;       // Display native code as it is generated
         bool disTesting;   // Display BEGIN METHOD/END METHOD anchors for disasm testing

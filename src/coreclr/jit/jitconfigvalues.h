@@ -696,6 +696,10 @@ CONFIG_INTEGER(JitCheckSynthesizedCounts, W("JitCheckSynthesizedCounts"), 0)
 // If instrumenting the method, run synthesis and save the synthesis results
 // as edge or block profile data. Do not actually instrument.
 CONFIG_INTEGER(JitPropagateSynthesizedCountsToProfileData, W("JitPropagateSynthesizedCountsToProfileData"), 0)
+// Use general (gauss-seidel) solver
+CONFIG_INTEGER(JitSynthesisUseSolver, W("JitSynthesisUseSolver"), 1)
+// Relative likelihood of exceptions for synthesis
+CONFIG_STRING(JitSynthesisExceptionScale, W("JitSynthesisExceptionScale"))
 #endif
 
 // Devirtualize virtual calls with getExactClasses (NativeAOT only for now)

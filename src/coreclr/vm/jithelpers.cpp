@@ -510,57 +510,6 @@ HCIMPL1_V(double, JIT_Lng2Dbl, INT64 val)
 }
 HCIMPLEND
 
-//--------------------------------------------------------------------------
-template <class ftype>
-ftype modftype(ftype value, ftype *iptr);
-template <> float modftype(float value, float *iptr) { return modff(value, iptr); }
-template <> double modftype(double value, double *iptr) { return modf(value, iptr); }
-
-// round to nearest, round to even if tied
-template <class ftype>
-ftype BankersRound(ftype value)
-{
-    if (value < 0.0) return -BankersRound <ftype> (-value);
-
-    ftype integerPart;
-    modftype( value, &integerPart );
-
-    // if decimal part is exactly .5
-    if ((value -(integerPart +0.5)) == 0.0)
-    {
-        // round to even
-        if (fmod(ftype(integerPart), ftype(2.0)) == 0.0)
-            return integerPart;
-
-        // Else return the nearest even integer
-        return (ftype)copysign(ceil(fabs(value+0.5)),
-                         value);
-    }
-
-    // Otherwise round to closest
-    return (ftype)copysign(floor(fabs(value)+0.5),
-                     value);
-}
-
-
-/*********************************************************************/
-// round double to nearest int (as double)
-HCIMPL1_V(double, JIT_DoubleRound, double val)
-{
-    FCALL_CONTRACT;
-    return BankersRound(val);
-}
-HCIMPLEND
-
-/*********************************************************************/
-// round float to nearest int (as float)
-HCIMPL1_V(float, JIT_FloatRound, float val)
-{
-    FCALL_CONTRACT;
-    return BankersRound(val);
-}
-HCIMPLEND
-
 /*********************************************************************/
 // Call fast Dbl2Lng conversion - used by functions below
 FORCEINLINE INT64 FastDbl2Lng(double val)
@@ -674,63 +623,11 @@ HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
 }
 HCIMPLEND
 
-#ifndef TARGET_WINDOWS
-namespace
-{
-    bool isnan(float val)
-    {
-        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
-        return (bits & 0x7FFFFFFFU) > 0x7F800000U;
-    }
-    bool isnan(double val)
-    {
-        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
-        return (bits & 0x7FFFFFFFFFFFFFFFULL) > 0x7FF0000000000000ULL;
-    }
-    bool isfinite(float val)
-    {
-        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
-        return (~bits & 0x7F800000U) != 0;
-    }
-    bool isfinite(double val)
-    {
-        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
-        return (~bits & 0x7FF0000000000000ULL) != 0;
-    }
-}
-#endif
-
 HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
 {
     FCALL_CONTRACT;
 
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-
-    if (divisor==0 || !isfinite(dividend))
-    {
-        UINT32 NaN = CLR_NAN_32;
-        return *(float *)(&NaN);
-    }
-    else if (!isfinite(divisor) && !isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-#if 0
-    // COMPILER BUG WITH FMODF() + /Oi, USE FMOD() INSTEAD
-    return fmodf(dividend,divisor);
-#else
-    return (float)fmod((double)dividend,(double)divisor);
-#endif
+    return fmodf(dividend, divisor);
 }
 HCIMPLEND
 
@@ -738,27 +635,7 @@ HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
 {
     FCALL_CONTRACT;
 
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-    if (divisor==0 || !isfinite(dividend))
-    {
-        UINT64 NaN = CLR_NAN_64;
-        return *(double *)(&NaN);
-    }
-    else if (!isfinite(divisor) && !isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-    return(fmod(dividend,divisor));
+    return fmod(dividend, divisor);
 }
 HCIMPLEND
 
