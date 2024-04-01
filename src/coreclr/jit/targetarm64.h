@@ -113,8 +113,8 @@
 
   #define CNT_CALLEE_SAVED_FLOAT  (8)
   #define CNT_CALLEE_TRASH_FLOAT  (24)
-  #define CNT_CALLEE_SAVED_MASK   (0)
-  #define CNT_CALLEE_TRASH_MASK   (0)
+  #define CNT_CALLEE_SAVED_MASK   (4)
+  #define CNT_CALLEE_TRASH_MASK   (8)
 
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)
@@ -152,8 +152,8 @@
   #define RBM_ALLMASK              (RBM_LOWMASK | RBM_HIGHMASK)
 
   // TODO-SVE: Fix when adding predicate register allocation
-  #define RBM_MSK_CALLEE_SAVED    (0)
-  #define RBM_MSK_CALLEE_TRASH    (0)
+  #define RBM_MSK_CALLEE_SAVED    (RBM_P0 | RBM_P1 | RBM_P2 | RBM_P3)
+  #define RBM_MSK_CALLEE_TRASH    (RBM_P4 | RBM_P5 | RBM_P6 | RBM_P7 | RBM_P8 | RBM_P9 | RBM_P10 | RBM_P11 | RBM_P12 | RBM_P13 | RBM_P14 | RBM_P15)
 
   // ARM64 write barrier ABI (see vm\arm64\asmhelpers.asm, vm\arm64\asmhelpers.S):
   // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
