@@ -27,7 +27,7 @@
 // Forbid the use of srand()/rand(), as these are globally shared facilities and our use of them would
 // interfere with native user code in the same process. This override is not compatible with stl headers.
 //
-#if !defined(DO_NOT_DISABLE_RAND) && !defined(USE_STL)
+#if !defined(DO_NOT_DISABLE_RAND)
 
 #ifdef srand
 #undef srand
@@ -39,7 +39,7 @@
 #endif
 #define rand Do_not_use_rand
 
-#endif //!DO_NOT_DISABLE_RAND && !USE_STL
+#endif //!DO_NOT_DISABLE_RAND
 
 
 class CLRRandom
