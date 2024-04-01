@@ -314,12 +314,6 @@ exit:
         {
             enabled = false;
 
-            if (result != 0)
-                return FatalError();
-
-            if (!enabled)
-                goto exit;
-
             if (mmapAddr != NULL)
             {
                 result = munmap(mmapAddr, sizeof(FileHeader));
@@ -342,7 +336,7 @@ exit:
 
             fd = -1;
         }
-exit:
+
         return 0;
     }
 };
