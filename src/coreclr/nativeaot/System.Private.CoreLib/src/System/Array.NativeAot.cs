@@ -49,14 +49,6 @@ namespace System
             }
         }
 
-        // This is the classlib-provided "get array MethodTable" function that will be invoked whenever the runtime
-        // needs to know the base type of an array.
-        [RuntimeExport("GetSystemArrayEEType")]
-        private static unsafe MethodTable* GetSystemArrayEEType()
-        {
-            return MethodTable.Of<Array>();
-        }
-
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         private static unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds)
         {

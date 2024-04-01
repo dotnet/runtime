@@ -96,14 +96,4 @@ namespace System
     {
         public AmbiguousImplementationException() { }
     }
-
-    internal class DataMisalignedException : Exception
-    {
-        public DataMisalignedException() { }
-    }
-
-    internal class AccessViolationException : Exception
-    {
-        public AccessViolationException() { }
-    }
 }

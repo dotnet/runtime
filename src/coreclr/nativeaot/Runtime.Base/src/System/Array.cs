@@ -19,7 +19,6 @@ namespace System
 #pragma warning restore
 
         public int Length => (int)Unsafe.As<RawArrayData>(this).Length;
-        internal nuint NativeLength => Unsafe.As<RawArrayData>(this).Length;
     }
 
     // To accommodate class libraries that wish to implement generic interfaces on arrays, all class libraries
