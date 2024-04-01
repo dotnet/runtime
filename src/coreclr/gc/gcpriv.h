@@ -5962,14 +5962,5 @@ public:
 #define THIS_ARG
 #endif // FEATURE_CARD_MARKING_STEALING
 
-template <typename T, typename U>
-auto max(T&& t, U&& u) -> decltype(t > u ? t : u)
-{
-    return t > u ? t : u;
-}
-
-template <typename T, typename U>
-auto min(T&& t, U&& u) -> decltype(t < u ? t : u)
-{
-    return t < u ? t : u;
-}
+using std::min;
+using std::max;

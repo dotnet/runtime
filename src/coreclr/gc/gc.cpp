@@ -3113,7 +3113,7 @@ void gc_history_global::print()
 
 uint32_t limit_time_to_uint32 (uint64_t time)
 {
-    time = min (time, UINT32_MAX);
+    time = min (time, (uint64_t)UINT32_MAX);
     return (uint32_t)time;
 }
 
@@ -12191,7 +12191,7 @@ void gc_heap::clear_region_demoted (heap_segment* region)
 
 int gc_heap::get_plan_gen_num (int gen_number)
 {
-    return ((settings.promotion) ? min ((gen_number + 1), max_generation) : gen_number);
+    return ((settings.promotion) ? min ((gen_number + 1), (int)max_generation) : gen_number);
 }
 
 uint8_t* gc_heap::get_uoh_start_object (heap_segment* region, generation* gen)
@@ -21859,13 +21859,13 @@ size_t gc_heap::min_reclaim_fragmentation_threshold (uint32_t num_heaps)
     dprintf (GTC_LOG, ("min av: %zd, 10%% gen2: %zd, 3%% mem: %zd",
         min_mem_based_on_available, ten_percent_size, three_percent_mem));
 #endif //SIMPLE_DPRINTF
-    return (size_t)(min (min_mem_based_on_available, min (ten_percent_size, three_percent_mem)));
+    return (size_t)(min ((uint64_t)min_mem_based_on_available, min ((uint64_t)ten_percent_size, three_percent_mem)));
 }
 
 inline
 uint64_t gc_heap::min_high_fragmentation_threshold(uint64_t available_mem, uint32_t num_heaps)
 {
-    return min (available_mem, (256*1024*1024u)) / num_heaps;
+    return min (available_mem, (uint64_t)(256*1024*1024)) / num_heaps;
 }
 
 enum {
@@ -22235,7 +22235,7 @@ void gc_heap::gc1()
     }
 
     //adjust the allocation size from the pinned quantities.
-    for (int gen_number = 0; gen_number <= min (max_generation,n+1); gen_number++)
+    for (int gen_number = 0; gen_number <= min ((int)max_generation,n+1); gen_number++)
     {
         generation* gn = generation_of (gen_number);
         if (settings.compaction)
@@ -29223,7 +29223,7 @@ BOOL gc_heap::decide_on_promotion_surv (size_t threshold)
     {
         gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
-        dynamic_data* dd = hp->dynamic_data_of (min ((settings.condemned_generation + 1), max_generation));
+        dynamic_data* dd = hp->dynamic_data_of (min ((int)(settings.condemned_generation + 1), (int)max_generation));
         size_t older_gen_size = dd_current_size (dd) + (dd_desired_allocation (dd) - dd_new_allocation (dd));
 
         size_t promoted = hp->total_promoted_bytes;
@@ -32532,7 +32532,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
     if ((condemned_gen_number < max_generation))
     {
-        older_gen = generation_of (min (max_generation, 1 + condemned_gen_number));
+        older_gen = generation_of (min ((int)max_generation, 1 + condemned_gen_number));
         generation_allocator (older_gen)->copy_to_alloc_list (r_free_list);
 
         r_free_list_space = generation_free_list_space (older_gen);
@@ -34103,7 +34103,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         {
             reset_pinned_queue_bos();
 #ifndef USE_REGIONS
-            unsigned int  gen_number = min (max_generation, 1 + condemned_gen_number);
+            unsigned int  gen_number = (unsigned int)min ((int)max_generation, 1 + condemned_gen_number);
             generation*  gen = generation_of (gen_number);
             uint8_t*  low = generation_allocation_start (generation_of (gen_number-1));
             uint8_t*  high =  heap_segment_allocated (ephemeral_heap_segment);
@@ -43548,7 +43548,7 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
             }
             else
             {
-                new_size = (size_t) min (max ( (f * current_size), min_gc_size), max_size);
+                new_size = (size_t) min (max ( (size_t)(f * current_size), min_gc_size), max_size);
             }
 
             assert ((new_size >= current_size) || (new_size == max_size));
@@ -43620,7 +43620,7 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
             size_t survivors = out;
             cst = float (survivors) / float (dd_begin_data_size (dd));
             f = surv_to_growth (cst, limit, max_limit);
-            new_allocation = (size_t) min (max ((f * (survivors)), min_gc_size), max_size);
+            new_allocation = (size_t) min (max ((size_t)(f * (survivors)), min_gc_size), max_size);
 
             new_allocation = linear_allocation_model (allocation_fraction, new_allocation,
                                                       dd_desired_allocation (dd), time_since_previous_collection_secs);
@@ -49817,7 +49817,7 @@ GCHeap::GarbageCollect (int generation, bool low_memory_p, int mode)
     gc_heap* hpt = 0;
 #endif //MULTIPLE_HEAPS
 
-    generation = (generation < 0) ? max_generation : min (generation, max_generation);
+    generation = (generation < 0) ? max_generation : min (generation, (int)max_generation);
     dynamic_data* dd = hpt->dynamic_data_of (generation);
 
 #ifdef BACKGROUND_GC
@@ -49915,7 +49915,7 @@ size_t
 GCHeap::GarbageCollectTry (int generation, BOOL low_memory_p, int mode)
 {
     int gen = (generation < 0) ?
-               max_generation : min (generation, max_generation);
+               max_generation : min (generation, (int)max_generation);
 
     gc_reason reason = reason_empty;
 
@@ -51912,7 +51912,7 @@ CFinalize::UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p)
     // it was promoted or not
     if (gen_0_empty_p)
     {
-        for (int i = min (gen+1, max_generation); i > 0; i--)
+        for (int i = min (gen+1, (int)max_generation); i > 0; i--)
         {
             m_FillPointers [gen_segment(i)] = m_FillPointers [gen_segment(i-1)];
         }
