@@ -166,7 +166,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         {
             ThrowHelper.ThrowIfNull(collection);
 
-            TryAddTransient(collection, typeof(TService), typeof(TService));
+            TryAddTransient<TService, TService>(collection);
         }
 
         /// <summary>
@@ -272,7 +272,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         {
             ThrowHelper.ThrowIfNull(collection);
 
-            TryAddScoped(collection, typeof(TService), typeof(TService));
+            TryAddScoped<TService, TService>(collection);
         }
 
         /// <summary>
@@ -378,7 +378,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         {
             ThrowHelper.ThrowIfNull(collection);
 
-            TryAddSingleton(collection, typeof(TService), typeof(TService));
+            TryAddSingleton<TService, TService>(collection);
         }
 
         /// <summary>
@@ -412,7 +412,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
             ThrowHelper.ThrowIfNull(collection);
             ThrowHelper.ThrowIfNull(instance);
 
-            var descriptor = ServiceDescriptor.Singleton(serviceType: typeof(TService), implementationInstance: instance);
+            var descriptor = ServiceDescriptor.Singleton(implementationInstance: instance);
             TryAdd(collection, descriptor);
         }
 

@@ -1331,7 +1331,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         IntPtr tmpPtr = (IntPtr)0;
                         for (int i = 0; i < count; i++)
                         {
-                            tmpPtr = IntPtr.Add(val, Marshal.SizeOf(typeof(DS_NAME_RESULT_ITEM)) * i);
+                            tmpPtr = IntPtr.Add(val, Marshal.SizeOf<DS_NAME_RESULT_ITEM>() * i);
                             DS_NAME_RESULT_ITEM nameResult = new DS_NAME_RESULT_ITEM();
                             Marshal.PtrToStructure(tmpPtr, nameResult);
                             if (nameResult.status == DS_NAME_ERROR.DS_NAME_NO_ERROR || nameResult.status == DS_NAME_ERROR.DS_NAME_ERROR_DOMAIN_ONLY)

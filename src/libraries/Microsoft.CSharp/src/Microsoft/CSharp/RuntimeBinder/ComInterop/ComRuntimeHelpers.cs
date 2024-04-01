@@ -179,7 +179,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             try
             {
-                return (ComTypes.TYPEATTR)Marshal.PtrToStructure(pAttrs, typeof(ComTypes.TYPEATTR));
+                return Marshal.PtrToStructure<ComTypes.TYPEATTR>(pAttrs);
             }
             finally
             {
@@ -200,7 +200,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             try
             {
-                return (ComTypes.TYPELIBATTR)Marshal.PtrToStructure(pAttrs, typeof(ComTypes.TYPELIBATTR));
+                return Marshal.PtrToStructure<ComTypes.TYPELIBATTR>(pAttrs);
             }
             finally
             {

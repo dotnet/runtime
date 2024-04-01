@@ -166,7 +166,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(services);
             ThrowHelper.ThrowIfNull(implementationFactory);
 
-            return services.AddKeyedTransient(typeof(TService), serviceKey, implementationFactory);
+            return services.AddKeyedTransient<TService>(serviceKey, implementationFactory);
         }
 
         /// <summary>
@@ -324,7 +324,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(services);
             ThrowHelper.ThrowIfNull(implementationFactory);
 
-            return services.AddKeyedScoped(typeof(TService), serviceKey, implementationFactory);
+            return services.AddKeyedScoped<TService>(serviceKey, implementationFactory);
         }
 
 
@@ -434,7 +434,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ThrowHelper.ThrowIfNull(services);
 
-            return services.AddKeyedSingleton(typeof(TService), serviceKey, typeof(TService));
+            return services.AddKeyedSingleton<TService, TService>(serviceKey);
         }
 
         /// <summary>
@@ -483,7 +483,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(services);
             ThrowHelper.ThrowIfNull(implementationFactory);
 
-            return services.AddKeyedSingleton(typeof(TService), serviceKey, implementationFactory);
+            return services.AddKeyedSingleton<TService>(serviceKey, implementationFactory);
         }
 
         /// <summary>

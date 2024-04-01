@@ -61,7 +61,7 @@ namespace System.DirectoryServices
             private void Advance()
             {
                 _currentValue = s_noMoreValues;
-                IntPtr addr = Marshal.AllocCoTaskMem(Marshal.SizeOf(typeof(Variant)));
+                IntPtr addr = Marshal.AllocCoTaskMem(Marshal.SizeOf<Variant>());
                 try
                 {
                     int[] numRead = new int[] { 0 };

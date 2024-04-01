@@ -157,8 +157,8 @@ namespace System.DirectoryServices.AccountManagement
 
                 for (int i = 0; i < domainCount; i++)
                 {
-                    domains[i] = (Interop.LSA_TRUST_INFORMATION)Marshal.PtrToStructure(pCurrentDomain, typeof(Interop.LSA_TRUST_INFORMATION));
-                    pCurrentDomain = new IntPtr(pCurrentDomain.ToInt64() + Marshal.SizeOf(typeof(Interop.LSA_TRUST_INFORMATION)));
+                    domains[i] = Marshal.PtrToStructure<Interop.LSA_TRUST_INFORMATION>(pCurrentDomain);
+                    pCurrentDomain = new IntPtr(pCurrentDomain.ToInt64() + Marshal.SizeOf<Interop.LSA_TRUST_INFORMATION>());
                 }
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "SidList: got {0} groups in {1} domains", sidCount, domainCount);

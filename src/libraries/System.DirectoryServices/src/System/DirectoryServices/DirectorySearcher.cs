@@ -844,7 +844,7 @@ namespace System.DirectoryServices
                         ptrVLVContexToFree = vlvValue.contextID;
                         Marshal.Copy(_vlv.DirectoryVirtualListViewContext._context, 0, vlvValue.contextID, vlvValue.contextIDlength);
                     }
-                    IntPtr vlvPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(AdsVLV)));
+                    IntPtr vlvPtr = Marshal.AllocHGlobal(Marshal.SizeOf<AdsVLV>());
                     byte[] vlvBytes = new byte[Marshal.SizeOf(vlvValue)];
                     try
                     {
@@ -894,7 +894,7 @@ namespace System.DirectoryServices
 
         private static void DoSetSearchPrefs(UnsafeNativeMethods.IDirectorySearch adsSearch, AdsSearchPreferenceInfo[] prefs)
         {
-            int structSize = Marshal.SizeOf(typeof(AdsSearchPreferenceInfo));
+            int structSize = Marshal.SizeOf<AdsSearchPreferenceInfo>();
             IntPtr ptr = Marshal.AllocHGlobal((IntPtr)(structSize * prefs.Length));
             try
             {

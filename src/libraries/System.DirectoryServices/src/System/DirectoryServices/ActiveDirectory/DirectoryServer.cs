@@ -692,7 +692,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal unsafe void SyncReplicaHelper(IntPtr dsHandle, bool isADAM, string partition, string? sourceServer, int option, SafeLibraryHandle libHandle)
         {
-            int structSize = Marshal.SizeOf(typeof(Guid));
+            int structSize = Marshal.SizeOf<Guid>();
             IntPtr unmanagedGuid = (IntPtr)0;
             Guid guid = Guid.Empty;
             AdamInstance? adamServer = null;
