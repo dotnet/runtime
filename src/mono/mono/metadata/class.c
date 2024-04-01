@@ -3347,8 +3347,9 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 
 	if (case_sensitive) {
 		if (dn_simdhash_string_ptr_try_get_value (image->name_cache, name_space, (void **)&nspace_table)) {
-			if (!dn_simdhash_string_ptr_try_get_value (nspace_table, name, (void **)&token))
-				token = 0;
+			void * temp;
+			if (dn_simdhash_string_ptr_try_get_value (nspace_table, name, &temp))
+				token = GPOINTER_TO_UINT(temp);
 		}
 	} else {
 		FindAllUserData all_user_data = { name_space, NULL };
