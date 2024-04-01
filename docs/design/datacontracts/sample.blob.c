@@ -273,6 +273,7 @@ const struct MagicAndBlob Blob = {
 			.TypesStart = offsetof(struct BinaryBlobDataDescriptor, Types),
 			.FieldPoolStart = offsetof(struct BinaryBlobDataDescriptor, FieldPool),
 			.GlobalValuesStart = offsetof(struct BinaryBlobDataDescriptor, GlobalValues),
+			.NamesStart = offsetof(struct BinaryBlobDataDescriptor, NamesPool),
 			.TypeCount = CDacBlobTypesCount,
 			.FieldPoolCount = CDacBlobFieldPoolCount,
 			.NamesPoolCount = sizeof(struct CDacStringPoolSizes),
