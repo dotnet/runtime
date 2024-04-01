@@ -885,16 +885,12 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     UPDATE_CACHE_SIZE_AND_LEVEL(size, 2)
 #endif
 #ifdef _SC_LEVEL3_CACHE_SIZE
-    size_t level3_dcache_size;
-    size = level3_dcache_size = ( size_t) sysconf(_SC_LEVEL3_CACHE_SIZE);
+    size = ( size_t) sysconf(_SC_LEVEL3_CACHE_SIZE);
     UPDATE_CACHE_SIZE_AND_LEVEL(size, 3)
-    printf("[GetLogicalProcessorCacheSizeFromOS]: size after Level3DCacheSize (%zu): %zu\n", level3_dcache_size,  size);
 #endif
 #ifdef _SC_LEVEL4_CACHE_SIZE
-    size_t level4_dcache_size;
-    size = level4_dcache_size = ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE);
+    size = ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE);
     UPDATE_CACHE_SIZE_AND_LEVEL(size, 4)
-    printf("[GetLogicalProcessorCacheSizeFromOS]: size after Level4DCacheSize (%zu): %zu\n", level4_dcache_size,  size);
 #endif
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
