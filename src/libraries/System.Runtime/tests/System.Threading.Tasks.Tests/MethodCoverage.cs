@@ -994,7 +994,7 @@ namespace TaskCoverage
         [InlineData(3)]
         [InlineData(4)]
         [InlineData(5)]
-        public async void Task_WhenEach_IteratesThroughCompleteAndIncompleteTasks(int mode)
+        public async Task Task_WhenEach_IteratesThroughCompleteAndIncompleteTasks(int mode)
         {
             TaskCompletionSource<int> tcs1 = new(), tcs2 = new(), tcs3 = new();
             Task<int>[] array = [Task.FromResult(1), tcs1.Task, Task.FromResult(2), tcs2.Task, Task.FromResult(3), tcs3.Task];
