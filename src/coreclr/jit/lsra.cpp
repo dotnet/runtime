@@ -4383,6 +4383,42 @@ void LinearScan::resetAllRegistersState()
     }
 }
 
+void LinearScan::updateDeadCandidatesAtBlockStart(AllRegsMask& deadRegMask, VarToRegMap inVarToRegMap)
+{
+    while (!deadRegMask.IsEmpty())
+    {
+        regNumber  reg           = genFirstRegNumFromMaskAndToggle(deadRegMask);
+        RegRecord* physRegRecord = getRegisterRecord(reg);
+
+        makeRegAvailable(reg, physRegRecord->registerType);
+        Interval* assignedInterval = physRegRecord->assignedInterval;
+
+        if (assignedInterval != nullptr)
+        {
+            assert(assignedInterval->isLocalVar || assignedInterval->isConstant || assignedInterval->IsUpperVector());
+
+            if (!assignedInterval->isConstant && assignedInterval->assignedReg == physRegRecord)
+            {
+                assignedInterval->isActive = false;
+                if (assignedInterval->getNextRefPosition() == nullptr)
+                {
+                    unassignPhysReg(physRegRecord, nullptr);
+                }
+                if (!assignedInterval->IsUpperVector())
+                {
+                    inVarToRegMap[assignedInterval->getVarIndex(compiler)] = REG_STK;
+                }
+            }
+            else
+            {
+                // This interval may still be active, but was in another register in an
+                // intervening block.
+                clearAssignedInterval(physRegRecord ARM_ARG(assignedInterval->registerType));
+            }
+        }
+    }
+}
+
 void LinearScan::updateDeadCandidatesAtBlockStart(regMaskTP deadRegMask, VarToRegMap inVarToRegMap)
 {
     while (deadRegMask != RBM_NONE)
@@ -4744,8 +4780,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     deadCandidates &= actualRegistersMask;
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    updateDeadCandidatesAtBlockStart(deadCandidates.GetGprFloatCombinedMask(), inVarToRegMap);
-    updateDeadCandidatesAtBlockStart(deadCandidates.predicateRegs(), inVarToRegMap);
+    updateDeadCandidatesAtBlockStart(deadCandidates, inVarToRegMap);
 #else
     updateDeadCandidatesAtBlockStart(deadCandidates.GetAllRegistersMask(), inVarToRegMap);
 #endif // HAS_MORE_THAN_64_REGISTERS

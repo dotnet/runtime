@@ -1014,6 +1014,7 @@ private:
     void processBlockStartLocations(BasicBlock* current);
     void processBlockEndLocations(BasicBlock* current);
     void             resetAllRegistersState();
+    FORCEINLINE void updateDeadCandidatesAtBlockStart(AllRegsMask& deadRegMask, VarToRegMap inVarToRegMap);
     FORCEINLINE void updateDeadCandidatesAtBlockStart(regMaskTP deadRegMask, VarToRegMap inVarToRegMap);
 
 #ifdef TARGET_ARM
