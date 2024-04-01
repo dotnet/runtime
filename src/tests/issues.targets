@@ -1393,7 +1393,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/LeakGen/leakgen/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_100437/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_100437/Runtime_100437/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
 
