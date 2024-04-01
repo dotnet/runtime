@@ -834,7 +834,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     availableMaskRegs = RBM_ALLMASK;
 #endif
 
@@ -846,7 +846,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
         availableIntRegs &= ~RBM_INT_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED;
         availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED;
         availableDoubleRegs &= ~RBM_FLT_CALLEE_SAVED;
-#if defined(TARGET_XARCH)
+#ifdef FEATURE_MASKED_HW_INTRINSICS
         availableMaskRegs &= ~RBM_MSK_CALLEE_SAVED;
 #endif // TARGET_XARCH
     }

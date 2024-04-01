@@ -1670,13 +1670,13 @@ private:
     PhasedVar<regMaskGpr>   availableIntRegs;
     PhasedVar<regMaskFloat> availableFloatRegs;
     PhasedVar<regMaskFloat> availableDoubleRegs;
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     PhasedVar<regMaskPredicate> availableMaskRegs;
 #endif
     PhasedVar<regMaskOnlyOne>* availableRegs[TYP_COUNT]; // TODO: probably separate this out based on gpr, vector,
                                                          // predicate
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#ifdef FEATURE_MASKED_HW_INTRINSICS
 #define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
 #else
 #define allAvailableRegs (availableIntRegs | availableFloatRegs)
