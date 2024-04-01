@@ -2813,13 +2813,15 @@ void           LinearScan::buildIntervals()
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
     }
 
-    needNonIntegerRegisters |= compiler->compFloatingPointUsed;
+    needNonIntegerRegisters |= compiler->compFloatingPointUsed; // TODO: Also track about mask registers
     if (!needNonIntegerRegisters)
     {
         availableRegCount = REG_INT_COUNT;
         availableFloatRegs.OverrideAssign(RBM_NONE);
         availableDoubleRegs.OverrideAssign(RBM_NONE);
-        // availableMaskRegs   = RBM_NONE; // Is this also needed?
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+        availableMaskRegs.OverrideAssign(RBM_NONE);
+#endif
     }
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
