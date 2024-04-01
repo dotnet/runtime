@@ -1382,7 +1382,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 
         // If a thread is Dead or Detached, abort is a NOP.
         //
-        if (m_State & (TS_Dead | TS_Detached | TS_TaskReset))
+        if (m_State & (TS_Dead | TS_Detached))
         {
             UnmarkThreadForAbort();
 
@@ -2098,9 +2098,6 @@ void Thread::RareDisablePreemptiveGC()
     {
         goto Exit;
     }
-
-    // This should NEVER be called if the TSNC_UnsafeSkipEnterCooperative bit is set!
-    _ASSERTE(!(m_StateNC & TSNC_UnsafeSkipEnterCooperative) && "DisablePreemptiveGC called while the TSNC_UnsafeSkipEnterCooperative bit is set");
 
     // Holding a spin lock in preemp mode and switch to coop mode could cause other threads spinning
     // waiting for GC

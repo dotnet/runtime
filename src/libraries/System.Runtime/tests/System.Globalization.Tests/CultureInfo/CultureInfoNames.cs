@@ -10,19 +10,31 @@ namespace System.Globalization.Tests
 {
     public class CultureInfoNames
     {
-        private static bool SupportFullIcuResources => (PlatformDetection.IsNotMobile && PlatformDetection.IsIcuGlobalization) || PlatformDetection.IsHybridGlobalizationOnApplePlatform;
+        // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
+        // Browser uses JS to get the NativeName that is missing in ICU (in the singlethreaded runtime only)
+        private static bool SupportFullIcuResources =>
+            !PlatformDetection.IsWasi && !PlatformDetection.IsAndroid && PlatformDetection.IsIcuGlobalization && !PlatformDetection.IsWasmThreadingSupported;
+        
+        public static IEnumerable<object[]> SupportedCultures_TestData()
+        {
+            // Browser does not support all ICU locales but it uses JS to get the correct native name
+            if (!PlatformDetection.IsBrowser)
+            {
+                yield return new object[] { "aa", "aa", "Afar", "Afar" };
+                yield return new object[] { "aa-ER", "aa-ER", "Afar (Eritrea)", "Afar (Eritrea)" };
+            }
+            yield return new object[] { "en", "en", "English", "English" };
+            yield return new object[] { "en", "fr", "English", "anglais" };
+            yield return new object[] { "en-US", "en-US", "English (United States)", "English (United States)" };
+            yield return new object[] { "en-US", "fr-FR", "English (United States)", "anglais (\u00C9tats-Unis)" };
+            yield return new object[] { "en-US", "de-DE", "English (United States)", "Englisch (Vereinigte Staaten)" };
+            yield return new object[] { "", "en-US", "Invariant Language (Invariant Country)", "Invariant Language (Invariant Country)" };
+            yield return new object[] { "", "fr-FR", "Invariant Language (Invariant Country)", "Invariant Language (Invariant Country)" };
+            yield return new object[] { "", "", "Invariant Language (Invariant Country)", "Invariant Language (Invariant Country)" };
+        }
 
         [ConditionalTheory(nameof(SupportFullIcuResources))]
-        [InlineData("en", "en", "English", "English")]
-        [InlineData("en", "fr", "English", "anglais")]
-        [InlineData("aa", "aa", "Afar", "Afar")]
-        [InlineData("en-US", "en-US", "English (United States)", "English (United States)")]
-        [InlineData("en-US", "fr-FR", "English (United States)", "anglais (\u00C9tats-Unis)")]
-        [InlineData("en-US", "de-DE", "English (United States)", "Englisch (Vereinigte Staaten)")]
-        [InlineData("aa-ER", "aa-ER", "Afar (Eritrea)", "Afar (Eritrea)")]
-        [InlineData("", "en-US", "Invariant Language (Invariant Country)", "Invariant Language (Invariant Country)")]
-        [InlineData("", "fr-FR", "Invariant Language (Invariant Country)", "Invariant Language (Invariant Country)")]
-        [InlineData("", "", "Invariant Language (Invariant Country)", "Invariant Language (Invariant Country)")]
+        [MemberData(nameof(SupportedCultures_TestData))]
         public void TestDisplayName(string cultureName, string uiCultureName, string nativeName, string displayName)
         {
             using (new ThreadCultureChange(null, CultureInfo.GetCultureInfo(uiCultureName)))
