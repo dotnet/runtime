@@ -792,7 +792,7 @@ done:
     return result;
 }
 
-#define UPDATE_CACHE_SIZE_AND_LEVEL(NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if ((NEW_CACHE_SIZE != UINTMAX_MAX) && (NEW_CACHE_SIZE > cacheSize)) { cacheSize = NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
+#define UPDATE_CACHE_SIZE_AND_LEVEL(NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if ((NEW_CACHE_SIZE != SIZE_MAX) && (NEW_CACHE_SIZE > cacheSize)) { cacheSize = NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
 
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
@@ -818,7 +818,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 #endif
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
-    if (cacheSize == 0 || cacheSize == UINTMAX_MAX)
+    if (cacheSize == 0 || cacheSize == SIZE_MAX)
     {
         //
         // Fallback to retrieve cachesize via /sys/.. if sysconf was not available
