@@ -4,7 +4,7 @@
 import { mono_wasm_imports, mono_wasm_threads_imports } from "./exports-binding";
 import gitHash from "consts:gitHash";
 
-export function export_linker_indexes_as_code(): string {
+export function export_linker_indexes_as_code (): string {
     const indexByName: any = {
         mono_wasm_imports: {},
         mono_wasm_threads_imports: {},
@@ -25,5 +25,5 @@ export function export_linker_indexes_as_code(): string {
     `;
 }
 
-// this is running during runtime compile time inside rollup process. 
+// this is running during runtime compile time inside rollup process.
 (globalThis as any).export_linker_indexes_as_code = export_linker_indexes_as_code;

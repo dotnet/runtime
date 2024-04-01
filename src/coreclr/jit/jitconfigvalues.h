@@ -521,7 +521,7 @@ CONFIG_STRING(JitEnableInductionVariableOptsRange, W("JitEnableInductionVariable
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
 
-CONFIG_INTEGER(JitEnableOptRepeat, W("JitEnableOptRepeat"), 0) // If zero, do not allow JitOptRepeat
+CONFIG_INTEGER(JitEnableOptRepeat, W("JitEnableOptRepeat"), 1) // If zero, do not allow JitOptRepeat
 CONFIG_METHODSET(JitOptRepeat, W("JitOptRepeat"))              // Runs optimizer multiple times on specified methods
 CONFIG_INTEGER(JitOptRepeatCount, W("JitOptRepeatCount"), 2)   // Number of times to repeat opts when repeating
 CONFIG_STRING(JitOptRepeatRange, W("JitOptRepeatRange"))       // Enable JitOptRepeat based on method hash range
@@ -696,6 +696,10 @@ CONFIG_INTEGER(JitCheckSynthesizedCounts, W("JitCheckSynthesizedCounts"), 0)
 // If instrumenting the method, run synthesis and save the synthesis results
 // as edge or block profile data. Do not actually instrument.
 CONFIG_INTEGER(JitPropagateSynthesizedCountsToProfileData, W("JitPropagateSynthesizedCountsToProfileData"), 0)
+// Use general (gauss-seidel) solver
+CONFIG_INTEGER(JitSynthesisUseSolver, W("JitSynthesisUseSolver"), 1)
+// Relative likelihood of exceptions for synthesis
+CONFIG_STRING(JitSynthesisExceptionScale, W("JitSynthesisExceptionScale"))
 #endif
 
 // Devirtualize virtual calls with getExactClasses (NativeAOT only for now)

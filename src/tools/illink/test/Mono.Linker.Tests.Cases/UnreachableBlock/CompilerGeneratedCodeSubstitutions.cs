@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
@@ -174,7 +175,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 			public static void Test ()
 			{
-				TestBranchWithNormalCall ();
+				// Use the IEnumerable to mark the IEnumerable methods
+				foreach (var _ in TestBranchWithNormalCall ()) ;
 				TestBranchWithYieldAfter ();
 				TestBranchWithYieldBefore ();
 			}
