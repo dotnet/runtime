@@ -1,0 +1,29 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+struct DotNetRuntimeContractDescriptor
+{
+    uint64_t magic;
+    uint32_t flags;
+    uint32_t aux_data_count;
+    uint32_t descriptor_size;
+    uint32_t reserved;
+    const char *descriptor;
+    uint64_t *aux_data;
+};
+
+static const uint32_t jsonDescriptorSize = %%jsonDescriptorSize%%;
+static const char *jsonPayload = "%%jsonDescriptor%%";
+
+extern const uint32_t contractDescriptorAuxDataCount;
+extern const uint64_t *contractDescriptorAuxData;
+
+// FIXME: export
+extern struct DotNetRuntimeContractDescriptor DotNetRuntimeContractDescriptor = {
+    .magic = 0x444e434344414300ull, // "DNCCDAC\0"
+    .flags = 0x00000001,
+    .aux_data_count = auxDataCount,
+    .descriptor_size = jsonDescriptorSize,
+    .aux_data_count = contractDescriptorAuxDataCount,
+    .aux_data = contractDescriptorAuxData,
+};

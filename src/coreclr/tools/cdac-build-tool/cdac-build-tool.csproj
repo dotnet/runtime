@@ -25,4 +25,8 @@
   <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
   </ItemGroup>
+
+  <ItemGroup>
+      <EmbeddedResource Include="Templates/contract-descriptor.c.in" />
+  </ItemGroup>
 </Project>

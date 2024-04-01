@@ -11,8 +11,8 @@ namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
 public class ObjectFileScraper
 {
-    public readonly ReadOnlyMemory<byte> MagicLE = new byte[4]{0x01, 0x02, 0x03, 0x4};
-    public readonly ReadOnlyMemory<byte> MagicBE = new byte[4]{0x04, 0x03, 0x02, 0x1};
+    public readonly ReadOnlyMemory<byte> MagicLE = new byte[4]{0x54, 0x45, 0x53, 0x54}; // "TEST"
+    public readonly ReadOnlyMemory<byte> MagicBE = new byte[4]{0x54, 0x53, 0x45, 0x54};
 
     public bool Verbose {get;}
     public ObjectFileScraper(bool verbose) {

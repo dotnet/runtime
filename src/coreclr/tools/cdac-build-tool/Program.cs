@@ -57,9 +57,13 @@ public class Program
                     return 1;
                 }
             }
+
             //var model = await scraper.BuildModel(token);
-            //using var modelWriter = new ModelWriter(output);
-            //await modelWriter.Write(model, token);
+            using var writer = new System.IO.StreamWriter(output);
+            var emitter = new ContractDescriptorSourceFileEmitter();
+            emitter.JsonDescriptor = "{version: 0}"; // model.ToJson();
+            emitter.Emit(writer);
+            await writer.FlushAsync(token);
             return 0;
         }
     }
