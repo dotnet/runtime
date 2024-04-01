@@ -309,8 +309,6 @@ private:
     RegBitSet64  _allRegisters;
 #endif
 
-    regMaskOnlyOne operator[](int index) const;
-    regMaskOnlyOne& operator[](int index);
     // This method shifts the high-32 bits of float to low-32 bits and return.
     // For gpr and predicate registers, it returns the same value.
     FORCEINLINE static RegBitSet32 encodeForIndex(int index, RegBitSet64 value)
@@ -451,6 +449,7 @@ public:
     FORCEINLINE regMaskTP GetAllRegistersMask() const;
 #endif // !HAS_MORE_THAN_64_REGISTERS
 
+    regMaskOnlyOne  operator[](int index) const;
     FORCEINLINE void operator|=(const _regMaskAll& other);
     FORCEINLINE void operator&=(const _regMaskAll& other);
     FORCEINLINE void operator|=(const regNumber reg);
@@ -460,7 +459,6 @@ public:
     FORCEINLINE bool operator!=(const _regMaskAll& other);
     FORCEINLINE _regMaskAll operator&(const _regMaskAll& other) const;
     FORCEINLINE _regMaskAll operator|(const _regMaskAll& other) const;
-    FORCEINLINE _regMaskAll operator&(const regNumber reg) const;
 
 } AllRegsMask;
 

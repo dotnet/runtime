@@ -5191,24 +5191,6 @@ AllRegsMask AllRegsMask::operator|(const AllRegsMask& other) const
     }
 }
 
-AllRegsMask AllRegsMask::operator&(const regNumber reg) const
-{
-#ifdef HAS_MORE_THAN_64_REGISTERS
-    if (_hasPredicateRegister)
-    {
-        AllRegsMask result = *this;
-        int         index  = regIndexForRegister(reg);
-        RegBitSet64 value  = genRegMask(reg);
-        result[index] &= encodeForIndex(index, value);
-        return result;
-    }
-    else
-#endif
-    {
-        return _allRegisters & genRegMask(reg);
-    }
-}
-
 void AllRegsMask::Clear()
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
@@ -5252,12 +5234,6 @@ regMaskOnlyOne AllRegsMask::operator[](int index) const
         return _allRegisters;
     }
 }
-
-// regMaskOnlyOne& AllRegsMask::operator[](int index)
-//{
-//    assert(index <= REGISTER_TYPE_COUNT);
-//    return _registers[index];
-//}
 
 void AllRegsMask::AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type)
 {
