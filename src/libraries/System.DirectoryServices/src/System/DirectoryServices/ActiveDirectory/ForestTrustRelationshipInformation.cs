@@ -114,7 +114,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 try
                 {
-                    IntPtr ptr = (IntPtr)0;
+                    IntPtr ptr = 0;
                     fileTime = Marshal.AllocHGlobal(Marshal.SizeOf<FileTime>());
                     Interop.Kernel32.GetSystemTimeAsFileTime(fileTime);
 

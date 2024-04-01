@@ -220,7 +220,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     // reconstruct the unmanaged structure to set it back
-                    newInfo = Marshal.AllocHGlobal(Marshal.SizeOf<Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX>());
+                    newInfo = Marshal.AllocHGlobal(sizeof(Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX));
                     Marshal.StructureToPtr(domainInfo, newInfo, false);
 
                     result = Interop.Advapi32.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, newInfo);

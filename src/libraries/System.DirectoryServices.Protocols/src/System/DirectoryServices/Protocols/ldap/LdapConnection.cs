@@ -918,12 +918,12 @@ namespace System.DirectoryServices.Protocols
             var list = new ArrayList();
             if (CAs != IntPtr.Zero)
             {
-                SecPkgContext_IssuerListInfoEx trustedCAs = Marshal.PtrToStructure<SecPkgContext_IssuerListInfoEx>(CAs);
+                SecPkgContext_IssuerListInfoEx trustedCAs = *(SecPkgContext_IssuerListInfoEx*)CAs;
                 int issuerNumber = trustedCAs.cIssuers;
                 for (int i = 0; i < issuerNumber; i++)
                 {
-                    IntPtr tempPtr = (IntPtr)((byte*)trustedCAs.aIssuers + Marshal.SizeOf<CRYPTOAPI_BLOB>() * (nint)i);
-                    CRYPTOAPI_BLOB info = Marshal.PtrToStructure<CRYPTOAPI_BLOB>(tempPtr);
+                    IntPtr tempPtr = (IntPtr)((byte*)trustedCAs.aIssuers + sizeof(CRYPTOAPI_BLOB) * (nint)i);
+                    CRYPTOAPI_BLOB info = *(CRYPTOAPI_BLOB*)tempPtr;
                     int dataLength = info.cbData;
 
                     byte[] context = new byte[dataLength];

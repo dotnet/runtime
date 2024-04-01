@@ -166,7 +166,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return typeInfo;
         }
 
-        internal static ComTypes.TYPEATTR GetTypeAttrForTypeInfo(ComTypes.ITypeInfo typeInfo)
+        internal static unsafe ComTypes.TYPEATTR GetTypeAttrForTypeInfo(ComTypes.ITypeInfo typeInfo)
         {
             IntPtr pAttrs;
             typeInfo.GetTypeAttr(out pAttrs);
@@ -179,7 +179,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             try
             {
-                return Marshal.PtrToStructure<ComTypes.TYPEATTR>(pAttrs);
+                return *(ComTypes.TYPEATTR*)pAttrs;
             }
             finally
             {
@@ -187,7 +187,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
-        internal static ComTypes.TYPELIBATTR GetTypeAttrForTypeLib(ComTypes.ITypeLib typeLib)
+        internal static unsafe ComTypes.TYPELIBATTR GetTypeAttrForTypeLib(ComTypes.ITypeLib typeLib)
         {
             IntPtr pAttrs;
             typeLib.GetLibAttr(out pAttrs);
@@ -200,7 +200,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             try
             {
-                return Marshal.PtrToStructure<ComTypes.TYPELIBATTR>(pAttrs);
+                return *(ComTypes.TYPELIBATTR*)pAttrs;
             }
             finally
             {

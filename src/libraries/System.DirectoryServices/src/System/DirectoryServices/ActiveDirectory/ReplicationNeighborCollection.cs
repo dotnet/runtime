@@ -48,7 +48,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // get the count
             int count = neighbors.cNumNeighbors;
 
-            IntPtr addr = (IntPtr)0;
+            IntPtr addr = 0;
 
             for (int i = 0; i < count; i++)
             {

@@ -892,10 +892,10 @@ namespace System.DirectoryServices
             }
         }
 
-        private static void DoSetSearchPrefs(UnsafeNativeMethods.IDirectorySearch adsSearch, AdsSearchPreferenceInfo[] prefs)
+        private static unsafe void DoSetSearchPrefs(UnsafeNativeMethods.IDirectorySearch adsSearch, AdsSearchPreferenceInfo[] prefs)
         {
-            int structSize = Marshal.SizeOf<AdsSearchPreferenceInfo>();
-            IntPtr ptr = Marshal.AllocHGlobal((IntPtr)(structSize * prefs.Length));
+            int structSize = sizeof(AdsSearchPreferenceInfo);
+            IntPtr ptr = Marshal.AllocHGlobal(structSize * prefs.Length);
             try
             {
                 IntPtr tempPtr = ptr;

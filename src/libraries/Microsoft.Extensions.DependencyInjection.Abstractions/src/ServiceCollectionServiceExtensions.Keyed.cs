@@ -166,7 +166,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(services);
             ThrowHelper.ThrowIfNull(implementationFactory);
 
-            return services.AddKeyedTransient<TService>(serviceKey, implementationFactory);
+            return services.AddKeyedTransient(typeof(TService), serviceKey, implementationFactory);
         }
 
         /// <summary>
@@ -324,9 +324,8 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(services);
             ThrowHelper.ThrowIfNull(implementationFactory);
 
-            return services.AddKeyedScoped<TService>(serviceKey, implementationFactory);
+            return services.AddKeyedScoped(typeof(TService), serviceKey, implementationFactory);
         }
-
 
         /// <summary>
         /// Adds a singleton service of the type specified in <paramref name="serviceType"/> with an
@@ -434,7 +433,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ThrowHelper.ThrowIfNull(services);
 
-            return services.AddKeyedSingleton<TService, TService>(serviceKey);
+            return services.AddKeyedSingleton(typeof(TService), serviceKey, typeof(TService));
         }
 
         /// <summary>
@@ -483,7 +482,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ThrowHelper.ThrowIfNull(services);
             ThrowHelper.ThrowIfNull(implementationFactory);
 
-            return services.AddKeyedSingleton<TService>(serviceKey, implementationFactory);
+            return services.AddKeyedSingleton(typeof(TService), serviceKey, implementationFactory);
         }
 
         /// <summary>

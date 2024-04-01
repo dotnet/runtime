@@ -198,15 +198,14 @@ namespace System.DirectoryServices.AccountManagement
         }
 
 
-        internal static SidType ClassifySID(IntPtr pSid)
+        internal static unsafe SidType ClassifySID(IntPtr pSid)
         {
             Debug.Assert(Interop.Advapi32.IsValidSid(pSid));
 
             // Get the issuing authority and the first RID
             IntPtr pIdentAuth = Interop.Advapi32.GetSidIdentifierAuthority(pSid);
 
-            Interop.Advapi32.SID_IDENTIFIER_AUTHORITY identAuth =
-                Marshal.PtrToStructure<Interop.Advapi32.SID_IDENTIFIER_AUTHORITY>(pIdentAuth);
+            Interop.Advapi32.SID_IDENTIFIER_AUTHORITY identAuth = *(Interop.Advapi32.SID_IDENTIFIER_AUTHORITY*)pIdentAuth;
 
             IntPtr pRid = Interop.Advapi32.GetSidSubAuthority(pSid, 0);
             int rid = Marshal.ReadInt32(pRid);
@@ -333,7 +332,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
 
-        internal static IntPtr GetCurrentUserSid()
+        internal static unsafe IntPtr GetCurrentUserSid()
         {
             SafeTokenHandle tokenHandle = null;
             IntPtr pBuffer = IntPtr.Zero;
@@ -425,7 +424,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
 
                 // Retrieve the user's SID from the user info
-                Interop.TOKEN_USER tokenUser = Marshal.PtrToStructure<Interop.TOKEN_USER>(pBuffer);
+                Interop.TOKEN_USER tokenUser = *(Interop.TOKEN_USER*)pBuffer;
                 IntPtr pUserSid = tokenUser.sidAndAttributes.Sid;   // this is a reference into the NATIVE memory (into pBuffer)
 
                 Debug.Assert(Interop.Advapi32.IsValidSid(pUserSid));
@@ -457,7 +456,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
 
-        internal static IntPtr GetMachineDomainSid()
+        internal static unsafe IntPtr GetMachineDomainSid()
         {
             SafeLsaPolicyHandle policyHandle = null;
             IntPtr pBuffer = IntPtr.Zero;
@@ -496,7 +495,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
 
                 Debug.Assert(pBuffer != IntPtr.Zero);
-                UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO info = Marshal.PtrToStructure<UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO>(pBuffer);
+                UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO info = *(UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO*)pBuffer;
 
                 Debug.Assert(Interop.Advapi32.IsValidSid(info.DomainSid));
 

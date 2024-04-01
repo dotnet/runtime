@@ -2038,7 +2038,7 @@ namespace System.DirectoryServices.ActiveDirectory
         }
 
 
-        internal static IntPtr GetCurrentUserSid()
+        internal static unsafe IntPtr GetCurrentUserSid()
         {
             SafeTokenHandle? tokenHandle = null;
             IntPtr pBuffer = IntPtr.Zero;
@@ -2120,7 +2120,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 // Retrieve the user's SID from the user info
-                global::Interop.TOKEN_USER tokenUser = Marshal.PtrToStructure<Interop.TOKEN_USER>(pBuffer)!;
+                Interop.TOKEN_USER tokenUser = *(Interop.TOKEN_USER*)pBuffer;
                 IntPtr pUserSid = tokenUser.sidAndAttributes.Sid;   // this is a reference into the NATIVE memory (into pBuffer)
 
                 Debug.Assert(global::Interop.Advapi32.IsValidSid(pUserSid));
@@ -2147,7 +2147,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal static IntPtr GetMachineDomainSid()
+        internal static unsafe IntPtr GetMachineDomainSid()
         {
             SafeLsaPolicyHandle? policyHandle = null;
             IntPtr pBuffer = IntPtr.Zero;
@@ -2178,7 +2178,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 Debug.Assert(pBuffer != IntPtr.Zero);
-                POLICY_ACCOUNT_DOMAIN_INFO info = Marshal.PtrToStructure<POLICY_ACCOUNT_DOMAIN_INFO>(pBuffer)!;
+                POLICY_ACCOUNT_DOMAIN_INFO info = *(POLICY_ACCOUNT_DOMAIN_INFO*)pBuffer;
 
                 Debug.Assert(global::Interop.Advapi32.IsValidSid(info.DomainSid));
 
@@ -2237,15 +2237,14 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal static SidType ClassifySID(IntPtr pSid)
+        internal static unsafe SidType ClassifySID(IntPtr pSid)
         {
             Debug.Assert(global::Interop.Advapi32.IsValidSid(pSid));
 
             // Get the issuing authority and the first RID
             IntPtr pIdentAuth = global::Interop.Advapi32.GetSidIdentifierAuthority(pSid);
 
-            global::Interop.Advapi32.SID_IDENTIFIER_AUTHORITY identAuth =
-                Marshal.PtrToStructure<Interop.Advapi32.SID_IDENTIFIER_AUTHORITY>(pIdentAuth)!;
+            Interop.Advapi32.SID_IDENTIFIER_AUTHORITY identAuth = *(Interop.Advapi32.SID_IDENTIFIER_AUTHORITY*)pIdentAuth;
 
             IntPtr pRid = global::Interop.Advapi32.GetSidSubAuthority(pSid, 0);
             int rid = Marshal.ReadInt32(pRid);

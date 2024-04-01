@@ -49,7 +49,7 @@ namespace System.DirectoryServices.ActiveDirectory
             else
                 count = ((DS_REPL_CURSORS)cursors).cNumCursors;
 
-            IntPtr addr = (IntPtr)0;
+            IntPtr addr = 0;
 
             for (int i = 0; i < count; i++)
             {
