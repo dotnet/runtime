@@ -8090,7 +8090,7 @@ static BOOL CheckExceptionInterception(StackFrameIterator* pStackFrameIterator, 
             reinterpret_cast<PBYTE *>(&(sfInterceptStackFrame.SP)),
             NULL, NULL);
 
-        TADDR spForDebugger = GetSpForDiagnosticReporting(pStackFrameIterator->m_crawl.GetRegisterSet());
+        TADDR spForDebugger = GetRegdisplaySP(pStackFrameIterator->m_crawl.GetRegisterSet());
 
         if ((pExInfo->m_passNumber == 1) ||
             ((pInterceptMD == pMD) && (sfInterceptStackFrame == spForDebugger)))
