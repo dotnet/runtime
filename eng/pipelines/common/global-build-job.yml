@@ -70,7 +70,8 @@ jobs:
 
     ${{ if or(ne(parameters.dependsOn,''), ne(parameters.dependsOnGlobalBuilds,'')) }}:
       dependsOn:
-      - ${{ insert }} : ${{ parameters.dependsOn }}
+      - ${{ each build in parameters.dependsOn }}:
+        - ${{ build }}
       - ${{ each globalBuild in parameters.dependsOnGlobalBuilds }}:
         - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(globalBuild.buildConfig, parameters.buildConfig), globalBuild.nameSuffix) }}
 
