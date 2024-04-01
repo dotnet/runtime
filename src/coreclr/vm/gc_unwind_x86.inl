@@ -366,7 +366,6 @@ size_t GetLocallocSPOffset(hdrInfo * info)
     return position * sizeof(TADDR);
 }
 
-#ifndef FEATURE_NATIVEAOT
 inline
 size_t GetParamTypeArgOffset(hdrInfo * info)
 {
@@ -451,6 +450,7 @@ TADDR GetOutermostBaseFP(TADDR ebp, hdrInfo * info)
     }
 }
 
+#ifndef FEATURE_NATIVEAOT
 /*****************************************************************************
  *
  *  For functions with handlers, checks if it is currently in a handler.
@@ -662,7 +662,7 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
     return sizeof(TADDR) +
             GetEndShadowSPSlotsOffset(info, MAX_EnC_HANDLER_NESTING_LEVEL);
 }
-#endif
+#endif // FEATURE_NATIVEAOT
 
 /*****************************************************************************/
 static
@@ -3686,13 +3686,7 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     }
     else
     {
-        /* However if ExecutionAborted, then this must be one of the
-         * ExceptionFrames. Handle accordingly
-         */
-        _ASSERTE(!(flags & AbortingCall) || !(flags & ActiveStackFrame));
-
-        newCurOffs = (flags & AbortingCall) ? curOffs-1 // inside "call"
-                                            : curOffs;  // at faulting instr, or start of "try"
+        newCurOffs = curOffs;
     }
 
     ptrOffs    = 0;

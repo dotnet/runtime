@@ -76,6 +76,7 @@ int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 void mono_trace_init (void);
+MonoMethod *mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle target_handle, MonoError *error);
 
 /* Not part of public headers */
 #define MONO_ICALL_TABLE_CALLBACKS_VERSION 3
@@ -355,4 +356,26 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
 	result = mono_class_get_method_from_name (klass, name, arguments);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
+}
+
+/*
+ * mono_wasm_marshal_get_managed_wrapper:
+ * Creates a wrapper for a function pointer to a method marked with
+ * UnamangedCallersOnlyAttribute.
+ * This wrapper ensures that the interpreter initializes the pointers.
+ */
+void
+mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* typeName, const char* methodName, int num_params)
+{
+	MonoError error;
+	mono_error_init (&error);
+	MonoAssembly* assembly = mono_wasm_assembly_load (assemblyName);
+	assert (assembly);
+	MonoClass* class = mono_wasm_assembly_find_class (assembly, "", typeName);
+	assert (class);
+	MonoMethod* method = mono_wasm_assembly_find_method (class, methodName, num_params);
+	assert (method);
+	MonoMethod *managedWrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, &error);
+	assert (managedWrapper);
+	mono_compile_method (managedWrapper);
 }

@@ -2949,8 +2949,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         //
         if (fgPgoHaveWeights && !dataIsGood)
         {
-            JITDUMP("\nIncorporated count data had inconsistencies; blending profile...\n");
-            ProfileSynthesis::Run(this, ProfileSynthesisOption::BlendLikelihoods);
+            JITDUMP("\nIncorporated count data had inconsistencies; repairing profile...\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
         }
     }
 
@@ -3266,15 +3266,9 @@ public:
 
     // Are there are reparable issues with the reconstruction?
     //
-    // Ideally we'd also have || !m_negativeCount here, but this
-    // leads to lots of diffs in async methods.
-    //
-    // Looks like we might first need to resolve reconstruction
-    // shortcomings with irreducible loops.
-    //
     bool IsGood() const
     {
-        return !m_entryWeightZero;
+        return !(m_entryWeightZero || m_negativeCount);
     }
 
     void VisitBlock(BasicBlock*) override
@@ -5246,6 +5240,9 @@ void Compiler::fgDebugCheckProfileWeights()
 // Arguments:
 //   checks - checker options
 //
+// Returns:
+//   True if all enabled checks pass
+//
 // Notes:
 //   For each profiled block, check that the flow of counts into
 //   the block matches the flow of counts out of the block.
@@ -5257,7 +5254,7 @@ void Compiler::fgDebugCheckProfileWeights()
 //   There's no point checking until we've built pred lists, as
 //   we can't easily reason about consistency without them.
 //
-void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
+bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 {
     // We can check classic (min/max, late computed) weights
     //   and/or
@@ -5273,7 +5270,7 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     if (!(verifyClassicWeights || verifyLikelyWeights || verifyHasLikelihood))
     {
         JITDUMP("[profile weight checks disabled]\n");
-        return;
+        return true;
     }
 
     JITDUMP("Checking Profile Weights (flags:0x%x)\n", checks);
@@ -5436,6 +5433,8 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
             assert(!"Inconsistent profile data");
         }
     }
+
+    return (problemBlocks == 0);
 }
 
 //------------------------------------------------------------------------

@@ -14,7 +14,7 @@ const dummyPerformance = {
     }
 };
 
-export function initializeReplacements(replacements: EmscriptenReplacements): void {
+export function initializeReplacements (replacements: EmscriptenReplacements): void {
     // performance.now() is used by emscripten and doesn't work in JSC
     if (typeof globalThis.performance === "undefined") {
         globalThis.performance = dummyPerformance as any;
@@ -43,12 +43,12 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
     }
 }
 
-export async function init_polyfills_async(): Promise<void> {
+export async function init_polyfills_async (): Promise<void> {
     // v8 shell doesn't have Event and EventTarget
     if (WasmEnableThreads && typeof globalThis.Event === "undefined") {
         globalThis.Event = class Event {
             readonly type: string;
-            constructor(type: string) {
+            constructor (type: string) {
                 this.type = type;
             }
         } as any;
@@ -56,7 +56,7 @@ export async function init_polyfills_async(): Promise<void> {
     if (WasmEnableThreads && typeof globalThis.EventTarget === "undefined") {
         globalThis.EventTarget = class EventTarget {
             private subscribers = new Map<string, Array<{ listener: EventListenerOrEventListenerObject, oneShot: boolean }>>();
-            addEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions) {
+            addEventListener (type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions) {
                 if (listener === undefined || listener == null)
                     return;
                 let oneShot = false;
@@ -78,7 +78,7 @@ export async function init_polyfills_async(): Promise<void> {
                 }
                 listeners.push({ listener, oneShot });
             }
-            removeEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | EventListenerOptions) {
+            removeEventListener (type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | EventListenerOptions) {
                 if (listener === undefined || listener == null)
                     return;
                 if (options !== undefined) {
@@ -102,7 +102,7 @@ export async function init_polyfills_async(): Promise<void> {
                     subscribers.splice(index, 1);
                 }
             }
-            dispatchEvent(event: Event) {
+            dispatchEvent (event: Event) {
                 if (!this.subscribers.has(event.type)) {
                     return true;
                 }

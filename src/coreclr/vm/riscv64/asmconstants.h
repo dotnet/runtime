@@ -29,8 +29,8 @@
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
-#define               Thread__m_fPreemptiveGCDisabled   0x0C
-#define               Thread__m_pFrame                  0x10
+#define               Thread__m_fPreemptiveGCDisabled   0x04
+#define               Thread__m_pFrame                  0x08
 
 ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled));
 ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
