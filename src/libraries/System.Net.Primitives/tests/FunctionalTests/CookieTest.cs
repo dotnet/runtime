@@ -116,10 +116,10 @@ namespace System.Net.Primitives.Functional.Tests
             Cookie c = new Cookie();
             Assert.False(c.Expired);
 
-            c.Expires = DateTime.Now.AddDays(-1);
+            c.Expires = DateTime.UtcNow.AddDays(-1);
             Assert.True(c.Expired);
 
-            c.Expires = DateTime.Now.AddDays(1);
+            c.Expires = DateTime.UtcNow.AddDays(1);
             Assert.False(c.Expired);
 
             c.Expired = true;
@@ -135,7 +135,7 @@ namespace System.Net.Primitives.Functional.Tests
             Cookie c = new Cookie();
             Assert.Equal(c.Expires, DateTime.MinValue);
 
-            DateTime dt = DateTime.Now;
+            DateTime dt = DateTime.UtcNow;
             c.Expires = dt;
             Assert.Equal(dt, c.Expires);
         }
@@ -226,7 +226,7 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void Timestamp_GetSet_Success()
         {
-            DateTime dt = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, 0); //DateTime.Now changes as the test runs
+            DateTime dt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0); //DateTime.Now changes as the test runs
             Cookie c = new Cookie();
             Assert.True(c.TimeStamp >= dt);
         }
