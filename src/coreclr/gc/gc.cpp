@@ -43357,7 +43357,7 @@ void gc_heap::init_static_data()
 
     size_t gen0_max_size =
 #ifdef MULTIPLE_HEAPS
-        max ((size_t)6*1024*1024u, min ( Align(soh_segment_size/2), (size_t)200*1024*1024u));
+        max ((size_t)6*1024*1024u, min ( Align(soh_segment_size/2), (size_t)200*1024*1024));
 #else //MULTIPLE_HEAPS
         (
 #ifdef BACKGROUND_GC
@@ -43394,7 +43394,7 @@ void gc_heap::init_static_data()
     // TODO: gen0_max_size has a 200mb cap; gen1_max_size should also have a cap.
     size_t gen1_max_size = (size_t)
 #ifdef MULTIPLE_HEAPS
-        max (6*1024u, Align(soh_segment_size/2));
+        max (6*1024 * 1024u, Align(soh_segment_size/2));
 #else //MULTIPLE_HEAPS
         (
 #ifdef BACKGROUND_GC
@@ -51270,11 +51270,11 @@ size_t gc_heap::get_gen0_min_size()
 #ifdef SERVER_GC
         // performance data seems to indicate halving the size results
         // in optimal perf.  Ask for adjusted gen0 size.
-        gen0size = max(GCToOSInterface::GetCacheSizePerLogicalCpu(FALSE), (size_t)(256*1024u));
+        gen0size = max(GCToOSInterface::GetCacheSizePerLogicalCpu(FALSE), (size_t)(256*1024));
 
         // if gen0 size is too large given the available memory, reduce it.
         // Get true cache size, as we don't want to reduce below this.
-        size_t trueSize = max(GCToOSInterface::GetCacheSizePerLogicalCpu(TRUE), (size_t)(256*1024u));
+        size_t trueSize = max(GCToOSInterface::GetCacheSizePerLogicalCpu(TRUE), (size_t)(256*1024));
         dprintf (1, ("cache: %zd-%zd",
             GCToOSInterface::GetCacheSizePerLogicalCpu(FALSE),
             GCToOSInterface::GetCacheSizePerLogicalCpu(TRUE)));
