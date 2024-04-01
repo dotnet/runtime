@@ -5414,6 +5414,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         EECodeInfo callerCodeInfo(GetIP(pFrameContext));
         ULONG_PTR establisherFrame = 0;
         PVOID handlerData = NULL;
+	LOG((LF_CORDB, LL_EVERYTHING, "RVU: in JIT_PatchPoint in jithelpers.cpp, ControlPc=0x%p\n", GetIP(pFrameContext)));
         RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(pFrameContext), callerCodeInfo.GetFunctionEntry(),
             pFrameContext, &handlerData, &establisherFrame, NULL);
 
@@ -5611,6 +5612,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     frameContext.ContextFlags = CONTEXT_FULL;
     ULONG_PTR establisherFrame = 0;
     PVOID handlerData = NULL;
+    LOG((LF_CORDB, LL_EVERYTHING, "RVU: in HCIMPL1 in jithelpers.cpp, ControlPc=0x%p\n", GetIP(&frameContext)));
     RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(&frameContext), callerCodeInfo.GetFunctionEntry(),
         &frameContext, &handlerData, &establisherFrame, NULL);
 
