@@ -54,11 +54,9 @@ lower_load (MonoCompile *cfg, MonoInst *load, MonoInst *ldaddr)
 
 	if (replaced_op != load->opcode) {
 		if (cfg->verbose_level > 2) {
-			#ifndef DISABLE_LOGGING
-			printf ("Incompatible load type: expected %s but got %s\n",
+			printf ("Incompatible load type: expected " M_PRI_INST " but got %s\n",
 				mono_inst_name (replaced_op),
 				mono_inst_name (load->opcode));
-			#endif
 		}
 		return FALSE;
 	} else {
