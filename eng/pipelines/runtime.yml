@@ -1373,10 +1373,11 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          buildConfig: release
           platforms:
             - windows_x86
           jobParameters:
+            nameSuffix: Installer_Build_And_Test
             buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release -test
             dependsOn:
               - build_windows_x86_release_CoreCLR_Libraries
@@ -1401,11 +1402,12 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          buildConfig: release
           platforms:
             - osx_x64
           jobParameters:
-            buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release -test
+            nameSuffix: Installer_Build_And_Test
+            buildArgs: -s host+packs -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} -rc Release -test
             dependsOn:
               - build_osx_x64_${{ variables.debugOnPrReleaseOnRolling }}_CoreCLR_Libraries
             preBuildSteps:
@@ -1429,11 +1431,12 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          buildConfig: release
           platforms:
             - windows_x64
           jobParameters:
-            buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release -test
+            nameSuffix: Installer_Build_And_Test
+            buildArgs: -s host+packs -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} -rc Release -test
             dependsOn:
               - build_windows_x64_${{ variables.debugOnPrReleaseOnRolling }}_CoreCLR_Libraries
             preBuildSteps:
@@ -1457,11 +1460,12 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          buildConfig: release
           platforms:
             - linux_x64
           jobParameters:
-            buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release -test
+            nameSuffix: Installer_Build_And_Test
+            buildArgs: -s host+packs -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} -rc Release -test
             dependsOn:
               - build_linux_x64_${{ variables.debugOnPrReleaseOnRolling }}_CoreCLR_Libraries
             preBuildSteps:
