@@ -521,14 +521,15 @@ CONFIG_STRING(JitEnableInductionVariableOptsRange, W("JitEnableInductionVariable
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
 
-CONFIG_INTEGER(JitEnableOptRepeat, W("JitEnableOptRepeat"), 1) // If zero, do not allow JitOptRepeat
-CONFIG_METHODSET(JitOptRepeat, W("JitOptRepeat"))              // Runs optimizer multiple times on specified methods
-CONFIG_INTEGER(JitOptRepeatCount, W("JitOptRepeatCount"), 2)   // Number of times to repeat opts when repeating
-CONFIG_STRING(JitOptRepeatRange, W("JitOptRepeatRange"))       // Enable JitOptRepeat based on method hash range
+CONFIG_STRING(JitOptRepeatRange, W("JitOptRepeatRange")) // Enable JitOptRepeat based on method hash range
 
 CONFIG_INTEGER(JitDoIfConversion, W("JitDoIfConversion"), 1) // Perform If conversion
 
 #endif // defined(OPT_CONFIG)
+
+CONFIG_INTEGER(JitEnableOptRepeat, W("JitEnableOptRepeat"), 1) // If zero, do not allow JitOptRepeat
+CONFIG_METHODSET(JitOptRepeat, W("JitOptRepeat"))              // Runs optimizer multiple times on specified methods
+CONFIG_INTEGER(JitOptRepeatCount, W("JitOptRepeatCount"), 2)   // Number of times to repeat opts when repeating
 
 // Max # of MapSelect's considered for a particular top-level invocation.
 CONFIG_INTEGER(JitVNMapSelBudget, W("JitVNMapSelBudget"), DEFAULT_MAP_SELECT_BUDGET)
