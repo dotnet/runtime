@@ -6798,50 +6798,48 @@ namespace System.Threading.Tasks
                 // advantage of the optimizations possible by not supporting that and simply have the semantics that, no matter
                 // how many times the enumerable is enumerated, every task is yielded only once. The original GetAsyncEnumerator
                 // call will give back all the tasks, and all subsequent iterations will be empty.
-                if (waiter?.TryStart() is true)
+                if (waiter?.TryStart() is not true)
                 {
-                    // Loop until we've yielded all tasks.
-                    while (waiter.Remaining > 0)
+                    yield break;
+                }
+
+                // Loop until we've yielded all tasks.
+                while (waiter.Remaining > 0)
+                {
+                    // Either get the next completed task from the queue, or get a
+                    // ValueTask with which to wait for the next task to complete.
+                    Task? next;
+                    ValueTask waitTask = default;
+                    lock (waiter)
                     {
-                        // Either get the next completed task from the queue, or get a
-                        // ValueTask with which to wait for the next task to complete.
-                        Task? next;
-                        ValueTask waitTask = default;
-                        lock (waiter)
+                        // Reset the MRVTSC if it was signaled, then try to dequeue a task and
+                        // either return one we got or return a ValueTask that will be signaled
+                        // when the next completed task is available.
+                        waiter._waitForNextCompletedTask.Reset();
+                        if (!waiter.TryDequeue(out next))
                         {
-                            // Reset the MRVTSC if it was signaled, then try to dequeue a task and
-                            // either return one we got or return a ValueTask that will be signaled
-                            // when the next completed task is available.
-                            waiter._waitForNextCompletedTask.Reset();
-                            if (!waiter.TryDequeue(out next))
-                            {
-                                waitTask = new(waiter, waiter._waitForNextCompletedTask.Version);
-                            }
-                        }
-
-                        // If we got a completed Task, yield it.
-                        if (next is not null)
-                        {
-                            cancellationToken.ThrowIfCancellationRequested();
-                            waiter.Remaining--;
-                            yield return (T)next;
-                            continue;
-                        }
-
-                        // Otherwise, wait.
-                        if (cancellationToken.CanBeCanceled && !waitTask.IsCompleted)
-                        {
-                            // If we have a cancellation token and the ValueTask isn't already completed,
-                            // get a Task from the ValueTask so we can use WaitAsync to make the wait cancelable.
-                            await waitTask.AsTask().WaitAsync(cancellationToken).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            // Otherwise, just await the ValueTask directly. We don't need to be concerned
-                            // about suppressing exceptions, as the ValueTask is only ever completed successfully.
-                            await waitTask.ConfigureAwait(false);
+                            waitTask = new(waiter, waiter._waitForNextCompletedTask.Version);
                         }
                     }
+
+                    // If we got a completed Task, yield it.
+                    if (next is not null)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        waiter.Remaining--;
+                        yield return (T)next;
+                        continue;
+                    }
+
+                    // If we have a cancellation token and the ValueTask isn't already completed,
+                    // get a Task from the ValueTask so we can use WaitAsync to make the wait cancelable.
+                    // Otherwise, just await the ValueTask directly. We don't need to be concerned
+                    // about suppressing exceptions, as the ValueTask is only ever completed successfully.
+                    if (cancellationToken.CanBeCanceled && !waitTask.IsCompleted)
+                    {
+                        waitTask = new ValueTask(waitTask.AsTask().WaitAsync(cancellationToken));
+                    }
+                    await waitTask.ConfigureAwait(false);
                 }
             }
         }
