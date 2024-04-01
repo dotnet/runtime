@@ -38,6 +38,9 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
     regMaskGpr   rsRestoreGprRegs   = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
     regMaskFloat rsRestoreFloatRegs = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    regMaskPredicate rsRestorePredicateRegs = regSet.rsGetModifiedPredicateRegsMask() & RBM_MSK_CALLEE_SAVED;
+#endif
 
     if (isFramePointerUsed())
     {
@@ -202,7 +205,11 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     }
 
     JITDUMP("    calleeSaveSpOffset=%d, calleeSaveSpDelta=%d\n", calleeSaveSpOffset, calleeSaveSpDelta);
-    genRestoreCalleeSavedRegistersHelp(AllRegsMask(rsRestoreGprRegs, rsRestoreFloatRegs), calleeSaveSpOffset,
+    genRestoreCalleeSavedRegistersHelp(AllRegsMask(rsRestoreGprRegs, rsRestoreFloatRegs
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+                                                                         ,rsRestorePredicateRegs
+#endif
+    ), calleeSaveSpOffset,
                                        calleeSaveSpDelta);
 
     switch (frameType)
@@ -916,6 +923,13 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lo
     assert(compiler->IsFloatRegMask(maskSaveRegsFloat));
 
     unsigned regsToSaveCount = genCountBits(maskSaveRegsFloat) + genCountBits(maskSaveRegsInt);
+
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    regMaskTP maskSaveRegsPredicate = regsToSaveMask.predicateRegs();
+    assert(compiler->IsPredicateRegMask(maskSaveRegsPredicate));
+    regsToSaveCount += genCountBits(maskSaveRegsPredicate);
+#endif
+    
     if (regsToSaveCount == 0)
     {
         if (spDelta != 0)
@@ -931,6 +945,16 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lo
 
     // We also can save FP and LR, even though they are not in RBM_CALLEE_SAVED.
     assert(regsToSaveCount <= genCountBits(RBM_CALLEE_SAVED | RBM_FP | RBM_LR));
+
+    
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    if (maskSaveRegsPredicate != RBM_NONE)
+    {
+        genSaveCalleeSavedRegisterGroup(maskSaveRegsPredicate, spDelta, lowestCalleeSavedOffset);
+        spDelta = 0;
+        lowestCalleeSavedOffset += genCountBits(maskSaveRegsPredicate) * FPSAVE_REGSIZE_BYTES;
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     // Save integer registers at higher addresses than floating-point registers.
     if (maskSaveRegsFloat != RBM_NONE)
@@ -1034,6 +1058,13 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask,
     assert(compiler->IsFloatRegMask(maskRestoreRegsFloat));
 
     unsigned regsToRestoreCount = genCountBits(maskRestoreRegsInt) + genCountBits(maskRestoreRegsFloat);
+
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    regMaskTP maskRestoreRegsPredicate = regsToRestoreMask.predicateRegs();
+    assert(compiler->IsPredicateRegMask(maskRestoreRegsPredicate));
+    regsToRestoreCount += genCountBits(maskRestoreRegsPredicate);
+#endif
+
     if (regsToRestoreCount == 0)
     {
         if (spDelta != 0)
@@ -1068,8 +1099,16 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask,
     {
         // If there is any spDelta, it must be used here.
         genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, spDelta, spOffset);
-        // No need to update spOffset since it's not used after this.
+        spOffset -= genCountBits(maskRestoreRegsInt) * FPSAVE_REGSIZE_BYTES;
     }
+
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    if (maskRestoreRegsPredicate != RBM_NONE)
+    {
+        // TODO: Do we need to adjust spDelta?
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsPredicate, spDelta, spOffset); 
+    }
+#endif
 }
 
 // clang-format off
@@ -1380,6 +1419,10 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     regMaskFloat maskSaveRegsFloat = genFuncletInfo.fiSaveFloatRegs;
     regMaskGpr   maskSaveRegsInt   = genFuncletInfo.fiSaveGprRegs;
 
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    regMaskPredicate maskSaveRegsPredicate = genFuncletInfo.fiSavePredicateRegs;
+#endif
+
     // Funclets must always save LR and FP, since when we have funclets we must have an FP frame.
     assert((maskSaveRegsInt & RBM_LR) != 0);
     assert((maskSaveRegsInt & RBM_FP) != 0);
@@ -1496,7 +1539,11 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     int lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta +
                                   genFuncletInfo.fiSpDelta2; // We haven't done the second adjustment of SP yet (if any)
 
-    genSaveCalleeSavedRegistersHelp(AllRegsMask(maskSaveRegsInt, maskSaveRegsFloat), lowestCalleeSavedOffset, 0);
+    genSaveCalleeSavedRegistersHelp(AllRegsMask(maskSaveRegsInt, maskSaveRegsFloat
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+                                                , maskSaveRegsPredicate
+#endif
+    ), lowestCalleeSavedOffset, 0);
 
     if ((genFuncletInfo.fiFrameType == 3) || (genFuncletInfo.fiFrameType == 5))
     {
@@ -1585,6 +1632,10 @@ void CodeGen::genFuncletEpilog()
     regMaskFloat maskRestoreRegsFloat = genFuncletInfo.fiSaveFloatRegs;
     regMaskGpr   maskRestoreRegsInt   = genFuncletInfo.fiSaveGprRegs;
 
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    regMaskPredicate maskRestoreRegsPredicate = genFuncletInfo.fiSavePredicateRegs;
+#endif
+
     // Funclets must always save LR and FP, since when we have funclets we must have an FP frame.
     assert((maskRestoreRegsInt & RBM_LR) != 0);
     assert((maskRestoreRegsInt & RBM_FP) != 0);
@@ -1611,7 +1662,11 @@ void CodeGen::genFuncletEpilog()
         maskRestoreRegsInt &= ~(RBM_LR | RBM_FP); // We restore FP/LR at the end
     }
     int lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta + genFuncletInfo.fiSpDelta2;
-    genRestoreCalleeSavedRegistersHelp(AllRegsMask(maskRestoreRegsInt, maskRestoreRegsFloat), lowestCalleeSavedOffset,
+    genRestoreCalleeSavedRegistersHelp(AllRegsMask(maskRestoreRegsInt, maskRestoreRegsFloat
+#ifdef FEATURE_MASKED_HW_INSTRINSICS
+        , maskRestoreRegsPredicate
+#endif
+    ), lowestCalleeSavedOffset,
                                        0);
 
     if (genFuncletInfo.fiFrameType == 1)
@@ -1875,7 +1930,9 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     genFuncletInfo.fiSaveGprRegs                = rsMaskSaveGprRegs;
     genFuncletInfo.fiSaveFloatRegs              = rsMaskSaveFloatRegs;
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     genFuncletInfo.fiSavePredicateRegs          = rsMaskSavePredicateRegs;
+#endif
     genFuncletInfo.fiSP_to_FPLR_save_delta      = SP_to_FPLR_save_delta;
     genFuncletInfo.fiSP_to_PSP_slot_delta       = SP_to_PSP_slot_delta;
     genFuncletInfo.fiSP_to_CalleeSave_delta     = SP_to_PSP_slot_delta + PSPSize;
@@ -1887,8 +1944,11 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         printf("\n");
         printf("Funclet prolog / epilog info\n");
         printf("                        Save regs: ");
-        dspRegMask(AllRegsMask(genFuncletInfo.fiSaveGprRegs, genFuncletInfo.fiSaveFloatRegs,
-                               genFuncletInfo.fiSavePredicateRegs));
+        dspRegMask(AllRegsMask(genFuncletInfo.fiSaveGprRegs, genFuncletInfo.fiSaveFloatRegs
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+            , genFuncletInfo.fiSavePredicateRegs
+#endif
+        ));
         printf("\n");
         if (compiler->opts.IsOSR())
         {
