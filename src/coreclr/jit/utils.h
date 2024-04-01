@@ -160,18 +160,6 @@ int signum(T val)
     }
 }
 
-template <typename T, typename U>
-constexpr auto max(T&& t, U&& u) -> decltype(t > u ? t : u)
-{
-    return t > u ? t : u;
-}
-
-template <typename T, typename U>
-constexpr auto min(T&& t, U&& u) -> decltype(t < u ? t : u)
-{
-    return t < u ? t : u;
-}
-
 #if defined(DEBUG)
 
 // ConfigMethodRange describes a set of methods, specified via their
