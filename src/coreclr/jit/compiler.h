@@ -2091,6 +2091,9 @@ class FlowGraphNaturalLoop
     // Can be used to store additional annotations for this loop on the side.
     unsigned m_index = 0;
 
+    // True if this loop contains an improper loop header
+    bool m_containsImproperHeader = false;
+
     FlowGraphNaturalLoop(const FlowGraphDfsTree* dfsTree, BasicBlock* head);
 
     unsigned LoopBlockBitVecIndex(BasicBlock* block);
@@ -2178,6 +2181,11 @@ public:
 
     bool ContainsBlock(BasicBlock* block);
     bool ContainsLoop(FlowGraphNaturalLoop* childLoop);
+
+    bool ContainsImproperHeader() const
+    {
+        return m_containsImproperHeader;
+    }
 
     unsigned NumLoopBlocks();
 
@@ -9875,9 +9883,14 @@ public:
         bool altJit;     // True if we are an altjit and are compiling this method
 
 #ifdef OPT_CONFIG
-        bool optRepeat;      // Repeat optimizer phases k times
-        int  optRepeatCount; // How many times to repeat. By default, comes from JitConfig.JitOptRepeatCount().
+        bool optRepeat; // Repeat optimizer phases k times
 #endif
+
+        int optRepeatIteration; // The current optRepeat iteration: from 0 to optRepeatCount. optRepeatCount can be
+                                // zero, in which case no optimizations in the set of repeated optimizations are
+                                // performed. optRepeatIteration will only be zero if optRepeatCount is zero.
+        int  optRepeatCount;    // How many times to repeat. By default, comes from JitConfig.JitOptRepeatCount().
+        bool optRepeatActive;   // `true` if we are in the range of phases being repeated.
 
         bool disAsm;       // Display native code as it is generated
         bool disTesting;   // Display BEGIN METHOD/END METHOD anchors for disasm testing
