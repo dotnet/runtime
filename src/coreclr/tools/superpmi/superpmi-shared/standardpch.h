@@ -63,17 +63,6 @@
 #include <algorithm>
 #include <vector>
 
-template<typename T, typename U>
-constexpr auto max(T&& t, U&& u) -> decltype(t > u ? t : u)
-{
-    return t > u ? t : u;
-}
-
-template<typename T, typename U>
-constexpr auto min(T&& t, U&& u) -> decltype(t < u ? t : u)
-{
-    return t < u ? t : u;
-}
 
 #ifdef USE_MSVCDIS
 #define DISLIB
@@ -127,6 +116,9 @@ static inline void __debugbreak()
   DebugBreak();
 }
 #endif
+
+using std::min;
+using std::max;
 
 #include <minipal/utils.h>
 
