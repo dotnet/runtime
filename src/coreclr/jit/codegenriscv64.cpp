@@ -80,6 +80,9 @@ bool CodeGen::genInstrWithConstant(instruction ins,
         case INS_flw:
         case INS_ld:
         case INS_fld:
+        case INS_lbu:
+        case INS_lhu:
+        case INS_lwu:
             break;
 
         default:
@@ -2499,7 +2502,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 // Generate code for InitBlk by performing a loop unroll
 // Preconditions:
 //   a) Both the size and fill byte value are integer constants.
-//   b) The size of the struct to initialize is smaller than INITBLK_UNROLL_LIMIT bytes.
+//   b) The size of the struct to initialize is smaller than getUnrollThreshold() bytes.
 void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 {
     assert(node->OperIs(GT_STORE_BLK));
@@ -5051,7 +5054,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & ~fullIntArgRegMask()) == 0);
+            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
+                          ~fullIntArgRegMask(compiler->info.compCallConv)) == 0);
 
 // the runtime side requires the codegen here to be consistent
 #ifdef PSEUDORANDOM_NOP_INSERTION
@@ -6138,7 +6142,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 //    None
 //
 // Assumption:
-//  The size argument of the CpBlk node is a constant and <= CPBLK_UNROLL_LIMIT bytes.
+//  The size argument of the CpBlk node is a constant and <= getUnrollThreshold() bytes.
 //
 void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 {
@@ -6509,7 +6513,7 @@ void CodeGen::genCall(GenTreeCall* call)
             for (unsigned i = 0; i < regCount; ++i)
             {
                 var_types regType      = pRetTypeDesc->GetReturnRegType(i);
-                returnReg              = pRetTypeDesc->GetABIReturnReg(i);
+                returnReg              = pRetTypeDesc->GetABIReturnReg(i, call->GetUnmanagedCallConv());
                 regNumber allocatedReg = call->GetRegNumByIdx(i);
                 inst_Mov(regType, allocatedReg, returnReg, /* canSkip */ true);
             }
@@ -7782,6 +7786,11 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 {
     assert(compiler->compGeneratingProlog);
 
+    // The 'initReg' could have been calculated as one of the callee-saved registers (let's say T0, T1 and T2 are in
+    // use, so the next possible register is S1, which should be callee-save register). This is fine, as long as we
+    // save callee-saved registers before using 'initReg' for the first time. Instead, we can use REG_SCRATCH
+    // beforehand. We don't care if REG_SCRATCH will be overwritten, so we'll skip 'RegZeroed check'.
+    //
     // Unlike on x86/x64, we can also push float registers to stack
     regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
 
@@ -7894,11 +7903,11 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
             calleeSaveSPDelta = AlignUp((UINT)offset, STACK_ALIGN);
             offset            = calleeSaveSPDelta - offset;
 
-            genStackPointerAdjustment(-calleeSaveSPDelta, initReg, pInitRegZeroed, /* reportUnwindData */ true);
+            genStackPointerAdjustment(-calleeSaveSPDelta, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
         }
         else
         {
-            genStackPointerAdjustment(-totalFrameSize, initReg, pInitRegZeroed, /* reportUnwindData */ true);
+            genStackPointerAdjustment(-totalFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
         }
     }
 
@@ -7906,6 +7915,8 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     genSaveCalleeSavedRegistersHelp(rsPushRegs, offset, 0);
     offset += (int)(genCountBits(rsPushRegs) << 3); // each reg has 8 bytes
+
+    // From now on, we can safely use initReg.
 
     emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RA, REG_SPBASE, offset);
     compiler->unwindSaveReg(REG_RA, offset);
@@ -7976,7 +7987,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                 unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compCalleeRegsPushed,
                 dspBool(compiler->compLocallocUsed));
 
-        if ((compiler->lvaOutgoingArgSpaceSize + (compiler->compCalleeRegsPushed << 3)) >= 2040)
+        if ((compiler->lvaOutgoingArgSpaceSize + (compiler->compCalleeRegsPushed << 3)) > 2047)
         {
             calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize & 0xfffffff0;
 
@@ -7988,8 +7999,8 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
             {
                 genStackPointerAdjustment(calleeSaveSPOffset, REG_RA, nullptr, /* reportUnwindData */ true);
             }
+            remainingSPSize    = totalFrameSize - calleeSaveSPOffset;
             calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize - calleeSaveSPOffset;
-            remainingSPSize    = remainingSPSize - calleeSaveSPOffset;
         }
         else
         {
@@ -8144,7 +8155,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     {
                         if (genIsValidIntReg(varDsc->GetArgReg()))
                         {
-                            assert(isValidIntArgReg(varDsc->GetArgReg()));
+                            assert(isValidIntArgReg(varDsc->GetArgReg(), compiler->info.compCallConv));
                             regArg[varDsc->GetArgReg() - REG_ARG_FIRST]     = varDsc->GetArgReg();
                             regArgInit[varDsc->GetArgReg() - REG_ARG_FIRST] = varDsc->GetArgInitReg();
                             regArgAttr[varDsc->GetArgReg() - REG_ARG_FIRST] =
@@ -8394,10 +8405,11 @@ void CodeGen::genFnPrologCalleeRegArgs()
     {
         for (int i = MAX_REG_ARG + MAX_FLOAT_REG_ARG - 1; i >= 0; i--)
         {
-            if (regArg[i] != REG_NA && !isValidIntArgReg(regArgInit[i]) && !isValidFloatArgReg(regArgInit[i]))
+            if (regArg[i] != REG_NA && !isValidIntArgReg(regArgInit[i], compiler->info.compCallConv) &&
+                !isValidFloatArgReg(regArgInit[i]))
             {
                 assert(regArg[i] != regArgInit[i]);
-                assert(isValidIntArgReg(regArg[i]) || isValidFloatArgReg(regArg[i]));
+                assert(isValidIntArgReg(regArg[i], compiler->info.compCallConv) || isValidFloatArgReg(regArg[i]));
 
                 GetEmitter()->emitIns_Mov(regArgAttr[i], regArgInit[i], regArg[i], false);
 
@@ -8437,9 +8449,10 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         assert(cur != indexList[count2] && "Attempt to move several values on same register.");
                     }
                     assert(cur < MAX_REG_ARG + MAX_FLOAT_REG_ARG);
-                    assert(isValidIntArgReg(regArg[cur]) || isValidFloatArgReg(regArg[cur]));
+                    assert(isValidIntArgReg(regArg[cur], compiler->info.compCallConv) ||
+                           isValidFloatArgReg(regArg[cur]));
 
-                    if (isValidIntArgReg(regArgInit[cur]))
+                    if (isValidIntArgReg(regArgInit[cur], compiler->info.compCallConv))
                     {
                         cur = regArgInit[cur] - REG_ARG_FIRST;
                     }

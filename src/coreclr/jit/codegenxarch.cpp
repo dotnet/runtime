@@ -121,7 +121,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
             for (unsigned i = 0; i < regCount; ++i)
             {
-                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i), retTypeDesc.GetReturnRegType(i));
+                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
+                                       retTypeDesc.GetReturnRegType(i));
             }
         }
     }
@@ -1318,8 +1319,8 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
     // This is a case of operand is in a single reg and needs to be
     // returned in multiple ABI return registers.
     regNumber opReg = src->GetRegNum();
-    regNumber reg0  = retTypeDesc->GetABIReturnReg(0);
-    regNumber reg1  = retTypeDesc->GetABIReturnReg(1);
+    regNumber reg0  = retTypeDesc->GetABIReturnReg(0, compiler->info.compCallConv);
+    regNumber reg1  = retTypeDesc->GetABIReturnReg(1, compiler->info.compCallConv);
 
     assert((reg0 != REG_NA) && (reg1 != REG_NA) && (opReg != REG_NA));
 
@@ -2170,7 +2171,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif // !FEATURE_EH_FUNCLETS
 
         case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & ~fullIntArgRegMask()) == 0);
+            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
+                          ~fullIntArgRegMask(compiler->info.compCallConv)) == 0);
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
             // the runtime side requires the codegen here to be consistent
@@ -2247,7 +2249,6 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
     // This case is always a call (AsCall() will assert if it is not).
     GenTreeCall*          call        = actualOp1->AsCall();
     const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-    assert(retTypeDesc->GetReturnRegCount() == MAX_RET_REG_COUNT);
 
     assert(regCount == 2);
     regNumber targetReg = lclNode->GetRegNum();
@@ -6014,17 +6015,6 @@ void CodeGen::genCall(GenTreeCall* call)
         instGen(INS_vzeroupper);
     }
 
-#ifdef SWIFT_SUPPORT
-    // Clear the Swift error register before calling a Swift method,
-    // so we can check if it set the error register after returning.
-    // (Flag is only set if we know we need to check the error register)
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
-    {
-        assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
-        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_SWIFT_ERROR);
-    }
-#endif // SWIFT_SUPPORT
-
     genCallInstruction(call X86_ARG(stackArgBytes));
 
     genDefinePendingCallLabel(call);
@@ -6074,7 +6064,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 for (unsigned i = 0; i < regCount; ++i)
                 {
                     var_types regType      = retTypeDesc->GetReturnRegType(i);
-                    returnReg              = retTypeDesc->GetABIReturnReg(i);
+                    returnReg              = retTypeDesc->GetABIReturnReg(i, call->GetUnmanagedCallConv());
                     regNumber allocatedReg = call->GetRegNumByIdx(i);
                     inst_Mov(regType, allocatedReg, returnReg, /* canSkip */ true);
                 }
@@ -6085,7 +6075,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 // the native compiler doesn't guarantee it.
                 if (call->IsUnmanaged() && (returnType == TYP_SIMD12))
                 {
-                    returnReg = retTypeDesc->GetABIReturnReg(1);
+                    returnReg = retTypeDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv());
                     genSimd12UpperClear(returnReg);
                 }
 #endif // FEATURE_SIMD
@@ -6846,19 +6836,6 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     ins     = (op1Type == TYP_FLOAT) ? INS_ucomiss : INS_ucomisd;
     cmpAttr = emitTypeSize(op1Type);
 
-    var_types targetType = treeNode->TypeGet();
-
-    // Clear target reg in advance via "xor reg,reg" to avoid movzx after SETCC
-    if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
-        !varTypeIsByte(targetType))
-    {
-        regMaskTP targetRegMask = genRegMask(targetReg);
-        if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
-        {
-            instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
-            targetType = TYP_UBYTE; // just a tip for inst_SETCC that movzx is not needed
-        }
-    }
     GetEmitter()->emitInsBinary(ins, cmpAttr, op1, op2);
 
     // Are we evaluating this into a register?
@@ -6875,7 +6852,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
             condition = GenCondition(GenCondition::P);
         }
 
-        inst_SETCC(condition, targetType, targetReg);
+        inst_SETCC(condition, treeNode->TypeGet(), targetReg);
         genProduceReg(tree);
     }
 }
@@ -7015,22 +6992,8 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
 
-    var_types targetType = tree->TypeGet();
-
     if (!canReuseFlags || !genCanAvoidEmittingCompareAgainstZero(tree, type))
     {
-        // Clear target reg in advance via "xor reg,reg" to avoid movzx after SETCC
-        if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
-            !varTypeIsByte(targetType))
-        {
-            regMaskTP targetRegMask = genRegMask(targetReg);
-            if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
-            {
-                instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
-                targetType = TYP_UBYTE; // just a tip for inst_SETCC that movzx is not needed
-            }
-        }
-
         emitAttr size    = emitTypeSize(type);
         bool     canSkip = compiler->opts.OptimizationEnabled() && (ins == INS_cmp) && !op1->isUsedFromMemory() &&
                        !op2->isUsedFromMemory() && emit->IsRedundantCmp(size, op1->GetRegNum(), op2->GetRegNum());
@@ -7044,7 +7007,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
     {
-        inst_SETCC(GenCondition::FromIntegralRelop(tree), targetType, targetReg);
+        inst_SETCC(GenCondition::FromIntegralRelop(tree), tree->TypeGet(), targetReg);
         genProduceReg(tree);
     }
 }

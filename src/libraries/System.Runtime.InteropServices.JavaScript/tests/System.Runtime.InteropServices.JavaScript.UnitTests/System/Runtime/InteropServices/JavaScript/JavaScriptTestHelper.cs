@@ -37,6 +37,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("delay", "JavaScriptTestHelper")]
         public static partial Task Delay(int ms);
 
+        [JSImport("intentionallyMissingImport", "JavaScriptTestHelper")]
+        public static partial void IntentionallyMissingImport();
+
         [JSImport("catch1toString", "JavaScriptTestHelper")]
         public static partial string catch1toString(string message, string functionName);
 
@@ -1020,14 +1023,24 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("INTERNAL.forceDisposeProxies")]
         internal static partial void ForceDisposeProxies(bool disposeMethods, bool verbose);
 
+        public static void AssertWasmBackgroundExec()
+        {
+            if (PlatformDetection.IsWasmBackgroundExec && Environment.CurrentManagedThreadId == 1)
+            {
+                throw new Exception("With WasmBackgroundExec we are expecting to run tests on the thread pool");
+            }
+        }
+
         static JSObject _module;
         public static async Task InitializeAsync()
         {
+            AssertWasmBackgroundExec();
             if (_module == null)
             {
                 _module = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs"); ;
                 await Setup();
             }
+            AssertWasmBackgroundExec();
 
 #if FEATURE_WASM_MANAGED_THREADS
             // are we in the UI thread ?
@@ -1037,6 +1050,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 // this gives browser chance to serve UI thread event loop before every test
                 await Task.Yield();
             }
+            AssertWasmBackgroundExec();
         }
 
         public static Task DisposeAsync()

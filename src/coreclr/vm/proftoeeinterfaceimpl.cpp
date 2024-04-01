@@ -4303,7 +4303,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
     LPCBYTE pbMethod = NULL;
 
     // Don't return rewritten IL, use the new API to get that.
-    pbMethod = (LPCBYTE) pModule->GetDynamicIL(methodId, FALSE);
+    pbMethod = (LPCBYTE) pModule->GetDynamicIL(methodId);
 
     // Method not overridden - get the original copy of the IL by going to metadata
     if (pbMethod == NULL)
@@ -4488,7 +4488,7 @@ HRESULT ProfToEEInterfaceImpl::SetILFunctionBody(ModuleID    moduleId,
     // This action is not temporary!
     // If the profiler want to be able to revert, they need to use
     // the new ReJIT APIs.
-    pModule->SetDynamicIL(methodId, (TADDR)pbNewILMethodHeader, FALSE);
+    pModule->SetDynamicIL(methodId, (TADDR)pbNewILMethodHeader);
 
     return (hr);
 }
@@ -8411,8 +8411,7 @@ Loop:
                     &rd,
                     &codeInfo,
                     SpeculativeStackwalk,
-                    &codeManState,
-                    NULL);
+                    &codeManState);
 
                 ctxCur.Ebp = *rd.GetEbpLocation();
                 ctxCur.Esp = rd.SP;

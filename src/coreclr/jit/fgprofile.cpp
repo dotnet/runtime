@@ -508,10 +508,9 @@ void BlockCountInstrumentor::RelocateProbes()
         if (criticalPreds.Height() > 0)
         {
             BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
-            intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED | BBF_NONE_QUIRK);
+            intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED);
             intermediary->inheritWeight(block);
             FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
-            newEdge->setLikelihood(1.0);
             intermediary->SetTargetEdge(newEdge);
             SetModifiedFlow();
 
@@ -1680,10 +1679,9 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         if (criticalPreds.Height() > 0)
         {
             BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
-            intermediary->SetFlags(BBF_IMPORTED | BBF_NONE_QUIRK);
+            intermediary->SetFlags(BBF_IMPORTED);
             intermediary->inheritWeight(block);
             FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
-            newEdge->setLikelihood(1.0);
             intermediary->SetTargetEdge(newEdge);
             NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
             SetModifiedFlow();
@@ -2951,8 +2949,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         //
         if (fgPgoHaveWeights && !dataIsGood)
         {
-            JITDUMP("\nIncorporated count data had inconsistencies; blending profile...\n");
-            ProfileSynthesis::Run(this, ProfileSynthesisOption::BlendLikelihoods);
+            JITDUMP("\nIncorporated count data had inconsistencies; repairing profile...\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
         }
     }
 
@@ -3268,15 +3266,9 @@ public:
 
     // Are there are reparable issues with the reconstruction?
     //
-    // Ideally we'd also have || !m_negativeCount here, but this
-    // leads to lots of diffs in async methods.
-    //
-    // Looks like we might first need to resolve reconstruction
-    // shortcomings with irreducible loops.
-    //
     bool IsGood() const
     {
-        return !m_entryWeightZero;
+        return !(m_entryWeightZero || m_negativeCount);
     }
 
     void VisitBlock(BasicBlock*) override
@@ -3921,7 +3913,7 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
 
         assert(flowEdge != nullptr);
 
-        // Naive likelihood should have been set during pred initialization in fgAddRefPred
+        // Naive likelihood should have been set during pred initialization in fgLinkBasicBlocks
         //
         assert(flowEdge->hasLikelihood());
         weight_t likelihood = 0;
@@ -3980,8 +3972,8 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     // If there is a pseudo edge,
     // There should be only one successor for block. The flow
     // from block to successor will not represent real flow.
-    // We set likelihood anyways so we can assert later
-    // that all flow edges have known likelihood.
+    // Likelihood should be set to 1.0 already, as we already know
+    // this block has only one successor.
     //
     // Note the flowEdge target may not be the same as the pseudo edge target.
     //
@@ -3992,7 +3984,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
         assert(block->HasInitializedTarget());
         FlowEdge* const flowEdge = block->GetTargetEdge();
         assert(flowEdge != nullptr);
-        flowEdge->setLikelihood(1.0);
+        assert(flowEdge->getLikelihood() == 1.0);
         return;
     }
 
@@ -5248,6 +5240,9 @@ void Compiler::fgDebugCheckProfileWeights()
 // Arguments:
 //   checks - checker options
 //
+// Returns:
+//   True if all enabled checks pass
+//
 // Notes:
 //   For each profiled block, check that the flow of counts into
 //   the block matches the flow of counts out of the block.
@@ -5259,7 +5254,7 @@ void Compiler::fgDebugCheckProfileWeights()
 //   There's no point checking until we've built pred lists, as
 //   we can't easily reason about consistency without them.
 //
-void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
+bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 {
     // We can check classic (min/max, late computed) weights
     //   and/or
@@ -5275,7 +5270,7 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     if (!(verifyClassicWeights || verifyLikelyWeights || verifyHasLikelihood))
     {
         JITDUMP("[profile weight checks disabled]\n");
-        return;
+        return true;
     }
 
     JITDUMP("Checking Profile Weights (flags:0x%x)\n", checks);
@@ -5438,6 +5433,8 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
             assert(!"Inconsistent profile data");
         }
     }
+
+    return (problemBlocks == 0);
 }
 
 //------------------------------------------------------------------------
@@ -5666,6 +5663,25 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
                 else
                 {
                     likelyWeightsValid = false;
+
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        for (const FlowEdge* succEdge : block->SuccEdges(this))
+                        {
+                            const BasicBlock* succBlock = succEdge->getDestinationBlock();
+                            if (succEdge->hasLikelihood())
+                            {
+                                printf("  " FMT_BB " -> " FMT_BB ": " FMT_WT "\n", block->bbNum, succBlock->bbNum,
+                                       succEdge->getLikelihood());
+                            }
+                            else
+                            {
+                                printf("  " FMT_BB " -> " FMT_BB ": no likelihood\n", block->bbNum, succBlock->bbNum);
+                            }
+                        }
+                    }
+#endif // DEBUG
                 }
             }
         }

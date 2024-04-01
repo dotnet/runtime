@@ -22,7 +22,8 @@ try {
     setModuleImports("main.js", {
         Sample: {
             Test: {
-                updateProgress
+                updateProgress,
+                updateProgress2
             }
         }
     });
@@ -61,6 +62,10 @@ export async function updateProgress(status) {
     } else {
         console.log("Progress: " + status);
     }
+}
+
+export async function updateProgress2() {
+    exports.Sample.Test.Progress2();
 }
 
 function delay(ms) {

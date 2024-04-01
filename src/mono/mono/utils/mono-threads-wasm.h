@@ -34,14 +34,26 @@ mono_wasm_dump_threads_async (void);
 gboolean
 mono_threads_wasm_is_deputy_thread (void);
 
+gboolean
+mono_threads_wasm_is_io_thread (void);
+
 MonoNativeThreadId
 mono_threads_wasm_deputy_thread_tid (void);
 
 MonoNativeThreadId
+mono_threads_wasm_io_thread_tid (void);
+
+MonoNativeThreadId
 mono_wasm_create_deputy_thread (void);
+
+MonoNativeThreadId
+mono_wasm_create_io_thread (void);
 
 void
 mono_wasm_register_ui_thread (void);
+
+void
+mono_wasm_register_io_thread (void);
 
 void
 mono_threads_wasm_async_run_in_target_thread (pthread_t target_thread, void (*func) (void));
@@ -53,7 +65,10 @@ void
 mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 
 void
-mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer args);
+
+void 
+mono_threads_wasm_sync_run_in_target_thread_done (MonoCoopSem *sem);
 
 static inline
 int32_t

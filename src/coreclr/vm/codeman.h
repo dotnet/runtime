@@ -69,10 +69,6 @@ Abstract:
 #include "gcinfo.h"
 #include "eexcp.h"
 
-#if defined(FEATURE_EH_FUNCLETS) && !defined(USE_INDIRECT_CODEHEADER)
-#error "FEATURE_EH_FUNCLETS requires USE_INDIRECT_CODEHEADER"
-#endif // FEATURE_EH_FUNCLETS && !USE_INDIRECT_CODEHEADER
-
 class MethodDesc;
 class ICorJitCompiler;
 class IJitManager;
@@ -125,20 +121,10 @@ enum StubCodeBlockKind : int
 // Today CodeHeader is used by the EEJitManager.
 // The GCInfo version is always current GCINFO_VERSION in this header.
 
-#ifdef USE_INDIRECT_CODEHEADER
 typedef DPTR(struct _hpRealCodeHdr) PTR_RealCodeHeader;
 typedef DPTR(struct _hpCodeHdr) PTR_CodeHeader;
 
-#else // USE_INDIRECT_CODEHEADER
-typedef DPTR(struct _hpCodeHdr) PTR_CodeHeader;
-
-#endif // USE_INDIRECT_CODEHEADER
-
-#ifdef USE_INDIRECT_CODEHEADER
 typedef struct _hpRealCodeHdr
-#else // USE_INDIRECT_CODEHEADER
-typedef struct _hpCodeHdr
-#endif // USE_INDIRECT_CODEHEADER
 {
 public:
     PTR_BYTE            phdrDebugInfo;
@@ -160,95 +146,9 @@ public:
 #endif // FEATURE_EH_FUNCLETS
 
 public:
-#ifndef USE_INDIRECT_CODEHEADER
-    //
-    // Note: that the JITted code follows immediately after the MethodDesc*
-    //
-    PTR_BYTE                GetDebugInfo()
-    {
-        SUPPORTS_DAC;
-
-        return phdrDebugInfo;
-    }
-    PTR_EE_ILEXCEPTION      GetEHInfo()
-    {
-        return phdrJitEHInfo;
-    }
-    PTR_BYTE                GetGCInfo()
-    {
-        SUPPORTS_DAC;
-        return phdrJitGCInfo;
-    }
-    PTR_MethodDesc          GetMethodDesc()
-    {
-        SUPPORTS_DAC;
-        return phdrMDesc;
-    }
-#if defined(FEATURE_GDBJIT)
-    VOID*                GetCalledMethods()
-    {
-        SUPPORTS_DAC;
-        return pCalledMethods;
-    }
-#endif
-    TADDR                   GetCodeStartAddress()
-    {
-        SUPPORTS_DAC;
-        return dac_cast<TADDR>(dac_cast<PTR_CodeHeader>(this) + 1);
-    }
-    StubCodeBlockKind       GetStubCodeBlockKind()
-    {
-        SUPPORTS_DAC;
-        return (StubCodeBlockKind)dac_cast<TADDR>(phdrMDesc);
-    }
-    BOOL                    IsStubCodeBlock()
-    {
-        SUPPORTS_DAC;
-        // Note that it is important for this comparison to be unsigned
-        return dac_cast<TADDR>(phdrMDesc) <= (TADDR)STUB_CODE_BLOCK_LAST;
-    }
-
-    void SetDebugInfo(PTR_BYTE pDI)
-    {
-        phdrDebugInfo = pDI;
-    }
-    void SetEHInfo(PTR_EE_ILEXCEPTION pEH)
-    {
-        phdrJitEHInfo = pEH;
-    }
-    void SetGCInfo(PTR_BYTE pGC)
-    {
-        phdrJitGCInfo = pGC;
-    }
-    void SetMethodDesc(PTR_MethodDesc pMD)
-    {
-        phdrMDesc = pMD;
-    }
-#if defined(FEATURE_GDBJIT)
-    void SetCalledMethods(VOID* pCM)
-    {
-        pCalledMethods = pCM;
-    }
-#endif
-    void SetStubCodeBlockKind(StubCodeBlockKind kind)
-    {
-        phdrMDesc = (PTR_MethodDesc)kind;
-    }
-#endif // !USE_INDIRECT_CODEHEADER
-
 // if we're using the indirect codeheaders then all enumeration is done by the code header
-#ifndef USE_INDIRECT_CODEHEADER
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJitMan);
-#endif  // DACCESS_COMPILE
-#endif  // USE_INDIRECT_CODEHEADER
-#ifdef USE_INDIRECT_CODEHEADER
 } RealCodeHeader;
-#else // USE_INDIRECT_CODEHEADER
-} CodeHeader;
-#endif // USE_INDIRECT_CODEHEADER
 
-#ifdef USE_INDIRECT_CODEHEADER
 typedef struct _hpCodeHdr
 {
     PTR_RealCodeHeader   pRealCodeHeader;
@@ -355,7 +255,6 @@ public:
 #endif  // DACCESS_COMPILE
 
 } CodeHeader;
-#endif // USE_INDIRECT_CODEHEADER
 
 
 //-----------------------------------------------------------------------------
@@ -1871,9 +1770,7 @@ public:
 
     void                allocCode(MethodDesc* pFD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, CodeHeader** ppCodeHeader, CodeHeader** ppCodeHeaderRW,
                                   size_t* pAllocatedSize, HeapList** ppCodeHeap
-#ifdef USE_INDIRECT_CODEHEADER
                                 , BYTE** ppRealHeader
-#endif
 #ifdef FEATURE_EH_FUNCLETS
                                 , UINT nUnwindInfos
 #endif
@@ -2619,21 +2516,20 @@ public:
     PTR_RUNTIME_FUNCTION GetFunctionEntry();
     BOOL        IsFunclet()     { WRAPPER_NO_CONTRACT; return GetJitManager()->IsFunclet(this); }
     EECodeInfo  GetMainFunctionInfo();
-    ULONG               GetFixedStackSize();
+#endif // FEATURE_EH_FUNCLETS
 
-#if defined(TARGET_AMD64)
-    BOOL        HasFrameRegister();
-#endif // TARGET_AMD64
-
-#else // FEATURE_EH_FUNCLETS
+#if defined(TARGET_X86)
     ULONG       GetFixedStackSize()
     {
         WRAPPER_NO_CONTRACT;
         return GetCodeManager()->GetFrameSize(GetGCInfoToken());
     }
-#endif // FEATURE_EH_FUNCLETS
+#endif // TARGET_X86
 
 #if defined(TARGET_AMD64)
+    BOOL        HasFrameRegister();
+    ULONG       GetFixedStackSize();
+
     void         GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset);
     ULONG        GetFrameOffsetFromUnwindInfo();
 #if defined(_DEBUG) && defined(HAVE_GCCOVER)

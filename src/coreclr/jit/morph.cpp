@@ -765,6 +765,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "ValidateIndirectCallTarget";
         case WellKnownArg::DispatchIndirectCallTarget:
             return "DispatchIndirectCallTarget";
+        case WellKnownArg::SwiftError:
+            return "SwiftError";
         case WellKnownArg::SwiftSelf:
             return "SwiftSelf";
     }
@@ -1694,36 +1696,6 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 #endif
 
                 unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
-                if (argx->gtOper == GT_MKREFANY)
-                {
-                    // For GT_MKREFANY, typically the actual struct copying does
-                    // not have any side-effects and can be delayed. So instead
-                    // of using a temp for the whole struct, we can just use a temp
-                    // for operand that has a side-effect.
-                    GenTree* operand;
-                    if ((argx->AsOp()->gtOp2->gtFlags & GTF_ALL_EFFECT) == 0)
-                    {
-                        operand = argx->AsOp()->gtOp1;
-
-                        // In the early argument evaluation, place an assignment to the temp
-                        // from the source operand of the mkrefany
-                        setupArg = comp->gtNewTempStore(tmpVarNum, operand);
-
-                        // Replace the operand for the mkrefany with the new temp.
-                        argx->AsOp()->gtOp1 = comp->gtNewLclvNode(tmpVarNum, operand->TypeGet());
-                    }
-                    else if ((argx->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT) == 0)
-                    {
-                        operand = argx->AsOp()->gtOp2;
-
-                        // In the early argument evaluation, place an assignment to the temp
-                        // from the source operand of the mkrefany
-                        setupArg = comp->gtNewTempStore(tmpVarNum, operand);
-
-                        // Replace the operand for the mkrefany with the new temp.
-                        argx->AsOp()->gtOp2 = comp->gtNewLclvNode(tmpVarNum, operand->TypeGet());
-                    }
-                }
 
                 if (setupArg != nullptr)
                 {
@@ -2660,7 +2632,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                         {
                             assert(size == 1);
                             size            = 2;
-                            nextOtherRegNum = genMapIntRegArgNumToRegNum(intArgRegNum);
+                            nextOtherRegNum = genMapIntRegArgNumToRegNum(intArgRegNum, call->GetUnmanagedCallConv());
                         }
                     }
                 }
@@ -2675,7 +2647,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 isRegArg = (intArgRegNum + (size - 1)) < maxRegArgs;
                 if (!passUsingFloatRegs && isRegArg && (size > 1))
                 {
-                    nextOtherRegNum = genMapIntRegArgNumToRegNum(intArgRegNum + 1);
+                    nextOtherRegNum = genMapIntRegArgNumToRegNum(intArgRegNum + 1, call->GetUnmanagedCallConv());
                 }
 
                 // Did we run out of registers when we had a 16-byte struct (size===2) ?
@@ -2814,7 +2786,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 {
                     if (structDesc.IsIntegralSlot(i))
                     {
-                        *nextRegNumPtrs[i] = genMapIntRegArgNumToRegNum(intArgRegNum + structIntRegs);
+                        *nextRegNumPtrs[i] =
+                            genMapIntRegArgNumToRegNum(intArgRegNum + structIntRegs, call->GetUnmanagedCallConv());
                         ++structIntRegs;
                     }
                     else if (structDesc.IsSseSlot(i))
@@ -2828,8 +2801,9 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             else
             {
                 // fill in or update the argInfo table
-                nextRegNum = passUsingFloatRegs ? genMapFloatRegArgNumToRegNum(nextFltArgRegNum)
-                                                : genMapIntRegArgNumToRegNum(intArgRegNum);
+                nextRegNum = passUsingFloatRegs
+                                 ? genMapFloatRegArgNumToRegNum(nextFltArgRegNum)
+                                 : genMapIntRegArgNumToRegNum(intArgRegNum, call->GetUnmanagedCallConv());
             }
 
 #ifdef WINDOWS_AMD64_ABI
@@ -2842,8 +2816,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             arg.AbiInfo.NumRegs = size;
             arg.AbiInfo.SetByteSize(byteSize, argAlignBytes, isStructArg, isFloatHfa);
 #ifdef UNIX_AMD64_ABI
-            arg.AbiInfo.StructIntRegs   = structIntRegs;
-            arg.AbiInfo.StructFloatRegs = structFloatRegs;
 
             if (isStructArg)
             {
@@ -3181,9 +3153,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         }
 
         // TODO-ARGS: Review this, is it really necessary to treat them specially here?
-        // Exception: Lower SwiftSelf struct arg to GT_LCL_FLD
-        if (call->gtArgs.IsNonStandard(this, call, &arg) && arg.AbiInfo.IsPassedInRegisters() &&
-            (arg.GetWellKnownArg() != WellKnownArg::SwiftSelf))
+        if (call->gtArgs.IsNonStandard(this, call, &arg) && arg.AbiInfo.IsPassedInRegisters())
         {
             flagsSummary |= argx->gtFlags;
             continue;
@@ -3201,7 +3171,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         GenTree* argObj         = argx->gtEffectiveVal();
         bool     makeOutArgCopy = false;
 
-        if (isStructArg && !reMorphing && !argObj->OperIs(GT_MKREFANY))
+        if (isStructArg && !reMorphing)
         {
             unsigned originalSize;
             if (argObj->TypeGet() == TYP_STRUCT)
@@ -3397,40 +3367,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             {
                 flagsSummary |= arg.GetEarlyNode()->gtFlags;
             }
-        }
-
-        if (argx->gtOper == GT_MKREFANY)
-        {
-            // 'Lower' the MKREFANY tree and insert it.
-            noway_assert(!reMorphing);
-
-#ifdef TARGET_X86
-            // Build the mkrefany as a GT_FIELD_LIST
-            GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
-            fieldList->AddField(this, argx->AsOp()->gtGetOp1(), OFFSETOF__CORINFO_TypedReference__dataPtr, TYP_BYREF);
-            fieldList->AddField(this, argx->AsOp()->gtGetOp2(), OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL);
-            arg.SetEarlyNode(fieldList);
-#else  // !TARGET_X86
-
-            // Get a new temp
-            // Here we don't need unsafe value cls check since the addr of temp is used only in mkrefany
-            unsigned tmp = lvaGrabTemp(true DEBUGARG("by-value mkrefany struct argument"));
-            lvaSetStruct(tmp, impGetRefAnyClass(), false);
-            lvaSetVarAddrExposed(tmp DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
-
-            // Build the mkrefany as a comma node: (tmp.ptr=argx),(tmp.type=handle)
-            GenTree* storePtrSlot =
-                gtNewStoreLclFldNode(tmp, TYP_BYREF, OFFSETOF__CORINFO_TypedReference__dataPtr, argx->AsOp()->gtOp1);
-            GenTree* storeTypeSlot =
-                gtNewStoreLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__type, argx->AsOp()->gtOp2);
-            GenTree* store = gtNewOperNode(GT_COMMA, TYP_VOID, storePtrSlot, storeTypeSlot);
-
-            // Change the expression to "(tmp=val)"
-            arg.SetEarlyNode(store);
-            call->gtArgs.SetTemp(&arg, tmp);
-            flagsSummary |= GTF_ASG;
-            hasMultiregStructArgs |= ((arg.AbiInfo.ArgType == TYP_STRUCT) && !arg.AbiInfo.PassedByRef);
-#endif // !TARGET_X86
         }
 
 #if FEATURE_MULTIREG_ARGS
@@ -3949,7 +3885,6 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
 void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 {
     GenTree* argx = arg->GetEarlyNode();
-    noway_assert(!argx->OperIs(GT_MKREFANY));
 
 #if FEATURE_IMPLICIT_BYREFS
     // If we're optimizing, see if we can avoid making a copy.
@@ -6172,8 +6107,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // Many tailcalls will have call and ret in the same block, and thus be
         // BBJ_RETURN, but if the call falls through to a ret, and we are doing a
         // tailcall, change it here.
-        // (compCurBB may have a jump target, so use SetKind() to avoid nulling it)
-        compCurBB->SetKind(BBJ_RETURN);
+        compCurBB->SetKindAndTargetEdge(BBJ_RETURN);
     }
 
     GenTree* stmtExpr = fgMorphStmt->GetRootNode();
@@ -7007,7 +6941,8 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
 }
 
 //------------------------------------------------------------------------
-// getTokenHandleTree: get a handle tree for a token
+// getTokenHandleTree: get a handle tree for a token. This method should never
+//    be called for tokens imported from inlinees.
 //
 // Arguments:
 //    pResolvedToken - token to get a handle for
@@ -7019,7 +6954,14 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
 GenTree* Compiler::getTokenHandleTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool parent)
 {
     CORINFO_GENERICHANDLE_RESULT embedInfo;
-    info.compCompHnd->embedGenericHandle(pResolvedToken, parent, &embedInfo);
+
+    // NOTE: inlining is done at this point, so we don't know which method contained this token.
+    // It's fine because currently this is never used for something that belongs to an inlinee.
+    // Namely, we currently use it for:
+    //   1) Methods with EH are never inlined
+    //   2) Methods with explicit tail calls are never inlined
+    //
+    info.compCompHnd->embedGenericHandle(pResolvedToken, parent, info.compMethodHnd, &embedInfo);
 
     GenTree* result = getLookupTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
                                     embedInfo.compileTimeHandle);
@@ -13209,7 +13151,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 fgRemoveRefPred(block->GetFalseEdge());
 
                 edgeTaken = block->GetTrueEdge();
-                block->SetKind(BBJ_ALWAYS);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, edgeTaken);
             }
             else
             {
@@ -13222,7 +13164,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 edgeTaken = block->GetFalseEdge();
                 block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
-                block->SetFlags(BBF_NONE_QUIRK);
             }
 
             if (fgHaveValidEdgeWeights)
@@ -13394,11 +13335,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             }
 
             assert(foundVal);
-            if (block->JumpsToNext())
-            {
-                block->SetFlags(BBF_NONE_QUIRK);
-            }
-
 #ifdef DEBUG
             if (verbose)
             {
@@ -14614,7 +14550,6 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     // Conservatively propagate BBF_COPY_PROPAGATE flags to all blocks
     BasicBlockFlags propagateFlagsToAll = block->GetFlagsRaw() & BBF_COPY_PROPAGATE;
     BasicBlock*     remainderBlock      = fgSplitBlockAfterStatement(block, stmt);
-    fgRemoveRefPred(block->GetTargetEdge()); // We're going to put more blocks between block and remainderBlock.
 
     BasicBlock* condBlock = fgNewBBafter(BBJ_ALWAYS, block, true);
     BasicBlock* elseBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
@@ -14638,10 +14573,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     assert(condBlock->bbWeight == remainderBlock->bbWeight);
 
     assert(block->KindIs(BBJ_ALWAYS));
-    {
-        FlowEdge* const newEdge = fgAddRefPred(condBlock, block);
-        block->SetTargetEdge(newEdge);
-    }
+    fgRedirectTargetEdge(block, condBlock);
 
     {
         FlowEdge* const newEdge = fgAddRefPred(elseBlock, condBlock);
@@ -14656,8 +14588,8 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     assert(condBlock->JumpsToNext());
     assert(elseBlock->JumpsToNext());
 
-    condBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
-    elseBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
+    condBlock->SetFlags(propagateFlagsToAll);
+    elseBlock->SetFlags(propagateFlagsToAll);
 
     BasicBlock* thenBlock = nullptr;
     if (hasTrueExpr && hasFalseExpr)
@@ -14680,15 +14612,20 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
             thenBlock->SetFlags(BBF_IMPORTED);
         }
 
+        const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
+        const unsigned elseLikelihood = qmark->ElseNodeLikelihood();
+
         FlowEdge* const newEdge = fgAddRefPred(remainderBlock, thenBlock);
         thenBlock->SetTargetEdge(newEdge);
 
         assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const falseEdge = fgAddRefPred(thenBlock, condBlock);
-        condBlock->SetCond(condBlock->GetTargetEdge(), falseEdge);
-
-        thenBlock->inheritWeightPercentage(condBlock, qmark->ThenNodeLikelihood());
-        elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());
+        FlowEdge* const elseEdge = fgAddRefPred(thenBlock, condBlock);
+        FlowEdge* const thenEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(thenEdge, elseEdge);
+        thenBlock->inheritWeightPercentage(condBlock, thenLikelihood);
+        elseBlock->inheritWeightPercentage(condBlock, elseLikelihood);
+        thenEdge->setLikelihood(thenLikelihood / 100.0);
+        elseEdge->setLikelihood(elseLikelihood / 100.0);
     }
     else if (hasTrueExpr)
     {
@@ -14700,15 +14637,21 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //
         gtReverseCond(condExpr);
 
+        const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
+        const unsigned elseLikelihood = qmark->ElseNodeLikelihood();
+
         assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const trueEdge = fgAddRefPred(remainderBlock, condBlock);
-        condBlock->SetCond(trueEdge, condBlock->GetTargetEdge());
+        FlowEdge* const thenEdge = fgAddRefPred(remainderBlock, condBlock);
+        FlowEdge* const elseEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(thenEdge, elseEdge);
 
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
         elseBlock = nullptr;
 
-        thenBlock->inheritWeightPercentage(condBlock, qmark->ThenNodeLikelihood());
+        thenBlock->inheritWeightPercentage(condBlock, thenLikelihood);
+        thenEdge->setLikelihood(thenLikelihood / 100.0);
+        elseEdge->setLikelihood(elseLikelihood / 100.0);
     }
     else if (hasFalseExpr)
     {
@@ -14718,11 +14661,17 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->------------+
         //              bbj_cond(true)
         //
-        assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const trueEdge = fgAddRefPred(remainderBlock, condBlock);
-        condBlock->SetCond(trueEdge, condBlock->GetTargetEdge());
+        const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
+        const unsigned elseLikelihood = qmark->ElseNodeLikelihood();
 
-        elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());
+        assert(condBlock->TargetIs(elseBlock));
+        FlowEdge* const thenEdge = fgAddRefPred(remainderBlock, condBlock);
+        FlowEdge* const elseEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(thenEdge, elseEdge);
+
+        elseBlock->inheritWeightPercentage(condBlock, elseLikelihood);
+        thenEdge->setLikelihood(thenLikelihood / 100.0);
+        elseEdge->setLikelihood(elseLikelihood / 100.0);
     }
 
     assert(condBlock->KindIs(BBJ_COND));

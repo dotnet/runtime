@@ -29,7 +29,7 @@ namespace System.Linq
                 _maxIndexInclusive = maxIndexInclusive;
             }
 
-            public override Iterator<TSource> Clone() =>
+            private protected override Iterator<TSource> Clone() =>
                 new IListSkipTakeIterator<TSource>(_source, _minIndexInclusive, _maxIndexInclusive);
 
             public override bool MoveNext()
@@ -230,7 +230,7 @@ namespace System.Linq
 
             private int Limit => _maxIndexInclusive + 1 - _minIndexInclusive; // This is that upper bound.
 
-            public override Iterator<TSource> Clone() =>
+            private protected override Iterator<TSource> Clone() =>
                 new IEnumerableSkipTakeIterator<TSource>(_source, _minIndexInclusive, _maxIndexInclusive);
 
             public override void Dispose()

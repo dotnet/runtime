@@ -13,15 +13,15 @@ To build the host tests, first build the product:
     * [CoreCLR](../../building/coreclr/README.md) build instructions
     * [Libraries](../../building/libraries/README.md) build instructions
 
-2.  Build the host and packs:
+2.  Build the host:
     ```
-    build.cmd/sh -subset host+packs.product -runtimeConfiguration Release -librariesConfiguration Release
+    build.cmd/sh -subset host -runtimeConfiguration Release -librariesConfiguration Release
     ```
     If using a configuration other than Release for CoreCLR/libraries, specify the desired configuration in the `-runtimeConfiguration`/`-librariesConfiguration` arguments.
 
 ### Building all tests
 
-The host tests are part of the `host` subset by default, so building the `host` subset also builds the host test. To build just the host tests:
+The host tests are part of the `host` subset by default, so building the `host` subset also builds the host tests. To build just the host tests:
 ```
 build.cmd/sh -subset host.tests -runtimeConfiguration Release -librariesConfiguration Release
 ```
@@ -36,16 +36,18 @@ dotnet build src\installer\tests\HostActivation.Tests
 ## Test context
 
 The host tests depend on:
-  1. Product binaries in a directory layout matching that of a .NET install
-  2. Restored [test projects](/src/installer/tests/Assets/TestProjects) which will be built and run by the tests
+  1. Pre-built [test project](/src/installer/tests/Assets/Projects) output which will be copied and run by the tests. The `host.pretest` subset builds these projects.
+  2. Product binaries in a directory layout matching that of a .NET install
   3. TestContextVariables.txt file with property and value pairs which will be read by the tests
 
 When [running all tests](#running-all-tests), the build is configured such that these are created/performed before the start of the test run.
 
-In order to create (or update) these dependencies without running all tests, the build targets that create them - RefreshProjectTestAssets and SetupTestContextVariables - can be directly run for the desired test project. For example:
-```
-dotnet build src\installer\tests\HostActivation.Tests -t:RefreshProjectTestAssets;SetupTestContextVariables -p:RuntimeConfiguration=Release -p:LibrariesConfiguration=Release
-```
+In order to create (or update) these dependencies without running all tests:
+  1. Build the `host.pretest` subset. By default, this is included in the `host` subset. This corresponds to (1) above.
+  2. Run the `SetUpSharedFrameworkPublish` and `SetupTestContextVariables` targets for the desired test project. This corresponds to (2) and (3) above. For example:
+  ```
+  dotnet build src\installer\tests\HostActivation.Tests -t:SetUpSharedFrameworkPublish;SetupTestContextVariables -p:RuntimeConfiguration=Release -p:LibrariesConfiguration=Release
+  ```
 
 ## Running tests
 
@@ -77,6 +79,12 @@ The `category!=failing` is to respect the [filtering traits](../libraries/filter
 ### Visual Studio
 
 The [Microsoft.DotNet.CoreSetup.sln](/src/installer/Microsoft.DotNet.CoreSetup.sln) can be used to run and debug host tests through Visual Studio. When using the solution, the product should have already been [built](#building-tests) and the [test context](#test-context) set up.
+
+If you built the runtime or libraries with a different configuration from the host, you have to specify this when starting visual studio:
+
+```console
+build.cmd -vs Microsoft.DotNet.CoreSetup -rc Release -lc Release
+```
 
 ### Preserving test artifacts
 

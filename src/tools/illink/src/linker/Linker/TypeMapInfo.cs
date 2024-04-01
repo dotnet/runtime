@@ -102,45 +102,76 @@ namespace Mono.Linker
 
 		public void AddBaseMethod (MethodDefinition method, MethodDefinition @base, InterfaceImplementor? interfaceImplementor)
 		{
-			if (!base_methods.TryGetValue (method, out List<OverrideInformation>? methods)) {
-				methods = new List<OverrideInformation> ();
-				base_methods[method] = methods;
-			}
-
-			methods.Add (new OverrideInformation (@base, method, interfaceImplementor));
+			base_methods.AddToList (method, new OverrideInformation (@base, method, interfaceImplementor));
 		}
 
 		public void AddOverride (MethodDefinition @base, MethodDefinition @override, InterfaceImplementor? interfaceImplementor = null)
 		{
-			if (!override_methods.TryGetValue (@base, out List<OverrideInformation>? methods)) {
-				methods = new List<OverrideInformation> ();
-				override_methods.Add (@base, methods);
-			}
-
-			methods.Add (new OverrideInformation (@base, @override, interfaceImplementor));
+			override_methods.AddToList (@base, new OverrideInformation (@base, @override, interfaceImplementor));
 		}
 
 		public void AddDefaultInterfaceImplementation (MethodDefinition @base, InterfaceImplementor interfaceImplementor, MethodDefinition defaultImplementationMethod)
 		{
 			Debug.Assert(@base.DeclaringType.IsInterface);
-			if (!default_interface_implementations.TryGetValue (@base, out var implementations)) {
-				implementations = new List<OverrideInformation> ();
-				default_interface_implementations.Add (@base, implementations);
-			}
-
-			implementations.Add (new (@base, defaultImplementationMethod, interfaceImplementor));
+			default_interface_implementations.AddToList (@base, new OverrideInformation (@base, defaultImplementationMethod, interfaceImplementor));
 		}
 
+		Dictionary<TypeDefinition, List<(TypeReference, List<InterfaceImplementation>)>> interfaces = new ();
 		protected virtual void MapType (TypeDefinition type)
 		{
 			MapVirtualMethods (type);
 			MapInterfaceMethodsInTypeHierarchy (type);
+			interfaces[type] = GetRecursiveInterfaceImplementations (type);
 
 			if (!type.HasNestedTypes)
 				return;
 
 			foreach (var nested in type.NestedTypes)
 				MapType (nested);
+		}
+
+		internal List<(TypeReference, List<InterfaceImplementation>)>? GetRecursiveInterfaces (TypeDefinition type)
+		{
+			if (interfaces.TryGetValue (type, out var value))
+				return value;
+			return null;
+		}
+
+		List<(TypeReference, List<InterfaceImplementation>)> GetRecursiveInterfaceImplementations (TypeDefinition type)
+		{
+			List<(TypeReference, List<InterfaceImplementation>)> firstImplementationChain = new ();
+
+			AddRecursiveInterfaces (type, [], firstImplementationChain, context);
+			Debug.Assert (firstImplementationChain.All (kvp => context.Resolve (kvp.Item1) == context.Resolve (kvp.Item2.Last ().InterfaceType)));
+
+			return firstImplementationChain;
+
+			static void AddRecursiveInterfaces (TypeReference typeRef, IEnumerable<InterfaceImplementation> pathToType, List<(TypeReference, List<InterfaceImplementation>)> firstImplementationChain, LinkContext Context)
+			{
+				var type = Context.TryResolve (typeRef);
+				if (type is null)
+					return;
+				// Get all explicit interfaces of this type
+				foreach (var iface in type.Interfaces) {
+					var interfaceType = iface.InterfaceType.TryInflateFrom (typeRef, Context);
+					if (interfaceType is null) {
+						continue;
+					}
+					if (!firstImplementationChain.Any (i => TypeReferenceEqualityComparer.AreEqual (i.Item1, interfaceType, Context))) {
+						firstImplementationChain.Add ((interfaceType, pathToType.Append (iface).ToList ()));
+					}
+				}
+
+				// Recursive interfaces after all direct interfaces to preserve Inherit/Implement tree order
+				foreach (var iface in type.Interfaces) {
+					// If we can't resolve the interface type we can't find recursive interfaces
+					var ifaceDirectlyOnType = iface.InterfaceType.TryInflateFrom (typeRef, Context);
+					if (ifaceDirectlyOnType is null) {
+						continue;
+					}
+					AddRecursiveInterfaces (ifaceDirectlyOnType, pathToType.Append (iface), firstImplementationChain, Context);
+				}
+			}
 		}
 
 		void MapInterfaceMethodsInTypeHierarchy (TypeDefinition type)

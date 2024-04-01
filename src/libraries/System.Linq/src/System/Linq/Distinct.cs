@@ -106,7 +106,7 @@ namespace System.Linq
                 _comparer = comparer;
             }
 
-            public override Iterator<TSource> Clone() => new DistinctIterator<TSource>(_source, _comparer);
+            private protected override Iterator<TSource> Clone() => new DistinctIterator<TSource>(_source, _comparer);
 
             public override bool MoveNext()
             {

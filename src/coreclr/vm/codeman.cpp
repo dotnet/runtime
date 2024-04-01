@@ -1297,9 +1297,6 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_VectorT512);
     }
 
-    // TODO-XArch: Add support for 512-bit Vector<T>
-    _ASSERTE(!CPUCompileFlags.IsSet(InstructionSet_VectorT512));
-
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
     {
         CPUCompileFlags.Set(InstructionSet_X86Base);
@@ -1447,6 +1444,26 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Serialize) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableX86Serialize))
     {
         CPUCompileFlags.Set(InstructionSet_X86Serialize);
+    }
+
+    // As Avx10v1_V512 could imply Avx10v1_V256 and Avx10v1, and Avx10v1_V256 could imply Avx10v1
+    // then the flag check here can be conducted for only once, and let 
+    // `EnusreValidInstructionSetSupport` to handle the illegal combination.
+    // To ensure `EnusreValidInstructionSetSupport` handle the dependency correctly, the implication
+    // defined in InstructionSetDesc.txt should be explicit, no transitive implication should be assumed.
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX10v1);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V256) != 0))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX10v1_V256);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V512) != 0))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
     }
 #elif defined(TARGET_ARM64)
 
@@ -2795,9 +2812,7 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
 
 void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, CodeHeader** ppCodeHeader, CodeHeader** ppCodeHeaderRW,
                              size_t* pAllocatedSize, HeapList** ppCodeHeap
-#ifdef USE_INDIRECT_CODEHEADER
                            , BYTE** ppRealHeader
-#endif
 #ifdef FEATURE_EH_FUNCLETS
                            , UINT nUnwindInfos
 #endif
@@ -2850,8 +2865,11 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
 #endif
     requestInfo.setReserveForJumpStubs(reserveForJumpStubs);
 
-#if defined(USE_INDIRECT_CODEHEADER)
+#ifdef FEATURE_EH_FUNCLETS
     SIZE_T realHeaderSize = offsetof(RealCodeHeader, unwindInfos[0]) + (sizeof(T_RUNTIME_FUNCTION) * nUnwindInfos);
+#else
+    SIZE_T realHeaderSize = sizeof(RealCodeHeader);
+#endif
 
     // if this is a LCG method then we will be allocating the RealCodeHeader
     // following the code so that the code block can be removed easily by
@@ -2861,7 +2879,6 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
         totalSize = ALIGN_UP(totalSize, sizeof(void*)) + realHeaderSize;
         static_assert_no_msg(CODE_SIZE_ALIGN >= sizeof(void*));
     }
-#endif  // USE_INDIRECT_CODEHEADER
 
     // Scope the lock
     {
@@ -2891,7 +2908,6 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
             pCodeHdrRW = pCodeHdr;
         }
 
-#ifdef USE_INDIRECT_CODEHEADER
         if (requestInfo.IsDynamicDomain())
         {
             // Set the real code header to the writeable mapping so that we can set its members via the CodeHeader methods below
@@ -2905,7 +2921,6 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
             BYTE* pRealHeader = (BYTE*)(void*)pMD->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(realHeaderSize));
             pCodeHdrRW->SetRealCodeHeader(pRealHeader);
         }
-#endif
 
         pCodeHdrRW->SetDebugInfo(NULL);
         pCodeHdrRW->SetEHInfo(NULL);
@@ -2915,7 +2930,6 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
         pCodeHdrRW->SetNumberOfUnwindInfos(nUnwindInfos);
 #endif
 
-#ifdef USE_INDIRECT_CODEHEADER
         if (requestInfo.IsDynamicDomain())
         {
             *ppRealHeader = (BYTE*)pCode + ALIGN_UP(blockSize, sizeof(void*));
@@ -2924,7 +2938,6 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
         {
             *ppRealHeader = NULL;
         }
-#endif // USE_INDIRECT_CODEHEADER
     }
 
     *ppCodeHeader = pCodeHdr;
@@ -3861,9 +3874,7 @@ void CodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJ
 
     DAC_ENUM_DTHIS();
 
-#ifdef USE_INDIRECT_CODEHEADER
     this->pRealCodeHeader.EnumMem();
-#endif // USE_INDIRECT_CODEHEADER
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     BOOL hasFlagByte = TRUE;
@@ -4937,14 +4948,6 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
 
     // a size of 0 is a signal to Nirvana to flush the entire cache
     FlushInstructionCache(GetCurrentProcess(),0,0);
-
-    /* StackwalkCacheEntry::EIP is an address into code. Since we are
-    unloading the code, we need to invalidate the cache. Otherwise,
-    its possible that another appdomain might generate code at the very
-    same address, and we might incorrectly think that the old
-    StackwalkCacheEntry corresponds to it. So flush the cache.
-    */
-    StackwalkCache::Invalidate(pLoaderAllocator);
 
     JumpStubCache * pJumpStubCache = (JumpStubCache *) pLoaderAllocator->m_pJumpStubCache;
     if (pJumpStubCache != NULL)
