@@ -753,7 +753,7 @@ protected:
         // x86:         38 bits
         // amd64:       38 bits
         // arm:         32 bits
-        // arm64:       44 bits
+        // arm64:       46 bits
         // loongarch64: 28 bits
         // risc-v:      28 bits
 
@@ -824,7 +824,7 @@ protected:
         // x86:         48 bits
         // amd64:       48 bits
         // arm:         48 bits
-        // arm64:       53 bits
+        // arm64:       55 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
 
@@ -837,7 +837,7 @@ protected:
 #if defined(TARGET_ARM)
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_ARM64)
-#define ID_EXTRA_BITFIELD_BITS (21)
+#define ID_EXTRA_BITFIELD_BITS (23)
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
@@ -879,7 +879,7 @@ protected:
         // x86:         54/50 bits
         // amd64:       55/50 bits
         // arm:         54/50 bits
-        // arm64:       60/55 bits
+        // arm64:       62/57 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
@@ -896,7 +896,7 @@ protected:
         // x86:         10/14 bits
         // amd64:       9/14 bits
         // arm:         10/14 bits
-        // arm64:        4/9 bits
+        // arm64:        2/7 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
