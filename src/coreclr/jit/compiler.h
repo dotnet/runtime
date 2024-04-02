@@ -1115,11 +1115,6 @@ public:
     {
         return (var_types)lvType;
     }
-    bool lvStackAligned() const
-    {
-        assert(lvIsStructField);
-        return ((lvFldOffset % TARGET_POINTER_SIZE) == 0);
-    }
 
     // NormalizeOnLoad Rules:
     //     1. All small locals are actually TYP_INT locals.
