@@ -976,6 +976,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         if (success)
         {
             assert(cacheSizeFromSysctl > 0);
+            assert(cacheSizeFromSysctl != SIZE_MAX);
             cacheSize = ( size_t) cacheSizeFromSysctl;
         }
     }
@@ -1013,6 +1014,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     }
 #endif
 
+    assert (cacheSize != SIZE_MAX);
     return cacheSize;
 }
 
