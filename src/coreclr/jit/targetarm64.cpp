@@ -32,7 +32,9 @@ const regMaskTP fltArgMasks[] = {RBM_V0, RBM_V1, RBM_V2, RBM_V3, RBM_V4, RBM_V5,
 //   info - Info about the method being classified.
 //
 Arm64Classifier::Arm64Classifier(const ClassifierInfo& info)
-    : m_info(info), m_intRegs(intArgRegs, ArrLen(intArgRegs)), m_floatRegs(fltArgRegs, ArrLen(fltArgRegs))
+    : m_info(info)
+    , m_intRegs(intArgRegs, ArrLen(intArgRegs))
+    , m_floatRegs(fltArgRegs, ArrLen(fltArgRegs))
 {
 }
 
