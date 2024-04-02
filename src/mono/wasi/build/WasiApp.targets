@@ -302,9 +302,6 @@
       <!--<_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />-->
       <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" />
       <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
-      <_MonoRuntimeComponentDontLink Include="libicui18n.a" Condition="'$(InvariantGlobalization)' == 'true'" />
-      <_MonoRuntimeComponentDontLink Include="libicudata.a" Condition="'$(InvariantGlobalization)' == 'true'" />
-      <_MonoRuntimeComponentDontLink Include="libicuuc.a" Condition="'$(InvariantGlobalization)' == 'true'" />
       <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-static.a" Condition="'$(_IsPublishing)' == 'true'" />
 
       <_WasmNativeFileForLinking
