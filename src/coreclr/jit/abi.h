@@ -55,10 +55,6 @@ struct ABIPassingInformation
     bool IsSplitAcrossRegistersAndStack() const;
 
     static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
-
-#ifdef DEBUG
-    void Dump() const;
-#endif
 };
 
 class RegisterQueue
