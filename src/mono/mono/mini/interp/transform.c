@@ -552,6 +552,22 @@ set_simple_type_and_var (TransformData *td, StackInfo *sp, int type)
 }
 
 static void
+push_mono_type (TransformData *td, MonoType *type, int mt, MonoClass *k)
+{
+	if (mt == -1)
+		mt = mono_mint_type (type);
+	if (!k)
+		k = mono_class_from_mono_type_internal (type);
+
+	g_assert (mt != MINT_TYPE_VT);
+
+	if (m_type_is_byref (type))
+		push_type_explicit (td, STACK_TYPE_MP, k, MINT_STACK_SLOT_SIZE);
+	else
+		push_type_explicit (td, stack_type [mt], k, MINT_STACK_SLOT_SIZE);
+}
+
+static void
 push_type (TransformData *td, int type, MonoClass *k)
 {
 	// We don't really care about the exact size for non-valuetypes
@@ -1006,7 +1022,7 @@ load_arg(TransformData *td, int n)
 		if (hasthis && n == 0) {
 			mt = MINT_TYPE_I;
 			klass = NULL;
-			push_type (td, stack_type [mt], klass);
+			push_type (td, STACK_TYPE_MP, klass);
 		} else {
 			g_assert (size < G_MAXUINT16);
 			push_type_vt (td, klass, size);
@@ -1020,7 +1036,7 @@ load_arg(TransformData *td, int n)
 			if (mt == MINT_TYPE_O)
 				klass = mono_class_from_mono_type_internal (type);
 		}
-		push_type (td, stack_type [mt], klass);
+		push_mono_type (td, type, mt, klass);
 	}
 	interp_add_ins (td, interp_get_mov_for_type (mt, TRUE));
 	interp_ins_set_sreg (td->last_ins, n);
@@ -1069,7 +1085,7 @@ load_local (TransformData *td, int local)
 		MonoClass *klass = NULL;
 		if (mt == MINT_TYPE_O)
 			klass = mono_class_from_mono_type_internal (type);
-		push_type (td, stack_type [mt], klass);
+		push_mono_type (td, type, mt, klass);
 	}
 	interp_add_ins (td, interp_get_mov_for_type (mt, TRUE));
 	interp_ins_set_sreg (td->last_ins, local);
@@ -3699,7 +3715,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				return FALSE;
 			}
 		} else {
-			push_type (td, stack_type[mt], klass);
+			push_mono_type (td, csignature->ret, mt, klass);
 		}
 		dreg = td->sp [-1].var;
 	} else {
@@ -4570,7 +4586,7 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 				interp_add_ins (td, interp_get_ldind_for_mt (mt));
 				interp_ins_set_sreg (td->last_ins, td->sp [-1].var);
 				td->sp--;
-				push_type (td, stack_type [mt], field_class);
+				push_mono_type (td, ftype, mt, field_class);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 			}
 		} else {
@@ -4597,14 +4613,14 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 				if (mt == MINT_TYPE_VT) {
 					push_type_vt (td, field_class, size);
 				} else {
-					push_type (td, stack_type [mt], field_class);
+					push_mono_type (td, ftype, mt, field_class);
 				}
 			} else if (mt == MINT_TYPE_VT) {
 				interp_add_ins (td, MINT_LDSFLD_VT);
 				push_type_vt (td, field_class, size);
 			} else {
 				interp_add_ins (td, MINT_LDSFLD_I1 + mt - MINT_TYPE_I1);
-				push_type (td, stack_type [mt], field_class);
+				push_mono_type (td, ftype, mt, field_class);
 			}
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 		} else {
@@ -6711,7 +6727,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					if (mt == MINT_TYPE_VT)
 						push_type_vt (td, field_klass, field_size);
 					else
-						push_type (td, stack_type [mt], field_klass);
+						push_mono_type (td, ftype, mt, field_klass);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 				} else {
 					if (G_UNLIKELY (m_field_is_from_update (field))) {
@@ -6741,7 +6757,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					if (mt == MINT_TYPE_VT)
 						push_type_vt (td, field_klass, field_size);
 					else
-						push_type (td, stack_type [mt], field_klass);
+						push_mono_type (td, ftype, mt, field_klass);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 				}
 			}
@@ -7697,8 +7713,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					int param_offset = get_tos_offset (td);
 
 					if (!MONO_TYPE_IS_VOID (info->sig->ret)) {
-						mt = mono_mint_type (info->sig->ret);
-						push_simple_type (td, stack_type [mt]);
+						push_mono_type (td, info->sig->ret, -1, NULL);
 						dreg = td->sp [-1].var;
 					} else {
 						// dummy dreg
