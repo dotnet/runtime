@@ -2657,13 +2657,12 @@ size_t      gc_heap::end_loh_size = 0;
 size_t      gc_heap::bgc_begin_poh_size = 0;
 size_t      gc_heap::end_poh_size = 0;
 
-#ifdef BGC_SERVO_TUNING
 uint64_t    gc_heap::loh_a_no_bgc = 0;
-
 uint64_t    gc_heap::loh_a_bgc_marking = 0;
-
 uint64_t    gc_heap::loh_a_bgc_planning = 0;
-
+uint64_t    gc_heap::poh_a_bgc_marking = 0;
+uint64_t    gc_heap::poh_a_bgc_planning = 0;
+#ifdef BGC_SERVO_TUNING
 size_t      gc_heap::bgc_maxgen_end_fl_size = 0;
 #endif //BGC_SERVO_TUNING
 
@@ -2794,9 +2793,9 @@ FinalizerWorkItem* gc_heap::finalizer_work;
 BOOL gc_heap::proceed_with_gc_p = FALSE;
 GCSpinLock gc_heap::gc_lock;
 
-#ifdef BGC_SERVO_TUNING
+#ifdef BACKGROUND_GC
 uint64_t gc_heap::total_loh_a_last_bgc = 0;
-#endif //BGC_SERVO_TUNING
+#endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
 region_free_list gc_heap::global_regions_to_decommit[count_free_region_kinds];
@@ -15039,10 +15038,12 @@ gc_heap::init_gc_heap (int h_number)
     make_mark_stack(arr);
 
 #ifdef BACKGROUND_GC
-#ifdef BGC_SERVO_TUNING
     loh_a_no_bgc = 0;
     loh_a_bgc_marking = 0;
     loh_a_bgc_planning = 0;
+    poh_a_bgc_marking = 0;
+    poh_a_bgc_planning = 0;
+#ifdef BGC_SERVO_TUNING
     bgc_maxgen_end_fl_size = 0;
 #endif //BGC_SERVO_TUNING
     freeable_soh_segment = 0;
@@ -18448,24 +18449,34 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
 #ifdef BACKGROUND_GC
     if (gc_heap::background_running_p())
     {
-#ifdef BGC_SERVO_TUNING
-        bool planning_p = (current_c_gc_state == c_gc_state_planning);
-#endif //BGC_SERVO_TUNING
-
         background_uoh_alloc_count++;
-        //if ((background_loh_alloc_count % bgc_alloc_spin_count_loh) == 0)
+
+        //!!! add helper
+        if (current_c_gc_state == c_gc_state_planning)
         {
-#ifdef BGC_SERVO_TUNING
-            if (planning_p)
+            if (gen_number == loh_generation)
             {
                 loh_a_bgc_planning += size;
             }
             else
             {
+                poh_a_bgc_planning += size;
+            }
+        }
+        else
+        {
+            if (gen_number == loh_generation)
+            {
                 loh_a_bgc_marking += size;
             }
-#endif //BGC_SERVO_TUNING
+            else
+            {
+                poh_a_bgc_marking += size;
+            }
+        }
 
+        //if ((background_loh_alloc_count % bgc_alloc_spin_count_loh) == 0)
+        {
             int spin_for_allocation = (gen_number == loh_generation) ?
                 bgc_loh_allocate_spin() :
                 bgc_poh_allocate_spin();
@@ -18491,12 +18502,10 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
             }
         }
     }
-#ifdef BGC_SERVO_TUNING
     else
     {
         loh_a_no_bgc += size;
     }
-#endif //BGC_SERVO_TUNING
 #endif //BACKGROUND_GC
 
     gc_reason gr = reason_oos_loh;
@@ -45890,9 +45899,7 @@ void gc_heap::background_sweep()
 
     if (heap_number == 0)
     {
-#ifdef BGC_SERVO_TUNING
         get_and_reset_loh_alloc_info();
-#endif //BGC_SERVO_TUNING
         uint64_t suspended_end_ts = GetHighPrecisionTimeStamp();
         last_bgc_info[last_bgc_info_index].pause_durations[1] = (size_t)(suspended_end_ts - suspended_start_time);
         total_suspended_time += last_bgc_info[last_bgc_info_index].pause_durations[1];
@@ -50238,12 +50245,10 @@ void gc_heap::check_and_adjust_bgc_tuning (int gen_number, size_t physical_size,
         }
     }
 }
+#endif //BGC_SERVO_TUNING
 
 void gc_heap::get_and_reset_loh_alloc_info()
 {
-    if (!bgc_tuning::enable_fl_tuning)
-        return;
-
     total_loh_a_last_bgc = 0;
 
     uint64_t total_loh_a_no_bgc = 0;
@@ -50257,11 +50262,16 @@ void gc_heap::get_and_reset_loh_alloc_info()
     {
         gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
+
+        gc_history_per_heap* current_gc_data_per_heap = hp->get_gc_data_per_heap();
+        current_gc_data_per_heap->gen_data[loh_generation].size_before += hp->loh_a_bgc_marking + hp->loh_a_bgc_planning;
+        current_gc_data_per_heap->gen_data[poh_generation].size_before += hp->poh_a_bgc_marking + hp->poh_a_bgc_planning;
+
         total_loh_a_no_bgc += hp->loh_a_no_bgc;
         hp->loh_a_no_bgc = 0;
-        total_loh_a_bgc_marking += hp->loh_a_bgc_marking;
+        total_loh_a_bgc_marking += hp->loh_a_bgc_marking + hp->poh_a_bgc_marking;
         hp->loh_a_bgc_marking = 0;
-        total_loh_a_bgc_planning += hp->loh_a_bgc_planning;
+        total_loh_a_bgc_planning += hp->loh_a_bgc_planning + hp->loh_a_bgc_planning;
         hp->loh_a_bgc_planning = 0;
     }
     dprintf (2, ("LOH alloc: outside bgc: %zd; bm: %zd; bp: %zd",
@@ -50271,7 +50281,6 @@ void gc_heap::get_and_reset_loh_alloc_info()
 
     total_loh_a_last_bgc = total_loh_a_no_bgc + total_loh_a_bgc_marking + total_loh_a_bgc_planning;
 }
-#endif //BGC_SERVO_TUNING
 
 bool gc_heap::is_pm_ratio_exceeded()
 {
