@@ -308,34 +308,12 @@ exit:
 
     int Finish()
     {
-        int result = 0;
+        // There's no way to cleanly shut down (munmap and close the fd) without
+        // adding locks, which would slow down a hot operation. We deliberately
+        // skip cleanup here and let the OS take care of releasing resources on
+        // process exit.
 
-        if (enabled)
-        {
-            enabled = false;
-
-            if (mmapAddr != NULL)
-            {
-                result = munmap(mmapAddr, sizeof(FileHeader));
-
-                if (result == -1)
-                    return FatalError();
-            }
-
-            mmapAddr = MAP_FAILED;
-
-            result = fsync(fd);
-
-            if (result == -1)
-                return FatalError();
-
-            result = close(fd);
-
-            if (result == -1)
-                return FatalError();
-
-            fd = -1;
-        }
+        enabled = false;
 
         return 0;
     }
