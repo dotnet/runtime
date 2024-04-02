@@ -278,31 +278,27 @@ private:
         RegBitSet32 _registers[3];
         struct
         {
-            RegBitSet64 _float_gpr;
+            union
+            {
+                RegBitSet64 _float_gpr;
+                RegBitSet64 _allRegisters; // just so no need to do #ifdef just to access this field
+                struct
+                {
+                    RegBitSet32 _gprRegs;
+                    RegBitSet32 _floatRegs;
+                };
+            };
             RegBitSet32 _predicateRegs;
-            // RegBitSet32 _predicateRegs : 28;
-            // bool _hasPredicateRegister : 8;
-        };
-        struct
-        {
-            // This one is just to have uniform code when `if(_hasPredicateRegister)` is used
-            RegBitSet64 _allRegisters;
-            RegBitSet32 _predicateRegs;
-            // RegBitSet32 _predicateRegs : 28;
-            // bool        _hasPredicateRegister : 8;
-        };
-        struct
-        {
-            RegBitSet32 _gprRegs;
-            RegBitSet32 _floatRegs;
-            RegBitSet32 _predicateRegs;
-            // RegBitSet32 _predicateRegs : 28;
-            // bool        _hasPredicateRegister : 8;
         };
     };
 #else
+    //TODO: This is also declared above, so revisit MORE_THAN_64_REGISTERS and see where we differentiated just for this
     RegBitSet64  _allRegisters;
 #endif
+//TODO: Come up with a name of variable such that:
+// 1. If HAS_MORE_THAN_64_REGISTERS==1, it represents float_gpr combined
+// 2. If HAS_MORE_THAN_64_REGISTERS==0, it represents all registers possible be - gpr/float/predicate in same place
+// Once we have that, we can just use and remove some of the #ifdef HAS_MORE_THAN_64_REGISTERS
 
     // This method shifts the high-32 bits of float to low-32 bits and return.
     // For gpr and predicate registers, it returns the same value.
