@@ -1432,13 +1432,11 @@ extends:
                   packageType: deb
                   target: debpkg
                   packagingArgs: -c $(_BuildConfig) /p:BuildDebPackage=true
-                  condition: eq(variables['osGroup'], 'linux')
               - template: /eng/pipelines/installer/steps/build-linux-package.yml
                 parameters:
                   packageType: rpm
                   target: rpmpkg
                   packagingArgs: -c $(_BuildConfig) /p:BuildRpmPackage=true
-                  condition: eq(variables['osGroup'], 'linux')
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
