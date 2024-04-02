@@ -1104,7 +1104,7 @@ void ProfileSynthesis::GaussSeidelSolver()
     weight_t                      relResidual      = 0;
     weight_t                      oldRelResidual   = 0;
     weight_t                      eigenvalue       = 0;
-    weight_t const                stopResidual     = 0.005;
+    weight_t const                stopResidual     = 0.001;
     weight_t const                stopRelResidual  = 0.002;
     BasicBlock*                   residualBlock    = nullptr;
     BasicBlock*                   relResidualBlock = nullptr;
