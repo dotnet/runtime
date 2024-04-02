@@ -28,11 +28,10 @@ namespace System.Text.Json.Serialization.Converters
             JsonSerializerOptions options,
             ref WriteStack state)
         {
-            IEnumerator<KeyValuePair<TKey, TValue>> enumerator;
+            Dictionary<TKey, TValue>.Enumerator enumerator;
             if (state.Current.CollectionEnumerator == null)
             {
                 enumerator = value.GetEnumerator();
-                state.Current.CollectionEnumerator = enumerator;
                 if (!enumerator.MoveNext())
                 {
                     enumerator.Dispose();
@@ -41,7 +40,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                enumerator = (IEnumerator<KeyValuePair<TKey, TValue>>)state.Current.CollectionEnumerator;
+                enumerator = (Dictionary<TKey, TValue>.Enumerator)state.Current.CollectionEnumerator;
             }
 
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
@@ -64,6 +63,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (ShouldFlush(writer, ref state))
                     {
+                        state.Current.CollectionEnumerator = enumerator;
                         return false;
                     }
 
@@ -78,6 +78,7 @@ namespace System.Text.Json.Serialization.Converters
                     TValue element = enumerator.Current.Value;
                     if (!_valueConverter.TryWrite(writer, element, options, ref state))
                     {
+                        state.Current.CollectionEnumerator = enumerator;
                         return false;
                     }
 
