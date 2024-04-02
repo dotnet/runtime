@@ -1417,7 +1417,7 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
             BADCODE("Duplicate SwiftSelf parameter");
         }
 
-        LclVarDsc* const varDsc  = varDscInfo->varDsc;
+        LclVarDsc* const varDsc = varDscInfo->varDsc;
         varDsc->SetArgReg(REG_SWIFT_SELF);
         varDsc->SetOtherArgReg(REG_NA);
         varDsc->lvIsRegArg = true;
@@ -1444,7 +1444,7 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
         // We won't actually be passing this SwiftError* in REG_SWIFT_ERROR (or any register, for that matter).
         // We will check for this quirk when generating the prolog,
         // and ensure this fake parameter doesn't take any registers/stack space
-        LclVarDsc* const varDsc  = varDscInfo->varDsc;
+        LclVarDsc* const varDsc = varDscInfo->varDsc;
         varDsc->SetArgReg(REG_SWIFT_ERROR);
         varDsc->SetOtherArgReg(REG_NA);
         varDsc->lvIsRegArg = true;
@@ -1453,7 +1453,7 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
         // Instead, all usages of the SwiftError* parameter will be redirected to this pseudolocal.
         lvaSwiftErrorLocal = lvaGrabTemp(false DEBUGARG("SwiftError pseudolocal"));
         lvaSetStruct(lvaSwiftErrorLocal, typeHnd, false);
-        LclVarDsc* const errorLocalDsc = lvaGetDesc(lvaSwiftErrorLocal);
+        LclVarDsc* const errorLocalDsc        = lvaGetDesc(lvaSwiftErrorLocal);
         errorLocalDsc->lvImplicitlyReferenced = true;
         return true;
     }

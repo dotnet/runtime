@@ -10962,7 +10962,7 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 case AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY:
                     m_externallyVisibleImplicitly++;
                     break;
-                
+
                 default:
                     unreached();
                     break;
