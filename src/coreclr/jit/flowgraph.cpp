@@ -4400,6 +4400,15 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         if (!FindNaturalLoopBlocks(loop, worklist))
         {
             loops->m_improperLoopHeaders++;
+
+            for (FlowGraphNaturalLoop* const otherLoop : loops->InPostOrder())
+            {
+                if (otherLoop->ContainsBlock(header))
+                {
+                    otherLoop->m_containsImproperHeader = true;
+                }
+            }
+
             continue;
         }
 
