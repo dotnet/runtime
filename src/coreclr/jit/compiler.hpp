@@ -65,26 +65,6 @@ inline UINT32 forceCastToUInt32(double d)
     return u;
 }
 
-enum RoundLevel
-{
-    ROUND_NEVER     = 0, // Never round
-    ROUND_CMP_CONST = 1, // Round values compared against constants
-    ROUND_CMP       = 2, // Round comparands and return values
-    ROUND_ALWAYS    = 3, // Round always
-
-    COUNT_ROUND_LEVEL,
-    DEFAULT_ROUND_LEVEL = ROUND_NEVER
-};
-
-inline RoundLevel getRoundFloatLevel()
-{
-#ifdef DEBUG
-    return (RoundLevel)JitConfig.JitRoundFloat();
-#else
-    return DEFAULT_ROUND_LEVEL;
-#endif
-}
-
 /*****************************************************************************/
 /*****************************************************************************
  *

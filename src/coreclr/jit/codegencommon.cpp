@@ -262,29 +262,6 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 #endif // defined(TARGET_X86) || defined(TARGET_ARM)
 
 /*****************************************************************************
- * Should we round simple operations (assignments, arithmetic operations, etc.)
- */
-
-// inline
-// static
-bool CodeGen::genShouldRoundFP()
-{
-    RoundLevel roundLevel = getRoundFloatLevel();
-
-    switch (roundLevel)
-    {
-        case ROUND_NEVER:
-        case ROUND_CMP_CONST:
-        case ROUND_CMP:
-            return false;
-
-        default:
-            assert(roundLevel == ROUND_ALWAYS);
-            return true;
-    }
-}
-
-/*****************************************************************************
  *
  *  Initialize some global variables.
  */
