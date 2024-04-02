@@ -762,7 +762,12 @@ https://learn.microsoft.com/windows/win32/fileio/symbolic-link-effects-on-file-s
         file.release();
         if (ERROR_ACCESS_DENIED != error)
         {
-            goto invalidPath;
+            if (!skip_error_logging)
+            {
+                trace::error(_X("Error resolving full path [%s]"), path->c_str());
+                trace::error(_X("GetLastError(): [%s]"), ::GetLastError());
+                return false;
+            }
         }
     }
     else
@@ -784,7 +789,12 @@ https://learn.microsoft.com/windows/win32/fileio/symbolic-link-effects-on-file-s
 
                 if (size == 0)
                 {
-                    goto invalidPath;
+                    if (!skip_error_logging)
+                    {
+                        trace::error(_X("Error resolving full path [%s]"), path->c_str());
+                        trace::error(_X("GetLastError(): [%s]"), ::GetLastError());
+                        return false;
+                    }
                 }
             }
 
@@ -802,13 +812,6 @@ https://learn.microsoft.com/windows/win32/fileio/symbolic-link-effects-on-file-s
 
     // If the above fails, fall back to fullpath
     return pal::fullpath(path, skip_error_logging);
-
-invalidPath:
-    if (!skip_error_logging)
-    {
-        trace::error(_X("Error resolving full path [%s]"), path->c_str());
-    }
-    return false;
 }
 
 bool pal::fullpath(string_t* path, bool skip_error_logging)
