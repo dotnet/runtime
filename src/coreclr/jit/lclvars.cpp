@@ -1417,7 +1417,7 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
             BADCODE("Duplicate SwiftSelf parameter");
         }
 
-        LclVarDsc*             varDsc  = varDscInfo->varDsc;
+        LclVarDsc* const varDsc  = varDscInfo->varDsc;
         varDsc->SetArgReg(REG_SWIFT_SELF);
         varDsc->SetOtherArgReg(REG_NA);
         varDsc->lvIsRegArg = true;
@@ -1441,14 +1441,21 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
             BADCODE("Duplicate SwiftError* parameter");
         }
 
+        // We won't actually be passing this SwiftError* in REG_SWIFT_ERROR (or any register, for that matter).
+        // We will check for this quirk when generating the prolog,
+        // and ensure this fake parameter doesn't take any registers/stack space
+        LclVarDsc* const varDsc  = varDscInfo->varDsc;
+        varDsc->SetArgReg(REG_SWIFT_ERROR);
+        varDsc->SetOtherArgReg(REG_NA);
+        varDsc->lvIsRegArg = true;
         lvaSwiftErrorArg   = varDscInfo->varNum;
+
+        // Instead, all usages of the SwiftError* parameter will be redirected to this pseudolocal.
         lvaSwiftErrorLocal = lvaGrabTemp(false DEBUGARG("SwiftError pseudolocal"));
         lvaSetStruct(lvaSwiftErrorLocal, typeHnd, false);
-        LclVarDsc* const varDsc = lvaGetDesc(lvaSwiftErrorLocal);
-        varDsc->lvImplicitlyReferenced = true;
-
-        // We set up the SwiftError pseudolocal, but we didn't initialize the SwiftError* parameter.
-        // We won't be needing the latter, but for correctness, return false so the caller initializes it.
+        LclVarDsc* const errorLocalDsc = lvaGetDesc(lvaSwiftErrorLocal);
+        errorLocalDsc->lvImplicitlyReferenced = true;
+        return true;
     }
 
     return false;
@@ -1690,6 +1697,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         {
             wellKnownArg = WellKnownArg::SwiftSelf;
         }
+        else if (i == lvaSwiftErrorArg)
+        {
+            wellKnownArg = WellKnownArg::SwiftError;
+        }
 #endif
 
         lvaParameterPassingInfo[i] = classifier.Classify(this, dsc->TypeGet(), structLayout, wellKnownArg);
@@ -1736,6 +1747,7 @@ void Compiler::lvaClassifyParameterABI()
 
     for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
     {
+
         LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
         const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
 
@@ -1785,7 +1797,7 @@ void Compiler::lvaClassifyParameterABI()
             }
         }
     }
-#endif
+#endif // DEBUG
 }
 
 /*****************************************************************************

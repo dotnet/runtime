@@ -2997,6 +2997,17 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         {
             continue;
         }
+
+        // On a similar note, the SwiftError* parameter is not a real argument,
+        // and should not be allocated any registers/stack space.
+        // We mark it as being passed in REG_SWIFT_ERROR so it won't interfere with other args.
+        // In genFnProlog, we should have removed this callee-save register from intRegState.rsCalleeRegArgMaskLiveIn.
+        // TODO-CQ: Fix this.
+        if (varNum == compiler->lvaSwiftErrorArg)
+        {
+            assert((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_ERROR) == 0);
+            continue;
+        }
 #endif
 
         var_types regType = compiler->mangleVarArgsType(varDsc->TypeGet());
@@ -6164,6 +6175,10 @@ void CodeGen::genFnProlog()
     {
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
         intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
+    }
+    else if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+    {
+        intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
     }
 #endif
 
