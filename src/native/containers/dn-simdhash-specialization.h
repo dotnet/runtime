@@ -78,15 +78,11 @@ address_of_value (dn_simdhash_buffers_t buffers, uint32_t value_slot_index)
 static DN_FORCEINLINE(int)
 DN_SIMDHASH_SCAN_BUCKET_INTERNAL (bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_suffixes search_vector)
 {
-	dn_simdhash_suffixes suffixes;
-	// HACK: Source address may not be aligned, because allocator may not have aligned our buffer,
-	//  and our bucket size may not be properly aligned either :(
-	memcpy(&suffixes, &bucket->suffixes, sizeof(dn_simdhash_suffixes));
-
-	uint32_t index = find_first_matching_suffix(search_vector, suffixes);
+	uint32_t count = dn_simdhash_bucket_count(bucket->suffixes),
+		index = find_first_matching_suffix(search_vector, bucket->suffixes);
 	DN_SIMDHASH_KEY_T *key = &bucket->keys[index];
 
-	for (uint32_t count = dn_simdhash_bucket_count(suffixes); index < count; index++, key++) {
+	for (; index < count; index++, key++) {
 		if (DN_SIMDHASH_KEY_EQUALS(needle, *key))
 			return index;
 	}
