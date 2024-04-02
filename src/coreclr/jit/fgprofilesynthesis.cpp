@@ -83,9 +83,21 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     //
     ComputeBlockWeights();
 
-    // Adapt......?
+    // If the initial pass results were approximate, iterate until we get
+    // something that is self-consistent (or, accept the fact that
+    // that the results can never be self-consisten. Infinite loops, eg).
     //
-    int retries = 0;
+    // Each iteration will blend in increasing amounts of synthetic profile,
+    // and also modulate the synthetic probabilities towards 50/50. The net result
+    // is that the profile moves towards something "blander" with less dramatic loop
+    // iteration counts. This blending helps facilitate convergence, which is also
+    // impacted by extremly high loop iteration counts.
+    //
+    // Put another way, we take an intially approximate profile as a sign that the
+    // profile data itself may be a bit suspect, and so we adjust based on a "prior"
+    // belief that the profile should be somewhat flatter.
+    //
+    unsigned retries = 0;
     while (m_approximate && (retries < maxRepairRetries))
     {
         JITDUMP("\n\n[%d] Retrying reconstruction with blend factor " FMT_WT ", because %s\n", retries, m_blendFactor,
