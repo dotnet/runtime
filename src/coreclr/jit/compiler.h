@@ -481,7 +481,6 @@ enum class AddressExposedReason
     EXTERNALLY_VISIBLE_IMPLICITLY, // Local is visible externally without explicit escape in JIT IR.
                                    // For example because it is used by GC or is the outgoing arg area
                                    // that belongs to callees.
-    SWIFT_ERROR_PSEUDOLOCAL,       // This is a pseudolocal that the SwiftError* out parameter is redirected to in IR
 };
 
 #endif // DEBUG
@@ -10691,7 +10690,6 @@ public:
         unsigned m_wideIndir;
         unsigned m_stressPoisonImplicitByrefs;
         unsigned m_externallyVisibleImplicitly;
-        unsigned m_swiftErrorPseudolocal;
 
     public:
         void RecordLocal(const LclVarDsc* varDsc);

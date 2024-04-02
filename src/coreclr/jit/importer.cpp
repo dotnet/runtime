@@ -10463,11 +10463,14 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
         else if (lclNum == lvaSwiftErrorArg)
         {
             // Convert any usages of the SwiftError* out parameter to pointers to the SwiftError pseudolocal
+            // (set side effect flags so stores to pseudolocal aren't removed)
             assert(info.compCallConv == CorInfoCallConvExtension::Swift);
             assert(lvaSwiftErrorArg != BAD_VAR_NUM);
             assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
-            const var_types type = lvaGetDesc(lvaSwiftErrorLocal)->TypeGet();
-            impPushOnStack(gtNewLclVarAddrNode(lvaSwiftErrorLocal, type), typeInfo(type));
+            const var_types type = lvaGetDesc(lvaSwiftErrorArg)->TypeGet();
+            GenTree* const swiftErrorLocalRef = gtNewLclVarAddrNode(lvaSwiftErrorLocal, type);
+            swiftErrorLocalRef->gtFlags |= GTF_SIDE_EFFECT;
+            impPushOnStack(swiftErrorLocalRef, typeInfo(type));
             JITDUMP("Created GT_LCL_ADDR of SwiftError pseudolocal\n");
             return;
         }

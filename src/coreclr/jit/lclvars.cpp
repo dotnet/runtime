@@ -1444,7 +1444,6 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
         lvaSwiftErrorArg   = varDscInfo->varNum;
         lvaSwiftErrorLocal = lvaGrabTemp(false DEBUGARG("SwiftError pseudolocal"));
         lvaSetStruct(lvaSwiftErrorLocal, typeHnd, false);
-        lvaSetVarAddrExposed(lvaSwiftErrorLocal DEBUGARG(AddressExposedReason::SWIFT_ERROR_PSEUDOLOCAL));
 
         // We set up the SwiftError pseudolocal, but we didn't initialize the SwiftError* parameter.
         // We won't be needing the latter, but for correctness, return false so the caller initializes it.
