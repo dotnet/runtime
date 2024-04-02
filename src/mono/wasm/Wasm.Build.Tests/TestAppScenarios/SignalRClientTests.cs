@@ -38,6 +38,9 @@ public class SignalRClientTests : AppTestBase
 
         List<string> consoleOutput = new();
         List<string> serverOutput = new();
+        bool shouldRetry = true;
+        int retryCount = 0;
+        int maxRetryCount = 3;
 
         var result = await RunSdkStyleAppForBuild(new(
             Configuration: config,
@@ -62,8 +65,29 @@ public class SignalRClientTests : AppTestBase
                     throw new Exception(msg.Text);
                 }
 
+                if (msg.Text.Contains("Starting the app"))
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(2)); // wait for 2 minutes for the test to start
+                    if (shouldRetry)
+                    {
+                        if (retryCount < maxRetryCount)
+                        {
+                            retryCount++;
+                            Console.WriteLine($"Starting the {retryCount} / {maxRetryCount} retry");
+                            string currentUrl = page.Url;
+                            await page.GotoAsync(currentUrl);
+                        }
+                        else
+                        {
+                            throw new Exception($"Max retries reached. Test failed.\n{_testOutput}");
+                        }
+                    }                    
+                }
+
                 if (msg.Text.Contains("Finished GetQueryParameters"))
                 {
+                    // WASM got loaded, no more retries
+                    shouldRetry = false;
                     // first click after render - make sure buttons are available
                     await page.WaitForSelectorAsync("button#connectButton");
                     await page.ClickAsync("button#connectButton");
