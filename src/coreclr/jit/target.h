@@ -273,7 +273,8 @@ typedef struct _regMaskAll
 {
 private:
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    union {
+    union
+    {
         RegBitSet32 _registers[3];
         struct
         {
@@ -320,15 +321,23 @@ private:
 public:
     inline regMaskGpr gprRegs() const
     {
+        RegBitSet64 resultMask;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        resultMask = _float_gpr;
+#else
+        resultMask = _allRegisters;
+#endif // HAS_MORE_THAN_64_REGISTERS
+
 #ifdef TARGET_AMD64
-        return _allRegisters & 0xFFFF;
+        return resultMask & 0xFFFF;
 #elif TARGET_ARM64
-        return _allRegisters & 0xFFFFFFFF;
+        return resultMask & 0xFFFFFFFF;
 #else
         // TODO: Fix this for ARM and x86
-        return _allRegisters;
-#endif
+        return resultMask;
+#endif // TARGET_AMD64
     }
+
     inline regMaskFloat floatRegs() const
     {
 #ifdef HAS_MORE_THAN_64_REGISTERS
