@@ -856,7 +856,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 #endif
 
 #if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_APPLE)
-    if (cacheSize == 0 || cacheSize == SIZE_MAX)
+    if (cacheSize == 0)
     {
         // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
         // from most of the machines.
@@ -884,7 +884,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 #endif
 
 #if HAVE_SYSCTLBYNAME
-    if (cacheSize == 0 || cacheSize == SIZE_MAX)
+    if (cacheSize == 0)
     {
         int64_t cacheSizeFromSysctl = 0;
         size_t sz = sizeof(cacheSizeFromSysctl);
