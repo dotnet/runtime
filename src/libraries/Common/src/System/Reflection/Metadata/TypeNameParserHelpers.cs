@@ -71,13 +71,8 @@ namespace System.Reflection.Metadata
             return 0;
         }
 
-        internal static string GetGenericTypeFullName(ReadOnlySpan<char> fullTypeName, TypeName[]? genericArgs)
+        internal static string GetGenericTypeFullName(ReadOnlySpan<char> fullTypeName, TypeName[] genericArgs)
         {
-            if (genericArgs is null)
-            {
-                return fullTypeName.ToString();
-            }
-
             ValueStringBuilder result = new(stackalloc char[128]);
             result.Append(fullTypeName);
 
@@ -184,30 +179,37 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal static string GetRankOrModifierStringRepresentation(int rankOrModifier)
+        internal static string GetRankOrModifierStringRepresentation(int rankOrModifier, ValueStringBuilder builder)
         {
-            return rankOrModifier switch
+            if (rankOrModifier == ByRef)
             {
-                ByRef => "&",
-                Pointer => "*",
-                SZArray => "[]",
-                1 => "[*]",
-                _ => ArrayRankToString(rankOrModifier)
-            };
-
-            static string ArrayRankToString(int arrayRank)
-            {
-                Debug.Assert(arrayRank >= 2 && arrayRank <= 32);
-
-                Span<char> buffer = stackalloc char[2 + MaxArrayRank - 1];
-                buffer[0] = '[';
-                for (int i = 1; i < arrayRank; i++)
-                {
-                    buffer[i] = ',';
-                }
-                buffer[arrayRank] = ']';
-                return buffer.Slice(0, arrayRank + 1).ToString();
+                builder.Append('&');
             }
+            else if (rankOrModifier == Pointer)
+            {
+                builder.Append('*');
+            }
+            else if (rankOrModifier == SZArray)
+            {
+                builder.Append("[]");
+            }
+            else if (rankOrModifier == 1)
+            {
+                builder.Append("[*]");
+            }
+            else
+            {
+                Debug.Assert(rankOrModifier >= 2 && rankOrModifier <= 32);
+
+                builder.Append('[');
+                for (int i = 1; i < rankOrModifier; i++)
+                {
+                    builder.Append(',');
+                }
+                builder.Append(']');
+            }
+
+            return builder.ToString();
         }
 
         /// <summary>

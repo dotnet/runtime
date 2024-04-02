@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace System.Reflection.Metadata.Tests
@@ -84,8 +85,11 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(2, "[,]")]
         [InlineData(3, "[,,]")]
         [InlineData(4, "[,,,]")]
-        public void GetRankOrModifierStringRepresentationReturnsExpectedString(int input, string expected)
-            => Assert.Equal(expected, TypeNameParserHelpers.GetRankOrModifierStringRepresentation(input));
+        public void AppendRankOrModifierStringRepresentationAppendsExpectedString(int input, string expected)
+        {
+            ValueStringBuilder builder = new ValueStringBuilder(initialCapacity: 10);
+            Assert.Equal(expected, TypeNameParserHelpers.GetRankOrModifierStringRepresentation(input, builder));
+        }
 
         [Theory]
         [InlineData(typeof(List<int>))]

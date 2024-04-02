@@ -5,6 +5,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace System.Reflection.Metadata
 {
@@ -25,17 +26,16 @@ namespace System.Reflection.Metadata
         private readonly AssemblyName? _assemblyName;
         private readonly TypeName? _elementOrGenericType;
         private readonly TypeName? _declaringType;
-        private string? _assemblyQualifiedName;
+        private string? _name, _fullName, _assemblyQualifiedName;
 
-        internal TypeName(string name, string fullName,
+        internal TypeName(string? fullName,
             AssemblyName? assemblyName,
             int rankOrModifier = default,
             TypeName? elementOrGenericType = default,
             TypeName? declaringType = default,
             TypeName[]? genericTypeArguments = default)
         {
-            Name = name;
-            FullName = fullName;
+            _fullName = fullName;
             _assemblyName = assemblyName;
             _rankOrModifier = rankOrModifier;
             _elementOrGenericType = elementOrGenericType;
@@ -89,7 +89,27 @@ namespace System.Reflection.Metadata
         /// the <see cref="FullName"/> property will return "System.Collections.Generic.Dictionary`2+Enumerator".
         /// See ECMA-335, Sec. I.10.7.2 (Type names and arity encoding) for more information.</para>
         /// </remarks>
-        public string FullName { get; }
+        public string FullName
+        {
+            get
+            {
+                if (_fullName is null)
+                {
+                    if (_genericArguments is not null)
+                    {
+                        _fullName = TypeNameParserHelpers.GetGenericTypeFullName(GetGenericTypeDefinition().FullName.AsSpan(), _genericArguments);
+                    }
+                    else if (IsArray || IsPointer || IsByRef)
+                    {
+                        ValueStringBuilder builder = new(stackalloc char[128]);
+                        builder.Append(GetElementType().FullName);
+                        _fullName = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, builder);
+                    }
+                }
+
+                return _fullName!;
+            }
+        }
 
         /// <summary>
         /// Returns true if this type represents any kind of array, regardless of the array's
@@ -152,7 +172,31 @@ namespace System.Reflection.Metadata
         /// The name of this type, without the namespace and the assembly name; e.g., "Int32".
         /// Nested types are represented without a '+'; e.g., "MyNamespace.MyType+NestedType" is just "NestedType".
         /// </summary>
-        public string Name { get; }
+        public string Name
+        {
+            get
+            {
+                if (_name is null)
+                {
+                    if (IsConstructedGenericType)
+                    {
+                        _name = TypeNameParserHelpers.GetName(GetGenericTypeDefinition().FullName.AsSpan()).ToString();
+                    }
+                    else if (IsPointer || IsByRef || IsArray)
+                    {
+                        ValueStringBuilder builder = new(stackalloc char[64]);
+                        builder.Append(GetElementType().Name);
+                        _name = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, builder);
+                    }
+                    else // Nested and Simple types
+                    {
+                        _name = TypeNameParserHelpers.GetName(FullName.AsSpan()).ToString();
+                    }
+                }
+
+                return _name;
+            }
+        }
 
         public bool Equals(TypeName? other)
             => other is not null

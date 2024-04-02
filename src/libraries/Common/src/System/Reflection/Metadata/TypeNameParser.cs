@@ -209,33 +209,24 @@ namespace System.Reflection.Metadata
             }
 
             TypeName? declaringType = GetDeclaringType(fullTypeName, nestedNameLengths, assemblyName);
-            string name = GetName(fullTypeName).ToString();
-            TypeName? underlyingType = genericArgs is null ? null : new(name, fullTypeName.ToString(), assemblyName, declaringType: declaringType);
-            string genericTypeFullName = GetGenericTypeFullName(fullTypeName, genericArgs);
-            TypeName result = new(name, genericTypeFullName, assemblyName, rankOrModifier: 0, underlyingType, declaringType, genericArgs);
+
+            TypeName? result;
+            if (genericArgs is null)
+            {
+                result = new(fullTypeName.ToString(), assemblyName, rankOrModifier: 0, elementOrGenericType: null, declaringType, genericArgs);
+            }
+            else
+            {
+                TypeName genericTypeDefinition = new(fullTypeName.ToString(), assemblyName, declaringType: declaringType);
+                result = new(fullName: null, assemblyName, rankOrModifier: 0, genericTypeDefinition, declaringType, genericArgs);
+            }
 
             if (previousDecorator != default) // some decorators were recognized
             {
-                ValueStringBuilder fullNameSb = new(stackalloc char[128]);
-                fullNameSb.Append(genericTypeFullName);
-
-                ValueStringBuilder nameSb = new(stackalloc char[32]);
-                nameSb.Append(name);
-
                 while (TryParseNextDecorator(ref capturedBeforeProcessing, out int parsedModifier))
                 {
-                    // we are not reusing the input string, as it could have contain whitespaces that we want to exclude
-                    string trimmedModifier = GetRankOrModifierStringRepresentation(parsedModifier);
-                    nameSb.Append(trimmedModifier);
-                    fullNameSb.Append(trimmedModifier);
-
-                    result = new(nameSb.AsSpan().ToString(), fullNameSb.AsSpan().ToString(), assemblyName, parsedModifier, elementOrGenericType: result);
+                    result = new(fullName: null, assemblyName, parsedModifier, elementOrGenericType: result);
                 }
-
-                // The code above is not calling ValueStringBuilder.ToString() directly,
-                // because it calls Dispose and we want to reuse the builder content until we are done with all decorators.
-                fullNameSb.Dispose();
-                nameSb.Dispose();
             }
 
             return result;
@@ -304,8 +295,7 @@ namespace System.Reflection.Metadata
             {
                 Debug.Assert(nestedNameLength > 0, "TryGetTypeNameInfo should return error on zero lengths");
                 ReadOnlySpan<char> fullName = fullTypeName.Slice(0, nameOffset + nestedNameLength);
-                ReadOnlySpan<char> name = GetName(fullName);
-                declaringType = new(name.ToString(), fullName.ToString(), assemblyName, declaringType: declaringType);
+                declaringType = new(fullName.ToString(), assemblyName, declaringType: declaringType);
                 nameOffset += nestedNameLength + 1; // include the '+' that was skipped in name
             }
 
