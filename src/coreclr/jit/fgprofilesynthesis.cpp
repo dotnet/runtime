@@ -832,8 +832,9 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
     //
     weight_t const cyclicProbability = 1.0 / (1.0 - cyclicWeight);
 
-    JITDUMP("For loop at " FMT_BB " cyclic weight is " FMT_WT " cyclic probability is " FMT_WT "%s\n",
-            loop->GetHeader()->bbNum, cyclicWeight, cyclicProbability, capped ? " [capped]" : "");
+    JITDUMP("For loop at " FMT_BB " cyclic weight is " FMT_WT " cyclic probability is " FMT_WT "%s%s\n",
+            loop->GetHeader()->bbNum, cyclicWeight, cyclicProbability, capped ? " [capped]" : "",
+            loop->ContainsImproperHeader() ? " [likely underestimated, (loop contains improper loop)]" : "");
 
     m_cyclicProbabilities[loop->GetIndex()] = cyclicProbability;
 
@@ -1285,6 +1286,11 @@ void ProfileSynthesis::GaussSeidelSolver()
                 }
                 else
                 {
+                    if (loop != nullptr)
+                    {
+                        JITDUMP(" .. not using Cp for " FMT_BB "; loop contains improper header\n", block->bbNum);
+                    }
+
                     // A self-edge that's part of a bigger SCC may
                     // not be detected as simple loop.
                     //
@@ -1338,14 +1344,14 @@ void ProfileSynthesis::GaussSeidelSolver()
             countVector[block->bbNum] = newWeight;
 
             // Remember max absolute and relative change
-            // (note rel residual will be infinite on the first pass, that's ok)
+            // (note rel residual will be infinite at times, that's ok)
             //
             // Note we are using a "point" bound here ("infinity norm") rather than say
-            // computing the l2-norm of the entire residual vector.
+            // computing the L2-norm of the entire residual vector.
             //
             weight_t const blockRelResidual = change / oldWeight;
 
-            if ((relResidualBlock == nullptr) || ((oldWeight > 0) && (blockRelResidual > relResidual)))
+            if ((relResidualBlock == nullptr) || (blockRelResidual > relResidual))
             {
                 relResidual      = blockRelResidual;
                 relResidualBlock = block;

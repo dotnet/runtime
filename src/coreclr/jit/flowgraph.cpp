@@ -4391,6 +4391,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
             {
                 if (otherLoop->ContainsBlock(header))
                 {
+                    JITDUMP("Noting that " FMT_LP " contains an improper loop header\n", loop->GetIndex());
                     otherLoop->m_containsImproperHeader = true;
                 }
             }

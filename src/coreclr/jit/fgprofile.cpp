@@ -2945,7 +2945,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
         // We now always run repair, to get consistent initial counts
         //
-        JITDUMP("\n%Repairing profile...\n", opts.IsOSR() ? "blending" : "repairing");
+        JITDUMP("\n%sRepairing profile...\n", opts.IsOSR() ? "blending" : "repairing");
         ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
     }
 
