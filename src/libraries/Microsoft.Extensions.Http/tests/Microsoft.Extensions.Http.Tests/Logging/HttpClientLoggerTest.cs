@@ -162,7 +162,7 @@ namespace Microsoft.Extensions.Http.Logging
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public async void CustomLogger_LogsCorrectEvents_Sync(bool requestSuccessful, bool asyncSecondCall)
+        public async Task CustomLogger_LogsCorrectEvents_Sync(bool requestSuccessful, bool asyncSecondCall)
         {
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddTransient(_ =>

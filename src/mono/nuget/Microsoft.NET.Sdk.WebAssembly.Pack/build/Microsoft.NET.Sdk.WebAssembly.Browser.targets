@@ -109,14 +109,14 @@ Copyright (c) .NET Foundation. All rights reserved.
       _GenerateBuildWasmBootJson;
       _AddWasmStaticWebAssets;
     </ResolveCompressedFilesDependsOn>
-    <ResolveCompressedFilesForPublishDependsOn>
+    <ResolveCompressedFilesForPublishDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       $(ResolveCompressedFilesForPublishDependsOn);
       ProcessPublishFilesForWasm;
       ComputeWasmExtensions;
       GeneratePublishWasmBootJson;
       _AddPublishWasmBootJsonToStaticWebAssets;
     </ResolveCompressedFilesForPublishDependsOn>
-    <CompressFilesForPublishDependsOn>
+    <CompressFilesForPublishDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       $(CompressFilesForPublishDependsOn);
       GeneratePublishWasmBootJson;
     </CompressFilesForPublishDependsOn>
