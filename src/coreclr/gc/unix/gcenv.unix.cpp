@@ -868,7 +868,7 @@ done:
     return result;
 }
 
-#define UPDATE_CACHE_SIZE_AND_LEVEL(NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if (NEW_CACHE_SIZE > cacheSize) { cacheSize = (size_t)NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
+#define UPDATE_CACHE_SIZE_AND_LEVEL(NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if (NEW_CACHE_SIZE > ((long)cacheSize)) { cacheSize = NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
 
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
@@ -876,7 +876,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     size_t cacheSize = 0;
     long size;
 
-    // sysconf can return -1 if the cache size is unavailable in some distros and 0 in others.
+    // sysconf can return -1 if the cache size is unavailable in some distributions and 0 in others.
     // UPDATE_CACHE_SIZE_AND_LEVEL should handle both the cases by not updating cacheSize if either of cases are met.
 #ifdef _SC_LEVEL1_DCACHE_SIZE
     size = sysconf(_SC_LEVEL1_DCACHE_SIZE);
@@ -915,21 +915,23 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
             path_to_size_file[index] = (char)(48 + i);
 
             uint64_t cache_size_from_sys_file = 0;
-            bool cache_size_read_from_sys_file_succeeded = ReadMemoryValueFromFile(path_to_size_file, &(cache_size_from_sys_file));
-            size = (long)cache_size_from_sys_file;
 
-            // This is a guard against the cache size value being -1.
-            if (cache_size_read_from_sys_file_succeeded && size > 0)
+            if (ReadMemoryValueFromFile(path_to_size_file, &cache_size_from_sys_file))
             {
+                // uint64_t to long conversion as ReadMemoryValueFromFile takes a uint64_t* as an argument for the val argument.
+                size = (long)cache_size_from_sys_file;
                 path_to_level_file[index] = (char)(48 + i);
 
                 if (ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
                     UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
                 }
-                else
+
+                // We guard against the case where the size = -1 or 0. 
+                // This isn't currently an issue but to be safe, we add this check.
+                else if (size > 0)
                 {
-                    cacheSize = std::max(cacheSize, ((size_t)size));
+                    cacheSize = std::max((long)cacheSize, size);
                 }
             }
         }
