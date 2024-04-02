@@ -510,11 +510,9 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 
     CorElementType elemType = pArrayMT->GetArrayElementType();
 
-    if (pArrayMT->Collectible() || (pArrayMT->ContainsPointers() && cElements > 0))
+    if (pArrayMT->ContainsPointers() && cElements > 0)
     {
-        // We cannot allocate in the frozen heap if:
-        // - the array type is collectible
-        // - or for non empty arrays with GC pointers
+        // For arrays with GC pointers we can only work with empty arrays
         return NULL;
     }
 
