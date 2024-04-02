@@ -5280,13 +5280,14 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     }
 
     JITDUMP("Checking Profile Weights (flags:0x%x)\n", checks);
-    unsigned problemBlocks    = 0;
-    unsigned unprofiledBlocks = 0;
-    unsigned profiledBlocks   = 0;
-    bool     entryProfiled    = false;
-    bool     exitProfiled     = false;
-    weight_t entryWeight      = 0;
-    weight_t exitWeight       = 0;
+    unsigned problemBlocks     = 0;
+    unsigned unprofiledBlocks  = 0;
+    unsigned profiledBlocks    = 0;
+    bool     entryProfiled     = false;
+    bool     exitProfiled      = false;
+    bool     hasCatchableThrow = false;
+    weight_t entryWeight       = 0;
+    weight_t exitWeight        = 0;
 
     // Verify each profiled block.
     //
@@ -5328,13 +5329,26 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 
         // Exit blocks
         //
-        if (block->KindIs(BBJ_RETURN, BBJ_THROW))
+        if (block->KindIs(BBJ_RETURN))
         {
-            if (BasicBlock::sameHndRegion(block, fgFirstBB))
+            exitWeight += blockWeight;
+            exitProfiled   = true;
+            verifyOutgoing = false;
+        }
+        else if (block->KindIs(BBJ_THROW))
+        {
+            bool const isCatchableThrow = block->hasTryIndex();
+
+            if (isCatchableThrow)
+            {
+                hasCatchableThrow = true;
+            }
+            else
             {
                 exitWeight += blockWeight;
-                exitProfiled = !opts.IsOSR();
+                exitProfiled = true;
             }
+
             verifyOutgoing = false;
         }
 
@@ -5387,11 +5401,15 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         }
     }
 
-    // Verify overall input-output balance.
+    // Verify overall entry-exit balance.
     //
     if (verifyClassicWeights || verifyLikelyWeights)
     {
-        if (entryProfiled && exitProfiled)
+        // If there's a catchable throw, significant weight might pass
+        // through throws to catches. We don't model that, and it
+        // can throw off entry-exit balance.
+        //
+        if (entryProfiled && exitProfiled && !hasCatchableThrow)
         {
             // Note these may not agree, if fgEntryBB is a loop header.
             //
