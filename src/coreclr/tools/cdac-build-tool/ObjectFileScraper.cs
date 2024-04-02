@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,17 +25,23 @@ public class ObjectFileScraper
         using var file = File.Open(inputPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         var r = await FindMagic(file, token);
 
-        if (!r.Found){
+        if (!r.Found) {
             return false;
         }
         if (Verbose) {
             Console.WriteLine ($"{inputPath}: magic at {r.Position}");
         }
         file.Seek(r.Position + (long)MagicLE.Length, SeekOrigin.Begin); // skip magic
+        var headerStart = file.Position;
         var header = ReadHeader(file, r.LittleEndian);
         if (Verbose) {
             Console.WriteLine ($"{inputPath}: namesStart = {header.NamesStart}");
             Console.WriteLine ($"{inputPath}: typeCount = {header.TypeCount}");
+            Console.WriteLine ($"{inputPath}: fieldPoolCount = {header.FieldPoolCount}");
+        }
+        var content = ReadContent(file, headerStart, header, r.LittleEndian);
+        if (Verbose) {
+            Console.WriteLine ($"{inputPath}: baseline = \"{content.Baseline}\"");
         }
         return true;
     }
@@ -94,6 +101,7 @@ public class ObjectFileScraper
         public uint TypeCount;
         public uint FieldPoolCount;
         
+        public uint GlobalValuesCount;
         public uint NamesPoolCount;
         
         public byte TypeSpecSize;
@@ -114,6 +122,8 @@ public class ObjectFileScraper
 
 
     private uint Swap(bool isLittleEndian, uint value) => (isLittleEndian == BitConverter.IsLittleEndian) ? value : BinaryPrimitives.ReverseEndianness(value);
+    private ushort Swap(bool isLittleEndian, ushort value) => (isLittleEndian == BitConverter.IsLittleEndian) ? value : BinaryPrimitives.ReverseEndianness(value);
+    private ulong Swap(bool isLittleEndian, ulong value) => (isLittleEndian == BitConverter.IsLittleEndian) ? value : BinaryPrimitives.ReverseEndianness(value);
         
 
     private HeaderDirectory ReadHeader(Stream stream, bool isLE)
@@ -127,6 +137,7 @@ public class ObjectFileScraper
         var typeCount = Swap(isLE, reader.ReadUInt32());
         var fieldPoolCount = Swap(isLE, reader.ReadUInt32());
 
+        var globalValuesCount = Swap(isLE, reader.ReadUInt32());
         var namesPoolCount = Swap(isLE, reader.ReadUInt32());
 
         var typeSpecSize = reader.ReadByte();
@@ -143,6 +154,7 @@ public class ObjectFileScraper
             TypeCount = typeCount,
             FieldPoolCount = fieldPoolCount,
 
+            GlobalValuesCount = globalValuesCount,
             NamesPoolCount = namesPoolCount,
 
             TypeSpecSize = typeSpecSize,
@@ -150,6 +162,189 @@ public class ObjectFileScraper
             GlobalSpecSize = globalSpecSize,
             Reserved0 = reserved0
         };
+    }
+
+    struct Content
+    {
+        public TypeEntry[] Types;
+        public string Baseline;
+        public GlobalEntry[] Globals;
+    }
+
+    struct TypeEntry
+    {
+        public string Name;
+        public int? Size;
+        public FieldEntry[] Fields;
+    }
+
+    struct FieldEntry
+    {
+        public string Name;
+        public string Type;
+        public int Offset;
+    }
+
+    struct GlobalEntry
+    {
+        public string Name;
+        public string Type;
+        public ulong Value;
+    }
+
+    struct TypeSpec
+    {
+        public uint NameIdx;
+        public uint FieldsIdx;
+        public ushort Size;
+    }
+
+    struct FieldSpec
+    {
+        public uint NameIdx;
+        public uint TypeNameIdx;
+        public ushort FieldOffset;
+    }
+    
+    struct GlobalSpec
+    {
+        public uint NameIdx;
+        public uint TypeNameIdx;
+        public ulong Value;
+    }
+
+    private Content ReadContent(Stream stream, long startPos, HeaderDirectory header, bool isLE)
+    {
+        using var reader = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true);
+        // fixme: badspec - we should have the offset of baseline name too
+        var baselineNameIdx = Swap(isLE, reader.ReadUInt32());
+        Console.WriteLine ($"baseline Name Idx = {baselineNameIdx}");
+        TypeSpec[] typeSpecs = new TypeSpec[header.TypeCount];
+
+        reader.BaseStream.Seek(startPos + (long)header.TypesStart, SeekOrigin.Begin);
+        for (int i = 0; i < header.TypeCount; i++)
+        {
+            int bytesRead = 0;
+            typeSpecs[i].NameIdx = Swap(isLE, reader.ReadUInt32());
+            bytesRead += 4;
+            typeSpecs[i].FieldsIdx = Swap(isLE, reader.ReadUInt32());
+            bytesRead += 4;
+            typeSpecs[i].Size = Swap(isLE, reader.ReadUInt16());
+            bytesRead += 2;
+            Console.WriteLine ($"TypeSpec[{i}]: NameIdx = {typeSpecs[i].NameIdx}, FieldsIdx = {typeSpecs[i].FieldsIdx}, Size = {typeSpecs[i].Size}");
+            // skip padding
+            if (bytesRead < header.TypeSpecSize) {
+                reader.BaseStream.Seek(header.TypeSpecSize - bytesRead, SeekOrigin.Current);
+            }
+        }
+
+        reader.BaseStream.Seek(startPos + (long)header.FieldPoolStart, SeekOrigin.Begin);
+        FieldSpec[] fieldSpecs = new FieldSpec[header.FieldPoolCount];
+        for (int i = 0; i < header.FieldPoolCount; i++)
+        {
+            int bytesRead = 0;
+            fieldSpecs[i].NameIdx = Swap(isLE, reader.ReadUInt32());
+            bytesRead += 4;
+            fieldSpecs[i].TypeNameIdx = Swap(isLE, reader.ReadUInt32());
+            bytesRead += 4;
+            fieldSpecs[i].FieldOffset = Swap(isLE, reader.ReadUInt16());
+            bytesRead += 2;
+            // skip padding
+            if (bytesRead < header.FieldSpecSize) {
+                reader.BaseStream.Seek(header.FieldSpecSize - bytesRead, SeekOrigin.Current);
+            }
+        }
+
+        GlobalSpec[] globalSpecs = new GlobalSpec[header.GlobalValuesCount];
+        reader.BaseStream.Seek(startPos + (long)header.GlobalValuesStart, SeekOrigin.Begin);
+        for (int i = 0; i < header.GlobalValuesCount; i++)
+        {
+            int bytesRead = 0;
+            globalSpecs[i].NameIdx = Swap(isLE, reader.ReadUInt32());
+            bytesRead += 4;
+            globalSpecs[i].TypeNameIdx = Swap(isLE, reader.ReadUInt32());
+            bytesRead += 4;
+            globalSpecs[i].Value = Swap(isLE, reader.ReadUInt64());
+            bytesRead += 8;
+            // skip padding
+            if (bytesRead < header.GlobalSpecSize) {
+                reader.BaseStream.Seek(header.GlobalSpecSize - bytesRead, SeekOrigin.Current);
+            }
+        }
+
+        // FIXME seek to names pool start
+        byte[] namesPool = new byte[header.NamesPoolCount];
+        reader.BaseStream.Seek(startPos + (long)header.NamesStart, SeekOrigin.Begin);
+        int namesPoolCountRead = reader.Read(namesPool.AsSpan());
+        if (namesPoolCountRead != header.NamesPoolCount) {
+            throw new InvalidOperationException ($"expected to read {header.NamesPoolCount} bytes of strings");
+        }
+
+        var baseline = GetPoolString(namesPool, baselineNameIdx);
+        Console.WriteLine ($"baseline Name = {baseline}");
+
+
+        byte[] endMagic = new byte[4];
+        reader.Read(endMagic.AsSpan());
+        if (!CheckEndMagic(endMagic)) {
+            throw new InvalidOperationException($"expected endMagic, got 0x{endMagic[0]:x} 0x{endMagic[1]:x} 0x{endMagic[2]:x} 0x{endMagic[3]:x}");
+        }
+
+        FieldEntry[] fields = new FieldEntry[fieldSpecs.Length];
+        for (int i = 0; i < fieldSpecs.Length; i++)
+        {
+            if (fieldSpecs[i].NameIdx == 0)
+                continue;
+            fields[i].Name = GetPoolString(namesPool, fieldSpecs[i].NameIdx);
+            fields[i].Type = GetPoolString(namesPool, fieldSpecs[i].TypeNameIdx);
+            fields[i].Offset = fieldSpecs[i].FieldOffset;
+            Console.WriteLine ($"field entry {i} Name = {fields[i].Name}, Type = {fields[i].Type}, Offset = {fields[i].Offset}");
+        }
+
+        TypeEntry[] types = new TypeEntry[typeSpecs.Length];
+        for (int i = 0; i < typeSpecs.Length; i++)
+        {
+            types[i].Name = GetPoolString(namesPool, typeSpecs[i].NameIdx);
+            uint j = typeSpecs[i].FieldsIdx / header.FieldSpecSize; // convert byte offset to index;
+            List<FieldEntry> typeFields = new();
+            Console.WriteLine ($"Type {types[i].Name} has fields starting at index {j}");
+            while (j < fields.Length && !String.IsNullOrEmpty(fields[j].Name)) {
+                typeFields.Add(fields[j]);
+                j++;
+            }
+            types[i].Fields = typeFields.ToArray();
+            types[i].Size = typeSpecs[i].Size;
+        }
+
+        GlobalEntry[] globals = new GlobalEntry[globalSpecs.Length];
+        for (int i = 0; i < globalSpecs.Length; i++)
+        {
+            globals[i].Name = GetPoolString(namesPool, globalSpecs[i].NameIdx);
+            globals[i].Type = GetPoolString(namesPool, globalSpecs[i].TypeNameIdx);
+            globals[i].Value = globalSpecs[i].Value;
+        }
+
+        return new Content {
+            Types = types,
+            Baseline = baseline,
+            Globals = globals,
+        };
+    }
+
+    public string GetPoolString(ReadOnlySpan<byte> names, uint index)
+    {
+        var nameStart = names.Slice((int)index);
+        var end = nameStart.IndexOf((byte)0); // find the first nul after index
+        if (end == -1)
+            throw new InvalidOperationException ("expected a nul-terminated name");
+        var nameBytes = nameStart.Slice(0, end);
+        return System.Text.Encoding.UTF8.GetString(nameBytes);
+    }
+
+    private bool CheckEndMagic(ReadOnlySpan<byte> bytes)
+    {
+        // FIXME: also endianness
+        return (bytes[0] == 0x01 && bytes[1] == 0x02 && bytes[2] == 0x03 && bytes[3] == 0x04);
     }
 
 }

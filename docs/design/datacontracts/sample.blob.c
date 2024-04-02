@@ -6,7 +6,9 @@
 typedef struct ManagedThread ManagedThread;
 
 struct ManagedThread {
+	uint32_t garbage0;
 	uint32_t m_gcHandle;
+	uint32_t garbage1;
 	ManagedThread *m_next;
 };
 
@@ -56,8 +58,7 @@ struct GlobalSpec
 struct CDacStringPoolSizes
 {
 	char cdac_string_pool_nil; // make the first real string start at offset 1
-	// include 1 +  for the nul
-#define DECL_LEN(membername,len) char membername[1 + (len)];
+#define DECL_LEN(membername,len) char membername[(len)];
 #define CDAC_BASELINE(name) DECL_LEN(cdac_string_pool_baseline_, (sizeof(name)))
 #define CDAC_TYPES_BEGIN()
 #define CDAC_TYPE_BEGIN(name) DECL_LEN(MAKE_TYPELEN_NAME(name), sizeof(#name))
@@ -206,7 +207,7 @@ struct CDacFieldPoolSizes
 {
 	char empty_field_spec[sizeof(struct FieldSpec)]; // make all valid field specs non-zero
 #define DECL_LEN(membername) char membername[sizeof(struct FieldSpec)];
-#define CDAC_BASELINE(name)
+#define CDAC_BASELINE(name) DECL_LEN(cdac_field_pool_start_placeholder__)
 #define CDAC_TYPES_BEGIN()
 #define CDAC_TYPE_BEGIN(name) struct MAKE_TYPEFIELDS_TYNAME(name) {
 #define CDAC_TYPE_INDETERMINATE(name)
@@ -247,6 +248,7 @@ struct BinaryBlobDataDescriptor
         uint32_t TypeCount;
         uint32_t FieldPoolCount;
         
+	uint32_t GlobalValuesCount;
         uint32_t NamesPoolCount;
         
         uint8_t TypeSpecSize;
@@ -259,6 +261,7 @@ struct BinaryBlobDataDescriptor
     struct FieldSpec FieldPool[CDacBlobFieldPoolCount];
     struct GlobalSpec GlobalValues[CDacBlobGlobalsCount];
     uint8_t NamesPool[sizeof(struct CDacStringPoolSizes)];
+    uint8_t EndMagic[4];
 };
 
 struct MagicAndBlob {
@@ -276,11 +279,13 @@ const struct MagicAndBlob Blob = {
 			.NamesStart = offsetof(struct BinaryBlobDataDescriptor, NamesPool),
 			.TypeCount = CDacBlobTypesCount,
 			.FieldPoolCount = CDacBlobFieldPoolCount,
+			.GlobalValuesCount = CDacBlobGlobalsCount,
 			.NamesPoolCount = sizeof(struct CDacStringPoolSizes),
 			.TypeSpecSize = sizeof(struct TypeSpec),
 			.FieldSpecSize = sizeof(struct FieldSpec),
 			.GlobalSpecSize = sizeof(struct GlobalSpec),
 		},
+		.EndMagic = { 0x01, 0x02, 0x03, 0x04 },
 		.BaselineName = offsetof(struct CDacStringPoolSizes, cdac_string_pool_baseline_),
 		.NamesPool = ("\0" // starts with a nul
 #define CDAC_BASELINE(name) name "\0"
