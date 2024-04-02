@@ -226,7 +226,8 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void Timestamp_GetSet_Success()
         {
-            DateTime dt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0); //DateTime.Now changes as the test runs
+            //DateTime.UtcNow changes as the test runs
+            DateTime dt = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0);
             Cookie c = new Cookie();
             Assert.True(c.TimeStamp >= dt);
         }
