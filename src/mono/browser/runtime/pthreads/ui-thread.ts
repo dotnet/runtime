@@ -5,11 +5,10 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { } from "../globals";
-import { mono_log_debug, mono_log_warn } from "../logging";
 import { MonoWorkerToMainMessage, monoThreadInfo, mono_wasm_pthread_ptr, update_thread_info, worker_empty_prefix } from "./shared";
 import { Module, ENVIRONMENT_IS_WORKER, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
 import { PThreadLibrary, MainToWorkerMessageType, MonoThreadMessage, PThreadInfo, PThreadPtr, PThreadPtrNull, PThreadWorker, PromiseController, Thread, WorkerToMainMessageType, monoMessageSymbol } from "../types/internal";
-import { mono_log_error, mono_log_info } from "../logging";
+import { mono_log_error, mono_log_info, mono_log_debug } from "../logging";
 import { threads_c_functions as cwraps } from "../cwraps";
 
 const threadPromises: Map<PThreadPtr, PromiseController<Thread>[]> = new Map();
@@ -279,7 +278,7 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
     if (!WasmEnableThreads) return null as any;
 
     if (modulePThread.unusedWorkers.length == 0) {
-        mono_log_warn(`Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolReady. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+        mono_log_debug(`Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolReady. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
         const worker = allocateUnusedWorker();
         modulePThread.loadWasmModuleToWorker(worker);
         availableThreadCount--;
@@ -300,7 +299,7 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
             return worker;
         }
     }
-    mono_log_warn(`Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolReady. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+    mono_log_debug(`Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolReady. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
     availableThreadCount--; // negative value
     return modulePThread.unusedWorkers.pop()!;
 }
