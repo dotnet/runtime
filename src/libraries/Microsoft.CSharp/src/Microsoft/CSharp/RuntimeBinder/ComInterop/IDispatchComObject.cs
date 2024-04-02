@@ -328,7 +328,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return new IDispatchMetaObject(parameter, this);
         }
 
-        private static void GetFuncDescForDescIndex(ComTypes.ITypeInfo typeInfo, int funcIndex, out ComTypes.FUNCDESC funcDesc, out IntPtr funcDescHandle)
+        private static unsafe void GetFuncDescForDescIndex(ComTypes.ITypeInfo typeInfo, int funcIndex, out ComTypes.FUNCDESC funcDesc, out IntPtr funcDescHandle)
         {
             IntPtr pFuncDesc;
             typeInfo.GetFuncDesc(funcIndex, out pFuncDesc);
@@ -339,7 +339,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 throw Error.CannotRetrieveTypeInformation();
             }
 
-            funcDesc = (ComTypes.FUNCDESC)Marshal.PtrToStructure(pFuncDesc, typeof(ComTypes.FUNCDESC));
+            funcDesc = *(ComTypes.FUNCDESC*)pFuncDesc;
             funcDescHandle = pFuncDesc;
         }
 

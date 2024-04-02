@@ -47,9 +47,9 @@ export function initialize_marshalers_to_cs (): void {
         js_to_cs_marshalers.set(MarshalerType.JSException, marshal_exception_to_cs);
         js_to_cs_marshalers.set(MarshalerType.JSObject, marshal_js_object_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Object, marshal_cs_object_to_cs);
-        js_to_cs_marshalers.set(MarshalerType.Task, _marshal_task_to_cs);
-        js_to_cs_marshalers.set(MarshalerType.TaskResolved, _marshal_task_to_cs);
-        js_to_cs_marshalers.set(MarshalerType.TaskRejected, _marshal_task_to_cs);
+        js_to_cs_marshalers.set(MarshalerType.Task, marshal_task_to_cs);
+        js_to_cs_marshalers.set(MarshalerType.TaskResolved, marshal_task_to_cs);
+        js_to_cs_marshalers.set(MarshalerType.TaskRejected, marshal_task_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Action, _marshal_function_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Function, _marshal_function_to_cs);
         js_to_cs_marshalers.set(MarshalerType.None, _marshal_null_to_cs);// also void
@@ -295,7 +295,7 @@ function _marshal_function_to_cs (arg: JSMarshalerArgument, value: Function, _?:
 }
 
 
-function _marshal_task_to_cs (arg: JSMarshalerArgument, value: Promise<any>, _?: MarshalerType, res_converter?: MarshalerToCs) {
+export function marshal_task_to_cs (arg: JSMarshalerArgument, value: Promise<any>, _?: MarshalerType, res_converter?: MarshalerToCs) {
     const handleIsPreallocated = get_arg_type(arg) == MarshalerType.TaskPreCreated;
     if (value === null || value === undefined) {
         if (WasmEnableThreads && handleIsPreallocated) {
@@ -415,7 +415,7 @@ export function marshal_cs_object_to_cs (arg: JSMarshalerArgument, value: any): 
             ) {
                 throw new Error("NotImplementedException: TypedArray");
             } else if (isThenable(value)) {
-                _marshal_task_to_cs(arg, value);
+                marshal_task_to_cs(arg, value);
             } else if (value instanceof Span) {
                 throw new Error("NotImplementedException: Span");
             } else if (js_type == "object") {
