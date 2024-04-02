@@ -358,7 +358,7 @@ private:
                                  GenTree*    switchValue,
                                  weight_t    defaultLikelihood);
 
-    void LowerCast(GenTree* node);
+    GenTree* LowerCast(GenTree* node);
 
 #if !CPU_LOAD_STORE_ARCH
     bool IsRMWIndirCandidate(GenTree* operand, GenTree* storeInd);
