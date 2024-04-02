@@ -582,9 +582,9 @@ namespace System.Media
                         if (waveFormat == null)
                         {
                             int dw = ck.cksize;
-                            if (dw < Marshal.SizeOf(typeof(Interop.WinMM.WAVEFORMATEX)))
+                            if (dw < Marshal.SizeOf<Interop.WinMM.WAVEFORMATEX>())
                             {
-                                dw = Marshal.SizeOf(typeof(Interop.WinMM.WAVEFORMATEX));
+                                dw = Marshal.SizeOf<Interop.WinMM.WAVEFORMATEX>();
                             }
 
                             waveFormat = new Interop.WinMM.WAVEFORMATEX();
