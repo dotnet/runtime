@@ -417,6 +417,7 @@ jobs:
           - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
             parameters:
               name: MonoRuntimePacks
+              isOfficialBuild: false
 
   # build PerfBDN app
   - template: /eng/pipelines/common/platform-matrix.yml
