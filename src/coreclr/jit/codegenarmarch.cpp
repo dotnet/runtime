@@ -3545,15 +3545,16 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         {
             for (unsigned j = 0; j < arg.AbiInfo.NumRegs; j++)
             {
-                regNumber reg = arg.AbiInfo.GetRegNum(j);
-                if ((trashedGprByEpilog & genRegMask(reg)) != 0)
+                regNumber reg     = arg.AbiInfo.GetRegNum(j);
+                var_types argType = arg.AbiInfo.ArgType;
+                if (varTypeUsesIntReg(argType) && ((trashedGprByEpilog & genRegMask(reg)) != 0))
                 {
                     JITDUMP("Tail call node:\n");
                     DISPTREE(call);
                     JITDUMP("Gpr Register used: %s\n", getRegName(reg));
                     assert(!"Argument to tailcall may be trashed by epilog");
                 }
-                else if ((trashedFloatByEpilog & genRegMask(reg)) != 0)
+                else if (varTypeUsesFloatArgReg(argType) && ((trashedFloatByEpilog & genRegMask(reg)) != 0))
                 {
                     JITDUMP("Tail call node:\n");
                     DISPTREE(call);
@@ -3561,7 +3562,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     assert(!"Argument to tailcall may be trashed by epilog");
                 }
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-                else if ((trashedPredicateByEpilog & genRegMask(reg)) != 0)
+                else if (varTypeUsesMaskReg(argType) && ((trashedPredicateByEpilog & genRegMask(reg)) != 0))
                 {
                     JITDUMP("Tail call node:\n");
                     DISPTREE(call);
