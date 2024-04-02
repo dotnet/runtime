@@ -447,7 +447,6 @@ public:
 } AllRegsMask;
 
 #define GprRegsMask(gprRegs) AllRegsMask(gprRegs)
-#define Create_AllRegsMask(gprRegs, floatRegs) AllRegsMask(gprRegs | floatRegs)
 
 #if REGMASK_BITS == 32
 typedef unsigned regMaskSmall;
