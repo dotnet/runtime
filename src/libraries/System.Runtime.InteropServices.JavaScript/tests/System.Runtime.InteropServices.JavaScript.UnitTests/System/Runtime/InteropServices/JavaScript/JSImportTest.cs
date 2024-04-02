@@ -43,6 +43,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Contains("intentionallyMissingImport must be a Function but was undefined", ex.Message);
         }
 
+        [Fact]
+        public async Task MissingImportAsync()
+        {
+            var ex = await Assert.ThrowsAsync<JSException>(() => JavaScriptTestHelper.IntentionallyMissingImportAsync());
+            Assert.Contains("intentionallyMissingImportAsync must be a Function but was undefined", ex.Message);
+        }
+
 #if !FEATURE_WASM_MANAGED_THREADS // because in MT JSHost.ImportAsync is really async, it will finish before the caller could cancel it
         [Fact]
         public async Task CancelableImportAsync()
