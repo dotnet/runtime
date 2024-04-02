@@ -15,7 +15,7 @@ host_startup_info_t::host_startup_info_t(
     , dotnet_root(dotnet_root_value)
     , app_path(app_path_value) {}
 
-// Determine if string is a valid path, and if so then fix up by using realpath()
+// Determine if string is a valid path, and if so then fix up by using fullpath()
 bool get_path_from_argv(pal::string_t *path)
 {
     // Assume all paths will have at least one separator. We want to detect path vs. file before calling realpath

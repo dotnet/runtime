@@ -221,14 +221,14 @@ void get_runtime_config_paths_from_app(const pal::string_t& app, pal::string_t* 
     get_runtime_config_paths(path, name, cfg, dev_cfg);
 }
 
-// Convert "path" to realpath (merging working dir if needed) and append to "realpaths" out param.
-void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>* realpaths, const pal::string_t& tfm)
+// Convert "path" to fullpath (merging working dir if needed) and append to "fullpaths" out param.
+void append_probe_fullpath(const pal::string_t& path, std::vector<pal::string_t>* fullpaths, const pal::string_t& tfm)
 {
     pal::string_t probe_path = path;
 
     if (pal::fullpath(&probe_path, true))
     {
-        realpaths->push_back(probe_path);
+        fullpaths->push_back(probe_path);
     }
     else
     {
@@ -251,7 +251,7 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
 
             if (pal::fullpath(&probe_path, true))
             {
-                realpaths->push_back(probe_path);
+                fullpaths->push_back(probe_path);
             }
             else
             {
@@ -348,7 +348,7 @@ namespace
         std::vector<pal::string_t> probe_realpaths;
         for (const auto& path : specified_probing_paths)
         {
-            append_probe_realpath(path, &probe_realpaths, tfm);
+            append_probe_fullpath(path, &probe_realpaths, tfm);
         }
 
         // Each framework can add probe paths
@@ -356,7 +356,7 @@ namespace
         {
             for (const auto& path : fx->get_runtime_config().get_probe_paths())
             {
-                append_probe_realpath(path, &probe_realpaths, tfm);
+                append_probe_fullpath(path, &probe_realpaths, tfm);
             }
         }
 
