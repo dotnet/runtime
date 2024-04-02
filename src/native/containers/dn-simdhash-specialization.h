@@ -79,7 +79,14 @@ static DN_FORCEINLINE(int)
 DN_SIMDHASH_SCAN_BUCKET_INTERNAL (bucket_t *bucket, DN_SIMDHASH_KEY_T needle, dn_simdhash_suffixes search_vector)
 {
 	uint32_t count = dn_simdhash_bucket_count(bucket->suffixes),
-		index = find_first_matching_suffix(search_vector, bucket->suffixes);
+#if DN_SIMDHASH_USE_SCALAR_FALLBACK
+		// HACK: This allows the creation of the search_vector in our caller to be optimized out,
+		//  and allows the search to compare each lane against a single scalar instead of having to
+		//  compare two search vectors lane-by-lane.
+		index = find_first_matching_suffix_scalar_1(search_vector.values[0], bucket->suffixes.values, count);
+#else
+		index = find_first_matching_suffix(search_vector, bucket->suffixes, count);
+#endif
 	DN_SIMDHASH_KEY_T *key = &bucket->keys[index];
 
 	for (; index < count; index++, key++) {
