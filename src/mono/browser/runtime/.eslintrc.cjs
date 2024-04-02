@@ -22,6 +22,8 @@ module.exports = {
         "es6/*.js",
         "jiterpreter-opcodes.ts",
         "jiterpreter-tables.ts",
+        "dotnet.d.ts",
+        "diagnostics-mock.d.ts",
     ],
     "rules": {
         "@typescript-eslint/no-explicit-any": "off",
@@ -48,6 +50,15 @@ module.exports = {
         "semi": [
             "error",
             "always"
-        ]
+        ],
+        "brace-style": ["error"],
+        "eol-last": ["error"],
+        "space-before-blocks": ["error"],
+        "semi-spacing": ["error", { "before": false, "after": true }],
+        "no-trailing-spaces": ["error"],
+        "object-curly-spacing": ["error", "always"],
+        "array-bracket-spacing": ["error"],
+        "space-infix-ops": ["error"],
+        "space-before-function-paren": ["error", "always"],
     }
 };
