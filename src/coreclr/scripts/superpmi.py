@@ -2345,8 +2345,9 @@ class SuperPMIReplayAsmDiffs:
                         diff_perfscore = diff_metrics["Overall"]["Diffed PerfScore"]
                         logging.info("Total PerfScore of base: {}".format(base_perfscore))
                         logging.info("Total PerfScore of diff: {}".format(diff_perfscore))
-                        delta_perfscore = diff_perfscore - base_perfscore
-                        logging.info("Total PerfScore of delta: {} ({:.2%} of base)".format(delta_perfscore, delta_perfscore / base_perfscore))
+                        if base_perfscore != 0:
+                            delta_perfscore = diff_perfscore - base_perfscore
+                            logging.info("Total PerfScore of delta: {} ({:.2%} of base)".format(delta_perfscore, delta_perfscore / base_perfscore))
                         logging.info("")
 
                         relative_perfscore_geomean = diff_metrics["Overall"]["Relative PerfScore Geomean"]
