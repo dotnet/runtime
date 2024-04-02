@@ -416,6 +416,31 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
+
+        public static unsafe object? Box(ref byte target, RuntimeTypeHandle type)
+        {
+            if (type.IsNullHandle())
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
+
+            RuntimeType rtType = (RuntimeType)Type.GetTypeFromHandle(type)!;
+
+            if (rtType.IsByRefLike)
+                throw new NotSupportedException(SR.NotSupported_ByRefLike);
+
+            if (rtType.IsPointer || rtType.IsFunctionPointer)
+                throw new NotSupportedException(SR.NotSupported_BoxedPointer);
+
+            if (rtType.IsActualValueType)
+            {
+                object? result = Box(rtType.GetNativeTypeHandle().AsMethodTable(), ref target);
+                GC.KeepAlive(rtType);
+                return result;
+            }
+            else
+            {
+                return Unsafe.As<byte, object?>(ref target);
+            }
+        }
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.

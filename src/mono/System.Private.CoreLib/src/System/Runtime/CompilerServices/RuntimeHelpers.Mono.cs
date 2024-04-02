@@ -211,5 +211,38 @@ namespace System.Runtime.CompilerServices
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool SufficientExecutionStack();
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void InternalBox(QCallTypeHandle type, ref byte target, ObjectHandleOnStack result);
+
+        public static object? Box(ref byte target, RuntimeTypeHandle type)
+        {
+            if (type.Value is 0)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
+
+            // Compatibility with CoreCLR, throw on a null reference to the unboxed data.
+            if (Unsafe.IsNullRef(ref target))
+                throw new NullReferenceException();
+
+            RuntimeType rtType = (RuntimeType)Type.GetTypeFromHandle(type)!;
+
+            if (rtType.IsByRefLike)
+                throw new NotSupportedException(SR.NotSupported_ByRefLike);
+
+            if (rtType.IsPointer || rtType.IsFunctionPointer)
+                throw new NotSupportedException(SR.NotSupported_BoxedPointer);
+
+
+            if (rtType.IsValueType)
+            {
+                object? result = null;
+                InternalBox(new QCallTypeHandle(ref rtType), ref target, ObjectHandleOnStack.Create(ref result));
+                return result;
+            }
+            else
+            {
+                return Unsafe.As<byte, object?>(ref target);
+            }
+        }
     }
 }

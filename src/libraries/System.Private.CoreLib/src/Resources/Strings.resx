@@ -2954,6 +2954,9 @@
   <data name="NotSupported_AssemblyLoadFromHash" xml:space="preserve">
     <value>Assembly.LoadFrom with hashValue is not supported.</value>
   </data>
+  <data name="NotSupported_BoxedPointer" xml:space="preserve">
+    <value>Cannot create boxed pointer values.</value>
+  </data>
   <data name="NotSupported_ByRefLike" xml:space="preserve">
     <value>Cannot create boxed ByRef-like values.</value>
   </data>

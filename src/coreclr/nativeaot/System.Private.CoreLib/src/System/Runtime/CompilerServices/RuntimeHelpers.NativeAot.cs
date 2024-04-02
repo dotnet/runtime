@@ -361,6 +361,26 @@ namespace System.Runtime.CompilerServices
 
             return RuntimeImports.RhNewObject(mt);
         }
+
+        public static unsafe object Box(ref byte target, RuntimeTypeHandle type)
+        {
+            if (type.IsNull)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
+
+            // Compatibility with CoreCLR, throw on a null reference to the unboxed data.
+            if (Unsafe.IsNullRef(ref target))
+                throw new NullReferenceException();
+
+            MethodTable* eeType = type.ToMethodTable();
+
+            if (eeType->IsByRefLike)
+                throw new NotSupportedException(SR.NotSupported_ByRefLike);
+
+            if (eeType->IsPointer || eeType->IsFunctionPointer)
+                throw new NotSupportedException(SR.NotSupported_BoxedPointer);
+
+            return RuntimeImports.RhBoxAny(ref target, eeType);
+        }
     }
 
     // CLR arrays are laid out in memory as follows (multidimensional array bounds are optional):
