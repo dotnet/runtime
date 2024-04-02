@@ -25,12 +25,6 @@ function DownloadClangTool {
 
     # override common RIDs with compatible version so we don't need to upload binaries for each RID
     case $clangPlatform in
-        osx.*-x64)
-        clangPlatform=osx-x64
-        ;;
-        osx.*-arm64)
-        clangPlatform=osx-arm64
-        ;;
         ubuntu.*-x64)
         clangPlatform=linux-x64
         ;;
