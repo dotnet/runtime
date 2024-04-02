@@ -291,13 +291,6 @@ CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 1) // If set, align inner loop
 CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 0)
 #endif
 
-///
-/// JIT
-///
-#ifdef FEATURE_ENABLE_NO_RANGE_CHECKS
-CONFIG_INTEGER(JitNoRangeChks, W("JitNoRngChks"), 0) // If 1, don't generate range checks
-#endif
-
 // AltJitAssertOnNYI should be 0 on targets where JIT is under development or bring up stage, so as to facilitate
 // fallback to main JIT on hitting a NYI.
 CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 1) // Controls the AltJit behavior of NYI stuff
