@@ -31,6 +31,7 @@ variables:
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
+    isOfficialBuild: false
     stages:
     - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
       - stage: EvaluatePaths
