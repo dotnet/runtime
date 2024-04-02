@@ -1421,18 +1421,6 @@ public:
         return OperIsMul(gtOper);
     }
 
-    bool OperIsArithmetic() const
-    {
-        genTreeOps op = OperGet();
-        return op == GT_ADD || op == GT_SUB || op == GT_MUL || op == GT_DIV || op == GT_MOD
-
-               || op == GT_UDIV || op == GT_UMOD
-
-               || op == GT_OR || op == GT_XOR || op == GT_AND
-
-               || OperIsShiftOrRotate(op);
-    }
-
 #ifdef TARGET_XARCH
     static bool OperIsRMWMemOp(genTreeOps gtOper)
     {
