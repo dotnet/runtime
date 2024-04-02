@@ -87,6 +87,15 @@ namespace System.Net.Sockets
         //
         private readonly ConcurrentQueue<SocketIOEvent> _eventQueue = new ConcurrentQueue<SocketIOEvent>();
 
+        // The scheme works as following:
+        // From NotScheduled, the only transition is to Scheduled when new events are enqueued and a work item is enqueued to process them
+        // From Scheduled, the only transition is to Determining right before trying to dequeue an event
+        // From Determining, it can go to either NotScheduled (when no events are present in the queue (the previous work item processed all of them)
+        // or Scheduled if the queue is still not empty (let the current work item handle parallelization as convinient)
+        //
+        // The goal is to avoid enqueueing more work items than necessary, while still ensuring that all events are processed
+        // Another work item isn't enqueued to the thread pool hastily while the state is Determining,
+        // instead the parallelizer takes care of that. We also ensure that only one thread can be parallelizing at any time
         private enum EventQueueProcessingStage
         {
             NotScheduled,
@@ -192,6 +201,8 @@ namespace System.Net.Sockets
                     // The native shim is responsible for ensuring this condition.
                     Debug.Assert(numEvents > 0, $"Unexpected numEvents: {numEvents}");
 
+                    // Only enqueue a work item if the stage is NotScheduled
+                    // Otherwise there must be a work item already queued or executing, let it handle parallelization
                     if (handler.HandleSocketEvents(numEvents) &&
                         Interlocked.Exchange(
                             ref _eventQueueProcessingStage,
@@ -211,10 +222,13 @@ namespace System.Net.Sockets
         {
             if (!isEventQueueEmpty)
             {
+                // There are more events to process, set stage to Scheduled and enqueue a work item
                 _eventQueueProcessingStage = (int)EventQueueProcessingStage.Scheduled;
             }
             else
             {
+                // The stage before update would naturally be Determining, in that case there is no more work to do
+                // However the event enqueuer may have set it to Scheduled if more events arrived so enqueue another work item to handle them
                 int stageBeforeUpdate =
                     Interlocked.CompareExchange(
                         ref _eventQueueProcessingStage,
@@ -245,6 +259,8 @@ namespace System.Net.Sockets
                     break;
                 }
 
+                // The stage before update would naturally be Determining, in that case there is no more work to do
+                // However the event enqueuer may have set it to Scheduled if more events were enqueued so let the work item try to dequeue again
                 int stageBeforeUpdate =
                     Interlocked.CompareExchange(
                         ref _eventQueueProcessingStage,

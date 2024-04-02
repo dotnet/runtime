@@ -404,6 +404,15 @@ namespace System.Threading
         private readonly int[] _assignedWorkItemQueueThreadCounts =
             s_assignableWorkItemQueueCount > 0 ? new int[s_assignableWorkItemQueueCount] : Array.Empty<int>();
 
+        // The scheme works as following:
+        // From NotScheduled, the only transition is to Scheduled when new items are enqueued and a thread is requested to process them
+        // From Scheduled, the only transition is to Determining right before trying to dequeue an item
+        // From Determining, it can go to either NotScheduled when no items are present in the queue (the previous thread processed all of them)
+        // or Scheduled if the queue is still not empty (let the current thread handle parallelization as convinient)
+        //
+        // The goal is to avoid requesting more threads than necessary, while still ensuring that all items are processed
+        // Another thread isn't requested hastily while the state is Determining,
+        // instead the parallelizer takes care of that. We also ensure that only one thread can be parallelizing at any time
         private enum QueueProcessingStage
         {
             NotScheduled,
@@ -580,6 +589,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void EnsureThreadRequested()
         {
+            // Only request a thread if the stage is NotScheduled
+            // Otherwise let the current requested thread handle parallelization
             if (Interlocked.Exchange(
                 ref _separated.queueProcessingStage,
                 (int)QueueProcessingStage.Scheduled) == (int)QueueProcessingStage.NotScheduled)
@@ -831,6 +842,8 @@ namespace System.Threading
                     break;
                 }
 
+                // The stage before update would naturally be Determining, in that case there is no more work to do
+                // However it may be Scheduled if more items were enqueued
                 int stageBeforeUpdate =
                     Interlocked.CompareExchange(
                         ref workQueue._separated.queueProcessingStage,
@@ -869,22 +882,18 @@ namespace System.Threading
                 }
                 if (secondWorkItem != null || missedSteal)
                 {
-                    // TODO: Update comment below
-
                     // A work item was successfully dequeued, and there may be more work items to process. Request a thread to
                     // parallelize processing of work items, before processing more work items. Following this, it is the
                     // responsibility of the new thread and other enqueuers to request more threads as necessary. The
                     // parallelization may be necessary here for correctness (aside from perf) if the work item blocks for some
                     // reason that may have a dependency on other queued work items.
-
                     workQueue._separated.queueProcessingStage = (int)QueueProcessingStage.Scheduled;
-                    // I thought we might want to add a MemoryBarrier here but not sure about it
                     ThreadPool.RequestWorkerThread();
                 }
                 else
                 {
-                    // the state should be Determining if no more work items were enqueued
-                    // however, another thread might have done so and changed the state to Scheduled
+                    // The stage before update would naturally be Determining, in that case there is no more work to do
+                    // However the enqueuer may have set it to Scheduled if more items were enqueued so request another thread
                     int stageBeforeUpdate =
                         Interlocked.CompareExchange(
                             ref workQueue._separated.queueProcessingStage,
@@ -893,7 +902,6 @@ namespace System.Threading
                     Debug.Assert(stageBeforeUpdate != (int)QueueProcessingStage.NotScheduled);
                     if (stageBeforeUpdate == (int)QueueProcessingStage.Scheduled)
                     {
-                        // Request another worker thread given that there is more work
                         ThreadPool.RequestWorkerThread();
                     }
                 }
@@ -1131,6 +1139,15 @@ namespace System.Threading
         where T : struct
         where TCallback : struct, IThreadPoolTypedWorkItemQueueCallback<T>
     {
+        // The scheme works as following:
+        // From NotScheduled, the only transition is to Scheduled when new items are enqueued and a TP work item is enqueued to process them
+        // From Scheduled, the only transition is to Determining right before trying to dequeue an item
+        // From Determining, it can go to either NotScheduled when no items are present in the queue (the previous TP work item processed all of them)
+        // or Scheduled if the queue is still not empty (let the current TP work item handle parallelization as convinient)
+        //
+        // The goal is to avoid enqueueing more TP work items than necessary, while still ensuring that all items are processed
+        // Another TP work item isn't enqueued to the thread pool hastily while the state is Determining,
+        // instead the parallelizer takes care of that. We also ensure that only one thread can be parallelizing at any time
         private enum QueueProcessingStage
         {
             NotScheduled,
@@ -1152,6 +1169,8 @@ namespace System.Threading
         public void BatchEnqueue(T workItem) => _workItems.Enqueue(workItem);
         public void CompleteBatchEnqueue()
         {
+            // Only enqueue a work item if the stage is NotScheduled
+            // Otherwise there must be a work item already queued or executing, let it handle parallelization
             if (Interlocked.Exchange(
                 ref _queueProcessingStage,
                 (int)QueueProcessingStage.Scheduled) == (int)QueueProcessingStage.NotScheduled)
@@ -1164,10 +1183,13 @@ namespace System.Threading
         {
             if (!isQueueEmpty)
             {
+                // There are more items to process, set stage to Scheduled and enqueue a TP work item
                 _queueProcessingStage = (int)QueueProcessingStage.Scheduled;
             }
             else
             {
+                // The stage before update would naturally be Determining, in that case there is no more work to do
+                // However the enqueuer may have set it to Scheduled if more items arrived so enqueue another work item to handle them
                 int stageBeforeUpdate =
                     Interlocked.CompareExchange(
                         ref _queueProcessingStage,
@@ -1197,6 +1219,8 @@ namespace System.Threading
                     break;
                 }
 
+                // The stage before update would naturally be Determining, in that case there is no more work to do
+                // However the enqueuer may have set it to Scheduled if more items were enqueued so let the TP work item try to dequeue again
                 int stageBeforeUpdate =
                     Interlocked.CompareExchange(
                         ref _queueProcessingStage,
