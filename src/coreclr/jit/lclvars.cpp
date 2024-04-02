@@ -1663,6 +1663,14 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 #endif
 
         lvaParameterPassingInfo[i] = classifier.Classify(this, dsc->TypeGet(), structLayout, wellKnownArg);
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("Parameter #%u ABI info: ", i);
+            lvaParameterPassingInfo[i].Dump();
+        }
+#endif
     }
 }
 
