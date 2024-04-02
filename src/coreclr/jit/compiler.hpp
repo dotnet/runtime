@@ -4313,9 +4313,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_RETURNTRAP:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
-#ifdef SWIFT_SUPPORT
-        case GT_SWIFT_ERROR_RET:
-#endif // SWIFT_SUPPORT
             visitor(this->AsUnOp()->gtOp1);
             return;
 

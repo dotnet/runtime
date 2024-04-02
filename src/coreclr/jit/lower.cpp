@@ -4616,18 +4616,6 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
     }
     ContainCheckRet(ret);
-
-#ifdef SWIFT_SUPPORT
-    // If this method has a SwiftError* out parameter, add some IR for setting the error register before returning.
-    if (comp->lvaSwiftErrorArg != BAD_VAR_NUM)
-    {
-        assert(comp->info.compCallConv == CorInfoCallConvExtension::Swift);
-        assert(comp->lvaSwiftErrorLocal != BAD_VAR_NUM);
-        GenTreeLclFld* const swiftErrorLocal = comp->gtNewLclFldNode(comp->lvaSwiftErrorLocal, TYP_I_IMPL, 0);
-        GenTree* const       swiftReturn     = comp->gtNewOperNode(GT_SWIFT_ERROR_RET, TYP_I_IMPL, swiftErrorLocal);
-        LIR::AsRange(comp->compCurBB).InsertAtEnd(LIR::SeqTree(comp, swiftReturn));
-    }
-#endif // SWIFT_SUPPORT
 }
 
 //----------------------------------------------------------------------------------------------

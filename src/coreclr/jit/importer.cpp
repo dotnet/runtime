@@ -10462,8 +10462,8 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
 #ifdef SWIFT_SUPPORT
         else if (lclNum == lvaSwiftErrorArg)
         {
-            // Convert any usages of the SwiftError* out parameter to pointers to the SwiftError pseudolocal
-            // (set side effect flags so stores to pseudolocal aren't removed)
+            // Convert any usages of the SwiftError pointer/ref parameter to pointers/refs to the SwiftError pseudolocal
+            // (set side effect flags so usages of references to pseudolocal aren't removed)
             assert(info.compCallConv == CorInfoCallConvExtension::Swift);
             assert(lvaSwiftErrorArg != BAD_VAR_NUM);
             assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
@@ -10471,7 +10471,7 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
             GenTree* const swiftErrorLocalRef = gtNewLclVarAddrNode(lvaSwiftErrorLocal, type);
             swiftErrorLocalRef->gtFlags |= GTF_SIDE_EFFECT;
             impPushOnStack(swiftErrorLocalRef, typeInfo(type));
-            JITDUMP("Created GT_LCL_ADDR of SwiftError pseudolocal\n");
+            JITDUMP("\nCreated GT_LCL_ADDR of SwiftError pseudolocal\n");
             return;
         }
 #endif // SWIFT_SUPPORT

@@ -11463,9 +11463,6 @@ public:
             case GT_ARR_ADDR:
             case GT_KEEPALIVE:
             case GT_INC_SATURATE:
-#ifdef SWIFT_SUPPORT
-            case GT_SWIFT_ERROR_RET:
-#endif // SWIFT_SUPPORT
             {
                 GenTreeUnOp* const unOp = node->AsUnOp();
                 if (unOp->gtOp1 != nullptr)

@@ -292,7 +292,6 @@ GTNODE(END_LFIN         , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // End l
 
 #ifdef SWIFT_SUPPORT
 GTNODE(SWIFT_ERROR      , GenTree            ,0,0,GTK_LEAF)             // Error register value post-Swift call
-GTNODE(SWIFT_ERROR_RET  , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE) // Returns error value in REG_SWIFT_ERROR for Swift reverse P/Invokes.
 #endif // SWIFT_SUPPORT
 
 //-----------------------------------------------------------------------------

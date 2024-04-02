@@ -7848,31 +7848,19 @@ void CodeGen::genReturn(GenTree* treeNode)
 
     genStackPointerCheck(doStackPointerCheck, compiler->lvaReturnSpCheck);
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
-}
 
 #ifdef SWIFT_SUPPORT
-//------------------------------------------------------------------------
-// genSwiftErrorReturn: Generates code for storing error value in REG_SWIFT_ERROR.
-//
-// Arguments:
-//    treeNode - The GT_SWIFT_ERROR_RET tree node,
-//    where its operand is the SwiftError::Value field
-//
-// Return Value:
-//    None
-//
-void CodeGen::genSwiftErrorReturn(GenTreeUnOp* treeNode)
-{
-    assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
-    assert(compiler->lvaSwiftErrorArg != BAD_VAR_NUM);
-    assert(compiler->lvaSwiftErrorLocal != BAD_VAR_NUM);
-
-    GenTree* op = treeNode->gtGetOp1();
-
-    const regNumber reg = genConsumeReg(op);
-    inst_Mov(op->TypeGet(), REG_SWIFT_ERROR, reg, true, EA_PTRSIZE);
-}
+    // If this method has a SwiftError* out parameter, load the SwiftError pseudolocal value into the error register.
+    // TODO-CQ: Introduce GenTree node that models returning a normal and Swift error value.
+    if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+    {
+        assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
+        assert(compiler->lvaSwiftErrorLocal != BAD_VAR_NUM);
+        GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_ERROR, compiler->lvaSwiftErrorLocal, 0);
+    }
 #endif // SWIFT_SUPPORT
+
+}
 
 //------------------------------------------------------------------------
 // isStructReturn: Returns whether the 'treeNode' is returning a struct.
