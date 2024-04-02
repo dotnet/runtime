@@ -907,16 +907,6 @@ public:
                 isUsedFromSpillTemp());
     }
 
-    bool isLclVarUsedFromMemory() const
-    {
-        return (OperGet() == GT_LCL_VAR) && (isContained() || isUsedFromSpillTemp());
-    }
-
-    bool isLclFldUsedFromMemory() const
-    {
-        return isLclField() && (isContained() || isUsedFromSpillTemp());
-    }
-
     bool isUsedFromReg() const
     {
         return !isContained() && !isUsedFromSpillTemp();
