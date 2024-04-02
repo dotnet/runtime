@@ -43809,7 +43809,7 @@ size_t gc_heap::trim_youngest_desired (uint32_t memory_load,
     }
     else
     {
-        size_t total_max_allocation = max (mem_one_percent, total_min_allocation);
+        size_t total_max_allocation = max ((size_t)mem_one_percent, total_min_allocation);
         return min (total_new_allocation, total_max_allocation);
     }
 }
