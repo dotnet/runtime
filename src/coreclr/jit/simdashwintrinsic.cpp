@@ -534,6 +534,15 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             return nullptr;
         }
 
+        case NI_VectorT_ConvertToInt32:
+        {
+            if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                break;
+            }
+            return nullptr;
+        }
+
         case NI_VectorT_ConvertToSingle:
         {
             if ((simdBaseType == TYP_INT) ||

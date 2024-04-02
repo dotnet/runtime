@@ -335,9 +335,11 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             && tree->gtOverflow()
 #elif defined(TARGET_AMD64)
             // Amd64: src = float, dst = uint64 or overflow conversion.
-            // This goes through helper and hence src needs to be converted to double except for the following cases
+            // src needs to be converted to double except for the following cases
             //       dstType = int/uint/ulong for AVX512F
             //       dstType = int for SSE41
+            // For PRE SSE41, the all src is converted to TYP_DOUBLE
+            // and goes through helpers.
             && (tree->gtOverflow() || (dstType == TYP_LONG) ||
                 !(compOpportunisticallyDependsOn(InstructionSet_AVX512F) ||
                   (dstType == TYP_INT && compOpportunisticallyDependsOn(InstructionSet_SSE41))))
@@ -374,6 +376,11 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #else
 #if defined(TARGET_AMD64)
                 // Following nodes are handled when lowering the nodes
+                //     float  -> ulong/uint/int for AVX512F
+                //     double -> ulong/uint/long/int for AVX512F
+                //     float  -> int for SSE41
+                //     double -> int/uint/long for SSE41
+                // For all othewr conversions, we use helper functions.
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX512F) ||
                     ((dstType != TYP_ULONG) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
                 {
