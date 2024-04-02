@@ -4922,6 +4922,17 @@ void CodeGen::genPushCalleeSavedRegisters()
     //
     rsPushRegs |= RBM_LR; // We must save the return address (in the LR register)
 
+#ifdef SWIFT_SUPPORT
+    // If this method returns an error value in the Swift error register,
+    // we don't need to push REG_SWIFT_ERROR.
+    if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+    {
+        assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
+        assert(compiler->lvaSwiftErrorLocal != BAD_VAR_NUM);
+        rsPushRegs &= ~RBM_SWIFT_ERROR;
+    }
+#endif // SWIFT_SUPPORT
+
     regSet.rsMaskCalleeSaved = rsPushRegs;
 
 #ifdef DEBUG

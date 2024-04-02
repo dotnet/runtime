@@ -9858,6 +9858,17 @@ void CodeGen::genPushCalleeSavedRegisters()
         rsPushRegs &= ~RBM_FPBASE;
     }
 
+#ifdef SWIFT_SUPPORT
+    // If this method returns an error value in the Swift error register,
+    // we don't need to push REG_SWIFT_ERROR.
+    if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+    {
+        assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
+        assert(compiler->lvaSwiftErrorLocal != BAD_VAR_NUM);
+        rsPushRegs &= ~RBM_SWIFT_ERROR;
+    }
+#endif // SWIFT_SUPPORT
+
 #ifdef DEBUG
     if (compiler->compCalleeRegsPushed != genCountBits(rsPushRegs))
     {
@@ -9964,8 +9975,18 @@ unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs)
 #ifdef TARGET_AMD64
     if ((rsPopRegs & RBM_R12) != 0)
     {
-        popCount++;
-        inst_RV(INS_pop, REG_R12, TYP_I_IMPL);
+#ifdef SWIFT_SUPPORT
+        static_assert_no_msg(RBM_SWIFT_ERROR == RBM_R12);
+        assert(compiler->lvaSwiftErrorArg == BAD_VAR_NUM);
+
+        // If this method returns an error argument in the Swift error register,
+        // we didn't push the register, and thus shouldn't pop it.
+        if (compiler->lvaSwiftErrorArg == BAD_VAR_NUM)
+#endif // SWIFT_SUPPORT
+        {
+            popCount++;
+            inst_RV(INS_pop, REG_R12, TYP_I_IMPL);
+        }
     }
     if ((rsPopRegs & RBM_R13) != 0)
     {
