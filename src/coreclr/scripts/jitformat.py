@@ -104,7 +104,8 @@ def main(argv):
             else:
                 bootstrapFilename = "bootstrap.sh"
 
-            bootstrapUrl = "https://raw.githubusercontent.com/dotnet/jitutils/main/" + bootstrapFilename
+            # bootstrapUrl = "https://raw.githubusercontent.com/dotnet/jitutils/main/" + bootstrapFilename
+            bootstrapUrl = "https://raw.githubusercontent.com/BruceForstall/jitutils/DownloadClangTools17.0.6/" + bootstrapFilename
             bootstrapPath = os.path.join(temp_location, bootstrapFilename)
             if not jitutil.download_one_url(bootstrapUrl, bootstrapPath) or not os.path.isfile(bootstrapPath):
                 logging.error("Did not download bootstrap!")
