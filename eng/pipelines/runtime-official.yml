@@ -30,6 +30,7 @@ variables:
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
+    isOfficialBuild: true
     stages:
     - stage: Build
       jobs:
@@ -38,7 +39,7 @@ extends:
       # Localization build
       #
 
-      - template: /eng/common/templates/job/onelocbuild.yml
+      - template: /eng/common/templates-official/job/onelocbuild.yml
         parameters:
           MirrorRepo: runtime
           MirrorBranch: main
@@ -49,7 +50,7 @@ extends:
       # Source Index Build
       #
       - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
-        - template: /eng/common/templates/job/source-index-stage1.yml
+        - template: /eng/common/templates-official/job/source-index-stage1.yml
           parameters:
             sourceIndexBuildCommand: build.cmd -subset libs.sfx+libs.oob -binarylog -os linux -ci /p:SkipLibrariesNativeRuntimePackages=true
 
@@ -66,6 +67,7 @@ extends:
           - windows_x64
           - windows_arm64
           jobParameters:
+            templatePath: 'templates-official'
             buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
             nameSuffix: CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -101,6 +103,7 @@ extends:
           platforms:
           - windows_x86
           jobParameters:
+            templatePath: 'templates-official'
             buildArgs: -s clr.runtime+clr.alljits -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
             nameSuffix: CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -134,6 +137,7 @@ extends:
           - osx_arm64
           - osx_x64
           jobParameters:
+            templatePath: 'templates-official'
             buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime+host.native -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
             nameSuffix: CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -189,6 +193,7 @@ extends:
           - linux_musl_arm
           - linux_musl_arm64
           jobParameters:
+            templatePath: 'templates-official'
             buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.aot+clr.packages+libs+host+packs -c $(_BuildConfig)
             nameSuffix: CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -201,12 +206,12 @@ extends:
                   SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
                   Contents: libcoreclr.so
                   TargetFolder: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts/$(osGroup)$(osSubgroup).$(archType).$(_BuildConfig)/$(crossDacHostArch)
-              - task: PublishBuildArtifacts@1
+              - task: 1ES.PublishBuildArtifacts@1
                 displayName: Publish runtime for CrossDac
                 inputs:
-                  pathToPublish: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
+                  PathtoPublish: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
                   PublishLocation: Container
-                  artifactName: CoreCLRCrossDacArtifacts
+                  ArtifactName: CoreCLRCrossDacArtifacts
               # Create RPMs and DEBs
               - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
                 parameters:
@@ -242,6 +247,7 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
+            templatePath: 'templates-official'
             buildArgs: -s crossdacpack -c $(_BuildConfig) /p:CrossDacArtifactsDir=$(crossDacArtifactsPath)
             nameSuffix: CrossDac
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -316,10 +322,13 @@ extends:
           - linux_musl_arm
           - linux_musl_arm64
           - linux_bionic_x64
+          - linux_bionic_arm
           - linux_bionic_arm64
+          - windows_x86
           - windows_x64
           - windows_arm64
           jobParameters:
+            templatePath: 'templates-official'
             buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true
             nameSuffix: NativeAOT
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -363,6 +372,7 @@ extends:
           - windows_x86
           # - windows_arm64
           jobParameters:
+            templatePath: 'templates-official'
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false
             nameSuffix: Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -380,6 +390,7 @@ extends:
           - browser_wasm
           - wasi_wasm
           jobParameters:
+            templatePath: 'templates-official'
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
             nameSuffix: Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -396,6 +407,7 @@ extends:
           platforms:
           - browser_wasm
           jobParameters:
+            templatePath: 'templates-official'
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
             nameSuffix: Mono_multithread
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -419,6 +431,7 @@ extends:
           - ios_arm64
           - maccatalyst_x64
           jobParameters:
+            templatePath: 'templates-official'
             isOfficialBuild: ${{ variables.isOfficialBuild }}
 
       #
@@ -435,6 +448,7 @@ extends:
           - linux_arm64
           - linux_musl_arm64
           jobParameters:
+            templatePath: 'templates-official'
             buildArgs: -s mono+packs -c $(_BuildConfig)
                       /p:MonoCrossAOTTargetOS=android+browser+wasi /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
             nameSuffix: CrossAOT_Mono
@@ -462,6 +476,7 @@ extends:
           - windows_arm64
           - windows_x64
           jobParameters:
+            templatePath: 'templates-official'
             buildArgs: -s mono+packs -c $(_BuildConfig)
                       /p:MonoCrossAOTTargetOS=android+browser+wasi /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
             nameSuffix: CrossAOT_Mono
@@ -489,6 +504,7 @@ extends:
           - osx_x64
           - osx_arm64
           jobParameters:
+            templatePath: 'templates-official'
             buildArgs: -s mono+packs -c $(_BuildConfig)
                       /p:MonoCrossAOTTargetOS=android+browser+wasi+tvos+ios+maccatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
             nameSuffix: CrossAOT_Mono
@@ -534,6 +550,7 @@ extends:
             buildConfig: release
             runtimeFlavor: mono
             jobParameters:
+              templatePath: 'templates-official'
               buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                         /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
               nameSuffix: Mono_LLVMJIT
@@ -548,6 +565,7 @@ extends:
             buildConfig: release
             runtimeFlavor: mono
             jobParameters:
+              templatePath: 'templates-official'
               buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                           /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
               nameSuffix: Mono_LLVMAOT
@@ -568,6 +586,7 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
+            templatePath: 'templates-official'
             buildArgs: -s tools+libs -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
             nameSuffix: Libraries_AllConfigurations
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -587,7 +606,9 @@ extends:
           platforms:
           - SourceBuild_linux_x64
           jobParameters:
+            templatePath: 'templates-official'
             nameSuffix: PortableSourceBuild
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
@@ -609,6 +630,7 @@ extends:
           - windows_arm64
           - linux_arm64
           jobParameters:
+            templatePath: 'templates-official'
             buildArgs: -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs+host+packs -c $(_BuildConfig) -pgoinstrument /p:SkipLibrariesNativeRuntimePackages=true
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             nameSuffix: PGO
@@ -628,6 +650,7 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
+            templatePath: 'templates-official'
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             dependsOn:

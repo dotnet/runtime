@@ -138,7 +138,7 @@ if (-not $PSBoundParameters.ContainsKey("subset") -and $properties.Length -gt 0 
 }
 
 if ($subset -eq 'help') {
-  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary"
+  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary /tl:false"
   exit 0
 }
 
@@ -259,6 +259,12 @@ if ($vs) {
   if ($runtimeConfiguration)
   {
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
+  }
+
+  if ($librariesConfiguration)
+  {
+    # Respect the LibrariesConfiguration variable for building inside VS with different libraries configurations
+    $env:LIBRARIESCONFIGURATION=$librariesConfiguration
   }
 
   # Respect the RuntimeFlavor variable for building inside VS with a different CoreLib and runtime

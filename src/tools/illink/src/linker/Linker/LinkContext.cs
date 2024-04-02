@@ -246,7 +246,8 @@ namespace Mono.Linker
 				CodeOptimizations.RemoveLinkAttributes |
 				CodeOptimizations.RemoveSubstitutions |
 				CodeOptimizations.RemoveDynamicDependencyAttribute |
-				CodeOptimizations.OptimizeTypeHierarchyAnnotations;
+				CodeOptimizations.OptimizeTypeHierarchyAnnotations |
+				CodeOptimizations.SubstituteFeatureGuards;
 
 			DisableEventSourceSpecialHandling = true;
 
@@ -266,7 +267,7 @@ namespace Mono.Linker
 
 		public TypeDefinition? GetType (string fullName)
 		{
-			int pos = fullName.IndexOf (",");
+			int pos = fullName.IndexOf (',');
 			fullName = TypeReferenceExtensions.ToCecilName (fullName);
 			if (pos == -1) {
 				foreach (AssemblyDefinition asm in GetReferencedAssemblies ()) {
@@ -1144,5 +1145,10 @@ namespace Mono.Linker
 		/// Otherwise, type annotation will only be applied with calls to object.GetType()
 		/// </summary>
 		OptimizeTypeHierarchyAnnotations = 1 << 24,
+
+		/// <summary>
+		/// Option to substitute properties annotated as FeatureGuard(typeof(RequiresUnreferencedCodeAttribute)) with false
+		/// </summary>
+		SubstituteFeatureGuards = 1 << 25,
 	}
 }

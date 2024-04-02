@@ -285,7 +285,7 @@ public partial class UpdateChromeVersions : MBU.Task
                                                     .ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                Log.LogMessage(MessageImportance.Low, $"Found {url}");
+                Log.LogMessage(MessageImportance.Low, $"Found url = {url} with branchUrl = ${branchUrl}");
                 return branchUrl;
             }
 

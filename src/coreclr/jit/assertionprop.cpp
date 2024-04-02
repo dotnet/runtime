@@ -866,6 +866,13 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                         printf("Exact Type MT(0x%p %s)", dspPtr(iconVal),
                                eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
                     }
+
+                    // We might want to assert:
+                    //      assert(curAssertion->op2.HasIconFlag());
+                    // However, if we run CSE with shared constant mode, we may end up with an expression instead
+                    // of the original handle value. If we then use JitOptRepeat to re-build value numbers, we lose
+                    // knowledge that the constant was ever a handle, as the expression creating the original value
+                    // was not (and can't be) assigned a handle flag.
                 }
                 else if (curAssertion->op1.kind == O1K_SUBTYPE)
                 {
@@ -1876,7 +1883,6 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
             {
                 case O1K_EXACT_TYPE:
                 case O1K_SUBTYPE:
-                    assert(assertion->op2.HasIconFlag());
                     break;
                 case O1K_LCLVAR:
                     assert((lvaGetDesc(assertion->op1.lcl.lclNum)->lvType != TYP_REF) ||
@@ -3037,6 +3043,18 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
 
             GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
             memcpy(&vecCon->gtSimdVal, &value, sizeof(simd64_t));
+
+            conValTree = vecCon;
+            break;
+        }
+        break;
+
+        case TYP_MASK:
+        {
+            simdmask_t value = vnStore->ConstantValue<simdmask_t>(vnCns);
+
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
+            memcpy(&vecCon->gtSimdVal, &value, sizeof(simdmask_t));
 
             conValTree = vecCon;
             break;
@@ -5416,6 +5434,25 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, Stat
             if (parent != nullptr)
             {
                 parent->ReplaceOperand(useEdge, newTree);
+
+                // If the parent is a GT_IND and we replaced the child with a handle constant, we might need
+                // to mark the GT_IND as invariant. This is the same as what gtNewIndOfIconHandleNode() does.
+                // Review: should some kind of more general morphing take care of this?
+                // Should this share code with gtNewIndOfIconHandleNode()?
+
+                if (parent->OperIs(GT_IND) && newTree->IsIconHandle())
+                {
+                    GenTreeFlags iconFlags = newTree->GetIconHandleFlag();
+                    if (GenTree::HandleKindDataIsInvariant(iconFlags))
+                    {
+                        parent->gtFlags |= GTF_IND_INVARIANT;
+                        if (iconFlags == GTF_ICON_STR_HDL)
+                        {
+                            // String literals are never null
+                            parent->gtFlags |= GTF_IND_NONNULL;
+                        }
+                    }
+                }
             }
             else
             {

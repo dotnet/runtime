@@ -8,6 +8,7 @@ using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -359,6 +360,43 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(expectedCloseStatus, cws.CloseStatus);
                 Assert.Equal(expectedCloseDescription, cws.CloseStatusDescription);
                 Assert.Equal(WebSocketState.Closed, cws.State);
+            }
+        }
+
+        public static IEnumerable<object[]> EchoServersSyncState =>
+            EchoServers.SelectMany(server => new List<object[]>
+            {
+                new object[] { server[0], true },
+                new object[] { server[0], false }
+            });
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServersSyncState))]
+        public async Task CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(Uri server, bool syncState)
+        {
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            {
+                var cts = new CancellationTokenSource(TimeOutMilliseconds);
+                await cws.SendAsync(
+                    WebSocketData.GetBufferFromText(".receiveMessageAfterClose"),
+                    WebSocketMessageType.Text,
+                    true,
+                    cts.Token);
+
+                await Task.Delay(2000);
+
+                if (syncState)
+                {
+                    var state = cws.State;
+                    Assert.Equal(WebSocketState.Open, state);
+                    // should be able to receive after this sync
+                }
+
+                var recvBuffer = new ArraySegment<byte>(new byte[1024]);
+                WebSocketReceiveResult recvResult = await cws.ReceiveAsync(recvBuffer, cts.Token);
+                var message = Encoding.UTF8.GetString(recvBuffer.ToArray(), 0, recvResult.Count);
+
+                Assert.Contains(".receiveMessageAfterClose", message);
             }
         }
 

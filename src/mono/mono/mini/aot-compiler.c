@@ -242,8 +242,11 @@ typedef struct MonoAotOptions {
 	gboolean child;
 	char *tool_prefix;
 	char *as_prefix;
+	char *as_name;
+	char *as_options;
 	char *ld_flags;
 	char *ld_name;
+	char *ld_options;
 	char *mtriple;
 	char *llvm_path;
 	char *temp_path;
@@ -5508,10 +5511,10 @@ MONO_RESTORE_WARNING
 					if (decoded_args->named_args_info [j].field && !strcmp (decoded_args->named_args_info [j].field->name, "EntryPoint")) {
 						named = (const char *)decoded_args->named_args[j]->value.primitive;
 						slen = mono_metadata_decode_value (named, &named);
-						
+
 						int prefix_len = (int)strlen (acfg->user_symbol_prefix);
 						g_assert (prefix_len < 2);
-						
+
 						export_name = (char *)g_malloc (prefix_len + slen + 1);
 						if (prefix_len == 1)
 							export_name[0] = *acfg->user_symbol_prefix;
@@ -5851,12 +5854,14 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 
 		icomparable_inst = mono_class_inflate_generic_class_checked (icomparable, &ctx, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
+		g_assert (icomparable_inst);
 
 		if (mono_class_is_assignable_from_internal (icomparable_inst, tclass)) {
 			MonoClass *gcomparer_inst;
 			gcomparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "GenericComparer`1");
 			gcomparer_inst = mono_class_inflate_generic_class_checked (gcomparer, &ctx, error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
+			g_assert (gcomparer_inst);
 
 			add_generic_class (acfg, gcomparer_inst, FALSE, "Comparer<T>");
 		}
@@ -5878,6 +5883,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 
 		iface_inst = mono_class_inflate_generic_class_checked (iface, &ctx, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
+		g_assert (iface_inst);
 
 		if (mono_class_is_assignable_from_internal (iface_inst, tclass)) {
 			MonoClass *gcomparer_inst;
@@ -5885,6 +5891,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			gcomparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "GenericEqualityComparer`1");
 			gcomparer_inst = mono_class_inflate_generic_class_checked (gcomparer, &ctx, error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
+			g_assert (gcomparer_inst);
 			add_generic_class (acfg, gcomparer_inst, FALSE, "EqualityComparer<T>");
 		}
 	}
@@ -5906,6 +5913,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "EnumEqualityComparer`1");
 			enum_comparer_inst = mono_class_inflate_generic_class_checked (enum_comparer, &ctx, error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
+			g_assert (enum_comparer_inst);
 			add_generic_class (acfg, enum_comparer_inst, FALSE, "EqualityComparer<T>");
 		}
 	}
@@ -5927,6 +5935,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "ObjectComparer`1");
 			comparer_inst = mono_class_inflate_generic_class_checked (comparer, &ctx, error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
+			g_assert (comparer_inst);
 			add_generic_class (acfg, comparer_inst, FALSE, "Comparer<T>");
 		}
 	}
@@ -5950,6 +5959,7 @@ add_instances_of (MonoAotCompile *acfg, MonoClass *klass, MonoType **insts, int 
 		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 		generic_inst = mono_class_inflate_generic_class_checked (klass, &ctx, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
+		g_assert (generic_inst);
 		add_generic_class (acfg, generic_inst, force, "");
 	}
 }
@@ -8933,10 +8943,16 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->tool_prefix = g_strdup (arg + strlen ("tool-prefix="));
 		} else if (str_begins_with (arg, "as-prefix=")) {
 			opts->as_prefix = g_strdup (arg + strlen ("as-prefix="));
+		} else if (str_begins_with (arg, "as-name=")) {
+			opts->as_name = g_strdup (arg + strlen ("as-name="));
+		} else if (str_begins_with (arg, "as-options=")) {
+			opts->as_options = g_strdup (arg + strlen ("as-options="));
 		} else if (str_begins_with (arg, "ld-flags=")) {
 			opts->ld_flags = g_strdup (arg + strlen ("ld-flags="));
 		} else if (str_begins_with (arg, "ld-name=")) {
 			opts->ld_name = g_strdup (arg + strlen ("ld-name="));
+		} else if (str_begins_with (arg, "ld-options=")) {
+			opts->ld_options = g_strdup (arg + strlen ("ld-options="));
 		} else if (str_begins_with (arg, "soft-debug")) {
 			opts->soft_debug = TRUE;
 		// Intentionally undocumented x2-- deprecated
@@ -11566,6 +11582,9 @@ emit_exception_info (MonoAotCompile *acfg)
 		char *aot_file = g_strdup_printf("%s%s", image_basename, SEQ_POINT_AOT_EXT);
 		char *aot_file_path = g_build_filename (dir, aot_file, (const char*)NULL);
 
+		g_assert (dir);
+		g_assert (aot_file_path);
+
 		if (g_ensure_directory_exists (aot_file_path) == FALSE) {
 			fprintf (stderr, "AOT : failed to create msym directory: %s\n", aot_file_path);
 			exit (1);
@@ -13212,8 +13231,16 @@ compile_asm (MonoAotCompile *acfg)
 #ifdef TARGET_OSX
 	g_string_append (acfg->as_args, "-c -x assembler ");
 #endif
+	const char *as_binary_name = acfg->aot_opts.as_name;
+	if (as_binary_name == NULL) {
+		as_binary_name = AS_NAME;
+	}
+	const char *as_options = acfg->aot_opts.as_options;
+	if (as_options == NULL) {
+		as_options = AS_OPTIONS;
+	}
 
-	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, AS_NAME, AS_OPTIONS,
+	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, as_binary_name, as_options,
 			acfg->as_args ? acfg->as_args->str : "",
 			wrap_path (objfile), wrap_path (acfg->asm_fname));
 	aot_printf (acfg, "Executing the native assembler: %s\n", command);
@@ -13224,7 +13251,7 @@ compile_asm (MonoAotCompile *acfg)
 	}
 
 	if (acfg->llvm && !acfg->llvm_owriter) {
-		command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, AS_NAME, AS_OPTIONS,
+		command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, as_binary_name, as_options,
 			acfg->as_args ? acfg->as_args->str : "",
 			wrap_path (acfg->llvm_ofile), wrap_path (acfg->llvm_sfile));
 		aot_printf (acfg, "Executing the native assembler: %s\n", command);
@@ -13273,16 +13300,21 @@ compile_asm (MonoAotCompile *acfg)
 
 	str = g_string_new ("");
 	const char *ld_binary_name = acfg->aot_opts.ld_name;
+
+	const char *ld_options = acfg->aot_opts.ld_options;
+	if (ld_options == NULL) {
+		ld_options = LD_OPTIONS;
+	}
 #if defined(LD_NAME)
 	if (ld_binary_name == NULL) {
 		ld_binary_name = LD_NAME;
 	}
 	if (acfg->aot_opts.tool_prefix)
-		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, ld_options);
 	else if (acfg->aot_opts.llvm_only)
 		g_string_append_printf (str, "%s", acfg->aot_opts.clangxx);
 	else
-		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, ld_options);
 #else
 	if (ld_binary_name == NULL) {
 		ld_binary_name = "ld";
@@ -13291,7 +13323,7 @@ compile_asm (MonoAotCompile *acfg)
 	// Default (linux)
 	if (acfg->aot_opts.tool_prefix)
 		/* Cross compiling */
-		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, ld_options);
 	else if (acfg->aot_opts.llvm_only)
 		g_string_append_printf (str, "%s", acfg->aot_opts.clangxx);
 	else
@@ -14222,8 +14254,11 @@ aot_opts_free (MonoAotOptions *aot_opts)
 	g_free (aot_opts->dedup_include);
 	g_free (aot_opts->tool_prefix);
 	g_free (aot_opts->as_prefix);
+	g_free (aot_opts->as_name);
+	g_free (aot_opts->as_options);
 	g_free (aot_opts->ld_flags);
 	g_free (aot_opts->ld_name);
+	g_free (aot_opts->ld_options);
 	g_free (aot_opts->mtriple);
 	g_free (aot_opts->llvm_path);
 	g_free (aot_opts->temp_path);
@@ -15345,6 +15380,8 @@ set_paths (MonoAotCompile *acfg)
 			}
 
 			acfg->tmpbasename = g_build_filename (temp_path, "temp", (const char*)NULL);
+			g_assert (acfg->tmpbasename);
+
 			acfg->asm_fname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 			acfg->llvm_sfile = g_strdup_printf ("%s-llvm.s", acfg->tmpbasename);
 
@@ -15379,6 +15416,8 @@ set_paths (MonoAotCompile *acfg)
 			/* Done later */
 		} else {
 			acfg->tmpbasename = g_build_filename (acfg->aot_opts.temp_path, "temp", (const char*)NULL);
+			g_assert (acfg->tmpbasename);
+
 			acfg->asm_fname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 		}
 	}
@@ -15624,6 +15663,7 @@ compile_assemblies_in_child (MonoAotOptions *aot_opts, MonoAssembly **assemblies
 
 #ifdef HOST_WIN32
 	response_fname = g_build_filename (aot_opts->temp_path, "temp.rsp", (const char*)NULL);
+	g_assert (response_fname);
 	response = fopen (response_fname, "w");
 	g_assert (response);
 #endif
