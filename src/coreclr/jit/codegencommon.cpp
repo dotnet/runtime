@@ -2838,6 +2838,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *  assigned location, in the function prolog.
  */
 
+// std::max isn't constexpr until C++14 and we're still on C++11
+constexpr size_t const_max(size_t a, size_t b)
+{
+    return a > b ? a : b;
+}
+
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
@@ -2931,7 +2937,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         bool circular;     // true if this register participates in a circular dependency loop.
         bool hfaConflict;  // arg is part of an HFA that will end up in the same register
                            // but in a different slot (eg arg in s3 = v3.s[0], needs to end up in v3.s[3])
-    } regArgTab[max(MAX_REG_ARG + 1, MAX_FLOAT_REG_ARG)] = {};
+    } regArgTab[const_max(MAX_REG_ARG + 1, MAX_FLOAT_REG_ARG)] = {};
 
     unsigned   varNum;
     LclVarDsc* varDsc;
