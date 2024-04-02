@@ -1193,12 +1193,14 @@ void ProfileSynthesis::GaussSeidelSolver()
             //
             if (block->bbPreds != nullptr)
             {
-                // Leverage Cp for existing loop headers.
+                // Leverage Cp for existing loop headers, provided that
+                // all contained loops are proper.
+                //
                 // This is an optimization to speed convergence.
                 //
                 FlowGraphNaturalLoop* const loop = m_loops->GetLoopByHeader(block);
 
-                if (loop != nullptr)
+                if ((loop != nullptr) && !loop->ContainsImproperHeader())
                 {
                     // Sum all entry edges that aren't EH flow
                     //
@@ -1289,6 +1291,12 @@ void ProfileSynthesis::GaussSeidelSolver()
                 residual      = change;
                 residualBlock = block;
             }
+
+            if (newWeight >= maxCount)
+            {
+                JITDUMP("count overflow in " FMT_BB ": " FMT_WT "\n", block->bbNum, newWeight);
+                m_overflow = true;
+            }
         }
 
         // If there were no improper headers, we will have converged in one pass.
@@ -1309,6 +1317,11 @@ void ProfileSynthesis::GaussSeidelSolver()
         if ((residual < stopResidual) || (relResidual < stopRelResidual))
         {
             converged = true;
+            break;
+        }
+
+        if (m_overflow)
+        {
             break;
         }
 
