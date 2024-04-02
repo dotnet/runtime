@@ -1940,6 +1940,7 @@ bool ReadyToRun_MethodIsGenericMap::IsGeneric(mdMethodDef input, bool *foundResu
         return false;
     }
 
+    *foundResult = true;
     uint8_t chunk = ((uint8_t*)&MethodCount)[((rid - 1) / 8) + sizeof(uint32_t)];
     chunk >>= 7 - ((rid - 1) % 8);
     return !!(chunk & 1);
