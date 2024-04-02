@@ -738,7 +738,7 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
     }
 
     // Use CreateFileW + GetFinalPathNameByHandleW to resolve symlinks
-
+https://learn.microsoft.com/windows/win32/fileio/symbolic-link-effects-on-file-systems-functions#createfile-and-createfiletransacted
     SmartHandle file(
         ::CreateFileW(
             path->c_str(),
