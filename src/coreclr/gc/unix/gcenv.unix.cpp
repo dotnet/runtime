@@ -836,7 +836,8 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         {
             path_to_size_file[index] = (char)(48 + i);
 
-            // Only accept reading cache sizes from size files if they are non-bogus values i.e., non-zero and != SIZE_MAX.
+            // Only accept reading cache sizes from size files if they are 
+            // non-bogus values i.e., non-zero and != SIZE_MAX.
             if (ReadMemoryValueFromFile(path_to_size_file, &size) && ((size != SIZE_MAX) || (size != 0)))
             {
                 path_to_level_file[index] = (char)(48 + i);
