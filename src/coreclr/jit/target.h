@@ -280,8 +280,8 @@ private:
         {
             union
             {
-                RegBitSet64 _float_gpr;
-                RegBitSet64 _allRegisters; // just so no need to do #ifdef just to access this field
+                // Represents combined registers bitset including gpr/float
+                RegBitSet64 _combinedRegisters;
                 struct
                 {
                     RegBitSet32 _gprRegs;
@@ -292,8 +292,9 @@ private:
         };
     };
 #else
-    //TODO: This is also declared above, so revisit MORE_THAN_64_REGISTERS and see where we differentiated just for this
-    RegBitSet64  _allRegisters;
+    // Represents combined registers bitset including gpr/float and on some platforms
+    // mask or predicate registers
+    RegBitSet64  _combinedRegisters;
 #endif
 //TODO: Come up with a name of variable such that:
 // 1. If HAS_MORE_THAN_64_REGISTERS==1, it represents float_gpr combined
@@ -317,37 +318,26 @@ private:
 public:
     inline regMaskGpr gprRegs() const
     {
-        RegBitSet64 resultMask;
-#ifdef HAS_MORE_THAN_64_REGISTERS
-        resultMask = _float_gpr;
-#else
-        resultMask = _allRegisters;
-#endif // HAS_MORE_THAN_64_REGISTERS
-
 #ifdef TARGET_AMD64
-        return resultMask & 0xFFFF;
+        return _combinedRegisters & 0xFFFF;
 #elif TARGET_ARM64
-        return resultMask & 0xFFFFFFFF;
+        return _combinedRegisters & 0xFFFFFFFF;
 #else
         // TODO: Fix this for ARM and x86
-        return resultMask;
+        return _combinedRegisters;
 #endif // TARGET_AMD64
     }
 
     inline regMaskFloat floatRegs() const
     {
-#ifdef HAS_MORE_THAN_64_REGISTERS
-        return _float_gpr & 0xFFFFFFFF00000000;
-#else
 #ifdef TARGET_AMD64
-        return _allRegisters & 0xFFFFFFFF0000;
+        return _combinedRegisters & 0xFFFFFFFF0000;
 #elif defined(TARGET_ARM64)
-        return _allRegisters & 0xFFFFFFFF00000000;
+        return _combinedRegisters & 0xFFFFFFFF00000000;
 #else
         // TODO: Fix this for ARM and x86
-        return _allRegisters;
+        return _combinedRegisters;
 #endif // TARGET_AMD64
-#endif // HAS_MORE_THAN_64_REGISTERS
     }
 
 //#ifdef DEBUG
@@ -357,7 +347,7 @@ public:
 #ifdef HAS_MORE_THAN_64_REGISTERS
         return _predicateRegs;
 #else
-        return _allRegisters & 0xFF000000000000; // TODO: Fix the mask
+        return _combinedRegisters & 0xFF000000000000; // TODO: Fix the mask
 #endif // HAS_MORE_THAN_64_REGISTERS
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -365,9 +355,9 @@ public:
 
     _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _float_gpr(floatRegMask | gprRegMask), _predicateRegs(RBM_NONE)
+        : _combinedRegisters(floatRegMask | gprRegMask), _predicateRegs(RBM_NONE)
 #else
-        : _allRegisters(floatRegMask | gprRegMask)
+    : _combinedRegisters(floatRegMask | gprRegMask)
 #endif
     {
     }
@@ -375,27 +365,27 @@ public:
     // TODO: See if we can avoid the '|' operation here.
     _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask, RegBitSet64 predicateRegs)
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _float_gpr(floatRegMask | gprRegMask), _predicateRegs((RegBitSet32)predicateRegs)
+        : _combinedRegisters(floatRegMask | gprRegMask), _predicateRegs((RegBitSet32)predicateRegs)
 #else
-        : _allRegisters(predicateRegs | floatRegMask | gprRegMask)
+        : _combinedRegisters(predicateRegs | floatRegMask | gprRegMask)
 #endif
     {
     }
 
     _regMaskAll()
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _float_gpr(RBM_NONE), _predicateRegs(RBM_NONE)
+        : _combinedRegisters(RBM_NONE), _predicateRegs(RBM_NONE)
 #else
-        : _allRegisters(RBM_NONE)
+        : _combinedRegisters(RBM_NONE)
 #endif
     {
     }
 
     _regMaskAll(RegBitSet64 allRegistersMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _float_gpr(allRegistersMask), _predicateRegs(RBM_NONE)
+        : _combinedRegisters(allRegistersMask), _predicateRegs(RBM_NONE)
 #else
-        : _allRegisters(allRegistersMask)
+        : _combinedRegisters(allRegistersMask)
 #endif
     {
     }
