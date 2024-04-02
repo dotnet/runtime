@@ -21,28 +21,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void Muxer_behind_symlink()
-        {
-            var app = sharedTestState.App.Copy();
-
-            var dotnetLoc = TestContext.BuiltDotNet.DotnetExecutablePath;
-            var appDll = app.AppDll;
-            var testDir = Directory.GetParent(app.Location).ToString();
-
-            using var symlink = new SymLink(Path.Combine(testDir, Binaries.GetExeName("dotnet")), dotnetLoc);
-
-            var cmd = Command.Create(symlink.SrcPath, new[] { appDll })
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .EnvironmentVariable("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1")
-                .MultilevelLookup(false); // Avoid looking at machine state by default
-
-            cmd.Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World");
-        }
-
-        [Fact]
         public void Muxer_Default()
         {
             var dotnet = TestContext.BuiltDotNet;

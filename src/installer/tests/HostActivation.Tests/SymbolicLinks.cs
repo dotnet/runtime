@@ -72,15 +72,14 @@ namespace HostActivation.Tests
             }
         }
 
-        //[Theory]
-        //[InlineData("a/b/SymlinkToFrameworkDependentApp")]
-        //[InlineData("a/SymlinkToFrameworkDependentApp")]
-        [Fact(Skip = "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
+        [Theory]
+        [InlineData("a/b/SymlinkToFrameworkDependentApp")]
+        [InlineData("a/SymlinkToFrameworkDependentApp")]
+        [SkipOnPlatform(TestPlatforms.OSX, "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
             "CI failing to use stat on symbolic links on Linux (permission denied).")]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
-        public void Run_framework_dependent_app_behind_symlink(/*string symlinkRelativePath*/)
+        public void Run_framework_dependent_app_behind_symlink(string symlinkRelativePath)
         {
-            var symlinkRelativePath = string.Empty;
+            symlinkRelativePath = Binaries.GetExeName(symlinkRelativePath);
 
             using (var testDir = TestArtifact.Create("symlink"))
             {
@@ -97,14 +96,14 @@ namespace HostActivation.Tests
             }
         }
 
-        [Fact(Skip = "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
-                     "CI failing to use stat on symbolic links on Linux (permission denied).")]
-        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.OSX, "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
+            "CI failing to use stat on symbolic links on Linux (permission denied).")]
         public void Run_framework_dependent_app_with_runtime_behind_symlink()
         {
             using (var testDir = TestArtifact.Create("symlink"))
             {
-                var dotnetSymlink = Path.Combine(testDir.Location, "dotnet");
+                var dotnetSymlink = Path.Combine(testDir.Location, Binaries.GetExeName("dotnet"));
 
                 using var symlink = new SymLink(dotnetSymlink, TestContext.BuiltDotNet.BinPath);
                 Command.Create(sharedTestState.FrameworkDependentApp.AppExe)
