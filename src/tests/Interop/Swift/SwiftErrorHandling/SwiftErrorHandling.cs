@@ -128,6 +128,7 @@ public class ErrorHandlingTests
     }
 
     [Fact]
+    [SkipOnMono("needs reverse P/Invoke support")]
     public static unsafe void TestUnmanagedCallersOnly()
     {
         SwiftError error;
@@ -143,6 +144,7 @@ public class ErrorHandlingTests
     }
 
     [Fact]
+    [SkipOnMono("needs reverse P/Invoke support")]
     public static unsafe void TestUnmanagedCallersOnlyWithReturn()
     {
         SwiftError error;
