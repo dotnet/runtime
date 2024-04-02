@@ -119,7 +119,7 @@ extends:
                 parameters:
                   packageType: rpm
                   target: rpmpkg
-                  packagingArgs: -c Release /p:BuildRpmPackage=true
+                  packagingArgs: -c Release -lc $(_BuildConfig) /p:BuildRpmPackage=true
                   condition: and(succeeded(), eq(variables.osSubgroup, ''))
             condition: >-
               or(
@@ -1386,7 +1386,7 @@ extends:
               - template: /eng/pipelines/common/download-artifact-step.yml
                 parameters:
                   artifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
-                  artifactFileName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
+                  artifactFileName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release$(archiveExtension)
                   unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
                   displayName: 'unified artifacts'
             enablePublishTestResults: true
@@ -1418,7 +1418,7 @@ extends:
               - template: /eng/pipelines/common/download-artifact-step.yml
                 parameters:
                   artifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
-                  artifactFileName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+                  artifactFileName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)$(archiveExtension)
                   unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
                   displayName: 'unified artifacts'
             enablePublishTestResults: true
@@ -1431,12 +1431,12 @@ extends:
                 parameters:
                   packageType: deb
                   target: debpkg
-                  packagingArgs: -c $(_BuildConfig) /p:BuildDebPackage=true
+                  packagingArgs: -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:BuildDebPackage=true
               - template: /eng/pipelines/installer/steps/build-linux-package.yml
                 parameters:
                   packageType: rpm
                   target: rpmpkg
-                  packagingArgs: -c $(_BuildConfig) /p:BuildRpmPackage=true
+                  packagingArgs: -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:BuildRpmPackage=true
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
