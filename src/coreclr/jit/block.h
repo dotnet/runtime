@@ -1668,14 +1668,6 @@ public:
 
     void* bbEmitCookie;
 
-#ifdef VERIFIER
-    stackDesc bbStackIn;  // stack descriptor for  input
-    stackDesc bbStackOut; // stack descriptor for output
-
-    verTypeVal* bbTypesIn;  // list of variable types on  input
-    verTypeVal* bbTypesOut; // list of variable types on output
-#endif                      // VERIFIER
-
 //-------------------------------------------------------------------------
 
 #if MEASURE_BLOCK_SIZE
