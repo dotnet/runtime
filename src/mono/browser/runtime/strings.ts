@@ -120,7 +120,10 @@ export function stringToUTF16Ptr (str: string): VoidPtr {
 }
 
 export function monoStringToString (root: WasmRoot<MonoString>): string | null {
-    if (WasmEnableThreads) return null as any;
+    // TODO https://github.com/dotnet/runtime/issues/100411
+    // after Blazor stops using monoStringToStringUnsafe
+    // mono_assert(!WasmEnableThreads, "Marshaling strings by reference is not supported in multithreaded mode");
+
     if (root.value === MonoStringNull)
         return null;
 
