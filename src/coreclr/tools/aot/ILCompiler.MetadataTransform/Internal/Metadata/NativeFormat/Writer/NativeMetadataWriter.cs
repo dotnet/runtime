@@ -373,7 +373,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
                     // 3rd, the name, Quote the string if not already quoted
                     string asString = rec.ToString(false);
-                    bool alreadyQuoted = asString.StartsWith("\"") && asString.EndsWith("\"");
+                    bool alreadyQuoted = asString.StartsWith('\"') && asString.EndsWith('\"');
                     if (!alreadyQuoted)
                     {
                         LogWriter.Write("\"");

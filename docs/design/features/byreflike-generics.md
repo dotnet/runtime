@@ -28,51 +28,6 @@ The expansion of ByRefLike types as Generic parameters does not relax restrictio
 
 ## API Proposal
 
-Support for the following will be indicated by a new property. For .NET 7, the feature will be marked with `RequiresPreviewFeaturesAttribute` to indicate it is in [preview](https://github.com/dotnet/designs/blob/main/accepted/2021/preview-features/preview-features.md).
-
-```diff
-namespace System.Runtime.CompilerServices
-{
-    public static partial class RuntimeFeature
-    {
-+        /// <summary>
-+        /// Represents a runtime feature where byref-like types can be used in Generic parameters.
-+        /// </summary>
-+        public const string GenericsAcceptByRefLike = nameof(GenericsAcceptByRefLike);
-    }
-}
-```
-
-The compiler will need an indication for existing troublesome APIs where ByRefLike types will be permissable, but where the failure will be handled at runtime. An attribute will be created and added to these APIs.
-
-```csharp
-namespace System.Runtime.CompilerServices
-{
-    /// <summary>
-    /// Indicates to the compiler that constraint checks should be suppressed
-    /// and will instead be enforced at run-time.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property)]
-    internal sealed class SuppressConstraintChecksAttribute : Attribute
-    { }
-}
-```
-
-Troublesome APIs:
-
-- [`Span<T>`](https://docs.microsoft.com/dotnet/api/system.span-1)
-    - `public Span(T[]? array);`
-    - `public Span(T[]? array, int start, int length);`
-    - `public T[] ToArray();`
-    - `public static implicit operator Span<T>(ArraySegment<T> segment);`
-    - `public static implicit operator Span<T>(T[]? array);`
-- [`ReadOnlySpan<T>`](https://docs.microsoft.com/dotnet/api/system.readonlyspan-1)
-    - `public ReadOnlySpan(T[]? array);`
-    - `public ReadOnlySpan(T[]? array, int start, int length);`
-    - `public T[] ToArray();`
-    - `public static implicit operator ReadOnlySpan<T>(ArraySegment<T> segment);`
-    - `public static implicit operator ReadOnlySpan<T>(T[]? array);`
-
 A new `GenericParameterAttributes` value will be defined which also represents metadata defined in the `CorGenericParamAttr` enumeration.
 
 ```diff
@@ -100,6 +55,47 @@ The expansion of metadata will impact at least the following:
 - IL Trimmer &ndash; https://github.com/dotnet/runtime/tree/main/src/tools/illink
 - F# &ndash; https://github.com/fsharp/fsharp
 - C++/CLI &ndash; The MSVC team
+
+### Troublesome API mitigation
+
+If existing types are expected to add ByRefLike support, it is possible they contain previously valid APIs that will become invalid when ByRefLike types are permitted. A potential mitigation for this would be create an attribute to indicate to compilers that specific APIs are validated at run-time not compile-time. What follows is a potential solution.
+
+The compiler will be imbued with knowledge of an API that tells it where ByRefLike types will be permissable and where the failure will be handled by the runtime. The compiler will only respect the attribute that is defined in the same assembly containing `System.Object`.
+
+```csharp
+namespace System.Runtime.CompilerServices
+{
+    /// <summary>
+    /// Indicates to the compiler the ByRefLike constraint check should be suppressed.
+    /// </summary>
+    /// <remarks>
+    /// The checking will be suppressed for both the signature and method body. These
+    /// checks are deferred and will be enforced at run-time.
+    /// </remarks>
+    /// <seealso href="https://github.com/dotnet/runtime/issues/99788">Design discussion</seealso>
+    [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
+    internal sealed class SuppressByRefLikeConstraintChecksAttribute : Attribute
+    {
+        /// <summary>Initializes the attribute.</summary>
+        public SuppressByRefLikeConstraintChecksAttribute() { }
+    }
+}
+```
+
+Current examples of APIs that would need the attribute applied:
+
+- [`Span<T>`](https://docs.microsoft.com/dotnet/api/system.span-1)
+    - `public Span(T[]? array);`
+    - `public Span(T[]? array, int start, int length);`
+    - `public T[] ToArray();`
+    - `public static implicit operator Span<T>(ArraySegment<T> segment);`
+    - `public static implicit operator Span<T>(T[]? array);`
+- [`ReadOnlySpan<T>`](https://docs.microsoft.com/dotnet/api/system.readonlyspan-1)
+    - `public ReadOnlySpan(T[]? array);`
+    - `public ReadOnlySpan(T[]? array, int start, int length);`
+    - `public T[] ToArray();`
+    - `public static implicit operator ReadOnlySpan<T>(ArraySegment<T> segment);`
+    - `public static implicit operator ReadOnlySpan<T>(T[]? array);`
 
 ## Semantic Proposal
 

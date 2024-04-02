@@ -545,9 +545,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     if (transitionToPreemptive)
     {
         GCPreemp transitionIfILStub(transitionToPreemptive);
-        DWORD* pLastError = &GetThread()->m_dwLastErrorInterp;
         CallDescrWorkerInternal(&callDescrData);
-        *pLastError = GetLastError();
     }
     else
 #endif // FEATURE_INTERPRETER

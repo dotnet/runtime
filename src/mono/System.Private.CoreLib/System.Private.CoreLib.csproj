@@ -274,13 +274,10 @@
   <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(FeaturePortableThreadPool)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.Mono.cs" />
   </ItemGroup>
-  <ItemGroup Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(FeatureWasmManagedThreads)' == 'true'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.Browser.Threads.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoAsyncWaitSemaphore.Browser.Threads.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\PortableThreadPool.Browser.Threads.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\PortableThreadPool.WorkerThread.Browser.Threads.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Threads.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\WebWorkerEventLoop.Browser.Threads.Mono.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.Browser.Mono.cs" />

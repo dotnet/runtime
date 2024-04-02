@@ -427,24 +427,33 @@ void * __cdecl operator new[](size_t n, StackingAllocator * alloc, const NoThrow
     return alloc->UnsafeAllocNoThrow((unsigned)n);
 }
 
+thread_local StackingAllocator* StackingAllocatorHolder::t_currentStackingAllocator = nullptr;
+
 StackingAllocatorHolder::~StackingAllocatorHolder()
 {
     m_pStackingAllocator->Collapse(m_checkpointMarker);
     if (m_owner)
     {
-        m_thread->m_stackLocalAllocator = NULL;
+        t_currentStackingAllocator = NULL;
         m_pStackingAllocator->~StackingAllocator();
     }
 }
 
-StackingAllocatorHolder::StackingAllocatorHolder(StackingAllocator *pStackingAllocator, Thread *pThread, bool owner) :
+StackingAllocatorHolder::StackingAllocatorHolder(StackingAllocator *pStackingAllocator, bool owner) :
     m_pStackingAllocator(pStackingAllocator),
     m_checkpointMarker(pStackingAllocator->GetCheckpoint()),
-    m_thread(pThread),
     m_owner(owner)
 {
+    _ASSERTE(pStackingAllocator != nullptr);
+    _ASSERTE((t_currentStackingAllocator == nullptr) == m_owner);
     if (m_owner)
     {
-        m_thread->m_stackLocalAllocator = pStackingAllocator;
+        t_currentStackingAllocator = pStackingAllocator;
     }
+}
+
+
+StackingAllocator* StackingAllocatorHolder::GetCurrentThreadStackingAllocator()
+{
+    return t_currentStackingAllocator;
 }

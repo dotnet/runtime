@@ -620,7 +620,7 @@ class AsyncSubprocessHelper:
                 loop = asyncio.new_event_loop()
 
             asyncio.set_event_loop(loop)
-            
+
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
         os.environ.clear()
         os.environ.update(reset_env)
@@ -1867,11 +1867,11 @@ def write_jit_options(coreclr_args, write_fh):
     Args:
         coreclr_args: args class instance
         write_fh: file to output to
-    
+
     """
     base_options = []
     diff_options = []
-    
+
     if coreclr_args.jitoption:
         base_options += coreclr_args.jitoption
         diff_options += coreclr_args.jitoption
@@ -2345,8 +2345,9 @@ class SuperPMIReplayAsmDiffs:
                         diff_perfscore = diff_metrics["Overall"]["Diffed PerfScore"]
                         logging.info("Total PerfScore of base: {}".format(base_perfscore))
                         logging.info("Total PerfScore of diff: {}".format(diff_perfscore))
-                        delta_perfscore = diff_perfscore - base_perfscore
-                        logging.info("Total PerfScore of delta: {} ({:.2%} of base)".format(delta_perfscore, delta_perfscore / base_perfscore))
+                        if base_perfscore != 0:
+                            delta_perfscore = diff_perfscore - base_perfscore
+                            logging.info("Total PerfScore of delta: {} ({:.2%} of base)".format(delta_perfscore, delta_perfscore / base_perfscore))
                         logging.info("")
 
                         relative_perfscore_geomean = diff_metrics["Overall"]["Relative PerfScore Geomean"]
@@ -4500,7 +4501,7 @@ def setup_args(args):
                             "produce_repro",
                             lambda unused: True,
                             "Unable to set produce_repro")
-        
+
         coreclr_args.verify(args,
                             "private_store",
                             lambda item: True,
@@ -4591,6 +4592,11 @@ def setup_args(args):
                             "compile",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Method context not valid")
+
+        coreclr_args.verify(args,
+                            "produce_repro",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Unable to set produce_repro")
 
         coreclr_args.verify(args,
                             "collection_command",

@@ -2573,6 +2573,10 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_GENERICINST:
 			field_class = mono_class_from_mono_type_internal (field->type);
+			if (mono_class_is_ginst (field_class) && !mono_verifier_class_is_valid_generic_instantiation (field_class)) {
+				mono_class_set_type_load_failure (klass, "Field '%s' is an invalid generic instantiation of type %s", field->name, mono_type_get_full_name (field_class));
+				return;
+			}
 			break;
 		default:
 			break;
@@ -3879,7 +3883,7 @@ mono_class_setup_interface_id (MonoClass *klass)
 /*
  * mono_class_setup_interfaces:
  *
- *   Initialize klass->interfaces/interfaces_count.
+ *   Initialize klass->interfaces/interface_count.
  * LOCKING: Acquires the loader lock.
  * This function can fail the type.
  */

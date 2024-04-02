@@ -440,13 +440,11 @@ EXTERN BOOL g_fComStarted;
 GVAL_DECL(DWORD, g_fEEShutDown);
 EXTERN DWORD g_fFastExitProcess;
 EXTERN BOOL g_fFatalErrorOccurredOnGCThread;
-EXTERN Volatile<LONG> g_fForbidEnterEE;
 GVAL_DECL(bool, g_fProcessDetach);
 #ifdef FEATURE_METADATA_UPDATER
 GVAL_DECL(bool, g_metadataUpdatesApplied);
 #endif
 EXTERN bool g_fManagedAttach;
-EXTERN bool g_fNoExceptions;
 
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.

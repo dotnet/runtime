@@ -89,7 +89,6 @@ enum ICodeManagerFlags
     ExecutionAborted =  0x0002, // execution of this function has been aborted
                                     // (i.e. it will not continue execution at the
                                     // current location)
-    AbortingCall    =   0x0004, // The current call will never return
     UpdateAllRegs   =   0x0008, // update full register set
     CodeAltered     =   0x0010, // code of that function might be altered
                                     // (e.g. by debugger), need to call EE
@@ -105,6 +104,9 @@ enum ICodeManagerFlags
                                 // any untracked slots
 
     LightUnwind     =   0x0100, // Unwind just enough to get return addresses
+    ReportFPBasedSlotsOnly
+                    =   0x0200, // EnumGCRefs/EnumerateLiveSlots should only include
+                                // slots that are based on the frame pointer
 };
 
 //*****************************************************************************

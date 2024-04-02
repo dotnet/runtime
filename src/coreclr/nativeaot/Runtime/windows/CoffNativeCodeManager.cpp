@@ -184,7 +184,6 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
 #endif
 }
 
-
 CoffNativeCodeManager::CoffNativeCodeManager(TADDR moduleBase,
                                              PTR_VOID pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
                                              PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, uint32_t nRuntimeFunctionTable,
@@ -323,7 +322,7 @@ bool CoffNativeCodeManager::IsFilter(MethodInfo * pMethInfo)
 }
 
 PTR_VOID CoffNativeCodeManager::GetFramePointer(MethodInfo *   pMethInfo,
-                                         REGDISPLAY *   pRegisterSet)
+                                                REGDISPLAY *   pRegisterSet)
 {
     CoffNativeMethodInfo * pMethodInfo = (CoffNativeMethodInfo *)pMethInfo;
 
@@ -340,6 +339,39 @@ PTR_VOID CoffNativeCodeManager::GetFramePointer(MethodInfo *   pMethInfo,
 
     return NULL;
 }
+
+#ifdef TARGET_X86
+uintptr_t CoffNativeCodeManager::GetResumeSp(MethodInfo *   pMethodInfo,
+                                             REGDISPLAY *   pRegisterSet)
+{
+    PTR_uint8_t gcInfo;
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
+
+    hdrInfo infoBuf;
+    size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &infoBuf);
+    PTR_CBYTE table = gcInfo + infoSize;
+
+    _ASSERTE(infoBuf.epilogOffs == hdrInfo::NOT_IN_EPILOG && infoBuf.prologOffs == hdrInfo::NOT_IN_PROLOG);
+
+    bool isESPFrame = !infoBuf.ebpFrame && !infoBuf.doubleAlign;
+
+    CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
+    if (pNativeMethodInfo->mainRuntimeFunction != pNativeMethodInfo->runtimeFunction)
+    {
+        // Treat funclet's frame as ESP frame
+        isESPFrame = true;
+    }
+
+    if (isESPFrame)
+    {
+        const uintptr_t curESP = pRegisterSet->SP;
+        return curESP + GetPushedArgSize(&infoBuf, table, codeOffset);
+    }
+
+    const uintptr_t curEBP = pRegisterSet->GetFP();
+    return GetOutermostBaseFP(curEBP, &infoBuf);
+}
+#endif // TARGET_X86
 
 uint32_t CoffNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID address, /*out*/ PTR_uint8_t* gcInfo)
 {
@@ -403,8 +435,10 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
 
+    bool executionAborted = ((CoffNativeMethodInfo *)pMethodInfo)->executionAborted;
+
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
-    if (((CoffNativeMethodInfo *)pMethodInfo)->executionAborted)
+    if (executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
 
     if (IsFilter(pMethodInfo))
@@ -414,14 +448,9 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::ActiveStackFrame);
 
 #ifdef USE_GC_INFO_DECODER
-    if (!isActiveStackFrame)
+    if (!isActiveStackFrame && !executionAborted)
     {
-        // If we are not in the active method, we are currently pointing
-        // to the return address. That may not be reachable after a call (if call does not return)
-        // or reachable via a jump and thus have a different live set.
-        // Therefore we simply adjust the offset to inside of call instruction.
-        // NOTE: The GcInfoDecoder depends on this; if you change it, you must
-        // revisit the GcInfoEncoder/Decoder
+        // the reasons for this adjustment are explained in EECodeManager::EnumGcRefs
         codeOffset--;
     }
 

@@ -861,11 +861,6 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         noway_assert(comp->opts.OptimizationDisabled());
         originalSwitchBB->SetKindAndTargetEdge(BBJ_ALWAYS, jumpTab[0]);
 
-        if (originalSwitchBB->JumpsToNext())
-        {
-            originalSwitchBB->SetFlags(BBF_NONE_QUIRK);
-        }
-
         // Remove extra predecessor links if there was more than one case.
         for (unsigned i = 1; i < jumpCnt; ++i)
         {
@@ -1026,11 +1021,6 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         }
 
         afterDefaultCondBlock->SetKindAndTargetEdge(BBJ_ALWAYS, uniqueSucc);
-
-        if (afterDefaultCondBlock->JumpsToNext())
-        {
-            afterDefaultCondBlock->SetFlags(BBF_NONE_QUIRK);
-        }
     }
     // If the number of possible destinations is small enough, we proceed to expand the switch
     // into a series of conditional branches, otherwise we follow the jump table based switch
@@ -1101,8 +1091,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             //
             if (fUsedAfterDefaultCondBlock)
             {
-                BasicBlock* newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
-                newBlock->SetFlags(BBF_NONE_QUIRK);
+                BasicBlock*     newBlock  = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
                 FlowEdge* const falseEdge = comp->fgAddRefPred(newBlock, currentBlock); // The fall-through predecessor.
 
                 // We set the true edge likelihood earlier, use that to figure out the false edge likelihood
@@ -1131,10 +1120,9 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 if (oldEdge->getDupCount() > 0)
                 {
                     BasicBlock* const newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
-                    newBlock->SetFlags(BBF_NONE_QUIRK);
-                    FlowEdge* const newEdge = comp->fgAddRefPred(newBlock, currentBlock);
-                    currentBlock            = newBlock;
-                    currentBBRange          = &LIR::AsRange(currentBlock);
+                    FlowEdge* const   newEdge  = comp->fgAddRefPred(newBlock, currentBlock);
+                    currentBlock               = newBlock;
+                    currentBBRange             = &LIR::AsRange(currentBlock);
                     afterDefaultCondBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
                 }
 

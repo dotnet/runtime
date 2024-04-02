@@ -1098,6 +1098,7 @@ void StackFrameIterator::CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 
     m_forceReportingWhileSkipping = ForceGCReportingStage::Off;
     m_movedPastFirstExInfo = false;
     m_fFuncletNotSeen = false;
+    m_fFoundFirstFunclet = false;
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     m_pvResumableFrameTargetSP = NULL;
 #endif
@@ -1460,6 +1461,8 @@ void StackFrameIterator::ResetCrawlFrame()
     m_crawl.isFilterFuncletCached = false;
     m_crawl.fShouldParentToFuncletSkipReportingGCReferences = false;
     m_crawl.fShouldParentFrameUseUnwindTargetPCforGCReporting = false;
+    m_crawl.fShouldSaveFuncletInfo = false;
+    m_crawl.fShouldParentToFuncletReportSavedFuncletSlots = false;
 #endif // FEATURE_EH_FUNCLETS
 
     m_crawl.pThread = this->m_pThread;
@@ -1542,6 +1545,66 @@ BOOL StackFrameIterator::IsValid(void)
 
     return TRUE;
 } // StackFrameIterator::IsValid()
+
+#ifndef DACCESS_COMPILE
+#ifdef FEATURE_EH_FUNCLETS
+//---------------------------------------------------------------------------------------
+//
+// Advance to the position that the other iterator is currently at.
+//
+void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
+{
+    // We copy the other stack frame iterator over the current one, but we need to
+    // keep a couple of members untouched. So we save them here and restore them
+    // after the copy.
+    ExInfo* pPrevExInfo = GetNextExInfo();
+    REGDISPLAY *pRD = m_crawl.GetRegisterSet();
+    Frame *pStartFrame = m_pStartFrame;
+#ifdef _DEBUG
+    Frame *pRealStartFrame = m_pRealStartFrame;
+#endif
+
+    *this = *pOtherStackFrameIterator;
+
+    m_pNextExInfo = pPrevExInfo;
+    m_crawl.pRD = pRD;
+    m_pStartFrame = pStartFrame;
+#ifdef _DEBUG
+    m_pRealStartFrame = pRealStartFrame;
+#endif
+
+    REGDISPLAY *pOtherRD = pOtherStackFrameIterator->m_crawl.GetRegisterSet();
+    *pRD->pCurrentContextPointers = *pOtherRD->pCurrentContextPointers;
+    SetIP(pRD->pCurrentContext, GetIP(pOtherRD->pCurrentContext));
+    SetSP(pRD->pCurrentContext, GetSP(pOtherRD->pCurrentContext));
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = (pRD->pCurrentContextPointers->regname == NULL) ? pOtherRD->pCurrentContext->regname : *pRD->pCurrentContextPointers->regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = pOtherRD->pCurrentContext->regname;
+    ENUM_FP_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    pRD->IsCallerContextValid = pOtherRD->IsCallerContextValid;
+    if (pRD->IsCallerContextValid)
+    {
+        *pRD->pCallerContextPointers = *pOtherRD->pCallerContextPointers;
+        SetIP(pRD->pCallerContext, GetIP(pOtherRD->pCallerContext));
+        SetSP(pRD->pCallerContext, GetSP(pOtherRD->pCallerContext));
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = (pRD->pCallerContextPointers->regname == NULL) ? pOtherRD->pCallerContext->regname : *pRD->pCallerContextPointers->regname;
+        ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = pOtherRD->pCallerContext->regname;
+        ENUM_FP_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+    }
+    SyncRegDisplayToCurrentContext(pRD);
+}
+#endif // FEATURE_EH_FUNCLETS
+#endif // DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
 //
@@ -1631,10 +1694,11 @@ StackWalkAction StackFrameIterator::Filter(void)
         {
             if (!m_movedPastFirstExInfo)
             {
-                if ((pExInfo->m_passNumber == 2) && !pExInfo->m_csfEnclosingClause.IsNull() && m_sfFuncletParent.IsNull())
+                if ((pExInfo->m_passNumber == 2) && !pExInfo->m_csfEnclosingClause.IsNull() && m_sfFuncletParent.IsNull() && pExInfo->m_lastReportedFunclet.IP != 0)
                 {
                     // We are in the 2nd pass and we have already called an exceptionally called
-                    // a finally funclet, but we have not seen any funclet on the call stack yet.
+                    // finally funclet and reported that to GC in a previous GC run. But we have
+                    // not seen any funclet on the call stack yet.
                     // Simulate that we have actualy seen a finally funclet during this pass and
                     // that it didn't report GC references to ensure that the references will be
                     // reported by the parent correctly.
@@ -1651,6 +1715,8 @@ StackWalkAction StackFrameIterator::Filter(void)
             }
         }
 
+        m_crawl.fShouldParentToFuncletReportSavedFuncletSlots = false;
+
         // by default, there is no funclet for the current frame
         // that reported GC references
         m_crawl.fShouldParentToFuncletSkipReportingGCReferences = false;
@@ -1658,6 +1724,8 @@ StackWalkAction StackFrameIterator::Filter(void)
         // By default, assume that we are going to report GC references for this
         // CrawlFrame
         m_crawl.fShouldCrawlframeReportGCReferences = true;
+
+        m_crawl.fShouldSaveFuncletInfo = false;
 
         // By default, assume that parent frame is going to report GC references from
         // the actual location reported by the stack walk.
@@ -1855,7 +1923,7 @@ ProcessFuncletsForGCReporting:
                                                 // Initiate force reporting of references in the new managed exception handling code frames. 
                                                 // These frames are still alive when we are in a finally funclet.
                                                 m_forceReportingWhileSkipping = ForceGCReportingStage::LookForManagedFrame;
-                                                STRESS_LOG0(LF_GCROOTS, LL_INFO100, "STACKWALK: Setting m_forceReportingWhileSkipping = ForceGCReportingStage::LookForManagedFrame\n");
+                                                STRESS_LOG0(LF_GCROOTS, LL_INFO100, "STACKWALK: Setting m_forceReportingWhileSkipping = ForceGCReportingStage::LookForManagedFrame while processing filter funclet\n");
                                             }
                                         }
                                     }
@@ -1871,12 +1939,12 @@ ProcessFuncletsForGCReporting:
                             {
                                 // Get a reference to the funclet's parent frame.
                                 m_sfFuncletParent = ExceptionTracker::FindParentStackFrameForStackWalk(&m_crawl, true);
-                                _ASSERTE(!m_fFuncletNotSeen);
 
+                                bool fFrameWasUnwound = ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(&m_crawl);
                                 if (m_sfFuncletParent.IsNull())
                                 {
                                     // This can only happen if the funclet (and its parent) have been unwound.
-                                    _ASSERTE(ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(&m_crawl));
+                                    _ASSERTE(fFrameWasUnwound);
                                 }
                                 else
                                 {
@@ -1899,7 +1967,19 @@ ProcessFuncletsForGCReporting:
 
                                         if (g_isNewExceptionHandlingEnabled)
                                         {
-                                            if (!ExecutionManager::IsManagedCode(GetIP(m_crawl.GetRegisterSet()->pCallerContext)))
+                                            if (!m_fFoundFirstFunclet && (pExInfo > (void*)GetRegdisplaySP(m_crawl.GetRegisterSet())) && ((void*)m_sfParent.SP > pExInfo))
+                                            {
+                                                // For the first funclet we encounter below the topmost ExInfo that has a parent above that ExInfo
+                                                // (so it is an exceptionally called funclet for the exception represented by the ExInfo),
+                                                // we instruct the GC scanning of the frame
+                                                // to save information on the funclet so that we can use it to report references in the parent frame if
+                                                // no such funclet is found in future GC scans for the same exception.
+                                                _ASSERTE(pExInfo != NULL);
+                                                m_crawl.fShouldSaveFuncletInfo = true;
+                                                m_fFoundFirstFunclet = true;
+                                            }
+
+                                            if (!fFrameWasUnwound && !ExecutionManager::IsManagedCode(GetIP(m_crawl.GetRegisterSet()->pCallerContext)))
                                             {
                                                 // Initiate force reporting of references in the new managed exception handling code frames. 
                                                 // These frames are still alive when we are in a finally funclet.
@@ -2119,6 +2199,14 @@ ProcessFuncletsForGCReporting:
                                         }
                                         else if (!m_crawl.IsFunclet())
                                         {
+                                            if (m_fFuncletNotSeen)
+                                            {
+                                                // We have reached a real parent of a funclet that would be on the stack if GC didn't
+                                                // kick in between the calls to funclets in the second pass. We instruct GC to report
+                                                // roots using the info of the saved funclet we've seen during a previous GC.
+                                                m_crawl.fShouldParentToFuncletReportSavedFuncletSlots = true;
+                                                m_fFuncletNotSeen = false;
+                                            }
                                             // we've reached the parent and it's not handling an exception, it's also not
                                             // a funclet so reset our state.  note that we cannot reset the state when the
                                             // parent is a funclet since the leaf funclet didn't report any references and
@@ -2131,15 +2219,6 @@ ProcessFuncletsForGCReporting:
                                         if (g_isNewExceptionHandlingEnabled)
                                         {
                                             _ASSERTE(!ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(&m_crawl));
-                                            if (m_fFuncletNotSeen && m_crawl.IsFunclet())
-                                            {
-                                                _ASSERTE(!m_fProcessIntermediaryNonFilterFunclet);
-                                                _ASSERTE(m_crawl.fShouldCrawlframeReportGCReferences);
-                                                m_fDidFuncletReportGCReferences = true;
-                                                shouldSkipReporting = false;
-                                                m_crawl.fShouldParentFrameUseUnwindTargetPCforGCReporting = true;
-                                                m_crawl.ehClauseForCatch = pExInfo->m_ClauseForCatch;
-                                            }                                                
                                         }
                                         else
                                         {

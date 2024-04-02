@@ -422,17 +422,6 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ConvertToManaged(IUnknown** ppUnk, 
 
 #endif // FEATURE_COMINTEROP
 
-FCIMPL0(void, StubHelpers::SetLastError)
-{
-    // Make sure this is the first thing we do after returning from the target, as almost everything can cause the last error to get trashed
-    DWORD lastError = ::GetLastError();
-
-    FCALL_CONTRACT;
-
-    GetThread()->m_dwLastError = lastError;
-}
-FCIMPLEND
-
 FCIMPL0(void, StubHelpers::ClearLastError)
 {
     FCALL_CONTRACT;
