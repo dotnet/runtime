@@ -1717,6 +1717,12 @@ void Compiler::lvaClassifyParameterABI()
         {
             numSegmentsToCompare = 1;
         }
+
+        // And also for TYP_DOUBLE on soft FP
+        if (opts.compUseSoftFP && (dsc->TypeGet() == TYP_DOUBLE))
+        {
+            numSegmentsToCompare = 1;
+        }
 #endif
 
         for (unsigned i = 0; i < numSegmentsToCompare; i++)
