@@ -77,7 +77,8 @@ ABIPassingInformation Arm32Classifier::Classify(Compiler*    comp,
 
     unsigned alignment = 4;
     if ((type == TYP_LONG) || (type == TYP_DOUBLE) ||
-        ((type == TYP_STRUCT) && (comp->info.compCompHnd->getClassAlignmentRequirement(structLayout->GetClassHandle()) == 8)))
+        ((type == TYP_STRUCT) &&
+         (comp->info.compCompHnd->getClassAlignmentRequirement(structLayout->GetClassHandle()) == 8)))
     {
         alignment    = 8;
         m_nextIntReg = roundUp(m_nextIntReg, 2);
