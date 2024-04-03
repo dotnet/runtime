@@ -461,9 +461,9 @@ void dspRegMask(AllRegsMask mask, size_t minSiz)
     sep = dspRegRange(mask.gprRegs(), minSiz, sep, REG_INT_FIRST, REG_INT_LAST);
     sep = dspRegRange(mask.floatRegs(), minSiz, sep, REG_FP_FIRST, REG_FP_LAST);
 
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     sep = dspRegRange(mask.predicateRegs(), minSiz, sep, REG_MASK_FIRST, REG_MASK_LAST);
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     printf("]");
 

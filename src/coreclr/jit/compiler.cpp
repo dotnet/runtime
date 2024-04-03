@@ -3730,9 +3730,22 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
     return rejectThisPromo;
 }
 
-void Compiler::dumpRegMask(regMaskOnlyOne mask) const
+void Compiler::dumpRegMask(regMaskOnlyOne mask, var_types type) const
 {
-    dumpRegMask(AllRegsMask(mask, mask, mask));
+    if (varTypeUsesIntReg(type))
+    {
+        dumpRegMask(AllRegsMask(mask, RBM_NONE, RBM_NONE));
+    }
+    else if (varTypeUsesFloatReg(type))
+    {
+        dumpRegMask(AllRegsMask(RBM_NONE, mask, RBM_NONE));
+    }
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    else
+    {
+        dumpRegMask(AllRegsMask(RBM_NONE, RBM_NONE, mask));
+    }
+#endif
 }
 
 //------------------------------------------------------------------------

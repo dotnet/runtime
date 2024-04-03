@@ -2645,6 +2645,11 @@ public:
         return genRegNumFromMask(registerAssignment);
     }
 
+    RegisterType getRegisterType()
+    {
+        return isIntervalRef() ? getInterval()->registerType : getReg()->registerType;
+    }
+
     // Returns true if it is a reference on a GenTree node.
     bool IsActualRef()
     {

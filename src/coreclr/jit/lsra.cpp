@@ -545,8 +545,7 @@ regMaskOnlyOne LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskOnly
         if (refPosition != nullptr)
         {
             minRegCount              = refPosition->minRegCandidateCount;
-            RegisterType currRegType = refPosition->isIntervalRef() ? refPosition->getInterval()->registerType
-                                                                    : refPosition->getReg()->registerType;
+            RegisterType currRegType = refPosition->getRegisterType();
             assert(regtype == currRegType);
         }
 
@@ -10449,7 +10448,17 @@ void RefPosition::dump(LinearScan* linearScan)
     printf(FMT_BB " ", this->bbNum);
 
     printf("regmask=");
-    linearScan->compiler->dumpRegMask(registerAssignment);
+    var_types type = TYP_UNKNOWN;
+    if ((refType == RefTypeBB) || (refType == RefTypeKillGCRefs))
+    {
+        // These refTypes do not have intervals
+        type = TYP_INT;
+    }
+    else
+    {
+        type = getRegisterType();
+    }
+    linearScan->compiler->dumpRegMask(registerAssignment, type);
 
     printf(" minReg=%d", minRegCandidateCount);
 
@@ -10585,10 +10594,10 @@ void Interval::dump(Compiler* compiler)
     printf(" physReg:%s", getRegName(physReg));
 
     printf(" Preferences=");
-    compiler->dumpRegMask(this->registerPreferences);
+    compiler->dumpRegMask(this->registerPreferences, this->registerType);
 
     printf(" Aversions=");
-    compiler->dumpRegMask(this->registerAversion);
+    compiler->dumpRegMask(this->registerAversion, this->registerType);
     if (relatedInterval)
     {
         printf(" RelatedInterval ");

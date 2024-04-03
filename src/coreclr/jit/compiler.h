@@ -10927,7 +10927,7 @@ public:
 
     bool compJitHaltMethod();
 
-    void dumpRegMask(regMaskOnlyOne mask) const;
+    void dumpRegMask(regMaskOnlyOne mask, var_types type) const;
     void dumpRegMask(AllRegsMask mask) const;
 
 #endif
