@@ -119,8 +119,8 @@
 
   <Target Name="_TrimApp" DependsOnTargets="ILLink;CopyFilesToPublishDirectory">
     <ItemGroup>
-      <AppleAssembliesToBundle Remove="@(_RemovedManagedAssembly)" />
-      <AppleAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" Exclude="$(OriginalPublishDir)\**\*.resources.dll" />
+      <AppleAssembliesToBundle Remove="@(AppleAssembliesToBundle)" />
+      <AppleAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" Exclude="$(OriginalPublishDir)\**\*.resources.dll;@(_RemovedManagedAssembly)" />
     </ItemGroup>
   </Target>
 
