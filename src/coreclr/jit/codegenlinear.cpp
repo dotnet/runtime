@@ -393,7 +393,7 @@ void CodeGen::genCodeForBBlist()
         if (compiler->fgBBisScratch(block) && compiler->lvaHasAnySwiftStackParamToReassemble())
         {
             bool clobbered = false;
-            genHomeSwiftStructParameters(/* handleStack */ true, REG_SCRATCH, &clobbered);
+            genHomeSwiftStructParameters(/* handleStack */ true);
         }
 #endif
 

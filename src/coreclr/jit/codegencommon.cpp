@@ -4984,10 +4984,8 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 // Parameters:
 //   handleStack         - If true, reassemble the segments that were passed on the stack.
 //                         If false, reassemble the segments that were passed in registers.
-//   scratchReg          - A scratch register to use
-//   scratchRegClobbered - [out] if scratchReg is used, this will be set to true. Otherwise will not be set.
 //
-void CodeGen::genHomeSwiftStructParameters(bool handleStack, regNumber scratchReg, bool* scratchRegClobbered)
+void CodeGen::genHomeSwiftStructParameters(bool handleStack)
 {
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
@@ -5063,17 +5061,19 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack, regNumber scratchRe
 
                 offset += (int)seg.GetStackOffset();
 
+                // Move the incoming segment to the local stack frame. We can
+                // use REG_SCRATCH as a temporary register here as we ensured
+                // that during LSRA build.
                 assert(dsc->lvOnFrame);
 #ifdef TARGET_XARCH
-                GetEmitter()->emitIns_R_AR(ins_Load(loadType), emitTypeSize(loadType), scratchReg, genFramePointerReg(),
-                                           offset);
+                GetEmitter()->emitIns_R_AR(ins_Load(loadType), emitTypeSize(loadType), REG_SCRATCH,
+                                           genFramePointerReg(), offset);
 #else
-                genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), scratchReg, genFramePointerReg(),
-                                     offset, scratchReg);
+                genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), REG_SCRATCH, genFramePointerReg(),
+                                     offset, REG_SCRATCH);
 #endif
-                *scratchRegClobbered = true;
 
-                GetEmitter()->emitIns_S_R(ins_Store(loadType), emitTypeSize(loadType), scratchReg, lclNum, seg.Offset);
+                GetEmitter()->emitIns_S_R(ins_Store(loadType), emitTypeSize(loadType), REG_SCRATCH, lclNum, seg.Offset);
             }
         }
     }
@@ -6354,12 +6354,7 @@ void CodeGen::genFnProlog()
             intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
         }
 
-        bool clobbered = false;
-        genHomeSwiftStructParameters(/* handleStack */ false, initReg, &clobbered);
-        if (clobbered)
-        {
-            initRegZeroed = false;
-        }
+        genHomeSwiftStructParameters(/* handleStack */ false);
     }
 #endif
 
