@@ -58,7 +58,7 @@ private:
         TempDsc*  spillTemp; // the temp holding the spilled value
 
         static SpillDsc* alloc(Compiler* pComp, RegSet* regSet, var_types type);
-        static void freeDsc(RegSet* regSet, SpillDsc* spillDsc);
+        static void      freeDsc(RegSet* regSet, SpillDsc* spillDsc);
     };
 
     //-------------------------------------------------------------------------
@@ -179,14 +179,14 @@ public:
     };
 
     static var_types tmpNormalizeType(var_types type);
-    TempDsc* tmpGetTemp(var_types type); // get temp for the given type
-    void tmpRlsTemp(TempDsc* temp);
-    TempDsc* tmpFindNum(int temp, TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
+    TempDsc*         tmpGetTemp(var_types type); // get temp for the given type
+    void             tmpRlsTemp(TempDsc* temp);
+    TempDsc*         tmpFindNum(int temp, TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
 
     void     tmpEnd();
     TempDsc* tmpListBeg(TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
     TempDsc* tmpListNxt(TempDsc* curTemp, TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
-    void tmpDone();
+    void     tmpDone();
 
 #ifdef DEBUG
     bool tmpAllFree() const;
