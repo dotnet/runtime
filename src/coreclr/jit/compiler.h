@@ -464,7 +464,6 @@ enum class DoNotEnregisterReason
     CallSpCheck,           // the local is used to do SP check on every call
     SimdUserForcesDep,     // a promoted struct was used by a SIMD/HWI node; it must be dependently promoted
     HiddenBufferStructArg, // the argument is a hidden return buffer passed to a method.
-    NonStandardParameter,  // local is a parameter that is passed in a register unhandled by genFnPrologCalleeRegArgs
 };
 
 enum class AddressExposedReason
@@ -10668,7 +10667,6 @@ public:
         unsigned m_returnSpCheck;
         unsigned m_callSpCheck;
         unsigned m_simdUserForcesDep;
-        unsigned m_nonStandardParameter;
         unsigned m_liveInOutHndlr;
         unsigned m_depField;
         unsigned m_noRegVars;
