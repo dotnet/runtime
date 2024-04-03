@@ -8854,6 +8854,13 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
             calleeTrashMask = RBM_INT_CALLEE_TRASH;
             assert(compiler->IsGprRegMask(terminatorConsumedRegs));
         }
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+        else if (varTypeUsesMaskReg(type))
+        {
+            calleeTrashMask = RBM_MSK_CALLEE_TRASH;
+            assert(compiler->IsPredicateRegMask(terminatorConsumedRegs));
+        }
+#endif
         else
         {
             assert(varTypeUsesFloatReg(type));
