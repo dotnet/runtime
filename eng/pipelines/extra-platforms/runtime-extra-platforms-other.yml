@@ -129,7 +129,7 @@ jobs:
         value: 180
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests_NonJitTests
+      nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests_Tests
       runtimeVariant: llvmfullaot
       buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       timeoutInMinutes: 360
@@ -170,7 +170,7 @@ jobs:
         value: 180
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests_JitTests
+      nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeIntrinsicsTests
       runtimeVariant: llvmfullaot
       buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       timeoutInMinutes: 360
