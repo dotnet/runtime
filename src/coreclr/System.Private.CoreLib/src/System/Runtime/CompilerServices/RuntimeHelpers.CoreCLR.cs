@@ -416,6 +416,18 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
+
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_SizeOf")]
+        private static partial int SizeOf(QCallTypeHandle handle);
+
+        public static int SizeOf(RuntimeTypeHandle type)
+        {
+            RuntimeTypeHandle typeLocal = type;
+            if (typeLocal.IsNullHandle())
+                ThrowHelpers.ThrowArgumentNullException(ExceptionArgument.type);
+            
+            return SizeOf(new QCallTypeHandle(ref typeLocal));
+        }
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.

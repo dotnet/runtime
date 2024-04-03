@@ -13175,6 +13175,7 @@ namespace System.Runtime.CompilerServices
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(System.RuntimeTypeHandle type) { }
         public static void RunModuleConstructor(System.ModuleHandle module) { }
+        public static int SizeOf(System.RuntimeTypeHandle type) { throw null; }
         public static bool TryEnsureSufficientExecutionStack() { throw null; }
         public delegate void CleanupCode(object? userData, bool exceptionThrown);
         public delegate void TryCode(object? userData);

@@ -439,6 +439,7 @@ HANDLES(RUNH_7, "InternalGetHashCode", ves_icall_System_Runtime_CompilerServices
 HANDLES(RUNH_3a, "PrepareMethod", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_PrepareMethod, void, 3, (MonoMethod_ptr, gpointer, int))
 HANDLES(RUNH_4, "RunClassConstructor", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor, void, 1, (MonoType_ptr))
 HANDLES(RUNH_5, "RunModuleConstructor", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunModuleConstructor, void, 1, (MonoImage_ptr))
+HANDLES(RUNH_9, "SizeOf", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SizeOf, gint32, 1, (MonoQCallTypeHandle))
 NOHANDLES(ICALL(RUNH_5h, "SufficientExecutionStack", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack))
 
 ICALL_TYPE(GCH, "System.Runtime.InteropServices.GCHandle", GCH_1)

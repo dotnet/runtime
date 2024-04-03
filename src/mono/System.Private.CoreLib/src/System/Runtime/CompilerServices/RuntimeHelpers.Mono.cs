@@ -211,5 +211,17 @@ namespace System.Runtime.CompilerServices
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool SufficientExecutionStack();
+        
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern int SizeOf(QCallTypeHandle handle);
+
+        public static int SizeOf(RuntimeTypeHandle type)
+        {
+            RuntimeTypeHandle typeLocal = type;
+            if (typeLocal.IsNullHandle())
+                ThrowHelpers.ThrowArgumentNullException(ExceptionArgument.type);
+            
+            return SizeOf(new QCallTypeHandle(ref typeLocal));
+        }
     }
 }

@@ -1210,6 +1210,13 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_PrepareMethod (MonoMeth
 	// FIXME: Implement
 }
 
+gint32
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SizeOf (MonoQCallTypeHandle type, MonoError* error)
+{
+	int align;
+	return mono_type_size (type.type, &align);
+}
+
 MonoObjectHandle
 ves_icall_System_Object_MemberwiseClone (MonoObjectHandle this_obj, MonoError *error)
 {

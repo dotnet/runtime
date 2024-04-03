@@ -2120,3 +2120,18 @@ FCIMPL2_IV(Object*, ReflectionEnum::InternalBoxEnum, ReflectClassBaseObject* tar
     return OBJECTREFToObject(ret);
 }
 FCIMPLEND
+
+extern "C" int32_t QCALLTYPE ReflectionInvocation_GetTypeSize(QCall::TypeHandle pType)
+{
+    QCALL_CONTRACT;
+
+    int32_t size = 0;
+
+    BEGIN_QCALL;
+
+    size = pType.AsTypeHandle().GetSize();
+
+    END_QCALL;
+
+    return size;
+}

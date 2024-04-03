@@ -361,6 +361,22 @@ namespace System.Runtime.CompilerServices
 
             return RuntimeImports.RhNewObject(mt);
         }
+
+        public static int SizeOf(RuntimeTypeHandle type)
+        {
+            RuntimeTypeHandle typeLocal = type;
+            if (typeLocal.IsNullHandle())
+                ThrowHelpers.ThrowArgumentNullException(ExceptionArgument.type);
+            
+            MethodTable* mt = type.ToMethodTable();
+
+            if (mt->IsValueType)
+            {
+                return (int)mt->ValueTypeSize;
+            }
+
+            return nint.Size;
+        }
     }
 
     // CLR arrays are laid out in memory as follows (multidimensional array bounds are optional):
