@@ -76,7 +76,7 @@ public class Program
             }
             using var writer = new System.IO.StreamWriter(output);
             var emitter = new ContractDescriptorSourceFileEmitter();
-            emitter.JsonDescriptor = "{version: 0}"; // model.ToJson();
+            emitter.SetJsonDescriptor(model.ToJson());
             emitter.Emit(writer);
             await writer.FlushAsync(token);
             return 0;

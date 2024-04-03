@@ -28,6 +28,8 @@
   </ItemGroup>
 
   <ItemGroup>
-      <EmbeddedResource Include="Templates/contract-descriptor.c.in" />
+      <EmbeddedResource Include="Resources/contract-descriptor.c.in" />
+      <!-- FIXME: share with the cdac reader -->
+      <EmbeddedResource Include="Resources/baseline/empty.jsonc" />
   </ItemGroup>
 </Project>

@@ -5,6 +5,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -44,9 +45,7 @@ public class ObjectFileScraper
             Console.WriteLine ($"{inputPath}: fieldPoolCount = {header.FieldPoolCount}");
         }
         var content = ReadContent(file, headerStart, header, r.LittleEndian);
-        if (Verbose) {
-            Console.WriteLine ($"{inputPath}: baseline = \"{content.Baseline}\"");
-        }
+        content.AddToModel(_builder);
         return true;
     }
 
@@ -114,15 +113,6 @@ public class ObjectFileScraper
         public byte Reserved0;
     };
 
-    //struct BinaryBlobDataDescriptor
-    //{
-    //HeaderDirectory Directory;
-    //uint32_t BaselineName;
-    //struct TypeSpec Types[CDacBlobTypesCount];
-    //struct FieldSpec FieldPool[CDacBlobFieldPoolCount];
-    //struct GlobalSpec GlobalValues[CDacBlobGlobalsCount];
-    //uint8_t NamesPool[sizeof(struct CDacStringPoolSizes)];
-    //};
 
 
     private uint Swap(bool isLittleEndian, uint value) => (isLittleEndian == BitConverter.IsLittleEndian) ? value : BinaryPrimitives.ReverseEndianness(value);
@@ -168,20 +158,6 @@ public class ObjectFileScraper
         };
     }
 
-    struct Content
-    {
-        public string Baseline;
-        public GlobalEntry[] Globals;
-    }
-
-
-    struct GlobalEntry
-    {
-        public string Name;
-        public string Type;
-        public ulong Value;
-    }
-
     struct TypeSpec
     {
         public uint NameIdx;
@@ -196,6 +172,7 @@ public class ObjectFileScraper
         public ushort FieldOffset;
     }
 
+    // Like a FieldSpec but with names resolved
     struct FieldEntry
     {
         public string Name;
@@ -210,12 +187,105 @@ public class ObjectFileScraper
         public ulong Value;
     }
 
+    class Content
+    {
+        public required uint Baseline { get; init; }
+        public required IReadOnlyList<TypeSpec> TypeSpecs { get; init; }
+        public required IReadOnlyList<FieldSpec> FieldSpecs { get; init; }
+        public required IReadOnlyList<GlobalSpec> GlobalSpecs { get; init; }
+        public required ReadOnlyMemory<byte> NamesPool { get; init; }
+
+        internal string GetPoolString(uint stringIdx)
+        {
+            var nameStart = NamesPool.Span.Slice((int)stringIdx);
+            var end = nameStart.IndexOf((byte)0); // find the first nul after index
+            if (end == -1)
+                throw new InvalidOperationException("expected a nul-terminated name");
+            var nameBytes = nameStart.Slice(0, end);
+            return System.Text.Encoding.UTF8.GetString(nameBytes);
+        }
+
+        public void AddToModel(DataDescriptorModel.Builder builder)
+        {
+            string baseline = GetPoolString(Baseline);
+            Console.WriteLine($"baseline Name = {baseline}");
+            builder.SetBaseline(baseline);
+
+            FieldEntry[] fields = FieldSpecs.Select((fieldSpec) =>
+                (fieldSpec.NameIdx != 0) ?
+                new FieldEntry
+                {
+                    Name = GetPoolString(fieldSpec.NameIdx),
+                    Type = GetPoolString(fieldSpec.TypeNameIdx),
+                    Offset = fieldSpec.FieldOffset
+                } :
+                default
+            ).ToArray();
+
+            foreach (var typeSpec in TypeSpecs)
+            {
+                string typeName = GetPoolString(typeSpec.NameIdx);
+                var typeBuilder = builder.AddOrUpdateType(typeName, typeSpec.Size);
+                uint j = typeSpec.FieldsIdx; // convert byte offset to index;
+                Console.WriteLine($"Type {typeName} has fields starting at index {j}");
+                while (j < fields.Length && !String.IsNullOrEmpty(fields[j].Name))
+                {
+                    typeBuilder.AddOrUpdateField(fields[j].Name, fields[j].Type, fields[j].Offset);
+                    Console.WriteLine($"Type {typeName} has field {fields[j].Name} with offset {fields[j].Offset}");
+                    j++;
+                }
+                if (typeSpec.Size != 0)
+                {
+                    Console.WriteLine($"Type {typeName} has size {typeSpec.Size}");
+                }
+                else
+                {
+                    Console.WriteLine($"Type {typeName} has indeterminate size");
+                }
+            }
+
+            foreach (var globalSpec in GlobalSpecs)
+            {
+                var globalName = GetPoolString(globalSpec.NameIdx);
+                var globalType = GetPoolString(globalSpec.TypeNameIdx);
+                var globalValue = globalSpec.Value;
+                builder.AddOrUpdateGlobal(globalName, globalType, DataDescriptorModel.GlobalValue.MakeDirect(globalValue));
+                Console.WriteLine($"Global {globalName} has type {globalType} with value {globalValue}");
+            }
+        }
+    }
+
     private Content ReadContent(Stream stream, long startPos, HeaderDirectory header, bool isLE)
     {
         using var reader = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true);
         // fixme: badspec - we should have the offset of baseline name too
         var baselineNameIdx = Swap(isLE, reader.ReadUInt32());
-        Console.WriteLine ($"baseline Name Idx = {baselineNameIdx}");
+        Console.WriteLine($"baseline Name Idx = {baselineNameIdx}");
+
+        TypeSpec[] typeSpecs = ReadTypeSpecs(reader, startPos, header, isLE);
+        FieldSpec[] fieldSpecs = ReadFieldSpecs(reader, startPos, header, isLE);
+        GlobalSpec[] globalSpecs = ReadGlobalSpecs(reader, startPos, header, isLE);
+        byte[] namesPool = ReadNamesPool(reader, startPos, header);
+
+        byte[] endMagic = new byte[4];
+        reader.Read(endMagic.AsSpan());
+        if (!CheckEndMagic(endMagic, isLE))
+        {
+            throw new InvalidOperationException($"expected endMagic, got 0x{endMagic[0]:x} 0x{endMagic[1]:x} 0x{endMagic[2]:x} 0x{endMagic[3]:x}");
+        }
+
+        return new Content
+        {
+            Baseline = baselineNameIdx,
+            TypeSpecs = typeSpecs,
+            FieldSpecs = fieldSpecs,
+            GlobalSpecs = globalSpecs,
+            NamesPool = namesPool
+        };
+    }
+
+    private TypeSpec[] ReadTypeSpecs(BinaryReader reader, long startPos, HeaderDirectory header, bool isLE)
+    {
         TypeSpec[] typeSpecs = new TypeSpec[header.TypeCount];
 
         reader.BaseStream.Seek(startPos + (long)header.TypesStart, SeekOrigin.Begin);
@@ -228,13 +298,18 @@ public class ObjectFileScraper
             bytesRead += 4;
             typeSpecs[i].Size = Swap(isLE, reader.ReadUInt16());
             bytesRead += 2;
-            Console.WriteLine ($"TypeSpec[{i}]: NameIdx = {typeSpecs[i].NameIdx}, FieldsIdx = {typeSpecs[i].FieldsIdx}, Size = {typeSpecs[i].Size}");
+            Console.WriteLine($"TypeSpec[{i}]: NameIdx = {typeSpecs[i].NameIdx}, FieldsIdx = {typeSpecs[i].FieldsIdx}, Size = {typeSpecs[i].Size}");
             // skip padding
-            if (bytesRead < header.TypeSpecSize) {
+            if (bytesRead < header.TypeSpecSize)
+            {
                 reader.BaseStream.Seek(header.TypeSpecSize - bytesRead, SeekOrigin.Current);
             }
         }
+        return typeSpecs;
+    }
 
+    private FieldSpec[] ReadFieldSpecs(BinaryReader reader, long startPos, HeaderDirectory header, bool isLE)
+    {
         reader.BaseStream.Seek(startPos + (long)header.FieldPoolStart, SeekOrigin.Begin);
         FieldSpec[] fieldSpecs = new FieldSpec[header.FieldPoolCount];
         for (int i = 0; i < header.FieldPoolCount; i++)
@@ -247,11 +322,16 @@ public class ObjectFileScraper
             fieldSpecs[i].FieldOffset = Swap(isLE, reader.ReadUInt16());
             bytesRead += 2;
             // skip padding
-            if (bytesRead < header.FieldSpecSize) {
+            if (bytesRead < header.FieldSpecSize)
+            {
                 reader.BaseStream.Seek(header.FieldSpecSize - bytesRead, SeekOrigin.Current);
             }
         }
+        return fieldSpecs;
+    }
 
+    private GlobalSpec[] ReadGlobalSpecs(BinaryReader reader, long startPos, HeaderDirectory header, bool isLE)
+    {
         GlobalSpec[] globalSpecs = new GlobalSpec[header.GlobalValuesCount];
         reader.BaseStream.Seek(startPos + (long)header.GlobalValuesStart, SeekOrigin.Begin);
         for (int i = 0; i < header.GlobalValuesCount; i++)
@@ -264,91 +344,35 @@ public class ObjectFileScraper
             globalSpecs[i].Value = Swap(isLE, reader.ReadUInt64());
             bytesRead += 8;
             // skip padding
-            if (bytesRead < header.GlobalSpecSize) {
+            if (bytesRead < header.GlobalSpecSize)
+            {
                 reader.BaseStream.Seek(header.GlobalSpecSize - bytesRead, SeekOrigin.Current);
             }
         }
+        return globalSpecs;
+    }
 
-        // FIXME seek to names pool start
+    private byte[] ReadNamesPool(BinaryReader reader, long startPos, HeaderDirectory header)
+    {
         byte[] namesPool = new byte[header.NamesPoolCount];
         reader.BaseStream.Seek(startPos + (long)header.NamesStart, SeekOrigin.Begin);
         int namesPoolCountRead = reader.Read(namesPool.AsSpan());
         if (namesPoolCountRead != header.NamesPoolCount) {
             throw new InvalidOperationException ($"expected to read {header.NamesPoolCount} bytes of strings");
         }
-
-        var baseline = GetPoolString(namesPool, baselineNameIdx);
-        Console.WriteLine ($"baseline Name = {baseline}");
-
-
-        byte[] endMagic = new byte[4];
-        reader.Read(endMagic.AsSpan());
-        if (!CheckEndMagic(endMagic)) {
-            throw new InvalidOperationException($"expected endMagic, got 0x{endMagic[0]:x} 0x{endMagic[1]:x} 0x{endMagic[2]:x} 0x{endMagic[3]:x}");
-        }
-
-        FieldEntry[] fields = new FieldEntry[fieldSpecs.Length];
-        for (int i = 0; i < fieldSpecs.Length; i++)
-        {
-            if (fieldSpecs[i].NameIdx == 0)
-                continue;
-            fields[i].Name = GetPoolString(namesPool, fieldSpecs[i].NameIdx);
-            fields[i].Type = GetPoolString(namesPool, fieldSpecs[i].TypeNameIdx);
-            fields[i].Offset = fieldSpecs[i].FieldOffset;
-            Console.WriteLine ($"field entry {i} Name = {fields[i].Name}, Type = {fields[i].Type}, Offset = {fields[i].Offset}");
-        }
-
-        for (int i = 0; i < typeSpecs.Length; i++)
-        {
-            string typeName = GetPoolString(namesPool, typeSpecs[i].NameIdx);
-            var typeBuilder = _builder.AddOrUpdateType(typeName, typeSpecs[i].Size);
-            uint j = typeSpecs[i].FieldsIdx; // convert byte offset to index;
-            Console.WriteLine($"Type {typeName} has fields starting at index {j}");
-            while (j < fields.Length && !String.IsNullOrEmpty(fields[j].Name)) {
-                typeBuilder.AddOrUpdateField(fields[j].Name, fields[j].Type, fields[j].Offset);
-                Console.WriteLine($"Type {typeName} has field {fields[j].Name} with offset {fields[j].Offset}");
-                j++;
-            }
-            if (typeSpecs[i].Size != 0)
-            {
-                Console.WriteLine($"Type {typeName} has size {typeSpecs[i].Size}");
-            }
-            else
-            {
-                Console.WriteLine($"Type {typeName} has indeterminate size");
-            }
-        }
-
-        GlobalEntry[] globals = new GlobalEntry[globalSpecs.Length];
-        for (int i = 0; i < globalSpecs.Length; i++)
-        {
-            globals[i].Name = GetPoolString(namesPool, globalSpecs[i].NameIdx);
-            globals[i].Type = GetPoolString(namesPool, globalSpecs[i].TypeNameIdx);
-            globals[i].Value = globalSpecs[i].Value;
-            Console.WriteLine($"Global[{i}] {globals[i].Name} has type {globals[i].Type} with value {globals[i].Value}");
-        }
-
-        return new Content
-        {
-            Baseline = baseline,
-            Globals = globals,
-        };
+        return namesPool;
     }
 
-    public string GetPoolString(ReadOnlySpan<byte> names, uint index)
+    private bool CheckEndMagic(ReadOnlySpan<byte> bytes, bool isLE)
     {
-        var nameStart = names.Slice((int)index);
-        var end = nameStart.IndexOf((byte)0); // find the first nul after index
-        if (end == -1)
-            throw new InvalidOperationException ("expected a nul-terminated name");
-        var nameBytes = nameStart.Slice(0, end);
-        return System.Text.Encoding.UTF8.GetString(nameBytes);
-    }
-
-    private bool CheckEndMagic(ReadOnlySpan<byte> bytes)
-    {
-        // FIXME: also endianness
-        return (bytes[0] == 0x01 && bytes[1] == 0x02 && bytes[2] == 0x03 && bytes[3] == 0x04);
+        if (isLE)
+        {
+            return (bytes[0] == 0x01 && bytes[1] == 0x02 && bytes[2] == 0x03 && bytes[3] == 0x04);
+        }
+        else
+        {
+            return (bytes[0] == 0x04 && bytes[1] == 0x03 && bytes[2] == 0x02 && bytes[3] == 0x01);
+        }
     }
 
 }

@@ -10,7 +10,7 @@ namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
 public partial class ContractDescriptorSourceFileEmitter
 {
-    public const string TemplateResourceName = "Microsoft.DotNet.Diagnostics.DataContract.Templates.contract-descriptor.c.in";
+    public const string TemplateResourceName = "Microsoft.DotNet.Diagnostics.DataContract.Resources.contract-descriptor.c.in";
     internal const string JsonDescriptorKey = "jsonDescriptor";
     internal const string JsonDescriptorSizeKey = "jsonDescriptorSize";
 
@@ -33,18 +33,19 @@ public partial class ContractDescriptorSourceFileEmitter
         return reader.ReadToEnd();
     }
 
-    public string JsonDescriptor
+    // The string should be C escaped
+    // The length should be the length of the unescaped string
+    // FIXME: move the escaping here.
+    public void SetJsonDescriptor(string jsonDescriptor)
     {
-        get
-        {
-            return Elements[JsonDescriptorKey];
-        }
-        set
-        {
-            Elements[JsonDescriptorKey] = value;
-            Elements[JsonDescriptorSizeKey] = (System.Text.Encoding.UTF8.GetByteCount(value) + 1).ToString(); // trailing nul
-        }
+        var count = jsonDescriptor.Length; // return the length before escaping
+        var escaped = CStringEscape().Replace(jsonDescriptor, "\\$1");
+        Elements[JsonDescriptorKey] = escaped;
+        Elements[JsonDescriptorSizeKey] = count.ToString();
     }
+
+    [GeneratedRegex("(\")", RegexOptions.CultureInvariant)]
+    private static partial Regex CStringEscape();
 
     public Dictionary<string,string> Elements {get; } = new();
 

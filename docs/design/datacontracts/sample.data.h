@@ -1,4 +1,4 @@
-CDAC_BASELINE("net9.0/coreclr/osx-arm64")
+CDAC_BASELINE("empty")
 CDAC_TYPES_BEGIN()
 
 CDAC_TYPE_BEGIN(ManagedThread)
