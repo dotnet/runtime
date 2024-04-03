@@ -2266,7 +2266,6 @@ inline TADDR EEJitManager::JitTokenToStartAddress(const METHODTOKEN& MethodToken
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -2280,7 +2279,6 @@ inline void EEJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodTo
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
         PRECONDITION(methodRegionInfo != NULL);
     } CONTRACTL_END;

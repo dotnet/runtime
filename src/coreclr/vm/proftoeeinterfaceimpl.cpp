@@ -1921,11 +1921,6 @@ HRESULT GetFunctionInfoInternal(LPCBYTE ip, EECodeInfo * pCodeInfo)
         EE_THREAD_NOT_REQUIRED;
         CAN_TAKE_LOCK;
         CANNOT_RETAKE_LOCK;
-
-
-        // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
-        // host (SQL).  Corners will be cut to ensure this is the case
-        if (ShouldAvoidHostCalls()) { HOST_NOCALLS; } else { HOST_CALLS; }
     }
     CONTRACTL_END;
 
@@ -2019,11 +2014,6 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromIP(LPCBYTE ip, FunctionID * pFunct
         // This contract detects any attempts to reenter locks held at the time
         // this function was called.
         CANNOT_RETAKE_LOCK;
-
-
-        // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
-        // host (SQL).  Corners will be cut to ensure this is the case
-        if (ShouldAvoidHostCalls()) { HOST_NOCALLS; } else { HOST_CALLS; }
     }
     CONTRACTL_END;
 
@@ -2237,11 +2227,6 @@ HRESULT GetCodeInfoFromCodeStart(
         // We need to take the ExecutionManager reader lock to find the
         // appropriate jit manager.
         CAN_TAKE_LOCK;
-
-
-        // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
-        // host (SQL).  Corners will be cut to ensure this is the case
-        if (ShouldAvoidHostCalls()) { HOST_NOCALLS; } else { HOST_CALLS; }
     }
     CONTRACTL_END;
 
@@ -2395,11 +2380,6 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo(FunctionID functionId, LPCBYTE * pSta
 
         // (See locking contract comment in GetCodeInfoHelper.)
         CANNOT_RETAKE_LOCK;
-
-
-        // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
-        // host (SQL).  Corners will be cut to ensure this is the case
-        if (ShouldAvoidHostCalls()) { HOST_NOCALLS; } else { HOST_CALLS; }
     }
     CONTRACTL_END;
 
@@ -2481,11 +2461,6 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo2(FunctionID functionId,
 
         // (See locking contract comment in GetCodeInfoHelper.)
         CANNOT_RETAKE_LOCK;
-
-
-        // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
-        // host (SQL).  Corners will be cut to ensure this is the case
-        if (ShouldAvoidHostCalls()) { HOST_NOCALLS; } else { HOST_CALLS; }
 
         PRECONDITION(CheckPointer(pcCodeInfos, NULL_OK));
         PRECONDITION(CheckPointer(codeInfos, NULL_OK));
@@ -8139,11 +8114,6 @@ static BOOL EnsureFrameInitialized(Frame * pFrame)
     {
         NOTHROW;
         GC_NOTRIGGER;
-
-        // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
-        // host (SQL).  Corners will be cut to ensure this is the case
-        if (ShouldAvoidHostCalls()) { HOST_NOCALLS; } else { HOST_CALLS; }
-
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -8202,10 +8172,6 @@ HRESULT ProfToEEInterfaceImpl::ProfilerEbpWalker(
         NOTHROW;
         MODE_ANY;
         EE_THREAD_NOT_REQUIRED;
-
-        // If this is called asynchronously (from a hijacked thread, as with F1), it must not re-enter the
-        // host (SQL).  Corners will be cut to ensure this is the case
-        if (ShouldAvoidHostCalls()) { HOST_NOCALLS; } else { HOST_CALLS; }
     }
     CONTRACTL_END;
 

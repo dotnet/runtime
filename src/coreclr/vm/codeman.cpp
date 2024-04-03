@@ -649,7 +649,6 @@ ExecutionManager::ReaderLockHolder::ReaderLockHolder(HostCallPreference hostCall
 {
     CONTRACTL {
         NOTHROW;
-        if (hostCallPreference == AllowHostCalls) { HOST_CALLS; } else { HOST_NOCALLS; }
         GC_NOTRIGGER;
         CAN_TAKE_LOCK;
     } CONTRACTL_END;
@@ -947,7 +946,6 @@ ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -3297,7 +3295,6 @@ GCInfoToken EEJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -4697,7 +4694,6 @@ RangeSection* ExecutionManager::GetRangeSection(TADDR addr, RangeSectionLockStat
 {
     CONTRACTL {
         NOTHROW;
-        HOST_NOCALLS;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
     } CONTRACTL_END;
@@ -4713,7 +4709,6 @@ PTR_Module ExecutionManager::FindReadyToRunModule(TADDR currentData)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        STATIC_CONTRACT_HOST_CALLS;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -4787,7 +4782,6 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        HOST_CALLS;
         PRECONDITION(pStartRange < pEndRange);
         PRECONDITION(CheckPointer(pJit));
         PRECONDITION(CheckPointer(pModule));
@@ -4811,7 +4805,6 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        HOST_CALLS;
         PRECONDITION(pStartRange < pEndRange);
         PRECONDITION(CheckPointer(pJit));
         PRECONDITION(CheckPointer(pHp));
@@ -4836,7 +4829,6 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        HOST_CALLS;
         PRECONDITION(pStartRange < pEndRange);
         PRECONDITION(CheckPointer(pJit));
         PRECONDITION(CheckPointer(pRangeList));
@@ -4919,8 +4911,6 @@ void RangeSection::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 void ExecutionManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
-    STATIC_CONTRACT_HOST_CALLS;
-
     ReaderLockHolder rlh;
 
     //
@@ -5587,7 +5577,6 @@ ReadyToRunInfo * ReadyToRunJitManager::JitTokenToReadyToRunInfo(const METHODTOKE
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -5599,7 +5588,6 @@ UINT32 ReadyToRunJitManager::JitTokenToGCInfoVersion(const METHODTOKEN& MethodTo
     CONTRACTL{
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -5613,7 +5601,6 @@ PTR_RUNTIME_FUNCTION ReadyToRunJitManager::JitTokenToRuntimeFunction(const METHO
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -5625,7 +5612,6 @@ TADDR ReadyToRunJitManager::JitTokenToStartAddress(const METHODTOKEN& MethodToke
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -5638,7 +5624,6 @@ GCInfoToken ReadyToRunJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -6034,7 +6019,6 @@ BOOL ReadyToRunJitManager::IsFunclet(EECodeInfo* pCodeInfo)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -6118,7 +6102,6 @@ void ReadyToRunJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodT
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
         PRECONDITION(methodRegionInfo != NULL);
     } CONTRACTL_END;

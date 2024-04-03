@@ -1831,7 +1831,6 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        if ((hostCallPreference == AllowHostCalls) && !m_MachState.isValid()) { HOST_CALLS; } else { HOST_NOCALLS; }
         SUPPORTS_DAC;
     } CONTRACTL_END;
 

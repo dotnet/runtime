@@ -14568,7 +14568,6 @@ TADDR EECodeInfo::GetSavedMethodCode()
         // be used during GC.
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 #ifndef HOST_64BIT
@@ -14596,7 +14595,6 @@ TADDR EECodeInfo::GetStartAddress()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
