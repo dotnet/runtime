@@ -392,7 +392,6 @@ void CodeGen::genCodeForBBlist()
         // codegen related to doing this, so it cannot be done in the prolog.
         if (compiler->fgBBisScratch(block) && compiler->lvaHasAnySwiftStackParamToReassemble())
         {
-            bool clobbered = false;
             genHomeSwiftStructParameters(/* handleStack */ true);
         }
 #endif
