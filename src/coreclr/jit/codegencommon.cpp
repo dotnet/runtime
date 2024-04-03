@@ -4982,8 +4982,8 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 //  Reassemble Swift struct parameters if necessary.
 //
 // Parameters:
-//   handleStack         - If true, reassemble the segments that were passed on the stack.
-//                         If false, reassemble the segments that were passed in registers.
+//   handleStack - If true, reassemble the segments that were passed on the stack.
+//                 If false, reassemble the segments that were passed in registers.
 //
 void CodeGen::genHomeSwiftStructParameters(bool handleStack)
 {
@@ -5064,7 +5064,6 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
                 // Move the incoming segment to the local stack frame. We can
                 // use REG_SCRATCH as a temporary register here as we ensured
                 // that during LSRA build.
-                assert(dsc->lvOnFrame);
 #ifdef TARGET_XARCH
                 GetEmitter()->emitIns_R_AR(ins_Load(loadType), emitTypeSize(loadType), REG_SCRATCH,
                                            genFramePointerReg(), offset);
