@@ -339,6 +339,39 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
                                                                                       TARGET_POINTER_SIZE));
     }
 
+    if (type == TYP_STRUCT)
+    {
+        const CORINFO_SWIFT_LOWERING* lowering = comp->GetSwiftLowering(structLayout->GetClassHandle());
+        if (lowering->byReference)
+        {
+            return m_classifier.Classify(comp, TYP_I_IMPL, nullptr, WellKnownArg::None);
+        }
+
+        ArrayStack<ABIPassingSegment> segments(comp->getAllocator(CMK_ABI));
+        for (unsigned i = 0; i < lowering->numLoweredElements; i++)
+        {
+            var_types             elemType = JITtype2varType(lowering->loweredElements[i]);
+            ABIPassingInformation elemInfo = m_classifier.Classify(comp, elemType, nullptr, WellKnownArg::None);
+
+            for (unsigned j = 0; j < elemInfo.NumSegments; j++)
+            {
+                ABIPassingSegment newSegment = elemInfo.Segments[j];
+                newSegment.Offset += lowering->offsets[i];
+                segments.Push(newSegment);
+            }
+        }
+
+        ABIPassingInformation result;
+        result.NumSegments = static_cast<unsigned>(segments.Height());
+        result.Segments    = new (comp, CMK_ABI) ABIPassingSegment[result.NumSegments];
+        for (int i = 0; i < segments.Height(); i++)
+        {
+            result.Segments[i] = segments.Bottom(i);
+        }
+
+        return result;
+    }
+
     return m_classifier.Classify(comp, type, structLayout, wellKnownParam);
 }
 #endif
