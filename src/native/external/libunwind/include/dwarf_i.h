@@ -280,7 +280,7 @@ dwarf_readw (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
       ret = dwarf_readu64 (as, a, addr, &u64, arg);
       if (ret < 0)
         return ret;
-      *val = u64;
+      *val = (unw_word_t) u64;
       return ret;
 
     default:
@@ -398,7 +398,7 @@ dwarf_read_encoded_pointer_inlined (unw_addr_space_t as, unw_accessors_t *a,
     case DW_EH_PE_udata8:
       if ((ret = dwarf_readu64 (as, a, addr, &uval64, arg)) < 0)
         return ret;
-      val = uval64;
+      val = (unw_word_t) uval64;
       break;
 
     case DW_EH_PE_sleb128:
@@ -421,7 +421,7 @@ dwarf_read_encoded_pointer_inlined (unw_addr_space_t as, unw_accessors_t *a,
     case DW_EH_PE_sdata8:
       if ((ret = dwarf_reads64 (as, a, addr, &sval64, arg)) < 0)
         return ret;
-      val = sval64;
+      val = (unw_word_t) sval64;
       break;
 
     default:

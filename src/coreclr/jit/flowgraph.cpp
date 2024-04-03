@@ -3920,15 +3920,6 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
     return firstNode;
 }
 
-void Compiler::fgLclFldAssign(unsigned lclNum)
-{
-    assert(varTypeIsStruct(lvaTable[lclNum].lvType));
-    if (lvaTable[lclNum].lvPromoted && lvaTable[lclNum].lvFieldCnt > 1)
-    {
-        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
-    }
-}
-
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
@@ -4386,6 +4377,15 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         if (!FindNaturalLoopBlocks(loop, worklist))
         {
             loops->m_improperLoopHeaders++;
+
+            for (FlowGraphNaturalLoop* const otherLoop : loops->InPostOrder())
+            {
+                if (otherLoop->ContainsBlock(header))
+                {
+                    otherLoop->m_containsImproperHeader = true;
+                }
+            }
+
             continue;
         }
 

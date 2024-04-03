@@ -101,8 +101,6 @@ private:
         }
     }
 
-    static bool genShouldRoundFP();
-
     static GenTreeIndir indirForm(var_types type, GenTree* base);
     static GenTreeStoreInd storeIndirForm(var_types type, GenTree* base, GenTree* data);
 
