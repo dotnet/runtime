@@ -5019,6 +5019,7 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack, regNumber scratchRe
                 RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? &floatRegState : &intRegState;
                 regMaskTP regs     = seg.GetRegisterMask();
 
+                assert(dsc->lvOnFrame);
                 if ((regState->rsCalleeRegArgMaskLiveIn & regs) != RBM_NONE)
                 {
                     var_types storeType = seg.GetRegisterStoreType();
