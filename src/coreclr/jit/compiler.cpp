@@ -3773,12 +3773,12 @@ void Compiler::dumpRegMask(AllRegsMask mask) const
     {
         printf("[allDouble]");
     }
-#ifdef TARGET_XARCH
-    else if (mask.predicateRegs() == RBM_ALLMASK)
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    else if ((RBM_ALLMASK != RBM_NONE) && (mask.predicateRegs() == RBM_ALLMASK))
     {
         printf("[allMask]");
     }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
     else
     {
         dspRegMask(mask);
