@@ -4997,7 +4997,7 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack, regNumber scratchRe
         }
 
         LclVarDsc* dsc = compiler->lvaGetDesc(lclNum);
-        if ((dsc->TypeGet() != TYP_STRUCT) || compiler->lvaIsImplicitByRefLocal(lclNum))
+        if ((dsc->TypeGet() != TYP_STRUCT) || compiler->lvaIsImplicitByRefLocal(lclNum) || !dsc->lvOnFrame)
         {
             continue;
         }
@@ -5019,7 +5019,6 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack, regNumber scratchRe
                 RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? &floatRegState : &intRegState;
                 regMaskTP regs     = seg.GetRegisterMask();
 
-                assert(dsc->lvOnFrame);
                 if ((regState->rsCalleeRegArgMaskLiveIn & regs) != RBM_NONE)
                 {
                     var_types storeType = seg.GetRegisterStoreType();

@@ -2295,6 +2295,13 @@ void           LinearScan::buildIntervals()
     {
         for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
         {
+            LclVarDsc* argDsc = compiler->lvaGetDesc(lclNum);
+
+            if ((argDsc->lvRefCnt() == 0) && !compiler->opts.compDbgCode)
+            {
+                continue;
+            }
+
             const ABIPassingInformation& abiInfo = compiler->lvaParameterPassingInfo[lclNum];
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {

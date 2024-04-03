@@ -2418,6 +2418,17 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
+#ifdef SWIFT_SUPPORT
+    // Swift structs are not passed in a way that match their layout and
+    // require reassembling on the local stack frame. Skip promotion for these
+    // (which would result in dependent promotion anyway).
+    if ((compiler->info.compCallConv == CorInfoCallConvExtension::Swift) && varDsc->lvIsParam)
+    {
+        JITDUMP("  struct promotion of V%02u is disabled because it is a parameter to a Swift function");
+        return false;
+    }
+#endif
+
     CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
     assert(typeHnd != NO_CLASS_HANDLE);
 
@@ -7280,19 +7291,9 @@ bool Compiler::lvaParamShouldHaveLocalStackSpace(unsigned lclNum)
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
 #ifdef SWIFT_SUPPORT
-    // In Swift functions, struct parameters that aren't passed in a single
-    // stack segment are always reassembled on the local stack frame since they
-    // are passed in a way that does not match their full layout.
-    if (info.compCallConv == CorInfoCallConvExtension::Swift)
+    if ((info.compCallConv == CorInfoCallConvExtension::Swift) && !lvaIsImplicitByRefLocal(lclNum) && !lvaParameterPassingInfo[lclNum].HasExactlyOneStackSegment())
     {
-        unsigned   baseLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
-        LclVarDsc* baseDsc    = lvaGetDesc(baseLclNum);
-
-        if ((baseDsc->TypeGet() == TYP_STRUCT) && !lvaIsImplicitByRefLocal(baseLclNum) &&
-            !lvaParameterPassingInfo[baseLclNum].HasExactlyOneStackSegment())
-        {
-            return true;
-        }
+        return true;
     }
 #endif
 
