@@ -3654,7 +3654,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 // We pick the lowest avail register number
                 regMaskFloat tempMask = genFindLowestBit(fpAvailMask);
-                xtraReg               = genRegNumFromMask(tempMask);
+                xtraReg               = genRegNumFromMask(tempMask MORE_THAN_64_REG_ARG(TYP_FLOAT));
             }
 #if defined(TARGET_X86)
             // This case shouldn't occur on x86 since NYI gets converted to an assert
@@ -5905,7 +5905,7 @@ void CodeGen::genFnProlog()
         // We will use one of the registers that we were planning to zero init anyway.
         // We pick the lowest register number.
         tempMask = genFindLowestBit(tempMask);
-        initReg  = genRegNumFromMask(tempMask);
+        initReg  = genRegNumFromMask(tempMask MORE_THAN_64_REG_ARG(TYP_INT));
     }
     // Next we prefer to use one of the unused argument registers.
     // If they aren't available we use one of the caller-saved integer registers.
@@ -5916,7 +5916,7 @@ void CodeGen::genFnProlog()
         {
             // We pick the lowest register number
             tempMask = genFindLowestBit(tempMask);
-            initReg  = genRegNumFromMask(tempMask);
+            initReg  = genRegNumFromMask(tempMask MORE_THAN_64_REG_ARG(TYP_INT));
         }
     }
 

@@ -5713,7 +5713,7 @@ void CodeGen::genAllocLclFrame(unsigned   frameSize,
         // We pick the next lowest register number for rLimit
         noway_assert(availMask != RBM_NONE);
         tempMask = genFindLowestBit(availMask);
-        rLimit   = genRegNumFromMask(tempMask);
+        rLimit   = genRegNumFromMask(tempMask MORE_THAN_64_REG_ARG(TYP_INT));
 
         // Generate:
         //

@@ -2999,7 +2999,7 @@ regNumber LinearScan::allocateRegMinimal(Interval*    currentInterval,
         return REG_NA;
     }
 
-    foundReg                   = genRegNumFromMask(foundRegBit);
+    foundReg                   = genRegNumFromMask(foundRegBit MORE_THAN_64_REG_ARG(currentInterval->registerType));
     availablePhysRegRecord     = getRegisterRecord(foundReg);
     Interval* assignedInterval = availablePhysRegRecord->assignedInterval;
     if ((assignedInterval != currentInterval) &&
@@ -3059,7 +3059,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
         return REG_NA;
     }
 
-    regNumber  foundReg               = genRegNumFromMask(foundRegBit);
+    regNumber  foundReg               = genRegNumFromMask(foundRegBit MORE_THAN_64_REG_ARG(currentInterval->registerType));
     RegRecord* availablePhysRegRecord = getRegisterRecord(foundReg);
     Interval*  assignedInterval       = availablePhysRegRecord->assignedInterval;
     if ((assignedInterval != currentInterval) &&
@@ -8433,7 +8433,7 @@ void           LinearScan::resolveRegisters()
                     regMaskOnlyOne initialRegMask = interval->firstRefPosition->registerAssignment;
                     regNumber      initialReg = (initialRegMask == RBM_NONE || interval->firstRefPosition->spillAfter)
                                                ? REG_STK
-                                               : genRegNumFromMask(initialRegMask);
+                                                    : genRegNumFromMask(initialRegMask MORE_THAN_64_REG_ARG(interval->registerType));
 
 #ifdef TARGET_ARM
                     if (varTypeIsMultiReg(varDsc))
@@ -8866,7 +8866,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
             freeRegs &= calleeTrashMask;
         }
 
-        regNumber tempReg = genRegNumFromMask(genFindLowestBit(freeRegs));
+        regNumber tempReg = genRegNumFromMask(genFindLowestBit(freeRegs) MORE_THAN_64_REG_ARG(type));
         return tempReg;
     }
 }
@@ -13531,8 +13531,8 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
                 //   to achieve zero diffs.
                 //
                 bool thisIsSingleReg = isSingleRegister(newRelatedPreferences);
-                if (!thisIsSingleReg ||
-                    linearScan->isFree(linearScan->getRegisterRecord(genRegNumFromMask(newRelatedPreferences))))
+                if (!thisIsSingleReg || linearScan->isFree(linearScan->getRegisterRecord(
+                                            genRegNumFromMask(newRelatedPreferences MORE_THAN_64_REG_ARG(regType)))))
                 {
                     relatedPreferences = newRelatedPreferences;
                     // If this Interval has a downstream def without a single-register preference, continue to iterate.
@@ -13626,7 +13626,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
         if (candidates == refPosition->registerAssignment)
         {
             found = true;
-            if (linearScan->nextIntervalRef[genRegNumFromMask(candidates)] > lastLocation)
+            if (linearScan->nextIntervalRef[genRegNumFromMask(candidates MORE_THAN_64_REG_ARG(regType))] > lastLocation)
             {
                 unassignedSet = candidates;
             }

@@ -27436,7 +27436,7 @@ regNumber GenTree::GetSingleTempReg(regMaskOnlyOne mask /* = (regMaskOnlyOne)-1 
 {
     regMaskOnlyOne availableSet = gtRsvdRegs & mask;
     assert(genCountBits(availableSet) == 1);
-    regNumber tempReg = genRegNumFromMask(availableSet);
+    regNumber tempReg = genRegNumFromMask(availableSet MORE_THAN_64_REG_ARG(TypeGet()));
     INDEBUG(gtRsvdRegs &= ~availableSet;) // Remove the register from the set, so it can't be used again.
     return tempReg;
 }

@@ -4645,7 +4645,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
         }
 
         // Figure out which register the next bit corresponds to.
-        regNumber regNum = genRegNumFromMask(tmpMask);
+        regNumber regNum = genRegNumFromMask(tmpMask MORE_THAN_64_REG_ARG(TYP_INT));
 
         /* Reserve SP future use */
         assert(regNum != REG_SPBASE);

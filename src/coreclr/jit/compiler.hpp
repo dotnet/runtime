@@ -931,7 +931,7 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 // Assumptions:
 //    The mask contains one and only one register.
 
-inline regNumber genRegNumFromMask(regMaskOnlyOne mask)
+inline regNumber genRegNumFromMask(regMaskOnlyOne mask MORE_THAN_64_REG_ARG(var_types type))
 {
     assert(mask != 0); // Must have one bit set, so can't have a mask of zero
 
@@ -943,6 +943,10 @@ inline regNumber genRegNumFromMask(regMaskOnlyOne mask)
 
     assert(genRegMask(regNum) == mask);
 
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    // If this is mask type, add `64` to the regNumber
+    return (regNumber)((varTypeUsesMaskReg(type) << 6) + regNum);
+#endif
     return regNum;
 }
 

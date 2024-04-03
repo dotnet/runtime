@@ -2642,11 +2642,13 @@ public:
             return REG_NA;
         }
 
-        return genRegNumFromMask(registerAssignment);
+        return genRegNumFromMask(registerAssignment MORE_THAN_64_REG_ARG(getRegisterType()));
     }
 
     RegisterType getRegisterType()
     {
+        //TODO: The type should be just on `Referenceable` that refposition can extract
+        // without having to deal with the check.
         return isIntervalRef() ? getInterval()->registerType : getReg()->registerType;
     }
 

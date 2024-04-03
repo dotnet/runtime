@@ -8966,7 +8966,7 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskGpr regs, BYTE* addr)
         do
         {
             regMaskGpr bit = genFindLowestBit(chg);
-            regNumber  reg = genRegNumFromMask(bit);
+            regNumber  reg = genRegNumFromMask(bit MORE_THAN_64_REG_ARG(TYP_INT));
 
             if (life & bit)
             {
