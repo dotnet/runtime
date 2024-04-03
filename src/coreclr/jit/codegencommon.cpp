@@ -8688,6 +8688,7 @@ void CodeGen::genCodeForReuseVal(GenTree* treeNode)
     }
 }
 
+#ifdef SWIFT_SUPPORT
 //---------------------------------------------------------------------
 // genCodeForSwiftErrorReg - generate code for a GT_SWIFT_ERROR node
 //
@@ -8713,3 +8714,4 @@ void CodeGen::genCodeForSwiftErrorReg(GenTree* tree)
 
     genProduceReg(tree);
 }
+#endif // SWIFT_SUPPORT

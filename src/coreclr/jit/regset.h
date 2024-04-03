@@ -261,7 +261,7 @@ private:
         TEMP_MAX_SIZE = FP_REGSIZE_BYTES,
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 #else  // !FEATURE_SIMD
-        TEMP_MAX_SIZE                               = sizeof(double),
+        TEMP_MAX_SIZE = sizeof(double),
 #endif // !FEATURE_SIMD
         TEMP_SLOT_COUNT = (TEMP_MAX_SIZE / sizeof(int))
     };
