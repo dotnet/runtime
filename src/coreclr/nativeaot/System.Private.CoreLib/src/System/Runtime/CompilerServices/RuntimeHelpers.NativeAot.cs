@@ -380,7 +380,7 @@ namespace System.Runtime.CompilerServices
             if (eeType->IsByRefLike)
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
 
-            return RuntimeImports.RhBox(ref target, eeType);
+            return RuntimeImports.RhBox(eeType, ref target);
         }
     }
 
