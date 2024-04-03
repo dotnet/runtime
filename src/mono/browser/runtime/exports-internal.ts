@@ -127,6 +127,9 @@ export function cwraps_internal (internal: any): void {
 
 /* @deprecated not GC safe, legacy support for Blazor */
 export function monoObjectAsBoolOrNullUnsafe (obj: MonoObject): boolean | null {
+    // TODO https://github.com/dotnet/runtime/issues/100411
+    // after Blazor stops using monoObjectAsBoolOrNullUnsafe
+
     if (obj === MonoObjectNull) {
         return null;
     }
