@@ -4039,7 +4039,7 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
     INDEBUG(bool killedRegs = false);
     while (candidateRegs != RBM_NONE)
     {
-        regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
+        regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs MORE_THAN_64_REG_ARG(TYP_INT));
 
         RegRecord* regRecord        = getRegisterRecord(nextReg);
         Interval*  assignedInterval = regRecord->assignedInterval;
@@ -4142,7 +4142,7 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
         regNumber newReg   = REG_NA;
         while (candidateRegs != RBM_NONE)
         {
-            regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
+            regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs MORE_THAN_64_REG_ARG(interval->registerType));
             if (nextReg > targetReg)
             {
                 newReg = nextReg;
@@ -4382,6 +4382,8 @@ void LinearScan::resetAllRegistersState()
     }
 }
 
+#ifdef HAS_MORE_THAN_64_REGISTERS
+
 void LinearScan::updateDeadCandidatesAtBlockStart(AllRegsMask& deadRegMask, VarToRegMap inVarToRegMap)
 {
     while (!deadRegMask.IsEmpty())
@@ -4417,6 +4419,7 @@ void LinearScan::updateDeadCandidatesAtBlockStart(AllRegsMask& deadRegMask, VarT
         }
     }
 }
+#else
 
 void LinearScan::updateDeadCandidatesAtBlockStart(regMaskTP deadRegMask, VarToRegMap inVarToRegMap)
 {
@@ -4453,6 +4456,7 @@ void LinearScan::updateDeadCandidatesAtBlockStart(regMaskTP deadRegMask, VarToRe
         }
     }
 }
+#endif // HAS_MORE_THAN_64_REGISTERS
 
 //------------------------------------------------------------------------
 // processBlockStartLocations: Update var locations on entry to 'currentBlock' and clear constant
@@ -4879,6 +4883,18 @@ void LinearScan::makeRegisterInactive(RegRecord* physRegRecord)
     }
 }
 
+#ifdef HAS_MORE_THAN_64_REGISTERS
+void LinearScan::inActivateRegisters(AllRegsMask& inactiveMask)
+{
+    while (!inactiveMask.IsEmpty())
+    {
+        regNumber  nextReg   = genFirstRegNumFromMaskAndToggle(inactiveMask);
+        RegRecord* regRecord = getRegisterRecord(nextReg);
+        clearSpillCost(regRecord->regNum, regRecord->registerType);
+        makeRegisterInactive(regRecord);
+    }
+}
+#else
 void LinearScan::inActivateRegisters(regMaskTP inactiveMask)
 {
     while (inactiveMask != RBM_NONE)
@@ -4889,6 +4905,7 @@ void LinearScan::inActivateRegisters(regMaskTP inactiveMask)
         makeRegisterInactive(regRecord);
     }
 }
+#endif
 
 //------------------------------------------------------------------------
 // LinearScan::freeRegister: Make a register available for use
@@ -4960,13 +4977,33 @@ void LinearScan::freeRegisters(AllRegsMask regsToFree)
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FREE_REGS));
     makeRegsAvailable(regsToFree);
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    freeRegisterMask(regsToFree.GetGprFloatCombinedMask());
-    freeRegisterMask(regsToFree.predicateRegs());
+    freeRegisterMask(regsToFree);
 #else
     freeRegisterMask(regsToFree.GetAllRegistersMask());
 #endif // HAS_MORE_THAN_64_REGISTERS
 }
 
+#ifdef HAS_MORE_THAN_64_REGISTERS
+//TODO: Can we just if-def the method signature and `IsEmpty()`?
+void LinearScan::freeRegisterMask(AllRegsMask& freeMask)
+{
+    while (freeMask.IsEmpty())
+    {
+        regNumber nextReg = genFirstRegNumFromMaskAndToggle(freeMask);
+
+        RegRecord* regRecord = getRegisterRecord(nextReg);
+#ifdef TARGET_ARM
+        if (regRecord->assignedInterval != nullptr && (regRecord->assignedInterval->registerType == TYP_DOUBLE))
+        {
+            assert(genIsValidDoubleReg(nextReg));
+            freeMask ^= genRegMask(regNumber(nextReg + 1));
+        }
+#endif
+        freeRegister(regRecord);
+    }
+}
+
+#else
 void LinearScan::freeRegisterMask(regMaskTP freeMask)
 {
     while (freeMask != RBM_NONE)
@@ -4984,6 +5021,7 @@ void LinearScan::freeRegisterMask(regMaskTP freeMask)
         freeRegister(regRecord);
     }
 }
+#endif // HAS_MORE_THAN_64_REGISTERS
 
 //------------------------------------------------------------------------
 // LinearScan::allocateRegistersMinimal: Perform the actual register allocation when localVars
@@ -5059,8 +5097,7 @@ void LinearScan::allocateRegistersMinimal()
         // to dumpRegRecords.
         AllRegsMask tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        inActivateRegisters(tempRegsToMakeInactive.GetGprFloatCombinedMask());
-        inActivateRegisters(tempRegsToMakeInactive.predicateRegs());
+        inActivateRegisters(tempRegsToMakeInactive);
 #else
         inActivateRegisters(tempRegsToMakeInactive.GetAllRegistersMask());
 #endif // HAS_MORE_THAN_64_REGISTERS
@@ -5749,8 +5786,7 @@ void LinearScan::allocateRegisters()
         // to dumpRegRecords. TODO: Do not do anything if tempRegsToMakeInactive == RBM_NONE
         AllRegsMask tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        inActivateRegisters(tempRegsToMakeInactive.GetGprFloatCombinedMask());
-        inActivateRegisters(tempRegsToMakeInactive.predicateRegs());
+        inActivateRegisters(tempRegsToMakeInactive);
 #else
         inActivateRegisters(tempRegsToMakeInactive.GetAllRegistersMask());
 #endif // HAS_MORE_THAN_64_REGISTERS
@@ -12288,7 +12324,7 @@ void LinearScan::verifyFinalAllocation()
                     regMaskOnlyOne candidateRegs = currentRefPosition.registerAssignment;
                     while (candidateRegs != RBM_NONE)
                     {
-                        regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
+                        regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs MORE_THAN_64_REG_ARG(TYP_INT));
 
                         RegRecord* regRecord        = getRegisterRecord(nextReg);
                         Interval*  assignedInterval = regRecord->assignedInterval;

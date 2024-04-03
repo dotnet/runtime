@@ -734,7 +734,7 @@ void CodeGen::genBuildRegPairsStack(regMaskOnlyOne regsMask, ArrayStack<RegPair>
 
     while (regsMask != RBM_NONE)
     {
-        regNumber reg1 = genFirstRegNumFromMaskAndToggle(regsMask);
+        regNumber reg1 = genFirstRegNumFromMaskAndToggle(regsMask MORE_THAN_64_REG_ARG(type));
         regsCount -= 1;
 
         bool isPairSave = false;

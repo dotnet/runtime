@@ -1014,8 +1014,11 @@ private:
     void processBlockStartLocations(BasicBlock* current);
     void processBlockEndLocations(BasicBlock* current);
     void             resetAllRegistersState();
+#ifdef HAS_MORE_THAN_64_REGISTERS
     FORCEINLINE void updateDeadCandidatesAtBlockStart(AllRegsMask& deadRegMask, VarToRegMap inVarToRegMap);
+#else
     FORCEINLINE void updateDeadCandidatesAtBlockStart(regMaskTP deadRegMask, VarToRegMap inVarToRegMap);
+#endif
 
 #ifdef TARGET_ARM
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
@@ -1105,10 +1108,18 @@ private:
     regMaskFloat internalFloatRegCandidates();
 
     void makeRegisterInactive(RegRecord* physRegRecord);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    FORCEINLINE void inActivateRegisters(AllRegsMask& inactiveMask);
+#else
     FORCEINLINE void inActivateRegisters(regMaskTP inactiveMask);
+#endif
     void freeRegister(RegRecord* physRegRecord);
     void freeRegisters(AllRegsMask regsToFree);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    FORCEINLINE void freeRegisterMask(AllRegsMask& freeMask);
+#else
     FORCEINLINE void freeRegisterMask(regMaskTP freeMask);
+#endif
 
     // Get the type that this tree defines.
     var_types getDefType(GenTree* tree)
@@ -2471,6 +2482,8 @@ public:
     // Prior to the allocation pass, registerAssignment captures the valid registers
     // for this RefPosition.
     // After the allocation pass, this contains the actual assignment
+    // TODO: This should really be a union, where before allocation-pass it has `mask` and
+    // after allocation-pass, it has regNumber directly, to avoid calling assignedReg();
     regMaskOnlyOne registerAssignment;
 
     RefType refType;
