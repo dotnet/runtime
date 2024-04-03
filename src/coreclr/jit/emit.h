@@ -328,7 +328,6 @@ struct insGroup
 #endif // !FEATURE_EH_FUNCLETS
 
     // Try to do better packing based on how large regMaskSmall is (8, 16, or 64 bits).
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !(REGMASK_BITS <= 32)
     regMaskSmall igGCregs; // set of registers with live GC refs
@@ -848,7 +847,6 @@ protected:
         // How many bits have been used beyond the first 32?
         // Define ID_EXTRA_BITFIELD_BITS to that number.
         //
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_ARM)
 #define ID_EXTRA_BITFIELD_BITS (16)
@@ -876,7 +874,6 @@ protected:
         // All instrDesc types are <= 56 bytes, but we also need m_debugInfoSize,
         // which is pointer sized, so 5 bits are required on 64-bit and 4 bits
         // on 32-bit.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef HOST_64BIT
         unsigned _idScaledPrevOffset : 5;
@@ -898,7 +895,6 @@ protected:
         // arm64:       60/55 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
@@ -915,7 +911,6 @@ protected:
         // arm64:        4/9 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
 #define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
@@ -940,7 +935,6 @@ protected:
         //
         // SMALL_IDSC_SIZE is this size, in bytes.
         //
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define SMALL_IDSC_SIZE 8
 
@@ -957,7 +951,6 @@ protected:
         }
 
     private:
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
         void checkSizes();
 
@@ -2571,7 +2564,6 @@ private:
     // instruction group depends on the instruction mix as well as DEBUG/non-DEBUG build type. See the
     // EMITTER_STATS output for various statistics related to this.
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 // ARM32/64, LoongArch and RISC-V can require a bigger prolog instruction group. One scenario

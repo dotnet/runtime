@@ -323,7 +323,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
                 minSiz -= strlen(sep) + strlen(nam);
 
                 // What kind of separator should we use for this range (if it is indeed going to be a range)?
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
                 if (genIsValidIntReg(regNum))
                 {
@@ -355,7 +354,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
                     }
 #elif defined(TARGET_X86)
                     // No register ranges
-                    CLANG_FORMAT_COMMENT_ANCHOR;
 #elif defined(TARGET_LOONGARCH64)
                     if (REG_A0 <= regNum && regNum <= REG_T8)
                     {

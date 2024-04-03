@@ -17,10 +17,6 @@
 #endif
 #endif
 
-// Clang-format messes with the indentation of comments if they directly precede an
-// ifdef. This macro allows us to anchor the comments to the regular flow of code.
-#define CLANG_FORMAT_COMMENT_ANCHOR ;
-
 // Clang-tidy replaces 0 with nullptr in some templated functions, causing a build
 // break. Replacing those instances with ZERO avoids this change
 #define ZERO 0

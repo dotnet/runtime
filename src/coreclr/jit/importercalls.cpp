@@ -587,7 +587,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
            tailcall to a function with a different number of arguments, we
            are hosed. There are ways around this (caller remembers esp value,
            varargs is not caller-pop, etc), but not worth it. */
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86
         if (canTailCall)
@@ -9781,8 +9780,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         // supported. For cases like Vector64.Create, this is fine because it will
                         // be behind a relevant IsSupported check and will never be hit and the
                         // software fallback will be executed instead.
-
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef FEATURE_HW_INTRINSICS
                         namespaceName += 10;

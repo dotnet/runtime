@@ -5708,7 +5708,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        0,             // disp
                                        true);         // isJump
             // clang-format on
-            CLANG_FORMAT_COMMENT_ANCHOR;
 #endif // TARGET_ARMARCH
         }
 #if FEATURE_FASTTAILCALL

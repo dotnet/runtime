@@ -2534,7 +2534,6 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
     // In that case, we would like to avoid promortion.
     // However we haven't yet computed the lvRefCnt values so we can't do that.
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
     return shouldPromote;
 }
@@ -4393,7 +4392,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                 {
                     // Variables can be marked as DoNotEngister in earlier stages like LocalAddressVisitor.
                     // No need to track them for single-def.
-                    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                     // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
@@ -6011,7 +6009,6 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned    lclNum,
     {
         /* Argument is passed in a register, don't count it
          * when updating the current offset on the stack */
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 #if DEBUG
@@ -6198,7 +6195,6 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned    lclNum,
             // r3    int             a2 --> pushed (not pre-spilled) for alignment of a0 by lvaInitUserArgs.
             // r2    struct { int }  a1
             // r0-r1 struct { long } a0
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef PROFILING_SUPPORTED
             // On Arm under profiler, r0-r3 are always prespilled on stack.
@@ -6262,7 +6258,6 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned    lclNum,
     // For struct promoted parameters we need to set the offsets for both LclVars.
     //
     // For a dependent promoted struct we also assign the struct fields stack offset
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
     if (varDsc->lvPromoted)
     {
@@ -7329,7 +7324,6 @@ void Compiler::lvaAlignFrame()
 
     // If this isn't the final frame layout, assume we have to push an extra QWORD
     // Just so the offsets are true upper limits.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef UNIX_AMD64_ABI
     // The compNeedToAlignFrame flag  is indicating if there is a need to align the frame.
@@ -7451,8 +7445,6 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         // assign their offsets in lvaAssignVirtualFrameOffsetToArg().
         // This is not true for the System V systems since there is no
         // outgoing args space. Assign the dependently promoted fields properly.
-        //
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86)
         // ARM: lo/hi parts of a promoted long arg need to be updated.
@@ -7528,7 +7520,6 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
             /* Figure out and record the stack offset of the temp */
 
             /* Need to align the offset? */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_64BIT
             if (varTypeIsGC(tempType) && ((stkOffs % TARGET_POINTER_SIZE) != 0))

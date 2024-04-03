@@ -1897,7 +1897,6 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
     if (block->NumSucc(this) == 1)
     {
         // Use BBJ_ALWAYS for a switch with only a default clause, or with only one unique successor.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         if (verbose)
@@ -2007,7 +2006,6 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         // replace it with a COMMA node.  In such a case we will end up with GT_JTRUE node pointing to
         // a COMMA node which results in noway asserts in fgMorphSmpOp(), optAssertionGen() and rpPredictTreeRegUse().
         // For the same reason fgMorphSmpOp() marks GT_JTRUE nodes with RELOP children as GTF_DONT_CSE.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         if (verbose)

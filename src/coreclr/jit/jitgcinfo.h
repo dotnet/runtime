@@ -340,7 +340,6 @@ public:
     //
     //  These record the info about the procedure in the info-block
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef JIT32_GCENCODER
 private:

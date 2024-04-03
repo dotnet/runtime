@@ -2873,7 +2873,6 @@ AGAIN:
         jmp->idjOffs += adjSJ;
 
         // If this is a jump via register, the instruction size does not change, so we are done.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
         /* Have we bound this jump's target already? */
 
@@ -2894,7 +2893,6 @@ AGAIN:
         else
         {
             /* First time we've seen this label, convert its target */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             tgtIG = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 

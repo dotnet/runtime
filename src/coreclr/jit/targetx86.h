@@ -232,7 +232,6 @@
   // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
   // Note that x86 normally emits an optimized (source-register-specific) write barrier, but can emit
   // a call to a "general" write barrier.
-  CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
   #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_EAX | RBM_EDX)
