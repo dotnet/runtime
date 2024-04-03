@@ -69,7 +69,7 @@ export function mono_wasm_new_external_root<T extends MonoObject> (address: Void
  * When you are done using the root you must call its .release() method.
  */
 export function mono_wasm_new_root<T extends MonoObject> (value: T | undefined = undefined): WasmRoot<T> {
-    if (WasmEnableThreads && runtimeHelpers.disableManagedTransition) throw new Error("External roots are not supported when threads are enabled");
+    if (WasmEnableThreads && runtimeHelpers.disableManagedTransition) throw new Error("External roots are not supported in multithreaded mode");
     let result: WasmRoot<T>;
 
     if (_scratch_root_free_instances.length > 0) {
