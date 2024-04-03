@@ -18332,18 +18332,6 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSe
     return false;
 }
 
-bool Compiler::gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_FIELD_HANDLE fldHnd)
-{
-    if (fieldNodeType != TYP_REF)
-    {
-        return false;
-    }
-    noway_assert(fldHnd != nullptr);
-    CorInfoType cit      = info.compCompHnd->getFieldType(fldHnd);
-    var_types   fieldTyp = JITtype2varType(cit);
-    return fieldTyp != TYP_REF;
-}
-
 //------------------------------------------------------------------------
 // gtStoreDefinesField: Does the given parent store modify the given field?
 //

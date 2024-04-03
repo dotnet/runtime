@@ -40,7 +40,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "arraystack.h"
 #include "hashbv.h"
 #include "jitexpandarray.h"
-#include "tinyarray.h"
 #include "valuenum.h"
 #include "scev.h"
 #include "namedintrinsiclist.h"
@@ -1115,11 +1114,6 @@ public:
     var_types TypeGet() const
     {
         return (var_types)lvType;
-    }
-    bool lvStackAligned() const
-    {
-        assert(lvIsStructField);
-        return ((lvFldOffset % TARGET_POINTER_SIZE) == 0);
     }
 
     // NormalizeOnLoad Rules:
@@ -3571,12 +3565,6 @@ public:
 
     bool gtSplitTree(
         BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse);
-
-    // Static fields of struct types (and sometimes the types that those are reduced to) are represented by having the
-    // static field contain an object pointer to the boxed struct.  This simplifies the GC implementation...but
-    // complicates the JIT somewhat.  This predicate returns "true" iff a node with type "fieldNodeType", representing
-    // the given "fldHnd", is such an object pointer.
-    bool gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_FIELD_HANDLE fldHnd);
 
     bool gtStoreDefinesField(
         LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize);
@@ -6725,11 +6713,6 @@ private:
     bool fgForwardSubStatement(Statement* statement);
     bool fgForwardSubHasStoreInterference(Statement* defStmt, Statement* nextStmt, GenTree* nextStmtUse);
     void fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* newSubListLast);
-
-    // The given local variable, required to be a struct variable, is being assigned via
-    // a "lclField", to make it masquerade as an integral type in the ABI.  Make sure that
-    // the variable is not enregistered, and is therefore not promoted independently.
-    void fgLclFldAssign(unsigned lclNum);
 
     enum TypeProducerKind
     {

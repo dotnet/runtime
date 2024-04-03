@@ -1535,10 +1535,7 @@ public:
 #define handlerGetsXcptnObj(hndTyp) ((hndTyp) != BBCT_NONE && (hndTyp) != BBCT_FAULT && (hndTyp) != BBCT_FINALLY)
 
     // TODO-Cleanup: Get rid of bbStkDepth and use bbStackDepthOnEntry() instead
-    union {
-        unsigned short bbStkDepth; // stack depth on entry
-        unsigned short bbFPinVars; // number of inner enregistered FP vars
-    };
+    unsigned short bbStkDepth; // stack depth on entry
 
     // Basic block predecessor lists. Predecessor lists are created by fgLinkBasicBlocks(), stored
     // in 'bbPreds', and then maintained throughout compilation. 'fgPredsComputed' will be 'true' after the
@@ -1670,14 +1667,6 @@ public:
     };
 
     void* bbEmitCookie;
-
-#ifdef VERIFIER
-    stackDesc bbStackIn;  // stack descriptor for  input
-    stackDesc bbStackOut; // stack descriptor for output
-
-    verTypeVal* bbTypesIn;  // list of variable types on  input
-    verTypeVal* bbTypesOut; // list of variable types on output
-#endif                      // VERIFIER
 
 //-------------------------------------------------------------------------
 

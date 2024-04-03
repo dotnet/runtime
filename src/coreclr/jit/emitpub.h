@@ -111,28 +111,6 @@ static instruction inst3opImulForReg(regNumber reg);
 #endif
 
 /************************************************************************/
-/*                   Emit PDB offset translation information            */
-/************************************************************************/
-
-#ifdef TRANSLATE_PDB
-
-static void SetILBaseOfCode(BYTE* pTextBase);
-static void SetILMethodBase(BYTE* pMethodEntry);
-static void SetILMethodStart(BYTE* pMethodCode);
-static void SetImgBaseOfCode(BYTE* pTextBase);
-
-void SetIDBaseToProlog();
-void SetIDBaseToOffset(int methodOffset);
-
-static void DisablePDBTranslation();
-static bool IsPDBEnabled();
-
-static void InitTranslationMaps(int ilCodeSize);
-static void DeleteTranslationMaps();
-static void InitTranslator(PDBRewriter* pPDB, int* rgSecMap, IMAGE_SECTION_HEADER** rgpHeader, int numSections);
-#endif
-
-/************************************************************************/
 /*                   Interface for generating unwind information        */
 /************************************************************************/
 
