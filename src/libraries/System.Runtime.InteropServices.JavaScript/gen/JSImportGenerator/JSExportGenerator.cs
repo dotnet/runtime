@@ -241,9 +241,7 @@ namespace Microsoft.Interop.JavaScript
                             .WithModifiers(TokenList(new[] { Token(SyntaxKind.StaticKeyword) }))
                             .WithBody(Block(registerStatements));
 
-            // HACK: protect the code from trimming by putting it behind a comparison we know
-            //  will always evaluate to false at runtime, but the linker can't see through at
-            //  build time. It seems there's no attribute to block trimming of a method?
+            // HACK: protect the code from trimming with DynamicDependency attached to a ModuleInitializer
             MemberDeclarationSyntax initializerMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(selfInitName))
                             .WithAttributeLists(
                                 SingletonList<AttributeListSyntax>(
