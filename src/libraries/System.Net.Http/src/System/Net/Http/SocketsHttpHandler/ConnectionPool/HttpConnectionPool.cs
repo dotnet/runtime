@@ -25,8 +25,8 @@ namespace System.Net.Http
     {
         /// <summary>The maximum number of times to retry a request after a failure on an established connection.</summary>
         private const int MaxConnectionFailureRetries = 3;
-        private const int DefaultHttpPort = 80;
-        private const int DefaultHttpsPort = 443;
+        public const int DefaultHttpPort = 80;
+        public const int DefaultHttpsPort = 443;
 
         private static readonly bool s_isWindows7Or2008R2 = GetIsWindows7Or2008R2();
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http3 };
