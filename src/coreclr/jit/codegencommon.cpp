@@ -2868,8 +2868,6 @@ public:
     {
     }
 
-    unsigned NumEdges = 0;
-
     RegNode* GetOrAdd(regNumber reg, var_types type)
     {
         assert(type != TYP_STRUCT);
@@ -2915,49 +2913,45 @@ public:
 
         edge->nextIncoming = to->incoming;
         to->incoming       = edge;
-
-        NumEdges++;
     }
 
-    RegNodeEdge* FindEdgeToHandle()
+    RegNode* FindNodeToHandle()
     {
-        RegNodeEdge* lastEdge = nullptr;
+        RegNode* lastNode = nullptr;
         for (int i = 0; i < m_nodes.Height(); i++)
         {
             RegNode* reg = m_nodes.Bottom(i);
-            for (RegNodeEdge* edge = reg->outgoing; edge != nullptr; edge = edge->nextOutgoing)
+            if (reg->incoming == nullptr)
             {
-                lastEdge = edge;
-                // If going to a register without any conflicts then it's easy.
-                if (edge->to->outgoing == nullptr)
-                {
-                    return edge;
-                }
+                continue;
             }
+
+            if (reg->outgoing == nullptr)
+            {
+                return reg;
+            }
+
+            lastNode = reg;
         }
 
-        return lastEdge;
+        return lastNode;
     }
 
-    void RemoveEdge(RegNodeEdge* edge)
+    void RemoveIncomingEdges(RegNode* node)
     {
-        RegNodeEdge** slot = &edge->from->outgoing;
-        while ((*slot) != edge)
+        for (RegNodeEdge* edge = node->incoming; edge != nullptr; edge = edge->nextIncoming)
         {
-            slot = &(*slot)->nextOutgoing;
+            // Unlink from source.
+            RegNodeEdge** slot = &edge->from->outgoing;
+            while ((*slot) != edge)
+            {
+                slot = &(*slot)->nextOutgoing;
+            }
+
+            *slot = edge->nextOutgoing;
         }
 
-        *slot = edge->nextOutgoing;
-
-        slot = &edge->to->incoming;
-        while ((*slot) != edge)
-        {
-            slot = &(*slot)->nextIncoming;
-        }
-
-        *slot = edge->nextIncoming;
-
-        NumEdges--;
+        node->incoming = nullptr;
     }
 
 #ifdef DEBUG
@@ -3232,20 +3226,44 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     // - cycle handling
     // None of these problems seem to be hit in any tests, so we need to add
     // some stress modes for this.
-    while (graph.NumEdges > 0)
+    while (true)
     {
-        RegNodeEdge* edge = graph.FindEdgeToHandle();
-        assert(edge != nullptr);
-        if ((edge->to->outgoing != nullptr) && (edge->to->copiedReg == REG_NA))
+        RegNode* node = graph.FindNodeToHandle();
+        if (node == nullptr)
+        {
+            break;
+        }
+
+        if ((node->outgoing != nullptr) && (node->copiedReg == REG_NA))
         {
             assert(!"Circular arg");
         }
 
-        regNumber sourceReg = edge->from->copiedReg != REG_NA ? edge->from->copiedReg : edge->from->reg;
-
-        if (edge->destOffset != 0)
+        // First handle edges that aren't insertions. We clobber the full register for these edges.
+        for (RegNodeEdge* edge = node->incoming; edge != nullptr; edge = edge->nextIncoming)
         {
-            INDEBUG(edge->to->wrote = true);
+            if (edge->destOffset != 0)
+            {
+                continue;
+            }
+
+            regNumber sourceReg = edge->from->copiedReg != REG_NA ? edge->from->copiedReg : edge->from->reg;
+            instruction ins = ins_Copy(sourceReg, genActualType(edge->type));
+            GetEmitter()->emitIns_Mov(ins, emitActualTypeSize(edge->type), edge->to->reg, sourceReg,
+                /* canSkip */ true);
+            break;
+        }
+
+        // Next handle all insertions.
+        for (RegNodeEdge* edge = node->incoming; edge != nullptr; edge = edge->nextIncoming)
+        {
+            if (edge->destOffset == 0)
+            {
+                continue;
+            }
+
+            regNumber sourceReg = edge->from->copiedReg != REG_NA ? edge->from->copiedReg : edge->from->reg;
+
 #if defined(TARGET_ARM64)
             // On arm64 SIMD parameters are HFAs and passed in multiple float
             // registers while we can enregister them as single registers.
@@ -3256,6 +3274,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             // which happens for example for Vector3 which can be passed in
             // xmm0[0..8), xmm1[8..12) but enregistered in a single register.
             noway_assert(edge->destOffset == 8);
+            assert(genIsValidFloatReg(edge->to->reg));
             // The shufpd here picks the first 8 bytes from the dest register
             // to go in the lower half, and the second 8 bytes from the source
             // register to go in the upper half.
@@ -3264,16 +3283,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             noway_assert(!"Insertion into register is not supported");
 #endif
         }
-        else
-        {
-            assert(!edge->to->wrote);
-            instruction ins = ins_Copy(sourceReg, genActualType(edge->type));
-            GetEmitter()->emitIns_Mov(ins, emitActualTypeSize(edge->type), edge->to->reg, sourceReg,
-                                      /* canSkip */ true);
-            INDEBUG(edge->to->wrote = true);
-        }
 
-        graph.RemoveEdge(edge);
+        graph.RemoveIncomingEdges(node);
     }
 }
 #endif
