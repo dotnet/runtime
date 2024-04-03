@@ -851,8 +851,6 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
                     UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
                 }
 
-                // We guard against the case where the size = -1 or 0. 
-                // This isn't currently an issue but to be safe, we add this check.
                 else if (size > 0)
                 {
                     cacheSize = std::max((long)cacheSize, size);
