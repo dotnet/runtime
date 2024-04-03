@@ -42,7 +42,7 @@ void mono_wasm_resolve_or_reject_promise_post (pthread_t target_tid, void *args)
 void mono_wasm_cancel_promise_post (pthread_t target_tid, int task_holder_gc_handle);
 
 extern void mono_wasm_install_js_worker_interop (int context_gc_handle);
-void mono_wasm_install_js_worker_interop_wrapper (int context_gc_handle, void* beforeSyncJSImport, void* afterSyncJSImport);
+void mono_wasm_install_js_worker_interop_wrapper (int context_gc_handle, void* beforeSyncJSImport, void* afterSyncJSImport, void* pumpHandler);
 extern void mono_wasm_uninstall_js_worker_interop ();
 extern void mono_wasm_invoke_jsimport_MT (void* signature, void* args);
 void mono_wasm_invoke_jsimport_async_post (pthread_t target_tid, void* signature, void* args);
@@ -260,11 +260,13 @@ void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *
 
 void* before_sync_js_import;
 void* after_sync_js_import;
+void* synchronization_context_pump_handler;
 
-void mono_wasm_install_js_worker_interop_wrapper (int context_gc_handle, void* beforeSyncJSImport, void* afterSyncJSImport)
+void mono_wasm_install_js_worker_interop_wrapper (int context_gc_handle, void* beforeSyncJSImport, void* afterSyncJSImport, void* pumpHandler)
 {
 	before_sync_js_import = beforeSyncJSImport;
 	after_sync_js_import = afterSyncJSImport;
+	synchronization_context_pump_handler = pumpHandler;
 	mono_wasm_install_js_worker_interop (context_gc_handle);
 }
 

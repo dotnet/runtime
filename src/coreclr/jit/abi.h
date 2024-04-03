@@ -50,6 +50,10 @@ struct ABIPassingInformation
     bool IsSplitAcrossRegistersAndStack() const;
 
     static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
+
+#ifdef DEBUG
+    void Dump() const;
+#endif
 };
 
 class RegisterQueue
@@ -141,6 +145,30 @@ public:
                                    WellKnownArg wellKnownParam);
 };
 
+class Arm32Classifier
+{
+    const ClassifierInfo& m_info;
+    // 4 int regs are available for parameters. This gives the index of the
+    // next one.
+    // A.k.a. "NCRN": Next Core Register Number
+    unsigned m_nextIntReg = 0;
+    // 16 float regs are available for parameters. We keep them as a mask as
+    // they can be backfilled.
+    unsigned m_floatRegs = 0xFFFF;
+    // A.k.a. "NSAA": Next Stack Argument Address
+    unsigned m_stackArgSize = 0;
+
+    ABIPassingInformation ClassifyFloat(Compiler* comp, var_types type, unsigned elems);
+
+public:
+    Arm32Classifier(const ClassifierInfo& info);
+
+    ABIPassingInformation Classify(Compiler*    comp,
+                                   var_types    type,
+                                   ClassLayout* structLayout,
+                                   WellKnownArg wellKnownParam);
+};
+
 #if defined(TARGET_X86)
 typedef X86Classifier PlatformClassifier;
 #elif defined(WINDOWS_AMD64_ABI)
@@ -149,6 +177,8 @@ typedef WinX64Classifier PlatformClassifier;
 typedef SysVX64Classifier PlatformClassifier;
 #elif defined(TARGET_ARM64)
 typedef Arm64Classifier PlatformClassifier;
+#elif defined(TARGET_ARM)
+typedef Arm32Classifier PlatformClassifier;
 #endif
 
 #ifdef SWIFT_SUPPORT
