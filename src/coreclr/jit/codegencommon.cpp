@@ -5410,7 +5410,7 @@ void CodeGen::genFinalizeFrame()
     noway_assert(!regSet.rsRegsModified(RBM_FPBASE));
 #endif
 
-    regMaskTP maskCalleeRegsPushed = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP maskCalleeRegsPushed = regSet.rsGetModifiedCalleeSavedRegsMask();
 
 #ifdef TARGET_ARMARCH
     if (isFramePointerUsed())
@@ -5501,17 +5501,6 @@ void CodeGen::genFinalizeFrame()
     // we always push RA.  See genPushCalleeSavedRegisters
     maskCalleeRegsPushed |= RBM_RA;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
-
-#ifdef SWIFT_SUPPORT
-    // If this method returns an error value in the Swift error register,
-    // don't treat REG_SWIFT_ERROR as callee-saved.
-    if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
-    {
-        assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
-        assert(compiler->lvaSwiftErrorLocal != BAD_VAR_NUM);
-        maskCalleeRegsPushed &= ~RBM_SWIFT_ERROR;
-    }
-#endif // SWIFT_SUPPORT
 
     compiler->compCalleeRegsPushed = genCountBits(maskCalleeRegsPushed);
 
@@ -6101,7 +6090,7 @@ void CodeGen::genFnProlog()
 
 #ifdef TARGET_ARM
     maskStackAlloc = genStackAllocRegisterMask(compiler->compLclFrameSize + extraFrameSize,
-                                               regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED);
+                                               regSet.rsGetModifiedFltCalleeSavedRegsMask());
 #endif // TARGET_ARM
 
     if (maskStackAlloc == RBM_NONE)

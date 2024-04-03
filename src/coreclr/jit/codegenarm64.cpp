@@ -36,7 +36,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskTP rsRestoreRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP rsRestoreRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
 
     if (isFramePointerUsed())
     {
@@ -201,17 +201,6 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         default:
             unreached();
     }
-
-#ifdef SWIFT_SUPPORT
-    // If this method returns an error value in the Swift error register,
-    // we didn't push the error register, and thus we shouldn't pop it.
-    if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
-    {
-        assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
-        assert(compiler->lvaSwiftErrorLocal != BAD_VAR_NUM);
-        regsToRestoreMask &= ~RBM_SWIFT_ERROR;
-    }
-#endif // SWIFT_SUPPORT
 
     JITDUMP("    calleeSaveSpOffset=%d, calleeSaveSpDelta=%d\n", calleeSaveSpOffset, calleeSaveSpDelta);
     genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSpOffset, calleeSaveSpDelta);

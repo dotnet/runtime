@@ -4880,7 +4880,7 @@ void CodeGen::genPushCalleeSavedRegisters()
                      intRegState.rsCalleeRegArgMaskLiveIn);
 #endif
 
-    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP rsPushRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -4913,17 +4913,6 @@ void CodeGen::genPushCalleeSavedRegisters()
     // is not worth it.
     //
     rsPushRegs |= RBM_LR; // We must save the return address (in the LR register)
-
-#ifdef SWIFT_SUPPORT
-    // If this method returns an error value in the Swift error register,
-    // we don't need to push REG_SWIFT_ERROR.
-    if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
-    {
-        assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
-        assert(compiler->lvaSwiftErrorLocal != BAD_VAR_NUM);
-        rsPushRegs &= ~RBM_SWIFT_ERROR;
-    }
-#endif // SWIFT_SUPPORT
 
     regSet.rsMaskCalleeSaved = rsPushRegs;
 
@@ -5539,7 +5528,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 
     if (jmpEpilog ||
-        genStackAllocRegisterMask(compiler->compLclFrameSize, regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED) ==
+        genStackAllocRegisterMask(compiler->compLclFrameSize, regSet.rsGetModifiedFltCalleeSavedRegsMask()) ==
             RBM_NONE)
     {
         genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted);
