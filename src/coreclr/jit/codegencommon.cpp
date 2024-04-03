@@ -2837,7 +2837,6 @@ struct RegNode;
 
 struct RegNodeEdge
 {
-    RegNodeEdge* nextOutgoing;
     RegNodeEdge* nextIncoming;
     RegNode*     from;
     RegNode*     to;
@@ -2853,9 +2852,6 @@ struct RegNode
     RegNodeEdge* incoming;
     RegNodeEdge* outgoing;
     RegNode*     next;
-#ifdef DEBUG
-    bool wrote = false;
-#endif
 };
 
 class RegGraph
@@ -2908,7 +2904,8 @@ public:
         edge->type        = type;
         edge->destOffset  = destOffset;
 
-        edge->nextOutgoing = from->outgoing;
+        // We currently never have multiple outgoing edges.
+        assert(from->outgoing == nullptr);
         from->outgoing     = edge;
 
         edge->nextIncoming = to->incoming;
@@ -2937,18 +2934,13 @@ public:
         return lastNode;
     }
 
-    void RemoveIncomingEdges(RegNode* node)
+    void RemoveIncomingEdges(RegNode* node, regMaskTP* busyRegs)
     {
         for (RegNodeEdge* edge = node->incoming; edge != nullptr; edge = edge->nextIncoming)
         {
             // Unlink from source.
-            RegNodeEdge** slot = &edge->from->outgoing;
-            while ((*slot) != edge)
-            {
-                slot = &(*slot)->nextOutgoing;
-            }
-
-            *slot = edge->nextOutgoing;
+            assert(edge->from->outgoing == edge);
+            edge->from->outgoing = nullptr;
         }
 
         node->incoming = nullptr;
@@ -3226,6 +3218,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     // - cycle handling
     // None of these problems seem to be hit in any tests, so we need to add
     // some stress modes for this.
+    regMaskTP busyRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
     while (true)
     {
         RegNode* node = graph.FindNodeToHandle();
@@ -3236,7 +3229,19 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
         if ((node->outgoing != nullptr) && (node->copiedReg == REG_NA))
         {
-            assert(!"Circular arg");
+            var_types copyType = node->outgoing->type;
+            if (varTypeUsesFloatReg(copyType))
+            {
+                node->copiedReg = genFirstRegNumFromMask(RBM_FLT_CALLEE_TRASH & ~busyRegs);
+            }
+            else
+            {
+                node->copiedReg = genFirstRegNumFromMask(RBM_INT_CALLEE_TRASH & ~busyRegs);
+            }
+
+            busyRegs |= genRegMask(node->copiedReg);
+            instruction ins = ins_Copy(node->reg, copyType);
+            GetEmitter()->emitIns_Mov(ins, emitActualTypeSize(copyType), node->copiedReg, node->reg, /* canSkip */ false);
         }
 
         // First handle edges that aren't insertions. We clobber the full register for these edges.
@@ -3284,7 +3289,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 #endif
         }
 
-        graph.RemoveIncomingEdges(node);
+        graph.RemoveIncomingEdges(node, &busyRegs);
+        busyRegs |= genRegMask(node->reg);
     }
 }
 #endif
