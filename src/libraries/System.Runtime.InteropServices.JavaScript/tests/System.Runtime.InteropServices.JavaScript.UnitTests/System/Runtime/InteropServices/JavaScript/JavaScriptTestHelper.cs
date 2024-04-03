@@ -37,6 +37,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("delay", "JavaScriptTestHelper")]
         public static partial Task Delay(int ms);
 
+        [JSImport("intentionallyMissingImport", "JavaScriptTestHelper")]
+        public static partial void IntentionallyMissingImport();
+
+        [JSImport("intentionallyMissingImportAsync", "JavaScriptTestHelper")]
+        public static partial Task IntentionallyMissingImportAsync();
+
         [JSImport("catch1toString", "JavaScriptTestHelper")]
         public static partial string catch1toString(string message, string functionName);
 
