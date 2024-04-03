@@ -9969,7 +9969,6 @@ unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs)
     {
 #ifdef SWIFT_SUPPORT
         static_assert_no_msg(RBM_SWIFT_ERROR == RBM_R12);
-        assert(compiler->lvaSwiftErrorArg == BAD_VAR_NUM);
 
         // If this method returns an error argument in the Swift error register,
         // we didn't push the register, and thus shouldn't pop it.
