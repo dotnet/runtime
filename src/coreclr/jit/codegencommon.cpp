@@ -7874,7 +7874,6 @@ void CodeGen::genReturn(GenTree* treeNode)
         GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_ERROR, compiler->lvaSwiftErrorLocal, 0);
     }
 #endif // SWIFT_SUPPORT
-
 }
 
 //------------------------------------------------------------------------
