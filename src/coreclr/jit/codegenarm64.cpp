@@ -1884,8 +1884,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
         if (compiler->lvaPSPSym != BAD_VAR_NUM)
         {
-            if (CallerSP_to_PSP_slot_delta !=
-                compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)) // for debugging
+            if (CallerSP_to_PSP_slot_delta != compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)) // for
+                                                                                                           // debugging
             {
                 printf("lvaGetCallerSPRelativeOffset(lvaPSPSym): %d\n",
                        compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym));
@@ -2216,9 +2216,9 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 
 //  move an immediate value into an integer register
 
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
-                                     regNumber reg,
-                                     ssize_t   imm,
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
+                                     regNumber      reg,
+                                     ssize_t        imm,
                                      insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     // reg cannot be a FP register
@@ -5130,7 +5130,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                gcInfo.gcRegByrefSetCur, DebugInfo(), callTarget, /* ireg */
                                REG_NA, 0, 0,                                     /* xreg, xmul, disp */
                                false                                             /* isJump */
-                               );
+    );
 
     regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
     regSet.verifyRegistersUsed(killMask);
@@ -5739,8 +5739,8 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
     GenTree*     castOp     = cast->CastOp();
 
     genConsumeRegs(castOp);
-    unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
-                                                          : genTypeSize(castOp) * BITS_PER_BYTE;
+    unsigned   srcBits    = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
+                                                               : genTypeSize(castOp) * BITS_PER_BYTE;
     const bool isUnsigned = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
     GetEmitter()->emitIns_R_R_I_I(isUnsigned ? INS_ubfiz : INS_sbfiz, size, tree->GetRegNum(), castOp->GetRegNum(),
                                   (int)shiftByImm, (int)srcBits);

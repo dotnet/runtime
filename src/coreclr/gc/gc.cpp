@@ -48838,7 +48838,7 @@ HRESULT GCHeap::Initialize()
             gc_heap::dynamic_heap_count_data.inc_recheck_threshold = 5;
             gc_heap::dynamic_heap_count_data.dec_failure_recheck_threshold = 5;
             // This should really be set as part of computing static data and should take conserve_mem_setting into consideration.
-            gc_heap::dynamic_heap_count_data.max_gen0_new_allocation = min (dd_max_size (gc_heap::g_heaps[0]->dynamic_data_of (0)), (64 * 1024 * 1024));
+            gc_heap::dynamic_heap_count_data.max_gen0_new_allocation = min (dd_max_size (gc_heap::g_heaps[0]->dynamic_data_of (0)), (size_t)(64 * 1024 * 1024));
             gc_heap::dynamic_heap_count_data.min_gen0_new_allocation = dd_min_size (gc_heap::g_heaps[0]->dynamic_data_of (0));
 
             dprintf (6666, ("datas max gen0 budget %Id, min %Id",

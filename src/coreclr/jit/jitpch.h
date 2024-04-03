@@ -18,8 +18,8 @@
 #endif
 #include <algorithm>
 
-using std::min;
 using std::max;
+using std::min;
 
 // Don't allow using the windows.h #defines for the BitScan* APIs. Using the #defines means our
 // `BitOperations::BitScan*` functions have their name mapped, which is confusing and messes up

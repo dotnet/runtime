@@ -36,7 +36,10 @@
 //       of a for-loop.
 //
 CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin)
-    : codeGen(codeGen), endLabel(nullptr), nonZeroLabel(nullptr), branchTargetReg(REG_NA)
+    : codeGen(codeGen)
+    , endLabel(nullptr)
+    , nonZeroLabel(nullptr)
+    , branchTargetReg(REG_NA)
 {
     assert(codeGen != nullptr);
     assert(varTypeIsIntegral(immOp));
