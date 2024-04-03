@@ -374,7 +374,7 @@ namespace System.Runtime.CompilerServices
 
             if (!eeType->IsValueType)
             {
-                return Unsafe.As<byte, object>>(ref target);
+                return Unsafe.As<byte, object>(ref target);
             }
             
             if (eeType->IsByRefLike)
