@@ -883,7 +883,6 @@ void SetLargestCacheSizeAndLevelFromSysConf(size_t* cache_size, size_t* cache_le
         long size = sysconf(cacheLevelNames[i]);
         if (size > 0)
         {
-            printf ("Iterating over cache size: %ld, current cache size: %zu\n", size, *cache_size);
             *cache_size = (size_t)size;
             *cache_level = i + 1;
             break;
