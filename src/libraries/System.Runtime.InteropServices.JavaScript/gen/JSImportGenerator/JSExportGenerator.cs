@@ -245,19 +245,40 @@ namespace Microsoft.Interop.JavaScript
             //  will always evaluate to false at runtime, but the linker can't see through at
             //  build time. It seems there's no attribute to block trimming of a method?
             MemberDeclarationSyntax initializerMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(selfInitName))
-                            .WithAttributeLists(List(new[]{
-                                    AttributeList(SingletonSeparatedList(Attribute(IdentifierName(Constants.ModuleInitializerAttributeGlobal)))),
-                                }))
+                            .WithAttributeLists(
+                                SingletonList<AttributeListSyntax>(
+                                    AttributeList(
+                                        SeparatedList<AttributeSyntax>(
+                                            new SyntaxNodeOrToken[]{
+                                                Attribute(
+                                                    IdentifierName(Constants.ModuleInitializerAttributeGlobal)),
+                                                Token(SyntaxKind.CommaToken),
+                                                Attribute(
+                                                    IdentifierName(Constants.DynamicDependencyAttributeGlobal))
+                                                .WithArgumentList(
+                                                    AttributeArgumentList(
+                                                        SeparatedList<AttributeArgumentSyntax>(
+                                                            new SyntaxNodeOrToken[]{
+                                                                AttributeArgument(
+                                                                    BinaryExpression(
+                                                                        SyntaxKind.BitwiseOrExpression,
+                                                                        MemberAccessExpression(
+                                                                            SyntaxKind.SimpleMemberAccessExpression,
+                                                                            IdentifierName(Constants.DynamicallyAccessedMemberTypesGlobal),
+                                                                            IdentifierName("PublicMethods")),
+                                                                        MemberAccessExpression(
+                                                                            SyntaxKind.SimpleMemberAccessExpression,
+                                                                            IdentifierName(Constants.DynamicallyAccessedMemberTypesGlobal),
+                                                                            IdentifierName("NonPublicMethods")))),
+                                                                Token(SyntaxKind.CommaToken),
+                                                                AttributeArgument(
+                                                                    TypeOfExpression(
+                                                                        IdentifierName(initializerClass)))})))}))))
                             .WithModifiers(TokenList(new[] {
                                 Token(SyntaxKind.StaticKeyword),
                                 Token(SyntaxKind.InternalKeyword)
                             }))
-                            .WithBody(Block(
-                                IfStatement(BinaryExpression(SyntaxKind.EqualsExpression,
-                                    IdentifierName("System.Runtime.InteropServices.JavaScript.JSHost.GlobalThis"),
-                                    LiteralExpression(SyntaxKind.NullLiteralExpression)),
-                                    Block(SingletonList<StatementSyntax>(
-                                        ExpressionStatement(InvocationExpression(IdentifierName(initializerName))))))));
+                            .WithBody(Block());
 
             var ns = NamespaceDeclaration(IdentifierName(generatedNamespace))
                         .WithMembers(
