@@ -575,7 +575,7 @@ export const enum JSThreadBlockingMode {
      * On JSWebWorker blocking .Wait always warns.
      * This is the default mode.
      */
-    PreventSynchronousJSExport = 0,
+    PreventSynchronousJSExport = "PreventSynchronousJSExport",
     /**
      * Allows synchronous JSExport to be called from JavaScript code also in UI thread.
      * Inside of that call blocking .Wait throws PNSE.
@@ -583,7 +583,7 @@ export const enum JSThreadBlockingMode {
      * On JSWebWorker synchronous JSExport always works.
      * On JSWebWorker blocking .Wait always throws PNSE.
      */
-    ThrowWhenBlockingWait = 1,
+    ThrowWhenBlockingWait = "ThrowWhenBlockingWait",
     /**
      * Allows synchronous JSExport to be called from JavaScript code also in UI thread.
      * Inside of that call blocking .Wait warns.
@@ -591,7 +591,7 @@ export const enum JSThreadBlockingMode {
      * On JSWebWorker synchronous JSExport always works.
      * On JSWebWorker blocking .Wait always warns.
      */
-    WarnWhenBlockingWait = 2,
+    WarnWhenBlockingWait = "WarnWhenBlockingWait",
     /**
      * Allows synchronous JSExport to be called from JavaScript code, and allows managed code to use blocking .Wait
      * .Wait on Promise/Task chains could lead to deadlock because JS event loop is not processed and it can't resolve JS promises.
@@ -599,5 +599,5 @@ export const enum JSThreadBlockingMode {
      * Allows synchronous JSExport to be called from JavaScript code also in Main thread.
      * Inside of that call nested call back to synchronous JSImport throws PNSE (because it would deadlock otherwise in 100% cases).
      */
-    DangerousAllowBlockingWait = 100,
+    DangerousAllowBlockingWait = "DangerousAllowBlockingWait",
 }

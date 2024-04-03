@@ -43,7 +43,7 @@ public partial class Test
         Console.WriteLine("Progress! "+ cwd); 
 
         // below is blocking call, which means that UI will spin-lock little longer
-        // it will warn about blocking wait because of jsThreadBlockingMode: 2
+        // it will warn about blocking wait because of jsThreadBlockingMode: "WarnWhenBlockingWait"
         // but it will not deadlock because underlying task chain is not JS promise
         Task.Delay(10).Wait();
     }

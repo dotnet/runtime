@@ -228,7 +228,7 @@ export function get_managed_stack_trace (exception_gc_handle: GCHandle) {
 }
 
 // GCHandle InstallMainSynchronizationContext(nint jsNativeTID, JSThreadBlockingMode jsThreadBlockingMode)
-export function install_main_synchronization_context (jsThreadBlockingMode: number): GCHandle {
+export function install_main_synchronization_context (jsThreadBlockingMode: JSThreadBlockingMode): GCHandle {
     if (!WasmEnableThreads) return GCHandleNull;
     assert_c_interop();
 
@@ -242,7 +242,24 @@ export function install_main_synchronization_context (jsThreadBlockingMode: numb
         const arg1 = get_arg(args, 2);
         const arg2 = get_arg(args, 3);
         set_arg_intptr(arg1, mono_wasm_main_thread_ptr() as any);
-        set_arg_i32(arg2, jsThreadBlockingMode);
+
+        // sync with JSHostImplementation.Types.cs
+        switch (jsThreadBlockingMode) {
+            case JSThreadBlockingMode.PreventSynchronousJSExport:
+                set_arg_i32(arg2, 0);
+                break;
+            case JSThreadBlockingMode.ThrowWhenBlockingWait:
+                set_arg_i32(arg2, 1);
+                break;
+            case JSThreadBlockingMode.WarnWhenBlockingWait:
+                set_arg_i32(arg2, 2);
+                break;
+            case JSThreadBlockingMode.DangerousAllowBlockingWait:
+                set_arg_i32(arg2, 100);
+                break;
+            default:
+                throw new Error("Invalid jsThreadBlockingMode");
+        }
 
         // this block is like invoke_sync_jsexport() but without assert_js_interop()
         cwraps.mono_wasm_invoke_jsexport(managedExports.InstallMainSynchronizationContext!, args);

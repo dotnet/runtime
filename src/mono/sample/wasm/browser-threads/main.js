@@ -18,7 +18,7 @@ try {
         .withExitCodeLogging()
         .withExitOnUnhandledError()
         .withConfig({
-            jsThreadBlockingMode: 2, /* WarnWhenBlockingWait */
+            jsThreadBlockingMode: "WarnWhenBlockingWait",
         })
         .create();
 
