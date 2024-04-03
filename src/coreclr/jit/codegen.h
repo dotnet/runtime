@@ -265,11 +265,10 @@ protected:
     //
 
     void genEstablishFramePointer(int delta, bool reportUnwindData);
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    void genFnPrologCalleeRegArgs();
-#else
-    void genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState);
-#endif
+    void genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
+
+    var_types genParamStackStoreType(LclVarDsc* dsc, const ABIPassingSegment& seg);
+    void genSpillOrAddRegisterParam(class RegGraph* graph, unsigned lclNum);
     void genEnregisterIncomingStackArgs();
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);

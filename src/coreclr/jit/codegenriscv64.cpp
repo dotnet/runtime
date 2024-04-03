@@ -8064,8 +8064,9 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     }
 }
 
-void CodeGen::genFnPrologCalleeRegArgs()
+void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 {
+    *initRegStillZeroed = false;
     assert(!(intRegState.rsCalleeRegArgMaskLiveIn & floatRegState.rsCalleeRegArgMaskLiveIn));
 
     regMaskTP regArgMaskLive = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;

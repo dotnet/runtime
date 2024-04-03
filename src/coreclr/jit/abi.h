@@ -29,6 +29,8 @@ public:
     // offset, relative to the first stack argument's offset.
     unsigned GetStackOffset() const;
 
+    var_types GetRegisterType() const;
+
     static ABIPassingSegment InRegister(regNumber reg, unsigned offset, unsigned size);
     static ABIPassingSegment OnStack(unsigned stackOffset, unsigned offset, unsigned size);
 };

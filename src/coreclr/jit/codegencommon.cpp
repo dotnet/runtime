@@ -2832,1389 +2832,450 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-/*****************************************************************************
- *
- *  Generates code for moving incoming register arguments to their
- *  assigned location, in the function prolog.
- */
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+struct RegNode;
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
+struct RegNodeEdge
+{
+    RegNodeEdge* nextOutgoing;
+    RegNodeEdge* nextIncoming;
+    RegNode*     from;
+    RegNode*     to;
+    unsigned     destOffset;
+    var_types    type;
+};
+
+struct RegNode
+{
+    regNumber    reg;
+    regNumber    copiedReg;
+    var_types    type;
+    RegNodeEdge* incoming;
+    RegNodeEdge* outgoing;
+    RegNode*     next;
+#ifdef DEBUG
+    bool wrote = false;
+#endif
+};
+
+class RegGraph
+{
+    Compiler*            m_comp;
+    ArrayStack<RegNode*> m_nodes;
+
+public:
+    RegGraph(Compiler* compiler) : m_comp(compiler), m_nodes(compiler->getAllocator(CMK_Codegen))
+    {
+    }
+
+    unsigned NumEdges = 0;
+
+    RegNode* GetOrAdd(regNumber reg, var_types type)
+    {
+        assert(type != TYP_STRUCT);
+
+        for (int i = 0; i < m_nodes.Height(); i++)
+        {
+            RegNode* node = m_nodes.Bottom(i);
+            if (node->reg == reg)
+            {
+                return node;
+            }
+
+#ifdef TARGET_ARM
+            if ((node->type == TYP_DOUBLE) && (reg == REG_NEXT(node->reg)))
+            {
+                return node;
+            }
+#endif
+        }
+
+        RegNode* node   = new (m_comp, CMK_Codegen) RegNode;
+        node->reg       = reg;
+        node->copiedReg = REG_NA;
+        node->type      = type;
+        node->incoming  = nullptr;
+        node->outgoing  = nullptr;
+
+        m_nodes.Push(node);
+        return node;
+    }
+
+    void AddEdge(RegNode* from, RegNode* to, var_types type, unsigned destOffset)
+    {
+        assert(type != TYP_STRUCT);
+        RegNodeEdge* edge = new (m_comp, CMK_Codegen) RegNodeEdge;
+        edge->from        = from;
+        edge->to          = to;
+        edge->type        = type;
+        edge->destOffset  = destOffset;
+
+        edge->nextOutgoing = from->outgoing;
+        from->outgoing     = edge;
+
+        edge->nextIncoming = to->incoming;
+        to->incoming       = edge;
+
+        NumEdges++;
+    }
+
+    RegNodeEdge* FindEdgeToHandle()
+    {
+        RegNodeEdge* lastEdge = nullptr;
+        for (int i = 0; i < m_nodes.Height(); i++)
+        {
+            RegNode* reg = m_nodes.Bottom(i);
+            for (RegNodeEdge* edge = reg->outgoing; edge != nullptr; edge = edge->nextOutgoing)
+            {
+                lastEdge = edge;
+                // If going to a register without any conflicts then it's easy.
+                if (edge->to->outgoing == nullptr)
+                {
+                    return edge;
+                }
+            }
+        }
+
+        return lastEdge;
+    }
+
+    void RemoveEdge(RegNodeEdge* edge)
+    {
+        RegNodeEdge** slot = &edge->from->outgoing;
+        while ((*slot) != edge)
+        {
+            slot = &(*slot)->nextOutgoing;
+        }
+
+        *slot = edge->nextOutgoing;
+
+        slot = &edge->to->incoming;
+        while ((*slot) != edge)
+        {
+            slot = &(*slot)->nextIncoming;
+        }
+
+        *slot = edge->nextIncoming;
+
+        NumEdges--;
+    }
+
+#ifdef DEBUG
+    void Dump()
+    {
+        printf("%d registers in register parameter interference graph\n", m_nodes.Height());
+        for (int i = 0; i < m_nodes.Height(); i++)
+        {
+            RegNode* regNode = m_nodes.Bottom(i);
+            printf("  %s (%s)", getRegName(regNode->reg), varTypeName(regNode->type));
+            for (RegNodeEdge* incoming = regNode->incoming; incoming != nullptr; incoming = incoming->nextIncoming)
+            {
+                printf("\n    <- %s (%s)", getRegName(incoming->from->reg), varTypeName(incoming->from->type));
+                if (incoming->type != incoming->from->type)
+                {
+                    printf(" (edge type: %s)", varTypeName(incoming->type));
+                }
+
+                if (incoming->destOffset != 0)
+                {
+                    printf(" (offset: %d)", incoming->destOffset);
+                }
+            }
+
+            printf("\n");
+        }
+    }
+#endif
+};
+
+// -----------------------------------------------------------------------------
+// genParamStackStoreType: Get the type to use to store part of a parameter
+// passed in a register to stack.
+//
+// Parameters:
+//   dsc - The parameter
+//   seg - The segment that is being stored to stack
+//
+// Return Value:
+//   Suitable type for the store.
+//
+var_types CodeGen::genParamStackStoreType(LclVarDsc* dsc, const ABIPassingSegment& seg)
+{
+    assert(seg.IsPassedInRegister());
+
+    switch (dsc->TypeGet())
+    {
+        case TYP_BYREF:
+        case TYP_REF:
+            assert((seg.Offset == 0) && (seg.Size == TARGET_POINTER_SIZE));
+            return dsc->TypeGet();
+        case TYP_STRUCT:
+        {
+            if (genIsValidFloatReg(seg.GetRegister()))
+            {
+                return seg.GetRegisterType();
+            }
+
+            ClassLayout* layout = dsc->GetLayout();
+            assert(seg.Offset < layout->GetSize());
+            if (((seg.Offset % TARGET_POINTER_SIZE) == 0) && (seg.Size == TARGET_POINTER_SIZE))
+            {
+                return layout->GetGCPtrType(seg.Offset / TARGET_POINTER_SIZE);
+            }
+
+#ifdef TARGET_ARM64
+            // We round struct sizes up to TYP_I_IMPL on the stack frame so we can
+            // always store the full register here. This allows us to use stp more
+            // often.
+            return TYP_I_IMPL;
+#else
+            return genActualType(seg.GetRegisterType());
+#endif
+        }
+        default:
+        {
+            return genActualType(seg.GetRegisterType());
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// genSpillOrAddRegisterParam: Handle a register parameter either by homing it
+// to stack immediately, or by adding it to the register graph.
+//
+// Parameters:
+//    initReg            - A register that this method should communicate if it trashes
+//    initRegStillZeroed - [out] whether or not xtraReg is still zeroed
+//
+void CodeGen::genSpillOrAddRegisterParam(RegGraph* graph, unsigned lclNum)
+{
+    regMaskTP  paramRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
+    LclVarDsc* varDsc    = compiler->lvaGetDesc(lclNum);
+
+    unsigned baseOffset = varDsc->lvIsStructField ? varDsc->lvFldOffset : 0;
+    unsigned size       = varDsc->lvExactSize();
+
+    unsigned                     paramLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
+    LclVarDsc*                   paramVarDsc = compiler->lvaGetDesc(paramLclNum);
+    const ABIPassingInformation& abiInfo     = compiler->lvaParameterPassingInfo[paramLclNum];
+    for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+    {
+        const ABIPassingSegment& seg = abiInfo.Segments[i];
+        if (!seg.IsPassedInRegister() || ((paramRegs & genRegMask(seg.GetRegister())) == 0))
+        {
+            continue;
+        }
+
+        if (seg.Offset + seg.Size <= baseOffset)
+        {
+            continue;
+        }
+
+        if (baseOffset + size <= seg.Offset)
+        {
+            continue;
+        }
+
+        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
+        {
+            var_types storeType = genParamStackStoreType(paramVarDsc, seg);
+            if ((varDsc->TypeGet() != TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
+            {
+                // Can happen for struct fields due to padding.
+                storeType = genActualType(varDsc);
+            }
+
+            GetEmitter()->emitIns_S_R(ins_Store(storeType), emitActualTypeSize(storeType), seg.GetRegister(), lclNum,
+                                      seg.Offset - baseOffset);
+        }
+
+        if (!varDsc->lvIsInReg())
+        {
+            continue;
+        }
+
+        var_types varRegType = genActualType(varDsc->GetRegisterType());
+
+        var_types edgeType = varRegType;
+        // Some parameters can be passed in multiple registers but enregistered
+        // in a single one (e.g. SIMD types on arm64). In this case the edges
+        // we add here represent insertions of each element.
+        if (seg.Size < genTypeSize(edgeType))
+        {
+            edgeType = seg.GetRegisterType();
+        }
+
+        RegNode* sourceReg = graph->GetOrAdd(seg.GetRegister(), seg.GetRegisterType());
+        RegNode* destReg   = graph->GetOrAdd(varDsc->GetRegNum(), varRegType);
+
+#ifdef TARGET_ARM
+        if (destReg->reg != varDsc->GetRegNum())
+        {
+            assert(varDsc->TypeGet() == TYP_FLOAT);
+            assert(varDsc->GetRegNum() == REG_NEXT(destReg->reg));
+            graph->AddEdge(sourceReg, destReg, edgeType, 4);
+            continue;
+        }
 #endif
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState)
+        if ((sourceReg != destReg) || (baseOffset != seg.Offset))
+        {
+            graph->AddEdge(sourceReg, destReg, edgeType, seg.Offset - baseOffset);
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// genHomeIncomingRegisters: Move all register arguments to their initial assigned
+// location.
+//
+// Parameters:
+//    initReg            - A register that this method should communicate if it trashes
+//    initRegStillZeroed - [out] whether or not initReg is still zeroed
+//
+void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 {
 #ifdef DEBUG
     if (verbose)
     {
-        printf("*************** In genFnPrologCalleeRegArgs() for %s regs\n", regState->rsIsFloat ? "float" : "int");
+        printf("*************** In genHomeRegisterParams()\n");
     }
 #endif
 
-    unsigned  argMax;           // maximum argNum value plus 1, (including the RetBuffArg)
-    unsigned  argNum;           // current argNum, always in [0..argMax-1]
-    unsigned  fixedRetBufIndex; // argNum value used by the fixed return buffer argument (ARM64)
-    unsigned  regArgNum;        // index into the regArgTab[] table
-    regMaskTP regArgMaskLive = regState->rsCalleeRegArgMaskLiveIn;
-    bool      doingFloat     = regState->rsIsFloat;
-
-    // We should be generating the prolog block when we are called
-    assert(compiler->compGeneratingProlog);
-
-    // We expect to have some registers of the type we are doing, that are LiveIn, otherwise we don't need to be called.
-    noway_assert(regArgMaskLive != 0);
-
-    // If a method has 3 args (and no fixed return buffer) then argMax is 3 and valid indexes are 0,1,2
-    // If a method has a fixed return buffer (on ARM64) then argMax gets set to 9 and valid index are 0-8
-    //
-    // The regArgTab can always have unused entries,
-    //    for example if an architecture always increments the arg register number but uses either
-    //    an integer register or a floating point register to hold the next argument
-    //    then with a mix of float and integer args you could have:
-    //
-    //    sampleMethod(int i, float x, int j, float y, int k, float z);
-    //          r0, r2 and r4 as valid integer arguments with argMax as 5
-    //      and f1, f3 and f5 and valid floating point arguments with argMax as 6
-    //    The first one is doingFloat==false and the second one is doingFloat==true
-    //
-    //    If a fixed return buffer (in r8) was also present then the first one would become:
-    //          r0, r2, r4 and r8 as valid integer arguments with argMax as 9
-    //
-
-    argMax           = regState->rsCalleeRegArgCount;
-    fixedRetBufIndex = (unsigned)-1; // Invalid value
-
-    // If necessary we will select a correct xtraReg for circular floating point args later.
-    if (doingFloat)
+    regMaskTP paramRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
+    if (compiler->opts.OptimizationDisabled())
     {
-        xtraReg = REG_NA;
-        noway_assert(argMax <= MAX_FLOAT_REG_ARG);
-    }
-    else // we are doing the integer registers
-    {
-        noway_assert(argMax <= MAX_REG_ARG);
-        if (hasFixedRetBuffReg(compiler->info.compCallConv))
+        // All registers are going to frame
+        for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
         {
-            fixedRetBufIndex = theFixedRetBuffArgNum(compiler->info.compCallConv);
-            // We have an additional integer register argument when hasFixedRetBuffReg() is true
-            argMax = fixedRetBufIndex + 1;
-            assert(argMax == (MAX_REG_ARG + 1));
-        }
-    }
+            LclVarDsc* lclDsc = compiler->lvaGetDesc(lclNum);
 
-    //
-    // Construct a table with the register arguments, for detecting circular and
-    // non-circular dependencies between the register arguments. A dependency is when
-    // an argument register Rn needs to be moved to register Rm that is also an argument
-    // register. The table is constructed in the order the arguments are passed in
-    // registers: the first register argument is in regArgTab[0], the second in
-    // regArgTab[1], etc. Note that on ARM, a TYP_DOUBLE takes two entries, starting
-    // at an even index. The regArgTab is indexed from 0 to argMax - 1.
-    // Note that due to an extra argument register for ARM64 (i.e  theFixedRetBuffReg())
-    // we have increased the allocated size of the regArgTab[] by one.
-    //
-    struct regArgElem
-    {
-        unsigned  varNum;  // index into compiler->lvaTable[] for this register argument
-        var_types type;    // the Jit type of this regArgTab entry
-        unsigned  trashBy; // index into this regArgTab[] table of the register that will be copied to this register.
-                           // That is, for regArgTab[x].trashBy = y, argument register number 'y' will be copied to
-                           // argument register number 'x'. Only used when circular = true.
-        char slot;         // 0 means the register is not used for a register argument
-                           // 1 means the first part of a register argument
-                           // 2, 3 or 4  means the second,third or fourth part of a multireg argument
-        bool stackArg;     // true if the argument gets homed to the stack
-        bool writeThru;    // true if the argument gets homed to both stack and register
-        bool processed;    // true after we've processed the argument (and it is in its final location)
-        bool circular;     // true if this register participates in a circular dependency loop.
-        bool hfaConflict;  // arg is part of an HFA that will end up in the same register
-                           // but in a different slot (eg arg in s3 = v3.s[0], needs to end up in v3.s[3])
-    } regArgTab[max(MAX_REG_ARG + 1, MAX_FLOAT_REG_ARG)] = {};
-
-    unsigned   varNum;
-    LclVarDsc* varDsc;
-
-    for (varNum = 0; varNum < compiler->lvaCount; ++varNum)
-    {
-        varDsc = compiler->lvaGetDesc(varNum);
-
-        // Is this variable a register arg?
-        if (!varDsc->lvIsParam)
-        {
-            continue;
-        }
-
-        if (!varDsc->lvIsRegArg)
-        {
-            continue;
-        }
-
-        // When we have a promoted struct we have two possible LclVars that can represent the incoming argument
-        // in the regArgTab[], either the original TYP_STRUCT argument or the introduced lvStructField.
-        // We will use the lvStructField if we have a TYPE_INDEPENDENT promoted struct field otherwise
-        // use the original TYP_STRUCT argument.
-        //
-        if (varDsc->lvPromoted || varDsc->lvIsStructField)
-        {
-            LclVarDsc* parentVarDsc = varDsc;
-            if (varDsc->lvIsStructField)
+            if (!lclDsc->lvOnFrame)
             {
-                assert(!varDsc->lvPromoted);
-                parentVarDsc = compiler->lvaGetDesc(varDsc->lvParentLcl);
-            }
-
-            Compiler::lvaPromotionType promotionType = compiler->lvaGetPromotionType(parentVarDsc);
-
-            if (promotionType == Compiler::PROMOTION_TYPE_INDEPENDENT)
-            {
-                // For register arguments that are independent promoted structs we put the promoted field varNum in the
-                // regArgTab[]
-                if (varDsc->lvPromoted)
-                {
-                    continue;
-                }
-            }
-            else
-            {
-                // For register arguments that are not independent promoted structs we put the parent struct varNum in
-                // the regArgTab[]
-                if (varDsc->lvIsStructField)
-                {
-                    continue;
-                }
-            }
-        }
-
-#ifdef SWIFT_SUPPORT
-        // The Swift self parameter is passed in a callee save register and is
-        // not part of the arg register order that this function relies on to
-        // handle conflicts. For this reason we always mark it as DNER and
-        // handle it outside the normal register arguments.
-        // TODO-CQ: Fix this.
-        if (varNum == compiler->lvaSwiftSelfArg)
-        {
-            continue;
-        }
-#endif
-
-        var_types regType = compiler->mangleVarArgsType(varDsc->TypeGet());
-        // Change regType to the HFA type when we have a HFA argument
-        if (varDsc->lvIsHfaRegArg())
-        {
-            if (TargetOS::IsWindows && TargetArchitecture::IsArm64 && compiler->info.compIsVarArgs)
-            {
-                assert(!"Illegal incoming HFA arg encountered in Vararg method.");
-            }
-            regType = varDsc->GetHfaType();
-        }
-
-#if defined(UNIX_AMD64_ABI)
-        if (!varTypeIsStruct(regType))
-#endif // defined(UNIX_AMD64_ABI)
-        {
-            bool isFloatReg = emitter::isFloatReg(varDsc->GetArgReg());
-
-            if (isFloatReg != doingFloat)
-            {
-                // A struct might be passed  partially in XMM register for System V calls.
-                // So a single arg might use both register files.
-                continue;
-            }
-            else if (isFloatReg != varTypeUsesFloatArgReg(regType))
-            {
-                if (regType == TYP_FLOAT)
-                {
-                    regType = TYP_INT;
-                }
-                else
-                {
-                    assert(regType == TYP_DOUBLE);
-                    regType = TYP_LONG;
-                }
-            }
-        }
-
-        int slots = 0;
-
-#if defined(UNIX_AMD64_ABI)
-        if (varTypeIsStruct(varDsc))
-        {
-            CORINFO_CLASS_HANDLE typeHnd;
-            if (varDsc->lvIsStructField)
-            {
-                // The only case we currently permit is a wrapped SIMD field,
-                // where we won't have the class handle available, so get it
-                // from the parent struct -- they will agree on ABI details.
-                LclVarDsc* parentDsc = compiler->lvaGetDesc(varDsc->lvParentLcl);
-                assert(varTypeIsSIMD(varDsc) && (parentDsc->lvFieldCnt == 1));
-                typeHnd = parentDsc->GetLayout()->GetClassHandle();
-            }
-            else
-            {
-                typeHnd = varDsc->GetLayout()->GetClassHandle();
-            }
-            assert(typeHnd != nullptr);
-            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-            compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
-            if (!structDesc.passedInRegisters)
-            {
-                // The var is not passed in registers.
                 continue;
             }
 
-            unsigned firstRegSlot = 0;
-            for (unsigned slotCounter = 0; slotCounter < structDesc.eightByteCount; slotCounter++)
+            const ABIPassingInformation& abiInfo = compiler->lvaParameterPassingInfo[lclNum];
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
-                regNumber regNum = varDsc->lvRegNumForSlot(slotCounter);
-                var_types slotRegType;
-
-#ifdef FEATURE_SIMD
-                // Assumption 1:
-                // RyuJit backend depends on the assumption that on 64-Bit targets Vector3 size is rounded off
-                // to TARGET_POINTER_SIZE and hence Vector3 locals on stack can be treated as TYP_SIMD16 for
-                // reading and writing purposes.  Hence while homing a Vector3 type arg on stack we should
-                // home entire 16-bytes so that the upper-most 4-bytes will be zeroed when written to stack.
-                //
-                // Assumption 2:
-                // RyuJit backend is making another implicit assumption that Vector3 type args when passed in
-                // registers or on stack, the upper most 4-bytes will be zero.
-                //
-                // For P/Invoke return and Reverse P/Invoke argument passing, native compiler doesn't guarantee
-                // that upper 4-bytes of a Vector3 type struct is zero initialized and hence assumption 2 is
-                // invalid.
-                //
-                // RyuJIT x64 Windows: arguments are treated as passed by ref and hence read/written just 12
-                // bytes. In case of Vector3 returns, Caller allocates a zero initialized Vector3 local and
-                // passes it retBuf arg and Callee method writes only 12 bytes to retBuf. For this reason,
-                // there is no need to clear upper 4-bytes of Vector3 type args.
-                //
-                // RyuJIT x64 Unix: arguments are treated as passed by value and read/writen as if TYP_SIMD16.
-                // Vector3 return values are returned two return registers and Caller assembles them into a
-                // single xmm reg. Hence RyuJIT explicitly generates code to clears upper 4-bytes of Vector3
-                // type args in prolog and Vector3 type return value of a call
-
-                if (varDsc->lvType == TYP_SIMD12)
+                const ABIPassingSegment& seg = abiInfo.Segments[i];
+                if (seg.IsPassedInRegister() && ((paramRegs & genRegMask(seg.GetRegister())) != 0))
                 {
-                    slotRegType = TYP_DOUBLE;
+                    var_types storeType = genParamStackStoreType(lclDsc, seg);
+                    GetEmitter()->emitIns_S_R(ins_Store(storeType), emitActualTypeSize(storeType), seg.GetRegister(),
+                                              lclNum, seg.Offset);
                 }
-                else
-#endif
-                {
-                    slotRegType = compiler->GetEightByteType(structDesc, slotCounter);
-                }
-
-                regArgNum = genMapRegNumToRegArgNum(regNum, slotRegType, compiler->info.compCallConv);
-
-                if ((!doingFloat && (structDesc.IsIntegralSlot(slotCounter))) ||
-                    (doingFloat && (structDesc.IsSseSlot(slotCounter))))
-                {
-                    // Store the reg for the first slot.
-                    if (slots == 0)
-                    {
-                        firstRegSlot = regArgNum;
-                    }
-
-                    // Bingo - add it to our table
-                    noway_assert(regArgNum < argMax);
-                    noway_assert(regArgTab[regArgNum].slot == 0); // we better not have added it already (there better
-                                                                  // not be multiple vars representing this argument
-                                                                  // register)
-                    regArgTab[regArgNum].varNum = varNum;
-                    regArgTab[regArgNum].slot   = (char)(slotCounter + 1);
-                    regArgTab[regArgNum].type   = slotRegType;
-                    slots++;
-                }
-            }
-
-            if (slots == 0)
-            {
-                continue; // Nothing to do for this regState set.
-            }
-
-            regArgNum = firstRegSlot;
-        }
-        else
-#endif // defined(UNIX_AMD64_ABI)
-        {
-            // Bingo - add it to our table
-            regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), regType, compiler->info.compCallConv);
-            slots     = 1;
-
-            if (TargetArchitecture::IsArm32 ||
-                (TargetOS::IsWindows && TargetArchitecture::IsArm64 && compiler->info.compIsVarArgs))
-            {
-                int lclSize = compiler->lvaLclSize(varNum);
-                if (lclSize > REGSIZE_BYTES)
-                {
-                    slots = lclSize / REGSIZE_BYTES;
-                }
-            }
-#if FEATURE_MULTIREG_ARGS
-            else if (varDsc->lvIsMultiRegArg)
-            {
-                if (varDsc->lvIsHfaRegArg())
-                {
-                    // We have an HFA argument, set slots to the number of registers used
-                    slots = varDsc->lvHfaSlots();
-                }
-                else
-                {
-                    // Currently all non-HFA multireg structs are two registers in size (i.e. two slots)
-                    assert(varDsc->lvSize() == (2 * TARGET_POINTER_SIZE));
-                    // We have a non-HFA multireg argument, set slots to two
-                    slots = 2;
-                }
-            }
-#endif // FEATURE_MULTIREG_ARGS
-
-            // Handle args split between registers and stack. The arm64 fixed ret buf arg is never split.
-            if (compFeatureArgSplit() && (fixedRetBufIndex != regArgNum))
-            {
-                unsigned maxRegArgNum = doingFloat ? MAX_FLOAT_REG_ARG : MAX_REG_ARG;
-                if (regArgNum + slots > maxRegArgNum)
-                {
-                    JITDUMP("Splitting V%02u: %u registers, %u stack slots\n", varNum, maxRegArgNum - regArgNum,
-                            regArgNum + slots - maxRegArgNum);
-                    slots = maxRegArgNum - regArgNum;
-                }
-            }
-
-            // Note that regArgNum + 1 represents an argument index not an actual argument register;
-            // see genMapRegArgNumToRegNum().
-
-            for (int i = 0; i < slots; i++)
-            {
-                noway_assert((regArgNum + i) < argMax);
-
-                // We better not have added it already (there better not be multiple vars representing this argument
-                // register)
-                noway_assert(regArgTab[regArgNum + i].slot == 0);
-
-                regArgTab[regArgNum + i].varNum = varNum;
-                regArgTab[regArgNum + i].slot   = static_cast<char>(i + 1);
-
-                regArgTab[regArgNum + i].type = regType; // Set the register type.
             }
         }
 
-        for (int i = 0; i < slots; i++)
-        {
-            regType          = regArgTab[regArgNum + i].type;
-            regNumber regNum = genMapRegArgNumToRegNum(regArgNum + i, regType, compiler->info.compCallConv);
+        return;
+    }
 
-#if !defined(UNIX_AMD64_ABI)
-            assert((i > 0) || (regNum == varDsc->GetArgReg()));
-#endif // defined(UNIX_AMD64_ABI)
-
-            // Is the arg dead on entry to the method ?
-
-            if ((regArgMaskLive & genRegMask(regNum)) == 0)
-            {
-                if (varDsc->lvTrackedNonStruct())
-                {
-                    // We may now see some tracked locals with zero refs.
-                    // See Lowering::DoPhase. Tolerate these.
-                    if (varDsc->lvRefCnt() > 0)
-                    {
-                        noway_assert(!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex));
-                    }
-                }
-                else
-                {
-#ifdef TARGET_X86
-                    noway_assert(varDsc->lvType == TYP_STRUCT);
-#else  // !TARGET_X86
-                    // For LSRA, it may not be in regArgMaskLive if it has a zero
-                    // refcnt.  This is in contrast with the non-LSRA case in which all
-                    // non-tracked args are assumed live on entry.
-                    noway_assert((varDsc->lvRefCnt() == 0) || (varDsc->lvType == TYP_STRUCT) ||
-                                 (varDsc->IsAddressExposed() && compiler->info.compIsVarArgs) ||
-                                 (varDsc->IsAddressExposed() && compiler->opts.compUseSoftFP));
-#endif // !TARGET_X86
-                }
-                // Mark it as processed and be done with it
-                regArgTab[regArgNum + i].processed = true;
-                goto NON_DEP;
-            }
+    // We build an interference graph where each node represents a register,
+    // and an edge regX -> regY represents moving (part of) register X to (part
+    // of) register Y. Note that in the general case each register can have
+    // multiple incoming edges. Examples:
+    // 1. On arm32 float registers overlay the double registers. If a double is passed in d0 (i.e. s0 and s1)
+    //    we can have two float params going into s0 and s1, giving two incoming edges
+    // 2. On arm64/SysV x64 SIMD types can be passed in multiple registers but
+    //    enregistered in a single vector register
+    // Currently we never have multiple outgoing edges but one could imagine
+    // this situation if we allowed promotion when fields didn't fit exactly on
+    // top of the underlying registers. TODO-CQ: Lift this restriction and
+    // implement the support for this.
+    RegGraph graph(compiler);
 
 #ifdef TARGET_ARM
-            // On the ARM when the varDsc is a struct arg (or pre-spilled due to varargs) the initReg/xtraReg
-            // could be equal to GetArgReg(). The pre-spilled registers are also not considered live either since
-            // they've already been spilled.
-            //
-            if ((regSet.rsMaskPreSpillRegs(false) & genRegMask(regNum)) == 0)
-#endif // TARGET_ARM
-            {
-#if !defined(UNIX_AMD64_ABI)
-                noway_assert(xtraReg != (varDsc->GetArgReg() + i));
-#endif
-                noway_assert(regArgMaskLive & genRegMask(regNum));
-            }
-
-            regArgTab[regArgNum + i].processed = false;
-            regArgTab[regArgNum + i].writeThru = (varDsc->lvIsInReg() && varDsc->lvLiveInOutOfHndlr);
-
-            /* mark stack arguments since we will take care of those first */
-            regArgTab[regArgNum + i].stackArg = varDsc->lvIsInReg() ? false : true;
-
-            /* If it goes on the stack or in a register that doesn't hold
-             * an argument anymore -> CANNOT form a circular dependency */
-
-            if (varDsc->lvIsInReg() && (genRegMask(regNum) & regArgMaskLive))
-            {
-                /* will trash another argument -> possible dependency
-                 * We may need several passes after the table is constructed
-                 * to decide on that */
-
-                /* Maybe the argument stays in the register (IDEAL) */
-
-                if ((i == 0) && (varDsc->GetRegNum() == regNum))
-                {
-                    goto NON_DEP;
-                }
-
-#if !defined(TARGET_64BIT)
-                if ((i == 1) && varTypeIsStruct(varDsc) && (varDsc->GetOtherReg() == regNum))
-                {
-                    goto NON_DEP;
-                }
-                if ((i == 1) && (genActualType(varDsc->TypeGet()) == TYP_LONG) && (varDsc->GetOtherReg() == regNum))
-                {
-                    goto NON_DEP;
-                }
-
-                if ((i == 1) && (genActualType(varDsc->TypeGet()) == TYP_DOUBLE) &&
-                    (REG_NEXT(varDsc->GetRegNum()) == regNum))
-                {
-                    goto NON_DEP;
-                }
-#endif // !defined(TARGET_64BIT)
-                regArgTab[regArgNum + i].circular = true;
-            }
-            else
-            {
-            NON_DEP:
-                regArgTab[regArgNum + i].circular = false;
-
-                /* mark the argument register as free */
-                regArgMaskLive &= ~genRegMask(regNum);
-            }
-        }
-    }
-
-    /* Find the circular dependencies for the argument registers, if any.
-     * A circular dependency is a set of registers R1, R2, ..., Rn
-     * such that R1->R2 (that is, R1 needs to be moved to R2), R2->R3, ..., Rn->R1 */
-
-    bool change         = true;
-    bool hasHfaConflict = false;
-    if (regArgMaskLive)
+    // Float and double registers overlap on arm32. When we have double
+    // parameters, we want to represent those as double nodes in the graph. Pre
+    // create them here to ensure a previous float parameter doesn't create an
+    // overlapping float node.
+    for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
-        /* Possible circular dependencies still exist; the previous pass was not enough
-         * to filter them out. Use a "sieve" strategy to find all circular dependencies. */
-
-        while (change)
+        const ABIPassingInformation& abiInfo = compiler->lvaParameterPassingInfo[lclNum];
+        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
         {
-            change = false;
+            const ABIPassingSegment& seg = abiInfo.Segments[i];
 
-            for (argNum = 0; argNum < argMax; argNum++)
+            if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()) && (seg.Size == 8))
             {
-                // If we already marked the argument as non-circular then continue
-
-                if (!regArgTab[argNum].circular)
-                {
-                    continue;
-                }
-
-                if (regArgTab[argNum].slot == 0) // Not a register argument
-                {
-                    continue;
-                }
-
-                varNum                     = regArgTab[argNum].varNum;
-                varDsc                     = compiler->lvaGetDesc(varNum);
-                const var_types varRegType = varDsc->GetRegisterType();
-                noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
-
-                /* cannot possibly have stack arguments */
-                noway_assert(varDsc->lvIsInReg());
-                noway_assert(!regArgTab[argNum].stackArg);
-
-                var_types regType = regArgTab[argNum].type;
-                regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType, compiler->info.compCallConv);
-
-                regNumber destRegNum = REG_NA;
-                if (varTypeIsPromotable(varDsc) &&
-                    (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT))
-                {
-                    assert(regArgTab[argNum].slot <= varDsc->lvFieldCnt);
-                    LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + regArgTab[argNum].slot - 1);
-                    destRegNum             = fieldVarDsc->GetRegNum();
-                }
-                else if (regArgTab[argNum].slot == 1)
-                {
-                    destRegNum = varDsc->GetRegNum();
-                }
-#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
-                else if (varDsc->lvIsHfa())
-                {
-                    // This must be a SIMD type that's fully enregistered, but is passed as an HFA.
-                    // Each field will be inserted into the same destination register.
-                    //
-                    assert(varTypeIsSIMD(varDsc));
-                    assert(regArgTab[argNum].slot <= (int)varDsc->lvHfaSlots());
-                    assert(argNum > 0);
-                    assert(regArgTab[argNum - 1].varNum == varNum);
-
-                    // If the field is passed in the same register as the destination,
-                    // but is in the wrong part of the register, mark it specially so later
-                    // we make sure to move it to the right spot before "freeing" the destination.
-                    //
-                    destRegNum = varDsc->GetRegNum();
-                    if (regNum == destRegNum)
-                    {
-                        // We only get here if the HFA part is not already in the right slot in
-                        // the destination. That is, it is not slot-1.
-                        //
-                        const int slot = regArgTab[argNum].slot;
-                        assert(slot != 1);
-                        JITDUMP("HFA conflict; arg num %u needs to move from %s[%u] to %s[%u]\n", argNum,
-                                getRegName(regNum), 0, getRegName(destRegNum), slot - 1);
-                        regArgTab[argNum].hfaConflict = true;
-
-                        // We'll need to do a special pass later to resolve these
-                        //
-                        hasHfaConflict = true;
-                    }
-                    regArgMaskLive &= ~genRegMask(regNum);
-                    regArgTab[argNum].circular = false;
-                    change                     = true;
-                    continue;
-                }
-#elif defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
-                else
-                {
-                    assert(regArgTab[argNum].slot == 2);
-                    assert(argNum > 0);
-                    assert(regArgTab[argNum - 1].slot == 1);
-                    assert(regArgTab[argNum - 1].varNum == varNum);
-                    assert((varRegType == TYP_SIMD12) || (varRegType == TYP_SIMD16));
-                    regArgMaskLive &= ~genRegMask(regNum);
-                    regArgTab[argNum].circular = false;
-                    change                     = true;
-                    continue;
-                }
-#endif // defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
-#if !defined(TARGET_64BIT)
-                else if (regArgTab[argNum].slot == 2 && genActualType(varDsc->TypeGet()) == TYP_LONG)
-                {
-                    destRegNum = varDsc->GetOtherReg();
-                }
-                else
-                {
-                    assert(regArgTab[argNum].slot == 2);
-                    assert(varDsc->TypeGet() == TYP_DOUBLE);
-                    destRegNum = REG_NEXT(varDsc->GetRegNum());
-                }
-#endif // !defined(TARGET_64BIT)
-                noway_assert(destRegNum != REG_NA);
-                if (genRegMask(destRegNum) & regArgMaskLive)
-                {
-                    /* we are trashing a live argument register - record it */
-                    unsigned destRegArgNum = genMapRegNumToRegArgNum(destRegNum, regType, compiler->info.compCallConv);
-                    noway_assert(destRegArgNum < argMax);
-                    regArgTab[destRegArgNum].trashBy = argNum;
-                }
-                else
-                {
-                    /* argument goes to a free register */
-                    regArgTab[argNum].circular = false;
-                    change                     = true;
-
-                    /* mark the argument register as free */
-                    regArgMaskLive &= ~genRegMask(regNum);
-                }
+                graph.GetOrAdd(seg.GetRegister(), TYP_DOUBLE);
             }
-        }
-    }
-
-    /* At this point, everything that has the "circular" flag
-     * set to "true" forms a circular dependency */
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-    if (regArgMaskLive)
-    {
-        if (verbose)
-        {
-            printf("Circular dependencies found while home-ing the incoming arguments.\n");
         }
     }
 #endif
 
-    // LSRA allocates registers to incoming parameters in order and will not overwrite
-    // a register still holding a live parameter.
-
-    noway_assert(((regArgMaskLive & RBM_FLTARG_REGS) == 0) &&
-                 "Homing of float argument registers with circular dependencies not implemented.");
-
-    // Now move the arguments to their locations.
-    // First consider ones that go on the stack since they may free some registers.
-    // Also home writeThru args, since they're also homed to the stack.
-
-    regArgMaskLive = regState->rsCalleeRegArgMaskLiveIn; // reset the live in to what it was at the start
-    for (argNum = 0; argNum < argMax; argNum++)
+    for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
-        emitAttr size;
+        LclVarDsc* lclDsc = compiler->lvaGetDesc(lclNum);
 
-#if defined(UNIX_AMD64_ABI)
-        // If this is the wrong register file, just continue.
-        if (regArgTab[argNum].type == TYP_UNDEF)
+        if (compiler->lvaGetPromotionType(lclNum) == Compiler::PROMOTION_TYPE_INDEPENDENT)
         {
-            // This could happen if the reg in regArgTab[argNum] is of the other register file -
-            //     for System V register passed structs where the first reg is GPR and the second an XMM reg.
-            // The next register file processing will process it.
-            continue;
-        }
-#endif // defined(UNIX_AMD64_ABI)
-
-        // If the arg is dead on entry to the method, skip it
-
-        if (regArgTab[argNum].processed)
-        {
-            continue;
-        }
-
-        if (regArgTab[argNum].slot == 0) // Not a register argument
-        {
-            continue;
-        }
-
-        varNum = regArgTab[argNum].varNum;
-        varDsc = compiler->lvaGetDesc(varNum);
-
-#ifndef TARGET_64BIT
-        // If this arg is never on the stack, go to the next one.
-        if (varDsc->lvType == TYP_LONG)
-        {
-            if (regArgTab[argNum].slot == 1 && !regArgTab[argNum].stackArg && !regArgTab[argNum].writeThru)
+            for (unsigned fld = 0; fld < lclDsc->lvFieldCnt; fld++)
             {
-                continue;
-            }
-            else if (varDsc->GetOtherReg() != REG_STK)
-            {
-                continue;
+                unsigned fieldLclNum = lclDsc->lvFieldLclStart + fld;
+                genSpillOrAddRegisterParam(&graph, fieldLclNum);
             }
         }
         else
-#endif // !TARGET_64BIT
         {
-            // If this arg is never on the stack, go to the next one.
-            if (!regArgTab[argNum].stackArg && !regArgTab[argNum].writeThru)
-            {
-                continue;
-            }
-        }
-
-#if defined(TARGET_ARM)
-        if (varDsc->lvType == TYP_DOUBLE)
-        {
-            if (regArgTab[argNum].slot == 2)
-            {
-                // We handled the entire double when processing the first half (slot == 1)
-                continue;
-            }
-        }
-#endif
-
-        noway_assert(regArgTab[argNum].circular == false);
-
-        noway_assert(varDsc->lvIsParam);
-        noway_assert(varDsc->lvIsRegArg);
-        noway_assert(varDsc->lvIsInReg() == false || varDsc->lvLiveInOutOfHndlr ||
-                     (varDsc->lvType == TYP_LONG && varDsc->GetOtherReg() == REG_STK && regArgTab[argNum].slot == 2));
-
-        var_types storeType = TYP_UNDEF;
-        unsigned  slotSize  = TARGET_POINTER_SIZE;
-
-        if (varTypeIsStruct(varDsc))
-        {
-            storeType = TYP_I_IMPL; // Default store type for a struct type is a pointer sized integer
-#if FEATURE_MULTIREG_ARGS
-            // Must be <= MAX_PASS_MULTIREG_BYTES or else it wouldn't be passed in registers
-            noway_assert(varDsc->lvSize() <= MAX_PASS_MULTIREG_BYTES);
-#endif // FEATURE_MULTIREG_ARGS
-#ifdef UNIX_AMD64_ABI
-            storeType = regArgTab[argNum].type;
-#endif // !UNIX_AMD64_ABI
-            if (varDsc->lvIsHfaRegArg())
-            {
-#ifdef TARGET_ARM
-                // On ARM32 the storeType for HFA args is always TYP_FLOAT
-                storeType = TYP_FLOAT;
-                slotSize  = (unsigned)emitActualTypeSize(storeType);
-#else  // TARGET_ARM64
-                storeType = genActualType(varDsc->GetHfaType());
-                slotSize  = (unsigned)emitActualTypeSize(storeType);
-#endif // TARGET_ARM64
-            }
-        }
-        else // Not a struct type
-        {
-            storeType = genActualType(regArgTab[argNum].type);
-        }
-        size = emitActualTypeSize(storeType);
-#ifdef TARGET_X86
-        noway_assert(genTypeSize(storeType) == TARGET_POINTER_SIZE);
-#endif // TARGET_X86
-
-        regNumber srcRegNum = genMapRegArgNumToRegNum(argNum, storeType, compiler->info.compCallConv);
-
-        // Stack argument - if the ref count is 0 don't care about it
-
-        if (!varDsc->lvOnFrame)
-        {
-            noway_assert(varDsc->lvRefCnt() == 0);
-        }
-        else
-        {
-            // Since slot is typically 1, baseOffset is typically 0
-            int baseOffset = (regArgTab[argNum].slot - 1) * slotSize;
-
-            GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, baseOffset);
-
-#ifndef UNIX_AMD64_ABI
-            // Check if we are writing past the end of the struct
-            if (varTypeIsStruct(varDsc))
-            {
-                assert(varDsc->lvSize() >= baseOffset + (unsigned)size);
-            }
-#endif // !UNIX_AMD64_ABI
-        }
-
-        // Mark the argument as processed, and set it as no longer live in srcRegNum,
-        // unless it is a writeThru var, in which case we home it to the stack, but
-        // don't mark it as processed until below.
-        if (!regArgTab[argNum].writeThru)
-        {
-            regArgTab[argNum].processed = true;
-            regArgMaskLive &= ~genRegMask(srcRegNum);
-        }
-
-#if defined(TARGET_ARM)
-        if ((storeType == TYP_DOUBLE) && !regArgTab[argNum].writeThru)
-        {
-            regArgTab[argNum + 1].processed = true;
-            regArgMaskLive &= ~genRegMask(REG_NEXT(srcRegNum));
-        }
-#endif
-    }
-
-    /* Process any circular dependencies */
-    if (regArgMaskLive)
-    {
-        unsigned    begReg, destReg, srcReg;
-        unsigned    varNumDest, varNumSrc;
-        LclVarDsc*  varDscDest;
-        LclVarDsc*  varDscSrc;
-        instruction insCopy = INS_mov;
-
-        if (doingFloat)
-        {
-#ifndef UNIX_AMD64_ABI
-            if (GlobalJitOptions::compFeatureHfa)
-#endif // !UNIX_AMD64_ABI
-            {
-                insCopy = ins_Copy(TYP_DOUBLE);
-                // Compute xtraReg here when we have a float argument
-                assert(xtraReg == REG_NA);
-
-                regMaskTP fpAvailMask;
-
-                fpAvailMask = RBM_FLT_CALLEE_TRASH & ~regArgMaskLive;
-                if (GlobalJitOptions::compFeatureHfa)
-                {
-                    fpAvailMask &= RBM_ALLDOUBLE;
-                }
-
-                if (fpAvailMask == RBM_NONE)
-                {
-                    fpAvailMask = RBM_ALLFLOAT & ~regArgMaskLive;
-                    if (GlobalJitOptions::compFeatureHfa)
-                    {
-                        fpAvailMask &= RBM_ALLDOUBLE;
-                    }
-                }
-
-                assert(fpAvailMask != RBM_NONE);
-
-                // We pick the lowest avail register number
-                regMaskTP tempMask = genFindLowestBit(fpAvailMask);
-                xtraReg            = genRegNumFromMask(tempMask);
-            }
-#if defined(TARGET_X86)
-            // This case shouldn't occur on x86 since NYI gets converted to an assert
-            NYI("Homing circular FP registers via xtraReg");
-#endif
-        }
-
-        for (argNum = 0; argNum < argMax; argNum++)
-        {
-            // If not a circular dependency then continue
-            if (!regArgTab[argNum].circular)
-            {
-                continue;
-            }
-
-            // If already processed the dependency then continue
-
-            if (regArgTab[argNum].processed)
-            {
-                continue;
-            }
-
-            if (regArgTab[argNum].slot == 0) // Not a register argument
-            {
-                continue;
-            }
-
-            destReg = begReg = argNum;
-            srcReg           = regArgTab[argNum].trashBy;
-
-            varNumDest = regArgTab[destReg].varNum;
-            varDscDest = compiler->lvaGetDesc(varNumDest);
-            noway_assert(varDscDest->lvIsParam && varDscDest->lvIsRegArg);
-
-            noway_assert(srcReg < argMax);
-            varNumSrc = regArgTab[srcReg].varNum;
-            varDscSrc = compiler->lvaGetDesc(varNumSrc);
-            noway_assert(varDscSrc->lvIsParam && varDscSrc->lvIsRegArg);
-
-            emitAttr size = EA_PTRSIZE;
-
-#ifdef TARGET_XARCH
-            //
-            // The following code relies upon the target architecture having an
-            // 'xchg' instruction which directly swaps the values held in two registers.
-            // On the ARM architecture we do not have such an instruction.
-            //
-            if (destReg == regArgTab[srcReg].trashBy)
-            {
-                /* only 2 registers form the circular dependency - use "xchg" */
-
-                varNum = regArgTab[argNum].varNum;
-                varDsc = compiler->lvaGetDesc(varNum);
-                noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
-
-                noway_assert(genTypeSize(genActualType(varDscSrc->TypeGet())) <= REGSIZE_BYTES);
-
-                /* Set "size" to indicate GC if one and only one of
-                 * the operands is a pointer
-                 * RATIONALE: If both are pointers, nothing changes in
-                 * the GC pointer tracking. If only one is a pointer we
-                 * have to "swap" the registers in the GC reg pointer mask
-                 */
-
-                if (varTypeIsGC(varDscSrc) != varTypeIsGC(varDscDest))
-                {
-                    size = EA_GCREF;
-                }
-
-                noway_assert(varDscDest->GetArgReg() == varDscSrc->GetRegNum());
-
-                GetEmitter()->emitIns_R_R(INS_xchg, size, varDscSrc->GetRegNum(), varDscSrc->GetArgReg());
-                regSet.verifyRegUsed(varDscSrc->GetRegNum());
-                regSet.verifyRegUsed(varDscSrc->GetArgReg());
-
-                /* mark both arguments as processed */
-                regArgTab[destReg].processed = true;
-                regArgTab[srcReg].processed  = true;
-
-                regArgMaskLive &= ~genRegMask(varDscSrc->GetArgReg());
-                regArgMaskLive &= ~genRegMask(varDscDest->GetArgReg());
-            }
-            else
-#endif // TARGET_XARCH
-            {
-                var_types destMemType = varDscDest->TypeGet();
-
-#ifdef TARGET_ARM
-                bool cycleAllDouble = true; // assume the best
-
-                unsigned iter = begReg;
-                do
-                {
-                    if (compiler->lvaGetDesc(regArgTab[iter].varNum)->TypeGet() != TYP_DOUBLE)
-                    {
-                        cycleAllDouble = false;
-                        break;
-                    }
-                    iter = regArgTab[iter].trashBy;
-                } while (iter != begReg);
-
-                // We may treat doubles as floats for ARM because we could have partial circular
-                // dependencies of a float with a lo/hi part of the double. We mark the
-                // trashBy values for each slot of the double, so let the circular dependency
-                // logic work its way out for floats rather than doubles. If a cycle has all
-                // doubles, then optimize so that instead of two vmov.f32's to move a double,
-                // we can use one vmov.f64.
-                //
-                if (!cycleAllDouble && destMemType == TYP_DOUBLE)
-                {
-                    destMemType = TYP_FLOAT;
-                }
-#endif // TARGET_ARM
-
-                if (destMemType == TYP_REF)
-                {
-                    size = EA_GCREF;
-                }
-                else if (destMemType == TYP_BYREF)
-                {
-                    size = EA_BYREF;
-                }
-                else if (destMemType == TYP_DOUBLE)
-                {
-                    size = EA_8BYTE;
-                }
-                else if (destMemType == TYP_FLOAT)
-                {
-                    size = EA_4BYTE;
-                }
-                // HVA types...?
-
-                /* move the dest reg (begReg) in the extra reg */
-
-                assert(xtraReg != REG_NA);
-
-                regNumber begRegNum = genMapRegArgNumToRegNum(begReg, destMemType, compiler->info.compCallConv);
-                GetEmitter()->emitIns_Mov(insCopy, size, xtraReg, begRegNum, /* canSkip */ false);
-                assert(!genIsValidIntReg(xtraReg) || !genIsValidFloatReg(begRegNum));
-
-                regSet.verifyRegUsed(xtraReg);
-
-                *pXtraRegClobbered = true;
-                /* start moving everything to its right place */
-
-                while (srcReg != begReg)
-                {
-                    /* mov dest, src */
-
-                    regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType, compiler->info.compCallConv);
-                    regNumber srcRegNum  = genMapRegArgNumToRegNum(srcReg, destMemType, compiler->info.compCallConv);
-
-                    GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, srcRegNum, /* canSkip */ false);
-                    assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(srcRegNum));
-
-                    regSet.verifyRegUsed(destRegNum);
-
-                    /* mark 'src' as processed */
-                    noway_assert(srcReg < argMax);
-                    regArgTab[srcReg].processed = true;
-#ifdef TARGET_ARM
-                    if (size == EA_8BYTE)
-                        regArgTab[srcReg + 1].processed = true;
-#endif
-                    regArgMaskLive &= ~genMapArgNumToRegMask(srcReg, destMemType);
-
-                    /* move to the next pair */
-                    destReg = srcReg;
-                    srcReg  = regArgTab[srcReg].trashBy;
-
-                    varDscDest  = varDscSrc;
-                    destMemType = varDscDest->TypeGet();
-#ifdef TARGET_ARM
-                    if (!cycleAllDouble && destMemType == TYP_DOUBLE)
-                    {
-                        destMemType = TYP_FLOAT;
-                    }
-#endif
-                    varNumSrc = regArgTab[srcReg].varNum;
-                    varDscSrc = compiler->lvaGetDesc(varNumSrc);
-                    noway_assert(varDscSrc->lvIsParam && varDscSrc->lvIsRegArg);
-
-                    if (destMemType == TYP_REF)
-                    {
-                        size = EA_GCREF;
-                    }
-                    else if (destMemType == TYP_DOUBLE)
-                    {
-                        size = EA_8BYTE;
-                    }
-                    else
-                    {
-                        size = EA_4BYTE;
-                    }
-                }
-
-                /* take care of the beginning register */
-
-                noway_assert(srcReg == begReg);
-
-                /* move the dest reg (begReg) in the extra reg */
-
-                regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType, compiler->info.compCallConv);
-
-                GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, xtraReg, /* canSkip */ false);
-                assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(xtraReg));
-
-                regSet.verifyRegUsed(destRegNum);
-                /* mark the beginning register as processed */
-
-                regArgTab[srcReg].processed = true;
-#ifdef TARGET_ARM
-                if (size == EA_8BYTE)
-                    regArgTab[srcReg + 1].processed = true;
-#endif
-                regArgMaskLive &= ~genMapArgNumToRegMask(srcReg, destMemType);
-            }
+            genSpillOrAddRegisterParam(&graph, lclNum);
         }
     }
 
-#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
-    // If we saw any hfa conflicts, handle those now.
-    //
-    if (hasHfaConflict)
+    DBEXEC(VERBOSE, graph.Dump());
+
+    // TODO:
+    // - handle per register node instead of per edge to ensure destOffset == 0
+    // case always happens first below
+    // - arm32 insertions when a float is allocated to the second register of a double
+    // - cycle handling
+    // None of these problems seem to be hit in any tests, so we need to add
+    // some stress modes for this.
+    while (graph.NumEdges > 0)
     {
-        // Up above we noticed that there was at least one non-slot-1 HFA arg whose
-        // destination register was the same as the arg register.
-        //
-        // For example, say an HFA was passed as s0-s3 and the destination was v3.
-        // s3 is in the right register, but not in the right slot in the register.
-        //
-        // We handle this by first moving the conflicting part to the right slot
-        // in the destination (via pass 0 below), and then moving the remaining parts
-        // to their respective slots (via pass 1).
-        //
-        // Note the slot index in the register is one less than value of
-        // regArgTab[argNum].slot, so a slot-1 hfa arg goes into slot 0 of the destination).
-        //
-        // So for the above example, we'd first move the "slot-4" s3 (== v3.s[0]) to v3.s[3].
-        // Then we can insert s0 to v3.s[0]) and so on.
-        //
-        // We can exempt slot-1 cases as the conflicting part is already in the
-        // right slot, and code lower down correctly handles populating the remaining slots.
-        //
-        for (argNum = 0; argNum < argMax; argNum++)
+        RegNodeEdge* edge = graph.FindEdgeToHandle();
+        assert(edge != nullptr);
+        if ((edge->to->outgoing != nullptr) && (edge->to->copiedReg == REG_NA))
         {
-            if (!regArgTab[argNum].hfaConflict)
-            {
-                continue;
-            }
-
-            varNum                      = regArgTab[argNum].varNum;
-            varDsc                      = compiler->lvaGetDesc(varNum);
-            const regNumber destRegNum  = varDsc->GetRegNum();
-            const var_types regType     = regArgTab[argNum].type;
-            const unsigned  firstArgNum = argNum - (regArgTab[argNum].slot - 1);
-            const unsigned  lastArgNum  = firstArgNum + varDsc->lvHfaSlots() - 1;
-
-            assert(varDsc->lvIsHfa());
-            assert((argNum >= firstArgNum) && (argNum <= lastArgNum));
-            assert(destRegNum == genMapRegArgNumToRegNum(argNum, regType, compiler->info.compCallConv));
-
-            // Pass 0: move the conflicting part; Pass1: insert everything else
-            //
-            for (int pass = 0; pass <= 1; pass++)
-            {
-                for (unsigned currentArgNum = firstArgNum; currentArgNum <= lastArgNum; currentArgNum++)
-                {
-                    const regNumber regNum =
-                        genMapRegArgNumToRegNum(currentArgNum, regType, compiler->info.compCallConv);
-                    bool insertArg =
-                        ((pass == 0) && (currentArgNum == argNum)) || ((pass == 1) && (currentArgNum != argNum));
-
-                    if (insertArg)
-                    {
-                        assert(!regArgTab[currentArgNum].processed);
-
-                        // EA_4BYTE is probably wrong here (and below)
-                        // todo -- suppress self move
-                        GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_4BYTE, destRegNum, regNum,
-                                                      regArgTab[currentArgNum].slot - 1, 0);
-                        assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(regNum));
-                        regArgTab[currentArgNum].processed = true;
-                        regArgMaskLive &= ~genRegMask(regNum);
-                    }
-                }
-            }
+            assert(!"Circular arg");
         }
-    }
-#endif // defined(TARGET_ARM64) && defined(FEATURE_SIMD)
 
-    /* Finally take care of the remaining arguments that must be enregistered */
-    while (regArgMaskLive)
-    {
-        regMaskTP regArgMaskLiveSave = regArgMaskLive;
+        regNumber sourceReg = edge->from->copiedReg != REG_NA ? edge->from->copiedReg : edge->from->reg;
 
-        for (argNum = 0; argNum < argMax; argNum++)
+        if (edge->destOffset != 0)
         {
-            /* If already processed go to the next one */
-            if (regArgTab[argNum].processed)
-            {
-                continue;
-            }
-
-            if (regArgTab[argNum].slot == 0)
-            { // Not a register argument
-                continue;
-            }
-
-            varNum                     = regArgTab[argNum].varNum;
-            varDsc                     = compiler->lvaGetDesc(varNum);
-            const var_types regType    = regArgTab[argNum].type;
-            const regNumber regNum     = genMapRegArgNumToRegNum(argNum, regType, compiler->info.compCallConv);
-            const var_types varRegType = varDsc->GetRegisterType();
-
-#if defined(UNIX_AMD64_ABI)
-            if (regType == TYP_UNDEF)
-            {
-                // This could happen if the reg in regArgTab[argNum] is of the other register file -
-                // for System V register passed structs where the first reg is GPR and the second an XMM reg.
-                // The next register file processing will process it.
-                regArgMaskLive &= ~genRegMask(regNum);
-                continue;
-            }
-#endif // defined(UNIX_AMD64_ABI)
-
-            noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
-#ifdef TARGET_X86
-            // On x86 we don't enregister args that are not pointer sized.
-            noway_assert(genTypeSize(varDsc->GetStackSlotHomeType()) == TARGET_POINTER_SIZE);
-#endif // TARGET_X86
-
-            noway_assert(varDsc->lvIsInReg() && !regArgTab[argNum].circular);
-
-            /* Register argument - hopefully it stays in the same register */
-            regNumber destRegNum  = REG_NA;
-            var_types destMemType = varDsc->GetRegisterType();
-
-            if (regArgTab[argNum].slot == 1)
-            {
-                destRegNum = varDsc->GetRegNum();
-
-#ifdef TARGET_ARM
-                if (genActualType(destMemType) == TYP_DOUBLE && regArgTab[argNum + 1].processed)
-                {
-                    // The second half of the double has already been processed! Treat this as a single.
-                    destMemType = TYP_FLOAT;
-                }
-#endif // TARGET_ARM
-            }
-#ifndef TARGET_64BIT
-            else if (regArgTab[argNum].slot == 2 && genActualType(destMemType) == TYP_LONG)
-            {
-                assert(genActualType(varDsc->TypeGet()) == TYP_LONG || genActualType(varDsc->TypeGet()) == TYP_DOUBLE);
-                if (genActualType(varDsc->TypeGet()) == TYP_DOUBLE)
-                {
-                    destRegNum = regNum;
-                }
-                else
-                {
-                    destRegNum = varDsc->GetOtherReg();
-                }
-
-                assert(destRegNum != REG_STK);
-            }
-            else
-            {
-                assert(regArgTab[argNum].slot == 2);
-                assert(destMemType == TYP_DOUBLE);
-
-                // For doubles, we move the entire double using the argNum representing
-                // the first half of the double. There are two things we won't do:
-                // (1) move the double when the 1st half of the destination is free but the
-                // 2nd half is occupied, and (2) move the double when the 2nd half of the
-                // destination is free but the 1st half is occupied. Here we consider the
-                // case where the first half can't be moved initially because its target is
-                // still busy, but the second half can be moved. We wait until the entire
-                // double can be moved, if possible. For example, we have F0/F1 double moving to F2/F3,
-                // and F2 single moving to F16. When we process F0, its target F2 is busy,
-                // so we skip it on the first pass. When we process F1, its target F3 is
-                // available. However, we want to move F0/F1 all at once, so we skip it here.
-                // We process F2, which frees up F2. The next pass through, we process F0 and
-                // F2/F3 are empty, so we move it. Note that if half of a double is involved
-                // in a circularity with a single, then we will have already moved that half
-                // above, so we go ahead and move the remaining half as a single.
-                // Because there are no circularities left, we are guaranteed to terminate.
-
-                assert(argNum > 0);
-                assert(regArgTab[argNum - 1].slot == 1);
-
-                if (!regArgTab[argNum - 1].processed)
-                {
-                    // The first half of the double hasn't been processed; try to be processed at the same time
-                    continue;
-                }
-
-                // The first half of the double has been processed but the second half hasn't!
-                // This could happen for double F2/F3 moving to F0/F1, and single F0 moving to F2.
-                // In that case, there is a F0/F2 loop that is not a double-only loop. The circular
-                // dependency logic above will move them as singles, leaving just F3 to move. Treat
-                // it as a single to finish the shuffling.
-
-                destMemType = TYP_FLOAT;
-                destRegNum  = REG_NEXT(varDsc->GetRegNum());
-            }
-#endif // !TARGET_64BIT
-#if (defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)) && defined(FEATURE_SIMD)
-            else
-            {
-                assert(regArgTab[argNum].slot == 2);
-                assert(argNum > 0);
-                assert(regArgTab[argNum - 1].slot == 1);
-                assert((varRegType == TYP_SIMD12) || (varRegType == TYP_SIMD16));
-                destRegNum = varDsc->GetRegNum();
-                noway_assert(regNum != destRegNum);
-                continue;
-            }
-#endif // (defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)) && defined(FEATURE_SIMD)
-            noway_assert(destRegNum != REG_NA);
-            if (destRegNum != regNum)
-            {
-                /* Cannot trash a currently live register argument.
-                 * Skip this one until its target will be free
-                 * which is guaranteed to happen since we have no circular dependencies. */
-
-                regMaskTP destMask = genRegMask(destRegNum);
-#ifdef TARGET_ARM
-                // Don't process the double until both halves of the destination are clear.
-                if (genActualType(destMemType) == TYP_DOUBLE)
-                {
-                    assert((destMask & RBM_ALLDOUBLE) != 0);
-                    destMask |= genRegMask(REG_NEXT(destRegNum));
-                }
-#endif
-
-                if (destMask & regArgMaskLive)
-                {
-                    continue;
-                }
-
-                /* Move it to the new register */
-
-                emitAttr size = emitActualTypeSize(destMemType);
-
+            INDEBUG(edge->to->wrote = true);
 #if defined(TARGET_ARM64)
-                if (varTypeIsSIMD(varDsc) && argNum < (argMax - 1) && regArgTab[argNum + 1].slot == 2)
-                {
-                    // For a SIMD type that is passed in two integer registers,
-                    // Limit the copy below to the first 8 bytes from the first integer register.
-                    // Handle the remaining 8 bytes from the second slot in the code further below
-                    assert(EA_SIZE(size) >= 8);
-                    size = EA_8BYTE;
-                }
+            // On arm64 SIMD parameters are HFAs and passed in multiple float
+            // registers while we can enregister them as single registers.
+            GetEmitter()->emitIns_R_R_I_I(INS_mov, emitTypeSize(edge->type), edge->to->reg, sourceReg,
+                                          edge->destOffset / genTypeSize(edge->type), 0);
+#elif defined(UNIX_AMD64_ABI)
+            // For SysV x64 the only insertions we should have is to offset 8,
+            // which happens for example for Vector3 which can be passed in
+            // xmm0[0..8), xmm1[8..12) but enregistered in a single register.
+            noway_assert(edge->destOffset == 8);
+            // The shufpd here picks the first 8 bytes from the dest register
+            // to go in the lower half, and the second 8 bytes from the source
+            // register to go in the upper half.
+            GetEmitter()->emitIns_R_R_I(INS_shufpd, EA_16BYTE, edge->to->reg, sourceReg, 0);
+#else
+            noway_assert(!"Insertion into register is not supported");
 #endif
-                inst_Mov(destMemType, destRegNum, regNum, /* canSkip */ false, size);
-                assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(regNum));
-            }
-
-            /* mark the argument as processed */
-
-            assert(!regArgTab[argNum].processed);
-            regArgTab[argNum].processed = true;
-            regArgMaskLive &= ~genRegMask(regNum);
-#if FEATURE_MULTIREG_ARGS
-            int argRegCount = 1;
-#ifdef TARGET_ARM
-            if (genActualType(destMemType) == TYP_DOUBLE)
-            {
-                argRegCount = 2;
-            }
-#endif
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
-            if (varTypeIsStruct(varDsc) && argNum < (argMax - 1) && regArgTab[argNum + 1].slot == 2)
-            {
-                argRegCount          = 2;
-                int       nextArgNum = argNum + 1;
-                regNumber nextRegNum =
-                    genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type, compiler->info.compCallConv);
-                noway_assert(regArgTab[nextArgNum].varNum == varNum);
-                // Emit a shufpd with a 0 immediate, which preserves the 0th element of the dest reg
-                // and moves the 0th element of the src reg into the 1st element of the dest reg.
-                GetEmitter()->emitIns_R_R_I(INS_shufpd, emitActualTypeSize(varRegType), destRegNum, nextRegNum, 0);
-                assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(nextRegNum));
-                // Set destRegNum to regNum so that we skip the setting of the register below,
-                // but mark argNum as processed and clear regNum from the live mask.
-                destRegNum = regNum;
-            }
-#endif // defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
-#ifdef TARGET_ARMARCH
-            if (varDsc->lvIsHfa())
-            {
-                // This includes both fixed-size SIMD types that are independently promoted, as well
-                // as other HFA structs.
-                argRegCount = varDsc->lvHfaSlots();
-                if (argNum < (argMax - argRegCount + 1))
-                {
-                    if (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT)
-                    {
-                        // For an HFA type that is passed in multiple registers and promoted, we copy each field to its
-                        // destination register.
-                        for (int i = 0; i < argRegCount; i++)
-                        {
-                            int        nextArgNum  = argNum + i;
-                            LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
-                            regNumber  nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type,
-                                                                           compiler->info.compCallConv);
-                            destRegNum = fieldVarDsc->GetRegNum();
-                            noway_assert(regArgTab[nextArgNum].varNum == varNum);
-                            noway_assert(genIsValidFloatReg(nextRegNum));
-                            noway_assert(genIsValidFloatReg(destRegNum));
-                            GetEmitter()->emitIns_Mov(INS_mov, EA_8BYTE, destRegNum, nextRegNum, /* canSkip */ false);
-                            assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(nextRegNum));
-                        }
-                    }
-#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
-                    else
-                    {
-                        // For a SIMD type that is passed in multiple registers but enregistered as a vector,
-                        // the code above copies the first argument register into the lower 4 or 8 bytes
-                        // of the target register. Here we must handle the subsequent fields by
-                        // inserting them into the upper bytes of the target SIMD floating point register.
-                        argRegCount = varDsc->lvHfaSlots();
-                        for (int i = 1; i < argRegCount; i++)
-                        {
-                            int         nextArgNum  = argNum + i;
-                            regArgElem* nextArgElem = &regArgTab[nextArgNum];
-                            var_types   nextArgType = nextArgElem->type;
-                            regNumber   nextRegNum =
-                                genMapRegArgNumToRegNum(nextArgNum, nextArgType, compiler->info.compCallConv);
-                            noway_assert(nextArgElem->varNum == varNum);
-                            noway_assert(genIsValidFloatReg(nextRegNum));
-                            noway_assert(genIsValidFloatReg(destRegNum));
-                            GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_4BYTE, destRegNum, nextRegNum, i, 0);
-                            assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(nextRegNum));
-                        }
-                    }
-#endif // defined(TARGET_ARM64) && defined(FEATURE_SIMD)
-                }
-            }
-#endif // TARGET_ARMARCH
-
-            // Mark the rest of the argument registers corresponding to this multi-reg type as
-            // being processed and no longer live.
-            for (int regSlot = 1; regSlot < argRegCount; regSlot++)
-            {
-                int nextArgNum = argNum + regSlot;
-                assert(!regArgTab[nextArgNum].processed);
-                regArgTab[nextArgNum].processed = true;
-                regNumber nextRegNum =
-                    genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type, compiler->info.compCallConv);
-                regArgMaskLive &= ~genRegMask(nextRegNum);
-            }
-#endif // FEATURE_MULTIREG_ARGS
+        }
+        else
+        {
+            assert(!edge->to->wrote);
+            instruction ins = ins_Copy(sourceReg, genActualType(edge->type));
+            GetEmitter()->emitIns_Mov(ins, emitActualTypeSize(edge->type), edge->to->reg, sourceReg,
+                                      /* canSkip */ true);
+            INDEBUG(edge->to->wrote = true);
         }
 
-        noway_assert(regArgMaskLiveSave != regArgMaskLive); // if it doesn't change, we have an infinite loop
+        graph.RemoveEdge(edge);
     }
 }
-#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
-
-#ifdef _PREFAST_
-#pragma warning(pop)
 #endif
 
 /*****************************************************************************
@@ -6148,14 +5209,6 @@ void CodeGen::genFnProlog()
         intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SECRET_STUB_PARAM;
     }
 
-#ifdef SWIFT_SUPPORT
-    if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) && ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
-    {
-        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
-        intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
-    }
-#endif
-
     //
     // Zero out the frame as needed
     //
@@ -6271,56 +5324,10 @@ void CodeGen::genFnProlog()
     {
         compiler->lvaUpdateArgsWithInitialReg();
 
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        if (intRegState.rsCalleeRegArgMaskLiveIn || floatRegState.rsCalleeRegArgMaskLiveIn)
+        if ((intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn) != RBM_NONE)
         {
-            initRegZeroed = false;
-            genFnPrologCalleeRegArgs();
+            genHomeRegisterParams(initReg, &initRegZeroed);
         }
-#else
-        auto assignIncomingRegisterArgs = [this, initReg, &initRegZeroed](RegState* regState) {
-            if (regState->rsCalleeRegArgMaskLiveIn)
-            {
-                // If we need an extra register to shuffle around the incoming registers
-                // we will use xtraReg (initReg) and set the xtraRegClobbered flag,
-                // if we don't need to use the xtraReg then this flag will stay false
-                //
-                regNumber xtraReg;
-                bool      xtraRegClobbered = false;
-
-                if (genRegMask(initReg) & RBM_ARG_REGS)
-                {
-                    xtraReg = initReg;
-                }
-                else
-                {
-                    xtraReg       = REG_SCRATCH;
-                    initRegZeroed = false;
-                }
-
-                genFnPrologCalleeRegArgs(xtraReg, &xtraRegClobbered, regState);
-
-                if (xtraRegClobbered)
-                {
-                    initRegZeroed = false;
-                }
-            }
-        };
-
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
-        // Handle float parameters first; in the presence of struct promotion
-        // we can have parameters that are homed into float registers but
-        // passed in integer registers. So make sure we get those out of the
-        // integer registers before we potentially override those as part of
-        // handling integer parameters.
-
-        assignIncomingRegisterArgs(&floatRegState);
-        assignIncomingRegisterArgs(&intRegState);
-#else
-        assignIncomingRegisterArgs(&intRegState);
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-
-#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
         // Home the incoming arguments.
         genEnregisterIncomingStackArgs();
