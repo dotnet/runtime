@@ -13,8 +13,8 @@ namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
 public partial class EmbeddedBaselines
 {
-    public const string TemplateResourceNamePrefix = "Microsoft.DotNet.Diagnostics.DataContract.Resources.baseline.";
-    public const string TemplateResourceNameEscapePrefix = @"Microsoft\.DotNet\.Diagnostics\.DataContract\.Resources\.baseline\.";
+    public const string TemplateResourceNamePrefix = "Microsoft.DotNet.Diagnostics.DataContract.Baseline:";
+    public const string TemplateResourceNameEscapePrefix = @"Microsoft\.DotNet\.Diagnostics\.DataContract\.Baseline:";
     public const string TemplateResourceNameExt = ".jsonc";
     public const string TemplateResourceNameEscapeExt = @"\.jsonc";
 
