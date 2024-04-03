@@ -3217,7 +3217,7 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
         CrstHolder ch(&m_CodeHeapCritSec);
 
         mem = (TADDR) allocCodeRaw(&requestInfo, sizeof(CodeHeader), blockSize, CODE_SIZE_ALIGN, &pCodeHeap);
-        if (mem == (TADDR)NULL)
+        if (mem == (TADDR)0)
         {
             _ASSERTE(!throwOnOutOfMemoryWithinRange);
             RETURN(NULL);
@@ -3767,7 +3767,7 @@ static CodeHeader * GetCodeHeaderFromDebugInfoRequest(const DebugInfoRequest & r
     } CONTRACTL_END;
 
     TADDR address = (TADDR) request.GetStartAddress();
-    _ASSERTE(address != (TADDR)NULL);
+    _ASSERTE(address != (TADDR)0);
 
     CodeHeader * pHeader = dac_cast<PTR_CodeHeader>(address & ~3) - 1;
     _ASSERTE(pHeader != NULL);
@@ -3937,7 +3937,7 @@ BOOL EEJitManager::JitCodeToMethodInfo(
         return FALSE;
 
     TADDR start = dac_cast<PTR_EEJitManager>(pRangeSection->_pjit)->FindMethodCode(pRangeSection, currentPC);
-    if (start == (TADDR)NULL)
+    if (start == (TADDR)0)
         return FALSE;
 
     CodeHeader * pCHdr = PTR_CodeHeader(start - sizeof(CodeHeader));
@@ -3982,7 +3982,7 @@ StubCodeBlockKind EEJitManager::GetStubCodeBlockKind(RangeSection * pRangeSectio
     }
 
     TADDR start = dac_cast<PTR_EEJitManager>(pRangeSection->_pjit)->FindMethodCode(pRangeSection, currentPC);
-    if (start == (TADDR)NULL)
+    if (start == (TADDR)0)
         return STUB_CODE_BLOCK_NOCODE;
     CodeHeader * pCHdr = PTR_CodeHeader(start - sizeof(CodeHeader));
     return pCHdr->IsStubCodeBlock() ? pCHdr->GetStubCodeBlockKind() : STUB_CODE_BLOCK_MANAGED;
@@ -4609,7 +4609,7 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC, RangeSectionLockStat
         // but on we could also be in a stub, so we check for that
         // as well and we don't consider stub to be real managed code.
         TADDR start = dac_cast<PTR_EEJitManager>(pRS->_pjit)->FindMethodCode(pRS, currentPC);
-        if (start == (TADDR)NULL)
+        if (start == (TADDR)0)
             return FALSE;
         CodeHeader * pCHdr = PTR_CodeHeader(start - sizeof(CodeHeader));
         if (!pCHdr->IsStubCodeBlock())
