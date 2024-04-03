@@ -200,6 +200,9 @@ enum _regMask_enum : unsigned
 
 #ifdef TARGET_ARM64
 #define HAS_MORE_THAN_64_REGISTERS 1
+#define MORE_THAN_64_REG_ARG(x) , x
+#else
+#define MORE_THAN_64_REG_ARG(x)
 #endif
 
 /*****************************************************************************/
