@@ -259,7 +259,6 @@
 #undef __encoded_array
 #undef __encoded_pointer
 #undef __exceptthat
-#undef __fallthrough
 #undef __field_bcount
 #undef __field_bcount_full
 #undef __field_bcount_full_opt

@@ -112,14 +112,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public AndConstraint<CommandResultAssertions> NotHaveStdOut()
         {
             Execute.Assertion.ForCondition(string.IsNullOrEmpty(Result.StdOut))
-                .FailWith($"Expected command to not output to stdout but it was not:{GetDiagnosticsInfo()}");
+                .FailWith($"Expected command to not output to stdout but it did:{GetDiagnosticsInfo()}");
             return new AndConstraint<CommandResultAssertions>(this);
         }
 
         public AndConstraint<CommandResultAssertions> NotHaveStdErr()
         {
             Execute.Assertion.ForCondition(string.IsNullOrEmpty(Result.StdErr))
-                .FailWith($"Expected command to not output to stderr but it was not:{GetDiagnosticsInfo()}");
+                .FailWith($"Expected command to not output to stderr but it did:{GetDiagnosticsInfo()}");
             return new AndConstraint<CommandResultAssertions>(this);
         }
 

@@ -87,8 +87,8 @@ class packer {
 
         assert(AH::is_aligned(mem_read));
 
-        auto memv_read = (TV *) mem_read;
-        auto memv_write = (TV *) mem_write;
+        TV * memv_read = (TV *) mem_read;
+        TV * memv_write = (TV *) mem_write;
 
         auto lenv = len / N;
         len -= (lenv * N);
@@ -184,8 +184,8 @@ class packer {
         assert(AH::is_aligned(mem_read));
 
         auto lenv = len / (N * 2);
-        auto memv_read = ((TV *) mem_read) - 1;
-        auto memv_write = ((TV *) mem_write) - 2;
+        TV * memv_read = ((TV *) mem_read) - 1;
+        TV * memv_write = ((TV *) mem_write) - 2;
         len -= lenv * N * 2;
 
         while (lenv >= Unroll) {

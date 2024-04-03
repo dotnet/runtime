@@ -24,6 +24,7 @@ public class SignalRClientTests : AppTestBase
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/100445")] // to be fixed by: "https://github.com/dotnet/aspnetcore/issues/54365"
     [InlineData("Debug", "LongPolling")]
     [InlineData("Release", "LongPolling")]
     [InlineData("Debug", "WebSockets")]

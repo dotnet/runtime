@@ -1647,6 +1647,14 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 #endif
 
         lvaParameterPassingInfo[i] = classifier.Classify(this, dsc->TypeGet(), structLayout, wellKnownArg);
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("Parameter #%u ABI info: ", i);
+            lvaParameterPassingInfo[i].Dump();
+        }
+#endif
     }
 }
 
@@ -1675,7 +1683,7 @@ void Compiler::lvaClassifyParameterABI()
     }
     else
 #endif
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
     {
         PlatformClassifier classifier(cInfo);
         lvaClassifyParameterABI(classifier);
@@ -1698,10 +1706,24 @@ void Compiler::lvaClassifyParameterABI()
         unsigned numSegmentsToCompare = abiInfo.NumSegments;
         if (dsc->lvIsHfa())
         {
-            assert(abiInfo.NumSegments >= 1);
             // LclVarDsc only has one register set for HFAs
             numSegmentsToCompare = 1;
         }
+
+#ifdef TARGET_ARM
+        // On arm the old representation only represents the start register for
+        // struct multireg args.
+        if (varTypeIsStruct(dsc))
+        {
+            numSegmentsToCompare = 1;
+        }
+
+        // And also for TYP_DOUBLE on soft FP
+        if (opts.compUseSoftFP && (dsc->TypeGet() == TYP_DOUBLE))
+        {
+            numSegmentsToCompare = 1;
+        }
+#endif
 
         for (unsigned i = 0; i < numSegmentsToCompare; i++)
         {
