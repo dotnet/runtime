@@ -7,8 +7,6 @@
     <ExtraFilesPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'extraFiles'))</ExtraFilesPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'obj'))</BaseIntermediateOutputPath>
 
-    <OriginalPublishDir>$([System.IO.Path]::GetFullPath('$(TestRootDir)..\publish\'))</OriginalPublishDir>
-    <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
     <AppleBuildDependsOn Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">ConfigureTrimming;_TrimApp;$(AppleBuildDependsOn)</AppleBuildDependsOn>
     <AppleBuildDependsOn>_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
     <!-- Forced by ILLink targets -->
@@ -24,9 +22,6 @@
     <_IsApplePlatform>true</_IsApplePlatform>
     <TargetsAppleMobile>true</TargetsAppleMobile>
     <_targetOS>$(TargetOS)</_targetOS>
-  
-    <!-- Forced by ILLink targets -->
-    <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(_UseNativeAOTLibraryModeBundling)' != 'true' and '$(UseNativeAOTRuntime)' == 'true'">
@@ -63,7 +58,7 @@
     <PropertyGroup>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IncludesTestRunner)' == 'true'">AppleTestRunner.dll</MainLibraryFileName>
-    
+
       <AppleBuildDir>$(OriginalPublishDir)</AppleBuildDir>
       <AppleBundleDir>$(TestRootDir)AppBundle\</AppleBundleDir>
     </PropertyGroup>
@@ -123,9 +118,8 @@
   </Target>
 
   <Target Name="_TrimApp" DependsOnTargets="ILLink;CopyFilesToPublishDirectory">
-    <Delete Files="@(_RemovedManagedAssembly)" />
     <ItemGroup>
-      <AppleAssembliesToBundle Remove="@(AppleAssembliesToBundle)" />
+      <AppleAssembliesToBundle Remove="@(_RemovedManagedAssembly)" />
       <AppleAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" Exclude="$(OriginalPublishDir)\**\*.resources.dll" />
     </ItemGroup>
   </Target>
