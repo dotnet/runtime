@@ -54,7 +54,7 @@ regMaskTP ABIPassingSegment::GetRegisterMask() const
     regMaskTP reg = genRegMask(m_register);
 
 #ifdef TARGET_ARM
-    if (varTypeIsFloating(m_register) && (Size == 8))
+    if (genIsValidFloatReg(m_register) && (Size == 8))
     {
         reg |= genRegMask(REG_NEXT(m_register));
     }
