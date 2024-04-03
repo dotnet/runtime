@@ -2565,7 +2565,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/tail_pinvoke/**" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/ByRefLike/ValidateNegative/**" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_80731/Runtime_80731/**" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/Comparer_get_Default/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/**" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/**" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case03/**" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case04/**" />
@@ -3858,7 +3858,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/compilerservices/UnsafeAccessors/UnsafeAccessorsTests/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/TieredVtableMethodTests/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/varargs/varargsupport/**" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/Comparer_get_Default.**" />
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_80731/Runtime_80731/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case03/**" />
