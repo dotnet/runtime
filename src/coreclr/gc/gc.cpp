@@ -29911,7 +29911,7 @@ void gc_heap::mark_phase (int condemned_gen_number)
 #endif //MULTIPLE_HEAPS
     {
 #ifdef FEATURE_EVENT_TRACE
-        record_mark_time (gc_time_info[time_plan - 1], current_mark_time, last_mark_time);
+        record_mark_time (gc_time_info[time_mark_long_weak], current_mark_time, last_mark_time);
         gc_time_info[time_plan] = last_mark_time;
 #endif //FEATURE_EVENT_TRACE
 
@@ -33909,14 +33909,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
             if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
             {
-#ifdef FEATURE_EVENT_TRACE
-                if (informational_event_enabled_p)
-                {
-                    uint64_t current_time = GetHighPrecisionTimeStamp();
-                    gc_time_info[time_compact] = current_time - gc_time_info[time_compact];
-                }
-#endif //FEATURE_EVENT_TRACE
-
 #ifdef MULTIPLE_HEAPS
                 for (int i = 0; i < n_heaps; i++)
                 {
@@ -33963,7 +33955,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_EVENT_TRACE
-                if (informational_event_enabled_p && (condemned_gen_number < (max_generation -1)))
+                if (informational_event_enabled_p)
                 {
                     uint64_t current_time = GetHighPrecisionTimeStamp();
                     gc_time_info[time_compact] = current_time - gc_time_info[time_compact];
