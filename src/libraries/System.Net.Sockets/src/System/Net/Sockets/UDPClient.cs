@@ -379,14 +379,7 @@ namespace System.Net.Sockets
 
             // Because we don't return the actual length, we need to ensure the returned buffer
             // has the appropriate length.
-            if (received < MaxUDPSize)
-            {
-                byte[] newBuffer = new byte[received];
-                Buffer.BlockCopy(_buffer, 0, newBuffer, 0, received);
-                return newBuffer;
-            }
-
-            return _buffer;
+            return _buffer.AsSpan(0, reeceived).ToArray();
         }
 
         // Joins a multicast address group.
@@ -623,11 +616,7 @@ namespace System.Net.Sockets
             async Task<UdpReceiveResult> WaitAndWrap(Task<SocketReceiveFromResult> task)
             {
                 SocketReceiveFromResult result = await task.ConfigureAwait(false);
-
-                byte[] buffer = result.ReceivedBytes < MaxUDPSize ?
-                    _buffer.AsSpan(0, result.ReceivedBytes).ToArray() :
-                    _buffer;
-
+                byte[] buffer = _buffer.AsSpan(0, result.ReceivedBytes).ToArray();
                 return new UdpReceiveResult(buffer, (IPEndPoint)result.RemoteEndPoint);
             }
         }
@@ -653,11 +642,7 @@ namespace System.Net.Sockets
             async ValueTask<UdpReceiveResult> WaitAndWrap(ValueTask<SocketReceiveFromResult> task)
             {
                 SocketReceiveFromResult result = await task.ConfigureAwait(false);
-
-                byte[] buffer = result.ReceivedBytes < MaxUDPSize ?
-                    _buffer.AsSpan(0, result.ReceivedBytes).ToArray() :
-                    _buffer;
-
+                byte[] buffer = _buffer.AsSpan(0, result.ReceivedBytes).ToArray();
                 return new UdpReceiveResult(buffer, (IPEndPoint)result.RemoteEndPoint);
             }
         }
@@ -842,17 +827,10 @@ namespace System.Net.Sockets
 
             int received = Client.ReceiveFrom(_buffer, MaxUDPSize, 0, ref tempRemoteEP);
             remoteEP = (IPEndPoint)tempRemoteEP;
-
+            
             // because we don't return the actual length, we need to ensure the returned buffer
             // has the appropriate length.
-
-            if (received < MaxUDPSize)
-            {
-                byte[] newBuffer = new byte[received];
-                Buffer.BlockCopy(_buffer, 0, newBuffer, 0, received);
-                return newBuffer;
-            }
-            return _buffer;
+            return _buffer.AsSpan(0, received).ToArray();
         }
 
 
