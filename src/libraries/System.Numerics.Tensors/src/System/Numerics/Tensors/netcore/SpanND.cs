@@ -26,7 +26,6 @@ namespace System.Numerics.Tensors
 #pragma warning disable SYSLIB1056 // Specified native type is invalid
     //[NativeMarshalling(typeof(SpanMarshaller<,>))]
 #pragma warning restore SYSLIB1056 // Specified native type is invalid
-    //[Intrinsic]
     public readonly ref struct SpanND<T>
     {
         /// <summary>A byref or a native ptr.</summary>
@@ -177,7 +176,6 @@ namespace System.Numerics.Tensors
         /// </exception>
         public ref T this[ReadOnlySpan<nint> indices]
         {
-            //[Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
@@ -194,7 +192,6 @@ namespace System.Numerics.Tensors
         /// </summary>
         internal nint LinearLength
         {
-            //[Intrinsic]
             get => _linearLength;
         }
 

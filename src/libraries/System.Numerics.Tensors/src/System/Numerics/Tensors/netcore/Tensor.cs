@@ -977,88 +977,76 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region TensorPrimitives
-        public static Tensor<T> Multiply<T>(this Tensor<T> input, T val)
+        public static Tensor<T> Multiply<T>(this Tensor<T> input, T val, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var rspan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Multiply(span, val, rspan);
-            return tensor;
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
+            Tensor<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Lengths);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
+            TensorPrimitives.Multiply(span, val, ospan);
+            return output;
         }
 
-        public static Tensor<T> Multiply<T>(this Tensor<T> input, Tensor<T> other)
+        public static Tensor<T> Multiply<T>(this Tensor<T> input, Tensor<T> other, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            var lspan = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var rspan = MemoryMarshal.CreateSpan(ref other._values[0], (int)other._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var ospan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Multiply(lspan, rspan, ospan);
-            return tensor;
+            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Multiply, inPlace);
         }
 
-        public static Tensor<T> Divide<T>(this Tensor<T> input, T val)
+        public static Tensor<T> Divide<T>(this Tensor<T> input, T val, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var rspan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Divide(span, val, rspan);
-            return tensor;
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
+            Tensor<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Lengths);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
+            TensorPrimitives.Divide(span, val, ospan);
+            return output;
         }
 
-        public static Tensor<T> Divide<T>(T val, Tensor<T> input)
+        public static Tensor<T> Divide<T>(T val, Tensor<T> input, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var rspan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Divide(val, span, rspan);
-            return tensor;
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
+            Tensor<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Lengths);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
+            TensorPrimitives.Divide(val, span, ospan);
+            return output;
         }
 
-        public static Tensor<T> Divide<T>(this Tensor<T> input, Tensor<T> other)
+        public static Tensor<T> Divide<T>(this Tensor<T> input, Tensor<T> other, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
-            var lspan = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var rspan = MemoryMarshal.CreateSpan(ref other._values[0], (int)input._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var resultspan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Divide(lspan, rspan, resultspan);
-            return tensor;
+            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Divide, inPlace);
         }
 
-        public static Tensor<T> Subtract<T>(this Tensor<T> input, T val)
+        public static Tensor<T> Subtract<T>(this Tensor<T> input, T val, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var rspan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Subtract(span, val, rspan);
-            return tensor;
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
+            Tensor<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Lengths);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
+            TensorPrimitives.Subtract(span, val, ospan);
+            return output;
         }
 
-        public static Tensor<T> Subtract<T>(T val, Tensor<T> input)
+        public static Tensor<T> Subtract<T>(T val, Tensor<T> input, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var rspan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Subtract(val, span, rspan);
-            return tensor;
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
+            Tensor<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Lengths);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
+            TensorPrimitives.Subtract(val, span, ospan);
+            return output;
         }
 
-        public static Tensor<T> Subtract<T>(this Tensor<T> input, Tensor<T> other)
+        public static Tensor<T> Subtract<T>(this Tensor<T> input, Tensor<T> other, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var rspan = MemoryMarshal.CreateSpan(ref other._values[0], (int)other._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var ospan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Subtract(span, rspan, ospan);
-            return tensor;
+            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Subtract, inPlace);
         }
+
+        public static Tensor<T> Sum<T>(this Tensor<T> input, int axis)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T> => throw new NotImplementedException();
 
         public static T Sum<T>(this Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
@@ -1067,25 +1055,20 @@ namespace System.Numerics.Tensors
             return TensorPrimitives.Sum(span);
         }
 
-        public static Tensor<T> Add<T>(this Tensor<T> input, Tensor<T> other)
+        public static Tensor<T> Add<T>(this Tensor<T> input, Tensor<T> other, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var rspan = MemoryMarshal.CreateSpan(ref other._values[0], (int)other._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var ospan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Add(span, rspan, ospan);
-            return tensor;
+            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Add, inPlace);
         }
 
-        public static Tensor<T> Add<T>(this Tensor<T> input, T val)
+        public static Tensor<T> Add<T>(this Tensor<T> input, T val, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var ospan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
+            Tensor<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Lengths);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
             TensorPrimitives.Add(span, val, ospan);
-            return tensor;
+            return output;
         }
 
         public static T Norm<T>(this Tensor<T> input)
@@ -1095,64 +1078,67 @@ namespace System.Numerics.Tensors
             return TensorPrimitives.Norm(span);
         }
 
-        public static Tensor<T> Cos<T>(this Tensor<T> input)
+        public static Tensor<T> Cos<T>(this Tensor<T> input, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var ospan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Cos(span, ospan);
-            return tensor;
+            return TensorPrimitivesHelperT1(input, TensorPrimitives.Cos, inPlace);
         }
 
-        public static Tensor<T> Sin<T>(this Tensor<T> input)
+        public static Tensor<T> Sin<T>(this Tensor<T> input, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var ospan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Sin(span, ospan);
-            return tensor;
+            return TensorPrimitivesHelperT1(input, TensorPrimitives.Sin, inPlace);
         }
 
-        public static Tensor<T> Sqrt<T>(this Tensor<T> input)
+        public static Tensor<T> Sqrt<T>(this Tensor<T> input, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
         {
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var ospan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Sqrt(span, ospan);
-            return tensor;
+            return TensorPrimitivesHelperT1(input, TensorPrimitives.Sqrt, inPlace);
         }
 
-        public static Tensor<T> Log<T>(this Tensor<T> input)
+        public static Tensor<T> Log<T>(this Tensor<T> input, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var ospan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Log(span, ospan);
-            return tensor;
+            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log, inPlace);
         }
 
-        public static Tensor<T> Log10<T>(this Tensor<T> input)
+        public static Tensor<T> Log10<T>(this Tensor<T> input, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var ospan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Log10(span, ospan);
-            return tensor;
+            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log10, inPlace);
         }
 
-        public static Tensor<T> Log2<T>(this Tensor<T> input)
+        public static Tensor<T> Log2<T>(this Tensor<T> input, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var tensor = Tensor.Create<T>(input.IsPinned, input.Lengths);
-            var ospan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
-            TensorPrimitives.Log2(span, ospan);
-            return tensor;
+            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log2, inPlace);
+        }
+
+        private delegate void PerformCalculationT1<T>(ReadOnlySpan<T> input, Span<T> output)
+             where T : IEquatable<T>, IEqualityOperators<T, T, bool>;
+
+        private delegate void PerformCalculationT1T2<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo, Span<T> output)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>;
+
+        private static Tensor<T> TensorPrimitivesHelperT1<T>(Tensor<T> input, PerformCalculationT1<T> performCalculation, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
+            Tensor<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Lengths);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
+            performCalculation(span, ospan);
+            return output;
+        }
+
+        private static Tensor<T> TensorPrimitivesHelperT1T2<T>(Tensor<T> input, Tensor<T> inputTwo, PerformCalculationT1T2<T> performCalculation, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
+            ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref inputTwo._values[0], (int)inputTwo._linearLength);
+            Tensor<T> output = inPlace ? input : Create<T>(input.IsPinned, input.Lengths);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._linearLength);
+            performCalculation(span, rspan, ospan);
+            return output;
         }
         #endregion
     }
