@@ -92,6 +92,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DFEATURE_COMINTEROP)
     add_definitions(-DFEATURE_COMINTEROP_APARTMENT_SUPPORT)
     add_definitions(-DFEATURE_COMINTEROP_UNMANAGED_ACTIVATION)
+    add_definitions(-DFEATURE_IJW) # C++/CLI managed/native interop support
 endif(CLR_CMAKE_TARGET_WIN32)
 
 add_definitions(-DFEATURE_BASICFREEZE)
@@ -154,6 +155,9 @@ endif(CLR_CMAKE_TARGET_LINUX AND CLR_CMAKE_HOST_LINUX)
 if(CLR_CMAKE_TARGET_FREEBSD)
     add_compile_definitions(FEATURE_PERFMAP)
 endif(CLR_CMAKE_TARGET_FREEBSD)
+if(CLR_CMAKE_TARGET_APPLE)
+    add_compile_definitions(FEATURE_PERFMAP)
+endif(CLR_CMAKE_TARGET_APPLE)
 
 if(FEATURE_COMWRAPPERS)
     add_compile_definitions(FEATURE_COMWRAPPERS)

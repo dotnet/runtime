@@ -14,7 +14,7 @@ import { VoidPtr } from "./types/emscripten";
 import { setSegmentationRulesFromJson } from "./hybrid-globalization/grapheme-segmenter";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
-export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array): void {
+export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8Array): void {
     mono_log_debug(`Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
     const mark = startMeasure();
 
@@ -82,22 +82,19 @@ export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Ar
             const index = loaderHelpers._loaded_files.findIndex(element => element.file == virtualName);
             loaderHelpers._loaded_files.splice(index, 1);
         }
-    }
-    else if (asset.behavior === "pdb") {
+    } else if (asset.behavior === "pdb") {
         cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
-    }
-    else if (asset.behavior === "icu") {
+    } else if (asset.behavior === "icu") {
         if (!mono_wasm_load_icu_data(offset!))
             Module.err(`Error loading ICU asset ${asset.name}`);
-    }
-    else if (asset.behavior === "resource") {
+    } else if (asset.behavior === "resource") {
         cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, bytes.length);
     }
     endMeasure(mark, MeasuredBlock.instantiateAsset, asset.name);
     ++loaderHelpers.actual_instantiated_assets_count;
 }
 
-export async function instantiate_symbols_asset(pendingAsset: AssetEntryInternal): Promise<void> {
+export async function instantiate_symbols_asset (pendingAsset: AssetEntryInternal): Promise<void> {
     try {
         const response = await pendingAsset.pendingDownloadInternal!.response;
         const text = await response.text();
@@ -107,7 +104,7 @@ export async function instantiate_symbols_asset(pendingAsset: AssetEntryInternal
     }
 }
 
-export async function instantiate_segmentation_rules_asset(pendingAsset: AssetEntryInternal): Promise<void> {
+export async function instantiate_segmentation_rules_asset (pendingAsset: AssetEntryInternal): Promise<void> {
     try {
         const response = await pendingAsset.pendingDownloadInternal!.response;
         const json = await response.json();
@@ -117,7 +114,7 @@ export async function instantiate_segmentation_rules_asset(pendingAsset: AssetEn
     }
 }
 
-export async function wait_for_all_assets() {
+export async function wait_for_all_assets () {
     // wait for all assets in memory
     await runtimeHelpers.allAssetsInMemory.promise;
     if (runtimeHelpers.config.assets) {
@@ -129,6 +126,6 @@ export async function wait_for_all_assets() {
 }
 
 // Used by the debugger to enumerate loaded dlls and pdbs
-export function mono_wasm_get_loaded_files(): string[] {
+export function mono_wasm_get_loaded_files (): string[] {
     return loaderHelpers.loadedFiles;
 }
