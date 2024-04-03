@@ -868,7 +868,7 @@ done:
     return result;
 }
 
-void SetLargestCacheSizeAndLevelFromSysConf(size_t* cache_size, size_t* cache_level)
+static void SetLargestCacheSizeAndLevelFromSysConf(size_t* cache_size, size_t* cache_level)
 {
     const int cacheLevelNames[] =
     {
