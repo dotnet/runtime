@@ -5333,6 +5333,10 @@ RegBitSet64 AllRegsMask::GetAllRegistersMask() const
 }
 #endif
 
+regMaskGpr AllRegsMask::gprRegs() const
+{
+    return _combinedRegisters & RBM_ALLINT;
+}
 /*****************************************************************************/
 #endif //_COMPILER_HPP_
 /*****************************************************************************/

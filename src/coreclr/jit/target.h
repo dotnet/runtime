@@ -319,17 +319,6 @@ private:
     }
 
 public:
-    inline regMaskGpr gprRegs() const
-    {
-#ifdef TARGET_AMD64
-        return _combinedRegisters & 0xFFFF;
-#elif TARGET_ARM64
-        return _combinedRegisters & 0xFFFFFFFF;
-#else
-        // TODO: Fix this for ARM and x86
-        return _combinedRegisters;
-#endif // TARGET_AMD64
-    }
 
     inline regMaskFloat floatRegs() const
     {
@@ -355,6 +344,7 @@ public:
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 //#endif // DEBUG
+    FORCEINLINE regMaskGpr gprRegs() const;
 
     _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
