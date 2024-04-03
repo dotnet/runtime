@@ -15,9 +15,13 @@ public class ObjectFileScraper
     public readonly ReadOnlyMemory<byte> MagicLE = new byte[8]{0x44, 0x41, 0x43, 0x42, 0x4C, 0x4F, 0x42, 0x00}; // "DACBLOB\0"
     public readonly ReadOnlyMemory<byte> MagicBE = new byte[8]{0x00, 0x42, 0x4F, 0x4C, 0x42, 0x43, 0x41, 0x44};
 
+    private readonly DataDescriptorModel.Builder _builder;
+
     public bool Verbose {get;}
-    public ObjectFileScraper(bool verbose) {
+    public ObjectFileScraper(bool verbose, DataDescriptorModel.Builder builder)
+    {
         Verbose = verbose;
+        _builder = builder;
     }
 
     public async Task<bool> ScrapeInput(string inputPath, CancellationToken token)
@@ -94,16 +98,16 @@ public class ObjectFileScraper
     struct HeaderDirectory {
         public uint TypesStart;
         public uint FieldPoolStart;
-        
+
         public uint GlobalValuesStart;
         public uint NamesStart;
-        
+
         public uint TypeCount;
         public uint FieldPoolCount;
-        
+
         public uint GlobalValuesCount;
         public uint NamesPoolCount;
-        
+
         public byte TypeSpecSize;
         public byte FieldSpecSize;
         public byte GlobalSpecSize;
@@ -124,7 +128,7 @@ public class ObjectFileScraper
     private uint Swap(bool isLittleEndian, uint value) => (isLittleEndian == BitConverter.IsLittleEndian) ? value : BinaryPrimitives.ReverseEndianness(value);
     private ushort Swap(bool isLittleEndian, ushort value) => (isLittleEndian == BitConverter.IsLittleEndian) ? value : BinaryPrimitives.ReverseEndianness(value);
     private ulong Swap(bool isLittleEndian, ulong value) => (isLittleEndian == BitConverter.IsLittleEndian) ? value : BinaryPrimitives.ReverseEndianness(value);
-        
+
 
     private HeaderDirectory ReadHeader(Stream stream, bool isLE)
     {
@@ -166,24 +170,10 @@ public class ObjectFileScraper
 
     struct Content
     {
-        public TypeEntry[] Types;
         public string Baseline;
         public GlobalEntry[] Globals;
     }
 
-    struct TypeEntry
-    {
-        public string Name;
-        public int? Size;
-        public FieldEntry[] Fields;
-    }
-
-    struct FieldEntry
-    {
-        public string Name;
-        public string Type;
-        public int Offset;
-    }
 
     struct GlobalEntry
     {
@@ -205,7 +195,14 @@ public class ObjectFileScraper
         public uint TypeNameIdx;
         public ushort FieldOffset;
     }
-    
+
+    struct FieldEntry
+    {
+        public string Name;
+        public string Type;
+        public ushort Offset;
+    }
+
     struct GlobalSpec
     {
         public uint NameIdx;
@@ -301,19 +298,25 @@ public class ObjectFileScraper
             Console.WriteLine ($"field entry {i} Name = {fields[i].Name}, Type = {fields[i].Type}, Offset = {fields[i].Offset}");
         }
 
-        TypeEntry[] types = new TypeEntry[typeSpecs.Length];
         for (int i = 0; i < typeSpecs.Length; i++)
         {
-            types[i].Name = GetPoolString(namesPool, typeSpecs[i].NameIdx);
-            uint j = typeSpecs[i].FieldsIdx / header.FieldSpecSize; // convert byte offset to index;
-            List<FieldEntry> typeFields = new();
-            Console.WriteLine ($"Type {types[i].Name} has fields starting at index {j}");
+            string typeName = GetPoolString(namesPool, typeSpecs[i].NameIdx);
+            var typeBuilder = _builder.AddOrUpdateType(typeName, typeSpecs[i].Size);
+            uint j = typeSpecs[i].FieldsIdx; // convert byte offset to index;
+            Console.WriteLine($"Type {typeName} has fields starting at index {j}");
             while (j < fields.Length && !String.IsNullOrEmpty(fields[j].Name)) {
-                typeFields.Add(fields[j]);
+                typeBuilder.AddOrUpdateField(fields[j].Name, fields[j].Type, fields[j].Offset);
+                Console.WriteLine($"Type {typeName} has field {fields[j].Name} with offset {fields[j].Offset}");
                 j++;
             }
-            types[i].Fields = typeFields.ToArray();
-            types[i].Size = typeSpecs[i].Size;
+            if (typeSpecs[i].Size != 0)
+            {
+                Console.WriteLine($"Type {typeName} has size {typeSpecs[i].Size}");
+            }
+            else
+            {
+                Console.WriteLine($"Type {typeName} has indeterminate size");
+            }
         }
 
         GlobalEntry[] globals = new GlobalEntry[globalSpecs.Length];
@@ -322,10 +325,11 @@ public class ObjectFileScraper
             globals[i].Name = GetPoolString(namesPool, globalSpecs[i].NameIdx);
             globals[i].Type = GetPoolString(namesPool, globalSpecs[i].TypeNameIdx);
             globals[i].Value = globalSpecs[i].Value;
+            Console.WriteLine($"Global[{i}] {globals[i].Name} has type {globals[i].Type} with value {globals[i].Value}");
         }
 
-        return new Content {
-            Types = types,
+        return new Content
+        {
             Baseline = baseline,
             Globals = globals,
         };

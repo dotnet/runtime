@@ -47,9 +47,20 @@ public class Program
         private async Task<int> Run(ParseResult parse, CancellationToken token = default)
         {
             var inputs = parse.GetValue(inputFiles);
+            if (inputs == null || inputs.Length == 0)
+            {
+                Console.Error.WriteLine("No input files specified");
+                return 1;
+            }
             var output = parse.GetValue(outputFile);
+            if (output == null)
+            {
+                Console.Error.WriteLine("No output file specified");
+                return 1;
+            }
             var verbose = parse.GetValue(_verboseOption);
-            var scraper = new ObjectFileScraper(verbose);
+            var builder = new DataDescriptorModel.Builder();
+            var scraper = new ObjectFileScraper(verbose, builder);
             foreach (var input in inputs) {
                 token.ThrowIfCancellationRequested();
                 if (!await scraper.ScrapeInput(input, token)) {
@@ -58,7 +69,11 @@ public class Program
                 }
             }
 
-            //var model = await scraper.BuildModel(token);
+            var model = builder.Build();
+            if (verbose)
+            {
+                model.DumpModel();
+            }
             using var writer = new System.IO.StreamWriter(output);
             var emitter = new ContractDescriptorSourceFileEmitter();
             emitter.JsonDescriptor = "{version: 0}"; // model.ToJson();

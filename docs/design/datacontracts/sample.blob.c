@@ -20,7 +20,7 @@ static ManagedThreadStore g_managedThreadStore;
 
 // end example structures
 
-// begin blob definition 
+// begin blob definition
 
 struct TypeSpec
 {
@@ -189,14 +189,16 @@ enum
 
 #define MAKE_TYPEFIELDS_TYNAME(tyname) CONCAT(CDacFieldPoolTypeStart__, tyname)
 
-// offsets of each run of fields
+// index of each run of fields.
+// we make a struct containing one 1-byte field for each field in the run, and then take the offset of the
+// struct to get the index of the run of fields.
 // this looks like
 //
 // struct CDacFieldPoolSizes {
-//   char empty_field_spec[sizeof(struct FieldSpec)];
+//   char cdac_field_pool_start_placeholder__;
 //   struct CDacFieldPoolTypeStart__MethodTable {
-//     char cdac_field_pool_member__MethodTable__GCHandle[sizeof(struct FieldSpec)];
-//     char cdac_field_pool_member__MethodTable_endmarker[sizeof(struct FieldSpec)];
+//     char cdac_field_pool_member__MethodTable__GCHandle;
+//     char cdac_field_pool_member__MethodTable_endmarker;
 //   } CDacFieldPoolTypeStart__MethodTable;
 //   ...
 // };
@@ -205,8 +207,7 @@ enum
 // method table field descriptors in the run of fields
 struct CDacFieldPoolSizes
 {
-	char empty_field_spec[sizeof(struct FieldSpec)]; // make all valid field specs non-zero
-#define DECL_LEN(membername) char membername[sizeof(struct FieldSpec)];
+#define DECL_LEN(membername) char membername;
 #define CDAC_BASELINE(name) DECL_LEN(cdac_field_pool_start_placeholder__)
 #define CDAC_TYPES_BEGIN()
 #define CDAC_TYPE_BEGIN(name) struct MAKE_TYPEFIELDS_TYNAME(name) {
@@ -241,16 +242,16 @@ struct BinaryBlobDataDescriptor
     struct Directory {
         uint32_t TypesStart;
         uint32_t FieldPoolStart;
-        
+
         uint32_t GlobalValuesStart;
         uint32_t NamesStart;
-        
+
         uint32_t TypeCount;
         uint32_t FieldPoolCount;
-        
+
 	uint32_t GlobalValuesCount;
         uint32_t NamesPoolCount;
-        
+
         uint8_t TypeSpecSize;
         uint8_t FieldSpecSize;
         uint8_t GlobalSpecSize;
@@ -297,7 +298,7 @@ const struct MagicAndBlob Blob = {
 #define CDAC_TYPE_END(name)
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL(name,tyname,value) #name "\0"
+#define CDAC_GLOBAL(name,tyname,value) #name "\0" #tyname "\0"
 #define CDAC_GLOBALS_END()
 #include "sample.data.h"
 #undef CDAC_BASELINE
@@ -397,7 +398,7 @@ const struct MagicAndBlob Blob = {
 #undef CDAC_GLOBAL
 #undef CDAC_GLOBALS_END
 		},
-		
+
 	}
 };
 

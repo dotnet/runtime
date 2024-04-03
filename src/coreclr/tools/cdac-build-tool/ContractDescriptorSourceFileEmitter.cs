@@ -16,7 +16,7 @@ public partial class ContractDescriptorSourceFileEmitter
 
     public ContractDescriptorSourceFileEmitter()
     {
-        
+
     }
 
     [GeneratedRegex("%%([a-zA-Z0-9_]+)%%", RegexOptions.CultureInvariant)]
@@ -24,7 +24,7 @@ public partial class ContractDescriptorSourceFileEmitter
 
     internal Stream GetTemplateStream()
     {
-        return typeof(ContractDescriptorSourceFileEmitter).Assembly.GetManifestResourceStream(TemplateResourceName);
+        return typeof(ContractDescriptorSourceFileEmitter).Assembly.GetManifestResourceStream(TemplateResourceName)!;
     }
 
     internal string GetTemplateString()
@@ -32,7 +32,7 @@ public partial class ContractDescriptorSourceFileEmitter
         using var reader = new StreamReader(GetTemplateStream(), System.Text.Encoding.UTF8);
         return reader.ReadToEnd();
     }
-    
+
     public string JsonDescriptor
     {
         get
@@ -60,7 +60,8 @@ public partial class ContractDescriptorSourceFileEmitter
             // lookup the capture key and write it out
 
             var key = match.Groups[1].Captures[0].Value;
-            if (!Elements.TryGetValue(key, out string result)) {
+            if (!Elements.TryGetValue(key, out string? result))
+            {
                 throw new InvalidOperationException ($"no replacement for {key}");
             }
             dest.Write(result);

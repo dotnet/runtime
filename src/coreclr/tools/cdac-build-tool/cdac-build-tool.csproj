@@ -3,6 +3,7 @@
   <PropertyGroup>
     <AssemblyName>cdac-build-tool</AssemblyName>
     <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
