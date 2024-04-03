@@ -200,7 +200,7 @@ export DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EMSDK_PATH)
       </_EmsdkPaths>
       <_EmsdkPaths Condition="'$(HostOS)' == 'windows'">
 set EMSDK_PATH=$(EMSDK_PATH)
-set EMSDK_PYTHON=$(EMSDK_PATH)python/
+set EMSDK_PYTHON=$(EMSDK_PATH)python/python.exe
 set DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EMSDK_PATH)bin/
 set DOTNET_EMSCRIPTEN_NODE_JS=$(EMSDK_PATH)node/bin/node
 set DOTNET_EMSCRIPTEN_NODE_PATH=$(EMSDK_PATH)node/bin/
