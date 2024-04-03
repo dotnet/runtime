@@ -872,7 +872,6 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cacheLevel = 0;
     size_t cacheSize = 0;
-    long size;
 
 #ifdef HAVE_SYSCONF
     const int cacheLevelNames[] =
