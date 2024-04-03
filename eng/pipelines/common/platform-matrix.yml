@@ -313,7 +313,8 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         isSourceBuild: true
-        isNonPortableSourceBuild: true
+        isPortableSourceBuild: false
+        outputRid: 'centos.8-x64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Non-existent RID Source Build
@@ -336,7 +337,8 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         isSourceBuild: true
-        isNonPortableSourceBuild: true
+        isPortableSourceBuild: false
+        outputRid: 'banana.24-x64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Portable Linux x64 Source Build
@@ -358,7 +360,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         isSourceBuild: true
-        isNonPortableSourceBuild: false
+        isPortableSourceBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # GCC Linux x64 Build

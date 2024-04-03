@@ -19,7 +19,8 @@ parameters:
   shouldContinueOnError: false
   isOfficialBuild: false
   isSourceBuild: false
-  isNonPortableSourceBuild: false
+  isPortableSourceBuild: true
+  outputRid: ''
   runtimeFlavor: 'coreclr'
   runtimeVariant: ''
   helixQueues: ''
@@ -174,7 +175,8 @@ jobs:
           platform:
             baseOS: ${{ parameters.baseOS }}
             buildScript: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
-            nonPortable: ${{ parameters.isNonPortableSourceBuild }}
+            portableBuild: ${{ parameters.isPortableSourceBuild }}
+            outputRid: ${{ parameters.outputRid }}
             targetRID: ${{ parameters.targetRid }}
             name: ${{ parameters.platform }}
 

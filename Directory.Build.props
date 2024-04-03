@@ -246,17 +246,16 @@
 
   <!-- OutputRID is used to name the target platform.
        For portable builds, OutputRID matches _portableOS.
-       For non-portable builds, it uses __DistroRid (from the native build script), or falls back to RuntimeInformation.RuntimeIdentifier.
+       For non-portable builds, it expects caller to set OutputRID or falls back to RuntimeInformation.RuntimeIdentifier.
        Source-build sets OutputRID directly. -->
   <PropertyGroup Label="CalculateOutputRID">
     <_hostRid Condition="'$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_hostRid>
     <_hostRid Condition="'$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_hostRid>
 
-    <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
-    <_parseDistroRid Condition="'$(_parseDistroRid)' == ''">$(_hostRid)</_parseDistroRid>
-    <_distroRidIndex>$(_parseDistroRid.LastIndexOf('-'))</_distroRidIndex>
+    <_parseDistroRid Condition="'$(PortableBuild)' == 'true'">$(_hostRid)</_parseDistroRid>
+    <_lastHyphenIndex Condition="'$(PortableBuild)' == 'true'">$(_parseDistroRid.LastIndexOf('-'))</_lastHyphenIndex>
 
-    <_outputOS>$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</_outputOS>
+    <_outputOS Condition="'$(PortableBuild)' == 'true'">$(_parseDistroRid.SubString(0, $(_lastHyphenIndex)))</_outputOS>
     <_outputOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_outputOS>
 
     <OutputRID Condition="'$(OutputRID)' == ''">$(_outputOS)-$(TargetArchitecture)</OutputRID>
