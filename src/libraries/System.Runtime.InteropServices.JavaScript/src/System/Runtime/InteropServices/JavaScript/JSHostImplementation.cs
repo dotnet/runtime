@@ -327,13 +327,13 @@ namespace System.Runtime.InteropServices.JavaScript
         public static (string assemblyName, string nameSpace, string shortClassName, string methodName) ParseFQN(string fqn)
         {
             ReadOnlySpan<char> fqnSpan = fqn.AsSpan();
-            ReadOnlySpan assemblyStart = fqnSpan..Slice(fqnSpan.IndexOf('[') + 1);
+            ReadOnlySpan assemblyStart = fqnSpan.Slice(fqnSpan.IndexOf('[') + 1);
             int assemblyEnd = assemblyStart.IndexOf(']');
 
             if (assemblyEnd == -1 || assemblyStart.Length == fqnSpan.Length)
                 throw new InvalidOperationException($"No assembly name specified {fqn}");
 
-            string assemblySpan = assemblyStart.Slice(assemblyEnd).Trim().ToString();
+            ReadOnlySpan<char> assemblySpan = assemblyStart.Slice(assemblyEnd - 1).Trim();
             ReadOnlySpan<char> classAndMethod = assemblyStart.Slice(assemblyEnd + 1).Trim();
 
             int classNameEnd = classAndMethod.IndexOf(':');
