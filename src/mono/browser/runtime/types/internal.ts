@@ -206,6 +206,7 @@ export type RuntimeHelpers = {
     getMemory(): WebAssembly.Memory,
     getWasmIndirectFunctionTable(): WebAssembly.Table,
     runtimeReady: boolean,
+    disableManagedTransition: boolean,
     monoThreadInfo: PThreadInfo,
     proxyGCHandle: GCHandle | undefined,
     managedThreadTID: PThreadPtr,
