@@ -868,7 +868,28 @@ done:
     return result;
 }
 
-#define UPDATE_CACHE_SIZE_AND_LEVEL(CURRENT_CACHE_SIZE, NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if (NEW_CACHE_SIZE > ((long)CURRENT_CACHE_SIZE)) { CURRENT_CACHE_SIZE = NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
+void SetLargestCacheSizeAndLevelFromSysConf(size_t* cache_size, size_t* cache_level)
+{
+    const int cacheLevelNames[] =
+    {
+        _SC_LEVEL1_DCACHE_SIZE,
+        _SC_LEVEL2_CACHE_SIZE,
+        _SC_LEVEL3_CACHE_SIZE,
+        _SC_LEVEL4_CACHE_SIZE,
+    };
+
+    for (int i = ARRAY_SIZE(cacheLevelNames) - 1; i >= 0; i--)
+    {
+        long size = sysconf(cacheLevelNames[i]);
+        if (size > 0)
+        {
+            printf ("Iterating over cache size: %ld, current cache size: %zu\n", size, *cache_size);
+            *cache_size = (size_t)size;
+            *cache_level = i + 1;
+            break;
+        }
+    }
+}
 
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
@@ -876,24 +897,9 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     size_t cacheSize = 0;
     long size;
 
-    // sysconf can return -1 if the cache size is unavailable in some distributions and 0 in others.
-    // UPDATE_CACHE_SIZE_AND_LEVEL should handle both the cases by not updating cacheSize if either of cases are met.
-#ifdef _SC_LEVEL1_DCACHE_SIZE
-    size = sysconf(_SC_LEVEL1_DCACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(cacheSize, size, 1)
-#endif
-#ifdef _SC_LEVEL2_CACHE_SIZE
-    size = sysconf(_SC_LEVEL2_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(cacheSize, size, 2)
-#endif
-#ifdef _SC_LEVEL3_CACHE_SIZE
-    size = sysconf(_SC_LEVEL3_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(cacheSize, size, 3)
-#endif
-#ifdef _SC_LEVEL4_CACHE_SIZE
-    size = sysconf(_SC_LEVEL4_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(cacheSize, size, 4)
-#endif
+#if HAVE_SYSCONF
+    SetLargestCacheSizeAndLevelFromSysConf(&cacheSize, &cacheLevel);
+#endif // HAVE_SYSCONF
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
     if (cacheSize == 0)
@@ -918,18 +924,13 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 
             if (ReadMemoryValueFromFile(path_to_size_file, &cache_size_from_sys_file))
             {
-                // uint64_t to long conversion as ReadMemoryValueFromFile takes a uint64_t* as an argument for the val argument.
                 size = (long)cache_size_from_sys_file;
-                path_to_level_file[index] = (char)(48 + i);
+                cacheSize = std::max((long)cacheSize, size);
 
+                path_to_level_file[index] = (char)(48 + i);
                 if (ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
-                    UPDATE_CACHE_SIZE_AND_LEVEL(cacheSize, size, level)
-                }
-
-                else
-                {
-                    cacheSize = std::max((long)cacheSize, size);
+                    cacheLevel = level;
                 }
             }
         }
