@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -466,6 +467,36 @@ namespace System.Numerics.Tensors
 
     public static partial class Tensor
     {
+        #region Expand
+        // REVIEW: THIS IS CALLED BROADCAST IN NUMPY AND I BELIEVE OTHER FRAMEWORKS
+        // REVIEW: THIS IS HOW IT WORKS IN NUMPY, WOULD RE RATHER PASS IN SHAPE INSTEAD OF A TENSOR SHAPE TO MATCH? OR BOTH?
+        public static Tensor<T> Expand<T>(this Tensor<T> tensor, params Tensor<T>[] tensors)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => throw new NotImplementedException();
+        #endregion
+
+        #region Flip
+        public static Tensor<T> Flip<T>(this Tensor<T> tensor, params NativeIndex[] axis)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => throw new NotImplementedException();
+
+        #endregion
+
+        #region Split
+        // REVIEW: NOT IN DESIGN DOC BUT NEEDED FOR NIKLAS NOTEBOOK.
+        // REVIEW: INT VS NATIVEINDEX VS NINT FOR SINGLE AXIS.
+        /// <summary>
+        /// If indices_or_sections is an integer, N, the array will be divided into N equal arrays along axis. If such a split is not possible, an error is raised.
+        /// If indices_or_sections is a 1-D array of sorted integers, the entries indicate where along axis the array is split.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="tensor"></param>
+        /// <param name="indices"></param>
+        /// <param name="axis"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static Tensor<T>[] Split<T>(this Tensor<T> tensor, nint[] indices, int axis = 0)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => throw new NotImplementedException();
+        #endregion
+
         #region SetSlice
         // REVIEW: NOT IN DESIGN DOC BUT NEEDED FOR NIKLAS NOTEBOOK.
         public static Tensor<T> SetSlice<T>(this Tensor<T> tensor, Tensor<T> values, params NativeRange[] ranges)
@@ -750,7 +781,8 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Unsqueeze
-        public static Tensor<T> Unsqueeze<T>(this Tensor<T> input, nint axis)
+        // REVIEW: NUMPY CALLS THIS expand_dims.
+        public static Tensor<T> Unsqueeze<T>(this Tensor<T> input, int axis)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (axis > input.Lengths.Length)
@@ -759,7 +791,7 @@ namespace System.Numerics.Tensors
                 axis = input.Rank - axis;
 
             List<nint> tempLengths = input._lengths.ToList();
-            tempLengths.Insert((int)axis, 1);
+            tempLengths.Insert(axis, 1);
             var lengths = tempLengths.ToArray();
             var strides = SpanHelpers.CalculateStrides(lengths.Length, lengths);
             return new Tensor<T>(input._values, lengths, strides, input.IsPinned);
@@ -865,7 +897,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
 
         {
-            T mean = Tensor.Mean(input);
+            T mean = Mean(input);
             var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
             var output = new T[input._linearLength].AsSpan();
             TensorPrimitives.Subtract(span, mean, output);
@@ -894,6 +926,9 @@ namespace System.Numerics.Tensors
             return T.CreateChecked(sum / T.CreateChecked(input.LinearLength));
         }
 
+        public static Tensor<T> Mean<T>(this Tensor<T> input, int axis)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T> => throw new NotImplementedException();
+
         public static TResult Mean<T, TResult>(this Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
             where TResult : IEquatable<TResult>, IEqualityOperators<TResult, TResult, bool>, IFloatingPoint<TResult>
@@ -902,6 +937,10 @@ namespace System.Numerics.Tensors
             T sum = Tensor.Sum(input);
             return TResult.CreateChecked(TResult.CreateChecked(sum) / TResult.CreateChecked(input.LinearLength));
         }
+
+        public static Tensor<TResult> Mean<T, TResult>(this Tensor<T> input, int axis)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+            where TResult : IEquatable<TResult>, IEqualityOperators<TResult, TResult, bool>, IFloatingPoint<TResult> => throw new NotImplementedException();
         #endregion
 
         #region Permute/Transpose
