@@ -226,23 +226,20 @@ namespace System.Runtime.CompilerServices
 
             RuntimeType rtType = (RuntimeType)Type.GetTypeFromHandle(type)!;
 
-            if (rtType.IsByRefLike)
-                throw new NotSupportedException(SR.NotSupported_ByRefLike);
+            if (rtType.IsPointer || rtType.IsFunctionPointer || rtType.IsByRef || rtType.IsGenericParameter)
+                throw new ArgumentException(SR.Arg_TypeNotSupported);
 
-            if (rtType.IsPointer || rtType.IsFunctionPointer)
-                throw new NotSupportedException(SR.NotSupported_BoxedPointer);
-
-
-            if (rtType.IsValueType)
-            {
-                object? result = null;
-                InternalBox(new QCallTypeHandle(ref rtType), ref target, ObjectHandleOnStack.Create(ref result));
-                return result;
-            }
-            else
+            if (!rtType.IsValueType)
             {
                 return Unsafe.As<byte, object?>(ref target);
             }
+
+            if (rtType.IsByRefLike)
+                throw new NotSupportedException(SR.NotSupported_ByRefLike);
+
+            object? result = null;
+            InternalBox(new QCallTypeHandle(ref rtType), ref target, ObjectHandleOnStack.Create(ref result));
+            return result;
         }
     }
 }

@@ -422,18 +422,19 @@ namespace System.Runtime.CompilerServices
             if (type.IsNullHandle())
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
 
-            RuntimeType rtType = (RuntimeType)Type.GetTypeFromHandle(type)!;
+            TypeHandle handle = type.GetNativeTypeHandle();
 
-            if (rtType.IsByRefLike)
-                throw new NotSupportedException(SR.NotSupported_ByRefLike);
+            if (handle.IsTypeDesc)
+                throw new ArgumentException(SR.Arg_TypeNotSupported);
 
-            if (rtType.IsPointer || rtType.IsFunctionPointer)
-                throw new NotSupportedException(SR.NotSupported_BoxedPointer);
+            MethodTable* pMT = handle.AsMethodTable();
 
-            if (rtType.IsActualValueType)
+            if (pMT->IsValueType)
             {
-                object? result = Box(rtType.GetNativeTypeHandle().AsMethodTable(), ref target);
-                GC.KeepAlive(rtType);
+                if (pMT->IsByRefLike)
+                    throw new NotSupportedException(SR.NotSupported_ByRefLike);
+                object? result = Box(pMT, ref target);
+                GC.KeepAlive(type);
                 return result;
             }
             else

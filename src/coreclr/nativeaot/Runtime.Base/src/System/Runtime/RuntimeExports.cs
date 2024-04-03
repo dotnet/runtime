@@ -75,6 +75,10 @@ namespace System.Runtime
         [RuntimeExport("RhBox")]
         public static unsafe object RhBox(MethodTable* pEEType, ref byte data)
         {
+            // Compatibility with CoreCLR, throw on a null reference to the unboxed data.
+            if (Unsafe.IsNullRef(ref target))
+                throw new NullReferenceException();
+
             ref byte dataAdjustedForNullable = ref data;
 
             // Can box non-ByRefLike value types only (which also implies no finalizers).

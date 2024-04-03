@@ -52,6 +52,9 @@ namespace System
         {
             RuntimeTypeHandle handle = RawTargetTypeToken(value);
 
+            if (handle.IsNull)
+                ThrowHelper.ThrowArgumentException_ArgumentNull_TypedRefType();
+
             MethodTable* mt = handle.ToMethodTable();
             if (mt->IsPointer || mt->IsFunctionPointer)
             {

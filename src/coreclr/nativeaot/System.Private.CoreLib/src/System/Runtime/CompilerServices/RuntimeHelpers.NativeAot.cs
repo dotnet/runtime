@@ -362,24 +362,25 @@ namespace System.Runtime.CompilerServices
             return RuntimeImports.RhNewObject(mt);
         }
 
-        public static unsafe object Box(ref byte target, RuntimeTypeHandle type)
+        public static unsafe object? Box(ref byte target, RuntimeTypeHandle type)
         {
             if (type.IsNull)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
 
-            // Compatibility with CoreCLR, throw on a null reference to the unboxed data.
-            if (Unsafe.IsNullRef(ref target))
-                throw new NullReferenceException();
-
             MethodTable* eeType = type.ToMethodTable();
 
+            if (eeType->IsByRef || eeType->IsPointer || eeType->IsFunctionPointer)
+                throw new ArgumentException(SR.Arg_TypeNotSupported);
+
+            if (!eeType->IsValueType)
+            {
+                return Unsafe.As<byte, object>>(ref target);
+            }
+            
             if (eeType->IsByRefLike)
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
 
-            if (eeType->IsPointer || eeType->IsFunctionPointer)
-                throw new NotSupportedException(SR.NotSupported_BoxedPointer);
-
-            return RuntimeImports.RhBoxAny(ref target, eeType);
+            return RuntimeImports.RhBox(ref target, eeType);
         }
     }
 

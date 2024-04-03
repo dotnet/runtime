@@ -449,7 +449,7 @@ namespace System.Runtime.CompilerServices.Tests
         [Fact]
         public static void BoxPointer()
         {
-            Assert.Throws<NotSupportedException>(() =>
+            Assert.Throws<ArgumentException>(() =>
             {
                 nint value = 3;
                 object result = RuntimeHelpers.Box(ref Unsafe.As<nint, byte>(ref value), typeof(void*).TypeHandle);
@@ -520,13 +520,21 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public static void BoxNullNullable()
+        {
+            float? value = null;
+            object? result = RuntimeHelpers.Box(ref Unsafe.As<float?, byte>(ref value), typeof(float?).TypeHandle);
+            Assert.Null(result);
+        }
+
+        [Fact]
         public static void NullBox()
         {
             Assert.Throws<NullReferenceException>(() => RuntimeHelpers.Box(ref Unsafe.NullRef<byte>(), typeof(byte).TypeHandle));
         }
 
         [Fact]
-        public static void BoxInvalidType()
+        public static void BoxNullTypeHandle()
         {
             Assert.Throws<ArgumentNullException>(() =>
             {
@@ -540,6 +548,24 @@ namespace System.Runtime.CompilerServices.Tests
         {
             string str = "ABC";
             Assert.Same(str, RuntimeHelpers.Box(ref Unsafe.As<string, byte>(ref str), typeof(string).TypeHandle));
+        }
+
+        [Fact]
+        public static void BoxArrayType()
+        {
+            string[] arr = ["a", "b", "c"];
+            Assert.Same(arr, RuntimeHelpers.Box(ref Unsafe.As<string[], byte>(ref arr), typeof(string[]).TypeHandle));
+        }
+
+        [Fact]
+        public static void BoxGenericParameterType()
+        {
+            Type t = typeof(List<>).GetGenericArguments()[0];
+            Assert.Throws<ArgumentException>(() =>
+            {
+                byte value = 3;
+                RuntimeHelpers.Box(ref value, t.TypeHandle);
+            });
         }
     }
 
