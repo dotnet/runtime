@@ -561,6 +561,7 @@ regMaskOnlyOne CodeGenInterface::genGetRegMask(GenTree* tree)
 void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bool isDying DEBUGARG(GenTree* tree))
 {
     regMaskOnlyOne regMask = genGetRegMask(varDsc);
+    assert(compiler->IsOnlyOneRegMask(regMask));
 
 #ifdef DEBUG
     if (compiler->verbose)
