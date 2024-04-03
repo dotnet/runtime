@@ -45,7 +45,7 @@ export function mono_wasm_new_root_buffer (capacity: number, name?: string): Was
  * Releasing this root will not de-allocate the root space. You still need to call .release().
  */
 export function mono_wasm_new_external_root<T extends MonoObject> (address: VoidPtr | MonoObjectRef): WasmRoot<T> {
-    if (WasmEnableThreads && runtimeHelpers.disableManagedTransition) throw new Error("External roots are not supported when threads are enabled");
+    if (WasmEnableThreads && runtimeHelpers.disableManagedTransition) throw new Error("External roots are not supported in multithreaded mode");
     let result: WasmExternalRoot<T>;
 
     if (!address)
