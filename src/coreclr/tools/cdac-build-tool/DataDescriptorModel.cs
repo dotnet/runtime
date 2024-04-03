@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -16,12 +17,12 @@ public class DataDescriptorModel
     public IReadOnlyDictionary<string, TypeModel> Types { get; }
     public IReadOnlyDictionary<string, GlobalModel> Globals { get; }
     public IReadOnlyDictionary<string, ContractModel> Contracts { get; }
-    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals)
+    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, IReadOnlyDictionary<string, ContractModel> contracts)
     {
         Baseline = baseline;
         Types = types;
         Globals = globals;
-        Contracts = new Dictionary<string, ContractModel>();
+        Contracts = contracts;
     }
 
 
@@ -47,6 +48,11 @@ public class DataDescriptorModel
             Console.WriteLine($"Global: {globalName}");
             Console.WriteLine($"  Type: {global.Type}");
             Console.WriteLine($"  Value: {global.Value}");
+        }
+        foreach (var (contractName, contract) in Contracts)
+        {
+            Console.WriteLine($"Contract: {contractName}");
+            Console.WriteLine($"  Version: {contract.Version}");
         }
     }
 
@@ -141,6 +147,7 @@ public class DataDescriptorModel
         private bool _baselineParsed;
         private readonly Dictionary<string, TypeModelBuilder> _types = new();
         private readonly Dictionary<string, GlobalBuilder> _globals = new();
+        private readonly Dictionary<string, ContractBuilder> _contracts = new();
         public Builder()
         {
             _baseline = string.Empty;
@@ -176,6 +183,16 @@ public class DataDescriptorModel
             global.Type = type;
             global.Value = value;
             return global;
+        }
+
+        public void AddOrUpdateContract(string name, int version)
+        {
+            if (!_contracts.TryGetValue(name, out var contract))
+            {
+                contract = new ContractBuilder();
+                _contracts[name] = contract;
+            }
+            contract.Version = version;
         }
 
         public void SetBaseline(string baseline)
@@ -229,7 +246,12 @@ public class DataDescriptorModel
                 }
                 globals[globalName] = new GlobalModel { Name = globalName, Type = globalBuilder.Type, Value = v.Value };
             }
-            return new DataDescriptorModel(_baseline, types, globals);
+            var contracts = new Dictionary<string, ContractModel>();
+            foreach (var (contractName, contractBuilder) in _contracts)
+            {
+                contracts[contractName] = contractBuilder.Build();
+            }
+            return new DataDescriptorModel(_baseline, types, globals, contracts);
         }
     }
 
@@ -382,5 +404,35 @@ public class DataDescriptorModel
     public readonly struct ContractModel
     {
         public int Version { get; init; }
+    }
+
+    public class ContractBuilder
+    {
+        private int? _version;
+        public ContractBuilder()
+        {
+        }
+
+        public int? Version
+        {
+            get => _version;
+            set
+            {
+                if (_version != null && _version != value)
+                {
+                    throw new InvalidOperationException($"Version already set to {_version} cannot set to {value}");
+                }
+                _version = value;
+            }
+        }
+
+        public ContractModel Build()
+        {
+            if (_version == null)
+            {
+                throw new InvalidOperationException("Version must be set for contract");
+            }
+            return new ContractModel { Version = _version.Value };
+        }
     }
 }

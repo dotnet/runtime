@@ -34,12 +34,14 @@ public class Program
     {
         private readonly CliArgument<string[]> inputFiles = new ("INPUT [INPUTS...]") { Arity = ArgumentArity.OneOrMore, Description="One or more input files" };
         private readonly CliOption<string> outputFile = new ("-o") { Arity = ArgumentArity.ExactlyOne, HelpName="OUTPUT", Required = true, Description = "Output file" };
+        private readonly CliOption<string[]> contractFile = new("-c") { Arity = ArgumentArity.ZeroOrMore, HelpName = "CONTRACT", Description = "Contract file options" };
         private readonly CliOption<bool> _verboseOption;
         public ComposeCommand (CliOption<bool> verboseOption) : base("compose")
         {
             _verboseOption = verboseOption;
             Add(inputFiles);
             Add(outputFile);
+            Add(contractFile);
             SetAction(Run);
         }
 
@@ -58,6 +60,7 @@ public class Program
                 Console.Error.WriteLine("No output file specified");
                 return 1;
             }
+            var contracts = parse.GetValue(contractFile);
             var verbose = parse.GetValue(_verboseOption);
             var builder = new DataDescriptorModel.Builder();
             var scraper = new ObjectFileScraper(verbose, builder);
@@ -66,6 +69,18 @@ public class Program
                 if (!await scraper.ScrapeInput(input, token)) {
                     Console.Error.WriteLine ($"could not scrape payload in {input}");
                     return 1;
+                }
+            }
+            if (contracts != null)
+            {
+                var contractReader = new ContractReader(builder);
+                foreach (var contract in contracts)
+                {
+                    if (!await contractReader.ParseContracts(contract, token))
+                    {
+                        Console.Error.WriteLine($"could not parse contracts in {contract}");
+                        return 1;
+                    }
                 }
             }
 
