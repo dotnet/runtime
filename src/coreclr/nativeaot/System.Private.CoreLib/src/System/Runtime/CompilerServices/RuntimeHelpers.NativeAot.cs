@@ -376,7 +376,7 @@ namespace System.Runtime.CompilerServices
             {
                 return Unsafe.As<byte, object>(ref target);
             }
-            
+
             if (eeType->IsByRefLike)
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
 
