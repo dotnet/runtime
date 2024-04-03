@@ -63,20 +63,16 @@ public class SignalRClientTests : AppTestBase
                 }
 
                 if (msg.Text.Contains("Finished GetQueryParameters"))
-                {
-                    // first click after render - make sure buttons are available
-                    await page.WaitForSelectorAsync("button#connectButton");
-                    await page.ClickAsync("button#connectButton");
-                }
+                    await SaveClickButtonAsync(page, "button#connectButton");
 
                 if (msg.Text.Contains("SignalR connected"))
-                    await page.ClickAsync("button#subscribeButton");
+                    await SaveClickButtonAsync(page, "button#subscribeButton");
 
                 if (msg.Text.Contains("Subscribed to ReceiveMessage"))
-                    await page.ClickAsync("button#sendMessageButton");
+                    await SaveClickButtonAsync(page, "button#sendMessageButton");
 
                 if (msg.Text.Contains("ReceiveMessage from server"))
-                    await page.ClickAsync("button#exitProgramButton");
+                    await SaveClickButtonAsync(page, "button#exitProgramButton");
             }
         ));
 
@@ -94,5 +90,11 @@ public class SignalRClientTests : AppTestBase
         Match match = Regex.Match(testOutput, pattern);
         Assert.True(match.Success, $"Expected to find a log that {actionDescription}. TestOutput: {testOutput}.");
         return match.Groups[1].Value ?? "";
+    }
+
+    private async Task SaveClickButtonAsync(IPage page, string selector)
+    {
+        await page.WaitForSelectorAsync(selector);
+        await page.ClickAsync(selector);
     }
 }
