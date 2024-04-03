@@ -290,9 +290,7 @@ GTNODE(END_LFIN         , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // End l
 //  Swift interop-specific nodes:
 //-----------------------------------------------------------------------------
 
-#ifdef SWIFT_SUPPORT
 GTNODE(SWIFT_ERROR      , GenTree            ,0,0,GTK_LEAF)             // Error register value post-Swift call
-#endif // SWIFT_SUPPORT
 
 //-----------------------------------------------------------------------------
 //  Nodes used by Lower to generate a closer CPU representation of other nodes

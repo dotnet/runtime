@@ -2108,11 +2108,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_NOP:
             break;
 
-#ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR:
             genCodeForSwiftErrorReg(treeNode);
             break;
-#endif // SWIFT_SUPPORT
 
         case GT_KEEPALIVE:
             genConsumeRegs(treeNode->AsOp()->gtOp1);

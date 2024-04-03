@@ -632,7 +632,6 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-#ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR:
             srcCount = 0;
             assert(dstCount == 1);
@@ -644,7 +643,6 @@ int LinearScan::BuildNode(GenTree* tree)
             // we can ensure the redundant move is elided.
             BuildDef(tree, RBM_SWIFT_ERROR);
             break;
-#endif // SWIFT_SUPPORT
 
     } // end switch (tree->OperGet())
 

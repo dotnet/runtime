@@ -441,11 +441,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // TARGET_ARM64
 
-#ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR:
             genCodeForSwiftErrorReg(treeNode);
             break;
-#endif // SWIFT_SUPPORT
 
         case GT_RELOAD:
             // do nothing - reload is just a marker.
