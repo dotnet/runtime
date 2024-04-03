@@ -1008,7 +1008,7 @@ inline regNumber genFirstRegNumFromMask(AllRegsMask& mask)
     }
     else
     {
-        regNum = (regNumber)(64 + BitOperations::BitScanForward(mask.predicateRegs()));
+        regNum = (regNumber)(64 + BitOperations::BitScanForward(mask.predicateRegs(nullptr)));
     }
 #else
     regNum = (regNumber)BitOperations::BitScanForward(gprOrFloatMask);
@@ -4524,11 +4524,11 @@ inline void printRegMask(AllRegsMask mask)
 {
     printf(REG_MASK_ALL_FMT, mask.gprRegs());
     printf(" ");
-    printf(REG_MASK_ALL_FMT, mask.floatRegs());
+    printf(REG_MASK_ALL_FMT, mask.floatRegs(nullptr));
 
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     printf(" ");
-    printf(REG_MASK_ALL_FMT, mask.predicateRegs());
+    printf(REG_MASK_ALL_FMT, mask.predicateRegs(nullptr));
 #endif // FEATURE_MASKED_HW_INTRINSICS
 }
 
@@ -5300,9 +5300,9 @@ bool AllRegsMask::IsGprMaskPresent(regMaskGpr maskToCheck) const
     return (gprRegs() & maskToCheck) != RBM_NONE;
 }
 
-bool AllRegsMask::IsFloatMaskPresent(regMaskFloat maskToCheck) const
+bool AllRegsMask::IsFloatMaskPresent(Compiler* compiler, regMaskFloat maskToCheck) const
 {
-    return (floatRegs() & maskToCheck) != RBM_NONE;
+    return (floatRegs(compiler) & maskToCheck) != RBM_NONE;
 }
 
 regMaskOnlyOne AllRegsMask::GetRegMaskForType(var_types type) const
@@ -5337,6 +5337,30 @@ regMaskGpr AllRegsMask::gprRegs() const
 {
     return _combinedRegisters & RBM_ALLINT;
 }
+
+regMaskFloat AllRegsMask::floatRegs(const Compiler* compiler) const
+{
+#ifdef TARGET_AMD64
+    regMaskOnlyOne allFloat = compiler != nullptr ? compiler->get_RBM_ALLFLOAT() : (RBM_HIGHFLOAT | RBM_LOWFLOAT);
+    return _combinedRegisters & allFloat;
+#else
+    return _combinedRegisters & RBM_ALLFLOAT;
+#endif // TARGET_AMD64
+}
+
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+regMaskPredicate AllRegsMask::predicateRegs(const Compiler* compiler) const
+{
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    return _predicateRegs;
+#else
+    regMaskOnlyOne allMask = compiler != nullptr ? compiler->get_RBM_ALLMASK() : (RBM_ALLMASK_EVEX);
+    return _combinedRegisters & compiler->get_RBM_ALLMASK();
+#endif
+}
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+
 /*****************************************************************************/
 #endif //_COMPILER_HPP_
 /*****************************************************************************/

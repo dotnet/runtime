@@ -319,32 +319,14 @@ private:
     }
 
 public:
-
-    inline regMaskFloat floatRegs() const
-    {
-#ifdef TARGET_AMD64
-        return _combinedRegisters & 0xFFFFFFFF0000;
-#elif defined(TARGET_ARM64)
-        return _combinedRegisters & 0xFFFFFFFF00000000;
-#else
-        // TODO: Fix this for ARM and x86
-        return _combinedRegisters;
-#endif // TARGET_AMD64
-    }
+    FORCEINLINE regMaskGpr gprRegs() const;
+    FORCEINLINE regMaskFloat floatRegs(const Compiler* compiler) const;
 
 //#ifdef DEBUG
-#ifdef FEATURE_MASKED_HW_INTRINSICS
-    inline regMaskPredicate predicateRegs() const
-    {
-#ifdef HAS_MORE_THAN_64_REGISTERS
-        return _predicateRegs;
-#else
-        return _combinedRegisters & 0xFF000000000000; // TODO: Fix the mask
-#endif // HAS_MORE_THAN_64_REGISTERS
-    }
+
+    #ifdef FEATURE_MASKED_HW_INTRINSICS
+    FORCEINLINE regMaskPredicate predicateRegs(const Compiler* compiler) const;
 #endif // FEATURE_MASKED_HW_INTRINSICS
-//#endif // DEBUG
-    FORCEINLINE regMaskGpr gprRegs() const;
 
     _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
@@ -415,7 +397,7 @@ public:
     FORCEINLINE void RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type);
     FORCEINLINE bool IsRegNumInMask(regNumber reg ARM_ARG(var_types type));
     FORCEINLINE bool IsGprMaskPresent(regMaskGpr maskToCheck) const;
-    FORCEINLINE bool IsFloatMaskPresent(regMaskFloat maskToCheck) const;
+    FORCEINLINE bool IsFloatMaskPresent(Compiler* compiler, regMaskFloat maskToCheck) const;
     // bool IsOnlyRegNumInMask(regNumber reg);
     FORCEINLINE regMaskOnlyOne GetRegMaskForType(var_types type) const;
 

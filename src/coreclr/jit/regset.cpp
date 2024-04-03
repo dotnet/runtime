@@ -203,7 +203,7 @@ void RegSet::rsSetFloatRegsModified(regMaskFloat mask DEBUGARG(bool suppressDump
     // assert(modifiedMask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
 #ifdef DEBUG
-    printModifiedRegsMask(rsModifiedRegsMask.floatRegs(), mask DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_FLT_CALLEE_SAVED));
+    printModifiedRegsMask(rsModifiedRegsMask.floatRegs(m_rsCompiler), mask DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_FLT_CALLEE_SAVED));
 #endif
 
     rsModifiedRegsMask.AddFloatRegMask(mask);
@@ -224,14 +224,14 @@ void RegSet::rsSetRegModified(regNumber reg DEBUGARG(bool suppressDump))
     }
     else if (genIsValidFloatReg(reg))
     {
-        printModifiedRegsMask(rsModifiedRegsMask.floatRegs(),
+        printModifiedRegsMask(rsModifiedRegsMask.floatRegs(m_rsCompiler),
                               genRegMask(reg) DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_FLT_CALLEE_SAVED));
     }
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     else
     {
         assert(genIsValidMaskReg(reg));
-        printModifiedRegsMask(rsModifiedRegsMask.predicateRegs(),
+        printModifiedRegsMask(rsModifiedRegsMask.predicateRegs(m_rsCompiler),
                               genRegMask(reg) DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_MSK_CALLEE_SAVED));
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -250,11 +250,12 @@ void RegSet::rsSetRegsModified(AllRegsMask& modifiedMask DEBUGARG(bool suppressD
 #ifdef DEBUG
     printModifiedRegsMask(rsModifiedRegsMask.gprRegs(),
                           modifiedMask.gprRegs() DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_INT_CALLEE_SAVED));
-    printModifiedRegsMask(rsModifiedRegsMask.floatRegs(),
-                          modifiedMask.floatRegs() DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_FLT_CALLEE_SAVED));
+    printModifiedRegsMask(rsModifiedRegsMask.floatRegs(m_rsCompiler),
+                          modifiedMask.floatRegs(m_rsCompiler) DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_FLT_CALLEE_SAVED));
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-    printModifiedRegsMask(rsModifiedRegsMask.predicateRegs(),
-                          modifiedMask.predicateRegs() DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_MSK_CALLEE_SAVED));
+    printModifiedRegsMask(rsModifiedRegsMask.predicateRegs(m_rsCompiler), modifiedMask.predicateRegs(m_rsCompiler)
+                                                                              DEBUG_ARG(suppressDump)
+                                                                                  DEBUG_ARG(RBM_MSK_CALLEE_SAVED));
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // DEBUG
 

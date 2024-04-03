@@ -98,14 +98,14 @@ public:
     regMaskFloat rsGetModifiedFloatRegsMask() const
     {
         assert(rsModifiedRegsMaskInitialized);
-        return rsModifiedRegsMask.floatRegs();
+        return rsModifiedRegsMask.floatRegs(m_rsCompiler);
     }
 
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     regMaskPredicate rsGetModifiedPredicateRegsMask() const
     {
         assert(rsModifiedRegsMaskInitialized);
-        return rsModifiedRegsMask.predicateRegs();
+        return rsModifiedRegsMask.predicateRegs(m_rsCompiler);
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 

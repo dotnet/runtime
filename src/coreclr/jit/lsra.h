@@ -1256,7 +1256,7 @@ private:
         // also available.
         if (regType == TYP_DOUBLE)
         {
-            result &= (m_AvailableRegs.floatRegs() >> 1);
+            result &= (m_AvailableRegs.floatRegs(compiler) >> 1);
         }
 #endif // TARGET_ARM
         return result;
@@ -1808,8 +1808,8 @@ private:
         m_AvailableRegs |= regMask;
 #ifdef HAS_MORE_THAN_64_REGISTERS
         assert(compiler->IsGprRegMask(m_AvailableRegs.gprRegs()));
-        assert(compiler->IsFloatRegMask(m_AvailableRegs.floatRegs()));
-        assert(compiler->IsPredicateRegMask(m_AvailableRegs.predicateRegs()));
+        assert(compiler->IsFloatRegMask(m_AvailableRegs.floatRegs(compiler)));
+        assert(compiler->IsPredicateRegMask(m_AvailableRegs.predicateRegs(compiler)));
 #endif
     }
 

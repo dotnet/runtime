@@ -3765,16 +3765,16 @@ void Compiler::dumpRegMask(AllRegsMask mask) const
     {
         printf("[allIntButFP]");
     }
-    else if (mask.floatRegs() == RBM_ALLFLOAT)
+    else if (mask.floatRegs(this) == RBM_ALLFLOAT)
     {
         printf("[allFloat]");
     }
-    else if (mask.floatRegs() == RBM_ALLDOUBLE)
+    else if (mask.floatRegs(this) == RBM_ALLDOUBLE)
     {
         printf("[allDouble]");
     }
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-    else if ((RBM_ALLMASK != RBM_NONE) && (mask.predicateRegs() == RBM_ALLMASK))
+    else if ((RBM_ALLMASK != RBM_NONE) && (mask.predicateRegs(this) == RBM_ALLMASK))
     {
         printf("[allMask]");
     }

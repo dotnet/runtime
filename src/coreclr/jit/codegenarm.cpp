@@ -1823,7 +1823,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
         GetEmitter()->emitIns_Mov(INS_mov, attr, REG_R0, REG_PROFILER_RET_SCRATCH, /* canSkip */ false);
         genTransferRegGCState(REG_R0, REG_PROFILER_RET_SCRATCH);
         assert(compiler->IsGprRegMask(AllRegsMask_PROFILER_RET_SCRATCH.gprRegs()));
-        assert(AllRegsMask_PROFILER_RET_SCRATCH.floatRegs() == RBM_NONE);
+        assert(AllRegsMask_PROFILER_RET_SCRATCH.floatRegs(compiler) == RBM_NONE);
         gcInfo.gcMarkRegSetNpt(AllRegsMask_PROFILER_RET_SCRATCH.gprRegs());
     }
 }

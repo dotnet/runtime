@@ -11868,13 +11868,13 @@ void LinearScan::verifyFreeRegisters(AllRegsMask regsToFree)
     {
         if (reg >= REG_FP_FIRST && reg <= REG_FP_LAST)
         {
-            regsMaskToFree    = regsToFree.floatRegs();
+            regsMaskToFree    = regsToFree.floatRegs(compiler);
             availableRegsMask = availableFloatRegs;
         }
 #ifdef FEATURE_MASKED_HW_INTRINSICS
         else if (reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST)
         {
-            regsMaskToFree    = regsToFree.predicateRegs();
+            regsMaskToFree    = regsToFree.predicateRegs(compiler);
             availableRegsMask = availableMaskRegs;
         }
 #endif
@@ -13701,7 +13701,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
         // clause below creates a mask to do this.
         if (currentInterval->registerType == TYP_DOUBLE)
         {
-            candidates &= ~((busyRegs.floatRegs() & RBM_ALLDOUBLE_HIGH) >> 1);
+            candidates &= ~((busyRegs.floatRegs(linearScan->compiler) & RBM_ALLDOUBLE_HIGH) >> 1);
         }
 #endif // TARGET_ARM
 
@@ -13807,7 +13807,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
                 // such range that is consecutive. Next, append that range to the `candidates`.
                 //
                 regMaskFloat limitCandidatesForConsecutive =
-                    refPosition->registerAssignment & ~inUseOrBusyRegsMask.floatRegs();
+                    refPosition->registerAssignment & ~inUseOrBusyRegsMask.floatRegs(linearScan->compiler);
                 regMaskFloat overallLimitCandidates;
                 regMaskFloat limitConsecutiveResult =
                     linearScan->filterConsecutiveCandidates(limitCandidatesForConsecutive, refPosition->regCount,
@@ -14029,7 +14029,7 @@ singleRegMask LinearScan::RegisterSelection::selectMinimal(
     // clause below creates a mask to do this.
     if (currentInterval->registerType == TYP_DOUBLE)
     {
-        candidates &= ~((busyRegs.floatRegs() & RBM_ALLDOUBLE_HIGH) >> 1);
+        candidates &= ~((busyRegs.floatRegs(linearScan->compiler) & RBM_ALLDOUBLE_HIGH) >> 1);
     }
 #endif // TARGET_ARM
 

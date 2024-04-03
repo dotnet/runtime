@@ -3514,12 +3514,24 @@ void emitter::emitDispGprRegSet(regMaskGpr regs)
     emitDispRegSet(REG_INT_FIRST, REG_INT_LAST, regs);
 }
 
+void emitter::emitDispFloatRegSet(regMaskFloat regs)
+{
+    emitDispRegSet(REG_FP_FIRST, REG_FP_LAST, regs);
+}
+
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+void emitter::emitDispMaskRegSet(regMaskPredicate regs)
+{
+    emitDispRegSet(REG_MASK_FIRST, REG_MASK_LAST, regs);
+}
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
 void emitter::emitDispRegSet(AllRegsMask regs)
 {
     emitDispGprRegSet(regs.gprRegs());
-    emitDispGprRegSet(regs.floatRegs());
+    emitDispFloatRegSet(regs.floatRegs(nullptr));
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-    emitDispGprRegSet(regs.predicateRegs());
+    emitDispMaskRegSet(regs.predicateRegs(nullptr));
 #endif
 }
 

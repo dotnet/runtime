@@ -918,7 +918,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lo
     assert(-spDelta <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
 
     regMaskTP maskSaveRegsInt   = regsToSaveMask.gprRegs();
-    regMaskTP maskSaveRegsFloat = regsToSaveMask.floatRegs();
+    regMaskTP maskSaveRegsFloat = regsToSaveMask.floatRegs(compiler);
 
     assert(compiler->IsGprRegMask(maskSaveRegsInt));
     assert(compiler->IsFloatRegMask(maskSaveRegsFloat));
@@ -926,7 +926,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lo
     unsigned regsToSaveCount = genCountBits(maskSaveRegsFloat) + genCountBits(maskSaveRegsInt);
 
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-    regMaskTP maskSaveRegsPredicate = regsToSaveMask.predicateRegs();
+    regMaskTP maskSaveRegsPredicate = regsToSaveMask.predicateRegs(compiler);
     assert(compiler->IsPredicateRegMask(maskSaveRegsPredicate));
     regsToSaveCount += genCountBits(maskSaveRegsPredicate);
 #endif
@@ -1056,7 +1056,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask,
     assert(spDelta >= 0);
 
     regMaskGpr   maskRestoreRegsInt   = regsToRestoreMask.gprRegs();
-    regMaskFloat maskRestoreRegsFloat = regsToRestoreMask.floatRegs();
+    regMaskFloat maskRestoreRegsFloat = regsToRestoreMask.floatRegs(compiler);
 
     assert(compiler->IsGprRegMask(maskRestoreRegsInt));
     assert(compiler->IsFloatRegMask(maskRestoreRegsFloat));
@@ -1064,7 +1064,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask,
     unsigned regsToRestoreCount = genCountBits(maskRestoreRegsInt) + genCountBits(maskRestoreRegsFloat);
 
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-    regMaskTP maskRestoreRegsPredicate = regsToRestoreMask.predicateRegs();
+    regMaskTP maskRestoreRegsPredicate = regsToRestoreMask.predicateRegs(compiler);
     assert(compiler->IsPredicateRegMask(maskRestoreRegsPredicate));
     regsToRestoreCount += genCountBits(maskRestoreRegsPredicate);
 #endif

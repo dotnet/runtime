@@ -3211,6 +3211,10 @@ public:
     const char* emitGetFrameReg();
     void emitDispRegSet(regNumber firstReg, regNumber lastReg, regMaskOnlyOne regs);
     void emitDispGprRegSet(regMaskGpr regs);
+    void        emitDispFloatRegSet(regMaskFloat regs);
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    void emitDispMaskRegSet(regMaskPredicate regs);
+#endif // FEATURE_MASKED_HW_INTRINSICS
     void emitDispRegSet(AllRegsMask regs);
     void emitDispVarSet();
 #endif

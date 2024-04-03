@@ -1125,9 +1125,9 @@ AllRegsMask LinearScan::getKillSetForNode(GenTree* tree)
 bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, AllRegsMask killMask)
 {
     assert(compiler->IsGprRegMask(killMask.gprRegs()));
-    assert(compiler->IsFloatRegMask(killMask.floatRegs()));
+    assert(compiler->IsFloatRegMask(killMask.floatRegs(compiler)));
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-    assert(compiler->IsPredicateRegMask(killMask.predicateRegs()));
+    assert(compiler->IsPredicateRegMask(killMask.predicateRegs(compiler)));
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     bool insertedKills = false;
@@ -3150,10 +3150,10 @@ void LinearScan::BuildKills(GenTree* tree, AllRegsMask killMask)
         // RefPositions in that case.
         // This must be done after the kills, so that we know which large vectors are still live.
         //
-        if ((killMask.IsFloatMaskPresent(RBM_FLT_CALLEE_TRASH)))
+        if ((killMask.IsFloatMaskPresent(compiler, RBM_FLT_CALLEE_TRASH)))
         {
             buildUpperVectorSaveRefPositions(tree,
-                                             currentLoc + 1 DEBUG_ARG((killMask.floatRegs() & RBM_FLT_CALLEE_TRASH)));
+                                             currentLoc + 1 DEBUG_ARG((killMask.floatRegs(compiler) & RBM_FLT_CALLEE_TRASH)));
         }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     }
