@@ -302,7 +302,7 @@ public class ObjectFileScraper
 
         byte[] endMagic = new byte[4];
         reader.Read(endMagic.AsSpan());
-        if (!CheckEndMagic(endMagic, isLE))
+        if (!CheckEndMagic(endMagic))
         {
             throw new InvalidOperationException($"expected endMagic, got 0x{endMagic[0]:x} 0x{endMagic[1]:x} 0x{endMagic[2]:x} 0x{endMagic[3]:x}");
         }
@@ -417,16 +417,9 @@ public class ObjectFileScraper
         return namesPool;
     }
 
-    private bool CheckEndMagic(ReadOnlySpan<byte> bytes, bool isLE)
+    private bool CheckEndMagic(ReadOnlySpan<byte> bytes)
     {
-        if (isLE)
-        {
-            return (bytes[0] == 0x01 && bytes[1] == 0x02 && bytes[2] == 0x03 && bytes[3] == 0x04);
-        }
-        else
-        {
-            return (bytes[0] == 0x04 && bytes[1] == 0x03 && bytes[2] == 0x02 && bytes[3] == 0x01);
-        }
+        return (bytes[0] == 0x01 && bytes[1] == 0x02 && bytes[2] == 0x03 && bytes[3] == 0x04);
     }
 
 }

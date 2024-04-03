@@ -367,12 +367,12 @@ struct BinaryBlobDataDescriptor
 };
 
 struct MagicAndBlob {
-    char magic[8];
+    uint64_t magic;
     struct BinaryBlobDataDescriptor Blob;
 };
 
 const struct MagicAndBlob Blob = {
-    .magic = "DACBLOB",
+    .magic = 0x00424F4C42434144ull,// "DACBLOB",
     .Blob = {
         .Directory = {
             .BaselineStart = offsetof(struct BinaryBlobDataDescriptor, BaselineName),
