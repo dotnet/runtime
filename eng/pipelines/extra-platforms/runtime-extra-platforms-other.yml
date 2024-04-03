@@ -145,7 +145,7 @@ jobs:
             creator: dotnet-bot
             llvmAotStepContainer: linux_x64_llvmaot
             testRunNamePrefixSuffix: Mono_Release
-            testBuildArgs: -tree:CoreMangLib -tree:Exceptions -tree:GC -tree:Interop -tree:Loader -tree:Regressions -tree:baseservices -tree:ilasm -tree:ilverify -tree:managed -tree:profiler -tree:readytorun -tree:reflection -tree:tracing
+            testBuildArgs: -tree:CoreMangLib -tree:Exceptions -tree:GC -tree:Interop -tree:Loader -tree:Regressions -tree:baseservices -tree:ilasm -tree:ilverify -tree:managed -tree:profiler -tree:readytorun -tree:reflection -tree:tracing -tree:JIT/BBT -tree:JIT/CodeGenBringUpTests -tree:JIT/Directed -tree:JIT/Generics -tree:JIT/IL_Conformance  -tree:JIT/Math -tree:JIT/Methodical -tree:JIT/PGO -tree:JIT/Performance -tree:JIT/Regression -tree:JIT/RyuJIT -tree:JIT/Stress -tree:JIT/common -tree:JIT/jit64 -tree:JIT/opt -tree:JIT/superpmi
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -186,7 +186,7 @@ jobs:
             creator: dotnet-bot
             llvmAotStepContainer: linux_x64_llvmaot
             testRunNamePrefixSuffix: Mono_Release
-            testBuildArgs: -tree:JIT
+            testBuildArgs: -tree:JIT/Intrinsics -tree:JIT/HardwareIntrinsics -tree:JIT/SIMD
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
