@@ -385,12 +385,6 @@ namespace System.Net.WebSockets
 #endif
                         _closeStatus = (WebSocketCloseStatus)code;
                         _closeStatusDescription = reason;
-                        _closeReceived = true;
-                        WebSocketState state = State;
-                        if (state == WebSocketState.Connecting || state == WebSocketState.Open || state == WebSocketState.CloseSent)
-                        {
-                            FastState = WebSocketState.Closed;
-                        }
 #if FEATURE_WASM_THREADS
                     } //lock
 #endif
