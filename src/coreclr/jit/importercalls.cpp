@@ -669,7 +669,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         checkForSmallType = true;
 
-        swiftErrorNode = impPopArgsForUnmanagedCall(call->AsCall(), sig);
+        impPopArgsForUnmanagedCall(call->AsCall(), sig, &swiftErrorNode);
 
         goto DONE;
     }
@@ -1844,18 +1844,19 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 // Arguments:
 //    call - The unmanaged call
 //    sig  - The signature of the call site
+//    swiftErrorNode - [out] If this is a Swift call with a SwiftError* argument,
+//                     then swiftErrorNode points to the node.
+//                     Otherwise left at its existing value.
 //
-// Return Value:
-//    Pointer to SwiftError* arg's GenTree node, if call is a Swift call with error handling
-//
-GenTree* Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig)
+void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, GenTree** swiftErrorNode)
 {
     assert(call->gtFlags & GTF_CALL_UNMANAGED);
 
 #ifdef SWIFT_SUPPORT
     if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
     {
-        return impPopArgsForSwiftCall(call, sig);
+        impPopArgsForSwiftCall(call, sig, swiftErrorNode);
+        return;
     }
 #endif
 
@@ -1926,8 +1927,6 @@ GenTree* Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INF
     }
 
     impRetypeUnmanagedCallArgs(call);
-
-    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -2002,19 +2001,17 @@ const CORINFO_SWIFT_LOWERING* Compiler::GetSwiftLowering(CORINFO_CLASS_HANDLE hC
 // impPopArgsForSwiftCall: Pop arguments from IL stack to a Swift pinvoke node.
 //
 // Arguments:
-//    call          - The Swift call
-//    sig           - The signature of the call site
+//    call           - The Swift call
+//    sig            - The signature of the call site
+//    swiftErrorNode - [out] Pointer to the SwiftError* argument.
+//                     Left at its existing value if no such argument exists.
 //
-// Return Value:
-//    Pointer to SwiftError* arg's GenTree node, if such an arg exists
-//
-GenTree* Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig)
+void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, GenTree** swiftErrorNode)
 {
     JITDUMP("Creating args for Swift call [%06u]\n", dspTreeID(call));
 
     unsigned short swiftErrorIndex = sig->numArgs;
     unsigned short swiftSelfIndex  = sig->numArgs;
-    GenTree* swiftErrorNode = nullptr;
 
     // We are importing an unmanaged Swift call, which might require special parameter handling
     bool checkEntireStack = false;
@@ -2130,7 +2127,8 @@ GenTree* Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* s
         call->gtArgs.InsertAfter(this, swiftErrorArg, NewCallArg::Primitive(errorSentinelValueNode).WellKnown(WellKnownArg::SwiftError));
 
         // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
-        swiftErrorNode = swiftErrorArg->GetNode();
+        assert(swiftErrorNode != nullptr);
+        *swiftErrorNode = swiftErrorArg->GetNode();
         call->gtArgs.Remove(swiftErrorArg);
     }
 
@@ -2301,8 +2299,6 @@ GenTree* Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     JITDUMP("\n");
 
     impRetypeUnmanagedCallArgs(call);
-
-    return swiftErrorNode;
 }
 
 //------------------------------------------------------------------------

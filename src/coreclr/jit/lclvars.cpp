@@ -1745,7 +1745,6 @@ void Compiler::lvaClassifyParameterABI()
 
     for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
     {
-
         LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
         const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
 
