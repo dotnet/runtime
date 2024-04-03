@@ -2511,8 +2511,8 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot'">
+        <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_r/**" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfault_jmp_r/**" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_jmpind_r/**" />
@@ -2575,18 +2575,14 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/generics_override1/**" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/Statics/Misc/LiteralStatic/**" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/DynamicObjects/**" />
+
+        <!-- Tracking issue: https://github.com/dotnet/runtime/issues/92883 -->
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/compilerservices/UnsafeAccessors/UnsafeAccessorsTests/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/TieredVtableMethodTests/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport/**" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' and '$(TargetArchitecture)' == 'x64'">
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/compilerservices/UnsafeAccessors/UnsafeAccessorsTests/*">
-            <Issue>https://github.com/dotnet/runtime/issues/92883</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/TieredVtableMethodTests/*">
-            <Issue>https://github.com/dotnet/runtime/issues/92883</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport/*">
-            <Issue>https://github.com/dotnet/runtime/issues/92883</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minijit' and '$(TargetArchitecture)' == 'arm64'">
@@ -3856,6 +3852,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/compilerservices/UnsafeAccessors/UnsafeAccessorsTests/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/TieredVtableMethodTests/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/varargs/varargsupport/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/Comparer_get_Default.**" />
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_80731/Runtime_80731/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case03/**" />
