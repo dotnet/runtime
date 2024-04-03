@@ -25,6 +25,7 @@ public class DataDescriptorModel
         Contracts = contracts;
     }
 
+    public const string PointerTypeName = "pointer";
 
     internal void DumpModel()
     {

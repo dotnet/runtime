@@ -94,23 +94,29 @@ public class ObjectFileScraper
         return false;
     }
 
-    struct HeaderDirectory {
+    struct HeaderDirectory
+    {
+        public uint BaselineStart;
         public uint TypesStart;
-        public uint FieldPoolStart;
 
-        public uint GlobalValuesStart;
+        public uint FieldPoolStart;
+        public uint GlobalLiteralValuesStart;
+
+        public uint GlobalPointersStart;
         public uint NamesStart;
 
         public uint TypeCount;
         public uint FieldPoolCount;
 
-        public uint GlobalValuesCount;
+        public uint GlobalLiteralValuesCount;
+        public uint GlobalPointerValuesCount;
+
         public uint NamesPoolCount;
 
         public byte TypeSpecSize;
         public byte FieldSpecSize;
-        public byte GlobalSpecSize;
-        public byte Reserved0;
+        public byte GlobalLiteralSpecSize;
+        public byte GlobalPointerSpecSize;
     };
 
 
@@ -123,38 +129,48 @@ public class ObjectFileScraper
     private HeaderDirectory ReadHeader(Stream stream, bool isLE)
     {
         using var reader = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true);
+        var baselineStart = Swap(isLE, reader.ReadUInt32());
         var typesStart = Swap(isLE, reader.ReadUInt32());
+
         var fieldPoolStart = Swap(isLE, reader.ReadUInt32());
-        var globalValuesStart = Swap(isLE, reader.ReadUInt32());
+        var globalLiteralValuesStart = Swap(isLE, reader.ReadUInt32());
+
+        var globalPointersStart = Swap(isLE, reader.ReadUInt32());
         var namesStart = Swap(isLE, reader.ReadUInt32());
 
         var typeCount = Swap(isLE, reader.ReadUInt32());
         var fieldPoolCount = Swap(isLE, reader.ReadUInt32());
 
-        var globalValuesCount = Swap(isLE, reader.ReadUInt32());
+        var globalLiteralValuesCount = Swap(isLE, reader.ReadUInt32());
+        var globalPointerValuesCount = Swap(isLE, reader.ReadUInt32());
+
         var namesPoolCount = Swap(isLE, reader.ReadUInt32());
 
         var typeSpecSize = reader.ReadByte();
         var fieldSpecSize = reader.ReadByte();
-        var globalSpecSize = reader.ReadByte();
-        var reserved0 = reader.ReadByte();
+        var globalLiteralSpecSize = reader.ReadByte();
+        var globalPointerSpecSize = reader.ReadByte();
 
         return new HeaderDirectory {
+            BaselineStart = baselineStart,
             TypesStart = typesStart,
             FieldPoolStart = fieldPoolStart,
-            GlobalValuesStart = globalValuesStart,
+            GlobalLiteralValuesStart = globalLiteralValuesStart,
+            GlobalPointersStart = globalPointersStart,
             NamesStart = namesStart,
 
             TypeCount = typeCount,
             FieldPoolCount = fieldPoolCount,
 
-            GlobalValuesCount = globalValuesCount,
+            GlobalLiteralValuesCount = globalLiteralValuesCount,
+            GlobalPointerValuesCount = globalPointerValuesCount,
+
             NamesPoolCount = namesPoolCount,
 
             TypeSpecSize = typeSpecSize,
             FieldSpecSize = fieldSpecSize,
-            GlobalSpecSize = globalSpecSize,
-            Reserved0 = reserved0
+            GlobalLiteralSpecSize = globalLiteralSpecSize,
+            GlobalPointerSpecSize = globalPointerSpecSize,
         };
     }
 
@@ -180,11 +196,17 @@ public class ObjectFileScraper
         public ushort Offset;
     }
 
-    struct GlobalSpec
+    struct GlobalLiteralSpec
     {
         public uint NameIdx;
         public uint TypeNameIdx;
         public ulong Value;
+    }
+
+    struct GlobalPointerSpec
+    {
+        public uint NameIdx;
+        public uint AuxDataIdx;
     }
 
     class Content
@@ -192,7 +214,8 @@ public class ObjectFileScraper
         public required uint Baseline { get; init; }
         public required IReadOnlyList<TypeSpec> TypeSpecs { get; init; }
         public required IReadOnlyList<FieldSpec> FieldSpecs { get; init; }
-        public required IReadOnlyList<GlobalSpec> GlobalSpecs { get; init; }
+        public required IReadOnlyList<GlobalLiteralSpec> GlobaLiteralSpecs { get; init; }
+        public required IReadOnlyList<GlobalPointerSpec> GlobalPointerSpecs { get; init; }
         public required ReadOnlyMemory<byte> NamesPool { get; init; }
 
         internal string GetPoolString(uint stringIdx)
@@ -244,13 +267,22 @@ public class ObjectFileScraper
                 }
             }
 
-            foreach (var globalSpec in GlobalSpecs)
+            foreach (var globalSpec in GlobaLiteralSpecs)
             {
                 var globalName = GetPoolString(globalSpec.NameIdx);
                 var globalType = GetPoolString(globalSpec.TypeNameIdx);
-                var globalValue = globalSpec.Value;
-                builder.AddOrUpdateGlobal(globalName, globalType, DataDescriptorModel.GlobalValue.MakeDirect(globalValue));
+                var globalValue = DataDescriptorModel.GlobalValue.MakeDirect(globalSpec.Value);
+                builder.AddOrUpdateGlobal(globalName, globalType, globalValue);
                 Console.WriteLine($"Global {globalName} has type {globalType} with value {globalValue}");
+            }
+
+            foreach (var globalPointer in GlobalPointerSpecs)
+            {
+                var globalName = GetPoolString(globalPointer.NameIdx);
+                var auxDataIdx = globalPointer.AuxDataIdx;
+                var globalValue = DataDescriptorModel.GlobalValue.MakeIndirect(auxDataIdx);
+                builder.AddOrUpdateGlobal(globalName, DataDescriptorModel.PointerTypeName, globalValue);
+                Console.WriteLine($"Global pointer {globalName} has index {globalValue}");
             }
         }
     }
@@ -258,13 +290,14 @@ public class ObjectFileScraper
     private Content ReadContent(Stream stream, long startPos, HeaderDirectory header, bool isLE)
     {
         using var reader = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true);
-        // fixme: badspec - we should have the offset of baseline name too
+        reader.BaseStream.Seek(startPos + header.BaselineStart, SeekOrigin.Begin);
         var baselineNameIdx = Swap(isLE, reader.ReadUInt32());
         Console.WriteLine($"baseline Name Idx = {baselineNameIdx}");
 
         TypeSpec[] typeSpecs = ReadTypeSpecs(reader, startPos, header, isLE);
         FieldSpec[] fieldSpecs = ReadFieldSpecs(reader, startPos, header, isLE);
-        GlobalSpec[] globalSpecs = ReadGlobalSpecs(reader, startPos, header, isLE);
+        GlobalLiteralSpec[] globalLiteralSpecs = ReadGlobalLiteralSpecs(reader, startPos, header, isLE);
+        GlobalPointerSpec[] globalPointerSpecs = ReadGlobalPointerSpecs(reader, startPos, header, isLE);
         byte[] namesPool = ReadNamesPool(reader, startPos, header);
 
         byte[] endMagic = new byte[4];
@@ -279,7 +312,8 @@ public class ObjectFileScraper
             Baseline = baselineNameIdx,
             TypeSpecs = typeSpecs,
             FieldSpecs = fieldSpecs,
-            GlobalSpecs = globalSpecs,
+            GlobaLiteralSpecs = globalLiteralSpecs,
+            GlobalPointerSpecs = globalPointerSpecs,
             NamesPool = namesPool
         };
     }
@@ -330,11 +364,11 @@ public class ObjectFileScraper
         return fieldSpecs;
     }
 
-    private GlobalSpec[] ReadGlobalSpecs(BinaryReader reader, long startPos, HeaderDirectory header, bool isLE)
+    private GlobalLiteralSpec[] ReadGlobalLiteralSpecs(BinaryReader reader, long startPos, HeaderDirectory header, bool isLE)
     {
-        GlobalSpec[] globalSpecs = new GlobalSpec[header.GlobalValuesCount];
-        reader.BaseStream.Seek(startPos + (long)header.GlobalValuesStart, SeekOrigin.Begin);
-        for (int i = 0; i < header.GlobalValuesCount; i++)
+        GlobalLiteralSpec[] globalSpecs = new GlobalLiteralSpec[header.GlobalLiteralValuesCount];
+        reader.BaseStream.Seek(startPos + (long)header.GlobalLiteralValuesStart, SeekOrigin.Begin);
+        for (int i = 0; i < header.GlobalLiteralValuesCount; i++)
         {
             int bytesRead = 0;
             globalSpecs[i].NameIdx = Swap(isLE, reader.ReadUInt32());
@@ -344,9 +378,29 @@ public class ObjectFileScraper
             globalSpecs[i].Value = Swap(isLE, reader.ReadUInt64());
             bytesRead += 8;
             // skip padding
-            if (bytesRead < header.GlobalSpecSize)
+            if (bytesRead < header.GlobalLiteralSpecSize)
             {
-                reader.BaseStream.Seek(header.GlobalSpecSize - bytesRead, SeekOrigin.Current);
+                reader.BaseStream.Seek(header.GlobalLiteralSpecSize - bytesRead, SeekOrigin.Current);
+            }
+        }
+        return globalSpecs;
+    }
+
+    private GlobalPointerSpec[] ReadGlobalPointerSpecs(BinaryReader reader, long startPos, HeaderDirectory header, bool isLE)
+    {
+        GlobalPointerSpec[] globalSpecs = new GlobalPointerSpec[header.GlobalPointerValuesCount];
+        reader.BaseStream.Seek(startPos + (long)header.GlobalPointersStart, SeekOrigin.Begin);
+        for (int i = 0; i < header.GlobalPointerValuesCount; i++)
+        {
+            int bytesRead = 0;
+            globalSpecs[i].NameIdx = Swap(isLE, reader.ReadUInt32());
+            bytesRead += 4;
+            globalSpecs[i].AuxDataIdx = Swap(isLE, reader.ReadUInt32());
+            bytesRead += 4;
+            // skip padding
+            if (bytesRead < header.GlobalPointerSpecSize)
+            {
+                reader.BaseStream.Seek(header.GlobalPointerSpecSize - bytesRead, SeekOrigin.Current);
             }
         }
         return globalSpecs;
