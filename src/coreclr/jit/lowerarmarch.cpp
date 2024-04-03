@@ -1206,6 +1206,13 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerHWIntrinsicFusedMultiplyAddScalar(node);
             break;
 
+        case NI_Sve_Abs:
+        {
+            GenTree* op1 = node->Op(1);
+
+            break;
+        }
+
         default:
             break;
     }

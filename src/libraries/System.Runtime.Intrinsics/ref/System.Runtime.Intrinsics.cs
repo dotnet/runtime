@@ -4144,7 +4144,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<long> Abs(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<float> Abs(System.Numerics.Vector<float> value) { throw null; }
         public static System.Numerics.Vector<double> Abs(System.Numerics.Vector<double> value) { throw null; }
-
         public static System.Numerics.Vector<sbyte> Add(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> Add(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> Add(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4155,7 +4154,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> Add(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<float> Add(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<double> Add(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
-
         public static System.Numerics.Vector<byte> CreateTrueMaskByte([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<double> CreateTrueMaskDouble([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<short> CreateTrueMaskInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
@@ -4166,7 +4164,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> CreateTrueMaskUInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<uint> CreateTrueMaskUInt32([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<ulong> CreateTrueMaskUInt64([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
-
         public static unsafe System.Numerics.Vector<sbyte> LoadVector(System.Numerics.Vector<sbyte> mask, sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<short> LoadVector(System.Numerics.Vector<short> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<int> LoadVector(System.Numerics.Vector<int> mask, int* address) { throw null; }
@@ -4177,7 +4174,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ulong> LoadVector(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
         public static unsafe System.Numerics.Vector<float> LoadVector(System.Numerics.Vector<float> mask, float* address) { throw null; }
         public static unsafe System.Numerics.Vector<double> LoadVector(System.Numerics.Vector<double> mask, double* address) { throw null; }
-
     }
 
     public enum SveMaskPattern : byte

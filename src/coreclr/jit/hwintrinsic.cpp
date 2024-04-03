@@ -1407,6 +1407,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 break;
 
             case 3:
+                assert(addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immLowerBound, immUpperBound) == op3);
                 op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
                 op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
                 op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
@@ -1426,29 +1427,29 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 break;
         }
 
-#if defined(TARGET_ARM64)
-        // Embedded masks need inserting as op1.
-        if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsic))
-        {
-            numArgs++;
-            assert(numArgs <= 4);
-            switch (numArgs)
-            {
-                case 4:
-                    op4 = op3;
-                    FALLTHROUGH;
-                case 3:
-                    op3 = op2;
-                    FALLTHROUGH;
-                case 2:
-                    op2 = op1;
-                    FALLTHROUGH;
-                default:
-                    break;
-            }
-            op1 = gtNewSimdEmbeddedMaskNode(simdBaseJitType, simdSize);
-        }
-#endif
+//#if defined(TARGET_ARM64)
+//        // Embedded masks need inserting as op1.
+//        if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsic))
+//        {
+//            numArgs++;
+//            assert(numArgs <= 4);
+//            switch (numArgs)
+//            {
+//                case 4:
+//                    op4 = op3;
+//                    FALLTHROUGH;
+//                case 3:
+//                    op3 = op2;
+//                    FALLTHROUGH;
+//                case 2:
+//                    op2 = op1;
+//                    FALLTHROUGH;
+//                default:
+//                    break;
+//            }
+//            op1 = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+//        }
+//#endif
 
         switch (numArgs)
         {

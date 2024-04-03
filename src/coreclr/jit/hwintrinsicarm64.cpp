@@ -2222,8 +2222,8 @@ GenTree* Compiler::gtNewSimdConvertVectorToMaskNode(var_types   type,
     assert(varTypeIsSIMD(node));
 
     // ConvertVectorToMask uses cmpne which requires an embedded mask.
-    GenTree* embeddedMask = gtNewSimdEmbeddedMaskNode(simdBaseJitType, simdSize);
-    return gtNewSimdHWIntrinsicNode(TYP_MASK, embeddedMask, node, NI_Sve_ConvertVectorToMask, simdBaseJitType,
+    GenTree* trueMask = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+    return gtNewSimdHWIntrinsicNode(TYP_MASK, trueMask, node, NI_Sve_ConvertVectorToMask, simdBaseJitType,
                                     simdSize);
 }
 
@@ -2256,7 +2256,7 @@ GenTree* Compiler::gtNewSimdConvertMaskToVectorNode(GenTreeHWIntrinsic* node, va
 // Return Value:
 //    The mask
 //
-GenTree* Compiler::gtNewSimdEmbeddedMaskNode(CorInfoType simdBaseJitType, unsigned simdSize)
+GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize)
 {
     return gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_CreateTrueMaskAll, simdBaseJitType, simdSize);
 }
