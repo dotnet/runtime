@@ -379,7 +379,7 @@ namespace System.Net.Sockets
 
             // Because we don't return the actual length, we need to ensure the returned buffer
             // has the appropriate length.
-            return _buffer.AsSpan(0, reeceived).ToArray();
+            return _buffer.AsSpan(0, received).ToArray();
         }
 
         // Joins a multicast address group.
