@@ -917,7 +917,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 
             if (ReadMemoryValueFromFile(path_to_size_file, &cache_size_from_sys_file))
             {
-                cacheSize = std::max((long)cacheSize, size);
+                cacheSize = std::max(cacheSize, (size_t)cache_size_from_sys_file);
 
                 path_to_level_file[index] = (char)(48 + i);
                 if (ReadMemoryValueFromFile(path_to_level_file, &level))
