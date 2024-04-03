@@ -9,7 +9,9 @@ The appeal of edge well-formedness is easy to check and relatively easy to maint
 We will use $p_{i,j}$ to denote the likelihood that block $i$ transfers control to block $j$. Thus local consistency means:
 
 $$ 0 \le p_{i,j} \le 1 $$
+
 and, for blocks with successors:
+
 $$ \sum_i p_{i,j} = 1 $$
 
 By contrast, block weight consistency requires that the flow into a block be balanced by the flow out of a block. It is a *global* property and harder to maintain during optimizations. It may also not be true initially.
@@ -120,9 +122,13 @@ $$ {(\boldsymbol I - \boldsymbol P)}^{-1} = \boldsymbol I + \boldsymbol P + \bol
 This gives rise to a simple *iterative* procedure for computing an approximate value of $\boldsymbol w$ (here superscripts on $\boldsymbol w$ are successive iterates, not powers)
 
 $$ \boldsymbol w^{(0)} = \boldsymbol e $$
+
 $$ \boldsymbol w^{(1)} = (\boldsymbol I + \boldsymbol P) \boldsymbol e = \boldsymbol e + \boldsymbol P \boldsymbol w^{(0)} $$
+
 $$ \boldsymbol w^{(2)} = (\boldsymbol I + \boldsymbol P + \boldsymbol P^2) \boldsymbol e = \boldsymbol e + \boldsymbol P \boldsymbol w^{(1)}$$
+
 $$ \dots$$
+
 $$ \boldsymbol w^{(k + 1)} = \boldsymbol e + \boldsymbol P \boldsymbol w^{(k)} $$
 
 where we can achieve any desired precision for $\boldsymbol w$ by iterating until the successive $\boldsymbol w$ differ by a small amount.
