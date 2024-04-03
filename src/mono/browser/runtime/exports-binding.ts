@@ -32,6 +32,7 @@ import {
     mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop, mono_wasm_start_io_thread_async
 } from "./pthreads";
 import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
+import { loaderHelpers } from "./globals";
 import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
 
 
@@ -147,7 +148,23 @@ export function replace_linker_placeholders (imports: WebAssembly.Imports) {
         }
     }
 
-    for (const [idx, realFn] of wasmImports.entries()) {
+    for (const [idx, rfn] of wasmImports.entries()) {
+        let realFn = rfn;
+        if (WasmEnableThreads) {
+            realFn = function catch_and_log_exceptions(...args: any[]) {
+                try {
+                    return rfn(...args);
+                } catch (ex: any) {
+                    if (ex == "unwind") {
+                        throw ex;
+                    }
+                    if (ex && !ex.silent) {
+                        loaderHelpers.mono_exit(1, ex);
+                    }
+                }
+            };
+        }
+
         const shortName = indexToNameMap[idx];
         // if it's not found it means the emcc linker didn't include it, which is fine
         if (shortName !== undefined) {
