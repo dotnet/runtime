@@ -13350,8 +13350,8 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
         case IF_SVE_DP_2A: // ........xx...... .......MMMMddddd -- SVE saturating inc/dec vector by predicate count
         case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
             assert(insOptsScalableAtLeastHalf(id->idInsOpt())); // xx
-            assert(isPredicateRegister(id->idReg1()));          // MMMM
-            assert(isVectorRegister(id->idReg2()));             // ddddd
+            assert(isVectorRegister(id->idReg1()));             // ddddd
+            assert(isPredicateRegister(id->idReg2()));          // MMMM
             assert(isScalableVectorSize(id->idOpSize()));
             break;
 
