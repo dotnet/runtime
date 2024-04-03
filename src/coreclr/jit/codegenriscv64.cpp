@@ -4291,8 +4291,8 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 // at the end
 static void emitLoadConstAtAddr(emitter* emit, regNumber dstRegister, ssize_t imm)
 {
-    ssize_t high = (imm >> 32) & 0xffffffff;
-    emit->emitIns_R_I(INS_lui, EA_PTRSIZE, dstRegister, (((high + 0x800) >> 12) & 0xfffff));
+    ssize_t high = imm >> 32;
+    emit->emitIns_R_I(INS_lui, EA_PTRSIZE, dstRegister, (high + 0x800) >> 12);
     emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstRegister, dstRegister, (high & 0xfff));
 
     ssize_t low = imm & 0xffffffff;
@@ -5198,7 +5198,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             UINT32 high = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) >> 32;
             if (((high + 0x800) >> 12) != 0)
             {
-                GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, regGSConst, (((high + 0x800) >> 12) & 0xfffff));
+                GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, regGSConst, ((int32_t)(high + 0x800)) >> 12);
             }
             if ((high & 0xFFF) != 0)
             {
