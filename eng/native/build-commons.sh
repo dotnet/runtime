@@ -563,12 +563,11 @@ if [[ "$__CrossBuild" == 1 ]]; then
     fi
 fi
 
-# init the __OutputRid and target portable os (__PortableTargetOS).
+# init the target distro name (__DistroRid) and target portable os (__PortableTargetOS).
 initTargetDistroRid
 if [ -z "$__OutputRid" ]; then
     if [[ "$__PortableBuild" == 0 ]]; then
-        echo "ERROR: --outputrid is required for non-portable builds"
-        exit 1
+        __OutputRid="$__DistroRid"
     else
         __OutputRid="$__PortableTargetOS-$__TargetArch"
     fi

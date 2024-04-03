@@ -118,7 +118,7 @@ done
 
 cp -R "$__TmpDir/data/data/com.termux/files/usr/"* "$__ToolchainDir/sysroot/usr/"
 
-# Generate platform file for build.sh script to assign to __OutputRid
+# Generate platform file for build.sh script to assign to __DistroRid
 echo "Generating platform file..."
 echo "RID=android.${__ApiLevel}-${__BuildArch}" > $__ToolchainDir/sysroot/android_platform
 
