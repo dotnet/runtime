@@ -7291,7 +7291,8 @@ bool Compiler::lvaParamShouldHaveLocalStackSpace(unsigned lclNum)
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
 #ifdef SWIFT_SUPPORT
-    if ((info.compCallConv == CorInfoCallConvExtension::Swift) && !lvaIsImplicitByRefLocal(lclNum) && !lvaParameterPassingInfo[lclNum].HasExactlyOneStackSegment())
+    if ((info.compCallConv == CorInfoCallConvExtension::Swift) && !lvaIsImplicitByRefLocal(lclNum) &&
+        !lvaParameterPassingInfo[lclNum].HasExactlyOneStackSegment())
     {
         return true;
     }
