@@ -21,7 +21,13 @@ namespace System.Reflection.Metadata
         /// Positive value is array rank.
         /// Negative value is modifier encoded using constants defined in <see cref="TypeNameParserHelpers"/>.
         /// </summary>
-        private readonly int _rankOrModifier;
+        private readonly sbyte _rankOrModifier;
+        /// <summary>
+        /// To avoid the need of allocating a string for all declaring types (example: A+B+C+D+E+F+G),
+        /// length of the name is stored and the fullName passed in ctor represents the full name of the nested type.
+        /// So when the name is needed, a substring is being performed.
+        /// </summary>
+        private readonly int _nestedNameLength;
         private readonly TypeName[]? _genericArguments;
         private readonly AssemblyName? _assemblyName;
         private readonly TypeName? _elementOrGenericType;
@@ -30,10 +36,11 @@ namespace System.Reflection.Metadata
 
         internal TypeName(string? fullName,
             AssemblyName? assemblyName,
-            int rankOrModifier = default,
             TypeName? elementOrGenericType = default,
             TypeName? declaringType = default,
-            TypeName[]? genericTypeArguments = default)
+            TypeName[]? genericTypeArguments = default,
+            sbyte rankOrModifier = default,
+            int nestedNameLength = -1)
         {
             _fullName = fullName;
             _assemblyName = assemblyName;
@@ -41,6 +48,7 @@ namespace System.Reflection.Metadata
             _elementOrGenericType = elementOrGenericType;
             _declaringType = declaringType;
             _genericArguments = genericTypeArguments;
+            _nestedNameLength = nestedNameLength;
 
             Debug.Assert(!(IsArray || IsPointer || IsByRef) || _elementOrGenericType is not null);
             Debug.Assert(_genericArguments is null || _elementOrGenericType is not null);
@@ -105,9 +113,19 @@ namespace System.Reflection.Metadata
                         builder.Append(GetElementType().FullName);
                         _fullName = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, builder);
                     }
+                    else
+                    {
+                        Debug.Fail("Pre-allocated full name should have been provided in the ctor");
+                    }
+                }
+                else if (_nestedNameLength > 0 && _fullName.Length > _nestedNameLength) // Declaring types
+                {
+                    // Stored fullName represents the full name of the nested type.
+                    // Example: Namespace.Declaring+Nested
+                    _fullName = _fullName.Substring(0, _nestedNameLength);
                 }
 
-                return _fullName!;
+                return _fullName;
             }
         }
 
@@ -188,7 +206,11 @@ namespace System.Reflection.Metadata
                         builder.Append(GetElementType().Name);
                         _name = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, builder);
                     }
-                    else // Nested and Simple types
+                    else if (_nestedNameLength > 0 && _fullName is not null)
+                    {
+                        _name = TypeNameParserHelpers.GetName(_fullName.AsSpan(0, _nestedNameLength)).ToString();
+                    }
+                    else
                     {
                         _name = TypeNameParserHelpers.GetName(FullName.AsSpan()).ToString();
                     }

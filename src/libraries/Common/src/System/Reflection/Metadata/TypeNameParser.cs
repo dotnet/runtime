@@ -208,24 +208,23 @@ namespace System.Reflection.Metadata
 #endif
             }
 
-            TypeName? declaringType = GetDeclaringType(fullTypeName, nestedNameLengths, assemblyName);
+            // No matter what was parsed, the full name string is allocated only once.
+            // In case of generic, nested, array, pointer and byref types the full name is allocated
+            // when needed for the first time .
+            string fullName = fullTypeName.ToString();
 
-            TypeName? result;
-            if (genericArgs is null)
+            TypeName? declaringType = GetDeclaringType(fullName, nestedNameLengths, assemblyName);
+            TypeName result = new(fullName, assemblyName, declaringType: declaringType);
+            if (genericArgs is not null)
             {
-                result = new(fullTypeName.ToString(), assemblyName, rankOrModifier: 0, elementOrGenericType: null, declaringType, genericArgs);
-            }
-            else
-            {
-                TypeName genericTypeDefinition = new(fullTypeName.ToString(), assemblyName, declaringType: declaringType);
-                result = new(fullName: null, assemblyName, rankOrModifier: 0, genericTypeDefinition, declaringType, genericArgs);
+                result = new(fullName: null, assemblyName, elementOrGenericType: result, declaringType, genericArgs);
             }
 
             if (previousDecorator != default) // some decorators were recognized
             {
                 while (TryParseNextDecorator(ref capturedBeforeProcessing, out int parsedModifier))
                 {
-                    result = new(fullName: null, assemblyName, parsedModifier, elementOrGenericType: result);
+                    result = new(fullName: null, assemblyName, elementOrGenericType: result, rankOrModifier: (sbyte)parsedModifier);
                 }
             }
 
@@ -282,7 +281,7 @@ namespace System.Reflection.Metadata
             return true;
         }
 
-        private static TypeName? GetDeclaringType(ReadOnlySpan<char> fullTypeName, List<int>? nestedNameLengths, AssemblyName? assemblyName)
+        private static TypeName? GetDeclaringType(string fullTypeName, List<int>? nestedNameLengths, AssemblyName? assemblyName)
         {
             if (nestedNameLengths is null)
             {
@@ -294,8 +293,8 @@ namespace System.Reflection.Metadata
             foreach (int nestedNameLength in nestedNameLengths)
             {
                 Debug.Assert(nestedNameLength > 0, "TryGetTypeNameInfo should return error on zero lengths");
-                ReadOnlySpan<char> fullName = fullTypeName.Slice(0, nameOffset + nestedNameLength);
-                declaringType = new(fullName.ToString(), assemblyName, declaringType: declaringType);
+                int fullNameLength = nameOffset + nestedNameLength;
+                declaringType = new(fullTypeName, assemblyName, declaringType: declaringType, nestedNameLength: fullNameLength);
                 nameOffset += nestedNameLength + 1; // include the '+' that was skipped in name
             }
 
