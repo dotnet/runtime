@@ -151,7 +151,7 @@ export function replace_linker_placeholders (imports: WebAssembly.Imports) {
     for (const [idx, rfn] of wasmImports.entries()) {
         let realFn = rfn;
         if (WasmEnableThreads) {
-            realFn = function catch_and_log_exceptions(...args: any[]) {
+            realFn = function catch_and_log_exceptions (...args: any[]) {
                 try {
                     return rfn(...args);
                 } catch (ex: any) {
