@@ -1451,10 +1451,8 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
         lvaSwiftErrorArg   = varDscInfo->varNum;
 
         // Instead, all usages of the SwiftError* parameter will be redirected to this pseudolocal.
-        lvaSwiftErrorLocal = lvaGrabTemp(false DEBUGARG("SwiftError pseudolocal"));
+        lvaSwiftErrorLocal = lvaGrabTempWithImplicitUse(false DEBUGARG("SwiftError pseudolocal"));
         lvaSetStruct(lvaSwiftErrorLocal, typeHnd, false);
-        LclVarDsc* const errorLocalDsc = lvaGetDesc(lvaSwiftErrorLocal);
-        errorLocalDsc->lvImplicitlyReferenced = true;
         return true;
     }
 
