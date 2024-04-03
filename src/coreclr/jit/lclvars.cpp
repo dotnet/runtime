@@ -6997,7 +6997,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             if (varDsc->lvIsParam)
             {
 #ifdef TARGET_ARM64
-                if (info.compIsVarArgs && varDsc->lvIsRegArg && (varDsc->GetArgReg() != theFixedRetBuffReg(info.compCallConv)))
+                if (info.compIsVarArgs && varDsc->lvIsRegArg &&
+                    (varDsc->GetArgReg() != theFixedRetBuffReg(info.compCallConv)))
                 {
                     // Stack offset to varargs (parameters) should point to home area which will be preallocated.
                     const unsigned regArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg(), info.compCallConv);
