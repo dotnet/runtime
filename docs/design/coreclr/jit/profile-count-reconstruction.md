@@ -18,7 +18,7 @@ We will use $w_j$ for the weight of block $j$. We will also assume there is an e
 
 $$ e_j + \sum_i w_i p_{i,j}  = \sum_k w_j p_{j,k} $$
 
-where the LHS is flow in and the RHS is flow out of block $j$. But 
+where the LHS is flow in and the RHS is flow out of block $j$. But
 
 $$ \sum_k w_j p_{j,k} = w_j \sum_k p_{j,k} = w_j $$
 
@@ -36,9 +36,9 @@ $$ \boldsymbol w = \boldsymbol e + \boldsymbol P \boldsymbol w $$
 
 where to be able to express the sum of incoming flow as a standard matrix-vector product we have:
 
-$$ \boldsymbol P_{i,j} = { p_{j,i} } $$ 
+$$ \boldsymbol P_{i,j} = { p_{j,i} } $$
 
-(that is, in $\boldsymbol P$, the flow from block $i$ is described by the entries in the $i\text{th}$ column, and the flow into block $i$ by the $i\text{th}$ row). A bit of rearranging puts this into the standard linear equation form 
+(that is, in $\boldsymbol P$, the flow from block $i$ is described by the entries in the $i\text{th}$ column, and the flow into block $i$ by the $i\text{th}$ row). A bit of rearranging puts this into the standard linear equation form
 
 $$ (\boldsymbol I - \boldsymbol P) \boldsymbol w = \boldsymbol e$$
 
@@ -55,8 +55,8 @@ For example, given the following graph with edge likelihoods a shown:
 we have
 
 ```math
-\boldsymbol P = 
-\begin{bmatrix} 
+\boldsymbol P =
+\begin{bmatrix}
  0 &    0 &    0 & 0 \cr
  1 &    0 &  0.8 & 0 \cr
  0 &  0.5 &    0 & 0 \cr
@@ -68,8 +68,8 @@ Note each column save the last sums to 1.0, representing the fact that the outgo
 
 Thus
 ```math
-(\boldsymbol I - \boldsymbol P) = 
-\begin{bmatrix} 
+(\boldsymbol I - \boldsymbol P) =
+\begin{bmatrix}
  1 &    0 &    0 & 0 \\\
 -1 &    1 & -0.8 & 0 \\\
  0 & -0.5 &    1 & 0 \\\
@@ -78,8 +78,8 @@ Thus
 ```
 and so (details of computing the inverse left as exercise for the reader)
 ```math
-{(\boldsymbol I - \boldsymbol P)}^{-1} = 
-\begin{bmatrix} 
+{(\boldsymbol I - \boldsymbol P)}^{-1} =
+\begin{bmatrix}
 1 & 0 & 0 & 0 \\\
 1.67 & 1.67 & 1.33 & 0 \\\
 0.83 & 0.83 & 1.67 & 0 \\\
@@ -90,7 +90,7 @@ Note the elements of ${(\boldsymbol I - \boldsymbol P)}^{-1}$ are all non-negati
 
 If we feed 6 units of flow into A, we have
 ```math
-\boldsymbol w = \begin{bmatrix} 6 \\\ 10 \\\ 5 \\\ 6 \end{bmatrix} 
+\boldsymbol w = \begin{bmatrix} 6 \\\ 10 \\\ 5 \\\ 6 \end{bmatrix}
 ```
 
 or graphically
@@ -109,7 +109,7 @@ So solution techniques that can leverage sparseness are of particular interest.
 
 Note the matrix $\boldsymbol I - \boldsymbol P$ has non-negative diagonal elements and negative non-diagonal elements, since all entries of $\boldsymbol P$ are in the range [0,1].
 
-If we further restrict ourselves to the case where $p_{i,i} \lt 1$ (meaning there are are no infinite self-loops) then all the diagonal entries are positive and the matrix has an inverse with no negative elements. 
+If we further restrict ourselves to the case where $p_{i,i} \lt 1$ (meaning there are are no infinite self-loops) then all the diagonal entries are positive and the matrix has an inverse with no negative elements.
 
 Such matrices are known as M-matrices.
 
@@ -121,7 +121,7 @@ This gives rise to a simple *iterative* procedure for computing an approximate v
 
 $$ \boldsymbol w^{(0)} = \boldsymbol e $$
 $$ \boldsymbol w^{(1)} = (\boldsymbol I + \boldsymbol P) \boldsymbol e = \boldsymbol e + \boldsymbol P \boldsymbol w^{(0)} $$
-$$ \boldsymbol w^{(2)} = (\boldsymbol I + \boldsymbol P + \boldsymbol P^2) \boldsymbol e = \boldsymbol e + \boldsymbol P \boldsymbol w^{(1)}$$ 
+$$ \boldsymbol w^{(2)} = (\boldsymbol I + \boldsymbol P + \boldsymbol P^2) \boldsymbol e = \boldsymbol e + \boldsymbol P \boldsymbol w^{(1)}$$
 $$ \dots$$
 $$ \boldsymbol w^{(k + 1)} = \boldsymbol e + \boldsymbol P \boldsymbol w^{(k)} $$
 
@@ -163,11 +163,11 @@ as we derived above.
 
 As an alternative we could split $\boldsymbol A = (\boldsymbol I - \boldsymbol P)$ into diagonal part $\boldsymbol M = \boldsymbol D$ and remainder part $\boldsymbol N$. This only leads to differences from the splitting above when there are self loops, otherwise the diagonal of $\boldsymbol P$ is all zeros.
 
-With that splitting, 
+With that splitting,
 
 
 ```math
- \boldsymbol D^{-1}_{i,i} = 1/a_{i,i} =  1/(1 - p_{i,i}) 
+ \boldsymbol D^{-1}_{i,i} = 1/a_{i,i} =  1/(1 - p_{i,i})
 ```
 
 so as $p_{i,i}$ gets close to 1.0 the value can be quite large: these are the count amplifications caused by self-loops. If we write things out component-wise we get the classic formulation for Jacobi iteration:
@@ -211,7 +211,7 @@ In the above scheme the order of visiting successive blocks is fixed unspecified
 If we do, that the code above nicely corresponds to our notion of forward and backward edges in the RPO:
 
 ```math
- w^{(k+1)}_i = \frac{1}{\underbrace{(1 - p_{i,i}}_\text{self edge})} \left(e_i + \underbrace{\sum_{j \lt i} p_{j,i} w^{(k + 1)}_j}_\text{forward edges in RPO} + \underbrace{\sum_{j \gt i} p_{j,i} w^{(k)}_j}_\text{backward edges in RPO} \right) 
+ w^{(k+1)}_i = \frac{1}{\underbrace{(1 - p_{i,i}}_\text{self edge})} \left(e_i + \underbrace{\sum_{j \lt i} p_{j,i} w^{(k + 1)}_j}_\text{forward edges in RPO} + \underbrace{\sum_{j \gt i} p_{j,i} w^{(k)}_j}_\text{backward edges in RPO} \right)
 ```
 
 Note because of the order of reads and writes, $\boldsymbol w^{(k+1)}$ can share storage with $\boldsymbol w^{(k)}$.
@@ -243,9 +243,9 @@ Note also that the technique above won't compute an accurate $C_p$ for loops tha
 If we add this refinement to our algorithm we end up with:
 
 ```math
- w^{(k+1)}_i = 
+ w^{(k+1)}_i =
 \begin{cases}
- C_p(i) \left(e_i + \sum_{j \lt i} p_{j,i} w^{(k + 1)}_j  \right), \text{ block } i \text{ is a natural loop head, and does not contain an improper loop} \\\ 
+ C_p(i) \left(e_i + \sum_{j \lt i} p_{j,i} w^{(k + 1)}_j  \right), \text{ block } i \text{ is a natural loop head, and does not contain an improper loop} \\\
  \frac{1}{(1 - p_{i,i})} \left(e_i + \sum_{j \lt i} p_{j,i} w^{(k + 1)}_j + \sum_{j \gt i} p_{j,i} w^{(k)}_j \right)
 \end{cases}
 ```
@@ -262,7 +262,7 @@ The algorithm described above is implemented in the code as the `GaussSeidel` so
 
 ### Cycles That Are Not Natural Loops, More Sophisticated Solvers, and Deep Nests
 
-If the flow graph has cycles that are not natural loops (irreducible loops) the above computations will converge but again may converge very slowly. On a sample of about 500 graphs with irreducible loops the modified Gauss-Seidel approach above required more than 20 iterations in 120 cases and more than 50 iterations in 70 cases, with worst-case around 500 iterations. 
+If the flow graph has cycles that are not natural loops (irreducible loops) the above computations will converge but again may converge very slowly. On a sample of about 500 graphs with irreducible loops the modified Gauss-Seidel approach above required more than 20 iterations in 120 cases and more than 50 iterations in 70 cases, with worst-case around 500 iterations.
 
 SOR is a classic convergence altering technique, but unfortunately, for M-Matrices SOR can only safely be used to slow down convergence.
 
@@ -280,4 +280,3 @@ Nick Higham. [What is an M-Matrix?](https://nhigham.com/2021/03/16/what-is-an-m-
 
 Youfeng Wu and James R. Larus. Static branch frequency and program profile analysis, Micro-27 (1994).
 
- 
