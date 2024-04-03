@@ -125,7 +125,7 @@ namespace System.Reflection.Metadata
                     _fullName = _fullName.Substring(0, _nestedNameLength);
                 }
 
-                return _fullName;
+                return _fullName!;
             }
         }
 
