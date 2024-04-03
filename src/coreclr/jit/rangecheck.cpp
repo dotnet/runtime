@@ -461,7 +461,9 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     }
 
     // Remove hashtable entry for expr when we exit the present scope.
-    auto                                         code = [this, expr] { m_pSearchPath->Remove(expr); };
+    auto code = [this, expr] {
+        m_pSearchPath->Remove(expr);
+    };
     jitstd::utility::scoped_code<decltype(code)> finally(code);
 
     if (m_pSearchPath->GetCount() > MAX_SEARCH_DEPTH)
@@ -1123,7 +1125,7 @@ Range RangeCheck::GetRangeFromType(var_types type)
 // Compute the range for a local var definition.
 Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
                                           GenTreeLclVarCommon* lcl,
-                                          bool monIncreasing DEBUGARG(int indent))
+                                          bool monIncreasing   DEBUGARG(int indent))
 {
     LclSsaVarDsc* ssaDef = GetSsaDefStore(lcl);
     if (ssaDef == nullptr)
@@ -1566,7 +1568,10 @@ struct MapMethodDefsData
     BasicBlock* block;
     Statement*  stmt;
 
-    MapMethodDefsData(RangeCheck* rc, BasicBlock* block, Statement* stmt) : rc(rc), block(block), stmt(stmt)
+    MapMethodDefsData(RangeCheck* rc, BasicBlock* block, Statement* stmt)
+        : rc(rc)
+        , block(block)
+        , stmt(stmt)
     {
     }
 };

@@ -65,7 +65,10 @@ CodeGenInterface* getCodeGenerator(Compiler* comp)
 
 // CodeGen constructor
 CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
-    : gcInfo(theCompiler), regSet(theCompiler, gcInfo), compiler(theCompiler), treeLifeUpdater(nullptr)
+    : gcInfo(theCompiler)
+    , regSet(theCompiler, gcInfo)
+    , compiler(theCompiler)
+    , treeLifeUpdater(nullptr)
 {
 }
 
@@ -84,7 +87,8 @@ void CodeGenInterface::CopyRegisterInfo()
 
 /*****************************************************************************/
 
-CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
+CodeGen::CodeGen(Compiler* theCompiler)
+    : CodeGenInterface(theCompiler)
 {
 #if defined(TARGET_XARCH)
     negBitmaskFlt  = nullptr;
@@ -1873,7 +1877,7 @@ void CodeGen::genGenerateMachineCode()
                             (compiler->compCodeOpt() != Compiler::SMALL_CODE) &&
                                 !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)
 #endif
-                                );
+    );
 
     /* Now generate code for the function */
     genCodeForBBlist();
@@ -3199,9 +3203,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #ifdef TARGET_X86
                     noway_assert(varDsc->lvType == TYP_STRUCT);
 #else  // !TARGET_X86
-                    // For LSRA, it may not be in regArgMaskLive if it has a zero
-                    // refcnt.  This is in contrast with the non-LSRA case in which all
-                    // non-tracked args are assumed live on entry.
+       // For LSRA, it may not be in regArgMaskLive if it has a zero
+       // refcnt.  This is in contrast with the non-LSRA case in which all
+       // non-tracked args are assumed live on entry.
                     noway_assert((varDsc->lvRefCnt() == 0) || (varDsc->lvType == TYP_STRUCT) ||
                                  (varDsc->IsAddressExposed() && compiler->info.compIsVarArgs) ||
                                  (varDsc->IsAddressExposed() && compiler->opts.compUseSoftFP));
@@ -4131,8 +4135,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                             int        nextArgNum  = argNum + i;
                             LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
                             regNumber  nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type,
-                                                                           compiler->info.compCallConv);
-                            destRegNum = fieldVarDsc->GetRegNum();
+                                                                             compiler->info.compCallConv);
+                            destRegNum             = fieldVarDsc->GetRegNum();
                             noway_assert(regArgTab[nextArgNum].varNum == varNum);
                             noway_assert(genIsValidFloatReg(nextRegNum));
                             noway_assert(genIsValidFloatReg(destRegNum));
@@ -4215,7 +4219,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
     regNumber tmp_reg    = REG_NA;
 #endif
 
-    for (LclVarDsc *varDsc = compiler->lvaTable; varNum < compiler->lvaCount; varNum++, varDsc++)
+    for (LclVarDsc* varDsc = compiler->lvaTable; varNum < compiler->lvaCount; varNum++, varDsc++)
     {
         /* Is this variable a parameter? */
 
@@ -4289,7 +4293,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
                 }
             }
         }
-#else // !TARGET_LOONGARCH64
+#else  // !TARGET_LOONGARCH64
         GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
 #endif // !TARGET_LOONGARCH64
 
@@ -5342,7 +5346,7 @@ void CodeGen::genFinalizeFrame()
         }
         noway_assert((regSet.rsGetModifiedRegsMask() & ~okRegs) == 0);
 #else  // !TARGET_AMD64 && !TARGET_ARM64
-        // On x86 we save all callee saved regs so the saved reg area size is consistent
+       // On x86 we save all callee saved regs so the saved reg area size is consistent
         regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
 #endif // !TARGET_AMD64 && !TARGET_ARM64
     }
@@ -6071,7 +6075,7 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_AMD64
 
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
 #ifdef TARGET_ARM
     if (compiler->compLocallocUsed)
@@ -6097,11 +6101,11 @@ void CodeGen::genFnProlog()
 #endif // TARGET_AMD64
     compiler->unwindEndProlog();
 
-//-------------------------------------------------------------------------
-//
-// This is the end of the OS-reported prolog for purposes of unwinding
-//
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
+    //
+    // This is the end of the OS-reported prolog for purposes of unwinding
+    //
+    //-------------------------------------------------------------------------
 
 #ifdef TARGET_ARM
     if (needToEstablishFP)
@@ -8488,7 +8492,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
             bool fpBased;
             int  addr = compiler->lvaFrameAddress((int)varNum, &fpBased);
 #else
-            int addr     = 0;
+            int addr = 0;
 #endif
             int end = addr + (int)size;
             for (int offs = addr; offs < end;)

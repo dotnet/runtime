@@ -101,7 +101,7 @@ private:
         }
     }
 
-    static GenTreeIndir indirForm(var_types type, GenTree* base);
+    static GenTreeIndir    indirForm(var_types type, GenTree* base);
     static GenTreeStoreInd storeIndirForm(var_types type, GenTree* base, GenTree* data);
 
     GenTreeIntCon intForm(var_types type, ssize_t value);
@@ -177,8 +177,8 @@ private:
 
 #ifdef JIT32_GCENCODER
     void* genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* codePtr));
-    void* genCreateAndStoreGCInfoJIT32(unsigned codeSize,
-                                       unsigned prologSize,
+    void* genCreateAndStoreGCInfoJIT32(unsigned            codeSize,
+                                       unsigned            prologSize,
                                        unsigned epilogSize DEBUGARG(void* codePtr));
 #else  // !JIT32_GCENCODER
     void genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* codePtr));
@@ -206,7 +206,7 @@ protected:
     unsigned genCurDispOffset;
 
     static const char* genInsName(instruction ins);
-    const char* genInsDisplayName(emitter::instrDesc* id);
+    const char*        genInsDisplayName(emitter::instrDesc* id);
 
     static const char* genSizeStr(emitAttr size);
 
@@ -317,11 +317,17 @@ protected:
         regNumber reg2;
         bool      useSaveNextPair;
 
-        RegPair(regNumber reg1) : reg1(reg1), reg2(REG_NA), useSaveNextPair(false)
+        RegPair(regNumber reg1)
+            : reg1(reg1)
+            , reg2(REG_NA)
+            , useSaveNextPair(false)
         {
         }
 
-        RegPair(regNumber reg1, regNumber reg2) : reg1(reg1), reg2(reg2), useSaveNextPair(false)
+        RegPair(regNumber reg1, regNumber reg2)
+            : reg1(reg1)
+            , reg2(reg2)
+            , useSaveNextPair(false)
         {
             assert(reg2 == REG_NEXT(reg1));
         }
@@ -364,8 +370,8 @@ protected:
 
     bool genStackPointerAdjustment(ssize_t spAdjustment, regNumber tmpReg);
 
-    void genPushFltRegs(regMaskTP regMask);
-    void genPopFltRegs(regMaskTP regMask);
+    void      genPushFltRegs(regMaskTP regMask);
+    void      genPopFltRegs(regMaskTP regMask);
     regMaskTP genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskCalleeSavedFloat);
 
     regMaskTP genJmpCallArgMask();
@@ -679,17 +685,17 @@ protected:
     void      genSinglePush();
     void      genSinglePop();
     regMaskTP genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* noRefRegs);
-    void genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs);
+    void      genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs);
 
-/*
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                           Debugging Support                               XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
+    /*
+    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    XX                                                                           XX
+    XX                           Debugging Support                               XX
+    XX                                                                           XX
+    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    */
 
 #ifdef DEBUG
     void genIPmappingDisp(unsigned mappingNum, const IPmappingDsc* ipMapping);
@@ -939,7 +945,7 @@ protected:
     void genCompareFloat(GenTree* treeNode);
     void genCompareInt(GenTree* treeNode);
 #ifdef TARGET_XARCH
-    bool genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
+    bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
     GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
 #endif
 
@@ -1112,12 +1118,12 @@ protected:
     void genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum);
     void genUnspillLocal(
         unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum, bool reSpill, bool isLastUse);
-    void genUnspillRegIfNeeded(GenTree* tree);
-    void genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex);
+    void      genUnspillRegIfNeeded(GenTree* tree);
+    void      genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex);
     regNumber genConsumeReg(GenTree* tree);
     regNumber genConsumeReg(GenTree* tree, unsigned multiRegIndex);
-    void genCopyRegIfNeeded(GenTree* tree, regNumber needReg);
-    void genConsumeRegAndCopy(GenTree* tree, regNumber needReg);
+    void      genCopyRegIfNeeded(GenTree* tree, regNumber needReg);
+    void      genConsumeRegAndCopy(GenTree* tree, regNumber needReg);
 
     void genConsumeIfReg(GenTree* tree)
     {
@@ -1127,15 +1133,15 @@ protected:
         }
     }
 
-    void genRegCopy(GenTree* tree);
+    void      genRegCopy(GenTree* tree);
     regNumber genRegCopy(GenTree* tree, unsigned multiRegIndex);
-    void genTransferRegGCState(regNumber dst, regNumber src);
-    void genConsumeAddress(GenTree* addr);
-    void genConsumeAddrMode(GenTreeAddrMode* mode);
-    void genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg);
-    void genConsumeBlockSrc(GenTreeBlk* blkNode);
-    void genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg);
-    void genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
+    void      genTransferRegGCState(regNumber dst, regNumber src);
+    void      genConsumeAddress(GenTree* addr);
+    void      genConsumeAddrMode(GenTreeAddrMode* mode);
+    void      genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg);
+    void      genConsumeBlockSrc(GenTreeBlk* blkNode);
+    void      genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg);
+    void      genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
     void genConsumePutStructArgStk(GenTreePutArgStk* putArgStkNode,
@@ -1243,10 +1249,10 @@ protected:
     unsigned genMove4IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
     unsigned genMove2IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
     unsigned genMove1IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
-    void genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
-    void genStoreRegToStackArg(var_types type, regNumber reg, int offset);
-    void genStructPutArgRepMovs(GenTreePutArgStk* putArgStkNode);
-    void genStructPutArgUnroll(GenTreePutArgStk* putArgStkNode);
+    void     genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
+    void     genStoreRegToStackArg(var_types type, regNumber reg, int offset);
+    void     genStructPutArgRepMovs(GenTreePutArgStk* putArgStkNode);
+    void     genStructPutArgUnroll(GenTreePutArgStk* putArgStkNode);
 #ifdef TARGET_X86
     void genStructPutArgPush(GenTreePutArgStk* putArgStkNode);
 #else
@@ -1254,13 +1260,13 @@ protected:
 #endif
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
-    void genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
-    void genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
-    void genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
-    void genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
+    void     genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
+    void     genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
+    void     genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
+    void     genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
     unsigned genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
-    void genJumpTable(GenTree* tree);
-    void genTableBasedSwitch(GenTree* tree);
+    void     genJumpTable(GenTree* tree);
+    void     genTableBasedSwitch(GenTree* tree);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     instruction genGetInsForOper(GenTree* treeNode);
 #else
@@ -1270,13 +1276,13 @@ protected:
                                       regNumber     targetReg,
                                       GenTreeIndir* indir,
                                       bool*         needsBarrier);
-    bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
-    GenTree* getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
-    regNumber getCallIndirectionCellReg(GenTreeCall* call);
-    void genCall(GenTreeCall* call);
-    void genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
-    void genDefinePendingCallLabel(GenTreeCall* call);
-    void genJmpMethod(GenTree* jmp);
+    bool        genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
+    GenTree*    getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
+    regNumber   getCallIndirectionCellReg(GenTreeCall* call);
+    void        genCall(GenTreeCall* call);
+    void        genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
+    void        genDefinePendingCallLabel(GenTreeCall* call);
+    void        genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // TODO: refactor for LA.
@@ -1318,13 +1324,13 @@ protected:
     void genReturn(GenTree* treeNode);
 
 #ifdef TARGET_XARCH
-    void genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdjustments);
-    void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, bool trackSpAdjustments);
+    void           genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdjustments);
+    void           genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, bool trackSpAdjustments);
     target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, bool trackSpAdjustments);
-    void genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta);
+    void           genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta);
 #else  // !TARGET_XARCH
-    void genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp);
-    void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp);
+    void           genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp);
+    void           genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp);
     target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, regNumber regTmp);
 #endif // !TARGET_XARCH
 
@@ -1358,8 +1364,8 @@ protected:
 
 #ifdef DEBUG
     GenTree* lastConsumedNode;
-    void genNumberOperandUse(GenTree* const operand, int& useNum) const;
-    void genCheckConsumeNode(GenTree* const node);
+    void     genNumberOperandUse(GenTree* const operand, int& useNum) const;
+    void     genCheckConsumeNode(GenTree* const node);
 #else  // !DEBUG
     inline void genCheckConsumeNode(GenTree* treeNode)
     {
@@ -1437,7 +1443,8 @@ public:
 
 #if defined(TARGET_XARCH)
 
-    enum class OperandKind{
+    enum class OperandKind
+    {
         ClsVar, // [CLS_VAR_ADDR]                 - "C" in the emitter.
         Local,  // [Local or spill temp + offset] - "S" in the emitter.
         Indir,  // [base+index*scale+disp]        - "A" in the emitter.
@@ -1448,7 +1455,8 @@ public:
     class OperandDesc
     {
         OperandKind m_kind;
-        union {
+        union
+        {
             struct
             {
                 CORINFO_FIELD_HANDLE m_fieldHnd;
@@ -1476,30 +1484,45 @@ public:
         };
 
     public:
-        OperandDesc(CORINFO_FIELD_HANDLE fieldHnd) : m_kind(OperandKind::ClsVar), m_fieldHnd(fieldHnd)
+        OperandDesc(CORINFO_FIELD_HANDLE fieldHnd)
+            : m_kind(OperandKind::ClsVar)
+            , m_fieldHnd(fieldHnd)
         {
         }
 
-        OperandDesc(int varNum, uint16_t offset) : m_kind(OperandKind::Local), m_varNum(varNum), m_offset(offset)
+        OperandDesc(int varNum, uint16_t offset)
+            : m_kind(OperandKind::Local)
+            , m_varNum(varNum)
+            , m_offset(offset)
         {
         }
 
         OperandDesc(GenTreeIndir* indir)
-            : m_kind(OperandKind::Indir), m_addr(indir->Addr()), m_indir(indir), m_indirType(indir->TypeGet())
+            : m_kind(OperandKind::Indir)
+            , m_addr(indir->Addr())
+            , m_indir(indir)
+            , m_indirType(indir->TypeGet())
         {
         }
 
         OperandDesc(var_types indirType, GenTree* addr)
-            : m_kind(OperandKind::Indir), m_addr(addr), m_indir(nullptr), m_indirType(indirType)
+            : m_kind(OperandKind::Indir)
+            , m_addr(addr)
+            , m_indir(nullptr)
+            , m_indirType(indirType)
         {
         }
 
         OperandDesc(ssize_t immediate, bool immediateNeedsReloc)
-            : m_kind(OperandKind::Imm), m_immediate(immediate), m_immediateNeedsReloc(immediateNeedsReloc)
+            : m_kind(OperandKind::Imm)
+            , m_immediate(immediate)
+            , m_immediateNeedsReloc(immediateNeedsReloc)
         {
         }
 
-        OperandDesc(regNumber reg) : m_kind(OperandKind::Reg), m_reg(reg)
+        OperandDesc(regNumber reg)
+            : m_kind(OperandKind::Reg)
+            , m_reg(reg)
         {
         }
 
@@ -1689,7 +1712,9 @@ class CodeGenPhase final : public Phase
 {
 public:
     CodeGenPhase(CodeGen* _codeGen, Phases _phase, void (CodeGen::*_action)())
-        : Phase(_codeGen->GetCompiler(), _phase), codeGen(_codeGen), action(_action)
+        : Phase(_codeGen->GetCompiler(), _phase)
+        , codeGen(_codeGen)
+        , action(_action)
     {
     }
 

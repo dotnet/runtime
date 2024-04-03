@@ -92,7 +92,8 @@ GenTree* MorphInitBlockHelper::MorphInitBlock(Compiler* comp, GenTree* tree)
 //    Most class members are initialized via in-class member initializers.
 //
 MorphInitBlockHelper::MorphInitBlockHelper(Compiler* comp, GenTree* store, bool initBlock = true)
-    : m_comp(comp), m_initBlock(initBlock)
+    : m_comp(comp)
+    , m_initBlock(initBlock)
 {
     assert(store->OperIsStore());
     assert((m_initBlock == store->OperIsInitBlkOp()) && (!m_initBlock == store->OperIsCopyBlkOp()));
@@ -530,8 +531,8 @@ GenTree* MorphInitBlockHelper::EliminateCommas(GenTree** commaPool)
 {
     *commaPool = nullptr;
 
-    GenTree* sideEffects = nullptr;
-    auto addSideEffect   = [&sideEffects](GenTree* sideEff) {
+    GenTree* sideEffects   = nullptr;
+    auto     addSideEffect = [&sideEffects](GenTree* sideEff) {
         sideEff->gtNext = sideEffects;
         sideEffects     = sideEff;
     };
@@ -645,7 +646,8 @@ GenTree* MorphCopyBlockHelper::MorphCopyBlock(Compiler* comp, GenTree* tree)
 // Notes:
 //    Most class members are initialized via in-class member initializers.
 //
-MorphCopyBlockHelper::MorphCopyBlockHelper(Compiler* comp, GenTree* store) : MorphInitBlockHelper(comp, store, false)
+MorphCopyBlockHelper::MorphCopyBlockHelper(Compiler* comp, GenTree* store)
+    : MorphInitBlockHelper(comp, store, false)
 {
 }
 
