@@ -3044,10 +3044,10 @@ var_types CodeGen::genParamStackStoreType(LclVarDsc* dsc, const ABIPassingSegmen
 // to stack immediately, or by adding it to the register graph.
 //
 // Parameters:
-//    initReg            - A register that this method should communicate if it trashes
-//    initRegStillZeroed - [out] whether or not xtraReg is still zeroed
+//    lclNum - Parameter local (or field of it)
+//    graph  - The register graph to add to
 //
-void CodeGen::genSpillOrAddRegisterParam(RegGraph* graph, unsigned lclNum)
+void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
 {
     regMaskTP  paramRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
     LclVarDsc* varDsc    = compiler->lvaGetDesc(lclNum);
@@ -3214,12 +3214,12 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             for (unsigned fld = 0; fld < lclDsc->lvFieldCnt; fld++)
             {
                 unsigned fieldLclNum = lclDsc->lvFieldLclStart + fld;
-                genSpillOrAddRegisterParam(&graph, fieldLclNum);
+                genSpillOrAddRegisterParam(fieldLclNum, &graph);
             }
         }
         else
         {
-            genSpillOrAddRegisterParam(&graph, lclNum);
+            genSpillOrAddRegisterParam(lclNum, &graph);
         }
     }
 
