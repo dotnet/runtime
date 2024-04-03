@@ -1263,7 +1263,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             AssertExtensions.Throws<ArgumentException>("tasks", () => Task.WaitAll((IEnumerable<Task>)[null, Task.CompletedTask]));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAll_Enumerable_Canceled()
         {
             var tcs = new TaskCompletionSource();
@@ -1274,7 +1274,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             Assert.Throws<OperationCanceledException>(() => Task.WaitAll((IEnumerable<Task>)[Task.CompletedTask, tcs.Task], cts.Token));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskWaitAll_Enumerable_AllComplete()
         {
             Task.WaitAll((IEnumerable<Task>)[]);
