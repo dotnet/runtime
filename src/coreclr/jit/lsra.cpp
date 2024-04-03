@@ -4987,7 +4987,7 @@ void LinearScan::freeRegisters(AllRegsMask regsToFree)
 //TODO: Can we just if-def the method signature and `IsEmpty()`?
 void LinearScan::freeRegisterMask(AllRegsMask& freeMask)
 {
-    while (freeMask.IsEmpty())
+    while (!freeMask.IsEmpty())
     {
         regNumber nextReg = genFirstRegNumFromMaskAndToggle(freeMask);
 
