@@ -868,8 +868,13 @@ done:
     return result;
 }
 
-static void SetLargestCacheSizeAndLevelFromSysConf(size_t* cache_size, size_t* cache_level)
+static size_t GetLogicalProcessorCacheSizeFromOS()
 {
+    size_t cacheLevel = 0;
+    size_t cacheSize = 0;
+    long size;
+
+#ifdef HAVE_SYSCONF
     const int cacheLevelNames[] =
     {
         _SC_LEVEL1_DCACHE_SIZE,
@@ -883,21 +888,11 @@ static void SetLargestCacheSizeAndLevelFromSysConf(size_t* cache_size, size_t* c
         long size = sysconf(cacheLevelNames[i]);
         if (size > 0)
         {
-            *cache_size = (size_t)size;
-            *cache_level = i + 1;
+            cacheSize = (size_t)size;
+            cacheLevel = i + 1;
             break;
         }
     }
-}
-
-static size_t GetLogicalProcessorCacheSizeFromOS()
-{
-    size_t cacheLevel = 0;
-    size_t cacheSize = 0;
-    long size;
-
-#if HAVE_SYSCONF
-    SetLargestCacheSizeAndLevelFromSysConf(&cacheSize, &cacheLevel);
 #endif // HAVE_SYSCONF
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
