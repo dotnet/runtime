@@ -868,7 +868,7 @@ done:
     return result;
 }
 
-#define UPDATE_CACHE_SIZE_AND_LEVEL(NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if (NEW_CACHE_SIZE > ((long)cacheSize)) { cacheSize = NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
+#define UPDATE_CACHE_SIZE_AND_LEVEL(CURRENT_CACHE_SIZE, NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if (NEW_CACHE_SIZE > ((long)CURRENT_CACHE_SIZE)) { CURRENT_CACHE_SIZE = NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
 
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
@@ -880,19 +880,19 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     // UPDATE_CACHE_SIZE_AND_LEVEL should handle both the cases by not updating cacheSize if either of cases are met.
 #ifdef _SC_LEVEL1_DCACHE_SIZE
     size = sysconf(_SC_LEVEL1_DCACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 1)
+    UPDATE_CACHE_SIZE_AND_LEVEL(cacheSize, size, 1)
 #endif
 #ifdef _SC_LEVEL2_CACHE_SIZE
     size = sysconf(_SC_LEVEL2_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 2)
+    UPDATE_CACHE_SIZE_AND_LEVEL(cacheSize, size, 2)
 #endif
 #ifdef _SC_LEVEL3_CACHE_SIZE
     size = sysconf(_SC_LEVEL3_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 3)
+    UPDATE_CACHE_SIZE_AND_LEVEL(cacheSize, size, 3)
 #endif
 #ifdef _SC_LEVEL4_CACHE_SIZE
     size = sysconf(_SC_LEVEL4_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 4)
+    UPDATE_CACHE_SIZE_AND_LEVEL(cacheSize, size, 4)
 #endif
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
@@ -924,7 +924,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 
                 if (ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
-                    UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
+                    UPDATE_CACHE_SIZE_AND_LEVEL(cacheSize, size, level)
                 }
 
                 else
@@ -981,7 +981,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         if (success)
         {
             assert(cacheSizeFromSysctl > 0);
-            cacheSize = ( size_t) cacheSizeFromSysctl;
+            cacheSize = (size_t) cacheSizeFromSysctl;
         }
     }
 #endif
