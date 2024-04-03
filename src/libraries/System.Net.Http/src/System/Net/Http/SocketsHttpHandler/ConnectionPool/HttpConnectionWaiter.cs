@@ -7,104 +7,101 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed partial class HttpConnectionPool
+    internal sealed class HttpConnectionWaiter<T> : TaskCompletionSourceWithCancellation<T>
+        where T : HttpConnectionBase?
     {
-        private sealed class HttpConnectionWaiter<T> : TaskCompletionSourceWithCancellation<T>
-            where T : HttpConnectionBase?
+        // When a connection attempt is pending, reference the connection's CTS, so we can tear it down if the initiating request is cancelled
+        // or completes on a different connection.
+        public CancellationTokenSource? ConnectionCancellationTokenSource;
+
+        // Distinguish connection cancellation that happens because the initiating request is cancelled or completed on a different connection.
+        public bool CancelledByOriginatingRequestCompletion { get; set; }
+
+        public ValueTask<T> WaitForConnectionAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
         {
-            // When a connection attempt is pending, reference the connection's CTS, so we can tear it down if the initiating request is cancelled
-            // or completes on a different connection.
-            public CancellationTokenSource? ConnectionCancellationTokenSource;
+            return HttpTelemetry.Log.IsEnabled() || pool.Settings._metrics!.RequestsQueueDuration.Enabled
+                ? WaitForConnectionWithTelemetryAsync(request, pool, async, requestCancellationToken)
+                : WaitWithCancellationAsync(async, requestCancellationToken);
+        }
 
-            // Distinguish connection cancellation that happens because the initiating request is cancelled or completed on a different connection.
-            public bool CancelledByOriginatingRequestCompletion { get; set; }
+        private async ValueTask<T> WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
+        {
+            Debug.Assert(typeof(T) == typeof(HttpConnection) || typeof(T) == typeof(Http2Connection));
 
-            public ValueTask<T> WaitForConnectionAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
+            long startingTimestamp = Stopwatch.GetTimestamp();
+            try
             {
-                return HttpTelemetry.Log.IsEnabled() || pool.Settings._metrics!.RequestsQueueDuration.Enabled
-                    ? WaitForConnectionWithTelemetryAsync(request, pool, async, requestCancellationToken)
-                    : WaitWithCancellationAsync(async, requestCancellationToken);
+                return await WaitWithCancellationAsync(async, requestCancellationToken).ConfigureAwait(false);
             }
-
-            private async ValueTask<T> WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
+            finally
             {
-                Debug.Assert(typeof(T) == typeof(HttpConnection) || typeof(T) == typeof(Http2Connection));
+                TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp);
+                int versionMajor = typeof(T) == typeof(HttpConnection) ? 1 : 2;
 
-                long startingTimestamp = Stopwatch.GetTimestamp();
-                try
+                pool.Settings._metrics!.RequestLeftQueue(request, pool, duration, versionMajor);
+
+                if (HttpTelemetry.Log.IsEnabled())
                 {
-                    return await WaitWithCancellationAsync(async, requestCancellationToken).ConfigureAwait(false);
-                }
-                finally
-                {
-                    TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp);
-                    int versionMajor = typeof(T) == typeof(HttpConnection) ? 1 : 2;
-
-                    pool.Settings._metrics!.RequestLeftQueue(request, pool, duration, versionMajor);
-
-                    if (HttpTelemetry.Log.IsEnabled())
-                    {
-                        HttpTelemetry.Log.RequestLeftQueue(versionMajor, duration);
-                    }
+                    HttpTelemetry.Log.RequestLeftQueue(versionMajor, duration);
                 }
             }
+        }
 
-            public bool TrySignal(T connection)
+        public bool TrySignal(T connection)
+        {
+            Debug.Assert(connection is not null);
+
+            if (TrySetResult(connection))
             {
-                Debug.Assert(connection is not null);
+                if (NetEventSource.Log.IsEnabled()) connection.Trace("Dequeued waiting request.");
+                return true;
+            }
+            else
+            {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    connection.Trace(Task.IsCanceled
+                        ? "Discarding canceled request from queue."
+                        : "Discarding signaled request waiter from queue.");
+                }
+                return false;
+            }
+        }
 
-                if (TrySetResult(connection))
-                {
-                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Dequeued waiting request.");
-                    return true;
-                }
-                else
-                {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        connection.Trace(Task.IsCanceled
-                            ? "Discarding canceled request from queue."
-                            : "Discarding signaled request waiter from queue.");
-                    }
-                    return false;
-                }
+        public void CancelIfNecessary(HttpConnectionPool pool, bool requestCancelled)
+        {
+            int timeout = GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion;
+            if (ConnectionCancellationTokenSource is null ||
+                timeout == Timeout.Infinite ||
+                pool.Settings._connectTimeout != Timeout.InfiniteTimeSpan && timeout > (int)pool.Settings._connectTimeout.TotalMilliseconds) // Do not override shorter ConnectTimeout
+            {
+                return;
             }
 
-            public void CancelIfNecessary(HttpConnectionPool pool, bool requestCancelled)
+            lock (this)
             {
-                int timeout = GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion;
-                if (ConnectionCancellationTokenSource is null ||
-                    timeout == Timeout.Infinite ||
-                    pool.Settings._connectTimeout != Timeout.InfiniteTimeSpan && timeout > (int)pool.Settings._connectTimeout.TotalMilliseconds) // Do not override shorter ConnectTimeout
+                if (ConnectionCancellationTokenSource is null)
                 {
                     return;
                 }
 
-                lock (this)
+                if (NetEventSource.Log.IsEnabled())
                 {
-                    if (ConnectionCancellationTokenSource is null)
-                    {
-                        return;
-                    }
+                    pool.Trace($"Initiating cancellation of a pending connection attempt with delay of {timeout} ms, " +
+                        $"Reason: {(requestCancelled ? "Request cancelled" : "Request served by another connection")}.");
+                }
 
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        pool.Trace($"Initiating cancellation of a pending connection attempt with delay of {timeout} ms, " +
-                            $"Reason: {(requestCancelled ? "Request cancelled" : "Request served by another connection")}.");
-                    }
-
-                    CancelledByOriginatingRequestCompletion = true;
-                    if (timeout > 0)
-                    {
-                        // Cancel after the specified timeout. This cancellation will not fire if the connection
-                        // succeeds within the delay and the CTS becomes disposed.
-                        ConnectionCancellationTokenSource.CancelAfter(timeout);
-                    }
-                    else
-                    {
-                        // Cancel immediately if no timeout specified.
-                        ConnectionCancellationTokenSource.Cancel();
-                    }
+                CancelledByOriginatingRequestCompletion = true;
+                if (timeout > 0)
+                {
+                    // Cancel after the specified timeout. This cancellation will not fire if the connection
+                    // succeeds within the delay and the CTS becomes disposed.
+                    ConnectionCancellationTokenSource.CancelAfter(timeout);
+                }
+                else
+                {
+                    // Cancel immediately if no timeout specified.
+                    ConnectionCancellationTokenSource.Cancel();
                 }
             }
         }

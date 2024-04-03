@@ -995,7 +995,7 @@ namespace System.Net.Http
                     $"Proxy {_proxyUri}" :
                     $"https://{_originAuthority}/ tunnelled via Proxy {_proxyUri}" + (_sslOptionsHttp11.TargetHost != _originAuthority.IdnHost ? $", SSL TargetHost={_sslOptionsHttp11.TargetHost}" : null)));
 
-        private void Trace(string? message, [CallerMemberName] string? memberName = null) =>
+        public void Trace(string? message, [CallerMemberName] string? memberName = null) =>
             NetEventSource.Log.HandlerMessage(
                 GetHashCode(),               // pool ID
                 0,                           // connection ID
