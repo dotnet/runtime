@@ -686,15 +686,6 @@ PTR_GSCookie GetProcessGSCookiePtr() { return  PTR_GSCookie(&s_gsCookie); }
 inline
 GSCookie GetProcessGSCookie() { return *(RAW_KEYWORD(volatile) GSCookie *)(&s_gsCookie); }
 
-// Passed to JitManager APIs to determine whether to avoid calling into the host.
-// The profiling API stackwalking uses this to ensure to avoid re-entering the host
-// (particularly SQL) from a hijacked thread.
-enum HostCallPreference
-{
-    AllowHostCalls,
-    NoHostCalls,
-};
-
 #ifdef TARGET_WINDOWS
 typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
 extern PINITIALIZECONTEXT2 g_pfnInitializeContext2;

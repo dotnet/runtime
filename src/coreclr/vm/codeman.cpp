@@ -645,7 +645,7 @@ BOOL EEJitManager::CodeHeapIterator::Next()
 // writer lock and check for any readers. If there are any, the WriterLockHolder functions
 // release the writer and yield to wait for the readers to be done.
 
-ExecutionManager::ReaderLockHolder::ReaderLockHolder(HostCallPreference hostCallPreference /*=AllowHostCalls*/)
+ExecutionManager::ReaderLockHolder::ReaderLockHolder()
 {
     CONTRACTL {
         NOTHROW;
@@ -661,15 +661,6 @@ ExecutionManager::ReaderLockHolder::ReaderLockHolder(HostCallPreference hostCall
 
     if (VolatileLoad(&m_dwWriterLock) != 0)
     {
-        if (hostCallPreference != AllowHostCalls)
-        {
-            // Rats, writer lock is held. Gotta bail. Since the reader count was already
-            // incremented, we're technically still blocking writers at the moment. But
-            // the holder who called us is about to call DecrementReader in its
-            // destructor and unblock writers.
-            return;
-        }
-
         YIELD_WHILE ((VolatileLoad(&m_dwWriterLock) != 0));
     }
 }
@@ -764,7 +755,7 @@ ExecutionManager::WriterLockHolder::~WriterLockHolder()
 // If it is, we will assume the locked data is in an inconsistent
 // state and throw. We never actually take the lock.
 // Note: Throws
-ExecutionManager::ReaderLockHolder::ReaderLockHolder(HostCallPreference hostCallPreference /*=AllowHostCalls*/)
+ExecutionManager::ReaderLockHolder::ReaderLockHolder()
 {
     SUPPORTS_DAC;
 
@@ -4551,35 +4542,6 @@ BOOL ExecutionManager::IsManagedCodeWithLock(PCODE currentPC)
     }
 
     return result;
-}
-
-//**************************************************************************
-BOOL ExecutionManager::IsManagedCode(PCODE currentPC, HostCallPreference hostCallPreference /*=AllowHostCalls*/, BOOL *pfFailedReaderLock /*=NULL*/)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-#ifdef DACCESS_COMPILE
-    return IsManagedCode(currentPC);
-#else
-    if (hostCallPreference == AllowHostCalls)
-    {
-        return IsManagedCode(currentPC);
-    }
-
-    ReaderLockHolder rlh(hostCallPreference);
-    if (!rlh.Acquired())
-    {
-        _ASSERTE(pfFailedReaderLock != NULL);
-        *pfFailedReaderLock = TRUE;
-        return FALSE;
-    }
-
-    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked;
-    return IsManagedCodeWorker(currentPC, &lockState);
-#endif
 }
 
 //**************************************************************************

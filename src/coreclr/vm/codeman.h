@@ -2000,9 +2000,6 @@ public:
     // Returns whether currentPC is in managed code. Returns false for jump stubs on WIN64.
     static BOOL IsManagedCode(PCODE currentPC);
 
-    // Special version with profiler hook
-    static BOOL IsManagedCode(PCODE currentPC, HostCallPreference hostCallPreference, BOOL *pfFailedReaderLock);
-
     // Returns true if currentPC is ready to run codegen
     static BOOL IsReadyToRunCode(PCODE currentPC);
 
@@ -2033,7 +2030,7 @@ public:
     class ReaderLockHolder
     {
     public:
-        ReaderLockHolder(HostCallPreference hostCallPreference = AllowHostCalls);
+        ReaderLockHolder();
         ~ReaderLockHolder();
 
         BOOL Acquired();
