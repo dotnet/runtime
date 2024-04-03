@@ -5621,17 +5621,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         if (!varDsc->lvOnFrame)
         {
-            if (!varDsc->lvIsParam
-#if !defined(TARGET_AMD64)
-                || (varDsc->lvIsRegArg
-#if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
-                    && compIsProfilerHookNeeded() &&
-                    !lvaIsPreSpilled(lclNum, codeGen->regSet.rsMaskPreSpillRegs(false)) // We need assign stack offsets
-                                                                                        // for prespilled arguments
-#endif
-                    )
-#endif // !defined(TARGET_AMD64)
-                    )
+            if (!varDsc->lvIsParam || lvaParamHasLocalStackSpace(lclNum))
             {
                 doAssignStkOffs = false; // Not on frame or an incoming stack arg
             }
@@ -7018,7 +7008,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 }
 #endif
 
-                if (!lvaParamShouldHaveLocalStackSpace(lclNum))
+                if (!lvaParamHasLocalStackSpace(lclNum))
                 {
                     continue;
                 }
@@ -7276,17 +7266,17 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 }
 
 //------------------------------------------------------------------------
-// lvaParamShouldHaveLocalStackSpace: Check if a local that represents a
-// parameter should be allocated as part of the locals space.
+// lvaParamHasLocalStackSpace: Check if a local that represents a parameter has
+// space allocated for it in the local stack frame.
 //
 // Arguments:
 //   lclNum - the variable number
 //
 // Return Value:
-//   true if the local does not have reusable stack space passed by the caller
+//   true if the local does not have reusable stack space created by the caller
 //   already.
 //
-bool Compiler::lvaParamShouldHaveLocalStackSpace(unsigned lclNum)
+bool Compiler::lvaParamHasLocalStackSpace(unsigned lclNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
 

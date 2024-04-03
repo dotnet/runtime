@@ -3944,7 +3944,7 @@ public:
     int lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs);
 #endif // !UNIX_AMD64_ABI
     void lvaAssignVirtualFrameOffsetsToLocals();
-    bool lvaParamShouldHaveLocalStackSpace(unsigned lclNum);
+    bool lvaParamHasLocalStackSpace(unsigned lclNum);
     int lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs);
 #ifdef TARGET_AMD64
     // Returns true if compCalleeRegsPushed (including RBP if used as frame pointer) is even.
