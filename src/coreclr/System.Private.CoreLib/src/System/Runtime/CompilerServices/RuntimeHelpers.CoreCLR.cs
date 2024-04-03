@@ -418,6 +418,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_SizeOf")]
+        [SuppressGCTransition]
         private static partial int SizeOf(QCallTypeHandle handle);
 
         public static int SizeOf(RuntimeTypeHandle type)
