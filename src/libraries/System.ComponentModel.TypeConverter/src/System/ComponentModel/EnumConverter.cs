@@ -23,10 +23,9 @@ namespace System.ComponentModel
         /// </summary>
         public EnumConverter(Type type)
         {
-            Debug.Assert(type.IsEnum || type.Equals(typeof(Enum)), "type should be an Enum type");
             if (!type.IsEnum && !type.Equals(typeof(Enum)))
             {
-                throw new ArgumentException(SR.Format(SR.EnumInvalidValue, nameof(type)));
+                throw new ArgumentException(SR.EnumInvalidValue);
             }
 
             EnumType = type;
@@ -162,7 +161,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    [UnconditionalSuppressMessage("Trimming", "IL2075:", Justification = "Trimmer does not trim enums")]
+                    [UnconditionalSuppressMessage("Trimming", "IL2075:", Justification = "Trimmer does not trim Enums")]
                     FieldInfo? GetEnumField(string name) => EnumType.GetField(name);
 
                     FieldInfo? info = GetEnumField(enumName);
@@ -236,15 +235,27 @@ namespace System.ComponentModel
                 // We need to get the enum values in this rather round-about way so we can filter
                 // out fields marked Browsable(false). Note that if multiple fields have the same value,
                 // the behavior is undefined, since what we return are just enum values, not names.
-                [UnconditionalSuppressMessage("Trimming", "IL2067:", Justification = "Trimmer does not trim enums")]
+                // Given that EnumType is constrained to be an enum, we suppress calls for reflection with Enum.
+
+                [UnconditionalSuppressMessage("Trimming", "IL2067:", Justification = "Trimmer does not trim Enums")]
+                [return: DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)]
                 static Type GetTypeDescriptorReflectionType(Type enumType) => TypeDescriptor.GetReflectionType(enumType);
 
-                Type reflectType = GetTypeDescriptorReflectionType(EnumType) ?? EnumType;
+                Type _reflectType = GetTypeDescriptorReflectionType(EnumType);
+                FieldInfo[]? fields;
 
-                [UnconditionalSuppressMessage("Trimming", "IL2070:", Justification = "Trimmer does not trim enums")]
-                static FieldInfo[]? GetPublicStaticEnumFields(Type type) => type.GetFields(BindingFlags.Public | BindingFlags.Static);
+                if (_reflectType == null)
+                {
+                    [UnconditionalSuppressMessage("Trimming", "IL2070:", Justification = "Trimmer does not trim Enums")]
+                    static FieldInfo[]? GetPublicStaticEnumFields(Type type) => type.GetFields(BindingFlags.Public | BindingFlags.Static);
 
-                FieldInfo[]? fields = GetPublicStaticEnumFields(reflectType);
+                    fields = GetPublicStaticEnumFields(EnumType);
+                }
+                else
+                {
+                    fields = _reflectType.GetFields(BindingFlags.Public | BindingFlags.Static);
+                }
+
                 ArrayList? objValues = null;
 
                 if (fields != null && fields.Length > 0)
