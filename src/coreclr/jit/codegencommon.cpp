@@ -2941,6 +2941,7 @@ public:
             // Unlink from source.
             assert(edge->from->outgoing == edge);
             edge->from->outgoing = nullptr;
+            *busyRegs &= ~genRegMask(edge->from->reg);
         }
 
         node->incoming = nullptr;
@@ -3254,7 +3255,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
             regNumber sourceReg = edge->from->copiedReg != REG_NA ? edge->from->copiedReg : edge->from->reg;
             instruction ins = ins_Copy(sourceReg, genActualType(edge->type));
-            GetEmitter()->emitIns_Mov(ins, emitActualTypeSize(edge->type), edge->to->reg, sourceReg,
+            GetEmitter()->emitIns_Mov(ins, emitActualTypeSize(edge->type), node->reg, sourceReg,
                 /* canSkip */ true);
             break;
         }
@@ -3272,18 +3273,18 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 #if defined(TARGET_ARM64)
             // On arm64 SIMD parameters are HFAs and passed in multiple float
             // registers while we can enregister them as single registers.
-            GetEmitter()->emitIns_R_R_I_I(INS_mov, emitTypeSize(edge->type), edge->to->reg, sourceReg,
+            GetEmitter()->emitIns_R_R_I_I(INS_mov, emitTypeSize(edge->type), node->reg, sourceReg,
                                           edge->destOffset / genTypeSize(edge->type), 0);
 #elif defined(UNIX_AMD64_ABI)
             // For SysV x64 the only insertions we should have is to offset 8,
             // which happens for example for Vector3 which can be passed in
             // xmm0[0..8), xmm1[8..12) but enregistered in a single register.
             noway_assert(edge->destOffset == 8);
-            assert(genIsValidFloatReg(edge->to->reg));
+            assert(genIsValidFloatReg(node->reg));
             // The shufpd here picks the first 8 bytes from the dest register
             // to go in the lower half, and the second 8 bytes from the source
             // register to go in the upper half.
-            GetEmitter()->emitIns_R_R_I(INS_shufpd, EA_16BYTE, edge->to->reg, sourceReg, 0);
+            GetEmitter()->emitIns_R_R_I(INS_shufpd, EA_16BYTE, node->reg, sourceReg, 0);
 #else
             noway_assert(!"Insertion into register is not supported");
 #endif
