@@ -48,13 +48,13 @@
       <Uri>https://github.com/dotnet/command-line-api</Uri>
       <Sha>5618b2d243ccdeb5c7e50a298b33b13036b4351b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.net6.Manifest-7.0.100" Version="7.0.18">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.net6.Manifest-7.0.100" Version="7.0.19">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>99e9039e93d280175b698d81fac92d91b6c10a95</Sha>
+      <Sha>61b9b4a56aec62f8c72f516b4d171edbc3faf03a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.net7.Manifest-7.0.100" Version="7.0.18">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.net7.Manifest-7.0.100" Version="7.0.19">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>99e9039e93d280175b698d81fac92d91b6c10a95</Sha>
+      <Sha>61b9b4a56aec62f8c72f516b4d171edbc3faf03a</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
