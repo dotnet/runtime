@@ -297,7 +297,7 @@ regMaskOnlyOne LinearScan::getMatchingConstants(regMaskOnlyOne mask,
     regMaskOnlyOne result     = RBM_NONE;
     while (candidates != RBM_NONE)
     {
-        regNumber     regNum       = genFirstRegNumFromMask(candidates);
+        regNumber     regNum       = genFirstRegNumFromMask(candidates MORE_THAN_64_REG_ARG(currentInterval->registerType));
         singleRegMask candidateBit = genRegMask(regNum);
         candidates ^= candidateBit;
 
@@ -12929,7 +12929,7 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
     LsraLocation bestFitLocation = earliestIsBest ? MaxLocation : MinLocation;
     for (regMaskOnlyOne bestFitCandidates = candidates; bestFitCandidates != RBM_NONE;)
     {
-        regNumber     bestFitCandidateRegNum = genFirstRegNumFromMask(bestFitCandidates);
+        regNumber     bestFitCandidateRegNum = genFirstRegNumFromMask(bestFitCandidates MORE_THAN_64_REG_ARG(regType));
         singleRegMask bestFitCandidateBit    = genRegMask(bestFitCandidateRegNum);
         bestFitCandidates ^= bestFitCandidateBit;
 
@@ -13028,7 +13028,7 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
     regMaskOnlyOne lowestRegOrderBit = RBM_NONE;
     for (regMaskOnlyOne regOrderCandidates = candidates; regOrderCandidates != RBM_NONE;)
     {
-        regNumber     regOrderCandidateRegNum = genFirstRegNumFromMask(regOrderCandidates);
+        regNumber     regOrderCandidateRegNum = genFirstRegNumFromMask(regOrderCandidates MORE_THAN_64_REG_ARG(regType));
         singleRegMask regOrderCandidateBit    = genRegMask(regOrderCandidateRegNum);
         regOrderCandidates ^= regOrderCandidateBit;
 
@@ -13064,7 +13064,7 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
 
     for (regMaskOnlyOne spillCandidates = candidates; spillCandidates != RBM_NONE;)
     {
-        regNumber     spillCandidateRegNum = genFirstRegNumFromMask(spillCandidates);
+        regNumber     spillCandidateRegNum = genFirstRegNumFromMask(spillCandidates MORE_THAN_64_REG_ARG(regType));
         singleRegMask spillCandidateBit    = genRegMask(spillCandidateRegNum);
         spillCandidates ^= spillCandidateBit;
 
@@ -13189,7 +13189,7 @@ void LinearScan::RegisterSelection::try_FAR_NEXT_REF()
     regMaskOnlyOne farthestSet      = RBM_NONE;
     for (regMaskOnlyOne farthestCandidates = candidates; farthestCandidates != RBM_NONE;)
     {
-        regNumber     farthestCandidateRegNum = genFirstRegNumFromMask(farthestCandidates);
+        regNumber     farthestCandidateRegNum = genFirstRegNumFromMask(farthestCandidates MORE_THAN_64_REG_ARG(regType));
         singleRegMask farthestCandidateBit    = genRegMask(farthestCandidateRegNum);
         farthestCandidates ^= farthestCandidateBit;
 
@@ -13222,7 +13222,7 @@ void LinearScan::RegisterSelection::try_PREV_REG_OPT()
     regMaskOnlyOne prevRegOptSet = RBM_NONE;
     for (regMaskOnlyOne prevRegOptCandidates = candidates; prevRegOptCandidates != RBM_NONE;)
     {
-        regNumber     prevRegOptCandidateRegNum = genFirstRegNumFromMask(prevRegOptCandidates);
+        regNumber     prevRegOptCandidateRegNum = genFirstRegNumFromMask(prevRegOptCandidates MORE_THAN_64_REG_ARG(regType));
         singleRegMask prevRegOptCandidateBit    = genRegMask(prevRegOptCandidateRegNum);
         prevRegOptCandidates ^= prevRegOptCandidateBit;
         Interval* assignedInterval   = linearScan->physRegs[prevRegOptCandidateRegNum].assignedInterval;
@@ -13325,7 +13325,7 @@ void LinearScan::RegisterSelection::calculateUnassignedSets() // TODO: Seperate 
     regMaskOnlyOne coversCandidates = candidates;
     for (; coversCandidates != RBM_NONE;)
     {
-        regNumber     coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates);
+        regNumber     coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates MORE_THAN_64_REG_ARG(regType));
         singleRegMask coversCandidateBit    = genRegMask(coversCandidateRegNum);
         coversCandidates ^= coversCandidateBit;
 
@@ -13353,7 +13353,7 @@ void LinearScan::RegisterSelection::calculateCoversSets()
     regMaskOnlyOne coversCandidates = (preferenceSet == RBM_NONE) ? candidates : preferenceSet;
     for (; coversCandidates != RBM_NONE;)
     {
-        regNumber     coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates);
+        regNumber     coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates MORE_THAN_64_REG_ARG(regType));
         singleRegMask coversCandidateBit    = genRegMask(coversCandidateRegNum);
         coversCandidates ^= coversCandidateBit;
 
@@ -13668,7 +13668,7 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
         regMaskOnlyOne checkConflictMask = candidates & linearScan->fixedRegs.GetRegMaskForType(regType);
         while (checkConflictMask != RBM_NONE)
         {
-            regNumber     checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
+            regNumber     checkConflictReg = genFirstRegNumFromMask(checkConflictMask MORE_THAN_64_REG_ARG(regType));
             singleRegMask checkConflictBit = genRegMask(checkConflictReg);
             checkConflictMask ^= checkConflictBit;
 
@@ -13992,7 +13992,7 @@ singleRegMask LinearScan::RegisterSelection::selectMinimal(
     regMaskOnlyOne checkConflictMask = candidates & linearScan->fixedRegs.GetRegMaskForType(regType);
     while (checkConflictMask != RBM_NONE)
     {
-        regNumber     checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
+        regNumber     checkConflictReg = genFirstRegNumFromMask(checkConflictMask MORE_THAN_64_REG_ARG(regType));
         singleRegMask checkConflictBit = genRegMask(checkConflictReg);
         checkConflictMask ^= checkConflictBit;
 

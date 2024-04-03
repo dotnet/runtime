@@ -725,7 +725,7 @@ void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, reg
 //   no return value; the regStack argument is modified.
 //
 // static
-void CodeGen::genBuildRegPairsStack(regMaskOnlyOne regsMask, ArrayStack<RegPair>* regStack)
+void CodeGen::genBuildRegPairsStack(regMaskOnlyOne regsMask, ArrayStack<RegPair>* regStack MORE_THAN_64_REG_ARG(var_types type))
 {
     assert(regStack != nullptr);
     assert(regStack->Height() == 0);
@@ -740,7 +740,7 @@ void CodeGen::genBuildRegPairsStack(regMaskOnlyOne regsMask, ArrayStack<RegPair>
         bool isPairSave = false;
         if (regsCount > 0)
         {
-            regNumber reg2 = genFirstRegNumFromMask(regsMask);
+            regNumber reg2 = genFirstRegNumFromMask(regsMask MORE_THAN_64_REG_ARG(type));
             if (reg2 == REG_NEXT(reg1))
             {
                 // The JIT doesn't allow saving pair (R28,FP), even though the
@@ -842,15 +842,16 @@ int CodeGen::genGetSlotSizeForRegsInMask(regMaskOnlyOne regsMask)
 //   regsMask             - a mask of registers for prolog generation;
 //   spDelta              - if non-zero, the amount to add to SP before the first register save (or together with it);
 //   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
+//   type                 - The type of `regsMask` we are operating on.
 //
-void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDelta, int spOffset)
+void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDelta, int spOffset MORE_THAN_64_REG_ARG(var_types type))
 {
     assert(compiler->IsOnlyOneRegMask(regsMask));
 
     const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
 
     ArrayStack<RegPair> regStack(compiler->getAllocator(CMK_Codegen));
-    genBuildRegPairsStack(regsMask, &regStack);
+    genBuildRegPairsStack(regsMask, &regStack MORE_THAN_64_REG_ARG(type));
 
     for (int i = 0; i < regStack.Height(); ++i)
     {
@@ -950,7 +951,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lo
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     if (maskSaveRegsPredicate != RBM_NONE)
     {
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsPredicate, spDelta, lowestCalleeSavedOffset);
+        genSaveCalleeSavedRegisterGroup(maskSaveRegsPredicate, spDelta, lowestCalleeSavedOffset MORE_THAN_64_REG_ARG(TYP_MASK));
         spDelta = 0;
         lowestCalleeSavedOffset += genCountBits(maskSaveRegsPredicate) * FPSAVE_REGSIZE_BYTES;
     }
@@ -959,14 +960,14 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lo
     // Save integer registers at higher addresses than floating-point registers.
     if (maskSaveRegsFloat != RBM_NONE)
     {
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, spDelta, lowestCalleeSavedOffset);
+        genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, spDelta, lowestCalleeSavedOffset MORE_THAN_64_REG_ARG(TYP_FLOAT));
         spDelta = 0;
         lowestCalleeSavedOffset += genCountBits(maskSaveRegsFloat) * FPSAVE_REGSIZE_BYTES;
     }
 
     if (maskSaveRegsInt != RBM_NONE)
     {
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, spDelta, lowestCalleeSavedOffset);
+        genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, spDelta, lowestCalleeSavedOffset MORE_THAN_64_REG_ARG(TYP_INT));
         // No need to update spDelta, lowestCalleeSavedOffset since they're not used after this.
     }
 }
@@ -977,14 +978,17 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lo
 // Arguments:
 //   regsMask             - a mask of registers for epilog generation;
 //   spDelta              - if non-zero, the amount to add to SP after the last register restore (or together with it);
-//   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
+//   spOffset             - the offset from SP that is the beginning of the callee-saved register area;.
+//   type                 - The type of `regsMask` we are operating on.
 //
-void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDelta, int spOffset)
+void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskOnlyOne regsMask,
+                                                 int            spDelta,
+                                                 int spOffset   MORE_THAN_64_REG_ARG(var_types type))
 {
     const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
 
     ArrayStack<RegPair> regStack(compiler->getAllocator(CMK_Codegen));
-    genBuildRegPairsStack(regsMask, &regStack);
+    genBuildRegPairsStack(regsMask, &regStack MORE_THAN_64_REG_ARG(type));
 
     int stackDelta = 0;
     for (int i = 0; i < regStack.Height(); ++i)
@@ -1091,14 +1095,14 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask,
     if (maskRestoreRegsInt != RBM_NONE)
     {
         int spIntDelta = (maskRestoreRegsFloat != RBM_NONE) ? 0 : spDelta; // should we delay the SP adjustment?
-        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsInt, spIntDelta, spOffset);
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsInt, spIntDelta, spOffset MORE_THAN_64_REG_ARG(TYP_INT));
         spOffset -= genCountBits(maskRestoreRegsInt) * REGSIZE_BYTES;
     }
 
     if (maskRestoreRegsFloat != RBM_NONE)
     {
         // If there is any spDelta, it must be used here.
-        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, spDelta, spOffset);
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, spDelta, spOffset MORE_THAN_64_REG_ARG(TYP_FLOAT));
         spOffset -= genCountBits(maskRestoreRegsInt) * FPSAVE_REGSIZE_BYTES;
     }
 
@@ -1106,7 +1110,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask,
     if (maskRestoreRegsPredicate != RBM_NONE)
     {
         // TODO: Do we need to adjust spDelta?
-        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsPredicate, spDelta, spOffset); 
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsPredicate, spDelta, spOffset MORE_THAN_64_REG_ARG(TYP_MASK)); 
     }
 #endif
 }

@@ -27457,7 +27457,7 @@ regNumber GenTree::ExtractTempReg(regMaskOnlyOne mask /* = (regMaskOnlyOne)-1 */
 {
     regMaskOnlyOne availableSet = gtRsvdRegs & mask;
     assert(genCountBits(availableSet) >= 1);
-    regNumber tempReg = genFirstRegNumFromMask(availableSet);
+    regNumber tempReg = genFirstRegNumFromMask(availableSet MORE_THAN_64_REG_ARG(TypeGet()));
     gtRsvdRegs ^= genRegMask(tempReg);
     return tempReg;
 }

@@ -1021,7 +1021,7 @@ inline regNumber genFirstRegNumFromMask(AllRegsMask& mask)
 //    The number of the first register contained in the mask.
 //
 
-inline regNumber genFirstRegNumFromMask(regMaskOnlyOne mask)
+inline regNumber genFirstRegNumFromMask(regMaskOnlyOne mask MORE_THAN_64_REG_ARG(var_types type))
 {
     assert(mask != 0); // Must have one bit set, so can't have a mask of zero
 
@@ -1029,6 +1029,10 @@ inline regNumber genFirstRegNumFromMask(regMaskOnlyOne mask)
 
     regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
 
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    // If this is mask type, add `64` to the regNumber
+    return (regNumber)((varTypeUsesMaskReg(type) << 6) + regNum);
+#endif
     return regNum;
 }
 

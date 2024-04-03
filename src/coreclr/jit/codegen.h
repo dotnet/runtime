@@ -329,13 +329,16 @@ protected:
         }
     };
 
-    static void genBuildRegPairsStack(regMaskOnlyOne regsMask, ArrayStack<RegPair>* regStack);
+    static void genBuildRegPairsStack(regMaskOnlyOne                regsMask,
+                                      ArrayStack<RegPair>* regStack MORE_THAN_64_REG_ARG(var_types type));
     static void genSetUseSaveNextPairs(ArrayStack<RegPair>* regStack);
 
     static int genGetSlotSizeForRegsInMask(regMaskOnlyOne regsMask);
 
-    void genSaveCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDelta, int spOffset);
-    void genRestoreCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDelta, int spOffset);
+    void genSaveCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDelta, int spOffset MORE_THAN_64_REG_ARG(var_types type));
+    void genRestoreCalleeSavedRegisterGroup(regMaskOnlyOne regsMask,
+                                            int            spDelta,
+                                            int spOffset   MORE_THAN_64_REG_ARG(var_types type));
 
     void genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
     void genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
