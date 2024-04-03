@@ -132,6 +132,13 @@ internal static partial class MsQuicConfiguration
         }
 #pragma warning restore SYSLIB0040
 
+        if (!MsQuicApi.UsesSChannelBackend && certificate is X509Certificate2 cert && intermediates is null)
+        {
+            // MsQuic will not lookup intermediates in local CA store if not explicitly provided, so we need to do it here to have parity with SslStream.
+            SslStreamCertificateContext context = SslStreamCertificateContext.Create(cert, additionalCertificates: null, offline: true, trust: null);
+            intermediates = context.IntermediateCertificates;
+        }
+
         QUIC_SETTINGS settings = default(QUIC_SETTINGS);
 
         settings.IsSet.PeerUnidiStreamCount = 1;
