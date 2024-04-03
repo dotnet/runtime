@@ -2302,7 +2302,7 @@ void           LinearScan::buildIntervals()
                 if (seg.IsPassedInRegister())
                 {
                     RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
-                    regState->rsCalleeRegArgMaskLiveIn |= genRegMask(seg.GetRegister());
+                    regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
                 }
             }
         }

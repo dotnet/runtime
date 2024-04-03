@@ -5016,18 +5016,17 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack, regNumber scratchRe
 
             if (seg.IsPassedInRegister())
             {
-                var_types storeType = seg.GetRegisterStoreType();
-                assert(storeType != TYP_UNDEF);
-                GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), seg.GetRegister(), lclNum,
-                                          seg.Offset);
+                RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? &floatRegState : &intRegState;
+                regMaskTP regs     = seg.GetRegisterMask();
 
-                if (genIsValidFloatReg(seg.GetRegister()))
+                if ((regState->rsCalleeRegArgMaskLiveIn & regs) != RBM_NONE)
                 {
-                    floatRegState.rsCalleeRegArgMaskLiveIn &= ~genRegMask(seg.GetRegister());
-                }
-                else
-                {
-                    intRegState.rsCalleeRegArgMaskLiveIn &= ~genRegMask(seg.GetRegister());
+                    var_types storeType = seg.GetRegisterStoreType();
+                    assert(storeType != TYP_UNDEF);
+                    GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), seg.GetRegister(), lclNum,
+                                              seg.Offset);
+
+                    regState->rsCalleeRegArgMaskLiveIn &= ~regs;
                 }
             }
             else
@@ -5064,6 +5063,7 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack, regNumber scratchRe
 
                 offset += (int)seg.GetStackOffset();
 
+                assert(dsc->lvOnFrame);
 #ifdef TARGET_XARCH
                 GetEmitter()->emitIns_R_AR(ins_Load(loadType), emitTypeSize(loadType), scratchReg, genFramePointerReg(),
                                            offset);

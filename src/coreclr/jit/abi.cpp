@@ -42,6 +42,28 @@ regNumber ABIPassingSegment::GetRegister() const
 }
 
 //-----------------------------------------------------------------------------
+// GetRegisterMask:
+//   Get the mask of registers that this segment is passed in.
+//
+// Return Value:
+//   The register mask.
+//
+regMaskTP ABIPassingSegment::GetRegisterMask() const
+{
+    assert(IsPassedInRegister());
+    regMaskTP reg = genRegMask(m_register);
+
+#ifdef TARGET_ARM
+    if (varTypeIsFloating(m_register) && (Size == 8))
+    {
+        reg |= genRegMask(REG_NEXT(m_register));
+    }
+#endif
+
+    return reg;
+}
+
+//-----------------------------------------------------------------------------
 // GetStackOffset:
 //   Get the stack offset where this segment is passed.
 //

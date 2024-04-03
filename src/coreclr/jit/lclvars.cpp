@@ -1741,7 +1741,7 @@ void Compiler::lvaClassifyParameterABI()
                 const ABIPassingSegment& segment = abiInfo.Segments[i];
                 if (segment.IsPassedInRegister())
                 {
-                    argRegs |= genRegMask(segment.GetRegister());
+                    argRegs |= segment.GetRegisterMask();
                 }
             }
         }

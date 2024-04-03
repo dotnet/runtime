@@ -25,6 +25,8 @@ public:
     // If this segment is passed in a register, return the particular register.
     regNumber GetRegister() const;
 
+    regMaskTP GetRegisterMask() const;
+
     // If this segment is passed on the stack then return the particular stack
     // offset, relative to the first stack argument's offset.
     unsigned GetStackOffset() const;
