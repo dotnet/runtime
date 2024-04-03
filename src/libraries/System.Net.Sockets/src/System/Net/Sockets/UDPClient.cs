@@ -827,7 +827,7 @@ namespace System.Net.Sockets
 
             int received = Client.ReceiveFrom(_buffer, MaxUDPSize, 0, ref tempRemoteEP);
             remoteEP = (IPEndPoint)tempRemoteEP;
-            
+
             // because we don't return the actual length, we need to ensure the returned buffer
             // has the appropriate length.
             return _buffer.AsSpan(0, received).ToArray();
