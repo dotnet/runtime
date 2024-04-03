@@ -585,7 +585,7 @@ namespace System.Net.Http
         private static int ScavengeHttp2ConnectionList(List<Http2Connection> list, ref List<HttpConnectionBase>? toDispose, long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)
         {
             int freeIndex = 0;
-            while (freeIndex < list.Count && list[freeIndex].IsUsableConnection(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
+            while (freeIndex < list.Count && list[freeIndex].IsUsable(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
             {
                 freeIndex++;
             }
@@ -605,7 +605,7 @@ namespace System.Net.Http
                 {
                     // Look for the first item to be kept.  Along the way, any
                     // that shouldn't be kept are disposed of.
-                    while (current < list.Count && !list[current].IsUsableConnection(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
+                    while (current < list.Count && !list[current].IsUsable(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
                     {
                         toDispose.Add(list[current]);
                         current++;

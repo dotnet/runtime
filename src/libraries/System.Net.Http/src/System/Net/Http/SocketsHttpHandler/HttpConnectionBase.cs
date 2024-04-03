@@ -215,7 +215,7 @@ namespace System.Net.Http
         /// <summary>
         /// Called by <see cref="HttpConnectionPool.CleanCacheAndDisposeIfUnused"/> while holding the lock.
         /// </summary>
-        public bool IsUsableConnection(long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)
+        public bool IsUsable(long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)
         {
             // Validate that the connection hasn't been idle in the pool for longer than is allowed.
             if (pooledConnectionIdleTimeout != Timeout.InfiniteTimeSpan)

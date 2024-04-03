@@ -406,7 +406,7 @@ namespace System.Net.Http
 
             while (connections.TryPop(out HttpConnection? connection))
             {
-                if (connection.IsUsableConnection(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
+                if (connection.IsUsable(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
                 {
                     stackCopy[usableConnections++] = connection;
                 }

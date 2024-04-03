@@ -298,6 +298,7 @@ namespace System.Net.Http
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
         public CredentialCache? PreAuthCredentials => _preAuthCredentials;
         public bool IsDefaultPort => OriginAuthority.Port == (IsSecure ? DefaultHttpsPort : DefaultHttpPort);
+        private bool DoProxyAuth => (_kind == HttpConnectionKind.Proxy || _kind == HttpConnectionKind.ProxyConnect);
 
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj
@@ -346,41 +347,53 @@ namespace System.Net.Http
         // we will remove it from the list of available connections, if it is present there.
         // If not, then it must be unavailable at the moment; we will detect this and ensure it is not added back to the available pool.
 
-        [DoesNotReturn]
-        private static void ThrowGetVersionException(HttpRequestMessage request, int desiredVersion, Exception? inner = null)
+        public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
-            Debug.Assert(desiredVersion == 2 || desiredVersion == 3);
-
-            HttpRequestException ex = new(HttpRequestError.VersionNegotiationError, SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner);
-            if (request.IsExtendedConnectRequest && desiredVersion == 2)
+            // We need the User-Agent header when we send a CONNECT request to the proxy.
+            // We must read the header early, before we return the ownership of the request back to the user.
+            if ((Kind is HttpConnectionKind.ProxyTunnel or HttpConnectionKind.SslProxyTunnel) &&
+                request.HasHeaders &&
+                request.Headers.NonValidated.TryGetValues(HttpKnownHeaderNames.UserAgent, out HeaderStringValues userAgent))
             {
-                ex.Data["HTTP2_ENABLED"] = false;
+                _connectTunnelUserAgent = userAgent.ToString();
             }
 
-            throw ex;
-        }
-
-        private bool CheckExpirationOnGet(HttpConnectionBase connection)
-        {
-            Debug.Assert(!HasSyncObjLock);
-
-            TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
-            if (pooledConnectionLifetime != Timeout.InfiniteTimeSpan)
+            if (doRequestAuth && Settings._credentials != null)
             {
-                return connection.GetLifetimeTicks(Environment.TickCount64) > pooledConnectionLifetime.TotalMilliseconds;
+                return AuthenticationHelper.SendWithRequestAuthAsync(request, async, Settings._credentials, Settings._preAuthenticate, this, cancellationToken);
             }
 
-            return false;
+            return SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        private static Exception CreateConnectTimeoutException(OperationCanceledException oce)
+        public ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
-            // The pattern for request timeouts (on HttpClient) is to throw an OCE with an inner exception of TimeoutException.
-            // Do the same for ConnectTimeout-based timeouts.
-            TimeoutException te = new TimeoutException(SR.net_http_connect_timedout, oce.InnerException);
-            Exception newException = CancellationHelper.CreateOperationCanceledException(te, oce.CancellationToken);
-            ExceptionDispatchInfo.SetCurrentStackTrace(newException);
-            return newException;
+            if (DoProxyAuth && ProxyCredentials is not null)
+            {
+                return AuthenticationHelper.SendWithProxyAuthAsync(request, _proxyUri!, async, ProxyCredentials, doRequestAuth, this, cancellationToken);
+            }
+
+            return SendWithVersionDetectionAndRetryAsync(request, async, doRequestAuth, cancellationToken);
+        }
+
+        private Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
+        {
+            if (doRequestAuth && Settings._credentials != null)
+            {
+                return AuthenticationHelper.SendWithNtConnectionAuthAsync(request, async, Settings._credentials, connection, this, cancellationToken);
+            }
+
+            return SendWithNtProxyAuthAsync(connection, request, async, cancellationToken);
+        }
+
+        public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        {
+            if (DoProxyAuth && ProxyCredentials is not null)
+            {
+                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, async, ProxyCredentials, connection, this, cancellationToken);
+            }
+
+            return connection.SendAsync(request, async, cancellationToken);
         }
 
         public async ValueTask<HttpResponseMessage> SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
@@ -547,59 +560,6 @@ namespace System.Net.Http
                 }
             }
         }
-
-        public Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
-        {
-            if (doRequestAuth && Settings._credentials != null)
-            {
-                return AuthenticationHelper.SendWithNtConnectionAuthAsync(request, async, Settings._credentials, connection, this, cancellationToken);
-            }
-
-            return SendWithNtProxyAuthAsync(connection, request, async, cancellationToken);
-        }
-
-        private bool DoProxyAuth => (_kind == HttpConnectionKind.Proxy || _kind == HttpConnectionKind.ProxyConnect);
-
-        public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, CancellationToken cancellationToken)
-        {
-            if (DoProxyAuth && ProxyCredentials is not null)
-            {
-                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, async, ProxyCredentials, connection, this, cancellationToken);
-            }
-
-            return connection.SendAsync(request, async, cancellationToken);
-        }
-
-        public ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
-        {
-            if (DoProxyAuth && ProxyCredentials is not null)
-            {
-                return AuthenticationHelper.SendWithProxyAuthAsync(request, _proxyUri!, async, ProxyCredentials, doRequestAuth, this, cancellationToken);
-            }
-
-            return SendWithVersionDetectionAndRetryAsync(request, async, doRequestAuth, cancellationToken);
-        }
-
-        public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
-        {
-            // We need the User-Agent header when we send a CONNECT request to the proxy.
-            // We must read the header early, before we return the ownership of the request back to the user.
-            if ((Kind is HttpConnectionKind.ProxyTunnel or HttpConnectionKind.SslProxyTunnel) &&
-                request.HasHeaders &&
-                request.Headers.NonValidated.TryGetValues(HttpKnownHeaderNames.UserAgent, out HeaderStringValues userAgent))
-            {
-                _connectTunnelUserAgent = userAgent.ToString();
-            }
-
-            if (doRequestAuth && Settings._credentials != null)
-            {
-                return AuthenticationHelper.SendWithRequestAuthAsync(request, async, Settings._credentials, Settings._preAuthenticate, this, cancellationToken);
-            }
-
-            return SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken);
-        }
-
-        private CancellationTokenSource GetConnectTimeoutCancellationTokenSource() => new CancellationTokenSource(Settings._connectTimeout);
 
         private async ValueTask<(Stream, TransportContext?, IPEndPoint?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
@@ -842,6 +802,45 @@ namespace System.Net.Http
             }
 
             return stream;
+        }
+
+        private CancellationTokenSource GetConnectTimeoutCancellationTokenSource() => new CancellationTokenSource(Settings._connectTimeout);
+
+        private static Exception CreateConnectTimeoutException(OperationCanceledException oce)
+        {
+            // The pattern for request timeouts (on HttpClient) is to throw an OCE with an inner exception of TimeoutException.
+            // Do the same for ConnectTimeout-based timeouts.
+            TimeoutException te = new TimeoutException(SR.net_http_connect_timedout, oce.InnerException);
+            Exception newException = CancellationHelper.CreateOperationCanceledException(te, oce.CancellationToken);
+            ExceptionDispatchInfo.SetCurrentStackTrace(newException);
+            return newException;
+        }
+
+        [DoesNotReturn]
+        private static void ThrowGetVersionException(HttpRequestMessage request, int desiredVersion, Exception? inner = null)
+        {
+            Debug.Assert(desiredVersion == 2 || desiredVersion == 3);
+
+            HttpRequestException ex = new(HttpRequestError.VersionNegotiationError, SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner);
+            if (request.IsExtendedConnectRequest && desiredVersion == 2)
+            {
+                ex.Data["HTTP2_ENABLED"] = false;
+            }
+
+            throw ex;
+        }
+
+        private bool CheckExpirationOnGet(HttpConnectionBase connection)
+        {
+            Debug.Assert(!HasSyncObjLock);
+
+            TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
+            if (pooledConnectionLifetime != Timeout.InfiniteTimeSpan)
+            {
+                return connection.GetLifetimeTicks(Environment.TickCount64) > pooledConnectionLifetime.TotalMilliseconds;
+            }
+
+            return false;
         }
 
         private bool CheckExpirationOnReturn(HttpConnectionBase connection)
