@@ -32,6 +32,11 @@
 #define DN_FORCEINLINE(RET_TYPE) inline RET_TYPE __attribute__((always_inline))
 #endif
 
+typedef struct dn_simdhash_void_data_t {
+	// HACK: Empty struct or 0-element array produce a MSVC warning and break the build.
+	uint8_t data[1];
+} dn_simdhash_void_data_t;
+
 typedef struct dn_simdhash_buffers_t {
 	// sizes of current allocations in items (not bytes)
 	// so values_length should == (buckets_length * bucket_capacity)
@@ -48,7 +53,9 @@ typedef struct dn_simdhash_t dn_simdhash_t;
 
 typedef struct dn_simdhash_meta_t {
 	// type metadata for generic implementation
-	uint32_t bucket_capacity, bucket_size_bytes, key_size, value_size;
+	uint32_t bucket_capacity, bucket_size_bytes, key_size, value_size,
+	// Allocate this many bytes of extra data inside the dn_simdhash_t
+		data_size;
 } dn_simdhash_meta_t;
 
 typedef enum dn_simdhash_insert_result {
@@ -58,8 +65,10 @@ typedef enum dn_simdhash_insert_result {
 } dn_simdhash_insert_result;
 
 typedef struct dn_simdhash_vtable_t {
-	// Does not free old_buffers, that's your job.
+	// Does not free old_buffers, that's your job. Required.
 	void (*rehash) (dn_simdhash_t *hash, dn_simdhash_buffers_t old_buffers);
+	// Invokes remove handler for all items, if necessary. Optional.
+	void (*destroy_all) (dn_simdhash_t *hash);
 } dn_simdhash_vtable_t;
 
 typedef struct dn_simdhash_t {
@@ -67,8 +76,14 @@ typedef struct dn_simdhash_t {
 	uint32_t count, grow_at_count;
 	dn_simdhash_buffers_t buffers;
 	dn_simdhash_vtable_t vtable;
-	dn_simdhash_meta_t meta;
+	dn_simdhash_meta_t *meta;
+	// We allocate extra space here based on meta.data_size
+	// This has one element because 0 elements generates a MSVC warning and breaks the build
+	uint8_t data[1];
 } dn_simdhash_t;
+
+#define dn_simdhash_instance_data(type, hash) \
+	(*(type *)(&hash->data))
 
 // These helpers use .values instead of .vec to avoid generating unnecessary
 //  vector loads/stores. Operations that touch these values may not need vectorization,
@@ -77,7 +92,7 @@ typedef struct dn_simdhash_t {
 #define dn_simdhash_bucket_count(suffixes) \
 	(suffixes).values[DN_SIMDHASH_COUNT_SLOT]
 
-#define dn_simdhash_bucket_is_cascaded(suffixes) \
+#define dn_simdhash_bucket_cascaded_count(suffixes) \
 	(suffixes).values[DN_SIMDHASH_CASCADED_SLOT]
 
 #define dn_simdhash_bucket_set_suffix(suffixes, slot, value) \
@@ -86,7 +101,7 @@ typedef struct dn_simdhash_t {
 #define dn_simdhash_bucket_set_count(suffixes, value) \
 	(suffixes).values[DN_SIMDHASH_COUNT_SLOT] = (value)
 
-#define dn_simdhash_bucket_set_cascaded(suffixes, value) \
+#define dn_simdhash_bucket_set_cascaded_count(suffixes, value) \
 	(suffixes).values[DN_SIMDHASH_CASCADED_SLOT] = (value)
 
 static DN_FORCEINLINE(uint8_t)
@@ -108,7 +123,7 @@ dn_simdhash_select_bucket_index (dn_simdhash_buffers_t buffers, uint32_t key_has
 // Creates a simdhash with the provided configuration metadata, vtable, size, and allocator.
 // Be sure you know what you're doing.
 dn_simdhash_t *
-dn_simdhash_new_internal (dn_simdhash_meta_t meta, dn_simdhash_vtable_t vtable, uint32_t capacity, dn_allocator_t *allocator);
+dn_simdhash_new_internal (dn_simdhash_meta_t *meta, dn_simdhash_vtable_t vtable, uint32_t capacity, dn_allocator_t *allocator);
 
 // Frees a simdhash and its associated buffers.
 void

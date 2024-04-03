@@ -27,14 +27,16 @@ next_power_of_two (uint32_t value) {
 #endif // __clang__ || __GNUC__
 
 dn_simdhash_t *
-dn_simdhash_new_internal (dn_simdhash_meta_t meta, dn_simdhash_vtable_t vtable, uint32_t capacity, dn_allocator_t *allocator)
+dn_simdhash_new_internal (dn_simdhash_meta_t *meta, dn_simdhash_vtable_t vtable, uint32_t capacity, dn_allocator_t *allocator)
 {
-	dn_simdhash_t *result = (dn_simdhash_t *)dn_allocator_alloc(allocator, sizeof(dn_simdhash_t));
-	memset(result, 0, sizeof(dn_simdhash_t));
+	const size_t size = sizeof(dn_simdhash_t) + meta->data_size;
+	dn_simdhash_t *result = (dn_simdhash_t *)dn_allocator_alloc(allocator, size);
+	memset(result, 0, size);
 
-	assert((meta.bucket_capacity > 1) && (meta.bucket_capacity <= DN_SIMDHASH_MAX_BUCKET_CAPACITY));
-	assert(meta.key_size > 0);
-	assert(meta.bucket_size_bytes >= (DN_SIMDHASH_VECTOR_WIDTH + (meta.bucket_capacity * meta.key_size)));
+	assert(meta);
+	assert((meta->bucket_capacity > 1) && (meta->bucket_capacity <= DN_SIMDHASH_MAX_BUCKET_CAPACITY));
+	assert(meta->key_size > 0);
+	assert(meta->bucket_size_bytes >= (DN_SIMDHASH_VECTOR_WIDTH + (meta->bucket_capacity * meta->key_size)));
 	result->meta = meta;
 	result->vtable = vtable;
 	result->buffers.allocator = allocator;
@@ -49,6 +51,8 @@ void
 dn_simdhash_free (dn_simdhash_t *hash)
 {
 	assert(hash);
+	if (hash->vtable.destroy_all)
+		hash->vtable.destroy_all(hash);
 	dn_simdhash_buffers_t buffers = hash->buffers;
 	memset(hash, 0, sizeof(dn_simdhash_t));
 	dn_simdhash_free_buffers(buffers);
@@ -68,13 +72,13 @@ dn_simdhash_buffers_t
 dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 {
 	assert(hash);
-	uint32_t bucket_count = (capacity + hash->meta.bucket_capacity - 1) / hash->meta.bucket_capacity;
+	uint32_t bucket_count = (capacity + hash->meta->bucket_capacity - 1) / hash->meta->bucket_capacity;
 	// FIXME: Only apply this when capacity == 0?
 	if (bucket_count < DN_SIMDHASH_MIN_BUCKET_COUNT)
 		bucket_count = DN_SIMDHASH_MIN_BUCKET_COUNT;
 	// Bucket count must be a power of two (this enables more efficient hashcode -> bucket mapping)
 	bucket_count = next_power_of_two(bucket_count);
-	uint32_t value_count = bucket_count * hash->meta.bucket_capacity;
+	uint32_t value_count = bucket_count * hash->meta->bucket_capacity;
 
 	dn_simdhash_buffers_t result = { 0, };
 	if (bucket_count <= hash->buffers.buckets_length) {
@@ -97,8 +101,8 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 	hash->buffers.values_length = value_count;
 
 	// pad buckets allocation by the width of one vector so we can align it
-	uint32_t buckets_size_bytes = (bucket_count * hash->meta.bucket_size_bytes) + DN_SIMDHASH_VECTOR_WIDTH,
-		values_size_bytes = value_count * hash->meta.value_size;
+	uint32_t buckets_size_bytes = (bucket_count * hash->meta->bucket_size_bytes) + DN_SIMDHASH_VECTOR_WIDTH,
+		values_size_bytes = value_count * hash->meta->value_size;
 
 	hash->buffers.buckets = dn_allocator_alloc(hash->buffers.allocator, buckets_size_bytes);
 	memset(hash->buffers.buckets, 0, buckets_size_bytes);
@@ -119,17 +123,19 @@ void
 dn_simdhash_clear (dn_simdhash_t *hash)
 {
 	assert(hash);
+	if (hash->vtable.destroy_all)
+		hash->vtable.destroy_all(hash);
 	hash->count = 0;
-	memset(hash->buffers.buckets, 0, hash->buffers.buckets_length * hash->meta.bucket_size_bytes);
+	memset(hash->buffers.buckets, 0, hash->buffers.buckets_length * hash->meta->bucket_size_bytes);
 	// Clearing the values is technically optional, so we could skip this for performance
-	memset(hash->buffers.values, 0, hash->buffers.values_length * hash->meta.value_size);
+	memset(hash->buffers.values, 0, hash->buffers.values_length * hash->meta->value_size);
 }
 
 uint32_t
 dn_simdhash_capacity (dn_simdhash_t *hash)
 {
 	assert(hash);
-	return hash->buffers.buckets_length * hash->meta.bucket_capacity;
+	return hash->buffers.buckets_length * hash->meta->bucket_capacity;
 }
 
 uint32_t

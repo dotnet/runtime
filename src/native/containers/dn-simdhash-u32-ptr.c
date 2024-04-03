@@ -24,7 +24,7 @@ fmix32 (uint32_t h)
 #define DN_SIMDHASH_T dn_simdhash_u32_ptr
 #define DN_SIMDHASH_KEY_T uint32_t
 #define DN_SIMDHASH_VALUE_T void *
-#define DN_SIMDHASH_KEY_HASHER fmix32
-#define DN_SIMDHASH_KEY_EQUALS(lhs, rhs) (lhs == rhs)
+#define DN_SIMDHASH_KEY_HASHER(hash, key) fmix32(key)
+#define DN_SIMDHASH_KEY_EQUALS(hash, lhs, rhs) (lhs == rhs)
 
 #include "dn-simdhash-specialization.h"

@@ -32,4 +32,28 @@ typedef struct dn_simdhash_str_key dn_simdhash_str_key;
 #undef DN_SIMDHASH_KEY_T
 #undef DN_SIMDHASH_VALUE_T
 
+#define DN_SIMDHASH_T dn_simdhash_ptr_ptr
+#define DN_SIMDHASH_KEY_T void *
+#define DN_SIMDHASH_VALUE_T void *
+
+#include "dn-simdhash-specialization-declarations.h"
+
+#undef DN_SIMDHASH_T
+#undef DN_SIMDHASH_KEY_T
+#undef DN_SIMDHASH_VALUE_T
+
+#define DN_SIMDHASH_T dn_simdhash_ght
+#define DN_SIMDHASH_KEY_T gconstpointer
+#define DN_SIMDHASH_VALUE_T gpointer
+#define DN_SIMDHASH_NO_DEFAULT_NEW 1
+
+#include "dn-simdhash-specialization-declarations.h"
+
+#undef DN_SIMDHASH_T
+#undef DN_SIMDHASH_KEY_T
+#undef DN_SIMDHASH_VALUE_T
+#undef DN_SIMDHASH_NO_DEFAULT_NEW
+
+#include "dn-simdhash-ght-compatible.h"
+
 #endif

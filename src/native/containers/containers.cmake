@@ -12,6 +12,7 @@ list(APPEND SHARED_CONTAINER_SOURCES
     # dn-simdhash.c
     # dn-simdhash-string-ptr.c
     # dn-simdhash-u32-ptr.c
+    # dn-simdhash-ptr-ptr.c
 )
 
 list(APPEND SHARED_CONTAINER_HEADERS
@@ -34,4 +35,5 @@ list(APPEND SHARED_CONTAINER_HEADERS
     dn-simdhash-specializations.h
     dn-simdhash-arch.h
     dn-simdhash-string-ptr.h
+    dn-simdhash-utils.h
 )
