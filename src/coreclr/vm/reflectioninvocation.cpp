@@ -2121,7 +2121,7 @@ FCIMPL2_IV(Object*, ReflectionEnum::InternalBoxEnum, ReflectClassBaseObject* tar
 }
 FCIMPLEND
 
-extern "C" int32_t QCALLTYPE ReflectionInvocation_GetTypeSize(QCall::TypeHandle pType)
+extern "C" int32_t QCALLTYPE ReflectionInvocation_SizeOf(QCall::TypeHandle pType)
 {
     QCALL_CONTRACT;
 

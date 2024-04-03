@@ -437,6 +437,32 @@ namespace System.Runtime.CompilerServices.Tests
 
             Assert.Equal(fixedPtr1, fixedPtr2);
         }
+
+        [InlineArray(4)]
+        private struct Byte4
+        {
+            public byte b1;
+        }
+
+        [Fact]
+        public static unsafe void SizeOf()
+        {
+            Assert.Equal(1, RuntimeHelpers.SizeOf(typeof(sbyte).TypeHandle));
+            Assert.Equal(1, RuntimeHelpers.SizeOf(typeof(byte).TypeHandle));
+            Assert.Equal(2, RuntimeHelpers.SizeOf(typeof(short).TypeHandle));
+            Assert.Equal(2, RuntimeHelpers.SizeOf(typeof(ushort).TypeHandle));
+            Assert.Equal(4, RuntimeHelpers.SizeOf(typeof(int).TypeHandle));
+            Assert.Equal(4, RuntimeHelpers.SizeOf(typeof(uint).TypeHandle));
+            Assert.Equal(8, RuntimeHelpers.SizeOf(typeof(long).TypeHandle));
+            Assert.Equal(8, RuntimeHelpers.SizeOf(typeof(ulong).TypeHandle));
+            Assert.Equal(4, RuntimeHelpers.SizeOf(typeof(float).TypeHandle));
+            Assert.Equal(8, RuntimeHelpers.SizeOf(typeof(double).TypeHandle));
+            Assert.Equal(4, RuntimeHelpers.SizeOf(typeof(Byte4).TypeHandle));
+            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(void*).TypeHandle));
+            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(delegate* <void>).TypeHandle));
+            Assert.Throws<ArgumentNullException>(() => RuntimeHelpers.SizeOf(default));
+            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(List<>).GetGenericArguments()[0].TypeHandle));
+        }
     }
 
     public struct Age

@@ -424,9 +424,14 @@ namespace System.Runtime.CompilerServices
         {
             RuntimeTypeHandle typeLocal = type;
             if (typeLocal.IsNullHandle())
-                ThrowHelpers.ThrowArgumentNullException(ExceptionArgument.type);
-            
-            return SizeOf(new QCallTypeHandle(ref typeLocal));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
+
+            int result = SizeOf(new QCallTypeHandle(ref typeLocal));
+
+            if (result < 0)
+                throw new ArgumentException(SR.Arg_TypeNotSupported);
+
+            return result;
         }
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.

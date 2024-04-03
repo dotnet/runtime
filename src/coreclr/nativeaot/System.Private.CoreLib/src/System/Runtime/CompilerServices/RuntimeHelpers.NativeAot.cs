@@ -362,12 +362,12 @@ namespace System.Runtime.CompilerServices
             return RuntimeImports.RhNewObject(mt);
         }
 
-        public static int SizeOf(RuntimeTypeHandle type)
+        public static unsafe int SizeOf(RuntimeTypeHandle type)
         {
             RuntimeTypeHandle typeLocal = type;
-            if (typeLocal.IsNullHandle())
-                ThrowHelpers.ThrowArgumentNullException(ExceptionArgument.type);
-            
+            if (typeLocal.IsNull)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
+
             MethodTable* mt = type.ToMethodTable();
 
             if (mt->IsValueType)
