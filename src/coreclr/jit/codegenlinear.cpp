@@ -156,8 +156,9 @@ void CodeGen::genCodeForBBlist()
 
     genMarkLabelsForCodegen();
 
-    assert(!compiler->fgFirstBBScratch || compiler->fgFirstBB == compiler->fgFirstBBScratch); // compiler->fgFirstBBScratch
-                                                                                              // has to be first.
+    assert(!compiler->fgFirstBBScratch ||
+           compiler->fgFirstBB == compiler->fgFirstBBScratch); // compiler->fgFirstBBScratch
+                                                               // has to be first.
 
     /* Initialize structures used in the block list iteration */
     genInitialize();
