@@ -6322,9 +6322,9 @@ void CodeGen::genFnProlog()
     genClearStackVec3ArgUpperBits();
 #endif // UNIX_AMD64_ABI && FEATURE_SIMD
 
-/*-----------------------------------------------------------------------------
- * Take care of register arguments first
- */
+    /*-----------------------------------------------------------------------------
+     * Take care of register arguments first
+     */
 
 #ifdef SWIFT_SUPPORT
     if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
