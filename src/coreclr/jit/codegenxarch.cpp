@@ -1719,7 +1719,6 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isRemovableJ
     //
     // Thus only on x86 do we need to assert that the stack level at the target block matches the current stack level.
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef UNIX_X86_ABI
     // bbTgtStkDepth is a (pure) argument count (stack alignment padding should be excluded).
@@ -6638,7 +6637,6 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #endif // !defined(UNIX_AMD64_ABI)
         {
             // Register argument
-            CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_X86
             noway_assert(isRegParamType(genActualType(varDsc->TypeGet())) ||
                          ((varDsc->TypeGet() == TYP_STRUCT) &&
@@ -9125,7 +9123,6 @@ void CodeGen::genAmd64EmitterUnitTestsSse2()
     //
     // Loads
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
     genDefineTempLabel(genCreateTempLabel());
 
@@ -10742,7 +10739,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     compiler->unwindEndProlog();
 
     // TODO We may need EBP restore sequence here if we introduce PSPSym
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef UNIX_X86_ABI
     // Add a padding for 16-byte alignment
@@ -10890,7 +10886,6 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     else
     {
         // Grab a non-argument, non-callee saved XMM reg
-        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef UNIX_AMD64_ABI
         // System V x64 first temp reg is xmm8
         regNumber zeroSIMDReg = genRegNumFromMask(RBM_XMM8);

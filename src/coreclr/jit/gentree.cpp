@@ -891,7 +891,6 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
         // A MultiRegOp is a GT_MUL_LONG, GT_PUTARG_REG, or GT_BITCAST.
         // For the latter two (ARM-only), they only have multiple registers if they produce a long value
         // (GT_MUL_LONG always produces a long value).
-        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_ARM
         return (TypeGet() == TYP_LONG) ? 2 : 1;
 #else
@@ -4882,7 +4881,6 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         //   [base + idx * mul + cns]  // mul can be 0, 2, 4, or 8
         // Note that mul == 0 is semantically equivalent to mul == 1.
         // Note that cns can be zero.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
         assert((base != nullptr) || (idx != nullptr && mul >= 2));
 
@@ -9450,7 +9448,6 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
     if (kind & GTK_SMPOP)
     {
         /* If necessary, make sure we allocate a "fat" tree node */
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
         switch (oper)
         {

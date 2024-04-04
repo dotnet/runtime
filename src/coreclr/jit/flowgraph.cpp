@@ -310,7 +310,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // Create a GT_EQ node that checks against g_TrapReturningThreads.  True jumps to Bottom,
         // false falls through to poll.  Add this to the end of Top.  Top is now BBJ_COND.  Bottom is
         // now a jump target
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef ENABLE_FAST_GCPOLL_HELPER
         // Prefer the fast gc poll helepr over the double indirection

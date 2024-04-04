@@ -1582,7 +1582,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     }
 
     // Update optMethodFlags
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     unsigned optMethodFlagsBefore = optMethodFlags;
