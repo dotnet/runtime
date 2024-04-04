@@ -7,10 +7,6 @@
        {
          "PipelineId": 133,
          "PipelineName": "runtime-dev-innerloop"
-       },
-       {
-         "PipelineId": 154,
-         "PipelineName": "runtime-extra-platforms"
        }
     ]
 }
