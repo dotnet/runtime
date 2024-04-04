@@ -104,10 +104,10 @@ enum insDisasmFmt
 #endif
 };
 
-code_t emitGetInsMask(int ins);
+code_t       emitGetInsMask(int ins);
 insDisasmFmt emitGetInsFmt(instruction ins);
-void emitDispInst(instruction ins);
-void emitDisInsName(code_t code, const BYTE* addr, instrDesc* id);
+void         emitDispInst(instruction ins);
+void         emitDisInsName(code_t code, const BYTE* addr, instrDesc* id);
 #endif // DEBUG
 
 void emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1 = REG_R0, regNumber reg2 = REG_R0);
@@ -316,9 +316,9 @@ void emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
-void emitIns_R_AI(instruction ins,
-                  emitAttr    attr,
-                  regNumber   reg,
+void emitIns_R_AI(instruction  ins,
+                  emitAttr     attr,
+                  regNumber    reg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 enum EmitCallType
@@ -343,8 +343,8 @@ enum EmitCallType
 void emitIns_Call(EmitCallType          callType,
                   CORINFO_METHOD_HANDLE methHnd,
                   INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*    addr,
-                  ssize_t  argSize,
+                  void*            addr,
+                  ssize_t          argSize,
                   emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                   VARSET_VALARG_TP ptrVars,
                   regMaskTP        gcrefRegs,

@@ -14,7 +14,9 @@ public:
         UseExecutionOrder = true,
     };
 
-    LocalSequencer(Compiler* comp) : GenTreeVisitor(comp), m_prevNode(nullptr)
+    LocalSequencer(Compiler* comp)
+        : GenTreeVisitor(comp)
+        , m_prevNode(nullptr)
     {
     }
 
@@ -918,9 +920,9 @@ private:
                 break;
 
 #ifdef FEATURE_HW_INTRINSICS
-            // We have two cases we want to handle:
-            // 1. Vector2/3/4 and Quaternion where we have 4x float fields
-            // 2. Plane where we have 1x Vector3 and 1x float field
+                // We have two cases we want to handle:
+                // 1. Vector2/3/4 and Quaternion where we have 4x float fields
+                // 2. Plane where we have 1x Vector3 and 1x float field
 
             case IndirTransform::GetElement:
             {
@@ -934,7 +936,7 @@ private:
                     {
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
                         hwiNode            = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
-                                                                      CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
                         break;
                     }
                     case TYP_SIMD12:

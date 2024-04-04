@@ -66,7 +66,6 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
     LclVarDsc* dsc = lvaGetDesc(lclNum);
 
     BasicBlockVisit result = loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
-
         if (!VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
         {
             JITDUMP("  Exit " FMT_BB " does not need a sink; V%02u is not live-in\n", exit->bbNum, lclNum);
@@ -94,7 +93,6 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
     // unprofitable. If this ever changes we need some more expansive handling
     // here.
     loop->VisitLoopBlocks([=](BasicBlock* block) {
-
         block->VisitAllSuccs(this, [=](BasicBlock* succ) {
             if (!loop->ContainsBlock(succ) && bbIsHandlerBeg(succ))
             {
@@ -334,7 +332,10 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned ne
         };
 
         ReplaceVisitor(Compiler* comp, unsigned lclNum, unsigned ssaNum, unsigned newLclNum)
-            : GenTreeVisitor(comp), m_lclNum(lclNum), m_ssaNum(ssaNum), m_newLclNum(newLclNum)
+            : GenTreeVisitor(comp)
+            , m_lclNum(lclNum)
+            , m_ssaNum(ssaNum)
+            , m_newLclNum(newLclNum)
         {
         }
 

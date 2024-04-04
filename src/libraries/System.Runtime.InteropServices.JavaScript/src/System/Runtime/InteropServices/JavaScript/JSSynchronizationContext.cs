@@ -68,7 +68,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
             Interop.Runtime.InstallWebWorkerInterop(proxyContext.ContextHandle,
                 (delegate* unmanaged[Cdecl]<JSMarshalerArgument*, void>)&JavaScriptExports.BeforeSyncJSExport,
-                (delegate* unmanaged[Cdecl]<JSMarshalerArgument*, void>)&JavaScriptExports.AfterSyncJSExport);
+                (delegate* unmanaged[Cdecl]<JSMarshalerArgument*, void>)&JavaScriptExports.AfterSyncJSExport,
+                (delegate* unmanaged[Cdecl]<void>)&PumpHandler);
 
             return ctx;
         }
@@ -170,7 +171,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             // While we COULD pump here, we don't want to. We want the pump to happen on the next event loop turn.
             // Otherwise we could get a chain where a pump generates a new work item and that makes us pump again, forever.
-            TargetThreadScheduleBackgroundJob(ProxyContext.NativeTID, (delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
+            ScheduleSynchronizationContext(ProxyContext.NativeTID);
         }
 
         public override void Post(SendOrPostCallback d, object? state)
@@ -236,13 +237,13 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void TargetThreadScheduleBackgroundJob(IntPtr targetTID, void* callback);
+        internal static extern unsafe void ScheduleSynchronizationContext(IntPtr targetTID);
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
 #pragma warning restore CS3016
         // this callback will arrive on the target thread, called from mono_background_exec
-        private static void BackgroundJobHandler()
+        private static void PumpHandler()
         {
             var ctx = JSProxyContext.AssertIsInteropThread();
             ctx.SynchronizationContext.Pump();
@@ -286,7 +287,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception e)
             {
-                Environment.FailFast($"JSSynchronizationContext.BackgroundJobHandler failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {e.StackTrace}");
+                Environment.FailFast($"JSSynchronizationContext.Pump failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {e.StackTrace}");
             }
         }
 
