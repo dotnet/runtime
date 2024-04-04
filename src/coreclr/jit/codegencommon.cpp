@@ -6246,19 +6246,6 @@ void CodeGen::genFnProlog()
         intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SECRET_STUB_PARAM;
     }
 
-#ifdef SWIFT_SUPPORT
-    if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) && ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
-    {
-        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
-        intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
-    }
-
-    if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
-    {
-        intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
-    }
-#endif
-
     //
     // Zero out the frame as needed
     //
@@ -6358,6 +6345,11 @@ void CodeGen::genFnProlog()
         {
             GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
             intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
+        }
+
+        if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+        {
+            intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
         }
 
         genHomeSwiftStructParameters(/* handleStack */ false);
