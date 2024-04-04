@@ -812,8 +812,8 @@ protected:
 
 #ifdef TARGET_LOONGARCH64
         // TODO-LoongArch64: maybe delete on future.
-        opSize   _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts  _idInsOpt : 6; // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
+        opSize  _idOpSize : 3;  // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts _idInsOpt : 6;  // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
                                 // accessing a local on stack.
         unsigned _idLclVar : 1; // access a local on stack.
 #endif
