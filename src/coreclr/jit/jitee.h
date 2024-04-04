@@ -54,13 +54,15 @@ public:
     };
     // clang-format on
 
-    JitFlags() : m_jitFlags(0)
+    JitFlags()
+        : m_jitFlags(0)
     {
         // empty
     }
 
     // Convenience constructor to set exactly one flags.
-    JitFlags(JitFlag flag) : m_jitFlags(0)
+    JitFlags(JitFlag flag)
+        : m_jitFlags(0)
     {
         Set(flag);
     }

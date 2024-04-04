@@ -182,7 +182,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize);
     }
 
-// ((v1 ^ cns1) | (v2 ^ cns2)) == zero
+    // ((v1 ^ cns1) | (v2 ^ cns2)) == zero
 
 #if defined(TARGET_XARCH)
     if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
@@ -317,7 +317,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
     assert(len >= 1 && len <= 8);
 
 // Compose Int32 or Int64 values from ushort components
-#define MAKEINT32(c1, c2) ((UINT64)c2 << 16) | ((UINT64)c1 << 0)
+#define MAKEINT32(c1, c2)         ((UINT64)c2 << 16) | ((UINT64)c1 << 0)
 #define MAKEINT64(c1, c2, c3, c4) ((UINT64)c4 << 48) | ((UINT64)c3 << 32) | ((UINT64)c2 << 16) | ((UINT64)c1 << 0)
 
     if (len == 1)
@@ -516,10 +516,10 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVarCommon* data,
             GenTree*   castedLen = gtNewCastNode(TYP_I_IMPL, gtCloneExpr(lengthFld), false, TYP_I_IMPL);
             GenTree*   byteLen   = gtNewOperNode(GT_MUL, TYP_I_IMPL, castedLen, gtNewIconNode(2, TYP_I_IMPL));
             GenTreeOp* cmpStart  = gtNewOperNode(GT_ADD, TYP_BYREF, gtClone(data),
-                                                gtNewOperNode(GT_SUB, TYP_I_IMPL, byteLen,
-                                                              gtNewIconNode((ssize_t)(len * 2), TYP_I_IMPL)));
-            GenTree* storeTmp = gtNewTempStore(dataAddr->GetLclNum(), cmpStart);
-            indirCmp          = gtNewOperNode(GT_COMMA, indirCmp->TypeGet(), storeTmp, indirCmp);
+                                                 gtNewOperNode(GT_SUB, TYP_I_IMPL, byteLen,
+                                                               gtNewIconNode((ssize_t)(len * 2), TYP_I_IMPL)));
+            GenTree*   storeTmp  = gtNewTempStore(dataAddr->GetLclNum(), cmpStart);
+            indirCmp             = gtNewOperNode(GT_COMMA, indirCmp->TypeGet(), storeTmp, indirCmp);
         }
 
         GenTreeColon* lenCheckColon = gtNewColonNode(TYP_INT, indirCmp, gtNewFalse());

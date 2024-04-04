@@ -1867,11 +1867,15 @@ PhaseStatus Compiler::fgTailMergeThrows()
         BasicBlock*  m_block;
         GenTreeCall* m_call;
 
-        ThrowHelper() : m_block(nullptr), m_call(nullptr)
+        ThrowHelper()
+            : m_block(nullptr)
+            , m_call(nullptr)
         {
         }
 
-        ThrowHelper(BasicBlock* block, GenTreeCall* call) : m_block(block), m_call(call)
+        ThrowHelper(BasicBlock* block, GenTreeCall* call)
+            : m_block(block)
+            , m_call(call)
         {
         }
 

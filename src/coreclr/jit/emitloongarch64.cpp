@@ -51,9 +51,9 @@ const emitJumpKind emitReverseJumpKinds[] = {
 }
 
 /*****************************************************************************
-* Look up the jump kind for an instruction. It better be a conditional
-* branch instruction with a jump kind!
-*/
+ * Look up the jump kind for an instruction. It better be a conditional
+ * branch instruction with a jump kind!
+ */
 
 /*static*/ emitJumpKind emitter::emitInsToJumpKind(instruction ins)
 {
@@ -2047,9 +2047,9 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 // This computes address from the immediate which is relocatable.
-void emitter::emitIns_R_AI(instruction ins,
-                           emitAttr    attr,
-                           regNumber   reg,
+void emitter::emitIns_R_AI(instruction  ins,
+                           emitAttr     attr,
+                           regNumber    reg,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(EA_IS_RELOC(attr)); // EA_PTR_DSP_RELOC
@@ -2381,8 +2381,8 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
 void emitter::emitIns_Call(EmitCallType          callType,
                            CORINFO_METHOD_HANDLE methHnd,
                            INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                           void*    addr,
-                           ssize_t  argSize,
+                           void*            addr,
+                           ssize_t          argSize,
                            emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
@@ -2786,9 +2786,9 @@ void emitter::emitJumpDistBind()
         B_DIST_SMALL_MAX_POS -
         emitCounts_INS_OPTS_J * (3 << 2); // the max placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
 
-/*****************************************************************************/
-/* If the default small encoding is not enough, we start again here.     */
-/*****************************************************************************/
+    /*****************************************************************************/
+    /* If the default small encoding is not enough, we start again here.     */
+    /*****************************************************************************/
 
 AGAIN:
 
@@ -2819,7 +2819,7 @@ AGAIN:
         UNATIVE_OFFSET dstOffs;
         NATIVE_OFFSET  jmpDist; // the relative jump distance, as it will be encoded
 
-/* Make sure the jumps are properly ordered */
+        /* Make sure the jumps are properly ordered */
 
 #ifdef DEBUG
         assert(lastSJ == nullptr || lastIG != jmp->idjIG || lastSJ->idjOffs < (jmp->idjOffs + adjSJ));
@@ -2997,8 +2997,8 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_bceqz <= ins) && (ins <= INS_bl));
 
-                if (ins <
-                    INS_beqz) //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu < beqz < bnez  // See instrsloongarch64.h.
+                if (ins < INS_beqz) //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu < beqz < bnez  // See
+                                    //   instrsloongarch64.h.
                 {
                     if ((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000)
                     {
@@ -3085,8 +3085,8 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_bceqz <= ins) && (ins <= INS_bl));
 
-                if (ins <
-                    INS_beqz) //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu < beqz < bnez  // See instrsloongarch64.h.
+                if (ins < INS_beqz) //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu < beqz < bnez  // See
+                                    //   instrsloongarch64.h.
                 {
                     if ((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000)
                     {
@@ -3181,7 +3181,7 @@ AGAIN:
 }
 
 /*****************************************************************************
-*
+ *
  *  Append the machine code corresponding to the given instruction descriptor
  *  to the code block at '*dp'; the base of the code block is 'bp', and 'ig'
  *  is the instruction group that contains the instruction. Updates '*dp' to

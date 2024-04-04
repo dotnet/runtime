@@ -207,10 +207,11 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     JITDUMP("    calleeSaveSpOffset=%d, calleeSaveSpDelta=%d\n", calleeSaveSpOffset, calleeSaveSpDelta);
     genRestoreCalleeSavedRegistersHelp(AllRegsMask(rsRestoreGprRegs, rsRestoreFloatRegs
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-                                                                         ,rsRestorePredicateRegs
+                                                   ,
+                                                   rsRestorePredicateRegs
 #endif
-    ), calleeSaveSpOffset,
-                                       calleeSaveSpDelta);
+                                                   ),
+                                       calleeSaveSpOffset, calleeSaveSpDelta);
 
     switch (frameType)
     {
@@ -725,7 +726,8 @@ void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, reg
 //   no return value; the regStack argument is modified.
 //
 // static
-void CodeGen::genBuildRegPairsStack(regMaskOnlyOne regsMask, ArrayStack<RegPair>* regStack MORE_THAN_64_REG_ARG(var_types type))
+void CodeGen::genBuildRegPairsStack(regMaskOnlyOne                regsMask,
+                                    ArrayStack<RegPair>* regStack MORE_THAN_64_REG_ARG(var_types type))
 {
     assert(regStack != nullptr);
     assert(regStack->Height() == 0);
@@ -844,7 +846,9 @@ int CodeGen::genGetSlotSizeForRegsInMask(regMaskOnlyOne regsMask)
 //   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
 //   type                 - The type of `regsMask` we are operating on.
 //
-void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDelta, int spOffset MORE_THAN_64_REG_ARG(var_types type))
+void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskOnlyOne regsMask,
+                                              int            spDelta,
+                                              int spOffset   MORE_THAN_64_REG_ARG(var_types type))
 {
     assert(compiler->IsOnlyOneRegMask(regsMask));
 
@@ -930,7 +934,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lo
     assert(compiler->IsPredicateRegMask(maskSaveRegsPredicate));
     regsToSaveCount += genCountBits(maskSaveRegsPredicate);
 #endif
-    
+
     if (regsToSaveCount == 0)
     {
         if (spDelta != 0)
@@ -947,11 +951,11 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lo
     // We also can save FP and LR, even though they are not in RBM_CALLEE_SAVED.
     assert(regsToSaveCount <= genCountBits(RBM_CALLEE_SAVED | RBM_FP | RBM_LR));
 
-    
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     if (maskSaveRegsPredicate != RBM_NONE)
     {
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsPredicate, spDelta, lowestCalleeSavedOffset MORE_THAN_64_REG_ARG(TYP_MASK));
+        genSaveCalleeSavedRegisterGroup(maskSaveRegsPredicate, spDelta,
+                                        lowestCalleeSavedOffset MORE_THAN_64_REG_ARG(TYP_MASK));
         spDelta = 0;
         lowestCalleeSavedOffset += genCountBits(maskSaveRegsPredicate) * FPSAVE_REGSIZE_BYTES;
     }
@@ -960,14 +964,16 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lo
     // Save integer registers at higher addresses than floating-point registers.
     if (maskSaveRegsFloat != RBM_NONE)
     {
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, spDelta, lowestCalleeSavedOffset MORE_THAN_64_REG_ARG(TYP_FLOAT));
+        genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, spDelta,
+                                        lowestCalleeSavedOffset MORE_THAN_64_REG_ARG(TYP_FLOAT));
         spDelta = 0;
         lowestCalleeSavedOffset += genCountBits(maskSaveRegsFloat) * FPSAVE_REGSIZE_BYTES;
     }
 
     if (maskSaveRegsInt != RBM_NONE)
     {
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, spDelta, lowestCalleeSavedOffset MORE_THAN_64_REG_ARG(TYP_INT));
+        genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, spDelta,
+                                        lowestCalleeSavedOffset MORE_THAN_64_REG_ARG(TYP_INT));
         // No need to update spDelta, lowestCalleeSavedOffset since they're not used after this.
     }
 }
@@ -1110,7 +1116,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask,
     if (maskRestoreRegsPredicate != RBM_NONE)
     {
         // TODO: Do we need to adjust spDelta?
-        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsPredicate, spDelta, spOffset MORE_THAN_64_REG_ARG(TYP_MASK)); 
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsPredicate, spDelta, spOffset MORE_THAN_64_REG_ARG(TYP_MASK));
     }
 #endif
 }
@@ -1545,9 +1551,11 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     genSaveCalleeSavedRegistersHelp(AllRegsMask(maskSaveRegsInt, maskSaveRegsFloat
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-                                                , maskSaveRegsPredicate
+                                                ,
+                                                maskSaveRegsPredicate
 #endif
-    ), lowestCalleeSavedOffset, 0);
+                                                ),
+                                    lowestCalleeSavedOffset, 0);
 
     if ((genFuncletInfo.fiFrameType == 3) || (genFuncletInfo.fiFrameType == 5))
     {
@@ -1668,10 +1676,11 @@ void CodeGen::genFuncletEpilog()
     int lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta + genFuncletInfo.fiSpDelta2;
     genRestoreCalleeSavedRegistersHelp(AllRegsMask(maskRestoreRegsInt, maskRestoreRegsFloat
 #ifdef FEATURE_MASKED_HW_INSTRINSICS
-        , maskRestoreRegsPredicate
+                                                   ,
+                                                   maskRestoreRegsPredicate
 #endif
-    ), lowestCalleeSavedOffset,
-                                       0);
+                                                   ),
+                                       lowestCalleeSavedOffset, 0);
 
     if (genFuncletInfo.fiFrameType == 1)
     {
@@ -1932,10 +1941,10 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     /* Now save it for future use */
 
-    genFuncletInfo.fiSaveGprRegs                = rsMaskSaveGprRegs;
-    genFuncletInfo.fiSaveFloatRegs              = rsMaskSaveFloatRegs;
+    genFuncletInfo.fiSaveGprRegs   = rsMaskSaveGprRegs;
+    genFuncletInfo.fiSaveFloatRegs = rsMaskSaveFloatRegs;
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-    genFuncletInfo.fiSavePredicateRegs          = rsMaskSavePredicateRegs;
+    genFuncletInfo.fiSavePredicateRegs = rsMaskSavePredicateRegs;
 #endif
     genFuncletInfo.fiSP_to_FPLR_save_delta      = SP_to_FPLR_save_delta;
     genFuncletInfo.fiSP_to_PSP_slot_delta       = SP_to_PSP_slot_delta;
@@ -1950,9 +1959,10 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         printf("                        Save regs: ");
         dspRegMask(AllRegsMask(genFuncletInfo.fiSaveGprRegs, genFuncletInfo.fiSaveFloatRegs
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-            , genFuncletInfo.fiSavePredicateRegs
+                               ,
+                               genFuncletInfo.fiSavePredicateRegs
 #endif
-        ));
+                               ));
         printf("\n");
         if (compiler->opts.IsOSR())
         {
@@ -1968,8 +1978,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
         if (compiler->lvaPSPSym != BAD_VAR_NUM)
         {
-            if (CallerSP_to_PSP_slot_delta !=
-                compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)) // for debugging
+            if (CallerSP_to_PSP_slot_delta != compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)) // for
+                                                                                                           // debugging
             {
                 printf("lvaGetCallerSPRelativeOffset(lvaPSPSym): %d\n",
                        compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym));
@@ -2300,9 +2310,9 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 
 //  move an immediate value into an integer register
 
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
-                                     regNumber reg,
-                                     ssize_t   imm,
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
+                                     regNumber      reg,
+                                     ssize_t        imm,
                                      insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     // reg cannot be a FP register
@@ -5218,7 +5228,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                gcInfo.gcRegByrefSetCur, DebugInfo(), callTarget, /* ireg */
                                REG_NA, 0, 0,                                     /* xreg, xmul, disp */
                                false                                             /* isJump */
-                               );
+    );
 
     AllRegsMask killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
     regSet.verifyRegistersUsed(killMask);
@@ -5832,8 +5842,8 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
     GenTree*     castOp     = cast->CastOp();
 
     genConsumeRegs(castOp);
-    unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
-                                                          : genTypeSize(castOp) * BITS_PER_BYTE;
+    unsigned   srcBits    = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
+                                                               : genTypeSize(castOp) * BITS_PER_BYTE;
     const bool isUnsigned = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
     GetEmitter()->emitIns_R_R_I_I(isUnsigned ? INS_ubfiz : INS_sbfiz, size, tree->GetRegNum(), castOp->GetRegNum(),
                                   (int)shiftByImm, (int)srcBits);

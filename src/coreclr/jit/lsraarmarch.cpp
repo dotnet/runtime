@@ -224,23 +224,23 @@ int LinearScan::BuildCall(GenTreeCall* call)
     else
 #endif // TARGET_ARM
         if (hasMultiRegRetVal)
-    {
-        assert(retTypeDesc != nullptr);
-        dstReturnCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
-        assert((int)dstReturnCandidates.Count() == dstCount);
-    }
-    else if (varTypeUsesFloatArgReg(registerType))
-    {
-        dstCandidates = RBM_FLOATRET;
-    }
-    else if (registerType == TYP_LONG)
-    {
-        dstCandidates = RBM_LNGRET;
-    }
-    else
-    {
-        dstCandidates = RBM_INTRET;
-    }
+        {
+            assert(retTypeDesc != nullptr);
+            dstReturnCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
+            assert((int)dstReturnCandidates.Count() == dstCount);
+        }
+        else if (varTypeUsesFloatArgReg(registerType))
+        {
+            dstCandidates = RBM_FLOATRET;
+        }
+        else if (registerType == TYP_LONG)
+        {
+            dstCandidates = RBM_LNGRET;
+        }
+        else
+        {
+            dstCandidates = RBM_INTRET;
+        }
 
     // First, count reg args
     // Each register argument corresponds to one source.

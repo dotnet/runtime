@@ -150,7 +150,7 @@ void RegSet::rsClearRegsModified()
 }
 
 #ifdef DEBUG
-void RegSet::printModifiedRegsMask(regMaskOnlyOne currentMask,
+void RegSet::printModifiedRegsMask(regMaskOnlyOne              currentMask,
                                    regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump)
                                        DEBUGARG(regMaskOnlyOne calleeSaveMask)) const
 {
@@ -203,7 +203,8 @@ void RegSet::rsSetFloatRegsModified(regMaskFloat mask DEBUGARG(bool suppressDump
     // assert(modifiedMask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
 #ifdef DEBUG
-    printModifiedRegsMask(rsModifiedRegsMask.floatRegs(m_rsCompiler), mask DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_FLT_CALLEE_SAVED));
+    printModifiedRegsMask(rsModifiedRegsMask.floatRegs(m_rsCompiler),
+                          mask DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_FLT_CALLEE_SAVED));
 #endif
 
     rsModifiedRegsMask.AddFloatRegMask(mask);
@@ -344,7 +345,9 @@ void RegSet::SetMaskVars(AllRegsMask newMaskVars)
 
 /*****************************************************************************/
 
-RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_rsGCInfo(gcInfo)
+RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo)
+    : m_rsCompiler(compiler)
+    , m_rsGCInfo(gcInfo)
 {
     /* Initialize the spill logic */
 
@@ -537,9 +540,9 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 
 #if defined(TARGET_X86)
 /*****************************************************************************
-*
-*  Spill the top of the FP x87 stack.
-*/
+ *
+ *  Spill the top of the FP x87 stack.
+ */
 void RegSet::rsSpillFPStack(GenTreeCall* call)
 {
     SpillDsc* spill;

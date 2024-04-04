@@ -68,27 +68,27 @@ inline bool compUnixX86Abi()
 // The following are intended to capture only those #defines that cannot be replaced
 // with static const members of Target
 #if defined(TARGET_AMD64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 16
 
 #elif defined(TARGET_X86)
-#define REGMASK_BITS 32
+#define REGMASK_BITS              32
 #define CSE_CONST_SHARED_LOW_BITS 16
 
 #elif defined(TARGET_ARM)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_ARM64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_LOONGARCH64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_RISCV64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #else
@@ -110,7 +110,7 @@ inline bool compUnixX86Abi()
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname, regTypeTag) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)                   REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -122,7 +122,7 @@ enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, sname, regTypeTag) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)                   RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -131,7 +131,7 @@ enum _regMask_enum : unsigned __int64
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, xname, wname, regTypeTag) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)                          REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -143,7 +143,7 @@ enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, xname, wname, regTypeTag) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)                          RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -152,7 +152,7 @@ enum _regMask_enum : unsigned __int64
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname, regTypeTag) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)                   REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -165,9 +165,8 @@ enum _regMask_enum : uint64_t
     RBM_NONE = 0,
 
 #define REGDEF(name, rnum, mask, sname, regTypeTag) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)                   RBM_##alias = RBM_##realname,
 #include "register.h"
-
 };
 
 #elif defined(TARGET_X86)
@@ -175,7 +174,7 @@ enum _regMask_enum : uint64_t
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname, regTypeTag) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)                   REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -188,7 +187,7 @@ enum _regMask_enum : unsigned
     RBM_NONE = 0,
 
 #define REGDEF(name, rnum, mask, sname, regTypeTag) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)                   RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -200,7 +199,7 @@ enum _regMask_enum : unsigned
 
 #ifdef TARGET_ARM64
 #define HAS_MORE_THAN_64_REGISTERS 1
-#define MORE_THAN_64_REG_ARG(x) , x
+#define MORE_THAN_64_REG_ARG(x)    , x
 #else
 #define MORE_THAN_64_REG_ARG(x)
 #endif
@@ -259,12 +258,12 @@ typedef unsigned __int64 singleRegMask;
 typedef unsigned regMaskTP;
 typedef unsigned RegBitSet64;
 
-#define regMaskGpr regMaskTP
-#define regMaskFloat regMaskTP
+#define regMaskGpr       regMaskTP
+#define regMaskFloat     regMaskTP
 #define regMaskPredicate regMaskTP
-#define regMaskOnlyOne regMaskTP
-#define regMaskMixed regMaskTP
-#define singleRegMask regMaskTP
+#define regMaskOnlyOne   regMaskTP
+#define regMaskMixed     regMaskTP
+#define singleRegMask    regMaskTP
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 unsigned genCountBits(uint64_t bits);
@@ -297,12 +296,12 @@ private:
 #else
     // Represents combined registers bitset including gpr/float and on some platforms
     // mask or predicate registers
-    RegBitSet64  _combinedRegisters;
+    RegBitSet64 _combinedRegisters;
 #endif
-//TODO: Come up with a name of variable such that:
-// 1. If HAS_MORE_THAN_64_REGISTERS==1, it represents float_gpr combined
-// 2. If HAS_MORE_THAN_64_REGISTERS==0, it represents all registers possible be - gpr/float/predicate in same place
-// Once we have that, we can just use and remove some of the #ifdef HAS_MORE_THAN_64_REGISTERS
+    // TODO: Come up with a name of variable such that:
+    //  1. If HAS_MORE_THAN_64_REGISTERS==1, it represents float_gpr combined
+    //  2. If HAS_MORE_THAN_64_REGISTERS==0, it represents all registers possible be - gpr/float/predicate in same place
+    //  Once we have that, we can just use and remove some of the #ifdef HAS_MORE_THAN_64_REGISTERS
 
     // This method shifts the high-32 bits of float to low-32 bits and return.
     // For gpr and predicate registers, it returns the same value.
@@ -319,20 +318,21 @@ private:
     }
 
 public:
-    FORCEINLINE regMaskGpr gprRegs() const;
+    FORCEINLINE regMaskGpr   gprRegs() const;
     FORCEINLINE regMaskFloat floatRegs(const Compiler* compiler) const;
 
-//#ifdef DEBUG
+    // #ifdef DEBUG
 
-    #ifdef FEATURE_MASKED_HW_INTRINSICS
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     FORCEINLINE regMaskPredicate predicateRegs(const Compiler* compiler) const;
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _combinedRegisters(floatRegMask | gprRegMask), _predicateRegs(RBM_NONE)
+        : _combinedRegisters(floatRegMask | gprRegMask)
+        , _predicateRegs(RBM_NONE)
 #else
-    : _combinedRegisters(floatRegMask | gprRegMask)
+        : _combinedRegisters(floatRegMask | gprRegMask)
 #endif
     {
     }
@@ -340,7 +340,8 @@ public:
     // TODO: See if we can avoid the '|' operation here.
     _regMaskAll(RegBitSet64 gprRegMask, RegBitSet64 floatRegMask, RegBitSet64 predicateRegs)
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _combinedRegisters(floatRegMask | gprRegMask), _predicateRegs((RegBitSet32)predicateRegs)
+        : _combinedRegisters(floatRegMask | gprRegMask)
+        , _predicateRegs((RegBitSet32)predicateRegs)
 #else
         : _combinedRegisters(predicateRegs | floatRegMask | gprRegMask)
 #endif
@@ -349,7 +350,8 @@ public:
 
     _regMaskAll()
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _combinedRegisters(RBM_NONE), _predicateRegs(RBM_NONE)
+        : _combinedRegisters(RBM_NONE)
+        , _predicateRegs(RBM_NONE)
 #else
         : _combinedRegisters(RBM_NONE)
 #endif
@@ -358,7 +360,8 @@ public:
 
     _regMaskAll(RegBitSet64 allRegistersMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        : _combinedRegisters(allRegistersMask), _predicateRegs(RBM_NONE)
+        : _combinedRegisters(allRegistersMask)
+        , _predicateRegs(RBM_NONE)
 #else
         : _combinedRegisters(allRegistersMask)
 #endif
@@ -368,7 +371,7 @@ public:
     FORCEINLINE void     Clear();
     FORCEINLINE bool     IsEmpty();
     FORCEINLINE unsigned Count();
-    FORCEINLINE void Create(regNumber reg);
+    FORCEINLINE void     Create(regNumber reg);
     // Rename this to AddRegNum
     FORCEINLINE void AddGprRegInMask(regNumber reg);
     FORCEINLINE void AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type);
@@ -388,29 +391,28 @@ public:
     FORCEINLINE bool IsRegNumInMask(regNumber reg, var_types type);
 #endif
 
-
-    FORCEINLINE void RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type);
-    FORCEINLINE bool IsGprMaskPresent(regMaskGpr maskToCheck) const;
-    FORCEINLINE bool IsFloatMaskPresent(Compiler* compiler, regMaskFloat maskToCheck) const;
+    FORCEINLINE void           RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type);
+    FORCEINLINE bool           IsGprMaskPresent(regMaskGpr maskToCheck) const;
+    FORCEINLINE bool           IsFloatMaskPresent(Compiler* compiler, regMaskFloat maskToCheck) const;
     FORCEINLINE regMaskOnlyOne GetRegMaskForType(var_types type) const;
 
     // TODO: this might go away once we have just `regMaskTP` gpr_float field
-    FORCEINLINE bool IsGprOrFloatPresent() const;
+    FORCEINLINE bool      IsGprOrFloatPresent() const;
     FORCEINLINE regMaskTP GetGprFloatCombinedMask() const;
 #ifndef HAS_MORE_THAN_64_REGISTERS
     FORCEINLINE regMaskTP GetAllRegistersMask() const;
 #endif // !HAS_MORE_THAN_64_REGISTERS
 
-    FORCEINLINE regMaskOnlyOne  operator[](int index) const;
-    FORCEINLINE void operator|=(const _regMaskAll& other);
-    FORCEINLINE void operator&=(const _regMaskAll& other);
-    FORCEINLINE void operator|=(const regNumber reg);
-    FORCEINLINE void operator^=(const regNumber reg);
-    FORCEINLINE      _regMaskAll operator~();
-    FORCEINLINE bool operator==(const _regMaskAll& other);
-    FORCEINLINE bool operator!=(const _regMaskAll& other);
-    FORCEINLINE _regMaskAll operator&(const _regMaskAll& other) const;
-    FORCEINLINE _regMaskAll operator|(const _regMaskAll& other) const;
+    FORCEINLINE regMaskOnlyOne operator[](int index) const;
+    FORCEINLINE void           operator|=(const _regMaskAll& other);
+    FORCEINLINE void           operator&=(const _regMaskAll& other);
+    FORCEINLINE void           operator|=(const regNumber reg);
+    FORCEINLINE void           operator^=(const regNumber reg);
+    FORCEINLINE _regMaskAll    operator~();
+    FORCEINLINE bool           operator==(const _regMaskAll& other);
+    FORCEINLINE bool           operator!=(const _regMaskAll& other);
+    FORCEINLINE _regMaskAll    operator&(const _regMaskAll& other) const;
+    FORCEINLINE _regMaskAll    operator|(const _regMaskAll& other) const;
 
 } AllRegsMask;
 
@@ -429,9 +431,9 @@ typedef unsigned __int64 regMaskSmall;
 /*****************************************************************************/
 
 #ifdef DEBUG
-#define DSP_SRC_OPER_LEFT 0
+#define DSP_SRC_OPER_LEFT  0
 #define DSP_SRC_OPER_RIGHT 1
-#define DSP_DST_OPER_LEFT 1
+#define DSP_DST_OPER_LEFT  1
 #define DSP_DST_OPER_RIGHT 0
 #endif
 
@@ -552,7 +554,7 @@ inline bool isByteReg(regNumber reg)
 #endif
 
 inline singleRegMask genRegMask(regNumber reg);
-inline regMaskFloat genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
+inline regMaskFloat  genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
 
 /*****************************************************************************
  * Return true if the register number is valid
@@ -990,8 +992,8 @@ typedef __int64          target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 63)
 
 #else // !TARGET_64BIT
-typedef unsigned int   target_size_t;
-typedef int            target_ssize_t;
+typedef unsigned int target_size_t;
+typedef int          target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 31)
 
 #endif // !TARGET_64BIT

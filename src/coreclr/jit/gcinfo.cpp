@@ -46,7 +46,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-GCInfo::GCInfo(Compiler* theCompiler) : compiler(theCompiler)
+GCInfo::GCInfo(Compiler* theCompiler)
+    : compiler(theCompiler)
 {
     regSet         = nullptr;
     gcVarPtrList   = nullptr;
