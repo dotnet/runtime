@@ -151,7 +151,11 @@ class CSE_HeuristicParameterized : public CSE_HeuristicCommon
 protected:
     struct Choice
     {
-        Choice(CSEdsc* dsc, double preference) : m_dsc(dsc), m_preference(preference), m_softmax(0), m_performed(false)
+        Choice(CSEdsc* dsc, double preference)
+            : m_dsc(dsc)
+            , m_preference(preference)
+            , m_softmax(0)
+            , m_performed(false)
         {
         }
 
@@ -181,11 +185,11 @@ public:
     void CaptureLocalWeights();
     void GreedyPolicy();
 
-    void GetFeatures(CSEdsc* dsc, double* features);
+    void   GetFeatures(CSEdsc* dsc, double* features);
     double Preference(CSEdsc* dsc);
-    void GetStoppingFeatures(double* features);
+    void   GetStoppingFeatures(double* features);
     double StoppingPreference();
-    void BuildChoices(ArrayStack<Choice>& choices);
+    void   BuildChoices(ArrayStack<Choice>& choices);
 
     Choice& ChooseGreedy(ArrayStack<Choice>& choices, bool recompute);
 
@@ -227,12 +231,12 @@ private:
     bool      m_updateParameters;
     bool      m_greedy;
 
-    Choice& ChooseSoftmax(ArrayStack<Choice>& choices);
-    void Softmax(ArrayStack<Choice>& choices);
-    void SoftmaxPolicy();
-    void UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choices, double reward, double* delta);
-    void    UpdateParameters();
-    Choice* FindChoice(CSEdsc* dsc, ArrayStack<Choice>& choices);
+    Choice&     ChooseSoftmax(ArrayStack<Choice>& choices);
+    void        Softmax(ArrayStack<Choice>& choices);
+    void        SoftmaxPolicy();
+    void        UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choices, double reward, double* delta);
+    void        UpdateParameters();
+    Choice*     FindChoice(CSEdsc* dsc, ArrayStack<Choice>& choices);
     const char* Name() const;
 
 public:

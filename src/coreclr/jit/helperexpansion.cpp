@@ -1945,13 +1945,13 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
             isCastClass = false;
             break;
 
-        // These are never expanded:
-        // CORINFO_HELP_ISINSTANCEOF_EXCEPTION
-        // CORINFO_HELP_CHKCASTCLASS_SPECIAL
-        // CORINFO_HELP_READYTORUN_ISINSTANCEOF,
-        // CORINFO_HELP_READYTORUN_CHKCAST,
+            // These are never expanded:
+            // CORINFO_HELP_ISINSTANCEOF_EXCEPTION
+            // CORINFO_HELP_CHKCASTCLASS_SPECIAL
+            // CORINFO_HELP_READYTORUN_ISINSTANCEOF,
+            // CORINFO_HELP_READYTORUN_CHKCAST,
 
-        // Other helper calls are not cast helpers
+            // Other helper calls are not cast helpers
 
         default:
             return 0;

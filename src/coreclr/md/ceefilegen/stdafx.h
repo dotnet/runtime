@@ -17,6 +17,7 @@
 #include <stdlib.h>		// for qsort
 #include <windows.h>
 #include <time.h>
+#include <algorithm>
 
 #include <corerror.h>
 #include <utilcode.h>
@@ -27,3 +28,6 @@
 
 #include "ceegen.h"
 #include "ceesectionstring.h"
+
+using std::min;
+using std::max;

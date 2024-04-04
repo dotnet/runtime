@@ -309,7 +309,11 @@ protected:
     bool      m_modifiedFlow;
 
 protected:
-    Instrumentor(Compiler* comp) : m_comp(comp), m_schemaCount(0), m_instrCount(0), m_modifiedFlow(false)
+    Instrumentor(Compiler* comp)
+        : m_comp(comp)
+        , m_schemaCount(0)
+        , m_instrCount(0)
+        , m_modifiedFlow(false)
     {
     }
 
@@ -360,7 +364,8 @@ public:
 class NonInstrumentor : public Instrumentor
 {
 public:
-    NonInstrumentor(Compiler* comp) : Instrumentor(comp)
+    NonInstrumentor(Compiler* comp)
+        : Instrumentor(comp)
     {
     }
 };
@@ -376,7 +381,9 @@ private:
     BasicBlock* m_entryBlock;
 
 public:
-    BlockCountInstrumentor(Compiler* comp) : Instrumentor(comp), m_entryBlock(nullptr)
+    BlockCountInstrumentor(Compiler* comp)
+        : Instrumentor(comp)
+        , m_entryBlock(nullptr)
     {
     }
     bool ShouldProcess(BasicBlock* block) override
@@ -566,8 +573,8 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     schemaElem.InstrumentationKind = m_comp->opts.compCollect64BitCounts
                                          ? ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount
                                          : ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
-    schemaElem.ILOffset = offset;
-    schemaElem.Offset   = 0;
+    schemaElem.ILOffset            = offset;
+    schemaElem.Offset              = 0;
 
     schema.push_back(schemaElem);
 
@@ -841,9 +848,9 @@ public:
         Duplicate
     };
 
-    virtual void Badcode()                     = 0;
-    virtual void VisitBlock(BasicBlock* block) = 0;
-    virtual void VisitTreeEdge(BasicBlock* source, BasicBlock* target) = 0;
+    virtual void Badcode()                                                               = 0;
+    virtual void VisitBlock(BasicBlock* block)                                           = 0;
+    virtual void VisitTreeEdge(BasicBlock* source, BasicBlock* target)                   = 0;
     virtual void VisitNonTreeEdge(BasicBlock* source, BasicBlock* target, EdgeKind kind) = 0;
 };
 
@@ -1239,7 +1246,9 @@ static int32_t EfficientEdgeCountBlockToKey(BasicBlock* block)
 // Based on "Optimally Profiling and Tracing Programs,"
 // Ball and Larus PLDI '92.
 //
-class EfficientEdgeCountInstrumentor : public Instrumentor, public SpanningTreeVisitor
+class EfficientEdgeCountInstrumentor
+    : public Instrumentor
+    , public SpanningTreeVisitor
 {
 private:
     // A particular edge probe. These are linked
@@ -1753,8 +1762,8 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         schemaElem.InstrumentationKind = m_comp->opts.compCollect64BitCounts
                                              ? ICorJitInfo::PgoInstrumentationKind::EdgeLongCount
                                              : ICorJitInfo::PgoInstrumentationKind::EdgeIntCount;
-        schemaElem.ILOffset = sourceKey;
-        schemaElem.Offset   = 0;
+        schemaElem.ILOffset            = sourceKey;
+        schemaElem.Offset              = 0;
 
         schema.push_back(schemaElem);
 
@@ -1903,7 +1912,9 @@ public:
     Compiler* m_compiler;
 
     HandleHistogramProbeVisitor(Compiler* compiler, TFunctor& functor)
-        : GenTreeVisitor<HandleHistogramProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
+        : GenTreeVisitor<HandleHistogramProbeVisitor>(compiler)
+        , m_functor(functor)
+        , m_compiler(compiler)
     {
     }
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -1935,7 +1946,9 @@ public:
     Compiler* m_compiler;
 
     ValueHistogramProbeVisitor(Compiler* compiler, TFunctor& functor)
-        : GenTreeVisitor<ValueHistogramProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
+        : GenTreeVisitor<ValueHistogramProbeVisitor>(compiler)
+        , m_functor(functor)
+        , m_compiler(compiler)
     {
     }
 
@@ -1965,7 +1978,8 @@ private:
 
 public:
     BuildHandleHistogramProbeSchemaGen(Schema& schema, unsigned& schemaCount)
-        : m_schema(schema), m_schemaCount(schemaCount)
+        : m_schema(schema)
+        , m_schemaCount(schemaCount)
     {
     }
 
@@ -2003,8 +2017,8 @@ public:
         schemaElem.InstrumentationKind = compiler->opts.compCollect64BitCounts
                                              ? ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount
                                              : ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount;
-        schemaElem.ILOffset = (int32_t)call->gtHandleHistogramProfileCandidateInfo->ilOffset;
-        schemaElem.Offset   = 0;
+        schemaElem.ILOffset            = (int32_t)call->gtHandleHistogramProfileCandidateInfo->ilOffset;
+        schemaElem.Offset              = 0;
 
         m_schema.push_back(schemaElem);
 
@@ -2013,7 +2027,7 @@ public:
         // Re-using ILOffset and Other fields from schema item for TypeHandleHistogramCount
         schemaElem.InstrumentationKind = isTypeHistogram ? ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes
                                                          : ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods;
-        schemaElem.Count = ICorJitInfo::HandleHistogram32::SIZE;
+        schemaElem.Count               = ICorJitInfo::HandleHistogram32::SIZE;
         m_schema.push_back(schemaElem);
 
         m_schemaCount++;
@@ -2027,7 +2041,8 @@ class BuildValueHistogramProbeSchemaGen
 
 public:
     BuildValueHistogramProbeSchemaGen(Schema& schema, unsigned& schemaCount)
-        : m_schema(schema), m_schemaCount(schemaCount)
+        : m_schema(schema)
+        , m_schemaCount(schemaCount)
     {
     }
 
@@ -2036,8 +2051,8 @@ public:
         ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
         schemaElem.Count                                 = 1;
         schemaElem.InstrumentationKind                   = compiler->opts.compCollect64BitCounts
-                                             ? ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount
-                                             : ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
+                                                               ? ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount
+                                                               : ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
         schemaElem.ILOffset = (int32_t)call->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
         m_schema.push_back(schemaElem);
         m_schemaCount++;
@@ -2332,7 +2347,8 @@ public:
 class HandleHistogramProbeInstrumentor : public Instrumentor
 {
 public:
-    HandleHistogramProbeInstrumentor(Compiler* comp) : Instrumentor(comp)
+    HandleHistogramProbeInstrumentor(Compiler* comp)
+        : Instrumentor(comp)
     {
     }
     bool ShouldProcess(BasicBlock* block) override
@@ -2350,7 +2366,8 @@ public:
 class ValueInstrumentor : public Instrumentor
 {
 public:
-    ValueInstrumentor(Compiler* comp) : Instrumentor(comp)
+    ValueInstrumentor(Compiler* comp)
+        : Instrumentor(comp)
     {
     }
     bool ShouldProcess(BasicBlock* block) override
@@ -2727,7 +2744,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     uint8_t* profileMemory;
     HRESULT  res = info.compCompHnd->allocPgoInstrumentationBySchema(info.compMethodHnd, schema.data(),
-                                                                    (UINT32)schema.size(), &profileMemory);
+                                                                     (UINT32)schema.size(), &profileMemory);
 
     // Deal with allocation failures.
     //
@@ -3102,7 +3119,7 @@ private:
     // Map correlating block keys to blocks.
     //
     typedef JitHashTable<int32_t, JitSmallPrimitiveKeyFuncs<int32_t>, BasicBlock*> KeyToBlockMap;
-    KeyToBlockMap m_keyToBlockMap;
+    KeyToBlockMap                                                                  m_keyToBlockMap;
 
     // Key for finding an edge based on schema info.
     //
@@ -3111,7 +3128,9 @@ private:
         int32_t const m_sourceKey;
         int32_t const m_targetKey;
 
-        EdgeKey(int32_t sourceKey, int32_t targetKey) : m_sourceKey(sourceKey), m_targetKey(targetKey)
+        EdgeKey(int32_t sourceKey, int32_t targetKey)
+            : m_sourceKey(sourceKey)
+            , m_targetKey(targetKey)
         {
         }
 
@@ -3159,7 +3178,7 @@ private:
     // Map for correlating EdgeIntCount schema entries with edges
     //
     typedef JitHashTable<EdgeKey, EdgeKey, Edge*> EdgeKeyToEdgeMap;
-    EdgeKeyToEdgeMap m_edgeKeyToEdgeMap;
+    EdgeKeyToEdgeMap                              m_edgeKeyToEdgeMap;
 
     // Per block data
     //
@@ -3519,8 +3538,9 @@ void EfficientEdgeCountReconstructor::Solve()
     //
     if (m_badcode || m_mismatch || m_allWeightsZero)
     {
-        JITDUMP("... not solving because of the %s\n",
-                m_badcode ? "badcode" : m_allWeightsZero ? "zero counts" : "mismatch");
+        JITDUMP("... not solving because of the %s\n", m_badcode          ? "badcode"
+                                                       : m_allWeightsZero ? "zero counts"
+                                                                          : "mismatch");
         return;
     }
 

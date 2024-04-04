@@ -11,6 +11,8 @@ import { set_thread_prefix } from "../logging";
 import { bindings_init } from "../startup";
 import { forceDisposeProxies } from "../gc-handles";
 import { monoMessageSymbol, GCHandleNull, PThreadPtrNull, WorkerToMainMessageType } from "../types/internal";
+import { threads_c_functions as tcwraps } from "../cwraps";
+import { forceThreadMemoryViewRefresh } from "../memory";
 
 // A duplicate in loader/assets.ts
 export const worker_empty_prefix = "          -    ";
@@ -103,6 +105,19 @@ export function update_thread_info (): void {
             runtimeHelpers.cspPolicy = true;
         }
     }
+}
+
+export function exec_synchronization_context_pump (): void {
+    if (!loaderHelpers.is_runtime_running()) {
+        return;
+    }
+    forceThreadMemoryViewRefresh();
+    tcwraps.mono_wasm_synchronization_context_pump();
+}
+
+export function mono_wasm_schedule_synchronization_context (): void {
+    if (!WasmEnableThreads) return;
+    Module.safeSetTimeout(exec_synchronization_context_pump, 0);
 }
 
 export function mono_wasm_pthread_ptr (): PThreadPtr {
