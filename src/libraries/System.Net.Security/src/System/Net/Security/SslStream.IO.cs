@@ -362,7 +362,7 @@ namespace System.Net.Security
                 token.ReleasePayload();
 
                 // reset the cached flag which has potentially outdated value.
-                _localClientCertificateUsed = null;
+                _localClientCertificateUsed = -1;
             }
 
             if (NetEventSource.Log.IsEnabled())
