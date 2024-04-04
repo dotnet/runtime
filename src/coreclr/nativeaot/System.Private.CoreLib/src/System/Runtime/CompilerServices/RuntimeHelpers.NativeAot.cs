@@ -367,20 +367,28 @@ namespace System.Runtime.CompilerServices
             if (type.IsNull)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
 
-            MethodTable* eeType = type.ToMethodTable();
+            MethodTable* mt = type.ToMethodTable();
 
-            if (eeType->IsByRef || eeType->IsPointer || eeType->IsFunctionPointer)
+            if (mt->ElementType == EETypeElementType.Void || mt->IsGenericTypeDefinition || mt->IsByRef || mt->IsPointer || mt->IsFunctionPointer)
                 throw new ArgumentException(SR.Arg_TypeNotSupported);
 
-            if (!eeType->IsValueType)
+            if (mt->NumVtableSlots == 0)
+            {
+                // This is a type without a vtable or GCDesc. We must not allow creating an instance of it
+                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(Type.GetTypeFromHandle(type));
+            }
+            // Paranoid check: not-meant-for-GC-heap types should be reliably identifiable by empty vtable.
+            Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(mt) != 0);
+
+            if (!mt->IsValueType)
             {
                 return Unsafe.As<byte, object>(ref target);
             }
 
-            if (eeType->IsByRefLike)
+            if (mt->IsByRefLike)
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
 
-            return RuntimeImports.RhBox(eeType, ref target);
+            return RuntimeImports.RhBox(mt, ref target);
         }
     }
 

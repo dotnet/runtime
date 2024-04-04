@@ -429,10 +429,17 @@ namespace System.Runtime.CompilerServices
 
             MethodTable* pMT = handle.AsMethodTable();
 
+            if (pMT->IsGenericTypeDefinition)
+                throw new ArgumentException(SR.Arg_TypeNotSupported);
+
             if (pMT->IsValueType)
             {
                 if (pMT->IsByRefLike)
                     throw new NotSupportedException(SR.NotSupported_ByRefLike);
+
+                if (MethodTable.AreSameType(pMT, (MethodTable*)RuntimeTypeHandle.ToIntPtr(typeof(void).TypeHandle)))
+                    throw new ArgumentException(SR.Arg_TypeNotSupported);
+
                 object? result = Box(pMT, ref target);
                 GC.KeepAlive(type);
                 return result;

@@ -567,6 +567,26 @@ namespace System.Runtime.CompilerServices.Tests
                 RuntimeHelpers.Box(ref value, t.TypeHandle);
             });
         }
+
+        [Fact]
+        public static void BoxGenericTypeDefinition()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                byte value = 3;
+                RuntimeHelpers.Box(ref value, typeof(List<>).TypeHandle);
+            });
+        }
+
+        [Fact]
+        public static void BoxVoid()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                byte value = 3;
+                RuntimeHelpers.Box(ref value, typeof(void).TypeHandle);
+            });
+        }
     }
 
     public struct Age

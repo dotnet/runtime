@@ -226,8 +226,15 @@ namespace System.Runtime.CompilerServices
 
             RuntimeType rtType = (RuntimeType)Type.GetTypeFromHandle(type)!;
 
-            if (rtType.IsPointer || rtType.IsFunctionPointer || rtType.IsByRef || rtType.IsGenericParameter)
+            if (rtType.IsGenericTypeDefinition
+                || rtType.IsPointer
+                || rtType.IsFunctionPointer
+                || rtType.IsByRef
+                || rtType.IsGenericParameter
+                || rtType == typeof(void))
+            {
                 throw new ArgumentException(SR.Arg_TypeNotSupported);
+            }
 
             if (!rtType.IsValueType)
             {
