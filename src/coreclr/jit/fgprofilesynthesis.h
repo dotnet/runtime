@@ -40,7 +40,8 @@ public:
     static constexpr weight_t epsilon = 0.001;
 
 private:
-    ProfileSynthesis(Compiler* compiler) : m_comp(compiler)
+    ProfileSynthesis(Compiler* compiler)
+        : m_comp(compiler)
     {
     }
 

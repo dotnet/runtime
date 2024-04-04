@@ -67,7 +67,8 @@
 class IndirectCallTransformer
 {
 public:
-    IndirectCallTransformer(Compiler* compiler) : compiler(compiler)
+    IndirectCallTransformer(Compiler* compiler)
+        : compiler(compiler)
     {
     }
 
@@ -157,7 +158,9 @@ private:
     {
     public:
         Transformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
-            : compiler(compiler), currBlock(block), stmt(stmt)
+            : compiler(compiler)
+            , currBlock(block)
+            , stmt(stmt)
         {
             remainderBlock = nullptr;
             checkBlock     = nullptr;
@@ -197,7 +200,7 @@ private:
         virtual const char*  Name()                       = 0;
         virtual void         ClearFlag()                  = 0;
         virtual GenTreeCall* GetCall(Statement* callStmt) = 0;
-        virtual void FixupRetExpr()                       = 0;
+        virtual void         FixupRetExpr()               = 0;
 
         //------------------------------------------------------------------------
         // CreateRemainder: split current block at the call stmt and
@@ -473,7 +476,8 @@ private:
     {
     public:
         GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
-            : Transformer(compiler, block, stmt), returnTemp(BAD_VAR_NUM)
+            : Transformer(compiler, block, stmt)
+            , returnTemp(BAD_VAR_NUM)
         {
         }
 
@@ -1259,7 +1263,9 @@ private:
                 unsigned m_nodeCount;
 
                 ClonabilityVisitor(Compiler* compiler)
-                    : GenTreeVisitor(compiler), m_unclonableNode(nullptr), m_nodeCount(0)
+                    : GenTreeVisitor(compiler)
+                    , m_unclonableNode(nullptr)
+                    , m_nodeCount(0)
                 {
                 }
 

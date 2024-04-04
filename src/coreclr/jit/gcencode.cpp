@@ -433,12 +433,13 @@ static void regenLog(unsigned encoding, InfoHdr* header, InfoHdr* state)
 
     EnterCriticalSection(&logFileLock);
 
-    fprintf(logFile, "InfoHdr( %2d, %2d, %1d, %1d, %1d,"
-                     " %1d, %1d, %1d, %1d, %1d,"
-                     " %1d, %1d, %1d, %1d, %1d, %1d,"
-                     " %1d, %1d, %1d,"
-                     " %1d, %2d, %2d,"
-                     " %2d, %2d, %2d, %2d, %2d, %2d), \n",
+    fprintf(logFile,
+            "InfoHdr( %2d, %2d, %1d, %1d, %1d,"
+            " %1d, %1d, %1d, %1d, %1d,"
+            " %1d, %1d, %1d, %1d, %1d, %1d,"
+            " %1d, %1d, %1d,"
+            " %1d, %2d, %2d,"
+            " %2d, %2d, %2d, %2d, %2d, %2d), \n",
             state->prologSize, state->epilogSize, state->epilogCount, state->epilogAtEnd, state->ediSaved,
             state->esiSaved, state->ebxSaved, state->ebpSaved, state->ebpFrame, state->interruptible,
             state->doubleAlign, state->security, state->handlers, state->localloc, state->editNcontinue, state->varargs,
@@ -1817,7 +1818,7 @@ static int (*zeroFunc)() = zeroFN;
  */
 
 typedef unsigned pasMaskType;
-#define BITS_IN_pasMask (BITS_PER_BYTE * sizeof(pasMaskType))
+#define BITS_IN_pasMask     (BITS_PER_BYTE * sizeof(pasMaskType))
 #define HIGHEST_pasMask_BIT (((pasMaskType)0x1) << (BITS_IN_pasMask - 1))
 
 //-----------------------------------------------------------------------------
@@ -1850,8 +1851,8 @@ public:
     // Use these in the case where there actually are more ptrs than pasArgMask
     unsigned pasEnumGCoffsCount();
 #define pasENUM_START ((unsigned)-1)
-#define pasENUM_LAST ((unsigned)-2)
-#define pasENUM_END ((unsigned)-3)
+#define pasENUM_LAST  ((unsigned)-2)
+#define pasENUM_END   ((unsigned)-3)
     unsigned pasEnumGCoffs(unsigned iter, unsigned* offs);
 
 protected:
@@ -2331,7 +2332,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
             unsigned varOffs = compiler->lvaTable[compiler->info.compThisArg].GetStackOffset();
 
             /* For negative stack offsets we must reset the low bits,
-                * take abs and then set them back */
+             * take abs and then set them back */
 
             varOffs = abs(static_cast<int>(varOffs));
             varOffs |= this_OFFSET_FLAG;
@@ -3285,7 +3286,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     assert(regMask || argMask || callArgCnt || pasStk.pasCurDepth());
 
-// Emit IPtrMask if needed
+                    // Emit IPtrMask if needed
 
 #define CHK_NON_INTRPT_ESP_IPtrMask                                                                                    \
                                                                                                                        \
@@ -3571,7 +3572,7 @@ size_t GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned* 
 #ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
 #else
-    gcDump.gcPrintf       = printf;
+    gcDump.gcPrintf = printf;
 #endif
 
     printf("Method info block:\n");
@@ -3590,7 +3591,7 @@ size_t GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned
 #ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
 #else
-    gcDump.gcPrintf       = printf;
+    gcDump.gcPrintf = printf;
 #endif
 
     return gcDump.DumpGCTable(table, header, methodSize, verifyGCTables);
@@ -3608,7 +3609,7 @@ void GCInfo::gcFindPtrsInFrame(const void* infoBlock, const void* codeBlock, uns
 #ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
 #else
-    gcDump.gcPrintf       = printf;
+    gcDump.gcPrintf = printf;
 #endif
 
     gcDump.DumpPtrsInFrame((PTR_CBYTE)infoBlock, (const BYTE*)codeBlock, offs, verifyGCTables);
@@ -3646,7 +3647,8 @@ class GcInfoEncoderWithLogging
 
 public:
     GcInfoEncoderWithLogging(GcInfoEncoder* gcInfoEncoder, bool verbose)
-        : m_gcInfoEncoder(gcInfoEncoder), m_doLogging(verbose INDEBUG(|| JitConfig.JitGCInfoLogging() != 0))
+        : m_gcInfoEncoder(gcInfoEncoder)
+        , m_doLogging(verbose INDEBUG(|| JitConfig.JitGCInfoLogging() != 0))
     {
     }
 
@@ -4024,7 +4026,8 @@ struct InterruptibleRangeReporter
     Encoder* gcInfoEncoderWithLog;
 
     InterruptibleRangeReporter(unsigned _prevStart, Encoder* _gcInfo)
-        : prevStart(_prevStart), gcInfoEncoderWithLog(_gcInfo)
+        : prevStart(_prevStart)
+        , gcInfoEncoderWithLog(_gcInfo)
     {
     }
 
@@ -4793,7 +4796,7 @@ void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder* gcInfoEncoder, MakeRegPtr
 
     StackSlotIdKey sskey(genStackPtr->rpdPtrArg, false,
                          GcSlotFlags(genStackPtr->rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE));
-    GcSlotId varSlotId;
+    GcSlotId       varSlotId;
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
         if (!m_stackSlotMap->Lookup(sskey, &varSlotId))
@@ -4841,8 +4844,8 @@ void GCInfo::gcInfoRecordGCStackArgsDead(GcInfoEncoder* gcInfoEncoder,
 
         StackSlotIdKey sskey(genRegPtrTemp->rpdPtrArg, false,
                              genRegPtrTemp->rpdGCtypeGet() == GCT_BYREF ? GC_SLOT_INTERIOR : GC_SLOT_BASE);
-        GcSlotId varSlotId;
-        bool     b = m_stackSlotMap->Lookup(sskey, &varSlotId);
+        GcSlotId       varSlotId;
+        bool           b = m_stackSlotMap->Lookup(sskey, &varSlotId);
         assert(b); // Should have been added in the first pass.
         // Live until the call.
         gcInfoEncoderWithLog->SetSlotState(instrOffset, varSlotId, GC_SLOT_DEAD);

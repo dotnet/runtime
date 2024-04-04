@@ -371,7 +371,7 @@ FloatComparisonMode HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(Flo
 {
     switch (comparison)
     {
-        // These comparison modes are the same even if the operands are swapped
+            // These comparison modes are the same even if the operands are swapped
 
         case FloatComparisonMode::OrderedEqualNonSignaling:
             return FloatComparisonMode::OrderedEqualNonSignaling;
@@ -406,7 +406,7 @@ FloatComparisonMode HWIntrinsicInfo::lookupFloatComparisonModeForSwappedArgs(Flo
         case FloatComparisonMode::UnorderedTrueSignaling:
             return FloatComparisonMode::UnorderedTrueSignaling;
 
-        // These comparison modes need a different mode if the operands are swapped
+            // These comparison modes need a different mode if the operands are swapped
 
         case FloatComparisonMode::OrderedLessThanSignaling:
             return FloatComparisonMode::OrderedGreaterThanSignaling;
@@ -2498,7 +2498,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     // TODO-XARCH-CQ: We should support long/ulong multiplication
                     break;
                 }
-// else if simdSize == 64 then above assert would check if baseline isa supported
+                // else if simdSize == 64 then above assert would check if baseline isa supported
 
 #if defined(TARGET_X86)
                 // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
@@ -3274,13 +3274,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 int ival = HWIntrinsicInfo::lookupIval(this, intrinsic, simdBaseType);
                 retNode  = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(ival), NI_AVX_CompareScalar,
-                                                   simdBaseJitType, simdSize);
+                                                    simdBaseJitType, simdSize);
             }
             else
             {
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
+                                                  nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE_MoveScalar, simdBaseJitType,
@@ -3333,13 +3333,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 int ival = HWIntrinsicInfo::lookupIval(this, intrinsic, simdBaseType);
                 retNode  = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(ival), NI_AVX_CompareScalar,
-                                                   simdBaseJitType, simdSize);
+                                                    simdBaseJitType, simdSize);
             }
             else
             {
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
+                                                  nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE2_MoveScalar, simdBaseJitType,
