@@ -275,6 +275,29 @@ namespace Microsoft.Extensions.Configuration
             Assert.True(GetIsDisposed(fileProvider));
         }
 
+        [Fact]
+        public void AddJsonFile_FileProvider_Is_Not_Disposed_When_SourcesGetReloaded()
+        {
+            string filePath = Path.Combine(Path.GetTempPath(), $"{nameof(AddJsonFile_FileProvider_Is_Not_Disposed_When_SourcesGetReloaded)}.json");
+            File.WriteAllText(filePath, @"{ ""some"": ""value"" }");
+
+            IConfigurationBuilder builder = new ConfigurationManager();
+
+            builder.AddJsonFile(filePath, optional: false);
+
+            FileConfigurationSource fileConfigurationSource = (FileConfigurationSource)builder.Sources.Last();
+            PhysicalFileProvider fileProvider = (PhysicalFileProvider)fileConfigurationSource.FileProvider;
+
+            Assert.False(GetIsDisposed(fileProvider));
+
+            builder.Properties.Add("simplest", "repro");
+
+            Assert.False(GetIsDisposed(fileProvider));
+
+            fileProvider.Dispose();
+            Assert.True(GetIsDisposed(fileProvider));
+        }
+
         private static bool GetIsDisposed(PhysicalFileProvider fileProvider)
         {
             System.Reflection.FieldInfo isDisposedField = typeof(PhysicalFileProvider).GetField("_disposed", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
