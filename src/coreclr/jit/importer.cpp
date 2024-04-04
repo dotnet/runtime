@@ -10472,7 +10472,6 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
             assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
             const var_types type               = lvaGetDesc(lvaSwiftErrorArg)->TypeGet();
             GenTree* const  swiftErrorLocalRef = gtNewLclVarAddrNode(lvaSwiftErrorLocal, type);
-            swiftErrorLocalRef->gtFlags |= GTF_SIDE_EFFECT;
             impPushOnStack(swiftErrorLocalRef, typeInfo(type));
             JITDUMP("\nCreated GT_LCL_ADDR of SwiftError pseudolocal\n");
             return;
