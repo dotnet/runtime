@@ -820,6 +820,8 @@ ReturnHR:
     return hr;
 } // HRESULT GetITypeInfoForEEClass()
 
+// Only a narrow set of types are supported.
+// See TryDeferToMscorlib() above.
 MethodTable* GetMethodTableForRecordInfo(IRecordInfo* recInfo)
 {
     CONTRACTL
@@ -832,11 +834,6 @@ MethodTable* GetMethodTableForRecordInfo(IRecordInfo* recInfo)
     CONTRACTL_END;
 
     HRESULT hr;
-
-    //
-    // Only a narrow set of types are supported.
-    // See TryDeferToMscorlib() above.
-    //
 
     // Verify the associated TypeLib attribute
     SafeComHolder<ITypeInfo> typeInfo;

@@ -33,7 +33,7 @@ struct ComInit
 };
 
 using ComMTA = ComInit<COINIT_MULTITHREADED>;
-void ValidateMiscTypes();
+void ValidationTests();
 
 int __cdecl main()
 {
@@ -49,7 +49,7 @@ int __cdecl main()
     try
     {
         CoreShimComActivation csact{ W("NETServer"), W("MiscTypesTesting") };
-        ValidateMiscTypes();
+        ValidationTests();
     }
     catch (HRESULT hr)
     {
@@ -76,16 +76,16 @@ struct VariantMarshalTest
     }
 };
 
-void ValidateMiscTypes()
+void ValidationTests()
 {
-    ::printf("MiscTypes test through CoCreateInstance...\n");
+    ::printf(__FUNCTION__ "() through CoCreateInstance...\n");
 
     HRESULT hr;
 
     IMiscTypesTesting *miscTypesTesting;
     THROW_IF_FAILED(::CoCreateInstance(CLSID_MiscTypesTesting, nullptr, CLSCTX_INPROC, IID_IMiscTypesTesting, (void**)&miscTypesTesting));
 
-    ::printf("Validate Primitives <=> VARIANT...\n");
+    ::printf("-- Primitives <=> VARIANT...\n");
     {
         VariantMarshalTest args{};
         V_VT(&args.Input) = VT_EMPTY;
@@ -141,7 +141,7 @@ void ValidateMiscTypes()
         THROW_FAIL_IF_FALSE(V_BOOL(&args.Input) == V_BOOL(&args.Result));
     }
 
-    ::printf("Validate BSTR <=> VARIANT...\n");
+    ::printf("-- BSTR <=> VARIANT...\n");
     {
         VariantMarshalTest args{};
         V_VT(&args.Input) = VT_BSTR;
@@ -150,7 +150,7 @@ void ValidateMiscTypes()
         THROW_FAIL_IF_FALSE(CompareStringOrdinal(V_BSTR(&args.Input), -1, V_BSTR(&args.Result), -1, FALSE) == CSTR_EQUAL);
     }
 
-    ::printf("Validate System.Guid <=> VARIANT...\n");
+    ::printf("-- System.Guid <=> VARIANT...\n");
     {
         /* 8EFAD956-B33D-46CB-90F4-45F55BA68A96 */
         const GUID expected = { 0x8EFAD956, 0xB33D, 0x46CB, { 0x90, 0xF4, 0x45, 0xF5, 0x5B, 0xA6, 0x8A, 0x96} };

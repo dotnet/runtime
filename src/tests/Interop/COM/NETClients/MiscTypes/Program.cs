@@ -12,6 +12,8 @@ namespace NetClient
     using Server.Contract;
     using Server.Contract.Servers;
 
+    struct Struct {}
+
     public unsafe class Program
     {
         [Fact]
@@ -25,7 +27,8 @@ namespace NetClient
 
             try
             {
-                RunTests();
+                ValidationTests();
+                ValidateNegativeTests();
             }
             catch (Exception e)
             {
@@ -36,11 +39,13 @@ namespace NetClient
             return 100;
         }
 
-        private static void RunTests()
+        private static void ValidationTests()
         {
+            Console.WriteLine($"Running {nameof(ValidationTests)} ...");
+
             var miscTypeTesting = (Server.Contract.Servers.MiscTypesTesting)new Server.Contract.Servers.MiscTypesTestingClass();
 
-            Console.WriteLine("Validate Primitives <=> VARIANT...");
+            Console.WriteLine("-- Primitives <=> VARIANT...");
             {
                 object expected = null;
                 Assert.Equal(expected, miscTypeTesting.Marshal_Variant(expected));
@@ -74,16 +79,28 @@ namespace NetClient
                 Assert.Equal(expected, miscTypeTesting.Marshal_Variant(expected));
             }
 
-            Console.WriteLine("Validate BSTR <=> VARIANT...");
+            Console.WriteLine("-- BSTR <=> VARIANT...");
             {
                 var expected = "The quick Fox jumped over the lazy Dog.";
                 Assert.Equal(expected, miscTypeTesting.Marshal_Variant(expected));
             }
 
-            Console.WriteLine("Validate System.Guid <=> VARIANT...");
+            Console.WriteLine("-- System.Guid <=> VARIANT...");
             {
                 var expected = new Guid("{8EFAD956-B33D-46CB-90F4-45F55BA68A96}");
                 Assert.Equal(expected, miscTypeTesting.Marshal_Variant(expected));
+            }
+        }
+
+        private static void ValidateNegativeTests()
+        {
+            Console.WriteLine($"Running {nameof(ValidateNegativeTests)} ...");
+
+            var miscTypeTesting = (Server.Contract.Servers.MiscTypesTesting)new Server.Contract.Servers.MiscTypesTestingClass();
+
+            Console.WriteLine("-- User defined ValueType <=> VARIANT...");
+            {
+                Assert.Throws<NotSupportedException>(() => miscTypeTesting.Marshal_Variant(new Struct()));
             }
         }
     }
