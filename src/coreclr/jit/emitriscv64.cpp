@@ -1255,7 +1255,6 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     // for case when low part is bigger than 0x800.
     INT32 high19 = ((int32_t)(high31 + 0x800)) >> 12;
 
-    assert(isValidSimm20(high19));
     emitIns_R_I(INS_lui, size, reg, high19);
     emitIns_R_R_I(INS_addiw, size, reg, reg, high31 & 0xFFF);
 
