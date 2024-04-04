@@ -11,7 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader;
 [Guid("4eca42d8-7e7b-4c8a-a116-7bfbf6929267")]
 internal partial interface ISOSDacInterface9
 {
-    void GetBreakingChangeVersion(out int version);
+    int GetBreakingChangeVersion();
 }
 
 /// <summary>
@@ -28,9 +28,9 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface9
         _target = target;
     }
 
-    public void GetBreakingChangeVersion(out int version)
+    public int GetBreakingChangeVersion()
     {
         // TODO: Return non-hard-coded version
-        version = 4;
+        return 4;
     }
 }
