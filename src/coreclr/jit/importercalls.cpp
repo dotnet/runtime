@@ -2115,6 +2115,10 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
     DISPTREE(call);
     JITDUMP("\n");
 
+    // Get SwiftError* arg (if it exists) before modifying the arg list
+    CallArg* const swiftErrorArg =
+        (swiftErrorIndex != sig->numArgs) ? call->gtArgs.GetArgByIndex(swiftErrorIndex) : nullptr;
+
     // Now expand struct args that must be lowered into primitives
     unsigned argIndex = 0;
     for (CallArg* arg = call->gtArgs.Args().begin().GetArg(); arg != nullptr; argIndex++)
@@ -2256,16 +2260,13 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         arg = insertAfter->GetNext();
     }
 
-    assert(call->gtArgs.CountArgs() == sig->numArgs);
-
-    if (swiftErrorIndex != sig->numArgs)
+    if (swiftErrorArg != nullptr)
     {
         // Before calling a Swift method that may throw, the error register must be cleared,
         // as we will check for a nonzero error value after the call returns.
         // By adding a well-known "sentinel" argument that uses the error register,
         // the JIT will emit code for clearing the error register before the call,
         // and will mark the error register as busy so it isn't used to hold the function call's address.
-        CallArg* const swiftErrorArg          = call->gtArgs.GetArgByIndex(swiftErrorIndex);
         GenTree* const errorSentinelValueNode = gtNewIconNode(0);
         call->gtArgs.InsertAfter(this, swiftErrorArg,
                                  NewCallArg::Primitive(errorSentinelValueNode).WellKnown(WellKnownArg::SwiftError));
