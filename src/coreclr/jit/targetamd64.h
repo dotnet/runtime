@@ -575,6 +575,6 @@
   #define REG_SWIFT_ARG_RET_BUFF REG_RAX
   #define RBM_SWIFT_ARG_RET_BUFF RBM_RAX
   #define SWIFT_RET_BUFF_ARGNUM  MAX_REG_ARG
-#endif
+#endif // UNIX_AMD64_ABI
 
 // clang-format on
