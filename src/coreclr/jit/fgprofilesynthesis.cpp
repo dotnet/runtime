@@ -121,7 +121,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         m_blendFactor = min(1.0, blendFactorGrowthRate * m_blendFactor);
         m_loopExitLikelihood *= 0.9;
         m_loopBackLikelihood *= 0.9;
-        m_returnLikelihood   *= 1.05;
+        m_returnLikelihood *= 1.05;
 
         retries++;
     }
