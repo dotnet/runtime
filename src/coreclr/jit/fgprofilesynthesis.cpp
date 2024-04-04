@@ -1177,17 +1177,18 @@ void ProfileSynthesis::GaussSeidelSolver()
 
     // The algorithm.
     //
-    bool                          converged        = false;
-    weight_t                      previousResidual = 0;
-    weight_t                      residual         = 0;
-    weight_t                      relResidual      = 0;
-    weight_t                      oldRelResidual   = 0;
-    weight_t                      eigenvalue       = 0;
-    weight_t const                stopRelResidual  = 0.002;
-    BasicBlock*                   residualBlock    = nullptr;
-    BasicBlock*                   relResidualBlock = nullptr;
-    const FlowGraphDfsTree* const dfs              = m_loops->GetDfsTree();
-    unsigned const                blockCount       = dfs->GetPostOrderCount();
+    bool                          converged            = false;
+    weight_t                      previousResidual     = 0;
+    weight_t                      residual             = 0;
+    weight_t                      relResidual          = 0;
+    weight_t                      oldRelResidual       = 0;
+    weight_t                      eigenvalue           = 0;
+    weight_t const                stopRelResidual      = 0.002;
+    BasicBlock*                   residualBlock        = nullptr;
+    BasicBlock*                   relResidualBlock     = nullptr;
+    const FlowGraphDfsTree* const dfs                  = m_loops->GetDfsTree();
+    unsigned const                blockCount           = dfs->GetPostOrderCount();
+    bool                          checkEntryExitWeight = true;
 
     // Remember the entry block
     //
@@ -1220,6 +1221,9 @@ void ProfileSynthesis::GaussSeidelSolver()
         residual         = 0;
         relResidual      = 0;
 
+        weight_t entryWeight = 0;
+        weight_t exitWeight  = 0;
+
         // Compute new counts based on Gauss-Seidel iteration
         //
         // Todo: after 1st iteration we can start at the postorder
@@ -1241,7 +1245,8 @@ void ProfileSynthesis::GaussSeidelSolver()
             //
             if (block == entryBlock)
             {
-                newWeight = block->bbWeight;
+                newWeight   = block->bbWeight;
+                entryWeight = newWeight;
             }
             else
             {
@@ -1380,6 +1385,25 @@ void ProfileSynthesis::GaussSeidelSolver()
                 JITDUMP("count overflow in " FMT_BB ": " FMT_WT "\n", block->bbNum, newWeight);
                 m_overflow = true;
             }
+
+            if (checkEntryExitWeight)
+            {
+                if (block->KindIs(BBJ_RETURN))
+                {
+                    exitWeight += newWeight;
+                }
+                else if (block->KindIs(BBJ_THROW))
+                {
+                    if (block->hasTryIndex())
+                    {
+                        checkEntryExitWeight = false;
+                    }
+                    else
+                    {
+                        exitWeight += newWeight;
+                    }
+                }
+            }
         }
 
         // If there were no improper headers, we will have converged in one pass.
@@ -1389,6 +1413,21 @@ void ProfileSynthesis::GaussSeidelSolver()
         {
             converged = true;
             break;
+        }
+
+        // Compute the relative entry/exit "residual", if we have reason to believe it
+        // should balance.
+        //
+        if (checkEntryExitWeight)
+        {
+            weight_t entryExitRelResidual = (entryWeight - exitWeight) / entryWeight;
+            assert(entryExitRelResidual >= 0);
+
+            if (entryExitRelResidual > relResidual)
+            {
+                relResidual      = entryExitRelResidual;
+                relResidualBlock = entryBlock;
+            }
         }
 
         JITDUMP("iteration %u: max residual is at " FMT_BB " : " FMT_WT "\n", i, residualBlock->bbNum, residual);
