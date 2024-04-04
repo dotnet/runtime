@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
@@ -15,6 +16,11 @@ namespace System.ComponentModel
     /// </summary>
     public class NullableConverter : TypeConverter
     {
+        [FeatureSwitchDefinition("System.ComponentModel.NullableConverter.IsSupported")]
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+#pragma warning disable IL4000
+        internal static bool IsSupported => AppContext.TryGetSwitch("System.ComponentModel.NullableConverter.IsSupported", out bool isEnabled) ? isEnabled : true;
+#pragma warning restore IL4000
         private static readonly ConstructorInfo s_nullableConstructor = typeof(Nullable<>).GetConstructor(typeof(Nullable<>).GetGenericArguments())!;
 
         /// <summary>
