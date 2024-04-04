@@ -178,7 +178,7 @@ extends:
               value: 180
           jobParameters:
             testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests
+            nameSuffix: AllSubsets_Mono_LLVMFULLAOT_RuntimeTests
             runtimeVariant: llvmfullaot
             buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             timeoutInMinutes: 360
@@ -225,7 +225,7 @@ extends:
               value: 180
           jobParameters:
             testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeIntrinsicsTests
+            nameSuffix: AllSubsets_Mono_LLVMFULLAOT_RuntimeIntrinsicsTests
             runtimeVariant: llvmfullaot
             buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             timeoutInMinutes: 360
