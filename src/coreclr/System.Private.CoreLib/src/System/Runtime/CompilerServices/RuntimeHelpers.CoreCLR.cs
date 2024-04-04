@@ -428,7 +428,7 @@ namespace System.Runtime.CompilerServices
 
             int result = SizeOf(new QCallTypeHandle(ref type));
 
-            if (result < 0)
+            if (result <= 0)
                 throw new ArgumentException(SR.Arg_TypeNotSupported);
 
             return result;

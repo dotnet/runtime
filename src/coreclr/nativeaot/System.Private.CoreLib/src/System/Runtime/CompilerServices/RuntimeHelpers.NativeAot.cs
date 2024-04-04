@@ -369,6 +369,13 @@ namespace System.Runtime.CompilerServices
 
             MethodTable* mt = type.ToMethodTable();
 
+            if (mt->ElementType == Internal.Runtime.EETypeElementType.Void
+                || mt->IsGenericTypeDefinition
+                || mt->IsGenericParameter)
+            {
+                throw new ArgumentException(SR.Arg_TypeNotSupported);
+            }
+
             if (mt->IsValueType)
             {
                 return (int)mt->ValueTypeSize;

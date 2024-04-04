@@ -462,6 +462,8 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(delegate* <void>).TypeHandle));
             Assert.Throws<ArgumentNullException>(() => RuntimeHelpers.SizeOf(default));
             Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(List<>).GetGenericArguments()[0].TypeHandle));
+            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(List<>).TypeHandle));
+            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(void).TypeHandle));
         }
     }
 
