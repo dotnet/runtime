@@ -9497,7 +9497,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // If initReg is trashed, either because it was an arg to the enter
     // callback, or because the enter callback itself trashes it, then it needs
     // to be zero'ed again before using.
-    if (((RBM_PROFILER_ENTER_TRASH | RBM_ARG0 | RBM_ARG1) & genRegMask(initReg)) != 0)
+    if (((RBM_PROFILER_ENTER_TRASH | RBM_ARG_0 | RBM_ARG_1) & genRegMask(initReg)) != 0)
     {
         *pInitRegZeroed = false;
     }
