@@ -1883,7 +1883,7 @@ private:
     AllRegsMask m_RegistersWithConstants;
     AllRegsMask fixedRegs;
 
-    void clearConstantReg(regNumber reg, var_types regType)
+    void      clearConstantReg(regNumber reg, var_types regType)
     {
         // TODO: If we decide to have curr_RegistersWithConstants, then here we will
         // just operate on curr_RegistersWithConstants and assert

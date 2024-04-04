@@ -702,19 +702,19 @@ inline unsigned int roundUp(unsigned size, unsigned mult)
 
 inline unsigned int unsigned_abs(int x)
 {
-    return ((unsigned int)abs(x));
+    return ((unsigned int)std::abs(x));
 }
 
 #ifdef TARGET_64BIT
 inline size_t unsigned_abs(ssize_t x)
 {
-    return ((size_t)abs((__int64)x));
+    return ((size_t)std::abs((__int64)x));
 }
 
 #ifdef __APPLE__
 inline size_t unsigned_abs(__int64 x)
 {
-    return ((size_t)abs(x));
+    return ((size_t)std::abs(x));
 }
 #endif // __APPLE__
 #endif // TARGET_64BIT

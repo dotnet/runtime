@@ -385,7 +385,6 @@ set( JIT_HEADERS
   targetamd64.h
   targetarm.h
   targetarm64.h
-  tinyarray.h
   treelifeupdater.h
   typelist.h
   unwind.h

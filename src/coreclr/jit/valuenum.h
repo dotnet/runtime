@@ -205,13 +205,6 @@ struct VNFuncApp
     }
 };
 
-// An instance of this struct represents the decoded information of a SIMD type from a value number.
-struct VNSimdTypeInfo
-{
-    unsigned int m_simdSize;
-    CorInfoType  m_simdBaseJitType;
-};
-
 // We use a unique prefix character when printing value numbers in dumps:  i.e.  $1c0
 // This define is used with string concatenation to put this in printf format strings
 #define FMT_VN "$%x"

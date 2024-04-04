@@ -41,6 +41,10 @@ namespace System.Threading
         {
             Debug.Assert(timeoutMs >= -1);
 
+#if FEATURE_WASM_MANAGED_THREADS
+            Thread.AssureBlockingPossible();
+#endif
+
             int spinCount = spinWait ? _spinCount : 0;
 
             // Try to acquire the semaphore or

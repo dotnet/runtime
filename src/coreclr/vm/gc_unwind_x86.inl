@@ -142,7 +142,6 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -494,7 +493,6 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 

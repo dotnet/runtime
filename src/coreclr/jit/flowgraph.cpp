@@ -3925,15 +3925,6 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
     return firstNode;
 }
 
-void Compiler::fgLclFldAssign(unsigned lclNum)
-{
-    assert(varTypeIsStruct(lvaTable[lclNum].lvType));
-    if (lvaTable[lclNum].lvPromoted && lvaTable[lclNum].lvFieldCnt > 1)
-    {
-        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
-    }
-}
-
 #ifdef DEBUG
 
 //------------------------------------------------------------------------

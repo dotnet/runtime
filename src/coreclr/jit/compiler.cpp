@@ -2907,10 +2907,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disAlignment = false;
     opts.disCodeBytes = false;
 
-#ifdef OPT_CONFIG
-    opts.optRepeat = false;
-#endif // OPT_CONFIG
-
+    opts.optRepeat          = false;
     opts.optRepeatIteration = 0;
     opts.optRepeatCount     = 1;
     opts.optRepeatActive    = false;
@@ -3089,6 +3086,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         opts.disAsm = true;
     }
+
+    if ((JitConfig.JitEnableOptRepeat() != 0) &&
+        (JitConfig.JitOptRepeat().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args)))
+    {
+        opts.optRepeat      = true;
+        opts.optRepeatCount = JitConfig.JitOptRepeatCount();
+    }
 #endif // !DEBUG
 
 #ifndef DEBUG
@@ -3114,8 +3118,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
     }
 
-#ifdef OPT_CONFIG
-
     if (opts.optRepeat)
     {
         // Defer printing this until now, after the "START" line printed above.
@@ -3137,7 +3139,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             JITDUMP("\n*************** JitOptRepeat enabled by JitOptRepeatRange; repetition count: %d\n\n",
                     opts.optRepeatCount);
         }
-#endif // DEBUG
 
         if (!opts.optRepeat && compStressCompile(STRESS_OPT_REPEAT, 10))
         {
@@ -3151,9 +3152,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
             JITDUMP("\n*************** JitOptRepeat for stress; repetition count: %d\n\n", opts.optRepeatCount);
         }
+#endif // DEBUG
     }
-
-#endif // OPT_CONFIG
 
 #ifdef DEBUG
     assert(!codeGen->isGCTypeFixed());
@@ -5038,12 +5038,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
 #endif // defined(OPT_CONFIG)
 
-#ifdef DEBUG
         if (opts.optRepeat)
         {
             opts.optRepeatActive = true;
         }
-#endif // DEBUG
 
         while (++opts.optRepeatIteration <= opts.optRepeatCount)
         {
@@ -5192,12 +5190,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #endif // DEBUG
         }
 
-#ifdef DEBUG
         if (opts.optRepeat)
         {
             opts.optRepeatActive = false;
         }
-#endif // DEBUG
     }
 
     optLoopsCanonical = false;
@@ -5681,7 +5677,7 @@ void Compiler::SplitTreesRandomly()
     rng.Init(info.compMethodHash() ^ 0x077cc4d4);
 
     // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
-    unsigned maxLvaCount = max(lvaCount * 2, 50000);
+    unsigned maxLvaCount = max(lvaCount * 2, 50000u);
 
     for (BasicBlock* block : Blocks())
     {
@@ -5743,7 +5739,7 @@ void Compiler::SplitTreesRandomly()
 void Compiler::SplitTreesRemoveCommas()
 {
     // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
-    unsigned maxLvaCount = max(lvaCount * 2, 50000);
+    unsigned maxLvaCount = max(lvaCount * 2, 50000u);
 
     for (BasicBlock* block : Blocks())
     {
@@ -7554,7 +7550,7 @@ void Compiler::compInitVarScopeMap()
     compVarScopeMap = new (getAllocator()) VarNumToScopeDscMap(getAllocator());
 
     // 599 prime to limit huge allocations; for ex: duplicated scopes on single var.
-    compVarScopeMap->Reallocate(min(info.compVarScopesCount, 599));
+    compVarScopeMap->Reallocate(min(info.compVarScopesCount, 599u));
 
     for (unsigned i = 0; i < info.compVarScopesCount; ++i)
     {

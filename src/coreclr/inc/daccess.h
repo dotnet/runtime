@@ -561,6 +561,10 @@
 #ifndef NATIVEAOT
 #include <stdint.h>
 
+#if !defined(HOST_WINDOWS)
+#include <pal_mstypes.h>
+#endif
+
 #include "switches.h"
 #include "safemath.h"
 #include "corerror.h"
@@ -568,12 +572,8 @@
 // Keep in sync with the definitions in dbgutil.cpp and createdump.h
 #define DACCESS_TABLE_SYMBOL "g_dacTable"
 
-#ifdef PAL_STDCPP_COMPAT
 #include <type_traits>
-#else
-#include "clr_std/type_traits"
 #include "crosscomp.h"
-#endif
 
 #include <dn-u16.h>
 

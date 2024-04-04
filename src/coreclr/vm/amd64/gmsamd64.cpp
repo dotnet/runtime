@@ -11,8 +11,7 @@
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundState,
                                     DWORD threadId,
-                                    int funCallDepth /* = 1 */,
-                                    HostCallPreference hostCallPreference /* = (HostCallPreference)(-1) */)
+                                    int funCallDepth /* = 1 */)
 {
     CONTRACTL
     {
@@ -83,20 +82,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         {
             // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
             // Use it now to see if we've unwound to managed code yet.
-            BOOL fFailedReaderLock = FALSE;
-            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc, hostCallPreference, &fFailedReaderLock);
-            if (fFailedReaderLock)
-            {
-                // We don't know if we would have been able to find a JIT
-                // manager, because we couldn't enter the reader lock without
-                // yielding (and our caller doesn't want us to yield).  So abort
-                // now.
-
-                // Invalidate the lazyState we're returning, so the caller knows
-                // we aborted before we could fully unwind
-                unwoundState->_pRetAddr = NULL;
-                return;
-            }
+            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc);
 
             if (fIsManagedCode)
                 break;

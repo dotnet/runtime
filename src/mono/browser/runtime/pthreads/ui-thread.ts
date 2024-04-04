@@ -5,11 +5,10 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { } from "../globals";
-import { mono_log_debug, mono_log_warn } from "../logging";
 import { MonoWorkerToMainMessage, monoThreadInfo, mono_wasm_pthread_ptr, update_thread_info, worker_empty_prefix } from "./shared";
 import { Module, ENVIRONMENT_IS_WORKER, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
-import { PThreadLibrary, MainToWorkerMessageType, MonoThreadMessage, PThreadInfo, PThreadPtr, PThreadPtrNull, PThreadWorker, PromiseAndController, PromiseController, Thread, WorkerToMainMessageType, monoMessageSymbol } from "../types/internal";
-import { mono_log_error, mono_log_info } from "../logging";
+import { PThreadLibrary, MainToWorkerMessageType, MonoThreadMessage, PThreadInfo, PThreadPtr, PThreadPtrNull, PThreadWorker, PromiseController, Thread, WorkerToMainMessageType, monoMessageSymbol } from "../types/internal";
+import { mono_log_error, mono_log_info, mono_log_debug } from "../logging";
 import { threads_c_functions as cwraps } from "../cwraps";
 
 const threadPromises: Map<PThreadPtr, PromiseController<Thread>[]> = new Map();
@@ -119,32 +118,16 @@ function monoWorkerMessageHandler (worker: PThreadWorker, ev: MessageEvent<any>)
     }
 }
 
-let pendingWorkerLoad: PromiseAndController<void> | undefined;
-
 /// Called by Emscripten internals on the browser thread when a new pthread worker is created and added to the pthread worker pool.
 /// At this point the worker doesn't have any pthread assigned to it, yet.
 export function onWorkerLoadInitiated (worker: PThreadWorker, loaded: Promise<Worker>): void {
     if (!WasmEnableThreads) return;
     worker.addEventListener("message", (ev) => monoWorkerMessageHandler(worker, ev));
-    if (pendingWorkerLoad == undefined) {
-        pendingWorkerLoad = createPromiseController<void>();
-    }
     loaded.then(() => {
         worker.info.isLoaded = true;
-        if (pendingWorkerLoad != undefined) {
-            pendingWorkerLoad.promise_control.resolve();
-            pendingWorkerLoad = undefined;
-        }
     });
 }
 
-export function thread_available (): Promise<void> {
-    if (!WasmEnableThreads) return null as any;
-    if (pendingWorkerLoad == undefined) {
-        return Promise.resolve();
-    }
-    return pendingWorkerLoad.promise;
-}
 
 export function populateEmscriptenPool (): void {
     if (!WasmEnableThreads) return;
@@ -295,7 +278,7 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
     if (!WasmEnableThreads) return null as any;
 
     if (modulePThread.unusedWorkers.length == 0) {
-        mono_log_warn(`Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolReady. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+        mono_log_debug(`Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolReady. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
         const worker = allocateUnusedWorker();
         modulePThread.loadWasmModuleToWorker(worker);
         availableThreadCount--;
@@ -316,7 +299,7 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
             return worker;
         }
     }
-    mono_log_warn(`Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolReady. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+    mono_log_debug(`Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolReady. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
     availableThreadCount--; // negative value
     return modulePThread.unusedWorkers.pop()!;
 }

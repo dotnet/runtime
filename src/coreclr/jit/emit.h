@@ -3233,7 +3233,7 @@ public:
     void emitDispMaskRegSet(regMaskPredicate regs);
 #endif // FEATURE_MASKED_HW_INTRINSICS
     void emitDispRegSet(AllRegsMask regs);
-    void emitDispVarSet();
+    void        emitDispVarSet();
 #endif
 
     void emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr);

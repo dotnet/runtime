@@ -2073,7 +2073,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     FlowEdge* const falseEdge = fgAddRefPred(fastPreheader, condLast);
     condLast->SetFalseEdge(falseEdge);
     FlowEdge* const trueEdge = condLast->GetTrueEdge();
-    falseEdge->setLikelihood(max(0, 1.0 - trueEdge->getLikelihood()));
+    falseEdge->setLikelihood(max(0.0, 1.0 - trueEdge->getLikelihood()));
 }
 
 //-------------------------------------------------------------------------
