@@ -5335,7 +5335,7 @@ RegBitSet64 AllRegsMask::GetAllRegistersMask() const
 
 regMaskGpr AllRegsMask::gprRegs() const
 {
-    return _combinedRegisters & RBM_ALLINT;
+    return _combinedRegisters & RBM_ALLGPR;
 }
 
 regMaskFloat AllRegsMask::floatRegs(const Compiler* compiler) const
