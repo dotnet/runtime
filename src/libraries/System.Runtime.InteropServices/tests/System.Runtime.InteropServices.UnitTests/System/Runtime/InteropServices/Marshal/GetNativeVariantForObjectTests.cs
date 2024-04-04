@@ -175,18 +175,25 @@ namespace System.Runtime.InteropServices.Tests
             IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
             try
             {
-                Marshal.GetNativeVariantForObject(guid, pNative);
+                if (PlatformDetection.IsWindowsNanoServer)
+                {
+                    Assert.Throws<NotSupportedException>(() => Marshal.GetNativeVariantForObject(guid, pNative));
+                }
+                else
+                {
+                    Marshal.GetNativeVariantForObject(guid, pNative);
 
-                Variant result = Marshal.PtrToStructure<Variant>(pNative);
-                Assert.Equal(VarEnum.VT_RECORD, (VarEnum)result.vt);
-                Assert.NotEqual(nint.Zero, result.pRecInfo); // We should have an IRecordInfo instance.
+                    Variant result = Marshal.PtrToStructure<Variant>(pNative);
+                    Assert.Equal(VarEnum.VT_RECORD, (VarEnum)result.vt);
+                    Assert.NotEqual(nint.Zero, result.pRecInfo); // We should have an IRecordInfo instance.
 
-                var expectedBytes = new ReadOnlySpan<byte>(guid.ToByteArray());
-                var actualBytes = new ReadOnlySpan<byte>((void*)result.bstrVal, expectedBytes.Length);
-                Assert.Equal(expectedBytes, actualBytes);
+                    var expectedBytes = new ReadOnlySpan<byte>(guid.ToByteArray());
+                    var actualBytes = new ReadOnlySpan<byte>((void*)result.bstrVal, expectedBytes.Length);
+                    Assert.Equal(expectedBytes, actualBytes);
 
-                object o = Marshal.GetObjectForNativeVariant(pNative);
-                Assert.Equal(guid, o);
+                    object o = Marshal.GetObjectForNativeVariant(pNative);
+                    Assert.Equal(guid, o);
+                }
             }
             finally
             {
