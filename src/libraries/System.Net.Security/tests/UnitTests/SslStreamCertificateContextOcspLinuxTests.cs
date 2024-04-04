@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 using System.Net.Security;
 
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Security.Tests;
 
