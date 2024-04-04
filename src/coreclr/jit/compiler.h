@@ -8234,23 +8234,24 @@ public:
     }
 
 #if defined(FEATURE_EH_WINDOWS_X86)
-    bool UsesFunclets()
+    bool eeIsNativeAotAbi;
+    bool UsesFunclets() const
     {
-        return IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+        return eeIsNativeAotAbi;
     }
 
-    bool UsesCallFinallyThunks()
+    bool UsesCallFinallyThunks() const
     {
         // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
         return UsesFunclets();
     }
 #else
-    bool UsesFunclets()
+    bool UsesFunclets() const
     {
         return true;
     }
 
-    bool UsesCallFinallyThunks()
+    bool UsesCallFinallyThunks() const
     {
         return true;
     }
