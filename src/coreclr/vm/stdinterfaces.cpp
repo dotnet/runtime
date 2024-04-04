@@ -611,7 +611,7 @@ HRESULT GetITypeLibForAssembly(_In_ Assembly *pAssembly, _Outptr_ ITypeLib **ppT
     return S_OK;
 } // HRESULT GetITypeLibForAssembly()
 
-// .NET Frameworks' mscorlib TLB GUID.
+// .NET Framework's mscorlib TLB GUID.
 static const GUID s_MscorlibGuid = { 0xBED7F4EA, 0x1A96, 0x11D2, { 0x8F, 0x08, 0x00, 0xA0, 0xC9, 0xA6, 0x18, 0x6D } };
 
 // Hard-coded GUID for System.Guid.
@@ -633,9 +633,8 @@ static bool TryDeferToMscorlib(MethodTable* pClass, ITypeInfo** ppTI)
     }
     CONTRACTL_END;
 
-    // Marshalling of a System.Guid is such a common scenario, let's see if we can load
-    // the .NET Framework's TLB. This is a niche scenario, but one that impacts many teams
-    // porting code to .NET 8+.
+    // Marshalling of System.Guid is a common scenario that impacts many teams porting
+    // code to .NET 8+. Try to load the .NET Framework's TLB to support this scenario.
     if (pClass == CoreLibBinder::GetClass(CLASS__GUID))
     {
         SafeComHolder<ITypeLib> pMscorlibTypeLib = NULL;
