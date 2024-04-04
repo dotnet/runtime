@@ -1828,7 +1828,7 @@ void Compiler::lvaClassifyParameterABI()
 
         assert(abiInfo.NumSegments > 0);
 
-        if ((dsc->TypeGet() == TYP_STRUCT) && info.compCallConv == CorInfoCallConvExtension::Swift)
+        if ((dsc->TypeGet() == TYP_STRUCT) && (info.compCallConv == CorInfoCallConvExtension::Swift))
         {
             continue;
         }
