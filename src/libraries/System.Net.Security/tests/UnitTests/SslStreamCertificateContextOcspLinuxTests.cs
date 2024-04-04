@@ -17,7 +17,7 @@ using Xunit.Abstractions;
 namespace System.Net.Security.Tests;
 
 [PlatformSpecific(TestPlatforms.Linux)]
-public class SslStreamCertificateContextOcspLinuxTests : IDisposable
+public class SslStreamCertificateContextOcspLinuxTests
 {
     [Fact]
     public async Task OfflineContext_NoFetchOcspResponse()
