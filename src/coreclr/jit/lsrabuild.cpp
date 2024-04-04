@@ -2321,7 +2321,7 @@ void LinearScan::buildIntervals()
             Interval*       interval = getIntervalForLocalVar(varIndex);
             const var_types regType  = argDsc->GetRegisterType();
             regMaskTP       mask     = allRegs(regType);
-            if (argDsc->lvIsRegArg)
+            if (argDsc->lvIsRegArg && !stressInitialParamReg())
             {
                 // Set this interval as currently assigned to that register
                 regNumber inArgReg = argDsc->GetArgReg();
@@ -2392,6 +2392,55 @@ void LinearScan::buildIntervals()
     if (compiler->info.compPublishStubParam)
     {
         intRegState->rsCalleeRegArgMaskLiveIn |= RBM_SECRET_STUB_PARAM;
+    }
+
+    if (stressInitialParamReg())
+    {
+        CLRRandom rng;
+        rng.Init(compiler->info.compMethodHash());
+        regMaskTP intRegs   = intRegState->rsCalleeRegArgMaskLiveIn;
+        regMaskTP floatRegs = floatRegState->rsCalleeRegArgMaskLiveIn;
+
+        for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
+        {
+            LclVarDsc* argDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
+
+            if (!argDsc->lvIsParam || !isCandidateVar(argDsc))
+            {
+                continue;
+            }
+
+            Interval* interval = getIntervalForLocalVar(varIndex);
+
+            regMaskTP* regs;
+            if (interval->registerType == FloatRegisterType)
+            {
+                regs = &floatRegs;
+            }
+            else
+            {
+                regs = &intRegs;
+            }
+
+            // Select a random register from all possible parameter registers
+            // (of the right type). Preference this parameter to that register.
+            unsigned numBits = BitOperations::PopCount(*regs);
+            if (numBits == 0)
+            {
+                continue;
+            }
+
+            int       bitIndex = rng.Next((int)numBits);
+            regNumber prefReg  = REG_NA;
+            regMaskTP regsLeft = *regs;
+            for (int i = 0; i <= bitIndex; i++)
+            {
+                prefReg = genFirstRegNumFromMaskAndToggle(regsLeft);
+            }
+
+            *regs &= ~genRegMask(prefReg);
+            interval->mergeRegisterPreferences(genRegMask(prefReg));
+        }
     }
 
     numPlacedArgLocals = 0;

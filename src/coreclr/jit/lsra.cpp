@@ -5507,7 +5507,7 @@ void LinearScan::allocateRegisters()
         Interval* currentInterval          = &interval;
         currentInterval->recentRefPosition = nullptr;
         currentInterval->isActive          = false;
-        if (currentInterval->isLocalVar)
+        if (currentInterval->isLocalVar && !stressInitialParamReg())
         {
             LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
             if (varDsc->lvIsRegArg && currentInterval->firstRefPosition != nullptr)
