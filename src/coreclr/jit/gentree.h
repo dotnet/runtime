@@ -556,8 +556,6 @@ enum GenTreeFlags : unsigned int
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
-
-    GTF_CONVERSION_SATURATED    = 0x20000000, // GT_CAST -- conversion operation has saturation behavior
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -3890,16 +3888,6 @@ struct GenTreeCast : public GenTreeOp
         }
 
         return false;
-    }
-
-    bool IsSaturatedConversion()
-    {
-        return (gtFlags & GTF_CONVERSION_SATURATED) != 0;
-    }
-
-    void SetSaturatedConversion()
-    {
-        gtFlags |= GTF_CONVERSION_SATURATED;
     }
 };
 
