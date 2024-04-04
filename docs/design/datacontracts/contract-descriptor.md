@@ -31,8 +31,8 @@ struct DotNetRuntimeContractDescriptor
 ```
 
 The `magic` is `0x44_4e_43_43_44_41_43_00` ("DNCCDAC\0") stored using the target architecture
-endianness. (N.B. this is sufficient to discover the target architecture endianness by comparing the
-value in memory to `0x44_4e_43_43_44_41_43_00` and to `0x00_43_41_44_43_43_4e_44`)
+endianness. This is sufficient to discover the target architecture endianness by comparing the
+value in memory to `0x44_4e_43_43_44_41_43_00` and to `0x00_43_41_44_43_43_4e_44`.
 
 The following `flags` bits are defined:
 
@@ -59,7 +59,7 @@ information derived from `DotNetRuntimeContractDescriptor` for validation.
 The `descriptor` is a JSON dictionary that is used for storing the [in-memory data descriptor](./data_descriptor.md#Physical_JSON_Descriptor)
 and the [compatible contracts](./datacontracts_design.md#Compatible_Contract).
 
-The compatible contracts are stored in the toplevel key `"contracts"`.  The value will be a
+The compatible contracts are stored in the top-level key `"contracts"`.  The value will be a
 dictionary that contains each contract name as a key.  Each value is the version of the contract as
 a JSON integer constant.
 
@@ -85,16 +85,16 @@ a JSON integer constant.
     "FEATURE_COMINTEROP": 0,
     "s_pThreadStore": [ 0 ] // indirect from aux data offset 0
   },
-  "contracts": {"Thread": 1,"GCHandle": 1, "ThreadStore": 1}
+  "contracts": {"Thread": 1, "GCHandle": 1, "ThreadStore": 1}
 }
 ```
 
 ## Contract symbol
 
-To aid in the discovery the contract descriptor should be exported by the module hosting the .NET
-runtime with the name `DotNetRuntimeContractDescriptor`. (Using the C symbol conventions of the
+To aid in discovery, the contract descriptor should be exported by the module hosting the .NET
+runtime with the name `DotNetRuntimeContractDescriptor` using the C symbol conventions of the
 target platform.  That is, on platforms where such symbols typically have an `_` prepended, this
-symbol should be exported as `_DotNetRuntimeContractDescriptor`).
+symbol should be exported as `_DotNetRuntimeContractDescriptor`.
 
 In scenarios where multiple .NET runtimes may be present in a single process, diagnostic tooling
 should look for the symbol in each loaded module to discover all the runtimes.
