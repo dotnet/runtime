@@ -873,7 +873,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     size_t cacheLevel = 0;
     size_t cacheSize = 0;
 
-#ifdef HAVE_SYSCONF
+#if defined(_SC_LEVEL1_DCACHE_SIZE) || defined(_SC_LEVEL2_CACHE_SIZE) || defined(_SC_LEVEL3_CACHE_SIZE) || defined(_SC_LEVEL4_CACHE_SIZE)
     const int cacheLevelNames[] =
     {
         _SC_LEVEL1_DCACHE_SIZE,
