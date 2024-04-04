@@ -2980,6 +2980,17 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         {
             continue;
         }
+
+        // On a similar note, the SwiftError* parameter is not a real argument,
+        // and should not be allocated any registers/stack space.
+        // We mark it as being passed in REG_SWIFT_ERROR so it won't interfere with other args.
+        // In genFnProlog, we should have removed this callee-save register from intRegState.rsCalleeRegArgMaskLiveIn.
+        // TODO-CQ: Fix this.
+        if (varNum == compiler->lvaSwiftErrorArg)
+        {
+            assert((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_ERROR) == 0);
+            continue;
+        }
 #endif
 
         var_types regType = compiler->mangleVarArgsType(varDsc->TypeGet());
@@ -5486,7 +5497,7 @@ void CodeGen::genFinalizeFrame()
     noway_assert(!regSet.rsRegsModified(RBM_FPBASE));
 #endif
 
-    regMaskTP maskCalleeRegsPushed = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP maskCalleeRegsPushed = regSet.rsGetModifiedCalleeSavedRegsMask();
 
 #ifdef TARGET_ARMARCH
     if (isFramePointerUsed())
@@ -6166,7 +6177,7 @@ void CodeGen::genFnProlog()
 
 #ifdef TARGET_ARM
     maskStackAlloc = genStackAllocRegisterMask(compiler->compLclFrameSize + extraFrameSize,
-                                               regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED);
+                                               regSet.rsGetModifiedFltCalleeSavedRegsMask());
 #endif // TARGET_ARM
 
     if (maskStackAlloc == RBM_NONE)
@@ -6234,6 +6245,19 @@ void CodeGen::genFnProlog()
         // It's no longer live; clear it out so it can be used after this in the prolog
         intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SECRET_STUB_PARAM;
     }
+
+#ifdef SWIFT_SUPPORT
+    if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) && ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
+    {
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
+        intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
+    }
+
+    if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+    {
+        intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
+    }
+#endif
 
     //
     // Zero out the frame as needed
@@ -7930,6 +7954,17 @@ void CodeGen::genReturn(GenTree* treeNode)
 
     genStackPointerCheck(doStackPointerCheck, compiler->lvaReturnSpCheck);
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
+
+#ifdef SWIFT_SUPPORT
+    // If this method has a SwiftError* out parameter, load the SwiftError pseudolocal value into the error register.
+    // TODO-CQ: Introduce GenTree node that models returning a normal and Swift error value.
+    if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+    {
+        assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
+        assert(compiler->lvaSwiftErrorLocal != BAD_VAR_NUM);
+        GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_ERROR, compiler->lvaSwiftErrorLocal, 0);
+    }
+#endif // SWIFT_SUPPORT
 }
 
 //------------------------------------------------------------------------

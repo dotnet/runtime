@@ -72,7 +72,8 @@ void Compiler::lvaInit()
     lvaRetAddrVar       = BAD_VAR_NUM;
 
 #ifdef SWIFT_SUPPORT
-    lvaSwiftSelfArg = BAD_VAR_NUM;
+    lvaSwiftSelfArg  = BAD_VAR_NUM;
+    lvaSwiftErrorArg = BAD_VAR_NUM;
 #endif
 
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
@@ -668,7 +669,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 IMPL_LIMITATION("SIMD types are currently unsupported in Swift reverse pinvokes");
             }
 
-            if (lvaInitSpecialSwiftParam(varDscInfo, strip(corInfoType), typeHnd))
+            if (lvaInitSpecialSwiftParam(argLst, varDscInfo, strip(corInfoType), typeHnd))
             {
                 continue;
             }
@@ -1382,19 +1383,32 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #ifdef SWIFT_SUPPORT
 //-----------------------------------------------------------------------------
-// lvaInitSpecialSwiftParam:
-//  If the parameter is a special Swift parameter then initialize it and return true.
+// lvaInitSpecialSwiftParam: Initialize SwiftSelf/SwiftError* parameters.
 //
 // Parameters:
+//   argHnd  - Handle for this parameter in the method's signature
 //   varDsc  - LclVarDsc* for the parameter
 //   type    - Type of the parameter
 //   typeHnd - Class handle for the type of the parameter
 //
-// Remarks:
-//   Handles SwiftSelf.
+// Returns:
+//   true if parameter was initialized
 //
-bool Compiler::lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd)
+bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
+                                        InitVarDscInfo*         varDscInfo,
+                                        CorInfoType             type,
+                                        CORINFO_CLASS_HANDLE    typeHnd)
 {
+    const bool argIsByrefOrPtr = (type == CORINFO_TYPE_BYREF) || (type == CORINFO_TYPE_PTR);
+
+    if (argIsByrefOrPtr)
+    {
+        // For primitive types, we don't expect to be passed a CORINFO_CLASS_HANDLE; look up the actual handle
+        assert(typeHnd == nullptr);
+        CORINFO_CLASS_HANDLE clsHnd = info.compCompHnd->getArgClass(&info.compMethodInfo->args, argHnd);
+        type                        = info.compCompHnd->getChildType(clsHnd, &typeHnd);
+    }
+
     if (type != CORINFO_TYPE_VALUECLASS)
     {
         return false;
@@ -1409,7 +1423,17 @@ bool Compiler::lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType 
     const char* className = info.compCompHnd->getClassNameFromMetadata(typeHnd, &namespaceName);
     if ((strcmp(className, "SwiftSelf") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
     {
-        LclVarDsc* varDsc = varDscInfo->varDsc;
+        if (argIsByrefOrPtr)
+        {
+            BADCODE("Expected SwiftSelf struct, got pointer/reference");
+        }
+
+        if (lvaSwiftSelfArg != BAD_VAR_NUM)
+        {
+            BADCODE("Duplicate SwiftSelf parameter");
+        }
+
+        LclVarDsc* const varDsc = varDscInfo->varDsc;
         varDsc->SetArgReg(REG_SWIFT_SELF);
         varDsc->SetOtherArgReg(REG_NA);
         varDsc->lvIsRegArg = true;
@@ -1418,6 +1442,34 @@ bool Compiler::lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType 
 
         lvaSwiftSelfArg = varDscInfo->varNum;
         lvaSetVarDoNotEnregister(lvaSwiftSelfArg DEBUGARG(DoNotEnregisterReason::NonStandardParameter));
+        return true;
+    }
+
+    if ((strcmp(className, "SwiftError") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+    {
+        if (!argIsByrefOrPtr)
+        {
+            BADCODE("Expected SwiftError pointer/reference, got struct");
+        }
+
+        if (lvaSwiftErrorArg != BAD_VAR_NUM)
+        {
+            BADCODE("Duplicate SwiftError* parameter");
+        }
+
+        // We won't actually be passing this SwiftError* in REG_SWIFT_ERROR (or any register, for that matter).
+        // We will check for this quirk when generating the prolog,
+        // and ensure this fake parameter doesn't take any registers/stack space
+        LclVarDsc* const varDsc = varDscInfo->varDsc;
+        varDsc->SetArgReg(REG_SWIFT_ERROR);
+        varDsc->SetOtherArgReg(REG_NA);
+        varDsc->lvIsRegArg = true;
+        lvaSwiftErrorArg   = varDscInfo->varNum;
+
+        // Instead, all usages of the SwiftError* parameter will be redirected to this pseudolocal.
+        lvaSwiftErrorLocal = lvaGrabTempWithImplicitUse(false DEBUGARG("SwiftError pseudolocal"));
+        lvaSetStruct(lvaSwiftErrorLocal, typeHnd, false);
+        lvaSetVarAddrExposed(lvaSwiftErrorLocal DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
         return true;
     }
 
@@ -1660,6 +1712,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         {
             wellKnownArg = WellKnownArg::SwiftSelf;
         }
+        else if (i == lvaSwiftErrorArg)
+        {
+            wellKnownArg = WellKnownArg::SwiftError;
+        }
 #endif
 
         lvaParameterPassingInfo[i] = classifier.Classify(this, dsc->TypeGet(), structLayout, wellKnownArg);
@@ -1835,7 +1891,7 @@ void Compiler::lvaClassifyParameterABI()
             }
         }
     }
-#endif
+#endif // DEBUG
 }
 
 //--------------------------------------------------------------------------------------------

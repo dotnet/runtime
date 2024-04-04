@@ -38,9 +38,14 @@ public partial class Test
     public static void Progress2()
     {
         // both calls here are sync POSIX calls dispatched to UI thread, which is already blocked because this is synchronous method on deputy thread
-        // in should not deadlock anyway, see also invoke_later_when_on_ui_thread_sync and emscripten_yield
+        // it should not deadlock anyway, see also invoke_later_when_on_ui_thread_sync and emscripten_yield
         var cwd = Directory.GetCurrentDirectory();
         Console.WriteLine("Progress! "+ cwd); 
+
+        // below is blocking call, which means that UI will spin-lock little longer
+        // it will warn about blocking wait because of jsThreadBlockingMode: "WarnWhenBlockingWait"
+        // but it will not deadlock because underlying task chain is not JS promise
+        Task.Delay(10).Wait();
     }
 
     [JSExport]

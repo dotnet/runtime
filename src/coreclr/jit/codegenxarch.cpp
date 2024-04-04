@@ -9756,7 +9756,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
     // x86/x64 doesn't support push of xmm/ymm regs, therefore consider only integer registers for pushing onto stack
     // here. Space for float registers to be preserved is stack allocated and saved as part of prolog sequence and not
     // here.
-    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+    regMaskTP rsPushRegs = regSet.rsGetModifiedOsrIntCalleeSavedRegsMask();
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -9837,7 +9837,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     // x86/x64 doesn't support push of xmm/ymm regs, therefore consider only integer registers for pushing onto stack
     // here. Space for float registers to be preserved is stack allocated and saved as part of prolog sequence and not
     // here.
-    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskTP rsPushRegs = regSet.rsGetModifiedIntCalleeSavedRegsMask();
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -9895,7 +9895,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     //
     if (doesSupersetOfNormalPops)
     {
-        regMaskTP rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+        regMaskTP rsPopRegs = regSet.rsGetModifiedOsrIntCalleeSavedRegsMask();
         regMaskTP tier0CalleeSaves =
             ((regMaskTP)compiler->info.compPatchpointInfo->CalleeSaveRegisters()) & RBM_OSR_INT_CALLEE_SAVED;
         regMaskTP additionalCalleeSaves = rsPopRegs & ~tier0CalleeSaves;
@@ -9915,7 +9915,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
     // Registers saved by a normal prolog
     //
-    regMaskTP      rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskTP      rsPopRegs = regSet.rsGetModifiedIntCalleeSavedRegsMask();
     const unsigned popCount  = genPopCalleeSavedRegistersFromMask(rsPopRegs);
     noway_assert(compiler->compCalleeRegsPushed == popCount);
 }
@@ -10102,7 +10102,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
             regMaskTP const tier0CalleeSaves           = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
             regMaskTP const tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
-            regMaskTP const osrIntCalleeSaves          = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+            regMaskTP const osrIntCalleeSaves          = regSet.rsGetModifiedOsrIntCalleeSavedRegsMask();
             regMaskTP const allIntCalleeSaves          = osrIntCalleeSaves | tier0IntCalleeSaves;
             unsigned const  tier0FrameSize             = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
             unsigned const  tier0IntCalleeSaveUsedSize = genCountBits(allIntCalleeSaves) * REGSIZE_BYTES;

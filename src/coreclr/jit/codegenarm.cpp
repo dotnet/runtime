@@ -2149,7 +2149,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskTP maskPopRegs      = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP maskPopRegs      = regSet.rsGetModifiedCalleeSavedRegsMask();
     regMaskTP maskPopRegsFloat = maskPopRegs & RBM_ALLFLOAT;
     regMaskTP maskPopRegsInt   = maskPopRegs & ~maskPopRegsFloat;
 
