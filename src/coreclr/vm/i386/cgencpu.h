@@ -241,6 +241,15 @@ inline TADDR GetFP(const CONTEXT * context)
     return (TADDR)context->Ebp;
 }
 
+// Get register that holds CallDescrData* in the GetCallDescrWorkerInternal
+inline TADDR GetCallDescrWorkerInternalCallDescrDataReg(CONTEXT * pContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return (TADDR)(pContext->Ebx);
+}
+
+
 // Get Rel32 destination, emit jumpStub if necessary
 inline INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod = NULL, LoaderAllocator *pLoaderAllocator = NULL)
 {

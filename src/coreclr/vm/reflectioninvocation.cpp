@@ -558,6 +558,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
         pTarget = pMeth->GetSingleCallableAddrOfCode();
     }
     callDescrData.pTarget = pTarget;
+    callDescrData.rethrowManagedException = false;
 
     // Build the arguments on the stack
 

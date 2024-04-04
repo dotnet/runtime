@@ -279,6 +279,13 @@ inline TADDR GetFP(const T_CONTEXT * context)
     return (TADDR)(context->Fp);
 }
 
+// Get register that holds CallDescrData* in the GetCallDescrWorkerInternal
+inline TADDR GetCallDescrWorkerInternalCallDescrDataReg(CONTEXT * pContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return (TADDR)(pContext->X19);
+}
 
 inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
 {

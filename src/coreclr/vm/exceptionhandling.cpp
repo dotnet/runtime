@@ -8390,7 +8390,8 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             size_t CallDescrWorkerInternalReturnAddress = (size_t)CallDescrWorkerInternal + CallDescrWorkerInternalReturnAddressOffset;
             if (GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext) == CallDescrWorkerInternalReturnAddress)
             {
-                invalidRevPInvoke = true;
+                CallDescrData* pCallDescrData = (CallDescrData*)GetCallDescrWorkerInternalCallDescrDataReg(pThis->m_crawl.GetRegisterSet()->pCallerContext);
+                invalidRevPInvoke = pCallDescrData->rethrowManagedException;
             }
             else if (pThis->m_crawl.IsFilterFunclet())
             {

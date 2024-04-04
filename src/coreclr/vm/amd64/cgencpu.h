@@ -455,6 +455,14 @@ inline TADDR GetFP(const CONTEXT * context)
     return (TADDR)(context->Rbp);
 }
 
+// Get register that holds CallDescrData* in the GetCallDescrWorkerInternal
+inline TADDR GetCallDescrWorkerInternalCallDescrDataReg(CONTEXT * pContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return (TADDR)(pContext->Rbx);
+}
+
 extern "C" TADDR GetCurrentSP();
 
 // Emits:

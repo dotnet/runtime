@@ -48,6 +48,12 @@ struct CallDescrData
 #else
     UINT64 returnValue;
 #endif
+    // True indicates that the new exception handling should rethrow managed exception
+    // using native EH / SEH when it reaches the CallDescrWorkerInternal.
+    // False means that the native code that called the CallDescrWorkerInternal will
+    // be skipped during EH. Please note that in this case destructors in that
+    // code won't be invoked, so extra care needs to be taken to avoid resource leaks.
+    bool rethrowManagedException;
 };
 
 #define NUMBER_RETURNVALUE_SLOTS (ENREGISTERED_RETURNTYPE_MAXSIZE / sizeof(ARG_SLOT))

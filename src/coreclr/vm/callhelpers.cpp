@@ -206,6 +206,7 @@ void * DispatchCallSimple(
 #endif
     callDescrData.fpReturnSize = 0;
     callDescrData.pTarget = pTargetAddress;
+    callDescrData.rethrowManagedException = true;
 
     if ((dwDispatchCallSimpleFlags & DispatchCallSimple_CatchHandlerFoundNotification) != 0)
     {
@@ -540,6 +541,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 #endif
     callDescrData.fpReturnSize = fpReturnSize;
     callDescrData.pTarget = m_pCallTarget;
+    callDescrData.rethrowManagedException = true;
 
 #ifdef FEATURE_INTERPRETER
     if (transitionToPreemptive)

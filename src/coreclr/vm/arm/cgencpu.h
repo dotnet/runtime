@@ -261,6 +261,14 @@ inline TADDR GetFP(const T_CONTEXT * context)
     return (TADDR)(context->R11);
 }
 
+// Get register that holds CallDescrData* in the GetCallDescrWorkerInternal
+inline TADDR GetCallDescrWorkerInternalCallDescrDataReg(CONTEXT * pContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return (TADDR)(pContext->R5);
+}
+
 inline void ClearITState(T_CONTEXT *context) {
     LIMITED_METHOD_DAC_CONTRACT;
     context->Cpsr = context->Cpsr & 0xf9ff03ff;
