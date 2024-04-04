@@ -826,7 +826,6 @@ private:
     //
     // Register or register pair number of the node.
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
 
@@ -858,7 +857,6 @@ private:
 public:
     // The register number is stored in a small format (8 bits), but the getters return and the setters take
     // a full-size (unsigned) format, to localize the casts here.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     bool canBeContained() const;
@@ -1310,7 +1308,6 @@ public:
     {
         // Note that only GT_EQ to GT_GT are HIR nodes, GT_TEST and GT_BITTEST
         // nodes are backend nodes only.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_XARCH
         static_assert_no_msg(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE,
                                            GT_BITTEST_EQ, GT_BITTEST_NE));
@@ -2000,7 +1997,6 @@ public:
     // These are only used for dumping.
     // The GetRegNum() is only valid in LIR, but the dumping methods are not easily
     // modified to check this.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     bool InReg() const

@@ -520,12 +520,6 @@
   #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3)
 #endif // !UNIX_AMD64_ABI
 
-  // The registers trashed by profiler enter/leave/tailcall hook
-  // See vm\amd64\asmhelpers.asm for more details.
-  #define AllRegsMask_PROFILER_ENTER_TRASH          AllRegsMask_CALLEE_TRASH
-
-  #define AllRegsMask_PROFILER_TAILCALL_TRASH       AllRegsMask_PROFILER_LEAVE_TRASH
-
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper.
 #ifdef UNIX_AMD64_ABI
   // See vm\amd64\unixasmhelpers.S for more details.
@@ -534,21 +528,23 @@
   // The return registers could be any two from the set { RAX, RDX, XMM0, XMM1 }.
   // STOP_FOR_GC helper preserves all the 4 possible return registers.
 
-#ifdef HAS_MORE_THAN_64_REGISTERS
-  #define AllRegsMask_STOP_FOR_GC_TRASH  AllRegsMask(RBM_INT_CALLEE_TRASH & ~(RBM_INTRET | RBM_INTRET_1), (RBM_FLT_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_FLOATRET_1)), RBM_MSK_CALLEE_TRASH)
-#else
-  #define AllRegsMask_STOP_FOR_GC_TRASH  AllRegsMask(RBM_INT_CALLEE_TRASH & ~(RBM_INTRET | RBM_INTRET_1), (RBM_FLT_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_FLOATRET_1)) | RBM_MSK_CALLEE_TRASH)
+
+  // The registers trashed by profiler enter/leave/tailcall hook
+  // See vm\amd64\asmhelpers.S for more details.
+  #define RBM_PROFILER_ENTER_TRASH  (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS|RBM_FLTARG_REGS))
 #endif // HAS_MORE_THAN_64_REGISTERS
   #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
+  #define RBM_PROFILER_TAILCALL_TRASH RBM_PROFILER_LEAVE_TRASH
+
 #else
   // See vm\amd64\asmhelpers.asm for more details.
 #ifdef HAS_MORE_THAN_64_REGISTERS
-  #define AllRegsMask_STOP_FOR_GC_TRASH  AllRegsMask((RBM_INT_CALLEE_TRASH & ~RBM_INTRET), (RBM_FLT_CALLEE_TRASH & ~RBM_FLOATRET), RBM_MSK_CALLEE_TRASH)
-#else
+
+  #define RBM_PROFILER_ENTER_TRASH  RBM_CALLEE_TRASH
   #define AllRegsMask_STOP_FOR_GC_TRASH AllRegsMask((RBM_INT_CALLEE_TRASH & ~RBM_INTRET), (RBM_FLT_CALLEE_TRASH & ~RBM_FLOATRET) | RBM_MSK_CALLEE_TRASH)
 #endif // HAS_MORE_THAN_64_REGISTERS
   #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
-#endif // UNIX_AMD64_ABI
+  #define RBM_PROFILER_TAILCALL_TRASH RBM_PROFILER_LEAVE_TRASH
 
   #define AllRegsMask_PROFILER_LEAVE_TRASH  AllRegsMask_STOP_FOR_GC_TRASH  
 
@@ -596,6 +592,6 @@
   #define REG_SWIFT_ARG_RET_BUFF REG_RAX
   #define RBM_SWIFT_ARG_RET_BUFF RBM_RAX
   #define SWIFT_RET_BUFF_ARGNUM  MAX_REG_ARG
-#endif
+#endif // UNIX_AMD64_ABI
 
 // clang-format on

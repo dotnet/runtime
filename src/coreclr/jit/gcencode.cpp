@@ -134,7 +134,6 @@ void GCInfo::gcMarkFilterVarsPinned()
                         //     (2) a regular one for after the filter
                         // and then adjust the original lifetime to end before
                         // the filter.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
                         if (compiler->verbose)
@@ -177,7 +176,6 @@ void GCInfo::gcMarkFilterVarsPinned()
                         // somewhere inside it, so we only create 1 new lifetime,
                         // and then adjust the original lifetime to end before
                         // the filter.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
                         if (compiler->verbose)
@@ -216,7 +214,6 @@ void GCInfo::gcMarkFilterVarsPinned()
                         // lifetime for the part inside the filter and adjust
                         // the start of the original lifetime to be the end
                         // of the filter
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
                         if (compiler->verbose)
                         {
@@ -259,7 +256,6 @@ void GCInfo::gcMarkFilterVarsPinned()
                     {
                         // The variable lifetime is completely within the filter,
                         // so just add the pinned flag.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
                         if (compiler->verbose)
                         {
@@ -1463,7 +1459,6 @@ size_t GCInfo::gcInfoBlockHdrSave(
 #endif
 
     /* Write the method size first (using between 1 and 5 bytes) */
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (compiler->verbose)
@@ -4112,7 +4107,6 @@ void GCInfo::gcMakeRegPtrTable(
                 // pointers" section of the GC info even if lvTracked==true
 
                 // Has this argument been fully enregistered?
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
                 if (!varDsc->lvOnFrame)
                 {
@@ -4141,7 +4135,6 @@ void GCInfo::gcMakeRegPtrTable(
             }
 
             // If we haven't continued to the next variable, we should report this as an untracked local.
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             GcSlotFlags flags = GC_SLOT_UNTRACKED;
 

@@ -3876,6 +3876,8 @@ public:
 
 #ifdef SWIFT_SUPPORT
     unsigned lvaSwiftSelfArg;
+    unsigned lvaSwiftErrorArg;
+    unsigned lvaSwiftErrorLocal;
 #endif
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
@@ -4005,7 +4007,7 @@ public:
 
     void lvaClassifyParameterABI();
 
-    bool lvaInitSpecialSwiftParam(InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd);
+    bool lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd, InitVarDscInfo* varDscInfo, CorInfoType type, CORINFO_CLASS_HANDLE typeHnd);
 
     var_types lvaGetActualType(unsigned lclNum);
     var_types lvaGetRealType(unsigned lclNum);
@@ -4420,12 +4422,12 @@ protected:
     void impCheckForPInvokeCall(
         GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block);
     GenTreeCall* impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di = DebugInfo());
-    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, CallArg** swiftErrorArg);
-    void impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, CallArg** swiftErrorArg);
+    void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, GenTree** swiftErrorNode);
+    void impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, GenTree** swiftErrorNode);
     void impRetypeUnmanagedCallArgs(GenTreeCall* call);
 
 #ifdef SWIFT_SUPPORT
-    void impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg);
+    void impAppendSwiftErrorStore(GenTree* const swiftErrorNode);
 #endif // SWIFT_SUPPORT
 
     void impInsertHelperCall(CORINFO_HELPER_DESC* helperCall);
@@ -8965,7 +8967,6 @@ public:
         // We need to report the ISA dependency to the VM so that scenarios
         // such as R2R work correctly for larger vector sizes, so we always
         // do `compExactlyDependsOn` for such cases.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_XARCH)
         if (compExactlyDependsOn(InstructionSet_VectorT512))
@@ -10384,7 +10385,6 @@ public:
         // There are cases where implicit RetBuf argument should be explicitly returned in a register.
         // In such cases the return type is changed to TYP_BYREF and appropriate IR is generated.
         // These cases are:
-        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_AMD64
         // 1. on x64 Windows and Unix the address of RetBuf needs to be returned by
         //    methods with hidden RetBufArg in RAX. In such case GT_RETURN is of TYP_BYREF,
@@ -10403,7 +10403,6 @@ public:
 #endif
         // 3. Windows ARM64 native instance calling convention requires the address of RetBuff
         //    to be returned in x0.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_ARM64)
         if (TargetOS::IsWindows)
         {
@@ -10415,7 +10414,6 @@ public:
         }
 #endif // TARGET_ARM64
        // 4. x86 unmanaged calling conventions require the address of RetBuff to be returned in eax.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_X86)
         if (info.compCallConv != CorInfoCallConvExtension::Managed)
         {

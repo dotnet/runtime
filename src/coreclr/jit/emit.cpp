@@ -4697,7 +4697,6 @@ void emitter::emitRemoveJumpToNextInst()
 
                 // the last instruction in the group is the jmp we're looking for
                 // and it jumps to the next instruction group so we don't need it
-                CLANG_FORMAT_COMMENT_ANCHOR
 
 #ifdef DEBUG
                 unsigned instructionCount = jmpGroup->igInsCnt;
@@ -5109,7 +5108,6 @@ AGAIN:
         jmp->idjOffs -= adjLJ;
 
         // If this is a jump via register, the instruction size does not change, so we are done.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_ARM64)
         // JIT code and data will be allocated together for arm64 so the relative offset to JIT data is known.
@@ -5175,7 +5173,6 @@ AGAIN:
         else
         {
             /* First time we've seen this label, convert its target */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
             if (EMITVERBOSE)
@@ -5584,7 +5581,6 @@ AGAIN:
 #endif
 
         /* Is there a chance of other jumps becoming short? */
-        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
 #if defined(TARGET_ARM)
         if (EMITVERBOSE)
@@ -5911,7 +5907,6 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader,
             //      jne IG06
             //
             //
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
             if ((igInLoop->igLoopBackEdge != nullptr) && (igInLoop->igLoopBackEdge != igLoopHeader))
@@ -6979,7 +6974,6 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     *consAddrRW               = consBlockRW;
 
     /* Nothing has been pushed on the stack */
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if EMIT_TRACK_STACK_DEPTH
     emitCurStackLvl = 0;
@@ -7642,7 +7636,6 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                 if (jmp->idjShort)
                 {
                     // Patch Forward Short Jump
-                    CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_XARCH)
                     *(BYTE*)(adr + writeableOffset) -= (BYTE)adj;
 #elif defined(TARGET_ARM)
@@ -7662,7 +7655,6 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                 else
                 {
                     // Patch Forward non-Short Jump
-                    CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_XARCH)
                     *(int*)(adr + writeableOffset) -= adj;
 #elif defined(TARGET_ARMARCH)
@@ -8641,7 +8633,6 @@ void emitter::emitGCvarLiveSet(int offs, GCtype gcType, BYTE* addr, ssize_t disp
     desc->vpdNext = nullptr;
 
     /* the lower 2 bits encode props about the stk ptr */
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(JIT32_GCENCODER) && !defined(FEATURE_EH_FUNCLETS)
     if (offs == emitSyncThisObjOffs)
@@ -10101,7 +10092,6 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
             Or do we have a partially interruptible EBP-less frame, and any
             of EDI,ESI,EBX,EBP are live, or is there an outer/pending call?
          */
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !FPO_INTERRUPTIBLE
         if (emitFullyInt || (gcrefRegs == 0 && byrefRegs == 0 && u2.emitGcArgTrackCnt == 0))

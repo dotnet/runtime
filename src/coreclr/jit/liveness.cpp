@@ -498,7 +498,6 @@ void Compiler::fgPerBlockLocalVarLiveness()
                 // 32-bit targets always pop the frame in the epilog.
                 // For 64-bit targets, we only do this in the epilog for IL stubs;
                 // for non-IL stubs the frame is popped after every PInvoke call.
-                CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_64BIT
                 if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
 #endif

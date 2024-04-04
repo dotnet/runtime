@@ -77,6 +77,14 @@ private:
                                    DEBUGARG(regMaskOnlyOne calleeSaveMask = RBM_NONE)) const;
 #endif // DEBUG
 
+#ifdef SWIFT_SUPPORT
+    regMaskTP rsAllCalleeSavedMask;
+    regMaskTP rsIntCalleeSavedMask;
+#else  // !SWIFT_SUPPORT
+    static constexpr regMaskTP rsAllCalleeSavedMask = RBM_CALLEE_SAVED;
+    static constexpr regMaskTP rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
+#endif // !SWIFT_SUPPORT
+
 public:
     void rsSetRegsModified(AllRegsMask& modifiedMask DEBUGARG(bool suppressDump = false));
     void rsSetRegModified(regNumber reg DEBUGARG(bool suppressDump = false));
@@ -86,6 +94,32 @@ public:
     {
         assert(rsModifiedRegsMaskInitialized);
         return rsModifiedRegsMask;
+    }
+
+    regMaskTP rsGetModifiedCalleeSavedRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return (rsModifiedRegsMask & rsAllCalleeSavedMask);
+    }
+
+    regMaskTP rsGetModifiedIntCalleeSavedRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return (rsModifiedRegsMask & rsIntCalleeSavedMask);
+    }
+
+#ifdef TARGET_AMD64
+    regMaskTP rsGetModifiedOsrIntCalleeSavedRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return (rsModifiedRegsMask & (rsIntCalleeSavedMask | RBM_EBP));
+    }
+#endif // TARGET_AMD64
+
+    regMaskTP rsGetModifiedFltCalleeSavedRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return (rsModifiedRegsMask & RBM_FLT_CALLEE_SAVED);
     }
 #endif
 

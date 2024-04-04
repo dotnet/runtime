@@ -773,7 +773,6 @@ private:
     // At least for x86 and AMD64, and potentially other architecture that will support SIMD,
     // we need a minimum of 5 fp regs in order to support the InitN intrinsic for Vector4.
     // Hence the "SmallFPSet" has 5 elements.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI

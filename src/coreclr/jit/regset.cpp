@@ -144,9 +144,13 @@ void RegSet::rsClearRegsModified()
 #endif // DEBUG
 
     rsModifiedRegsMask.Clear();
-    // rsModifiedGprRegsMask       = RBM_NONE;
-    // rsModifiedFloatRegsMask     = RBM_NONE;
-    // rsModifiedPredicateRegsMask = RBM_NONE;
+    // so don't treat it as callee-save.
+    if (m_rsCompiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+    {
+        rsAllCalleeSavedMask &= ~RBM_SWIFT_ERROR;
+        rsIntCalleeSavedMask &= ~RBM_SWIFT_ERROR;
+    }
+#endif // SWIFT_SUPPORT
 }
 
 #ifdef DEBUG
@@ -376,6 +380,11 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo)
     rsMaskPreSpillRegArg = RBM_NONE;
     rsMaskPreSpillAlign  = RBM_NONE;
 #endif
+
+#ifdef SWIFT_SUPPORT
+    rsAllCalleeSavedMask = RBM_CALLEE_SAVED;
+    rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
+#endif // SWIFT_SUPPORT
 
 #ifdef DEBUG
     rsModifiedRegsMaskInitialized = false;

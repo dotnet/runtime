@@ -758,7 +758,6 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         {
             // We have a (large) struct that can't be replaced with a "primitive" type
             // and can't be passed in multiple registers
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_X86) || defined(TARGET_ARM) || defined(UNIX_AMD64_ABI)
 
@@ -1908,7 +1907,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         //
         // Initialize all the per-method statistics gathering data structures.
         //
-        CLANG_FORMAT_COMMENT_ANCHOR;
 #if LOOP_HOIST_STATS
         m_loopsConsidered             = 0;
         m_curLoopHasHoistedExpression = false;
@@ -2279,7 +2277,6 @@ void Compiler::compSetProcessor()
     //
     // Processor specific optimizations
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
     opts.compSupportsISA.Reset();
@@ -2880,7 +2877,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // The rest of the opts fields that we initialize here
     // should only be used when we generate code for the method
     // They should not be used when importing or inlining
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if FEATURE_TAILCALL_OPT
     opts.compTailCallLoopOpt = true;
@@ -5843,7 +5839,6 @@ void Compiler::generatePatchpointInfo()
     //
     // For arm64, if the frame pointer is not at the top of the frame, we need to adjust the
     // offset.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_AMD64)
     // We add +TARGET_POINTER_SIZE here is to account for the slot that Jit_Patchpoint
@@ -9884,7 +9879,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         chars += printf("flags=");
 
         // Node flags
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(DEBUG)
         if (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE)

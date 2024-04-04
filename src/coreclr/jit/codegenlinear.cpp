@@ -400,7 +400,6 @@ void CodeGen::genCodeForBBlist()
 
         // Traverse the block in linear order, generating code for each node as we
         // as we encounter it.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         // Set the use-order numbers for each node.
@@ -1791,7 +1790,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
 
     // If the op1 is already in the dstReg - nothing to do.
     // Otherwise load the op1 (the address) into the dstReg to copy the struct on the stack by value.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86
     assert(dstReg != REG_SPBASE);
