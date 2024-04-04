@@ -13,28 +13,28 @@ namespace System.Net.Http.Json
     {
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static async Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent content = JsonContent.Create(value, mediaType: null, options);
-            return client.PutAsync(requestUri, content, cancellationToken);
+            using JsonContent content = JsonContent.Create(value, mediaType: null, options);
+            return await client.PutAsync(requestUri, content, cancellationToken).ConfigureAwait(false);
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, Uri? requestUri, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static async Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, Uri? requestUri, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent content = JsonContent.Create(value, mediaType: null, options);
-            return client.PutAsync(requestUri, content, cancellationToken);
+            using JsonContent content = JsonContent.Create(value, mediaType: null, options);
+            return await client.PutAsync(requestUri, content, cancellationToken).ConfigureAwait(false);
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
@@ -47,26 +47,26 @@ namespace System.Net.Http.Json
         public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, Uri? requestUri, TValue value, CancellationToken cancellationToken)
             => client.PutAsJsonAsync(requestUri, value, options: null, cancellationToken);
 
-        public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, TValue value, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
+        public static async Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, TValue value, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
         {
             if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent content = JsonContent.Create(value, jsonTypeInfo);
-            return client.PutAsync(requestUri, content, cancellationToken);
+            using JsonContent content = JsonContent.Create(value, jsonTypeInfo);
+            return await client.PutAsync(requestUri, content, cancellationToken).ConfigureAwait(false);
         }
 
-        public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, Uri? requestUri, TValue value, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
+        public static async Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, Uri? requestUri, TValue value, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
         {
             if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent content = JsonContent.Create(value, jsonTypeInfo);
-            return client.PutAsync(requestUri, content, cancellationToken);
+            using JsonContent content = JsonContent.Create(value, jsonTypeInfo);
+            return await client.PutAsync(requestUri, content, cancellationToken).ConfigureAwait(false);
         }
     }
 }
