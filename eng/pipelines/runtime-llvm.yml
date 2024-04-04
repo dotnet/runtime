@@ -131,30 +131,37 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          buildConfig: release
+          buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - linux_x64
-          # Disabled pending outcome of https://github.com/dotnet/runtime/issues/60234 investigation
-          #- linux_arm64
+            - linux_x64
+            # Disabled pending outcome of https://github.com/dotnet/runtime/issues/60234 investigation
+            #- linux_arm64
+          variables:
+            - name: timeoutPerTestInMinutes
+              value: 60
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT_RuntimeTests
             runtimeVariant: llvmaot
-            buildArgs: -s mono+clr.iltools+clr.hosts+libs+host+packs -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }}
-                      /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-            postBuildSteps:
-              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-                parameters:
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: Mono_Release
-                  llvmAotStepContainer: linux_x64_llvmaot
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+            timeoutInMinutes: 360
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  llvmAotStepContainer: linux_x64_llvmaot
+                  testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
       #
       # Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
