@@ -393,12 +393,18 @@ void CodeGen::genMarkLabelsForCodegen()
                 // all handler begins.
                 if (compiler->UsesCallFinallyThunks())
                 {
-                    bbToLabel = bbToLabel->Next(); // skip the BBJ_CALLFINALLYRET
-                }
-                if (bbToLabel != nullptr)
-                {
-                    JITDUMP("  " FMT_BB " : callfinally thunk region end\n", bbToLabel->bbNum);
-                    bbToLabel->SetFlags(BBF_HAS_LABEL);
+                    // For callfinally thunks, we need to mark the block following the callfinally/callfinallyret pair,
+                    // as that's needed for identifying the range of the "duplicate finally" region in EH data.
+                    BasicBlock* bbToLabel = block->Next();
+                    if (block->isBBCallFinallyPair())
+                    {
+                        bbToLabel = bbToLabel->Next(); // skip the BBJ_CALLFINALLYRET
+                    }
+                    if (bbToLabel != nullptr)
+                    {
+                        JITDUMP("  " FMT_BB " : callfinally thunk region end\n", bbToLabel->bbNum);
+                        bbToLabel->SetFlags(BBF_HAS_LABEL);
+                    }
                 }
                 break;
 
