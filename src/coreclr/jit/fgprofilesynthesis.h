@@ -53,7 +53,7 @@ private:
     static constexpr weight_t loopBackLikelihood    = 0.9;
     static constexpr weight_t loopExitLikelihood    = 0.9;
     static constexpr unsigned maxRepairRetries      = 4;
-    static constexpr unsigned maxSolverIterations   = 25;
+    static constexpr unsigned maxSolverIterations   = 50;
     static constexpr weight_t maxCount              = 1e12;
 
     void Run(ProfileSynthesisOption option);
@@ -88,6 +88,7 @@ private:
     weight_t               m_blendFactor               = initialBlendFactor;
     weight_t               m_loopExitLikelihood        = loopExitLikelihood;
     weight_t               m_loopBackLikelihood        = loopBackLikelihood;
+    weight_t               m_returnLikelihood          = returnLikelihood;
     unsigned               m_improperLoopHeaders       = 0;
     unsigned               m_cappedCyclicProbabilities = 0;
     bool                   m_approximate               = false;

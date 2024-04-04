@@ -121,6 +121,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         m_blendFactor = min(1.0, blendFactorGrowthRate * m_blendFactor);
         m_loopExitLikelihood *= 0.9;
         m_loopBackLikelihood *= 0.9;
+        m_returnLikelihood   *= 1.05;
 
         retries++;
     }
@@ -336,13 +337,13 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
     {
         if (isJumpReturn)
         {
-            trueEdge->setLikelihood(returnLikelihood);
-            falseEdge->setLikelihood(1.0 - returnLikelihood);
+            trueEdge->setLikelihood(m_returnLikelihood);
+            falseEdge->setLikelihood(1.0 - m_returnLikelihood);
         }
         else
         {
-            trueEdge->setLikelihood(1.0 - returnLikelihood);
-            falseEdge->setLikelihood(returnLikelihood);
+            trueEdge->setLikelihood(1.0 - m_returnLikelihood);
+            falseEdge->setLikelihood(m_returnLikelihood);
         }
 
         return;
