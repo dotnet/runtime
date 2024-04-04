@@ -56,8 +56,9 @@ set(CDAC_BUILD_TOOL_CSPROJ "${CLR_DIR}/tools/cdac-build-tool/cdac-build-tool.csp
 add_custom_command(
   OUTPUT "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c"
   VERBATIM
-  COMMAND "${DOTNET_CMD}" run --project "${CDAC_BUILD_TOOL_CSPROJ}" -c "$<CONFIG>" -- compose -o "${CONTRACT_DESCRIPTOR_OUTPUT}" $<TARGET_OBJECTS:cdac_data_descriptor>
+  COMMAND "${DOTNET_CMD}" run --project "${CDAC_BUILD_TOOL_CSPROJ}" -c "$<CONFIG>" -- compose -v -o "${CONTRACT_DESCRIPTOR_OUTPUT}" $<TARGET_OBJECTS:cdac_data_descriptor>
   DEPENDS cdac_data_descriptor $<TARGET_OBJECTS:cdac_data_descriptor>
+  USES_TERMINAL
 )
 
 add_library_clr(CDACContractDescriptor STATIC

@@ -32,6 +32,10 @@ public class Program
 {
     public static async Task<int> Main(string[] args)
     {
+	Console.Error.WriteLine ("Called cdac-build-tool with:");
+	foreach (var a in args) {
+	    Console.Error.WriteLine("  arg: {0}", a);
+	}
         CliRootCommand rootCommand = new ();
         var verboseOption = new CliOption<bool>("-v", "--verbose") {Recursive = true, Description = "Verbose"};
         rootCommand.Add(verboseOption);
