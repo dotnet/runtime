@@ -63,7 +63,21 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
         public void EnsureDefaults(IConfigurationBuilder builder)
         {
-            if (FileProvider is null && builder.GetUserDefinedFileProvider() is null)
+            // There are two in-box implementations of IConfigurationBuilder: ConfigurationBuilder and ConfigurationManager.
+            // 1) ConfigurationBuilder.Build takes a list of IConfigurationSources and builds IConfigurationProvider from them.
+            // IConfigurationProvider abstraction does not expose a reference to IConfigurationSources, but most of it implementations do.
+            // ConfigurationBuilder.Build creates an instance of ConfigurationRoot by passing it just the list of providers (NOT the sources).
+            // ConfigurationRoot implements IDisposable and it has only a list of providers (no sources).
+            // When it gets disposed, all providers AND sources that were used to create the providers should be disposed.
+            // This is why FileConfigurationProvider disposes the source when it knows that it's not owned by the user.
+            // 2) ConfigurationManager is also IDisposable, but it has references both sources and providers.
+            // When sources change, it creates new providers and disposes the old ones.
+            // It must not dispose the sources! That is why, in such scenario OwnsFileProvider is set to false.
+            if (builder is IConfigurationManager)
+            {
+                OwnsFileProvider = false;
+            }
+            else if (FileProvider is null && builder.GetUserDefinedFileProvider() is null)
             {
                 OwnsFileProvider = true;
             }
