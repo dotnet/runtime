@@ -295,6 +295,17 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
                                                                                       TARGET_POINTER_SIZE));
     }
 
+    if (wellKnownParam == WellKnownArg::SwiftError)
+    {
+        // We aren't actually going to pass the SwiftError* parameter in REG_SWIFT_ERROR.
+        // We won't be using this parameter at all, and shouldn't allocate registers/stack space for it,
+        // as that will mess with other args.
+        // Quirk: To work around the JIT for now, "pass" it in REG_SWIFT_ERROR,
+        // and let CodeGen::genFnProlog handle the rest.
+        return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_SWIFT_ERROR, 0,
+                                                                                      TARGET_POINTER_SIZE));
+    }
+
     return m_classifier.Classify(comp, type, structLayout, wellKnownParam);
 }
 #endif

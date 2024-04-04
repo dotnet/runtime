@@ -1084,9 +1084,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_do/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/managed/Compilation/Compilation/**">
-            <Issue>expects to see System.Private.CoreLib in CORE_ROOT</Issue>
-        </ExcludeList>
 
         <!-- Complex constrained calls -->
         <!-- https://github.com/dotnet/runtimelab/issues/1431 -->

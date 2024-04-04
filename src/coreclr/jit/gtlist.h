@@ -37,7 +37,6 @@ GTNODE(LABEL            , GenTree            ,0,0,GTK_LEAF)             // Jump-
 GTNODE(JMP              , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Address of a function
 GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
-GTNODE(SWIFT_ERROR      , GenTree            ,0,0,GTK_LEAF)             // Error register value post-Swift call
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -286,6 +285,12 @@ GTNODE(RETFILT          , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE) // End f
 #if !defined(FEATURE_EH_FUNCLETS)
 GTNODE(END_LFIN         , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // End locally-invoked finally.
 #endif // !FEATURE_EH_FUNCLETS
+
+//-----------------------------------------------------------------------------
+//  Swift interop-specific nodes:
+//-----------------------------------------------------------------------------
+
+GTNODE(SWIFT_ERROR      , GenTree            ,0,0,GTK_LEAF)             // Error register value post-Swift call
 
 //-----------------------------------------------------------------------------
 //  Nodes used by Lower to generate a closer CPU representation of other nodes

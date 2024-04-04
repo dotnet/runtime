@@ -317,9 +317,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         case 1:
                         {
-                            regNumber targetReg = node->GetRegNum();
-                            GenTree*  rmOp      = node->Op(1);
-                            auto emitSwCase     = [&](int8_t i) {
+                            regNumber targetReg  = node->GetRegNum();
+                            GenTree*  rmOp       = node->Op(1);
+                            auto      emitSwCase = [&](int8_t i) {
                                 insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
                                 genHWIntrinsic_R_RM(node, ins, simdSize, targetReg, rmOp, newInstOptions);
                             };
@@ -559,7 +559,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (HWIntrinsicInfo::isImmOp(intrinsicId, op3))
                 {
-                    auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_R_RM_I(node, ins, simdSize, i); };
+                    auto emitSwCase = [&](int8_t i) {
+                        genHWIntrinsic_R_R_RM_I(node, ins, simdSize, i);
+                    };
 
                     if (op3->IsCnsIntOrI())
                     {
@@ -653,7 +655,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (HWIntrinsicInfo::isImmOp(intrinsicId, op4))
                 {
-                    auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_R_R_RM_I(node, ins, simdSize, i); };
+                    auto emitSwCase = [&](int8_t i) {
+                        genHWIntrinsic_R_R_R_RM_I(node, ins, simdSize, i);
+                    };
 
                     if (op4->IsCnsIntOrI())
                     {
@@ -1208,10 +1212,10 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(GenTreeHWIntrinsic* node, instruction in
 
         if (op2->isContained())
         {
-// op2 is never selected by the table so
-// we can contain and ignore any register
-// allocated to it resulting in better
-// non-RMW based codegen.
+            // op2 is never selected by the table so
+            // we can contain and ignore any register
+            // allocated to it resulting in better
+            // non-RMW based codegen.
 
 #if defined(DEBUG)
             NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
@@ -1364,8 +1368,8 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
         {
             // This intrinsic has several overloads, only the ones with floating number inputs should reach this part.
             assert(varTypeIsFloating(baseType));
-            GenTree* rmOp   = node->Op(1);
-            auto emitSwCase = [&](int8_t i) {
+            GenTree* rmOp       = node->Op(1);
+            auto     emitSwCase = [&](int8_t i) {
                 insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
                 genHWIntrinsic_R_RM(node, ins, attr, targetReg, rmOp, newInstOptions);
             };
@@ -2055,7 +2059,9 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
             instruction ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
             emitAttr    attr = emitActualTypeSize(node->TypeGet());
 
-            auto emitSwCase = [&](int8_t i) { inst_RV_TT_IV(ins, attr, targetReg, op1, i); };
+            auto emitSwCase = [&](int8_t i) {
+                inst_RV_TT_IV(ins, attr, targetReg, op1, i);
+            };
 
             if (op2->IsCnsIntOrI())
             {

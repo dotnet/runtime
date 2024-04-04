@@ -83,7 +83,8 @@ struct EHblkDsc
     BasicBlock* ebdTryLast; // Last block of the try
     BasicBlock* ebdHndBeg;  // First block of the handler
     BasicBlock* ebdHndLast; // Last block of the handler
-    union {
+    union
+    {
         BasicBlock* ebdFilter; // First block of filter,          if HasFilter()
         unsigned    ebdTyp;    // Exception type (a class token), otherwise
     };
@@ -165,8 +166,8 @@ struct EHblkDsc
     unsigned ebdGetEnclosingRegionIndex(bool* inTryRegion);
 
     static bool ebdIsSameTry(EHblkDsc* h1, EHblkDsc* h2); // Same 'try' region? Compare begin/last blocks.
-    bool ebdIsSameTry(Compiler* comp, unsigned t2);
-    bool ebdIsSameTry(BasicBlock* ebdTryBeg, BasicBlock* ebdTryLast);
+    bool        ebdIsSameTry(Compiler* comp, unsigned t2);
+    bool        ebdIsSameTry(BasicBlock* ebdTryBeg, BasicBlock* ebdTryLast);
 
 #ifdef DEBUG
     void DispEntry(unsigned num); // Display this table entry
