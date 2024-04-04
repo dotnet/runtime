@@ -828,6 +828,36 @@ inline regMaskFloat genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TY
 #endif
 }
 
+inline regNumber getRegForType(regNumber reg, var_types regType)
+{
+#ifdef TARGET_ARM
+    if ((regType == TYP_DOUBLE) && !genIsValidDoubleReg(reg))
+    {
+        reg = REG_PREV(reg);
+    }
+#endif // TARGET_ARM
+    return reg;
+}
+
+// This is similar to genRegMask(reg, regType) for all platforms
+// except Arm. For Arm, if regType is DOUBLE and reg is also a
+// valid double register, it is again same as genRegMask(reg, regType)
+// but if not, it will return the pair of even/odd registers corresponding
+// to the `reg`.
+inline regMaskOnlyOne getRegMask(regNumber reg, var_types regType)
+{
+    reg                   = getRegForType(reg, regType);
+    singleRegMask regMask = genRegMask(reg);
+#ifdef TARGET_ARM
+    if (regType == TYP_DOUBLE)
+    {
+        assert(genIsValidDoubleReg(reg));
+        regMask |= (regMask << 1);
+    }
+#endif // TARGET_ARM
+    return regMask;
+}
+
 //------------------------------------------------------------------------
 // genRegMask: Given a register, and its type, generate the appropriate regMask
 //

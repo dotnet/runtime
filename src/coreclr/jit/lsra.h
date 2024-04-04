@@ -1753,31 +1753,6 @@ private:
     // entry again and agin.
     AllRegsMask m_AvailableRegs;
 
-    regNumber getRegForType(regNumber reg, var_types regType)
-    {
-#ifdef TARGET_ARM
-        if ((regType == TYP_DOUBLE) && !genIsValidDoubleReg(reg))
-        {
-            reg = REG_PREV(reg);
-        }
-#endif // TARGET_ARM
-        return reg;
-    }
-
-    regMaskOnlyOne getRegMask(regNumber reg, var_types regType)
-    {
-        reg                   = getRegForType(reg, regType);
-        singleRegMask regMask = genRegMask(reg);
-#ifdef TARGET_ARM
-        if (regType == TYP_DOUBLE)
-        {
-            assert(genIsValidDoubleReg(reg));
-            regMask |= (regMask << 1);
-        }
-#endif // TARGET_ARM
-        return regMask;
-    }
-
     void resetAvailableRegs()
     {
 #ifdef HAS_MORE_THAN_64_REGISTERS
