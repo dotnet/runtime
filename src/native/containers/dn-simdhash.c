@@ -140,6 +140,19 @@ dn_simdhash_count (dn_simdhash_t *hash)
 	return hash->count;
 }
 
+uint32_t
+dn_simdhash_overflow_count (dn_simdhash_t *hash)
+{
+	assert(hash);
+	uint32_t result = 0;
+	for (uint32_t bucket_index = 0; bucket_index < hash->buffers.buckets_length; bucket_index++) {
+		uint8_t *suffixes = ((uint8_t *)hash->buffers.buckets) + (bucket_index * hash->meta->bucket_size_bytes);
+		uint8_t cascade_count = suffixes[DN_SIMDHASH_CASCADED_SLOT];
+		result += cascade_count;
+	}
+	return result;
+}
+
 void
 dn_simdhash_ensure_capacity (dn_simdhash_t *hash, uint32_t capacity)
 {
