@@ -104,9 +104,10 @@ namespace Microsoft.Extensions.Configuration
                 registration.Dispose();
             }
 
-            // dispose providers
+            // dispose providers and the sources
             foreach (IConfigurationProvider provider in _providers)
             {
+                (provider.ConfigurationSource as IDisposable)?.Dispose();
                 (provider as IDisposable)?.Dispose();
             }
         }

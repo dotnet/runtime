@@ -24,10 +24,11 @@ namespace Microsoft.Extensions.Configuration
         public abstract void Load(System.IO.Stream stream);
         public override string ToString() { throw null; }
     }
-    public abstract partial class FileConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
+    public abstract partial class FileConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource, System.IDisposable
     {
         protected FileConfigurationSource() { }
         public Microsoft.Extensions.FileProviders.IFileProvider? FileProvider { get { throw null; } set { } }
+        public void Dispose() { }
         public System.Action<Microsoft.Extensions.Configuration.FileLoadExceptionContext>? OnLoadException { get { throw null; } set { } }
         public bool Optional { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.DisallowNull]

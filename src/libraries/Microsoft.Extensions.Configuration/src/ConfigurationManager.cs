@@ -85,6 +85,11 @@ namespace Microsoft.Extensions.Configuration
         {
             DisposeRegistrations();
             _providerManager.Dispose();
+
+            foreach (IConfigurationSource source in _sources)
+            {
+                (source as IDisposable)?.Dispose();
+            }
         }
 
         IConfigurationBuilder IConfigurationBuilder.Add(IConfigurationSource source)

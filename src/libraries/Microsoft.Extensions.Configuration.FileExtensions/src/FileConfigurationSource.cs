@@ -11,17 +11,12 @@ namespace Microsoft.Extensions.Configuration
     /// <summary>
     /// Represents a base class for file based <see cref="IConfigurationSource"/>.
     /// </summary>
-    public abstract class FileConfigurationSource : IConfigurationSource
+    public abstract class FileConfigurationSource : IConfigurationSource, IDisposable
     {
         /// <summary>
         /// Used to access the contents of the file.
         /// </summary>
         public IFileProvider? FileProvider { get; set; }
-
-        /// <summary>
-        /// Set to true when <see cref="FileProvider"/> was not provided by user and can be safely disposed.
-        /// </summary>
-        internal bool OwnsFileProvider { get; private set; }
 
         /// <summary>
         /// The path to the file.
@@ -57,17 +52,14 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>A <see cref="IConfigurationProvider"/></returns>
         public abstract IConfigurationProvider Build(IConfigurationBuilder builder);
 
+        public void Dispose() => (FileProvider as IDisposable)?.Dispose();
+
         /// <summary>
         /// Called to use any default settings on the builder like the FileProvider or FileLoadExceptionHandler.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
         public void EnsureDefaults(IConfigurationBuilder builder)
         {
-            if (FileProvider is null && builder.GetUserDefinedFileProvider() is null)
-            {
-                OwnsFileProvider = true;
-            }
-
             FileProvider ??= builder.GetFileProvider();
             OnLoadException ??= builder.GetFileLoadExceptionHandler();
         }
@@ -91,7 +83,6 @@ namespace Microsoft.Extensions.Configuration
                 }
                 if (Directory.Exists(directory))
                 {
-                    OwnsFileProvider = true;
                     FileProvider = new PhysicalFileProvider(directory);
                     Path = pathToFile;
                 }

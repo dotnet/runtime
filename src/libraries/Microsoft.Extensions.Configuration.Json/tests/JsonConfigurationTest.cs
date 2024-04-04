@@ -225,9 +225,9 @@ namespace Microsoft.Extensions.Configuration
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void AddJsonFile_FileProvider_Gets_Disposed_When_It_Was_Not_Created_By_The_User(bool disposeConfigRoot)
+        public void AddJsonFile_FileConfigurationSource_Gets_Disposed_When_ConfigurationRoot_Is_Disposed(bool disposeConfigRoot)
         {
-            string filePath = Path.Combine(Path.GetTempPath(), $"{nameof(AddJsonFile_FileProvider_Gets_Disposed_When_It_Was_Not_Created_By_The_User)}.json");
+            string filePath = Path.Combine(Path.GetTempPath(), $"{nameof(AddJsonFile_FileConfigurationSource_Gets_Disposed_When_ConfigurationRoot_Is_Disposed)}.json");
             File.WriteAllText(filePath, @"{ ""some"": ""value"" }");
 
             IConfigurationRoot config = new ConfigurationBuilder().AddJsonFile(filePath, optional: false).Build();
@@ -240,19 +240,21 @@ namespace Microsoft.Extensions.Configuration
             if (disposeConfigRoot)
             {
                 (config as IDisposable).Dispose(); // disposing ConfigurationRoot
+
+                Assert.True(GetIsDisposed(fileProvider));
             }
             else
             {
                 jsonConfigurationProvider.Dispose(); // disposing JsonConfigurationProvider
-            }
 
-            Assert.True(GetIsDisposed(fileProvider));
+                Assert.False(GetIsDisposed(fileProvider));
+            }
         }
 
         [Fact]
-        public void AddJsonFile_FileProvider_Is_Not_Disposed_When_It_Is_Owned_By_The_User()
+        public void AddJsonFile_FileProvider_Is_Disposed_When_It_Is_Owned_By_The_User()
         {
-            string filePath = Path.Combine(Path.GetTempPath(), $"{nameof(AddJsonFile_FileProvider_Is_Not_Disposed_When_It_Is_Owned_By_The_User)}.json");
+            string filePath = Path.Combine(Path.GetTempPath(), $"{nameof(AddJsonFile_FileProvider_Is_Disposed_When_It_Is_Owned_By_The_User)}.json");
             File.WriteAllText(filePath, @"{ ""some"": ""value"" }");
 
             PhysicalFileProvider fileProvider = new(Path.GetDirectoryName(filePath));
@@ -265,11 +267,11 @@ namespace Microsoft.Extensions.Configuration
 
             Assert.False(GetIsDisposed(fileProvider));
 
-            (config as IDisposable).Dispose(); // disposing ConfigurationRoot that does not own the provider
+            configurationProvider.Dispose(); // disposing JsonConfigurationProvider that does not own the source
             Assert.False(GetIsDisposed(fileProvider));
 
-            configurationProvider.Dispose(); // disposing JsonConfigurationProvider that does not own the provider
-            Assert.False(GetIsDisposed(fileProvider));
+            (config as IDisposable).Dispose();
+            Assert.True(GetIsDisposed(fileProvider));
 
             fileProvider.Dispose(); // disposing PhysicalFileProvider itself
             Assert.True(GetIsDisposed(fileProvider));
