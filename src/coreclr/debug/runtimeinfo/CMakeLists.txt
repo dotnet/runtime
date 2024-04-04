@@ -37,3 +37,28 @@ endif()
 
 # publish runtimeinfo lib
 install_clr(TARGETS runtimeinfo DESTINATIONS lib COMPONENT runtime)
+
+
+add_library(cdac_data_descriptor STATIC data-descriptor.c)
+
+set(GENERATED_CDAC_DESCRIPTOR_DIR "${CMAKE_CURRENT_BINARY_DIR}/cdac")
+
+if (CLR_CLR_HOST_WIN32)
+set(DOTNET_CMD "${CLR_REPO_ROOT_DIR}/dotnet.cmd")
+else()
+set(DOTNET_CMD "${CLR_REPO_ROOT_DIR}/dotnet.sh")
+endif()
+set(CDAC_BUILD_TOOL_CSPROJ "${CLR_DIR}/tools/cdac-build-tool/cdac-build-tool.csproj")
+
+add_custom_command(
+  OUTPUT "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c"
+  VERBATIM
+  COMMAND "${DOTNET_CMD}" run --project "${CDAC_BUILD_TOOL_CSPROJ}" -c "$<CONFIG>" -- compose -o "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c" $<TARGET_OBJECTS:cdac_data_descriptor>
+  DEPENDS cdac_data_descriptor $<TARGET_OBJECTS:cdac_data_descriptor>
+)
+
+add_library_clr(CDACContractDescriptor STATIC
+  "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c"
+  contract-aux-data.c
+)
+add_dependencies(CDACContractDescriptor cdac_data_descriptor)

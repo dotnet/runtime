@@ -75,11 +75,23 @@ internal class ComposeCommand : CliCommand
         {
             model.DumpModel();
         }
+        EnsureDirectoryExists(output);
         using var writer = new System.IO.StreamWriter(output);
         var emitter = new ContractDescriptorSourceFileEmitter();
+        emitter.SetAuxDataCount(model.AuxDataCount);
         emitter.SetJsonDescriptor(model.ToJson());
         emitter.Emit(writer);
         await writer.FlushAsync(token);
         return 0;
+    }
+
+    private void EnsureDirectoryExists(string outputPath)
+    {
+        var directory = System.IO.Path.GetDirectoryName(outputPath);
+        if (directory == null)
+        {
+            return;
+        }
+        System.IO.Directory.CreateDirectory(directory);
     }
 }

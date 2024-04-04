@@ -33,6 +33,11 @@ public partial class ContractDescriptorSourceFileEmitter
         return reader.ReadToEnd();
     }
 
+    public void SetAuxDataCount(int count)
+    {
+        Elements["auxDataCount"] = count.ToString();
+    }
+
     // The string should be C escaped
     // The length should be the length of the unescaped string
     // FIXME: move the escaping here.

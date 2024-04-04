@@ -188,6 +188,11 @@ target_sources(coreclr_static PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
 target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} clrjit_static cee_wks_mergeable ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
+# using $<TARGET_OBJECTS:> because the exported symbols from CDACConctractDescriptor are otherwise
+# unreferenced which means the linker doesn't include them
+target_link_libraries(coreclr PRIVATE $<TARGET_OBJECTS:CDACContractDescriptor>)
+target_link_libraries(coreclr_static PRIVATE $<TARGET_OBJECTS:CDACContractDescriptor>)
+
 if(CLR_CMAKE_TARGET_WIN32)
     set(CLRDEBUGINFO_RESOURCE_PATH ${CMAKE_CURRENT_BINARY_DIR}/clr_debug_resource.bin)
 
