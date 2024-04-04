@@ -13,23 +13,12 @@ using System.Net.Security;
 
 using Xunit;
 using Xunit.Abstractions;
-using TestUtilities;
 
 namespace System.Net.Security.Tests;
 
 [PlatformSpecific(TestPlatforms.Linux)]
 public class SslStreamCertificateContextOcspLinuxTests : IDisposable
 {
-    TestEventListener _listener;
-
-    public SslStreamCertificateContextOcspLinuxTests(ITestOutputHelper output) => _listener = new TestEventListener(output, new[] { "Private.InternalDiagnostics.System.Net.Security" });
-
-    public void Dispose()
-    {
-        _listener.Dispose();
-    }
-
-
     [Fact]
     public async Task OfflineContext_NoFetchOcspResponse()
     {
