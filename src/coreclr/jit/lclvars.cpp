@@ -622,7 +622,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
     const unsigned argSigLen = info.compMethodInfo->args.numArgs;
 
     // We will process at most takeArgs arguments from the signature after skipping skipArgs arguments
-    const int64_t numUserArgs = min(takeArgs, (argSigLen - (int64_t)skipArgs));
+    const int64_t numUserArgs = min((int64_t)takeArgs, (argSigLen - (int64_t)skipArgs));
 
     // If there are no user args or less than skipArgs args, return here since there's no work to do.
     if (numUserArgs <= 0)
@@ -2000,7 +2000,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 #if defined(FEATURE_SIMD)
     // getMaxVectorByteLength() represents the size of the largest primitive type that we can struct promote.
     const unsigned maxSize =
-        MAX_NumOfFieldsInPromotableStruct * max(compiler->getMaxVectorByteLength(), sizeof(double));
+        MAX_NumOfFieldsInPromotableStruct * max(compiler->getMaxVectorByteLength(), (uint32_t)sizeof(double));
 #else  // !FEATURE_SIMD
     // sizeof(double) represents the size of the largest primitive type that we can struct promote.
     const unsigned maxSize = MAX_NumOfFieldsInPromotableStruct * sizeof(double);

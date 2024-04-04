@@ -86,10 +86,11 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
             }
             else
             {
-                unsigned alignment = compAppleArm64Abi() ? min(elemSize, TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
-                m_stackArgSize     = roundUp(m_stackArgSize, alignment);
-                info = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0,
-                                                                                           structLayout->GetSize()));
+                unsigned alignment =
+                    compAppleArm64Abi() ? min(elemSize, (unsigned)TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
+                m_stackArgSize = roundUp(m_stackArgSize, alignment);
+                info           = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0,
+                                                                                                     structLayout->GetSize()));
                 m_stackArgSize += roundUp(structLayout->GetSize(), alignment);
                 // After passing any float value on the stack, we should not enregister more float values.
                 m_floatRegs.Clear();

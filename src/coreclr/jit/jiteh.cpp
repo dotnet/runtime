@@ -1554,7 +1554,7 @@ EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
         // Double the table size. For stress, we could use +1. Note that if the table isn't allocated
         // yet, such as when we add an EH region for synchronized methods that don't already have one,
         // we start at zero, so we need to make sure the new table has at least one entry.
-        unsigned newHndBBtabAllocCount = max(1, compHndBBtabAllocCount * 2);
+        unsigned newHndBBtabAllocCount = max(1u, compHndBBtabAllocCount * 2);
         noway_assert(compHndBBtabAllocCount < newHndBBtabAllocCount); // check for overflow
 
         if (newHndBBtabAllocCount > MAX_XCPTN_INDEX)

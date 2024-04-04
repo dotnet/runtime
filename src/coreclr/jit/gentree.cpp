@@ -5745,7 +5745,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     {
                         // Store to an enregistered local.
                         costEx = op1->GetCostEx();
-                        costSz = max(3, op1->GetCostSz()); // 3 is an estimate for a reg-reg move.
+                        costSz = max(3, (int)op1->GetCostSz()); // 3 is an estimate for a reg-reg move.
                         goto DONE;
                     }
 
@@ -26906,7 +26906,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             assert(varTypeIsValidHfaType(hfaType));
 
             // Note that the retail build issues a warning about a potential divsion by zero without this "max",
-            unsigned elemSize = max(1, genTypeSize(hfaType));
+            unsigned elemSize = max(1u, genTypeSize(hfaType));
 
             // The size of this struct should be evenly divisible by elemSize
             assert((structSize % elemSize) == 0);

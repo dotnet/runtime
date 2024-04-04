@@ -823,6 +823,8 @@ void VirtualCallStubManager::ReclaimAll()
     g_reclaim_counter++;
 }
 
+const UINT32 VirtualCallStubManager::counter_block::MAX_COUNTER_ENTRIES;
+
 /* reclaim/rearrange any structures that can only be done during a gc sync point
 i.e. need to be serialized and non-concurrant. */
 void VirtualCallStubManager::Reclaim()
