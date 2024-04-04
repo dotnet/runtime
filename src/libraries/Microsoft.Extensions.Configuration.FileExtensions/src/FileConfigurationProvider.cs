@@ -46,6 +46,8 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         public FileConfigurationSource Source { get; }
 
+        public sealed override IConfigurationSource? ConfigurationSource => Source;
+
         /// <summary>
         /// Generates a string representing this provider name and relevant details.
         /// </summary>

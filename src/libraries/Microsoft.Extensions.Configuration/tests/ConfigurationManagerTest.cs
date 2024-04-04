@@ -1366,6 +1366,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
         private class NullReloadTokenConfigSource : IConfigurationSource, IConfigurationProvider
         {
+            public IConfigurationSource? ConfigurationSource => this;
             public IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string parentPath) => throw new NotImplementedException();
             public IChangeToken GetReloadToken() => null;
             public void Load() { }

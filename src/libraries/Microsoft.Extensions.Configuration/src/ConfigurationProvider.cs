@@ -24,6 +24,8 @@ namespace Microsoft.Extensions.Configuration
             Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         }
 
+        public virtual IConfigurationSource? ConfigurationSource => null;
+
         /// <summary>
         /// The configuration key value pairs for this provider.
         /// </summary>

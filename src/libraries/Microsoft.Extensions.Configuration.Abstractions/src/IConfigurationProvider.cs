@@ -11,6 +11,8 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public interface IConfigurationProvider
     {
+        IConfigurationSource? ConfigurationSource { get; }
+
         /// <summary>
         /// Tries to get a configuration value for the specified key.
         /// </summary>

@@ -64,6 +64,7 @@ namespace Microsoft.Extensions.Configuration
     }
     public partial interface IConfigurationProvider
     {
+        Microsoft.Extensions.Configuration.IConfigurationSource? ConfigurationSource { get; }
         System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath);
         Microsoft.Extensions.Primitives.IChangeToken GetReloadToken();
         void Load();

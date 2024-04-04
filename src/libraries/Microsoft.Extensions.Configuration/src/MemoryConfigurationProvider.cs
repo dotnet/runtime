@@ -33,6 +33,8 @@ namespace Microsoft.Extensions.Configuration.Memory
             }
         }
 
+        public override IConfigurationSource? ConfigurationSource => _source;
+
         /// <summary>
         /// Add a new key and value pair.
         /// </summary>

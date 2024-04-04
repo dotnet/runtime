@@ -15,6 +15,7 @@ namespace Microsoft.Extensions.Configuration
     {
         public ChainedConfigurationProvider(Microsoft.Extensions.Configuration.ChainedConfigurationSource source) { }
         public Microsoft.Extensions.Configuration.IConfiguration Configuration { get { throw null; } }
+        public Microsoft.Extensions.Configuration.IConfigurationSource? ConfigurationSource { get { throw null; } }
         public void Dispose() { }
         public System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath) { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
@@ -62,6 +63,7 @@ namespace Microsoft.Extensions.Configuration
     public abstract partial class ConfigurationProvider : Microsoft.Extensions.Configuration.IConfigurationProvider
     {
         protected ConfigurationProvider() { }
+        public virtual Microsoft.Extensions.Configuration.IConfigurationSource? ConfigurationSource { get { throw null; } }
         protected System.Collections.Generic.IDictionary<string, string?> Data { get { throw null; } set { } }
         public virtual System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath) { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
@@ -126,6 +128,7 @@ namespace Microsoft.Extensions.Configuration.Memory
     public partial class MemoryConfigurationProvider : Microsoft.Extensions.Configuration.ConfigurationProvider, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>, System.Collections.IEnumerable
     {
         public MemoryConfigurationProvider(Microsoft.Extensions.Configuration.Memory.MemoryConfigurationSource source) { }
+        public override Microsoft.Extensions.Configuration.IConfigurationSource? ConfigurationSource { get { throw null; } }
         public void Add(string key, string? value) { }
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, string?>> GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }

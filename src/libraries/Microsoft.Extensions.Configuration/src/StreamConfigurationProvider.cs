@@ -16,6 +16,8 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         public StreamConfigurationSource Source { get; }
 
+        public override IConfigurationSource? ConfigurationSource => Source;
+
         private bool _loaded;
 
         /// <summary>

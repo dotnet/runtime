@@ -25,12 +25,15 @@ namespace Microsoft.Extensions.Configuration
 
             _config = source.Configuration ?? throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Configuration"), nameof(source));
             _shouldDisposeConfig = source.ShouldDisposeConfiguration;
+            ConfigurationSource = source;
         }
 
         /// <summary>
         /// Gets the chained configuration.
         /// </summary>
         public IConfiguration Configuration => _config;
+
+        public IConfigurationSource ConfigurationSource { get; }
 
         /// <summary>
         /// Tries to get a configuration value for the specified key.
