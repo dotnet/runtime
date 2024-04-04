@@ -215,7 +215,7 @@ namespace Microsoft.Interop.JavaScript
             const string generatedNamespace = "System.Runtime.InteropServices.JavaScript";
             const string initializerClass = "__GeneratedInitializer";
             const string initializerName = "__Register_";
-            const string selfInitName = "__Net7SelfInit_";
+            const string trimmingPreserveName = "__TrimmingPreserve_";
 
             if (methods.IsEmpty) return NamespaceDeclaration(IdentifierName(generatedNamespace));
 
@@ -242,7 +242,7 @@ namespace Microsoft.Interop.JavaScript
                             .WithBody(Block(registerStatements));
 
             // HACK: protect the code from trimming with DynamicDependency attached to a ModuleInitializer
-            MemberDeclarationSyntax initializerMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(selfInitName))
+            MemberDeclarationSyntax initializerMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(trimmingPreserveName))
                             .WithAttributeLists(
                                 SingletonList<AttributeListSyntax>(
                                     AttributeList(
