@@ -5083,7 +5083,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 #ifdef DEBUG
     if (verbose)
     {
-        dspRegMask(maskSaveRegsInt, maskSaveRegsFloat);
+        dspRegMask(AllRegsMask(maskSaveRegsInt, maskSaveRegsFloat));
         printf("\n");
     }
 #endif // DEBUG
