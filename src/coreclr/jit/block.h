@@ -1604,7 +1604,7 @@ public:
 #ifdef DEBUG
         void dspBlockILRange() const; // Display the block's IL range as [XXX...YYY), where XXX and YYY might be "???"
                                       // for BAD_IL_OFFSET.
-#endif // DEBUG
+#endif                                // DEBUG
 
         VARSET_TP bbVarUse; // variables used     by block (before a definition)
         VARSET_TP bbVarDef; // variables assigned by block (before a use)

@@ -5577,11 +5577,10 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         compiler->unwindSetFrameReg(REG_SAVED_LOCALLOC_SP, 0);
     }
 
-    if (jmpEpilog ||
-                                               regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED) == RBM_NONE)
-    {
-        genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted);
-    }
+    if (jmpEpilog || regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED) == RBM_NONE)
+        {
+            genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted);
+        }
 
     if (!unwindStarted)
     {

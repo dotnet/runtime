@@ -10111,7 +10111,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             //
             PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
 
-            regMaskTP const tier0CalleeSaves           = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
+            regMaskTP const  tier0CalleeSaves    = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
             regMaskGpr const tier0IntCalleeSaves = patchpointInfo->CalleeSaveGprRegisters() & RBM_OSR_INT_CALLEE_SAVED;
             regMaskGpr const osrIntCalleeSaves   = regSet.rsGetModifiedGprRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
             regMaskGpr const allIntCalleeSaves   = osrIntCalleeSaves | tier0IntCalleeSaves;
