@@ -1356,8 +1356,30 @@ void ProfileSynthesis::GaussSeidelSolver()
             //
             assert(change >= 0);
 
-            JITDUMP("iteration %u: " FMT_BB " :: old " FMT_WT " new " FMT_WT " change " FMT_WT "\n", i, block->bbNum,
-                    oldWeight, newWeight, change);
+            bool isExit = false;
+            if (checkEntryExitWeight)
+            {
+                if (block->KindIs(BBJ_RETURN))
+                {
+                    exitWeight += newWeight;
+                    isExit = true;
+                }
+                else if (block->KindIs(BBJ_THROW))
+                {
+                    if (block->hasTryIndex())
+                    {
+                        checkEntryExitWeight = false;
+                    }
+                    else
+                    {
+                        exitWeight += newWeight;
+                        isExit = true;
+                    }
+                }
+            }
+
+            JITDUMP("iteration %u: " FMT_BB " :: old " FMT_WT " new " FMT_WT " change " FMT_WT "%s\n", i, block->bbNum,
+                    oldWeight, newWeight, change, isExit ? " [exit]" : "");
             countVector[block->bbNum] = newWeight;
 
             // Remember max absolute and relative change
@@ -1385,25 +1407,6 @@ void ProfileSynthesis::GaussSeidelSolver()
                 JITDUMP("count overflow in " FMT_BB ": " FMT_WT "\n", block->bbNum, newWeight);
                 m_overflow = true;
             }
-
-            if (checkEntryExitWeight)
-            {
-                if (block->KindIs(BBJ_RETURN))
-                {
-                    exitWeight += newWeight;
-                }
-                else if (block->KindIs(BBJ_THROW))
-                {
-                    if (block->hasTryIndex())
-                    {
-                        checkEntryExitWeight = false;
-                    }
-                    else
-                    {
-                        exitWeight += newWeight;
-                    }
-                }
-            }
         }
 
         // If there were no improper headers, we will have converged in one pass.
@@ -1420,7 +1423,12 @@ void ProfileSynthesis::GaussSeidelSolver()
         //
         if (checkEntryExitWeight)
         {
-            weight_t entryExitRelResidual = (entryWeight - exitWeight) / entryWeight;
+            // we can see slight overflow here in the exit residual, so use abs
+            //
+            weight_t const entryExitResidual = abs(entryWeight - exitWeight);
+            JITDUMP("Entry weight " FMT_WT " exit weight " FMT_WT " residual " FMT_WT "\n", entryWeight, exitWeight,
+                    entryExitResidual);
+            weight_t const entryExitRelResidual = entryExitResidual / entryWeight;
             assert(entryExitRelResidual >= 0);
 
             if (entryExitRelResidual > relResidual)
