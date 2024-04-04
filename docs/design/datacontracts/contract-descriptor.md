@@ -22,11 +22,11 @@ struct DotNetRuntimeContractDescriptor
 {
     uint64_t magic;
     uint32_t flags;
-    uint32_t aux_data_count;
     uint32_t descriptor_size;
-    uint32_t reserved;
     const char *descriptor;
-    uint64_t *aux_data;
+    uint32_t aux_data_count;
+    uint32_t pad0;
+    uintptr_t *aux_data;
 };
 ```
 
@@ -43,9 +43,9 @@ The following `flags` bits are defined:
 If `ptrSize` is 0, the architecture is 64-bit.  If it is 1, the architecture is 32-bit.  The
 reserved bits should be written as zero.  Diagnostic tooling may ignore non-zero reserved bits.
 
-The `descriptor` is a pointer to a JSON string described in [data descriptor physical layout](./data_descriptor.md#Physical_JSON_descriptor).  The total length (including nul terminator character) is given by `descriptor_size`.
+The `descriptor` is a pointer to a UTF-8 JSON string described in [data descriptor physical layout](./data_descriptor.md#Physical_JSON_descriptor).  The total number of bytes is given by `descriptor_size`.
 
-The auxiliary data for the JSON descriptor is stored at the location `aux_data` in `aux_data_count` 64-bit slots.
+The auxiliary data for the JSON descriptor is stored at the location `aux_data` in `aux_data_count` pointer-sized slots.
 
 ### Architecture properties
 
@@ -92,9 +92,8 @@ a JSON integer constant.
 ## Contract symbol
 
 To aid in discovery, the contract descriptor should be exported by the module hosting the .NET
-runtime with the name `DotNetRuntimeContractDescriptor` using the C symbol conventions of the
-target platform.  That is, on platforms where such symbols typically have an `_` prepended, this
-symbol should be exported as `_DotNetRuntimeContractDescriptor`.
+runtime with the name `DotNetRuntimeContractDescriptor` using the C symbol naming conventions of the
+target platform.
 
 In scenarios where multiple .NET runtimes may be present in a single process, diagnostic tooling
 should look for the symbol in each loaded module to discover all the runtimes.
