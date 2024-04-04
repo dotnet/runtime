@@ -4614,7 +4614,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 assert(targetReg != REG_STK);
                 assert(interval->assignedReg != nullptr && interval->assignedReg->regNum == targetReg &&
                        interval->assignedReg->assignedInterval == interval);
-                liveRegs.AddRegNumInMask(targetReg ARM_ARG(interval->registerType));
+                liveRegs.AddRegNum(targetReg, interval->registerType);
                 continue;
             }
         }
@@ -4644,7 +4644,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 // likely to match other assignments this way.
                 targetReg          = interval->physReg;
                 interval->isActive = true;
-                liveRegs.AddRegNumInMask(targetReg ARM_ARG(interval->registerType));
+                liveRegs.AddRegNum(targetReg, interval->registerType);
                 INDEBUG(inactiveRegs |= targetReg);
                 setVarReg(inVarToRegMap, varIndex, targetReg);
             }
@@ -4656,7 +4656,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         if (targetReg != REG_STK)
         {
             RegRecord* targetRegRecord = getRegisterRecord(targetReg);
-            liveRegs.AddRegNumInMask(targetReg ARM_ARG(interval->registerType));
+            liveRegs.AddRegNum(targetReg, interval->registerType);
             if (!allocationPassComplete)
             {
                 updateNextIntervalRef(targetReg, interval);
@@ -4693,7 +4693,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                     RegRecord* anotherHalfRegRec = findAnotherHalfRegRec(targetRegRecord);
 
                     // Use TYP_FLOAT to get the regmask of just the half reg.
-                    liveRegs.RemoveRegNumFromMask(anotherHalfRegRec->regNum, TYP_FLOAT);
+                    liveRegs.RemoveRegNum(anotherHalfRegRec->regNum, TYP_FLOAT);
                 }
 
 #endif // TARGET_ARM
@@ -5430,7 +5430,7 @@ void LinearScan::allocateRegistersMinimal()
                                                                   DEBUG_ARG(assignedRegister));
                     if (!currentRefPosition.lastUse)
                     {
-                        copyRegsToFree.AddRegNumInMask(copyReg ARM_ARG(currentInterval->registerType));
+                        copyRegsToFree.AddRegNum(copyReg, currentInterval->registerType);
                     }
 
                     // For tree temp (non-localVar) interval, we will need an explicit move.
@@ -5445,7 +5445,7 @@ void LinearScan::allocateRegistersMinimal()
                 else
                 {
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NEEDS_NEW_REG, nullptr, assignedRegister));
-                    regsToFree.AddRegNumInMask(assignedRegister ARM_ARG(currentInterval->registerType));
+                    regsToFree.AddRegNum(assignedRegister, currentInterval->registerType);
                     // We want a new register, but we don't want this to be considered a spill.
                     assignedRegister = REG_NA;
                     if (physRegRecord->assignedInterval == currentInterval)
@@ -5543,7 +5543,8 @@ void LinearScan::allocateRegistersMinimal()
         if (assignedRegister != REG_NA)
         {
             assignedRegBit              = genRegMask(assignedRegister);
-            AllRegsMask assignedRegMask = AllRegsMask(assignedRegister ARM_ARG(currentInterval->registerType));
+            AllRegsMask assignedRegMask;
+            assignedRegMask.AddRegNum(assignedRegister, currentInterval->registerType);
 
             regsInUseThisLocation |= assignedRegMask;
             if (currentRefPosition.delayRegFree)
@@ -5732,7 +5733,7 @@ void LinearScan::allocateRegisters()
                 updateNextIntervalRef(reg, interval);
                 updateSpillCost(reg, interval);
                 setRegInUse(reg, interval->registerType);
-                INDEBUG(registersToDump.AddRegNumInMask(reg ARM_ARG(interval->registerType)));
+                INDEBUG(registersToDump.AddRegNum(reg, interval->registerType));
             }
         }
         else
@@ -6154,7 +6155,7 @@ void LinearScan::allocateRegisters()
                                 updateSpillCost(assignedRegister, currentInterval);
                             }
 
-                            regsToFree.AddRegNumInMask(assignedRegister ARM_ARG(currentInterval->registerType));
+                            regsToFree.AddRegNum(assignedRegister, currentInterval->registerType);
                         }
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, nullptr, assignedRegister));
                         currentRefPosition.registerAssignment = RBM_NONE;
@@ -6471,7 +6472,7 @@ void LinearScan::allocateRegisters()
                                                                           currentInterval) DEBUG_ARG(assignedRegister));
                             if (!currentRefPosition.lastUse)
                             {
-                                copyRegsToFree.AddRegNumInMask(copyReg ARM_ARG(currentInterval->registerType));
+                                copyRegsToFree.AddRegNum(copyReg, currentInterval->registerType);
                             }
 
                             // If this is a tree temp (non-localVar) interval, we will need an explicit move.
@@ -6580,7 +6581,7 @@ void LinearScan::allocateRegisters()
                                                                   DEBUG_ARG(assignedRegister));
                     if (!currentRefPosition.lastUse)
                     {
-                        copyRegsToFree.AddRegNumInMask(copyReg ARM_ARG(currentInterval->registerType));
+                        copyRegsToFree.AddRegNum(copyReg, currentInterval->registerType);
                     }
 
                     // If this is a tree temp (non-localVar) interval, we will need an explicit move.
@@ -6601,7 +6602,7 @@ void LinearScan::allocateRegisters()
                 else
                 {
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NEEDS_NEW_REG, nullptr, assignedRegister));
-                    regsToFree.AddRegNumInMask(assignedRegister ARM_ARG(currentInterval->registerType));
+                    regsToFree.AddRegNum(assignedRegister, currentInterval->registerType);
                     // We want a new register, but we don't want this to be considered a spill.
                     assignedRegister = REG_NA;
                     if (physRegRecord->assignedInterval == currentInterval)
@@ -6769,7 +6770,8 @@ void LinearScan::allocateRegisters()
         if (assignedRegister != REG_NA)
         {
             assignedRegBit              = genRegMask(assignedRegister);
-            AllRegsMask assignedRegMask = AllRegsMask(assignedRegister ARM_ARG(currentInterval->registerType));
+            AllRegsMask assignedRegMask;
+            assignedRegMask.AddRegNum(assignedRegister, currentInterval->registerType);
 
             regsInUseThisLocation |= assignedRegMask;
             if (currentRefPosition.delayRegFree)
@@ -11195,7 +11197,7 @@ void LinearScan::dumpLsraAllocationEvent(
     }
     if ((interval != nullptr) && (reg != REG_NA) && (reg != REG_STK))
     {
-        registersToDump.AddRegNumInMask(reg ARM_ARG(interval->registerType));
+        registersToDump.AddRegNum(reg, interval->registerType);
         dumpRegRecordTitleIfNeeded();
     }
 

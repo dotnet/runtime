@@ -5231,48 +5231,112 @@ void AllRegsMask::AddGprRegInMask(regNumber reg)
     AddGprRegMask(genRegMask(reg));
 }
 
-#ifdef TARGET_ARM
+// ----------------------------------------------------------
+//  AddRegNumForType: Adds `reg` to the mask.
+//
 void AllRegsMask::AddRegNumInMask(regNumber reg)
 {
-    _combinedRegisters |= genRegMask(reg);
+    RegBitSet64 value = genRegMask(reg);
+#ifdef HAS_MORE_THAN_64_REGISTERS   
+    int index = regIndexForRegister(reg);
+    _registers[index] |= encodeForIndex(index, value);
+#else
+    _combinedRegisters |= value;
+#endif
 }
 
+// This is similar to AddRegNumInMask(reg, regType) for all platforms
+// except Arm. For Arm, it calls getRegMask() instead of genRegMask()
+// to create a mask that needs to be added.
+void AllRegsMask::AddRegNum(regNumber reg, var_types type)
+{
+#ifdef TARGET_ARM
+    _combinedRegisters |= getRegMask(reg, type);
+#else
+    AddRegNumInMask(reg);
+#endif
+}
+
+// ----------------------------------------------------------
+//  RemoveRegNumFromMask: Removes `reg` to the mask.
+//
 void AllRegsMask::RemoveRegNumFromMask(regNumber reg)
 {
-    _combinedRegisters &= ~genRegMask(reg);
+    RegBitSet64 value = genRegMask(reg);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    int index = regIndexForRegister(reg);
+    _registers[index] &= ~encodeForIndex(index, value);
+#else
+    _combinedRegisters &= ~value;
+#endif
 }
 
+// This is similar to RemoveRegNumFromMask(reg, regType) for all platforms
+// except Arm. For Arm, it calls getRegMask() instead of genRegMask()
+// to create a mask that needs to be added.
+void AllRegsMask::RemoveRegNum(regNumber reg, var_types type)
+{
+#ifdef TARGET_ARM
+    _combinedRegisters &= ~getRegMask(reg, type);
+#else
+    RemoveRegNumFromMask(reg);
+#endif
+}
+
+// ----------------------------------------------------------
+//  IsRegNumInMask: Checks if `reg` is present in the mask.
+//
 bool AllRegsMask::IsRegNumInMask(regNumber reg)
 {
-    return (_combinedRegisters & genRegMask(reg)) != RBM_NONE;
-}
+    RegBitSet64 value = genRegMask(reg);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    int         index          = regIndexForRegister(reg);
+    return (_registers[index] & encodeForIndex(index, value)) != RBM_NONE;
+#else
+    return (_combinedRegisters & value) != RBM_NONE;
 #endif
+}
 
+// This is similar to IsRegNumInMask(reg, regType) for all platforms
+// except Arm. For Arm, it calls getRegMask() instead of genRegMask()
+// to create a mask that needs to be added.
+bool AllRegsMask::IsRegNumPresent(regNumber reg, var_types type)
+{
+#ifdef TARGET_ARM
+    return (_combinedRegisters & getRegMask(reg, type)) != RBM_NONE;
+#else
+    return IsRegNumInMask(reg);
+#endif
+}
+
+#ifdef TARGET_ARM
 // ----------------------------------------------------------
 //  AddRegNumForType: Adds `reg` to the mask. It is same as AddRegNumInMask(reg) except
 //  that it takes `type` as an argument and adds `reg` to the mask for that type.
 //
-void AllRegsMask::AddRegNumInMask(regNumber reg ARM_ARG(var_types type))
+void AllRegsMask::AddRegNumInMask(regNumber reg, var_types type)
 {
-#ifdef HAS_MORE_THAN_64_REGISTERS
-    RegBitSet64 value = genRegMask(reg ARM_ARG(type));
-    int         index = regIndexForRegister(reg);
-    _registers[index] |= encodeForIndex(index, value);
-#else
-    _combinedRegisters |= genRegMask(reg ARM_ARG(type));
-#endif
+    _combinedRegisters |= genRegMask(reg, type);
 }
 
-void AllRegsMask::RemoveRegNumFromMask(regNumber reg ARM_ARG(var_types type))
+// ----------------------------------------------------------
+//  RemoveRegNumFromMask: Removes `reg` from the mask. It is same as RemoveRegNumFromMask(reg) except
+//  that it takes `type` as an argument and adds `reg` to the mask for that type.
+//
+void AllRegsMask::RemoveRegNumFromMask(regNumber reg, var_types type)
 {
-#ifdef HAS_MORE_THAN_64_REGISTERS
-    RegBitSet64 regMaskToRemove = genRegMask(reg ARM_ARG(type));
-    int         index           = regIndexForRegister(reg);
-    _registers[index] &= ~encodeForIndex(index, regMaskToRemove);
-#else
-    _combinedRegisters &= ~genRegMask(reg ARM_ARG(type));
-#endif
+    _combinedRegisters &= ~genRegMask(reg, type);
 }
+
+// ----------------------------------------------------------
+//  IsRegNumInMask: Removes `reg` from the mask. It is same as IsRegNumInMask(reg) except
+//  that it takes `type` as an argument and adds `reg` to the mask for that type.
+//
+bool AllRegsMask::IsRegNumInMask(regNumber reg, var_types type)
+{
+    return (_combinedRegisters & genRegMask(reg, type)) != RBM_NONE;
+}
+#endif
 
 void AllRegsMask::RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type)
 {
@@ -5284,16 +5348,6 @@ void AllRegsMask::RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_type
 #endif
 }
 
-bool AllRegsMask::IsRegNumInMask(regNumber reg ARM_ARG(var_types type))
-{
-#ifdef HAS_MORE_THAN_64_REGISTERS
-    int         index          = regIndexForRegister(reg);
-    RegBitSet64 regMaskToCheck = genRegMask(reg ARM_ARG(type));
-    return (_registers[index] & encodeForIndex(index, regMaskToCheck)) != RBM_NONE;
-#else
-    return (_combinedRegisters & genRegMask(reg ARM_ARG(type))) != RBM_NONE;
-#endif
-}
 
 bool AllRegsMask::IsGprMaskPresent(regMaskGpr maskToCheck) const
 {

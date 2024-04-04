@@ -365,40 +365,33 @@ public:
     {
     }
 
-#ifdef TARGET_ARM
-    _regMaskAll(regNumber reg) : _regMaskAll()
-    {
-        AddRegNumInMask(reg);
-    }
-#endif
-
-    _regMaskAll(regNumber reg ARM_ARG(var_types type)) : _regMaskAll()
-    {
-        AddRegNumInMask(reg ARM_ARG(type));
-    }
-
     FORCEINLINE void     Clear();
     FORCEINLINE bool     IsEmpty();
     FORCEINLINE unsigned Count();
     FORCEINLINE void Create(regNumber reg);
     // Rename this to AddRegNum
     FORCEINLINE void AddGprRegInMask(regNumber reg);
-    FORCEINLINE void AddRegNumInMask(regNumber reg ARM_ARG(var_types type));
     FORCEINLINE void AddRegMaskForType(regMaskOnlyOne maskToAdd, var_types type);
     FORCEINLINE void AddGprRegMask(regMaskGpr maskToAdd);
     FORCEINLINE void AddFloatRegMask(regMaskFloat maskToAdd);
 
-#ifdef TARGET_ARM
     FORCEINLINE void AddRegNumInMask(regNumber reg);
+    FORCEINLINE void AddRegNum(regNumber reg, var_types type);
     FORCEINLINE void RemoveRegNumFromMask(regNumber reg);
+    FORCEINLINE void RemoveRegNum(regNumber reg, var_types type);
     FORCEINLINE bool IsRegNumInMask(regNumber reg);
+    FORCEINLINE bool IsRegNumPresent(regNumber reg, var_types type);
+
+#ifdef TARGET_ARM
+    FORCEINLINE void AddRegNumInMask(regNumber reg, var_types type);
+    FORCEINLINE void RemoveRegNumFromMask(regNumber reg, var_types type);
+    FORCEINLINE bool IsRegNumInMask(regNumber reg, var_types type);
 #endif
-    FORCEINLINE void RemoveRegNumFromMask(regNumber reg ARM_ARG(var_types type));
+
+
     FORCEINLINE void RemoveRegTypeFromMask(regMaskOnlyOne regMaskToRemove, var_types type);
-    FORCEINLINE bool IsRegNumInMask(regNumber reg ARM_ARG(var_types type));
     FORCEINLINE bool IsGprMaskPresent(regMaskGpr maskToCheck) const;
     FORCEINLINE bool IsFloatMaskPresent(Compiler* compiler, regMaskFloat maskToCheck) const;
-    // bool IsOnlyRegNumInMask(regNumber reg);
     FORCEINLINE regMaskOnlyOne GetRegMaskForType(var_types type) const;
 
     // TODO: this might go away once we have just `regMaskTP` gpr_float field

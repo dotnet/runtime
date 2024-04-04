@@ -1765,7 +1765,7 @@ private:
 
     bool isRegAvailable(regNumber reg, var_types regType) // only used in asserts
     {
-        return m_AvailableRegs.IsRegNumInMask(reg ARM_ARG(regType));
+        return m_AvailableRegs.IsRegNumPresent(reg, regType);
     }
 
     void setRegsInUse(AllRegsMask regMask)
@@ -1775,7 +1775,7 @@ private:
 
     void setRegInUse(regNumber reg, var_types regType)
     {
-        m_AvailableRegs.RemoveRegNumFromMask(reg ARM_ARG(regType));
+        m_AvailableRegs.RemoveRegNum(reg, regType);
     }
 
     void makeRegsAvailable(AllRegsMask regMask)
@@ -1790,7 +1790,7 @@ private:
 
     void makeRegAvailable(regNumber reg, var_types regType)
     {
-        m_AvailableRegs.AddRegNumInMask(reg ARM_ARG(regType));
+        m_AvailableRegs.AddRegNum(reg, regType);
     }
 
     void clearAllNextIntervalRef();
@@ -1817,16 +1817,16 @@ private:
         // just operate on curr_RegistersWithConstants and assert
         // assert(m_RegistersWithConstants[regIndexForType(regType)] == curr_RegistersWithConstants);
         // but we will have to make sure that we save it back too??
-        m_RegistersWithConstants.RemoveRegNumFromMask(reg ARM_ARG(regType));
+        m_RegistersWithConstants.RemoveRegNum(reg, regType);
     }
     void setConstantReg(regNumber reg, var_types regType)
     {
-        m_RegistersWithConstants.AddRegNumInMask(reg ARM_ARG(regType));
+        m_RegistersWithConstants.AddRegNum(reg, regType);
     }
     bool isRegConstant(regNumber reg, var_types regType)
     {
         reg = getRegForType(reg, regType);
-        return m_RegistersWithConstants.IsRegNumInMask(reg ARM_ARG(regType));
+        return m_RegistersWithConstants.IsRegNumPresent(reg, regType);
     }
     regMaskOnlyOne getMatchingConstants(regMaskOnlyOne mask, Interval* currentInterval, RefPosition* refPosition);
 
@@ -1867,11 +1867,11 @@ private:
 #endif
     bool isRegBusy(regNumber reg, var_types regType)
     {
-        return regsBusyUntilKill.IsRegNumInMask(reg ARM_ARG(regType));
+        return regsBusyUntilKill.IsRegNumPresent(reg, regType);
     }
     void setRegBusyUntilKill(regNumber reg, var_types regType)
     {
-        regsBusyUntilKill.AddRegNumInMask(reg ARM_ARG(regType));
+        regsBusyUntilKill.AddRegNum(reg, regType);
     }
     void clearRegBusyUntilKill(regNumber reg)
     {
