@@ -21,4 +21,103 @@ const regNumber intArgRegs [] = {REG_ECX, REG_EDX};
 const regMaskTP intArgMasks[] = {RBM_ECX, RBM_EDX};
 // clang-format on
 
+//-----------------------------------------------------------------------------
+// X86Classifier:
+//   Construct a new instance of the x86 ABI classifier.
+//
+// Parameters:
+//   info - Info about the method being classified.
+//
+X86Classifier::X86Classifier(const ClassifierInfo& info)
+    : m_regs(nullptr, 0)
+{
+    switch (info.CallConv)
+    {
+        case CorInfoCallConvExtension::Thiscall:
+        {
+            static const regNumber thiscallRegs[] = {REG_ECX};
+            m_regs                                = RegisterQueue(thiscallRegs, ArrLen(thiscallRegs));
+            break;
+        }
+        case CorInfoCallConvExtension::C:
+        case CorInfoCallConvExtension::Stdcall:
+        case CorInfoCallConvExtension::CMemberFunction:
+        case CorInfoCallConvExtension::StdcallMemberFunction:
+        {
+            break;
+        }
+        default:
+        {
+            unsigned numRegs = ArrLen(intArgRegs);
+            if (info.IsVarArgs)
+            {
+                // In varargs methods we only enregister the this pointer or retbuff.
+                numRegs = info.HasThis || info.HasRetBuff ? 1 : 0;
+            }
+            m_regs = RegisterQueue(intArgRegs, numRegs);
+            break;
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
+// Classify:
+//   Classify a parameter for the x86 ABI.
+//
+// Parameters:
+//   comp           - Compiler instance
+//   type           - The type of the parameter
+//   structLayout   - The layout of the struct. Expected to be non-null if
+//                    varTypeIsStruct(type) is true.
+//   wellKnownParam - Well known type of the parameter (if it may affect its ABI classification)
+//
+// Returns:
+//   Classification information for the parameter.
+//
+ABIPassingInformation X86Classifier::Classify(Compiler*    comp,
+                                              var_types    type,
+                                              ClassLayout* structLayout,
+                                              WellKnownArg wellKnownParam)
+{
+    unsigned size     = type == TYP_STRUCT ? structLayout->GetSize() : genTypeSize(type);
+    unsigned numSlots = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+
+    bool canEnreg = false;
+    if (m_regs.Count() >= numSlots)
+    {
+        switch (type)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            case TYP_SHORT:
+            case TYP_USHORT:
+            case TYP_INT:
+            case TYP_REF:
+            case TYP_BYREF:
+                canEnreg = true;
+                break;
+            case TYP_STRUCT:
+                canEnreg = comp->isTrivialPointerSizedStruct(structLayout->GetClassHandle());
+                break;
+            default:
+                break;
+        }
+    }
+
+    ABIPassingSegment segment;
+    if (canEnreg)
+    {
+        assert(numSlots == 1);
+        segment = ABIPassingSegment::InRegister(m_regs.Dequeue(), 0, size);
+    }
+    else
+    {
+        assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
+        segment = ABIPassingSegment::OnStack(m_stackArgSize, 0, size);
+        m_stackArgSize += roundUp(size, TARGET_POINTER_SIZE);
+    }
+
+    return ABIPassingInformation::FromSegment(comp, segment);
+}
+
 #endif // TARGET_X86

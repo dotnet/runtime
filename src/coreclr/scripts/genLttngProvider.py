@@ -88,7 +88,7 @@ coreCLRLttngDataTypeMapping ={
         "win:Binary"        :"const BYTE"
         }
 
-monoLttngDataTypeMapping ={
+portableLttngDataTypeMapping ={
         #constructed types
         "win:null"          :" ",
         "win:Int64"         :"const int64_t",
@@ -113,8 +113,8 @@ monoLttngDataTypeMapping ={
 def getLttngDataTypeMapping(runtimeFlavor):
     if runtimeFlavor.coreclr:
         return coreCLRLttngDataTypeMapping
-    elif runtimeFlavor.mono:
-        return monoLttngDataTypeMapping
+    else:
+        return portableLttngDataTypeMapping
 
 ctfDataTypeMapping ={
         #constructed types
@@ -580,8 +580,6 @@ def generateLttngFiles(etwmanifest, eventprovider_directory, runtimeFlavor, dryR
 #include "pal_mstypes.h"
 #include "pal_error.h"
 #include "pal.h"
-#define PAL_free free
-#define PAL_realloc realloc
 #include "pal/stackstring.hpp"
 """)
                 lttngimpl_file.write("#include \"" + lttngevntheadershortname + "\"\n\n")

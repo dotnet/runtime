@@ -58,6 +58,9 @@
 
 #include "exinfo.h"
 
+using std::isfinite;
+using std::isnan;
+
 //========================================================================
 //
 // This file contains implementation of all JIT helpers. The helpers are
@@ -264,7 +267,7 @@ HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
         }
         else if (divisor == -1)
         {
-            if (dividend == _I32_MIN)
+            if (dividend == INT32_MIN)
             {
                 ehKind = kOverflowException;
                 goto ThrowExcep;
@@ -296,7 +299,7 @@ HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
         }
         else if (divisor == -1)
         {
-            if (dividend == _I32_MIN)
+            if (dividend == INT32_MIN)
             {
                 ehKind = kOverflowException;
                 goto ThrowExcep;
@@ -1183,7 +1186,7 @@ NOINLINE HCIMPL1(void, JIT_InitClass_Framed, MethodTable* pMT)
     // already have initialized the Global Class <Module>
     CONSISTENCY_CHECK(!pMT->IsGlobalClass());
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
     pMT->CheckRunClassInitThrowing();
 
     HELPER_METHOD_FRAME_END();
@@ -1236,7 +1239,7 @@ HCIMPL2(void, JIT_InitInstantiatedClass, CORINFO_CLASS_HANDLE typeHnd_, CORINFO_
         pMT = pTemplateMT;
     }
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
     pMT->EnsureInstanceActive();
     pMT->CheckRunClassInitThrowing();
     HELPER_METHOD_FRAME_END();
@@ -1488,7 +1491,7 @@ NOINLINE HCIMPL1(void*, JIT_GetGenericsGCStaticBase_Framed, MethodTable *pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     pMT->CheckRunClassInitThrowing();
 
@@ -1549,7 +1552,7 @@ NOINLINE HCIMPL1(void*, JIT_GetGenericsNonGCStaticBase_Framed, MethodTable *pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     // If pMT refers to a method table that requires some initialization work,
     // then pMT cannot to a method table that is shared by generic instantiations,
@@ -1629,9 +1632,7 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBase_Helper, MethodTable * pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    // For generics, we need to call CheckRestore() for some reason
-    if (pMT->HasGenericsStaticsInfo())
-        pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     // Get the TLM
     ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
@@ -1661,9 +1662,7 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    // For generics, we need to call CheckRestore() for some reason
-    if (pMT->HasGenericsStaticsInfo())
-        pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     // Get the TLM
     ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
@@ -2763,7 +2762,7 @@ HCIMPL3(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs
     HELPER_METHOD_FRAME_BEGIN_RET_1(ret);    // Set up a frame
 
     TypeHandle typeHnd(classHnd);
-    typeHnd.CheckRestore();
+    _ASSERTE(typeHnd.IsFullyLoaded());
     _ASSERTE(typeHnd.GetMethodTable()->IsArray());
 
     ret = AllocateArrayEx(typeHnd, pArgList, dwNumArgs);
@@ -2826,7 +2825,7 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 
     MethodTable *pMT = clsHnd.AsMethodTable();
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     _ASSERTE (pMT->IsValueType() && !pMT->IsByRefLike());
 

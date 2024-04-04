@@ -790,11 +790,9 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
     else
     {
         JITDUMP("Debug: New V%02u debug range: %s\n", m_varNum,
-                m_VariableLiveRanges->empty()
-                    ? "first"
-                    : siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation))
-                          ? "new var or location"
-                          : "not adjacent");
+                m_VariableLiveRanges->empty()                                                   ? "first"
+                : siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation)) ? "new var or location"
+                                                                                                : "not adjacent");
         // Creates new live range with invalid end
         m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
         m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
@@ -1685,9 +1683,9 @@ NATIVE_OFFSET CodeGen::psiGetVarStackOffset(const LclVarDsc* lclVarDsc) const
 }
 
 /*============================================================================
-*           INTERFACE (public) Functions for PrologScopeInfo
-*============================================================================
-*/
+ *           INTERFACE (public) Functions for PrologScopeInfo
+ *============================================================================
+ */
 
 //------------------------------------------------------------------------
 // psiBegProlog: Initializes the PrologScopeInfo creating open psiScopes or
