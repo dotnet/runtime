@@ -768,7 +768,7 @@ public:
     //
     // Operators to emulate Pointer semantics.
     //
-    bool IsNull() { SUPPORTS_DAC; return m_addr == NULL; }
+    bool IsNull() { SUPPORTS_DAC; return m_addr == (TADDR)0; }
 
     static VMPTR_This NullPtr()
     {
