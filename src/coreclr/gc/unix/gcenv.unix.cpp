@@ -892,7 +892,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
             break;
         }
     }
-#endif // HAVE_SYSCONF
+#endif
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
     if (cacheSize == 0)
