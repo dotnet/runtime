@@ -411,12 +411,6 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
 
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
 
-    // Raising the assert dialog can cause us to re-enter the host when allocating
-    // memory for the string.  Since this is debug-only code, we can safely skip
-    // violation asserts here, particularly since they can also cause infinite
-    // recursion.
-    PERMANENT_CONTRACT_VIOLATION(HostViolation, ReasonDebugOnly);
-
     dbgForceToMemory = &szFile;     //make certain these args are available in the debugger
     dbgForceToMemory = &iLine;
     dbgForceToMemory = &szExpr;

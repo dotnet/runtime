@@ -48,8 +48,7 @@ jobs:
       displayName: 'Install .NET SDK'
       inputs:
         packageType: 'sdk'
-        version: '6.x'
-        includePreviewVersions: true
+        version: '8.x'
         installationPath: $(Agent.ToolsDirectory)/dotnet
 
     - script: $(PythonSetupScript)
