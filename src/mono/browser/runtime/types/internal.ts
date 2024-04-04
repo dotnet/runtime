@@ -95,9 +95,7 @@ export type MonoConfigInternal = MonoConfig & {
     GitHash?: string,
     ProductVersion?: string,
 
-    mainThreadingMode?: MainThreadingMode,
     jsThreadBlockingMode?: JSThreadBlockingMode,
-    jsThreadInteropMode?: JSThreadInteropMode,
 };
 
 export type RunArguments = {
@@ -206,6 +204,7 @@ export type RuntimeHelpers = {
     getMemory(): WebAssembly.Memory,
     getWasmIndirectFunctionTable(): WebAssembly.Table,
     runtimeReady: boolean,
+    disableManagedTransition: boolean,
     monoThreadInfo: PThreadInfo,
     proxyGCHandle: GCHandle | undefined,
     managedThreadTID: PThreadPtr,
@@ -570,35 +569,36 @@ export interface MonoThreadMessage {
 }
 
 // keep in sync with JSHostImplementation.Types.cs
-export const enum MainThreadingMode {
-    // Running the managed main thread on UI thread.
-    // Managed GC and similar scenarios could be blocking the UI.
-    // Easy to deadlock. Not recommended for production.
-    UIThread = 0,
-    // Running the managed main thread on dedicated WebWorker. Marshaling all JavaScript calls to and from the main thread.
-    DeputyThread = 1,
-    // TODO comment
-    DeputyAndIOThreads = 2,
-}
-
-// keep in sync with JSHostImplementation.Types.cs
 export const enum JSThreadBlockingMode {
-    // throw PlatformNotSupportedException if blocking .Wait is called on threads with JS interop, like JSWebWorker and Main thread.
-    // Avoids deadlocks (typically with pending JS promises on the same thread) by throwing exceptions.
-    NoBlockingWait = 0,
-    // TODO comment
-    AllowBlockingWaitInAsyncCode = 1,
-    // allow .Wait on all threads.
-    // Could cause deadlocks with blocking .Wait on a pending JS Task/Promise on the same thread or similar Task/Promise chain.
-    AllowBlockingWait = 100,
-}
-
-// keep in sync with JSHostImplementation.Types.cs
-export const enum JSThreadInteropMode {
-    // throw PlatformNotSupportedException if synchronous JSImport/JSExport is called on threads with JS interop, like JSWebWorker and Main thread.
-    // calling synchronous JSImport on thread pool or new threads is allowed.
-    NoSyncJSInterop = 0,
-    // allow non-re-entrant synchronous blocking calls to and from JS on JSWebWorker on threads with JS interop, like JSWebWorker and Main thread.
-    // calling synchronous JSImport on thread pool or new threads is allowed.
-    SimpleSynchronousJSInterop = 1,
+    /**
+     * Prevents synchronous JSExport from being called from JavaScript code in UI thread.
+     * On JSWebWorker synchronous JSExport always works.
+     * On JSWebWorker blocking .Wait always warns.
+     * This is the default mode.
+     */
+    PreventSynchronousJSExport = "PreventSynchronousJSExport",
+    /**
+     * Allows synchronous JSExport to be called from JavaScript code also in UI thread.
+     * Inside of that call blocking .Wait throws PNSE.
+     * Inside of that call nested call back to synchronous JSImport throws PNSE (because it would deadlock otherwise in 100% cases).
+     * On JSWebWorker synchronous JSExport always works.
+     * On JSWebWorker blocking .Wait always throws PNSE.
+     */
+    ThrowWhenBlockingWait = "ThrowWhenBlockingWait",
+    /**
+     * Allows synchronous JSExport to be called from JavaScript code also in UI thread.
+     * Inside of that call blocking .Wait warns.
+     * Inside of that call nested call back to synchronous JSImport throws PNSE (because it would deadlock otherwise in 100% cases).
+     * On JSWebWorker synchronous JSExport always works.
+     * On JSWebWorker blocking .Wait always warns.
+     */
+    WarnWhenBlockingWait = "WarnWhenBlockingWait",
+    /**
+     * Allows synchronous JSExport to be called from JavaScript code, and allows managed code to use blocking .Wait
+     * .Wait on Promise/Task chains could lead to deadlock because JS event loop is not processed and it can't resolve JS promises.
+     * This mode is dangerous and not supported.
+     * Allows synchronous JSExport to be called from JavaScript code also in Main thread.
+     * Inside of that call nested call back to synchronous JSImport throws PNSE (because it would deadlock otherwise in 100% cases).
+     */
+    DangerousAllowBlockingWait = "DangerousAllowBlockingWait",
 }

@@ -27,7 +27,7 @@ public:
         const std::unordered_map<pal::string_t, const fx_ver_t> &existing_framework_versions_by_name);
 
 private:
-    fx_resolver_t();
+    fx_resolver_t() = default;
 
     void update_newest_references(
         const runtime_config_t& config);
@@ -40,10 +40,6 @@ private:
         fx_definition_vector_t& fx_definitions,
         const pal::char_t* app_display_name);
 
-    static StatusCode reconcile_fx_references_helper(
-        const fx_reference_t& lower_fx_ref,
-        const fx_reference_t& higher_fx_ref,
-        /*out*/ fx_reference_t& effective_fx_ref);
     static StatusCode reconcile_fx_references(
         const fx_reference_t& fx_ref_a,
         const fx_reference_t& fx_ref_b,

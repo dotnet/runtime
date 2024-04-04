@@ -25,6 +25,7 @@ Revision History:
 #include "pal/stackstring.hpp"
 #include <sys/types.h>
 #include <dirent.h>
+#include <glob.h>
 
 #ifdef __cplusplus
 extern "C"
