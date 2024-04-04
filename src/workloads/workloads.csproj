@@ -186,6 +186,15 @@
       <VSDrop Include="%(PartitionedSwixProjects.ZipFile)" SourceDirectory="%(ManifestOutputPath)" />
     </ItemGroup>
 
+    <!-- Generate metadata for VSDROP automation. This information cannot be obtained during staging when insertions are triggered -->
+    <ItemGroup>
+      <VSDropMetadata Include="$(FileVersion)" />
+      <VSDropMetadata Include="$(BUILD_REPOSITORY_NAME)" />
+      <VSDropMetadata Include="$(BUILD_SOURCEBRANCH)"/>
+    </ItemGroup>
+
+    <WriteLinesToFile File="%(VSDrop.SourceDirectory)\.metadata" Lines="@(VSDropMetadata)" Overwrite="true" Condition="'$(OfficialBuild)' == 'true'" />
+
     <MakeDir Directories="$(ArtifactsNonShippingPackagesDir)" />
     <MakeDir Directories="$(VisualStudioSetupInsertionPath)" />
     <ZipDirectory Overwrite="true" SourceDirectory="%(SourceDirectory)"
