@@ -936,7 +936,7 @@ GenTree* Lowering::LowerCast(GenTree* tree)
                 GenTree* maxValScalar = (srcType == TYP_DOUBLE)
                                             ? comp->gtNewDconNodeD(static_cast<double>(actualMaxVal))
                                             : comp->gtNewDconNodeF(static_cast<float>(actualMaxVal));
-                GenTree* maxVal = comp->gtNewSimdCreateBroadcastNode(TYP_SIMD16, maxValScalar, fieldType, 16);
+                GenTree* maxVal       = comp->gtNewSimdCreateBroadcastNode(TYP_SIMD16, maxValScalar, fieldType, 16);
                 BlockRange().InsertAfter(fixupVal, maxVal);
 
                 GenTree* maxValDstTypeScalar = (dstType == TYP_INT) ? comp->gtNewIconNode(actualMaxVal, dstType)
