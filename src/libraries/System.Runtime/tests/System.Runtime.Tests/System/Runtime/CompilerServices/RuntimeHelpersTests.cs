@@ -457,7 +457,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(8, RuntimeHelpers.SizeOf(typeof(ulong).TypeHandle));
             Assert.Equal(4, RuntimeHelpers.SizeOf(typeof(float).TypeHandle));
             Assert.Equal(8, RuntimeHelpers.SizeOf(typeof(double).TypeHandle));
-            Assert.Equal(4, RuntimeHelpers.SizeOf(typeof(Byte3).TypeHandle));
+            Assert.Equal(3, RuntimeHelpers.SizeOf(typeof(Byte3).TypeHandle));
             Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(void*).TypeHandle));
             Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(delegate* <void>).TypeHandle));
             Assert.Throws<ArgumentNullException>(() => RuntimeHelpers.SizeOf(default));
