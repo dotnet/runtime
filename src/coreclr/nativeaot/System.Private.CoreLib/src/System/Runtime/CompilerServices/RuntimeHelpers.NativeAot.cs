@@ -364,8 +364,7 @@ namespace System.Runtime.CompilerServices
 
         public static unsafe int SizeOf(RuntimeTypeHandle type)
         {
-            RuntimeTypeHandle typeLocal = type;
-            if (typeLocal.IsNull)
+            if (type.IsNull)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
 
             MethodTable* mt = type.ToMethodTable();

@@ -2127,11 +2127,7 @@ extern "C" int32_t QCALLTYPE ReflectionInvocation_SizeOf(QCall::TypeHandle pType
 
     int32_t size = 0;
 
-    BEGIN_QCALL;
-
     size = pType.AsTypeHandle().GetSize();
-
-    END_QCALL;
 
     return size;
 }

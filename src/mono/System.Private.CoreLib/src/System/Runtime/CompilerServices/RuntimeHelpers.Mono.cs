@@ -217,14 +217,13 @@ namespace System.Runtime.CompilerServices
 
         public static int SizeOf(RuntimeTypeHandle type)
         {
-            RuntimeTypeHandle typeLocal = type;
-            if (typeLocal.Value == IntPtr.Zero)
+            if (type.Value == IntPtr.Zero)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
 
             if (Type.GetTypeFromHandle(type)!.IsGenericParameter)
                 throw new ArgumentException(SR.Arg_TypeNotSupported);
 
-            return SizeOf(new QCallTypeHandle(ref typeLocal));
+            return SizeOf(new QCallTypeHandle(ref type));
         }
     }
 }

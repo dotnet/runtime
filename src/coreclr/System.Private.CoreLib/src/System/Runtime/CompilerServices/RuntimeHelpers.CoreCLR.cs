@@ -423,11 +423,10 @@ namespace System.Runtime.CompilerServices
 
         public static int SizeOf(RuntimeTypeHandle type)
         {
-            RuntimeTypeHandle typeLocal = type;
-            if (typeLocal.IsNullHandle())
+            if (type.IsNullHandle())
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
 
-            int result = SizeOf(new QCallTypeHandle(ref typeLocal));
+            int result = SizeOf(new QCallTypeHandle(ref type));
 
             if (result < 0)
                 throw new ArgumentException(SR.Arg_TypeNotSupported);
