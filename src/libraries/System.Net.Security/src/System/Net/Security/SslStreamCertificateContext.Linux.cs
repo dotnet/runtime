@@ -116,7 +116,10 @@ namespace System.Net.Security
 
                 if (task.IsCompletedSuccessfully)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Got OCSP response.");
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(this, $"Got OCSP response.");
+                    }
                     return task.Result;
                 }
             }
@@ -124,7 +127,10 @@ namespace System.Net.Security
             {
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "No OCSP response available.");
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, "No OCSP response available.");
+            }
             return null;
         }
 
@@ -139,13 +145,19 @@ namespace System.Net.Security
 
             if (now > _ocspExpiration)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Cached OCSP response expired, fetching fresh staple.");
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(this, "Cached OCSP response expired, fetching fresh staple.");
+                }
                 return DownloadOcspAsync();
             }
 
             if (now > _nextDownload)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Starting async refresh of OCSP staple");
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(this, "Starting async refresh of OCSP staple");
+                }
                 // Calling DownloadOcsp will activate a Task to initiate
                 // in the background.  Further calls will attach to the
                 // same Task if it's still running.
@@ -176,7 +188,10 @@ namespace System.Net.Security
 
             if (pending is not null && !pending.IsFaulted)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Pending download task exists.");
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(this, $"Pending download task exists.");
+                }
                 return new ValueTask<byte[]?>(pending);
             }
 
@@ -214,7 +229,10 @@ namespace System.Net.Security
 
                 if (pending is null || pending.IsFaulted)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Starting new OCSP download task.");
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(this, $"Starting new OCSP download task.");
+                    }
                     pending = FetchOcspAsync();
                 }
             }
@@ -297,7 +315,10 @@ namespace System.Net.Security
                             _ocspResponse = ret;
                             _ocspExpiration = expiration;
                             _nextDownload = nextCheckA < nextCheckB ? nextCheckA : nextCheckB;
-                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Received {ret.Length} B OCSP response, Expiration: {_ocspExpiration}, Next refresh: {_nextDownload}");
+                            if (NetEventSource.Log.IsEnabled())
+                            {
+                                NetEventSource.Info(this, $"Received {ret.Length} B OCSP response, Expiration: {_ocspExpiration}, Next refresh: {_nextDownload}");
+                            }
                             break;
                         }
                     }
@@ -317,7 +338,10 @@ namespace System.Net.Security
                         // This backoff will be applied only if the OCSP staple is not expired.
                         // If it is expired, we will force-refresh it during next GetOcspResponseAsync call.
                         _nextDownload = DateTimeOffset.UtcNow.Add(RefreshAfterFailureBackOffInterval);
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"OCSP response fetch failed, backing off, Next refresh = {_nextDownload}");
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Info(this, $"OCSP response fetch failed, backing off, Next refresh = {_nextDownload}");
+                        }
                     }
 
                     _pendingDownload = null;
@@ -325,7 +349,10 @@ namespace System.Net.Security
                 }
                 catch (Exception ex)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"OCSP refresh failed: {ex}");
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Error(this, $"OCSP refresh failed: {ex}");
+                    }
                     completionSource.SetException(ex);
                 }
             }
