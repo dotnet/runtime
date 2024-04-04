@@ -35,12 +35,6 @@
 #define __has_cpp_attribute(x) (0)
 #endif
 
-#if __has_cpp_attribute(fallthrough)
-#define FALLTHROUGH [[fallthrough]]
-#else
-#define FALLTHROUGH
-#endif
-
 #include <algorithm>
 
 #if HAVE_SYS_TIME_H
@@ -868,28 +862,30 @@ done:
     return result;
 }
 
-#define UPDATE_CACHE_SIZE_AND_LEVEL(NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if (NEW_CACHE_SIZE > cacheSize) { cacheSize = NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
+#define UPDATE_CACHE_SIZE_AND_LEVEL(NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if (NEW_CACHE_SIZE > ((long)cacheSize)) { cacheSize = NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
 
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cacheLevel = 0;
     size_t cacheSize = 0;
-    size_t size;
+    long size;
 
+    // sysconf can return -1 if the cache size is unavailable in some distributions and 0 in others.
+    // UPDATE_CACHE_SIZE_AND_LEVEL should handle both the cases by not updating cacheSize if either of cases are met.
 #ifdef _SC_LEVEL1_DCACHE_SIZE
-    size = ( size_t) sysconf(_SC_LEVEL1_DCACHE_SIZE);
+    size = sysconf(_SC_LEVEL1_DCACHE_SIZE);
     UPDATE_CACHE_SIZE_AND_LEVEL(size, 1)
 #endif
 #ifdef _SC_LEVEL2_CACHE_SIZE
-    size = ( size_t) sysconf(_SC_LEVEL2_CACHE_SIZE);
+    size = sysconf(_SC_LEVEL2_CACHE_SIZE);
     UPDATE_CACHE_SIZE_AND_LEVEL(size, 2)
 #endif
 #ifdef _SC_LEVEL3_CACHE_SIZE
-    size = ( size_t) sysconf(_SC_LEVEL3_CACHE_SIZE);
+    size = sysconf(_SC_LEVEL3_CACHE_SIZE);
     UPDATE_CACHE_SIZE_AND_LEVEL(size, 3)
 #endif
 #ifdef _SC_LEVEL4_CACHE_SIZE
-    size = ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE);
+    size = sysconf(_SC_LEVEL4_CACHE_SIZE);
     UPDATE_CACHE_SIZE_AND_LEVEL(size, 4)
 #endif
 
@@ -912,17 +908,22 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         {
             path_to_size_file[index] = (char)(48 + i);
 
-            if (ReadMemoryValueFromFile(path_to_size_file, &size))
+            uint64_t cache_size_from_sys_file = 0;
+
+            if (ReadMemoryValueFromFile(path_to_size_file, &cache_size_from_sys_file))
             {
+                // uint64_t to long conversion as ReadMemoryValueFromFile takes a uint64_t* as an argument for the val argument.
+                size = (long)cache_size_from_sys_file;
                 path_to_level_file[index] = (char)(48 + i);
 
                 if (ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
                     UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
                 }
+
                 else
                 {
-                    cacheSize = std::max(cacheSize, size);
+                    cacheSize = std::max((long)cacheSize, size);
                 }
             }
         }

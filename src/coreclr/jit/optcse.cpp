@@ -204,7 +204,9 @@ void Compiler::optCSE_GetMaskData(GenTree* tree, optCSE_MaskData* pMaskData)
             DoPreOrder = true,
         };
 
-        MaskDataWalker(Compiler* comp, optCSE_MaskData* maskData) : GenTreeVisitor(comp), m_maskData(maskData)
+        MaskDataWalker(Compiler* comp, optCSE_MaskData* maskData)
+            : GenTreeVisitor(comp)
+            , m_maskData(maskData)
         {
         }
 
@@ -396,7 +398,9 @@ void CSEdsc::ComputeNumLocals(Compiler* compiler)
         };
 
         LocalCountingVisitor(Compiler* compiler)
-            : GenTreeVisitor<LocalCountingVisitor>(compiler), m_count(0), m_occurrences(0)
+            : GenTreeVisitor<LocalCountingVisitor>(compiler)
+            , m_count(0)
+            , m_occurrences(0)
         {
         }
 
@@ -1186,7 +1190,9 @@ class CSE_DataFlow
     EXPSET_TP m_preMergeOut;
 
 public:
-    CSE_DataFlow(Compiler* pCompiler) : m_comp(pCompiler), m_preMergeOut(BitVecOps::UninitVal())
+    CSE_DataFlow(Compiler* pCompiler)
+        : m_comp(pCompiler)
+        , m_preMergeOut(BitVecOps::UninitVal())
     {
     }
 
@@ -1742,7 +1748,8 @@ void Compiler::optValnumCSE_Availability()
 // Notes:
 //  This creates the basic CSE heuristic. It never does any CSEs.
 //
-CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler) : m_pCompiler(pCompiler)
+CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler)
+    : m_pCompiler(pCompiler)
 {
     m_addCSEcount  = 0; /* Count of the number of LclVars for CSEs that we added */
     sortTab        = nullptr;
@@ -2074,7 +2081,8 @@ void CSE_HeuristicCommon::DumpMetrics()
 //  This creates the random CSE heuristic. It does CSEs randomly, with some
 //  predetermined likelihood (set by config or by stress).
 //
-CSE_HeuristicRandom::CSE_HeuristicRandom(Compiler* pCompiler) : CSE_HeuristicCommon(pCompiler)
+CSE_HeuristicRandom::CSE_HeuristicRandom(Compiler* pCompiler)
+    : CSE_HeuristicCommon(pCompiler)
 {
     m_cseRNG.Init(m_pCompiler->info.compMethodHash() ^ JitConfig.JitRandomCSE());
 }
@@ -2200,7 +2208,8 @@ void CSE_HeuristicRandom::ConsiderCandidates()
 //  This creates the replay CSE heuristic. It does CSEs specifed by
 //  the ArrayConfig parsing of JitReplayCSE.
 //
-CSE_HeuristicReplay::CSE_HeuristicReplay(Compiler* pCompiler) : CSE_HeuristicCommon(pCompiler)
+CSE_HeuristicReplay::CSE_HeuristicReplay(Compiler* pCompiler)
+    : CSE_HeuristicCommon(pCompiler)
 {
 }
 
@@ -2292,7 +2301,8 @@ double CSE_HeuristicParameterized::s_defaultParameters[CSE_HeuristicParameterize
 // Arguments;
 //  pCompiler - compiler instance
 //
-CSE_HeuristicParameterized::CSE_HeuristicParameterized(Compiler* pCompiler) : CSE_HeuristicCommon(pCompiler)
+CSE_HeuristicParameterized::CSE_HeuristicParameterized(Compiler* pCompiler)
+    : CSE_HeuristicCommon(pCompiler)
 {
     // Default parameter values...
     //
@@ -2605,7 +2615,7 @@ void CSE_HeuristicParameterized::GetFeatures(CSEdsc* cse, double* features)
     if (!isLiveAcrossCallLSRA)
     {
         unsigned count = 0;
-        for (BasicBlock *block                                                            = minPostorderBlock;
+        for (BasicBlock* block                                                            = minPostorderBlock;
              block != nullptr && block != maxPostorderBlock && count < blockSpread; block = block->Next(), count++)
         {
             if (block->HasFlag(BBF_HAS_CALL))
@@ -2986,7 +2996,10 @@ void CSE_HeuristicParameterized::DumpChoices(ArrayStack<Choice>& choices, CSEdsc
 //      Uses parameters from JitRLCSE to drive a deterministic greedy policy
 //
 CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
-    : CSE_HeuristicParameterized(pCompiler), m_alpha(0.0), m_updateParameters(false), m_greedy(false)
+    : CSE_HeuristicParameterized(pCompiler)
+    , m_alpha(0.0)
+    , m_updateParameters(false)
+    , m_greedy(false)
 {
     // Set up the random state
     //
@@ -3656,7 +3669,8 @@ CSE_HeuristicRL::Choice* CSE_HeuristicRL::FindChoice(CSEdsc* dsc, ArrayStack<Cho
 // Notes:
 //  This creates the standard CSE heuristic.
 //
-CSE_Heuristic::CSE_Heuristic(Compiler* pCompiler) : CSE_HeuristicCommon(pCompiler)
+CSE_Heuristic::CSE_Heuristic(Compiler* pCompiler)
+    : CSE_HeuristicCommon(pCompiler)
 {
     aggressiveRefCnt = 0;
     moderateRefCnt   = 0;

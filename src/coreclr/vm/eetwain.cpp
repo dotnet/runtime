@@ -1180,7 +1180,6 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 

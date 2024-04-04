@@ -866,6 +866,13 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                         printf("Exact Type MT(0x%p %s)", dspPtr(iconVal),
                                eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
                     }
+
+                    // We might want to assert:
+                    //      assert(curAssertion->op2.HasIconFlag());
+                    // However, if we run CSE with shared constant mode, we may end up with an expression instead
+                    // of the original handle value. If we then use JitOptRepeat to re-build value numbers, we lose
+                    // knowledge that the constant was ever a handle, as the expression creating the original value
+                    // was not (and can't be) assigned a handle flag.
                 }
                 else if (curAssertion->op1.kind == O1K_SUBTYPE)
                 {
@@ -1517,9 +1524,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
 
             assert((assertion.op1.lcl.ssaNum == SsaConfig::RESERVED_SSA_NUM) ||
-                   (assertion.op1.vn ==
-                    vnStore->VNConservativeNormalValue(
-                        lvaGetDesc(lclNum)->GetPerSsaData(assertion.op1.lcl.ssaNum)->m_vnPair)));
+                   (assertion.op1.vn == vnStore->VNConservativeNormalValue(
+                                            lvaGetDesc(lclNum)->GetPerSsaData(assertion.op1.lcl.ssaNum)->m_vnPair)));
 
             ssize_t      cnsValue  = 0;
             GenTreeFlags iconFlags = GTF_EMPTY;
@@ -1876,7 +1882,6 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
             {
                 case O1K_EXACT_TYPE:
                 case O1K_SUBTYPE:
-                    assert(assertion->op2.HasIconFlag());
                     break;
                 case O1K_LCLVAR:
                     assert((lvaGetDesc(assertion->op1.lcl.lclNum)->lvType != TYP_REF) ||
@@ -2764,7 +2769,7 @@ GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTre
         case GT_CALL:
             return optVNBasedFoldExpr_Call(block, parent, tree->AsCall());
 
-        // We can add more VN-based foldings here.
+            // We can add more VN-based foldings here.
 
         default:
             break;
@@ -3319,7 +3324,7 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
 //
 GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                                             GenTreeLclVarCommon* tree,
-                                            Statement* stmt DEBUGARG(AssertionIndex index))
+                                            Statement* stmt      DEBUGARG(AssertionIndex index))
 {
     const unsigned lclNum = tree->GetLclNum();
 
@@ -3574,7 +3579,7 @@ bool Compiler::optAssertionProp_LclVarTypeCheck(GenTree* tree, LclVarDsc* lclVar
 //
 GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
                                         GenTreeLclVarCommon* tree,
-                                        Statement* stmt DEBUGARG(AssertionIndex index))
+                                        Statement* stmt      DEBUGARG(AssertionIndex index))
 {
     const AssertionDsc::AssertionDscOp1& op1 = curAssertion->op1;
     const AssertionDsc::AssertionDscOp2& op2 = curAssertion->op2;
@@ -4523,8 +4528,9 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         {
             printf("\nVN relop based copy assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
             printf("Assertion index=#%02u: V%02d.%02d %s V%02d.%02d\n", index, op1->AsLclVar()->GetLclNum(),
-                   op1->AsLclVar()->GetSsaNum(), (curAssertion->assertionKind == OAK_EQUAL) ? "==" : "!=",
-                   op2->AsLclVar()->GetLclNum(), op2->AsLclVar()->GetSsaNum());
+                   op1->AsLclVar()->GetSsaNum(),
+                   (curAssertion->assertionKind == OAK_EQUAL) ? "==" : "!=", op2->AsLclVar()->GetLclNum(),
+                   op2->AsLclVar()->GetSsaNum());
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
@@ -4818,7 +4824,7 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
 //   If both VN and assertion table yield a matching assertion, "pVnBased"
 //   is only set and the return value is "NO_ASSERTION_INDEX."
 //
-bool Compiler::optAssertionIsNonNull(GenTree*         op,
+bool Compiler::optAssertionIsNonNull(GenTree*                    op,
                                      ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased)
                                          DEBUGARG(AssertionIndex* pIndex))
 {
@@ -4865,7 +4871,7 @@ bool Compiler::optAssertionIsNonNull(GenTree*         op,
 // Return Value:
 //   index of assertion, or NO_ASSERTION_INDEX
 //
-AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
+AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*                    op,
                                                        ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased))
 {
 
@@ -5267,12 +5273,12 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
     assert(tree->OperIs(GT_BOUNDS_CHECK));
 
 #ifdef FEATURE_ENABLE_NO_RANGE_CHECKS
-    if (JitConfig.JitNoRangeChks())
+    if (JitConfig.JitNoRngChks())
     {
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nFlagging check redundant due to JitNoRangeChks in " FMT_BB ":\n", compCurBB->bbNum);
+            printf("\nFlagging check redundant due to JitNoRngChks in " FMT_BB ":\n", compCurBB->bbNum);
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif // DEBUG
@@ -5428,6 +5434,25 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, Stat
             if (parent != nullptr)
             {
                 parent->ReplaceOperand(useEdge, newTree);
+
+                // If the parent is a GT_IND and we replaced the child with a handle constant, we might need
+                // to mark the GT_IND as invariant. This is the same as what gtNewIndOfIconHandleNode() does.
+                // Review: should some kind of more general morphing take care of this?
+                // Should this share code with gtNewIndOfIconHandleNode()?
+
+                if (parent->OperIs(GT_IND) && newTree->IsIconHandle())
+                {
+                    GenTreeFlags iconFlags = newTree->GetIconHandleFlag();
+                    if (GenTree::HandleKindDataIsInvariant(iconFlags))
+                    {
+                        parent->gtFlags |= GTF_IND_INVARIANT;
+                        if (iconFlags == GTF_ICON_STR_HDL)
+                        {
+                            // String literals are never null
+                            parent->gtFlags |= GTF_IND_NONNULL;
+                        }
+                    }
+                }
             }
             else
             {
@@ -6258,7 +6283,9 @@ struct VNAssertionPropVisitorInfo
     Statement*  stmt;
     BasicBlock* block;
     VNAssertionPropVisitorInfo(Compiler* pThis, BasicBlock* block, Statement* stmt)
-        : pThis(pThis), stmt(stmt), block(block)
+        : pThis(pThis)
+        , stmt(stmt)
+        , block(block)
     {
     }
 };

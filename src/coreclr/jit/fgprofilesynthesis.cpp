@@ -1104,7 +1104,6 @@ void ProfileSynthesis::GaussSeidelSolver()
     weight_t                      relResidual      = 0;
     weight_t                      oldRelResidual   = 0;
     weight_t                      eigenvalue       = 0;
-    weight_t const                stopResidual     = 0.005;
     weight_t const                stopRelResidual  = 0.002;
     BasicBlock*                   residualBlock    = nullptr;
     BasicBlock*                   relResidualBlock = nullptr;
@@ -1312,9 +1311,9 @@ void ProfileSynthesis::GaussSeidelSolver()
         JITDUMP("iteration %u: max rel residual is at " FMT_BB " : " FMT_WT "\n", i, relResidualBlock->bbNum,
                 relResidual);
 
-        // If max residual or relative residual is sufficiently small, then stop.
+        // If max relative residual is sufficiently small, then stop.
         //
-        if ((residual < stopResidual) || (relResidual < stopRelResidual))
+        if (relResidual < stopRelResidual)
         {
             converged = true;
             break;

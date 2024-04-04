@@ -18,7 +18,7 @@
  *          tt      -- the tupletype for the instruction
  *          flags   -- flags, see INS_FLAGS_* enum
  *
-******************************************************************************/
+ ******************************************************************************/
 
 // clang-format off
 #if !defined(TARGET_XARCH)
