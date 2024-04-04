@@ -37,11 +37,8 @@ find_first_matching_suffix_scalar_1 (uint8_t needle, uint8_t haystack[DN_SIMDHAS
 #include <wasm_simd128.h>
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
 #include <emmintrin.h>
-/*
- * FIXME: Blocked by https://github.com/dotnet/runtime/pull/98336
- * #elif defined(__ARM_NEON)
- * #include <arm_neon.h>
- */
+#elif defined(__ARM_NEON)
+#include <arm_neon.h>
 #elif defined(__wasm)
 #ifdef DN_SIMDHASH_WARNINGS
 #pragma message("WARNING: Building dn_simdhash for WASM without -msimd128! Performance will be terrible!")
@@ -103,25 +100,22 @@ find_first_matching_suffix (dn_simdhash_suffixes needle, dn_simdhash_suffixes ha
 	return ctz(wasm_i8x16_bitmask(wasm_i8x16_eq(needle.vec, haystack.vec)));
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
 	return ctz(_mm_movemask_epi8(_mm_cmpeq_epi8(needle.m128, haystack.m128)));
-/*
- * FIXME: Blocked by https://github.com/dotnet/runtime/pull/98336
- * #elif defined(__ARM_NEON)
- * dn_simdhash_suffixes match_vector;
- * // Completely untested.
- * static const dn_simdhash_suffixes byte_mask = {
- * 	1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128
- * };
- * union {
- * 	uint8_t b[4];
- * 	uint32_t u;
- * } msb;
- * match_vector.vec = vceqq_u8(needle.vec, haystack.vec);
- * dn_simdhash_suffixes masked;
- * masked.vec = vandq_u8(match_vector.vec, byte_mask.vec);
- * msb.b[0] = vaddv_u8(vget_low_u8(masked.vec));
- * msb.b[1] = vaddv_u8(vget_high_u8(masked.vec));
- * return ctz(msb.u);
- */
+#elif defined(__ARM_NEON)
+    dn_simdhash_suffixes match_vector;
+    // Completely untested.
+    static const dn_simdhash_suffixes byte_mask = {
+        1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128
+    };
+    union {
+        uint8_t b[4];
+        uint32_t u;
+    } msb;
+    match_vector.vec = vceqq_u8(needle.vec, haystack.vec);
+    dn_simdhash_suffixes masked;
+    masked.vec = vandq_u8(match_vector.vec, byte_mask.vec);
+    msb.b[0] = vaddv_u8(vget_low_u8(masked.vec));
+    msb.b[1] = vaddv_u8(vget_high_u8(masked.vec));
+    return ctz(msb.u);
 #else
 	#define DN_SIMDHASH_USE_SCALAR_FALLBACK 1
 	return find_first_matching_suffix_scalar(needle.values, haystack.values, count);
