@@ -3243,6 +3243,10 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             busyRegs |= genRegMask(node->copiedReg);
             instruction ins = ins_Copy(node->reg, copyType);
             GetEmitter()->emitIns_Mov(ins, emitActualTypeSize(copyType), node->copiedReg, node->reg, /* canSkip */ false);
+            if (node->copiedReg == initReg)
+            {
+                *initRegStillZeroed = false;
+            }
         }
 
         // First handle edges that aren't insertions. We clobber the full register for these edges.
@@ -3292,6 +3296,11 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
         graph.RemoveIncomingEdges(node, &busyRegs);
         busyRegs |= genRegMask(node->reg);
+
+        if (node->reg == initReg)
+        {
+            *initRegStillZeroed = false;
+        }
     }
 }
 #endif
