@@ -140,6 +140,39 @@ ABIPassingInformation ABIPassingInformation::FromSegment(Compiler* comp, const A
     return info;
 }
 
+#ifdef DEBUG
+//-----------------------------------------------------------------------------
+// Dump:
+//   Dump the ABIPassingInformation to stdout.
+//
+void ABIPassingInformation::Dump() const
+{
+    if (NumSegments != 1)
+    {
+        printf("%u segments\n", NumSegments);
+    }
+
+    for (unsigned i = 0; i < NumSegments; i++)
+    {
+        if (NumSegments > 1)
+        {
+            printf("  [%u] ", i);
+        }
+
+        const ABIPassingSegment& seg = Segments[i];
+
+        if (Segments[i].IsPassedInRegister())
+        {
+            printf("[%02u..%02u) reg %s\n", seg.Offset, seg.Offset + seg.Size, getRegName(seg.GetRegister()));
+        }
+        else
+        {
+            printf("[%02u..%02u) stack @ +%02u\n", seg.Offset, seg.Offset + seg.Size, seg.GetStackOffset());
+        }
+    }
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // RegisterQueue::Dequeue:
 //   Dequeue a register from the queue.

@@ -68,27 +68,27 @@ inline bool compUnixX86Abi()
 // The following are intended to capture only those #defines that cannot be replaced
 // with static const members of Target
 #if defined(TARGET_AMD64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 16
 
 #elif defined(TARGET_X86)
-#define REGMASK_BITS 32
+#define REGMASK_BITS              32
 #define CSE_CONST_SHARED_LOW_BITS 16
 
 #elif defined(TARGET_ARM)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_ARM64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_LOONGARCH64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_RISCV64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #else
@@ -110,7 +110,7 @@ inline bool compUnixX86Abi()
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -122,7 +122,7 @@ enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -131,7 +131,7 @@ enum _regMask_enum : unsigned __int64
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, xname, wname) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)              REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -143,7 +143,7 @@ enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)              RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -152,7 +152,7 @@ enum _regMask_enum : unsigned __int64
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -165,9 +165,8 @@ enum _regMask_enum : uint64_t
     RBM_NONE = 0,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
 #include "register.h"
-
 };
 
 #elif defined(TARGET_X86)
@@ -175,7 +174,7 @@ enum _regMask_enum : uint64_t
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -188,7 +187,7 @@ enum _regMask_enum : unsigned
     RBM_NONE = 0,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -212,7 +211,7 @@ enum _regMask_enum : unsigned
 #if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
 #else
-typedef unsigned       regMaskTP;
+typedef unsigned regMaskTP;
 #endif
 
 #if REGMASK_BITS == 8
@@ -239,9 +238,9 @@ typedef unsigned char   regNumberSmall;
 /*****************************************************************************/
 
 #ifdef DEBUG
-#define DSP_SRC_OPER_LEFT 0
+#define DSP_SRC_OPER_LEFT  0
 #define DSP_SRC_OPER_RIGHT 1
-#define DSP_DST_OPER_LEFT 1
+#define DSP_DST_OPER_LEFT  1
 #define DSP_DST_OPER_RIGHT 0
 #endif
 
@@ -770,8 +769,8 @@ typedef __int64          target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 63)
 
 #else // !TARGET_64BIT
-typedef unsigned int   target_size_t;
-typedef int            target_ssize_t;
+typedef unsigned int target_size_t;
+typedef int          target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 31)
 
 #endif // !TARGET_64BIT

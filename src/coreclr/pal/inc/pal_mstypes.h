@@ -64,13 +64,15 @@ extern "C" {
 #define _cdecl
 #define CDECL
 
-// On ARM __fastcall is ignored and causes a compile error
-#if !defined(PAL_STDCPP_COMPAT) || defined(__arm__)
-#  undef __fastcall
-#  undef _fastcall
-#  define __fastcall
-#  define _fastcall
-#endif // !defined(PAL_STDCPP_COMPAT) || defined(__arm__)
+// Some platforms (such as FreeBSD) define the __fastcall macro
+// on all targets, even when using it will fail.
+// Undefine it here so we can use it on all platforms without error.
+#ifdef __fastcall
+#undef __fastcall
+#endif
+
+#define __fastcall
+#define _fastcall
 
 #endif  // !defined(__i386__)
 
@@ -101,7 +103,9 @@ extern "C" {
 #else
 
 #define PALIMPORT
+#ifndef DLLEXPORT
 #define DLLEXPORT __attribute__((visibility("default")))
+#endif
 #define PAL_NORETURN    __attribute__((noreturn))
 
 #endif
@@ -206,21 +210,6 @@ extern "C" {
 
 #endif // _MSC_VER
 
-#ifndef PAL_STDCPP_COMPAT
-// Defined in gnu's types.h. For non PAL_IMPLEMENTATION system
-// includes are not included, so we need to define them.
-#ifndef PAL_IMPLEMENTATION
-
-typedef __int64 int64_t;
-typedef unsigned __int64 uint64_t;
-typedef __int32 int32_t;
-typedef unsigned __int32 uint32_t;
-typedef __int16 int16_t;
-typedef unsigned __int16 uint16_t;
-typedef __int8 int8_t;
-typedef unsigned __int8 uint8_t;
-
-#endif // PAL_IMPLEMENTATION
 
 #ifndef _MSC_VER
 
@@ -229,7 +218,6 @@ typedef long double LONG_DOUBLE;
 #endif
 
 #endif // _MSC_VER
-#endif // !PAL_STDCPP_COMPAT
 
 typedef void VOID;
 
@@ -565,48 +553,9 @@ static_assert(sizeof(SSIZE_T) == sizeof(void*), "SSIZE_T should be pointer sized
 #define SSIZE_T_MIN (ssize_t)I64(0x8000000000000000)
 #endif
 
-#ifndef PAL_STDCPP_COMPAT
-#ifdef HOST_64BIT
-typedef unsigned long size_t;
-typedef long ssize_t;
-typedef long ptrdiff_t;
-#else // !HOST_64BIT
-typedef unsigned int size_t;
-typedef int ptrdiff_t;
-#endif // !HOST_64BIT
-#endif // !PAL_STDCPP_COMPAT
-#define _SIZE_T_DEFINED
-
 typedef LONG_PTR LPARAM;
 
-#define _PTRDIFF_T_DEFINED
-#ifdef _MINGW_
-// We need to define _PTRDIFF_T to make sure ptrdiff_t doesn't get defined
-// again by system headers - but only for MinGW.
-#define _PTRDIFF_T
-#endif
-
 typedef char16_t WCHAR;
-
-#ifndef PAL_STDCPP_COMPAT
-
-#if defined(__linux__)
-#ifdef HOST_64BIT
-typedef long int intptr_t;
-typedef unsigned long int uintptr_t;
-#else // !HOST_64BIT
-typedef int intptr_t;
-typedef unsigned int uintptr_t;
-#endif // !HOST_64BIT
-#else
-typedef long int intptr_t;
-typedef unsigned long int uintptr_t;
-#endif
-
-#endif // PAL_STDCPP_COMPAT
-
-#define _INTPTR_T_DEFINED
-#define _UINTPTR_T_DEFINED
 
 typedef DWORD LCID;
 typedef PDWORD PLCID;
