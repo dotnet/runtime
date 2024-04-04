@@ -11,12 +11,4 @@
     <TrimMode>partial</TrimMode>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
-  <!-- This is temporary hack for https://github.com/dotnet/runtime/issues/61294 -->
-  <ItemGroup>
-    <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-stub-static.a" />
-    <!-- FIXME: This will exclude the diagnostics component if tracing is not on and threads are not on.  Which means that if you turn on threading, you will get diagnostics.  Is this what we want? -->
-    <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(FeatureWasmPerfTracing)' != 'true' and $(FeatureWasmManagedThreads) != 'true'"/>
-    <_MonoRuntimeComponentDontLink Include="libmono-component-hot_reload-stub-static.a" />
-    <_MonoRuntimeComponentDontLink Include="libmono-component-marshal-ilgen-stub-static.a" />
-  </ItemGroup>
 </Project>

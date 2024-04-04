@@ -296,13 +296,25 @@
       <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true'">libmono-wasm-nosimd.a</_WasmSIMDLibToExclude>
     </PropertyGroup>
 
+    <!-- Mono component selection -->
+    <ItemGroup>
+      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" /> <!-- Requires threads -->
+      <_MonoRuntimeComponentDontLink Include="libmono-component-marshal-ilgen-static.a" />
+      <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
+    </ItemGroup>
+    <ItemGroup Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
+      <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-static.a" />
+      <_MonoRuntimeComponentDontLink Include="libmono-component-hot_reload-static.a" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+      <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-stub-static.a" />
+      <_MonoRuntimeComponentDontLink Include="libmono-component-hot_reload-stub-static.a" />
+    </ItemGroup>
+
     <ItemGroup>
       <!-- order matters -->
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <!--<_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />-->
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" />
-      <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
-      <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-static.a" Condition="'$(_IsPublishing)' == 'true'" />
 
       <_WasmNativeFileForLinking
           Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.a"
