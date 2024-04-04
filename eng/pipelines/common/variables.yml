@@ -50,7 +50,7 @@ variables:
   value: $[ and(
               ne(variables['isWasmOnlyBuild'], true),
               or(
-                eq(variables['isExtraPlatformsBuild'], true),
+                ne(variables['isExtraPlatformsBuild'], true),
                 eq(variables['isRollingBuild'], true))) ]
 
 - template: /eng/pipelines/common/perf-variables.yml
