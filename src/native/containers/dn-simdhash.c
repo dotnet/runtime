@@ -119,8 +119,7 @@ dn_simdhash_clear (dn_simdhash_t *hash)
 	if (hash->vtable.destroy_all)
 		hash->vtable.destroy_all(hash);
 	hash->count = 0;
-	// TODO: Scan through buckets sequentially and only erase ones with data in them
-	// Maybe skip erasing the key slots too?
+	// TODO: Implement a fast clear algorithm that scans buckets and only clears ones w/nonzero count
 	memset(hash->buffers.buckets, 0, hash->buffers.buckets_length * hash->meta->bucket_size_bytes);
 	// Skip this for performance; memset is especially slow in wasm
 	// memset(hash->buffers.values, 0, hash->buffers.values_length * hash->meta->value_size);

@@ -4331,18 +4331,33 @@ mono_class_is_variant_compatible_slow (MonoClass *klass, MonoClass *oklass)
 	}
 	return TRUE;
 }
-/*Check if @candidate implements the interface @target*/
+
 static gboolean
-mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
+mono_class_implement_interface_slow_cached (MonoClass *target, MonoClass *candidate, dn_simdhash_ptrpair_ptr_t *cache);
+
+static gboolean
+mono_class_implement_interface_slow_uncached (MonoClass *target, MonoClass *candidate, dn_simdhash_ptrpair_ptr_t *cache)
 {
 	ERROR_DECL (error);
 	int i;
+
 	gboolean is_variant = mono_class_has_variant_generic_params (target);
 
 	if (is_variant && MONO_CLASS_IS_INTERFACE_INTERNAL (candidate)) {
 		if (mono_class_is_variant_compatible_slow (target, candidate))
 			return TRUE;
 	}
+
+	/*
+	MonoVTable *vt = m_class_is_inited (target) ? m_class_get_runtime_vtable (target) : NULL;
+	if (vt) {
+		g_printf (
+			"vtable fast path in implement_interface_slow for '%s.%s'\n",
+			m_class_get_name_space (target), m_class_get_name (target)
+		);
+		return MONO_VTABLE_IMPLEMENTS_INTERFACE (vt, m_class_get_interface_id (candidate));
+	}
+	*/
 
 	do {
 		if (candidate == target)
@@ -4365,7 +4380,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 						return TRUE;
 					if (is_variant && mono_class_is_variant_compatible_slow (target, iface_class))
 						return TRUE;
-					if (mono_class_implement_interface_slow (target, iface_class))
+					if (mono_class_implement_interface_slow_cached (target, iface_class, cache))
 						return TRUE;
 				}
 			}
@@ -4390,7 +4405,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 				if (is_variant && mono_class_is_variant_compatible_slow (target, candidate_interfaces [i]))
 					return TRUE;
 
-				if (mono_class_implement_interface_slow (target, candidate_interfaces [i]))
+				if (mono_class_implement_interface_slow_cached (target, candidate_interfaces [i], cache))
 					return TRUE;
 			}
 		}
@@ -4398,6 +4413,85 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 	} while (candidate);
 
 	return FALSE;
+}
+
+#define LOG_INTERFACE_CACHE_HITS 0
+
+#if LOG_INTERFACE_CACHE_HITS
+static gint64 implement_interface_hits = 0, implement_interface_misses = 0;
+
+static void
+log_hit_rate (dn_simdhash_ptrpair_ptr_t *cache)
+{
+	gint64 total_calls = implement_interface_hits + implement_interface_misses;
+	if ((total_calls % 500) != 0)
+		return;
+	double hit_rate = implement_interface_hits * 100.0 / total_calls;
+	g_printf ("implement_interface cache hit rate: %f (%lld total calls). Overflow count: %u\n", hit_rate, total_calls, dn_simdhash_overflow_count (cache));
+}
+#endif
+
+static gboolean
+mono_class_implement_interface_slow_cached (MonoClass *target, MonoClass *candidate, dn_simdhash_ptrpair_ptr_t *cache)
+{
+	// Skip the caching logic for exact matches
+	if (candidate == target)
+		return TRUE;
+
+	gpointer cached_result = NULL;
+	gboolean result;
+	dn_ptrpair_t key = { target, candidate };
+	if (dn_simdhash_ptrpair_ptr_try_get_value (cache, key, &cached_result)) {
+		// Testing shows a cache hit rate of 60% on S.R.Tests and S.T.J.Tests,
+		//  and 40-50% for small app startup. Near-zero overflow count.
+#if LOG_INTERFACE_CACHE_HITS
+		implement_interface_hits++;
+		log_hit_rate (cache);
+#endif
+		return (cached_result != NULL);
+	}
+	result = mono_class_implement_interface_slow_uncached (target, candidate, cache);
+	dn_simdhash_ptrpair_ptr_try_add (cache, key, result ? GUINT_TO_POINTER(1) : NULL);
+#if LOG_INTERFACE_CACHE_HITS
+	implement_interface_misses++;
+	log_hit_rate (cache);
+#endif
+	return result;
+}
+
+static dn_simdhash_ptrpair_ptr_t *implement_interface_scratch_cache = NULL;
+
+/*Check if @candidate implements the interface @target*/
+static gboolean
+mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
+{
+	gpointer cas_result;
+	gboolean result;
+	dn_simdhash_ptrpair_ptr_t *cache = (dn_simdhash_ptrpair_ptr_t *)mono_atomic_xchg_ptr ((volatile gpointer *)&implement_interface_scratch_cache, NULL);
+	if (!cache)
+		// Roughly 64KB of memory usage and big enough to have fast lookups
+		// Smaller is viable but makes the hit rate worse
+		cache = dn_simdhash_ptrpair_ptr_new (2048, NULL);
+	else if (dn_simdhash_count (cache) >= 2250) {
+		// FIXME: 2250 is arbitrary (roughly 256 11-item buckets w/load factor)
+		// One step down reduces hit rate by approximately 2-4%
+		// HACK: Only clear the scratch cache once it gets too big.
+		// The pattern is that (especially during startup), we have lots
+		//  of mono_class_implement_interface_slow calls back to back that
+		//  perform similar checks, so keeping the cache data around between
+		//  sequential calls will potentially optimize them a lot.
+		dn_simdhash_clear (cache);
+	}
+
+	result = mono_class_implement_interface_slow_cached (target, candidate, cache);
+
+	cas_result = mono_atomic_cas_ptr ((volatile gpointer *)&implement_interface_scratch_cache, cache, NULL);
+	if (cas_result != NULL) {
+		g_printf ("freeing extra implement_interface cache\n");
+		dn_simdhash_free (cache);
+	}
+
+	return result;
 }
 
 /*
@@ -4416,8 +4510,9 @@ mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate)
 		return TRUE;
 
 	/*If target is not an interface there is no need to check them.*/
-	if (MONO_CLASS_IS_INTERFACE_INTERNAL (target))
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (target)) {
 		return mono_class_implement_interface_slow (target, candidate);
+	}
 
 	if (m_class_is_delegate (target) && mono_class_has_variant_generic_params (target))
 		return mono_class_is_variant_compatible (target, candidate, FALSE);
