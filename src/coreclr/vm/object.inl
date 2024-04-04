@@ -91,7 +91,7 @@ inline void Object::EnumMemoryRegions(void)
     // Unfortunately, DacEnumMemoryRegion takes only ULONG32 as size argument
     while (size > 0) {
         // Use 0x10000000 instead of MAX_ULONG32 so that the chunks stays aligned
-        SIZE_T chunk = min(size, 0x10000000);
+        SIZE_T chunk = min(size, (SIZE_T)0x10000000);
         // If for any reason we can't enumerate the memory, stop.  This would generally mean
         // that we have target corruption, or that the target is executing, etc.
         if (!DacEnumMemoryRegion(ptr, chunk))

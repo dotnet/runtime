@@ -31,6 +31,7 @@
                 "_UNICODE",
                 "_WIN32",
                 "_WIN32_WINNT=0x0602",
+                "NOMINMAX",
                 "HOST_64BIT",
                 "AMD64",
                 "HOST_64BIT=1",

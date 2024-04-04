@@ -32,7 +32,9 @@ const regMaskTP fltArgMasks[] = {RBM_V0, RBM_V1, RBM_V2, RBM_V3, RBM_V4, RBM_V5,
 //   info - Info about the method being classified.
 //
 Arm64Classifier::Arm64Classifier(const ClassifierInfo& info)
-    : m_info(info), m_intRegs(intArgRegs, ArrLen(intArgRegs)), m_floatRegs(fltArgRegs, ArrLen(fltArgRegs))
+    : m_info(info)
+    , m_intRegs(intArgRegs, ArrLen(intArgRegs))
+    , m_floatRegs(fltArgRegs, ArrLen(fltArgRegs))
 {
 }
 
@@ -84,10 +86,11 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
             }
             else
             {
-                unsigned alignment = compAppleArm64Abi() ? min(elemSize, TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
-                m_stackArgSize     = roundUp(m_stackArgSize, alignment);
-                info = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0,
-                                                                                           structLayout->GetSize()));
+                unsigned alignment =
+                    compAppleArm64Abi() ? min(elemSize, (unsigned)TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
+                m_stackArgSize = roundUp(m_stackArgSize, alignment);
+                info           = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0,
+                                                                                                     structLayout->GetSize()));
                 m_stackArgSize += roundUp(structLayout->GetSize(), alignment);
                 // After passing any float value on the stack, we should not enregister more float values.
                 m_floatRegs.Clear();
