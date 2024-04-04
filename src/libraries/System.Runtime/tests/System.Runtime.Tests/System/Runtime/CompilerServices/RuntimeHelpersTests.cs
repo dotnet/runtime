@@ -557,7 +557,10 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Same(arr, RuntimeHelpers.Box(ref Unsafe.As<string[], byte>(ref arr), typeof(string[]).TypeHandle));
         }
 
-        [Fact]
+        // We can't even get a RuntimeTypeHandle for a generic parameter type on NativeAOT,
+        // so we don't even get to the method we're testing.
+        // So, let's not even waste time running this test on NativeAOT
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public static void BoxGenericParameterType()
         {
             Type t = typeof(List<>).GetGenericArguments()[0];
