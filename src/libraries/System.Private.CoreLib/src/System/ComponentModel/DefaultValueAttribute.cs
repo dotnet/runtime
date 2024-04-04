@@ -239,7 +239,18 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the default value of the property this attribute is bound to.
         /// </summary>
-        public virtual object? Value => _value;
+        public virtual object? Value
+        {
+            get
+            {
+                if (!IsSupported)
+                {
+                    throw new ArgumentException(SR.RuntimeInstanceNotAllowed);
+                }
+                return _value;
+            }
+        }
+
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
