@@ -47,7 +47,7 @@ namespace System.Reflection.Metadata
         private uint _length;
 
         private const uint IsFrozenMask = 0x80000000;
-        private bool IsHead => (_length & IsFrozenMask) == 0;
+        internal bool IsHead => (_length & IsFrozenMask) == 0;
         private int Length => (int)(_length & ~IsFrozenMask);
         private uint FrozenLength => _length | IsFrozenMask;
         private Span<byte> Span => _buffer.AsSpan(0, Length);
