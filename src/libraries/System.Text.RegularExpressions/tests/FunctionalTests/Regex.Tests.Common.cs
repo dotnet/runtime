@@ -123,6 +123,14 @@ namespace System.Text.RegularExpressions.Tests
                 new Regex(pattern, options.Value | OptionsFromEngine(engine), matchTimeout.Value);
         }
 
+        public static Regex[] GetRegexes(RegexEngine engine, params (string pattern, CultureInfo? culture, RegexOptions? options, TimeSpan? matchTimeout)[] regexes)
+        {
+            // xunit theory member data in xunit v2 may only be synchronous, and Roslyn's APIs are only asynchronous.
+            // As such, they need to block to get the results. But if they block on xunit's limited synchronization
+            // scheduler, they could deadlock, so escape the context by queueing the work to a thread pool thread.
+            return Task.Run(() => GetRegexesAsync(engine, regexes)).Result;
+        }
+
         public static async Task<Regex[]> GetRegexesAsync(RegexEngine engine, params (string pattern, CultureInfo? culture, RegexOptions? options, TimeSpan? matchTimeout)[] regexes)
         {
             if (engine == RegexEngine.SourceGenerated)
