@@ -2125,5 +2125,11 @@ extern "C" int32_t QCALLTYPE ReflectionInvocation_SizeOf(QCall::TypeHandle pType
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    return pType.AsTypeHandle().GetSize();
+    TypeHandle handle = pType.AsTypeHandle();
+
+    // -1 is the same sentinel value returned by GetSize for an invalid type.
+    if (handle.ContainsGenericVariables())
+        return -1;
+
+    return handle.GetSize();
 }

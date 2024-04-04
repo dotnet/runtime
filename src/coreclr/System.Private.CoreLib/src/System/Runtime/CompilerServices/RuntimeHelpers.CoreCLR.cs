@@ -426,10 +426,6 @@ namespace System.Runtime.CompilerServices
             if (type.IsNullHandle())
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
 
-            TypeHandle handle = type.GetNativeTypeHandle();
-            if (!handle.IsTypeDesc && handle.AsMethodTable()->IsGenericTypeDefinition)
-                throw new ArgumentException(SR.Arg_TypeNotSupported);
-
             int result = SizeOf(new QCallTypeHandle(ref type));
 
             if (result <= 0)

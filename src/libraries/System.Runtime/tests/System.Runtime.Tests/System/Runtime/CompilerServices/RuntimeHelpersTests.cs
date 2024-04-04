@@ -460,8 +460,10 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(3, RuntimeHelpers.SizeOf(typeof(Byte3).TypeHandle));
             Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(void*).TypeHandle));
             Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(delegate* <void>).TypeHandle));
+            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(int).MakeByRefType().TypeHandle));
             Assert.Throws<ArgumentNullException>(() => RuntimeHelpers.SizeOf(default));
             Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(List<>).TypeHandle));
+            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(Dictionary<,>).MakeGenericType([ typeof(int), typeof(Dictionary<,>).GetGenericArguments()[1] ]).TypeHandle));
             Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(void).TypeHandle));
         }
 

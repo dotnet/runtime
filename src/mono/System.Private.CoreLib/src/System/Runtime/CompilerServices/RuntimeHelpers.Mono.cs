@@ -221,7 +221,7 @@ namespace System.Runtime.CompilerServices
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
 
             Type typeObj = Type.GetTypeFromHandle(type)!;
-            if (typeObj.IsGenericTypeDefinition || typeObj.IsGenericParameter || typeObj == typeof(void))
+            if (typeObj.ContainsGenericParameters || typeObj.IsGenericParameter || typeObj == typeof(void))
                 throw new ArgumentException(SR.Arg_TypeNotSupported);
 
             return SizeOf(new QCallTypeHandle(ref type));
