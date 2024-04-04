@@ -93,6 +93,7 @@ struct CDacStringPoolSizes
 #undef CDAC_GLOBAL_POINTER
 #undef CDAC_GLOBAL
 #undef CDAC_GLOBALS_END
+    char cdac_string_pool_trailing_nil;
 };
 
 #define GET_TYPE_NAME(name) offsetof(struct CDacStringPoolSizes, MAKE_TYPELEN_NAME(name))
