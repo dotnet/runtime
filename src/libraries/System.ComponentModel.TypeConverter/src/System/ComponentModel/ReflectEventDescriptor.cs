@@ -56,6 +56,7 @@ namespace System.ComponentModel
     /// ReflectEventDescriptors can be obtained by a user programmatically through the
     /// ComponentManager.
     /// </summary>
+    [RequiresUnreferencedCode("Reflection-based type description providers are not trim-compatible.")]
     internal sealed class ReflectEventDescriptor : EventDescriptor
     {
         private Type? _type;           // the delegate type for the event

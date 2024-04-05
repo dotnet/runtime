@@ -20,6 +20,7 @@ namespace System.ComponentModel
     /// this class. There should be a single instance of this class associated
     /// with "object", as it can provide all type information for any type.
     /// </summary>
+    [RequiresUnreferencedCode("Reflection-based type description providers are not trim-compatible.")]
     internal sealed partial class ReflectTypeDescriptionProvider : TypeDescriptionProvider
     {
         // Hastable of Type -> ReflectedTypeData. ReflectedTypeData contains all

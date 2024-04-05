@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Metadata;
 
@@ -13,9 +14,13 @@ namespace System.ComponentModel
     {
         public static void ClearCache(Type[]? types)
         {
+            if (!TypeDescriptor.SupportsReflectionBasedProvider)
+            {
+                return;
+            }
             // ReflectTypeDescriptionProvider maintains global caches on top of reflection.
             // Clear those.
-            ReflectTypeDescriptionProvider.ClearReflectionCaches();
+            ClearReflectionCaches();
 
             // Each type descriptor may also cache reflection-based state that it gathered
             // from ReflectTypeDescriptionProvider.  Clear those as well.
@@ -34,5 +39,8 @@ namespace System.ComponentModel
                 }
             }
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "If SupportsReflectionBasedProvider is enabled, there will already be a warning in TypeDescriptor.CreateReflectionBasedProvider.")]
+        private static void ClearReflectionCaches() => ReflectTypeDescriptionProvider.ClearReflectionCaches();
     }
 }

@@ -15,6 +15,7 @@ namespace System.ComponentModel
         /// This class contains all the reflection information for a
         /// given type.
         /// </summary>
+        [RequiresUnreferencedCode("Reflection-based type description providers are not trim-compatible.")]
         private sealed class ReflectedTypeData
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]

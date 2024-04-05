@@ -22,6 +22,12 @@ namespace System.ComponentModel
         internal const DynamicallyAccessedMemberTypes ReflectTypesDynamicallyAccessedMembers = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields;
         internal const string DesignTimeAttributeTrimmed = "Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.";
 
+        [FeatureSwitchDefinition("System.ComponentModel.TypeDescriptor.SupportsReflectionBasedProvider")]
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+#pragma warning disable IL4000 // MSBuild logic will ensure that the switch is disabled in trimmed scenarios.
+        internal static bool SupportsReflectionBasedProvider => AppContext.TryGetSwitch("System.ComponentModel.TypeDescriptor.SupportsReflectionBasedProvider", out bool isEnabled) ? isEnabled : true;
+#pragma warning restore IL4000
+
         // Note: this is initialized at class load because we
         // lock on it for thread safety. It is used from nearly
         // every call to this class, so it will be created soon after
@@ -1492,7 +1498,7 @@ namespace System.ComponentModel
                             {
                                 // The reflect type description provider is a default provider that
                                 // can provide type information for all objects.
-                                node = new TypeDescriptionNode(new ReflectTypeDescriptionProvider());
+                                node = new TypeDescriptionNode(CreateReflectionBasedProvider(searchType));
                                 s_providerTable[searchType] = node;
                             }
                         }
@@ -1514,6 +1520,14 @@ namespace System.ComponentModel
             }
 
             return node;
+        }
+
+        private static ReflectTypeDescriptionProvider CreateReflectionBasedProvider(Type type) {
+            if (!SupportsReflectionBasedProvider)
+            {
+                throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderNotFound, type.FullName));
+            }
+            return new ReflectTypeDescriptionProvider();
         }
 
         /// <summary>
@@ -3229,6 +3243,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
                 TypeConverter ICustomTypeDescriptor.GetConverter()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3251,6 +3266,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
                 EventDescriptor? ICustomTypeDescriptor.GetDefaultEvent()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3271,6 +3287,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
                 PropertyDescriptor? ICustomTypeDescriptor.GetDefaultProperty()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3290,6 +3307,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
                 object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
                 {
                     ArgumentNullException.ThrowIfNull(editorBaseType);
@@ -3333,6 +3351,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
                 EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[]? attributes)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3359,6 +3378,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3380,6 +3400,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3515,7 +3536,7 @@ namespace System.ComponentModel
                 string? name;
                 if (p is ReflectTypeDescriptionProvider)
                 {
-                    name = ReflectTypeDescriptionProvider.GetComponentName(_instance);
+                    name = GetReflectionBasedComponentName(_instance);
                 }
                 else
                 {
@@ -3526,6 +3547,12 @@ namespace System.ComponentModel
                 }
 
                 return name;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "If SupportsReflectionBasedProvider is enabled, there will already be a warning in TypeDescriptor.CreateReflectionBasedProvider.")]
+                static string? GetReflectionBasedComponentName(object? instance)
+                {
+                    return ReflectTypeDescriptionProvider.GetComponentName(instance);
+                }
             }
 
             /// <summary>
@@ -3540,7 +3567,7 @@ namespace System.ComponentModel
                 TypeConverter? converter;
                 if (p is ReflectTypeDescriptionProvider rp)
                 {
-                    converter = rp.GetConverter(_objectType, _instance);
+                    converter = GetReflectionBasedConverter(rp, _objectType, _instance);
                 }
                 else
                 {
@@ -3553,6 +3580,12 @@ namespace System.ComponentModel
                 }
 
                 return converter;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "If SupportsReflectionBasedProvider is enabled, there will already be a warning in TypeDescriptor.CreateReflectionBasedProvider.")]
+                static TypeConverter GetReflectionBasedConverter(ReflectTypeDescriptionProvider rp, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+                {
+                    return rp.GetConverter(objectType, instance);
+                }
             }
 
             /// <summary>
@@ -3567,7 +3600,7 @@ namespace System.ComponentModel
                 EventDescriptor? defaultEvent;
                 if (p is ReflectTypeDescriptionProvider rp)
                 {
-                    defaultEvent = rp.GetDefaultEvent(_objectType, _instance);
+                    defaultEvent = GetReflectionBasedEvent(rp, _objectType, _instance);
                 }
                 else
                 {
@@ -3578,6 +3611,12 @@ namespace System.ComponentModel
                 }
 
                 return defaultEvent;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "If SupportsReflectionBasedProvider is enabled, there will already be a warning in TypeDescriptor.CreateReflectionBasedProvider.")]
+                static EventDescriptor? GetReflectionBasedEvent(ReflectTypeDescriptionProvider rp, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+                {
+                    return rp.GetDefaultEvent(objectType, instance);
+                }
             }
 
             /// <summary>
@@ -3592,7 +3631,7 @@ namespace System.ComponentModel
                 PropertyDescriptor? defaultProperty;
                 if (p is ReflectTypeDescriptionProvider rp)
                 {
-                    defaultProperty = rp.GetDefaultProperty(_objectType, _instance);
+                    defaultProperty = GetReflectionBasedProperty(rp, _objectType, _instance);
                 }
                 else
                 {
@@ -3603,6 +3642,12 @@ namespace System.ComponentModel
                 }
 
                 return defaultProperty;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "If SupportsReflectionBasedProvider is enabled, there will already be a warning in TypeDescriptor.CreateReflectionBasedProvider.")]
+                static PropertyDescriptor? GetReflectionBasedProperty(ReflectTypeDescriptionProvider rp, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+                {
+                    return rp.GetDefaultProperty(objectType, instance);
+                }
             }
 
             /// <summary>
@@ -3619,7 +3664,7 @@ namespace System.ComponentModel
                 object? editor;
                 if (p is ReflectTypeDescriptionProvider rp)
                 {
-                    editor = rp.GetEditor(_objectType, _instance, editorBaseType);
+                    editor = GetReflectionBasedEditor(rp, _objectType, _instance, editorBaseType);
                 }
                 else
                 {
@@ -3630,6 +3675,12 @@ namespace System.ComponentModel
                 }
 
                 return editor;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "If SupportsReflectionBasedProvider is enabled, there will already be a warning in TypeDescriptor.CreateReflectionBasedProvider.")]
+                static object? GetReflectionBasedEditor(ReflectTypeDescriptionProvider rp, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance, Type editorBaseType)
+                {
+                    return rp.GetEditor(objectType, instance, editorBaseType);
+                }
             }
 
             /// <summary>
@@ -3686,6 +3737,12 @@ namespace System.ComponentModel
                 return events;
             }
 
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "If SupportsReflectionBasedProvider is enabled, there will already be a warning in TypeDescriptor.CreateReflectionBasedProvider.")]
+            private static PropertyDescriptorCollection GetReflectionBasedProperties(ReflectTypeDescriptionProvider rp, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType)
+            {
+                return rp.GetProperties(objectType);
+            }
+
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
@@ -3698,7 +3755,7 @@ namespace System.ComponentModel
                 PropertyDescriptorCollection properties;
                 if (p is ReflectTypeDescriptionProvider rp)
                 {
-                    properties = rp.GetProperties(_objectType);
+                    properties = GetReflectionBasedProperties(rp, _objectType);
                 }
                 else
                 {
@@ -3725,7 +3782,7 @@ namespace System.ComponentModel
                 PropertyDescriptorCollection properties;
                 if (p is ReflectTypeDescriptionProvider rp)
                 {
-                    properties = rp.GetProperties(_objectType);
+                    properties = GetReflectionBasedProperties(rp, _objectType);
                 }
                 else
                 {
@@ -3752,7 +3809,7 @@ namespace System.ComponentModel
                 object? owner;
                 if (p is ReflectTypeDescriptionProvider)
                 {
-                    owner = ReflectTypeDescriptionProvider.GetPropertyOwner(_objectType, _instance!);
+                    owner = GetReflectionBasedPropertyOwner(_objectType, _instance);
                 }
                 else
                 {
@@ -3763,6 +3820,12 @@ namespace System.ComponentModel
                 }
 
                 return owner;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "If SupportsReflectionBasedProvider is enabled, there will already be a warning in TypeDescriptor.CreateReflectionBasedProvider.")]
+                static object? GetReflectionBasedPropertyOwner([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+                {
+                    return ReflectTypeDescriptionProvider.GetPropertyOwner(objectType, instance!);
+                }
             }
         }
 

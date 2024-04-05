@@ -44,6 +44,7 @@ namespace System.ComponentModel
     /// ReflectPropertyDescriptors can be obtained by a user programmatically through the
     /// ComponentManager.
     /// </summary>
+    [RequiresUnreferencedCode("Reflection-based type description providers are not trim-compatible.")]
     internal sealed class ReflectPropertyDescriptor : PropertyDescriptor
     {
         private static readonly object s_noValue = new object();
