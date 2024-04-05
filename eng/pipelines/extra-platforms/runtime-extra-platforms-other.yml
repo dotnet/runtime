@@ -120,8 +120,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
       - linux_x64
-      # Tracking issue: https://github.com/dotnet/runtime/issues/90427
-      # linux_arm64
+      - linux_arm64
     variables:
       - name: timeoutPerTestInMinutes
         value: 60
