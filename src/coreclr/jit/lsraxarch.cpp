@@ -710,7 +710,6 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 {
     // TODO-XArch-CQ: Make this more accurate.
     // For now, We assume that most binary operators are of the RMW form.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef FEATURE_HW_INTRINSICS
     assert(tree->OperIsBinary() || (tree->OperIsMultiOp() && (tree->AsMultiOp()->GetOperandCount() <= 2)));
@@ -1069,7 +1068,6 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     // TODO-CQ-XARCH: We can optimize generating 'test' instruction for GT_EQ/NE(shift, 0)
     // if the shift count is known to be non-zero and in the range depending on the
     // operand size.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86
     // The first operand of a GT_LSH_HI and GT_RSH_LO oper is a GT_LONG so that
@@ -1169,7 +1167,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
     RegisterType registerType = regType(call);
 
     // Set destination candidates for return value of the call.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86
     if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
@@ -3019,7 +3016,6 @@ int LinearScan::BuildMul(GenTree* tree)
     // three-op form:   reg = r/m * imm
 
     // This special widening 32x32->64 MUL is not used on x64
-    CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_X86)
     if (tree->OperGet() != GT_MUL_LONG)
 #endif
