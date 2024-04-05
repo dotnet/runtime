@@ -47,7 +47,6 @@
   </ItemGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
-  <Import Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Project="$(ILLinkPropsPath)" />
 
   <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuild" />
 
