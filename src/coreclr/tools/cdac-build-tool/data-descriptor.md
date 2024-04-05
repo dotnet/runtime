@@ -58,30 +58,45 @@ Multi-byte values are in the target platform endianness.
 The format is:
 
 ```c
+
+struct TypeSpec;
+struct FieldSpec;
+struct GlobalLiteralSpec;
+struct GlobalPointerSpec;
+
 struct BinaryBlobDataDescriptor
 {
+    char Magic[8];
     struct Directory {
+        uint32_t BaselineStart;
         uint32_t TypesStart;
+
         uint32_t FieldPoolStart;
-        
-        uint32_t GlobalValuesStart;
+        uint32_t GlobalLiteralValuesStart;
+
+        uint32_t GlobalPointersStart;
         uint32_t NamesStart;
-        
+
         uint32_t TypeCount;
         uint32_t FieldPoolCount;
-        
+
+        uint32_t GlobalLiteralValuesCount;
+        uint32_t GlobalPointerValuesCount;
+
         uint32_t NamesPoolCount;
-        
+
         uint8_t TypeSpecSize;
         uint8_t FieldSpecSize;
-        uint8_t GlobalSpecSize;
-        uint8_t Reserved0;
-    }
+        uint8_t GlobalLiteralSpecSize;
+        uint8_t GlobalPointerSpecSize;
+    } Directory;
     uint32_t BaselineName;
-    TypeSpec[TypeCount] Types;
-    FieldSpec[FieldPoolCount] FieldPool;
-    GlobalSpec[GlobalsCount] GlobalValues;
-    uint8_t[NamesPoolCount] NamesPool;
+    struct TypeSpec Types[CDacBlobTypesCount];
+    struct FieldSpec FieldPool[CDacBlobFieldPoolCount];
+    struct GlobalLiteralSpec GlobalLiteralValues[CDacBlobGlobalLiteralsCount];
+    struct GlobalPointerSpec GlobalPointerValues[CDacBlobGlobalPointersCount];
+    uint8_t NamesPool[sizeof(struct CDacStringPoolSizes)];
+    uint8_t EndMagic[4];
 };
 
 struct TypeSpec
@@ -98,17 +113,25 @@ struct FieldSpec
     uint16_t FieldOffset;
 };
 
-struct GlobalSpec
+struct GlobalLiteralSpec
 {
     uint32_t Name;
     uint32_t TypeName;
     uint64_t Value;
 };
+
+struct GlobalPointerSpec
+{
+    uint32_t Name;
+    uint32_t AuxIndex;
+};
 ```
 
+where the magic value is `"DACBLOB"` and `EndMagic` is `{0x01, 0x02, 0x03, 0x04}`
+
 The blob begins with a directory that gives the relative offsets of the `Types`, `FieldPool`,
-`GlobalValues` and `Names` fields of the blob.  The number of elements of each of the arrays is
-next. This is followed by the sizes of the `TypeSpec`, `FieldSpec` and `GlobalSpec` structs.
+`GlobalLiteralValues`, `GlobalPointerValues` and `Names` fields of the blob.  The number of elements of each of the arrays is
+next. This is followed by the sizes of the spec structs.
 
 Rationale: If a `BinaryBlobDataDescriptor` is created via C macros, we want to embed the `offsetof`
 and `sizeof` of the components of the blob into the blob itself without having to account for any
@@ -149,6 +172,6 @@ extends until the first nul byte encountered at or past the beginning of the nam
 
 ## Example
 
-And example C header describing some data types is given in [sample.data.h](./sample.data.h). And
+An example C header describing some data types is given in [sample.data.h](./sample/sample.data.h). And
 example series of C macro preprocessor definitions that produces a constant blob `Blob` is given in
-[sample.blob.c](./sample.blob.c)
+[sample.blob.c](./sample/sample.blob.c)
