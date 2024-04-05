@@ -498,6 +498,12 @@ inline regMaskTP fullIntArgRegMask(CorInfoCallConvExtension callConv)
     if (callConv == CorInfoCallConvExtension::Swift)
     {
         result |= RBM_SWIFT_SELF;
+
+        // We don't pass any arguments in REG_SWIFT_ERROR, but as a quirk,
+        // we set the SwiftError* parameter to be passed in this register,
+        // and later ensure the parameter isn't given any registers/stack space
+        // to avoid interfering with other arguments.
+        result |= RBM_SWIFT_ERROR;
     }
 #endif
 
