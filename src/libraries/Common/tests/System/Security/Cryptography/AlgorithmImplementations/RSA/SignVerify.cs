@@ -133,8 +133,9 @@ namespace System.Security.Cryptography.Rsa.Tests
             {
                 rsaPub.ImportParameters(rsa.ExportParameters(false));
 
-                Assert.ThrowsAny<CryptographicException>(
+                CryptographicException ce = Assert.ThrowsAny<CryptographicException>(
                     () => rsaPub.SignData(TestData.HelloBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+                Assert.Contains("A private key must also be provided", ce.Message);
             }
         }
 
