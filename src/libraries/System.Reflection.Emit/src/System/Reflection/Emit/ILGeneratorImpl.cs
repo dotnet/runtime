@@ -18,6 +18,8 @@ namespace System.Reflection.Emit
         private readonly BlobBuilder _builder;
         private readonly InstructionEncoder _il;
         private readonly ControlFlowBuilder _cfBuilder;
+        private readonly Scope _scope; // scope of the entire method body
+        private Scope _currentScope;
         private bool _hasDynamicStackAllocation;
         private int _maxStackDepth;
         private int _currentStackDepth; // Current stack labelStartDepth
@@ -25,11 +27,11 @@ namespace System.Reflection.Emit
         // Adjustment to add to _maxStackDepth for incorrect/invalid IL. For example, when branch
         // instructions branches backward with non zero stack depths targeting the same label.
         private int _depthAdjustment;
-        private List<LocalBuilder> _locals = new();
+        private int _localCount;
         private Dictionary<Label, LabelInfo> _labelTable = new(2);
         private List<KeyValuePair<object, BlobWriter>> _memberReferences = new();
         private List<ExceptionBlock> _exceptionStack = new();
-        private Dictionary<SymbolDocumentWriter, List<SequencePoint>> _sequencePoints = new();
+        private Dictionary<SymbolDocumentWriter, List<SequencePoint>> _documentToSequencePoints = new();
 
         internal ILGeneratorImpl(MethodBuilderImpl methodBuilder, int size)
         {
@@ -39,14 +41,18 @@ namespace System.Reflection.Emit
             _builder = new BlobBuilder(Math.Max(size, DefaultSize));
             _cfBuilder = new ControlFlowBuilder();
             _il = new InstructionEncoder(_builder, _cfBuilder);
+            _scope = new Scope(_il.Offset, parent: null);
+            _currentScope = _scope;
         }
 
         internal int GetMaxStack() => Math.Min(ushort.MaxValue, _maxStackDepth + _depthAdjustment);
         internal List<KeyValuePair<object, BlobWriter>> GetMemberReferences() => _memberReferences;
         internal InstructionEncoder Instructions => _il;
         internal bool HasDynamicStackAllocation => _hasDynamicStackAllocation;
-        internal List<LocalBuilder> Locals => _locals;
-        internal Dictionary<SymbolDocumentWriter, List<SequencePoint>> SequencePoints => _sequencePoints;
+        internal List<LocalBuilder> Locals => _scope.GetAllLocals();
+        internal int LocalCount => _localCount;
+        internal Scope Scope => _scope;
+        internal Dictionary<SymbolDocumentWriter, List<SequencePoint>> DocumentToSequencePoints => _documentToSequencePoints;
 
         public override int ILOffset => _il.Offset;
 
@@ -201,16 +207,19 @@ namespace System.Reflection.Emit
 
         public override void BeginScope()
         {
-            // TODO: No-op, will be implemented wit PDB support
+            _currentScope._children ??= new List<Scope>();
+            Scope newScope = new Scope(_il.Offset, _currentScope);
+            _currentScope._children.Add(newScope);
+            _currentScope = newScope;
         }
 
         public override LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
             ArgumentNullException.ThrowIfNull(localType);
 
-            LocalBuilder local = new LocalBuilderImpl(_locals.Count, localType, _methodBuilder, pinned);
-            _locals.Add(local);
-
+            _currentScope._locals ??= new List<LocalBuilder>();
+            LocalBuilder local = new LocalBuilderImpl(_localCount++, localType, _methodBuilder, pinned);
+            _currentScope._locals.Add(local);
             return local;
         }
 
@@ -734,7 +743,10 @@ namespace System.Reflection.Emit
 
         public override void EndScope()
         {
-            // TODO: No-op, will be implemented wit PDB support
+            Debug.Assert(_currentScope._parent != null);
+
+            _currentScope._endOffset = _il.Offset;
+            _currentScope = _currentScope._parent;
         }
 
         public override void MarkLabel(Label loc)
@@ -780,29 +792,32 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void MarkSequencePoint(ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn)
+        protected override void MarkSequencePointCore(ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn)
         {
             if (document is SymbolDocumentWriter symbolDoc)
             {
-                if (_sequencePoints.TryGetValue(symbolDoc, out List<SequencePoint>? sequencePoints))
+                if (_documentToSequencePoints.TryGetValue(symbolDoc, out List<SequencePoint>? sequencePoints))
                 {
                     sequencePoints.Add(new SequencePoint(_il.Offset, startLine, startColumn, endLine, endColumn));
                 }
                 else
                 {
                     sequencePoints = new List<SequencePoint> { new SequencePoint(_il.Offset, startLine, startColumn, endLine, endColumn) };
-                    _sequencePoints.Add(symbolDoc, sequencePoints);
+                    _documentToSequencePoints.Add(symbolDoc, sequencePoints);
                 }
             }
             else
             {
-                throw new ArgumentException(nameof(document)); // TODO: SR
+                throw new ArgumentException(SR.InvalidOperation_InValidDocument, nameof(document));
             }
         }
 
         public override void UsingNamespace(string usingNamespace)
         {
-            // TODO: No-op, will be implemented wit PDB support
+            ArgumentException.ThrowIfNullOrEmpty(usingNamespace);
+
+            _currentScope._importNamespaces ??= new List<string>();
+            _currentScope._importNamespaces.Add(usingNamespace);
         }
     }
 
@@ -839,5 +854,41 @@ namespace System.Reflection.Emit
         internal int _position; // Position in the il stream, with -1 meaning unknown.
         internal int _startDepth; // Stack labelStartDepth, with -1 meaning unknown.
         internal LabelHandle _metaLabel;
+    }
+
+    internal sealed class Scope
+    {
+        public Scope(int offset, Scope? parent)
+        {
+            _startOffset = offset;
+            _parent = parent;
+        }
+
+        internal Scope? _parent;
+        internal List<Scope>? _children;
+        internal List<LocalBuilder>? _locals;
+        internal List<string>? _importNamespaces;
+        internal int _startOffset;
+        internal int _endOffset;
+
+        internal List<LocalBuilder> GetAllLocals()
+        {
+            List<LocalBuilder> locals = new List<LocalBuilder>();
+
+            if (_locals != null)
+            {
+                locals.AddRange(_locals);
+            }
+
+            if (_children != null)
+            {
+                foreach (Scope child in _children)
+                {
+                    locals.AddRange(child.GetAllLocals());
+                }
+            }
+
+            return locals;
+        }
     }
 }

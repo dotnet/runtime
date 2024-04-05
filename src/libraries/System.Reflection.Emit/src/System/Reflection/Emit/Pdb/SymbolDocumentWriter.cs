@@ -11,11 +11,13 @@ namespace System.Reflection.Emit
         internal readonly string _url;
         private Guid _hashAlgorithm;
         private byte[]? _hash;
+        private byte[]? _source;
 
         internal string URL => _url;
         internal Guid Language => _language;
         internal Guid HashAlgorithm => _hashAlgorithm;
         internal byte[]? Hash => _hash;
+        internal byte[]? Source => _source;
 
         public SymbolDocumentWriter(string url, Guid language)
         {
@@ -29,6 +31,9 @@ namespace System.Reflection.Emit
             _hash = checkSum;
         }
 
-        public void SetSource(byte[] source) => throw new NotImplementedException();
+        public void SetSource(byte[] source)
+        {
+            _source = source;
+        }
     }
 }

@@ -28,8 +28,21 @@ namespace System.Reflection.Emit
         internal string? Name => _name;
         #endregion
 
-        #region LocalVariableInfo Override
-        public override void SetLocalSymInfo(string name) => _name = name;
+        #region LocalBuilder Override
+        protected override void SetLocalSymInfoCore(string name)
+        {
+            if (_method.DeclaringType is not TypeBuilderImpl typeBuilder)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_NotValidTypeBuilder);
+            }
+
+            if (typeBuilder.IsCreated())
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_TypeHasBeenCreated);
+            }
+
+            _name = name;
+        }
         #endregion
 
         #region LocalVariableInfo Override

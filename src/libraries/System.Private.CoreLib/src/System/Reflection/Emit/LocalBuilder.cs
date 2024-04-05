@@ -13,6 +13,20 @@ namespace System.Reflection.Emit
         /// </remarks>
         protected LocalBuilder() { }
 
-        public virtual void SetLocalSymInfo(string name) => throw new NotSupportedException();
+        /// <summary>
+        /// Sets the name of this local variable.
+        /// </summary>
+        /// <param name="name">The name of the local variable</param>
+        /// <exception cref="InvalidOperationException">The containing type has been created with CreateType() or
+        /// containing type doesn't support symbol writing.</exception>"
+        public void SetLocalSymInfo(string name) => SetLocalSymInfoCore(name);
+
+        /// <summary>
+        /// Sets the name of this local variable.
+        /// </summary>
+        /// <param name="name">The name of the local variable.</param>
+        /// <exception cref="InvalidOperationException">The containing type has been created with CreateType() or
+        /// containing type doesn't support symbol writing.</exception>"
+        protected virtual void SetLocalSymInfoCore(string name) { }
     }
 }
