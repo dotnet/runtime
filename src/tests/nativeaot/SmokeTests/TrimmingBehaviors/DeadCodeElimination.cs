@@ -383,8 +383,8 @@ class DeadCodeElimination
         {
             Generic<object>();
 
-            ThrowIfPresent(typeof(TestTypeIsValueType), nameof(Never));
-            ThrowIfNotPresent(typeof(TestTypeIsValueType), nameof(Ever));
+            ThrowIfPresent(typeof(TestTypeIsEnum), nameof(Never));
+            ThrowIfNotPresent(typeof(TestTypeIsEnum), nameof(Ever));
         }
     }
 
