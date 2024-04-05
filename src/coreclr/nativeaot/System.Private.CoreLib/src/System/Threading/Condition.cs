@@ -89,7 +89,9 @@ namespace System.Threading
 
         public Condition(Lock @lock)
         {
+#pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
             ArgumentNullException.ThrowIfNull(@lock);
+#pragma warning restore CS9216
             _lock = @lock;
         }
 

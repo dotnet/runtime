@@ -118,7 +118,7 @@ inline const char* GCtypeStr(GCtype gcType)
 
 #if DEBUG_EMIT
 #define INTERESTING_JUMP_NUM -1 // set to 0 to see all jump info
-//#define INTERESTING_JUMP_NUM    0
+// #define INTERESTING_JUMP_NUM    0
 #endif
 
 /*****************************************************************************
@@ -129,11 +129,15 @@ inline const char* GCtypeStr(GCtype gcType)
 class emitLocation
 {
 public:
-    emitLocation() : ig(nullptr), codePos(0)
+    emitLocation()
+        : ig(nullptr)
+        , codePos(0)
     {
     }
 
-    emitLocation(insGroup* _ig) : ig(_ig), codePos(0)
+    emitLocation(insGroup* _ig)
+        : ig(_ig)
+        , codePos(0)
     {
     }
 
@@ -147,7 +151,9 @@ public:
         CaptureLocation(emit);
     }
 
-    emitLocation(void* emitCookie) : ig((insGroup*)emitCookie), codePos(0)
+    emitLocation(void* emitCookie)
+        : ig((insGroup*)emitCookie)
+        , codePos(0)
     {
     }
 
@@ -228,10 +234,8 @@ enum insGroupPlaceholderType : unsigned char
 {
     IGPT_PROLOG, // currently unused
     IGPT_EPILOG,
-#if defined(FEATURE_EH_FUNCLETS)
     IGPT_FUNCLET_PROLOG,
     IGPT_FUNCLET_EPILOG,
-#endif // FEATURE_EH_FUNCLETS
 };
 
 #if defined(_MSC_VER) && defined(TARGET_ARM)
@@ -286,20 +290,23 @@ struct insGroup
     insGroup* igLoopBackEdge; // "last" back-edge that branches back to an aligned loop head.
 #endif
 
-#define IGF_GC_VARS 0x0001        // new set of live GC ref variables
-#define IGF_BYREF_REGS 0x0002     // new set of live by-ref registers
+#define IGF_GC_VARS        0x0001 // new set of live GC ref variables
+#define IGF_BYREF_REGS     0x0002 // new set of live by-ref registers
 #define IGF_FUNCLET_PROLOG 0x0004 // this group belongs to a funclet prolog
 #define IGF_FUNCLET_EPILOG 0x0008 // this group belongs to a funclet epilog.
-#define IGF_EPILOG 0x0010         // this group belongs to a main function epilog
-#define IGF_NOGCINTERRUPT 0x0020  // this IG is in a no-interrupt region (prolog, epilog, etc.)
-#define IGF_UPD_ISZ 0x0040        // some instruction sizes updated
-#define IGF_PLACEHOLDER 0x0080    // this is a placeholder group, to be filled in later
-#define IGF_EXTEND 0x0100         // this block is conceptually an extension of the previous block
-                                  // and the emitter should continue to track GC info as if there was no new block.
-#define IGF_HAS_ALIGN 0x0200      // this group contains an alignment instruction(s) at the end to align either the next
-                                  // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
-#define IGF_REMOVED_ALIGN 0x0400  // IG was marked as having an alignment instruction(s), but was later unmarked
-                                  // without updating the IG's size/offsets.
+#define IGF_EPILOG         0x0010 // this group belongs to a main function epilog
+#define IGF_NOGCINTERRUPT  0x0020 // this IG is in a no-interrupt region (prolog, epilog, etc.)
+#define IGF_UPD_ISZ        0x0040 // some instruction sizes updated
+#define IGF_PLACEHOLDER    0x0080 // this is a placeholder group, to be filled in later
+#define IGF_EXTEND                                                                                                     \
+    0x0100 // this block is conceptually an extension of the previous block
+           // and the emitter should continue to track GC info as if there was no new block.
+#define IGF_HAS_ALIGN                                                                                                  \
+    0x0200 // this group contains an alignment instruction(s) at the end to align either the next
+           // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
+#define IGF_REMOVED_ALIGN                                                                                              \
+    0x0400                           // IG was marked as having an alignment instruction(s), but was later unmarked
+                                     // without updating the IG's size/offsets.
 #define IGF_HAS_REMOVABLE_JMP 0x0800 // this group ends with an unconditional jump which is a candidate for removal
 #ifdef TARGET_ARM64
 #define IGF_HAS_REMOVED_INSTR 0x1000 // this group has an instruction that was removed.
@@ -308,24 +315,20 @@ struct insGroup
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
 // automatically marked properly.
-#if defined(FEATURE_EH_FUNCLETS)
 #ifdef DEBUG
 #define IGF_PROPAGATE_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)
 #else // DEBUG
 #define IGF_PROPAGATE_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG)
 #endif // DEBUG
-#else  // !FEATURE_EH_FUNCLETS
-#define IGF_PROPAGATE_MASK (IGF_EPILOG)
-#endif // !FEATURE_EH_FUNCLETS
 
     // Try to do better packing based on how large regMaskSmall is (8, 16, or 64 bits).
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !(REGMASK_BITS <= 32)
     regMaskSmall igGCregs; // set of registers with live GC refs
 #endif                     // !(REGMASK_BITS <= 32)
 
-    union {
+    union
+    {
         BYTE*                    igData;   // addr of instruction descriptors
         insPlaceholderGroupData* igPhData; // when igFlags & IGF_PLACEHOLDER
     };
@@ -428,8 +431,8 @@ struct emitLclVarAddr
     //
 protected:
     unsigned _lvaVarNum : 15; // Usually the lvaVarNum
-    unsigned _lvaExtra : 15;  // Usually the lvaOffset
-    unsigned _lvaTag : 2;     // tag field to support larger varnums
+    unsigned _lvaExtra  : 15; // Usually the lvaOffset
+    unsigned _lvaTag    : 2;  // tag field to support larger varnums
 };
 
 enum idAddrUnionTag
@@ -513,7 +516,7 @@ protected:
 #ifdef TARGET_AMD64
         OPSZP = OPSZ8,
 #else
-        OPSZP         = OPSZ4,
+        OPSZP = OPSZ4,
 #endif
     };
 
@@ -522,7 +525,7 @@ protected:
     static const emitAttr emitSizeDecode[];
 
     static emitter::opSize emitEncodeSize(emitAttr size);
-    static emitAttr emitDecodeSize(emitter::opSize ensz);
+    static emitAttr        emitDecodeSize(emitter::opSize ensz);
 
     // Currently, we only allow one IG for the prolog
     bool emitIGisInProlog(const insGroup* ig)
@@ -535,8 +538,6 @@ protected:
         return (ig != nullptr) && ((ig->igFlags & IGF_EPILOG) != 0);
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
-
     bool emitIGisInFuncletProlog(const insGroup* ig)
     {
         return (ig != nullptr) && ((ig->igFlags & IGF_FUNCLET_PROLOG) != 0);
@@ -546,8 +547,6 @@ protected:
     {
         return (ig != nullptr) && ((ig->igFlags & IGF_FUNCLET_EPILOG) != 0);
     }
-
-#endif // FEATURE_EH_FUNCLETS
 
     void emitRecomputeIGoffsets();
 
@@ -570,10 +569,10 @@ protected:
 
 #ifdef TARGET_XARCH
 
-#define AM_DISP_BITS ((sizeof(unsigned) * 8) - 2 * (REGNUM_BITS + 1) - 2)
+#define AM_DISP_BITS    ((sizeof(unsigned) * 8) - 2 * (REGNUM_BITS + 1) - 2)
 #define AM_DISP_BIG_VAL (-(1 << (AM_DISP_BITS - 1)))
-#define AM_DISP_MIN (-((1 << (AM_DISP_BITS - 1)) - 1))
-#define AM_DISP_MAX (+((1 << (AM_DISP_BITS - 1)) - 1))
+#define AM_DISP_MIN     (-((1 << (AM_DISP_BITS - 1)) - 1))
+#define AM_DISP_MAX     (+((1 << (AM_DISP_BITS - 1)) - 1))
 
     struct emitAddrMode
     {
@@ -643,9 +642,9 @@ protected:
         static_assert_no_msg(IF_COUNT <= 128);
         insFormat _idInsFmt : 7;
 #elif defined(TARGET_LOONGARCH64)
-        unsigned    _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
+        unsigned _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_RISCV64)
-        unsigned    _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
+        unsigned _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_ARM64)
         static_assert_no_msg(IF_COUNT <= 1024);
         insFormat _idInsFmt : 10;
@@ -685,7 +684,7 @@ protected:
         {
         }
 #elif defined(TARGET_RISCV64)
-        insFormat   idInsFmt() const
+        insFormat idInsFmt() const
         {
             NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
             return (insFormat)0;
@@ -695,7 +694,7 @@ protected:
             NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
         }
 #else
-        insFormat   idInsFmt() const
+        insFormat idInsFmt() const
         {
             return _idInsFmt;
         }
@@ -721,7 +720,7 @@ protected:
     private:
 #if defined(TARGET_XARCH)
         unsigned _idCodeSize : 4; // size of instruction in bytes. Max size of an Intel instruction is 15 bytes.
-        opSize   _idOpSize : 3;   // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16, 5=32
+        opSize   _idOpSize   : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16, 5=32
                                   // At this point we have fully consumed first DWORD so that next field
                                   // doesn't cross a byte boundary.
 #elif defined(TARGET_ARM64)
@@ -730,7 +729,7 @@ protected:
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 /* _idOpSize defined below. */
 #else
-        opSize    _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
+        opSize _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
         // On Amd64, this is where the second DWORD begins
@@ -763,9 +762,9 @@ protected:
         // loongarch64: 28 bits
         // risc-v:      28 bits
 
-        unsigned _idSmallDsc : 1;  // is this a "small" descriptor?
-        unsigned _idLargeCns : 1;  // does a large constant     follow?
-        unsigned _idLargeDsp : 1;  // does a large displacement follow?
+        unsigned _idSmallDsc  : 1; // is this a "small" descriptor?
+        unsigned _idLargeCns  : 1; // does a large constant     follow?
+        unsigned _idLargeDsp  : 1; // does a large displacement follow?
         unsigned _idLargeCall : 1; // large call descriptor used
 
         // We have several pieces of information we need to encode but which are only applicable
@@ -776,15 +775,15 @@ protected:
         unsigned _idCustom2 : 1;
         unsigned _idCustom3 : 1;
 
-#define _idBound _idCustom1 /* jump target / frame offset bound */
-#define _idTlsGD _idCustom2 /* Used to store information related to TLS GD access on linux */
-#define _idNoGC _idCustom3  /* Some helpers don't get recorded in GC tables */
+#define _idBound          _idCustom1 /* jump target / frame offset bound */
+#define _idTlsGD          _idCustom2 /* Used to store information related to TLS GD access on linux */
+#define _idNoGC           _idCustom3 /* Some helpers don't get recorded in GC tables */
 #define _idEvexAaaContext (_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1 /* bits used for the EVEX.aaa context */
 
 #if !defined(TARGET_ARMARCH)
         unsigned _idCustom4 : 1;
 
-#define _idCallRegPtr _idCustom4   /* IL indirect calls : addr in reg */
+#define _idCallRegPtr   _idCustom4 /* IL indirect calls : addr in reg */
 #define _idEvexZContext _idCustom4 /* bits used for the EVEX.z context */
 #endif                             // !TARGET_ARMARCH
 
@@ -797,17 +796,16 @@ protected:
 #endif //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
-
-        unsigned _idLclVar : 1;    // access a local on stack
-        unsigned _idLclVarPair : 1 // carries information for 2 GC lcl vars.
+        unsigned _idLclVar     : 1; // access a local on stack
+        unsigned _idLclVarPair : 1; // carries information for 2 GC lcl vars.
 #endif
 
 #ifdef TARGET_LOONGARCH64
-            // TODO-LoongArch64: maybe delete on future.
-            opSize _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts    _idInsOpt : 6; // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
-                                  // accessing a local on stack.
-        unsigned _idLclVar : 1;   // access a local on stack.
+        // TODO-LoongArch64: maybe delete on future.
+        opSize  _idOpSize : 3;  // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts _idInsOpt : 6;  // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
+                                // accessing a local on stack.
+        unsigned _idLclVar : 1; // access a local on stack.
 #endif
 
 #ifdef TARGET_RISCV64
@@ -818,11 +816,11 @@ protected:
 #endif
 
 #ifdef TARGET_ARM
-        insSize  _idInsSize : 2;   // size of instruction: 16, 32 or 48 bits
-        insFlags _idInsFlags : 1;  // will this instruction set the flags
-        unsigned _idLclVar : 1;    // access a local on stack
+        insSize  _idInsSize   : 2; // size of instruction: 16, 32 or 48 bits
+        insFlags _idInsFlags  : 1; // will this instruction set the flags
+        unsigned _idLclVar    : 1; // access a local on stack
         unsigned _idLclFPBase : 1; // access a local on stack - SP based offset
-        insOpts  _idInsOpt : 3;    // options for Load/Store instructions
+        insOpts  _idInsOpt    : 3; // options for Load/Store instructions
 #endif
 
         ////////////////////////////////////////////////////////////////////////
@@ -838,7 +836,6 @@ protected:
         // How many bits have been used beyond the first 32?
         // Define ID_EXTRA_BITFIELD_BITS to that number.
         //
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_ARM)
 #define ID_EXTRA_BITFIELD_BITS (16)
@@ -866,7 +863,6 @@ protected:
         // All instrDesc types are <= 56 bytes, but we also need m_debugInfoSize,
         // which is pointer sized, so 5 bits are required on 64-bit and 4 bits
         // on 32-bit.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef HOST_64BIT
         unsigned _idScaledPrevOffset : 5;
@@ -888,11 +884,10 @@ protected:
         // arm64:       60/55 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
-/* Use whatever bits are left over for small constants */
+        /* Use whatever bits are left over for small constants */
 
 #define ID_BIT_SMALL_CNS (32 - ID_EXTRA_BITS)
         C_ASSERT(ID_BIT_SMALL_CNS > 0);
@@ -905,7 +900,6 @@ protected:
         // arm64:        4/9 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
 #define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
@@ -930,7 +924,6 @@ protected:
         //
         // SMALL_IDSC_SIZE is this size, in bytes.
         //
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define SMALL_IDSC_SIZE 8
 
@@ -947,13 +940,13 @@ protected:
         }
 
     private:
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
         void checkSizes();
 
-        union idAddrUnion {
-// TODO-Cleanup: We should really add a DEBUG-only tag to this union so we can add asserts
-// about reading what we think is here, to avoid unexpected corruption issues.
+        union idAddrUnion
+        {
+            // TODO-Cleanup: We should really add a DEBUG-only tag to this union so we can add asserts
+            // about reading what we think is here, to avoid unexpected corruption issues.
 
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
             emitLclVarAddr iiaLclVar;
@@ -1857,137 +1850,137 @@ protected:
 
 #define PERFSCORE_THROUGHPUT_1C 1.0f // Single Issue
 
-#define PERFSCORE_THROUGHPUT_2C 2.0f     // slower - 2 cycles
-#define PERFSCORE_THROUGHPUT_3C 3.0f     // slower - 3 cycles
-#define PERFSCORE_THROUGHPUT_4C 4.0f     // slower - 4 cycles
-#define PERFSCORE_THROUGHPUT_5C 5.0f     // slower - 5 cycles
-#define PERFSCORE_THROUGHPUT_6C 6.0f     // slower - 6 cycles
-#define PERFSCORE_THROUGHPUT_7C 7.0f     // slower - 7 cycles
-#define PERFSCORE_THROUGHPUT_8C 8.0f     // slower - 8 cycles
-#define PERFSCORE_THROUGHPUT_9C 9.0f     // slower - 9 cycles
-#define PERFSCORE_THROUGHPUT_10C 10.0f   // slower - 10 cycles
-#define PERFSCORE_THROUGHPUT_11C 10.0f   // slower - 10 cycles
-#define PERFSCORE_THROUGHPUT_13C 13.0f   // slower - 13 cycles
-#define PERFSCORE_THROUGHPUT_14C 14.0f   // slower - 13 cycles
-#define PERFSCORE_THROUGHPUT_16C 16.0f   // slower - 13 cycles
-#define PERFSCORE_THROUGHPUT_19C 19.0f   // slower - 19 cycles
-#define PERFSCORE_THROUGHPUT_25C 25.0f   // slower - 25 cycles
-#define PERFSCORE_THROUGHPUT_33C 33.0f   // slower - 33 cycles
-#define PERFSCORE_THROUGHPUT_50C 50.0f   // slower - 50 cycles
-#define PERFSCORE_THROUGHPUT_52C 52.0f   // slower - 52 cycles
-#define PERFSCORE_THROUGHPUT_57C 57.0f   // slower - 57 cycles
+#define PERFSCORE_THROUGHPUT_2C   2.0f   // slower - 2 cycles
+#define PERFSCORE_THROUGHPUT_3C   3.0f   // slower - 3 cycles
+#define PERFSCORE_THROUGHPUT_4C   4.0f   // slower - 4 cycles
+#define PERFSCORE_THROUGHPUT_5C   5.0f   // slower - 5 cycles
+#define PERFSCORE_THROUGHPUT_6C   6.0f   // slower - 6 cycles
+#define PERFSCORE_THROUGHPUT_7C   7.0f   // slower - 7 cycles
+#define PERFSCORE_THROUGHPUT_8C   8.0f   // slower - 8 cycles
+#define PERFSCORE_THROUGHPUT_9C   9.0f   // slower - 9 cycles
+#define PERFSCORE_THROUGHPUT_10C  10.0f  // slower - 10 cycles
+#define PERFSCORE_THROUGHPUT_11C  10.0f  // slower - 10 cycles
+#define PERFSCORE_THROUGHPUT_13C  13.0f  // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_14C  14.0f  // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_16C  16.0f  // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_19C  19.0f  // slower - 19 cycles
+#define PERFSCORE_THROUGHPUT_25C  25.0f  // slower - 25 cycles
+#define PERFSCORE_THROUGHPUT_33C  33.0f  // slower - 33 cycles
+#define PERFSCORE_THROUGHPUT_50C  50.0f  // slower - 50 cycles
+#define PERFSCORE_THROUGHPUT_52C  52.0f  // slower - 52 cycles
+#define PERFSCORE_THROUGHPUT_57C  57.0f  // slower - 57 cycles
 #define PERFSCORE_THROUGHPUT_140C 140.0f // slower - 140 cycles
 
 #define PERFSCORE_LATENCY_ILLEGAL -1024.0f
 
 #define PERFSCORE_LATENCY_ZERO 0.0f
-#define PERFSCORE_LATENCY_1C 1.0f
-#define PERFSCORE_LATENCY_2C 2.0f
-#define PERFSCORE_LATENCY_3C 3.0f
-#define PERFSCORE_LATENCY_4C 4.0f
-#define PERFSCORE_LATENCY_5C 5.0f
-#define PERFSCORE_LATENCY_6C 6.0f
-#define PERFSCORE_LATENCY_7C 7.0f
-#define PERFSCORE_LATENCY_8C 8.0f
-#define PERFSCORE_LATENCY_9C 9.0f
-#define PERFSCORE_LATENCY_10C 10.0f
-#define PERFSCORE_LATENCY_11C 11.0f
-#define PERFSCORE_LATENCY_12C 12.0f
-#define PERFSCORE_LATENCY_13C 13.0f
-#define PERFSCORE_LATENCY_14C 14.0f
-#define PERFSCORE_LATENCY_15C 15.0f
-#define PERFSCORE_LATENCY_16C 16.0f
-#define PERFSCORE_LATENCY_18C 18.0f
-#define PERFSCORE_LATENCY_20C 20.0f
-#define PERFSCORE_LATENCY_22C 22.0f
-#define PERFSCORE_LATENCY_23C 23.0f
-#define PERFSCORE_LATENCY_26C 26.0f
-#define PERFSCORE_LATENCY_62C 62.0f
-#define PERFSCORE_LATENCY_69C 69.0f
+#define PERFSCORE_LATENCY_1C   1.0f
+#define PERFSCORE_LATENCY_2C   2.0f
+#define PERFSCORE_LATENCY_3C   3.0f
+#define PERFSCORE_LATENCY_4C   4.0f
+#define PERFSCORE_LATENCY_5C   5.0f
+#define PERFSCORE_LATENCY_6C   6.0f
+#define PERFSCORE_LATENCY_7C   7.0f
+#define PERFSCORE_LATENCY_8C   8.0f
+#define PERFSCORE_LATENCY_9C   9.0f
+#define PERFSCORE_LATENCY_10C  10.0f
+#define PERFSCORE_LATENCY_11C  11.0f
+#define PERFSCORE_LATENCY_12C  12.0f
+#define PERFSCORE_LATENCY_13C  13.0f
+#define PERFSCORE_LATENCY_14C  14.0f
+#define PERFSCORE_LATENCY_15C  15.0f
+#define PERFSCORE_LATENCY_16C  16.0f
+#define PERFSCORE_LATENCY_18C  18.0f
+#define PERFSCORE_LATENCY_20C  20.0f
+#define PERFSCORE_LATENCY_22C  22.0f
+#define PERFSCORE_LATENCY_23C  23.0f
+#define PERFSCORE_LATENCY_26C  26.0f
+#define PERFSCORE_LATENCY_62C  62.0f
+#define PERFSCORE_LATENCY_69C  69.0f
 #define PERFSCORE_LATENCY_140C 140.0f
 #define PERFSCORE_LATENCY_400C 400.0f // Intel microcode issue with these instructions
 
-#define PERFSCORE_LATENCY_BRANCH_DIRECT 1.0f   // cost of an unconditional branch
-#define PERFSCORE_LATENCY_BRANCH_COND 2.0f     // includes cost of a possible misprediction
+#define PERFSCORE_LATENCY_BRANCH_DIRECT   1.0f // cost of an unconditional branch
+#define PERFSCORE_LATENCY_BRANCH_COND     2.0f // includes cost of a possible misprediction
 #define PERFSCORE_LATENCY_BRANCH_INDIRECT 2.0f // includes cost of a possible misprediction
 
 #if defined(TARGET_XARCH)
 
 // a read,write or modify from stack location, possible def to use latency from L0 cache
-#define PERFSCORE_LATENCY_RD_STACK PERFSCORE_LATENCY_2C
-#define PERFSCORE_LATENCY_WR_STACK PERFSCORE_LATENCY_2C
+#define PERFSCORE_LATENCY_RD_STACK    PERFSCORE_LATENCY_2C
+#define PERFSCORE_LATENCY_WR_STACK    PERFSCORE_LATENCY_2C
 #define PERFSCORE_LATENCY_RD_WR_STACK PERFSCORE_LATENCY_5C
 
 // a read, write or modify from constant location, possible def to use latency from L0 cache
-#define PERFSCORE_LATENCY_RD_CONST_ADDR PERFSCORE_LATENCY_2C
-#define PERFSCORE_LATENCY_WR_CONST_ADDR PERFSCORE_LATENCY_2C
+#define PERFSCORE_LATENCY_RD_CONST_ADDR    PERFSCORE_LATENCY_2C
+#define PERFSCORE_LATENCY_WR_CONST_ADDR    PERFSCORE_LATENCY_2C
 #define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_5C
 
 // a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
 // plus an extra cost  (of 1.0) for a increased chance  of a cache miss
-#define PERFSCORE_LATENCY_RD_GENERAL PERFSCORE_LATENCY_3C
-#define PERFSCORE_LATENCY_WR_GENERAL PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_RD_GENERAL    PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_GENERAL    PERFSCORE_LATENCY_3C
 #define PERFSCORE_LATENCY_RD_WR_GENERAL PERFSCORE_LATENCY_6C
 
 #elif defined(TARGET_ARM64) || defined(TARGET_ARM)
 
 // a read,write or modify from stack location, possible def to use latency from L0 cache
-#define PERFSCORE_LATENCY_RD_STACK PERFSCORE_LATENCY_3C
-#define PERFSCORE_LATENCY_WR_STACK PERFSCORE_LATENCY_1C
-#define PERFSCORE_LATENCY_RD_WR_STACK PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_RD_STACK         PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_STACK         PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_STACK      PERFSCORE_LATENCY_3C
 
 // a read, write or modify from constant location, possible def to use latency from L0 cache
-#define PERFSCORE_LATENCY_RD_CONST_ADDR PERFSCORE_LATENCY_3C
-#define PERFSCORE_LATENCY_WR_CONST_ADDR PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_CONST_ADDR    PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_CONST_ADDR    PERFSCORE_LATENCY_1C
 #define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_3C
 
 // a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
 // plus an extra cost  (of 1.0) for a increased chance  of a cache miss
-#define PERFSCORE_LATENCY_RD_GENERAL PERFSCORE_LATENCY_4C
-#define PERFSCORE_LATENCY_WR_GENERAL PERFSCORE_LATENCY_1C
-#define PERFSCORE_LATENCY_RD_WR_GENERAL PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_RD_GENERAL       PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
 
 #elif defined(TARGET_LOONGARCH64)
 // a read,write or modify from stack location, possible def to use latency from L0 cache
-#define PERFSCORE_LATENCY_RD_STACK PERFSCORE_LATENCY_3C
-#define PERFSCORE_LATENCY_WR_STACK PERFSCORE_LATENCY_1C
-#define PERFSCORE_LATENCY_RD_WR_STACK PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_RD_STACK         PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_STACK         PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_STACK      PERFSCORE_LATENCY_3C
 
 // a read, write or modify from constant location, possible def to use latency from L0 cache
-#define PERFSCORE_LATENCY_RD_CONST_ADDR PERFSCORE_LATENCY_3C
-#define PERFSCORE_LATENCY_WR_CONST_ADDR PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_CONST_ADDR    PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_CONST_ADDR    PERFSCORE_LATENCY_1C
 #define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_3C
 
 // a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
 // plus an extra cost  (of 1.0) for a increased chance  of a cache miss
-#define PERFSCORE_LATENCY_RD_GENERAL PERFSCORE_LATENCY_4C
-#define PERFSCORE_LATENCY_WR_GENERAL PERFSCORE_LATENCY_1C
-#define PERFSCORE_LATENCY_RD_WR_GENERAL PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_RD_GENERAL       PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
 
 #elif defined(TARGET_RISCV64)
 // a read,write or modify from stack location, possible def to use latency from L0 cache
-#define PERFSCORE_LATENCY_RD_STACK PERFSCORE_LATENCY_3C
-#define PERFSCORE_LATENCY_WR_STACK PERFSCORE_LATENCY_1C
-#define PERFSCORE_LATENCY_RD_WR_STACK PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_RD_STACK         PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_STACK         PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_STACK      PERFSCORE_LATENCY_3C
 
 // a read, write or modify from constant location, possible def to use latency from L0 cache
-#define PERFSCORE_LATENCY_RD_CONST_ADDR PERFSCORE_LATENCY_3C
-#define PERFSCORE_LATENCY_WR_CONST_ADDR PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_CONST_ADDR    PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_CONST_ADDR    PERFSCORE_LATENCY_1C
 #define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_3C
 
 // a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
 // plus an extra cost  (of 1.0) for a increased chance  of a cache miss
-#define PERFSCORE_LATENCY_RD_GENERAL PERFSCORE_LATENCY_4C
-#define PERFSCORE_LATENCY_WR_GENERAL PERFSCORE_LATENCY_1C
-#define PERFSCORE_LATENCY_RD_WR_GENERAL PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_RD_GENERAL       PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
 
 #endif // TARGET_XXX
 
 // Make this an enum:
 //
-#define PERFSCORE_MEMORY_NONE 0
-#define PERFSCORE_MEMORY_READ 1
-#define PERFSCORE_MEMORY_WRITE 2
+#define PERFSCORE_MEMORY_NONE       0
+#define PERFSCORE_MEMORY_READ       1
+#define PERFSCORE_MEMORY_WRITE      2
 #define PERFSCORE_MEMORY_READ_WRITE 3
 
     struct insExecutionCharacteristics
@@ -2020,7 +2013,8 @@ protected:
         instrDescJmp* idjNext; // next jump in the group/method
         insGroup*     idjIG;   // containing group
 
-        union {
+        union
+        {
             BYTE* idjAddr; // address of jump ins (for patching)
         } idjTemp;
 
@@ -2043,7 +2037,7 @@ protected:
 #else
             30;
 #endif
-        unsigned idjShort : 1;    // is the jump known to be a short one?
+        unsigned idjShort    : 1; // is the jump known to be a short one?
         unsigned idjKeepLong : 1; // should the jump be kept long? (used for hot to cold and cold to hot jumps)
     };
 
@@ -2184,7 +2178,9 @@ protected:
         alignas(alignof(T)) char idStorage[sizeof(T)];
 
     public:
-        inlineInstrDesc() : idDebugInfo(nullptr), idStorage()
+        inlineInstrDesc()
+            : idDebugInfo(nullptr)
+            , idStorage()
         {
             static_assert_no_msg((offsetof(inlineInstrDesc<T>, idStorage) - sizeof(instrDescDebugInfo*)) ==
                                  offsetof(inlineInstrDesc<T>, idDebugInfo));
@@ -2210,7 +2206,7 @@ protected:
 #endif // TARGET_ARM
 
     insUpdateModes emitInsUpdateMode(instruction ins);
-    insFormat emitInsModeFormat(instruction ins, insFormat base);
+    insFormat      emitInsModeFormat(instruction ins, insFormat base);
 
     static const BYTE emitInsModeFmtTab[];
 #ifdef DEBUG
@@ -2225,7 +2221,7 @@ protected:
     ssize_t emitGetInsDsp(instrDesc* id);
     ssize_t emitGetInsAmd(instrDesc* id);
 
-    ssize_t emitGetInsCIdisp(instrDesc* id);
+    ssize_t  emitGetInsCIdisp(instrDesc* id);
     unsigned emitGetInsCIargs(instrDesc* id);
 
     inline emitAttr emitGetMemOpSize(instrDesc* id) const;
@@ -2238,7 +2234,7 @@ protected:
 #endif // TARGET_XARCH
 
     cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
-    unsigned emitInsCount;
+    unsigned       emitInsCount;
 
     /************************************************************************/
     /*           A few routines used for debug display purposes             */
@@ -2264,11 +2260,11 @@ protected:
     regMaskTP  debugPrevGCrefRegs;
     regMaskTP  debugPrevByrefRegs;
     void       emitDispInsIndent();
-    void emitDispGCDeltaTitle(const char* title);
-    void emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskTP curRegs);
-    void emitDispGCVarDelta();
-    void emitDispRegPtrListDelta();
-    void emitDispGCInfoDelta();
+    void       emitDispGCDeltaTitle(const char* title);
+    void       emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskTP curRegs);
+    void       emitDispGCVarDelta();
+    void       emitDispRegPtrListDelta();
+    void       emitDispGCInfoDelta();
 
     void emitDispIGflags(unsigned flags);
     void emitDispIG(insGroup* ig,
@@ -2325,7 +2321,9 @@ protected:
         EpilogList*  elNext;
         emitLocation elLoc;
 
-        EpilogList() : elNext(nullptr), elLoc()
+        EpilogList()
+            : elNext(nullptr)
+            , elLoc()
         {
         }
     };
@@ -2348,26 +2346,22 @@ public:
     void emitBegFnEpilog(insGroup* igPh);
     void emitEndFnEpilog();
 
-#if defined(FEATURE_EH_FUNCLETS)
-
     void emitBegFuncletProlog(insGroup* igPh);
     void emitEndFuncletProlog();
 
     void emitBegFuncletEpilog(insGroup* igPh);
     void emitEndFuncletEpilog();
 
-#endif // FEATURE_EH_FUNCLETS
-
     /************************************************************************/
     /*    Methods to record a code position and later convert to offset     */
     /************************************************************************/
 
-    unsigned emitFindInsNum(const insGroup* ig, const instrDesc* id) const;
+    unsigned       emitFindInsNum(const insGroup* ig, const instrDesc* id) const;
     UNATIVE_OFFSET emitFindOffset(const insGroup* ig, unsigned insNum) const;
 
-/************************************************************************/
-/*        Members and methods used to issue (encode) instructions.      */
-/************************************************************************/
+    /************************************************************************/
+    /*        Members and methods used to issue (encode) instructions.      */
+    /************************************************************************/
 
 #ifdef DEBUG
     // If we have started issuing instructions from the list of instrDesc, this is set
@@ -2458,9 +2452,9 @@ public:
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     instrDesc* emitFirstInstrDesc(BYTE* idData) const;
-    void emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const;
-    size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
-    size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
+    void       emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const;
+    size_t     emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
+    size_t     emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
 
     bool emitHasFramePtr;
 
@@ -2511,13 +2505,13 @@ private:
 #endif // FEATURE_SIMD
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
-    void emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
-    void emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
-    void emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommon* varNode);
+    void      emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
+    void      emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
+    void      emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommon* varNode);
     insFormat emitMapFmtForIns(insFormat fmt, instruction ins);
     insFormat emitMapFmtAtoM(insFormat fmt);
-    void emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
-    void spillIntArgRegsToShadowSlots();
+    void      emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
+    void      spillIntArgRegsToShadowSlots();
 
 #ifdef TARGET_XARCH
     bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
@@ -2555,7 +2549,6 @@ private:
     // instruction group depends on the instruction mix as well as DEBUG/non-DEBUG build type. See the
     // EMITTER_STATS output for various statistics related to this.
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 // ARM32/64, LoongArch and RISC-V can require a bigger prolog instruction group. One scenario
@@ -2604,22 +2597,22 @@ private:
     // non-adaptive alignment on xarch, this points to the first align instruction of the series of align instructions.
     instrDescAlign* emitAlignLastGroup;
 
-    unsigned getLoopSize(insGroup* igLoopHeader,
+    unsigned getLoopSize(insGroup*            igLoopHeader,
                          unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted) DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
                              DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum)); // Get the smallest loop size
-    void emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
-    bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
-    bool emitSetLoopBackEdge(const BasicBlock* loopTopBlock);
+    void     emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
+    bool     emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
+    bool     emitSetLoopBackEdge(const BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
-    unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig,
+    unsigned emitCalculatePaddingForLoopAlignment(insGroup*     ig,
                                                   size_t offset DEBUG_ARG(bool isAlignAdjusted)
                                                       DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
                                                           DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum));
 
-    void emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
-    void emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
+    void            emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
+    void            emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
     instrDescAlign* emitAlignInNextIG(instrDescAlign* alignInstr);
-    void emitConnectAlignInstrWithCurIG();
+    void            emitConnectAlignInstrWithCurIG();
 
 #endif
 
@@ -2692,7 +2685,7 @@ private:
     void emitSetSecondRetRegGCType(instrDescCGCA* id, emitAttr secondRetSize);
 #endif // MULTIREG_HAS_SECOND_GC_RET
 
-    static void emitEncodeCallGCregs(regMaskTP regs, instrDesc* id);
+    static void     emitEncodeCallGCregs(regMaskTP regs, instrDesc* id);
     static unsigned emitDecodeCallGCregs(instrDesc* id);
 
     unsigned emitNxtIGnum;
@@ -2716,8 +2709,8 @@ private:
 
     insGroup* emitAllocAndLinkIG();
     insGroup* emitAllocIG();
-    void emitInitIG(insGroup* ig);
-    void emitInsertIGAfter(insGroup* insertAfterIG, insGroup* ig);
+    void      emitInitIG(insGroup* ig);
+    void      emitInsertIGAfter(insGroup* insertAfterIG, insGroup* ig);
 
     void emitNewIG();
 
@@ -2732,9 +2725,9 @@ private:
     static bool emitJmpInstHasNoCode(instrDesc* id);
 #endif
 
-    void emitGenIG(insGroup* ig);
+    void      emitGenIG(insGroup* ig);
     insGroup* emitSavIG(bool emitAdd = false);
-    void emitNxtIG(bool extend = false);
+    void      emitNxtIG(bool extend = false);
 
 #ifdef TARGET_ARM64
     void emitRemoveLastInstruction();
@@ -2864,8 +2857,8 @@ private:
     // Mark this instruction group as having a label; return the new instruction group.
     // Sets the emitter's record of the currently live GC variables
     // and registers.
-    void* emitAddLabel(VARSET_VALARG_TP GCvars,
-                       regMaskTP        gcrefRegs,
+    void* emitAddLabel(VARSET_VALARG_TP    GCvars,
+                       regMaskTP           gcrefRegs,
                        regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block = nullptr));
 
     // Same as above, except the label is added and is conceptually "inline" in
@@ -2873,7 +2866,7 @@ private:
     // continues to track GC info as if there was no label.
     void* emitAddInlineLabel();
 
-    void emitPrintLabel(const insGroup* ig) const;
+    void        emitPrintLabel(const insGroup* ig) const;
     const char* emitLabelString(const insGroup* ig) const;
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -3096,7 +3089,7 @@ public:
         return (offs >= emitGCrFrameOffsMin) && (offs < emitGCrFrameOffsMax);
     }
 
-    static instruction emitJumpKindToIns(emitJumpKind jumpKind);
+    static instruction  emitJumpKindToIns(emitJumpKind jumpKind);
     static emitJumpKind emitInsToJumpKind(instruction ins);
     static emitJumpKind emitReverseJumpKind(emitJumpKind jumpKind);
 
@@ -3161,7 +3154,8 @@ public:
 
     bool emitSimpleStkUsed; // using the "simple" stack table?
 
-    union {
+    union
+    {
         struct // if emitSimpleStkUsed==true
         {
 
@@ -3209,8 +3203,8 @@ public:
 
 #ifdef DEBUG
     const char* emitGetFrameReg();
-    void emitDispRegSet(regMaskTP regs);
-    void emitDispVarSet();
+    void        emitDispRegSet(regMaskTP regs);
+    void        emitDispVarSet();
 #endif
 
     void emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr);
@@ -3275,7 +3269,11 @@ public:
         UNATIVE_OFFSET dsdOffs;
         UNATIVE_OFFSET alignment; // in bytes, defaults to 4
 
-        dataSecDsc() : dsdList(nullptr), dsdLast(nullptr), dsdOffs(0), alignment(4)
+        dataSecDsc()
+            : dsdList(nullptr)
+            , dsdLast(nullptr)
+            , dsdOffs(0)
+            , alignment(4)
         {
         }
     };
@@ -3293,9 +3291,9 @@ public:
 
     COMP_HANDLE emitCmpHandle;
 
-/************************************************************************/
-/*               Helpers for interface to EE                            */
-/************************************************************************/
+    /************************************************************************/
+    /*               Helpers for interface to EE                            */
+    /************************************************************************/
 
 #ifdef DEBUG
 
@@ -3305,25 +3303,25 @@ public:
 #define emitRecordRelocationWithAddlDelta(location, target, fRelocType, addlDelta)                                     \
     emitRecordRelocationHelp(location, target, fRelocType, #fRelocType, addlDelta)
 
-    void emitRecordRelocationHelp(void*       location,       /* IN */
-                                  void*       target,         /* IN */
-                                  uint16_t    fRelocType,     /* IN */
-                                  const char* relocTypeName,  /* IN */
-                                  int32_t     addlDelta = 0); /* IN */
+    void emitRecordRelocationHelp(void*       location,      /* IN */
+                                  void*       target,        /* IN */
+                                  uint16_t    fRelocType,    /* IN */
+                                  const char* relocTypeName, /* IN */
+                                  int32_t     addlDelta = 0);    /* IN */
 
 #else // !DEBUG
 
     void emitRecordRelocationWithAddlDelta(void*    location,   /* IN */
                                            void*    target,     /* IN */
                                            uint16_t fRelocType, /* IN */
-                                           int32_t  addlDelta)  /* IN */
+                                           int32_t  addlDelta)   /* IN */
     {
         emitRecordRelocation(location, target, fRelocType, addlDelta);
     }
 
-    void emitRecordRelocation(void*    location,       /* IN */
-                              void*    target,         /* IN */
-                              uint16_t fRelocType,     /* IN */
+    void emitRecordRelocation(void*    location,      /* IN */
+                              void*    target,        /* IN */
+                              uint16_t fRelocType,    /* IN */
                               int32_t  addlDelta = 0); /* IN */
 
 #endif // !DEBUG
@@ -3343,9 +3341,9 @@ public:
     CORINFO_SIG_INFO* emitScratchSigInfo;
 #endif // DEBUG
 
-/************************************************************************/
-/*               Logic to collect and display statistics                */
-/************************************************************************/
+    /************************************************************************/
+    /*               Logic to collect and display statistics                */
+    /************************************************************************/
 
 #if EMITTER_STATS
 
@@ -3482,10 +3480,10 @@ public:
     }
 #endif // EMITTER_STATS
 
-/*************************************************************************
- *
- *  Define any target-dependent emitter members.
- */
+    /*************************************************************************
+     *
+     *  Define any target-dependent emitter members.
+     */
 
 #include "emitdef.h"
 
@@ -4000,7 +3998,8 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
         case INS_comiss:
         case INS_cvtss2sd:
         case INS_cvtss2si:
-        case INS_cvttss2si:
+        case INS_cvttss2si32:
+        case INS_cvttss2si64:
         case INS_divss:
         case INS_extractps:
         case INS_insertps:
@@ -4043,7 +4042,8 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
         case INS_comisd:
         case INS_cvtsd2si:
         case INS_cvtsd2ss:
-        case INS_cvttsd2si:
+        case INS_cvttsd2si32:
+        case INS_cvttsd2si64:
         case INS_divsd:
         case INS_maxsd:
         case INS_minsd:

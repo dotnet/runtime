@@ -75,11 +75,12 @@
       <InnerBuildArgs Condition="'$(PortableBuild)' != ''">$(InnerBuildArgs) /p:PortableBuild=$(PortableBuild)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(RestoreConfigFile)' != ''">$(InnerBuildArgs) /p:RestoreConfigFile=$(RestoreConfigFile)</InnerBuildArgs>
 
-      <!-- Pass locations for assets and packages -->
+      <!-- Pass locations for assets, packages and symbols -->
       <InnerBuildArgs Condition="'$(SourceBuiltAssetsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetsDir=$(SourceBuiltAssetsDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltShippingPackagesDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltShippingPackagesDir=$(SourceBuiltShippingPackagesDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltNonShippingPackagesDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltNonShippingPackagesDir=$(SourceBuiltNonShippingPackagesDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltAssetManifestsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetManifestsDir=$(SourceBuiltAssetManifestsDir)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(SourceBuiltSymbolsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltSymbolsDir=$(SourceBuiltSymbolsDir)</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
