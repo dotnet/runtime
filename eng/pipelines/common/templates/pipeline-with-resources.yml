@@ -94,9 +94,6 @@ extends:
       debian-12-gcc13-amd64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc13-amd64
 
-      linux_x64_llvmaot:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
-
       browser_wasm:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-webassembly-20230913040940-1edc1c6
         env:

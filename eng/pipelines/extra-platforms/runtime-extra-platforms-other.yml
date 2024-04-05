@@ -142,7 +142,6 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
-            llvmAotStepContainer: linux_x64
             testRunNamePrefixSuffix: Mono_Release
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
