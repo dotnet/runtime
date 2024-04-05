@@ -46284,6 +46284,14 @@ void gc_heap::background_sweep()
     // be accurate.
     compute_new_dynamic_data (max_generation);
 
+    // We also need to adjust size_before for UOH allocations that occurred during sweeping.
+    gc_history_per_heap* current_gc_data_per_heap = get_gc_data_per_heap();
+    assert(hp->loh_a_bgc_marking == 0);
+    assert(hp->poh_a_bgc_marking == 0);
+    assert(hp->loh_a_no_bgc == 0);
+    current_gc_data_per_heap->gen_data[loh_generation].size_before += hp->loh_a_bgc_planning;
+    current_gc_data_per_heap->gen_data[poh_generation].size_before += hp->poh_a_bgc_planning;
+
 #ifdef DOUBLY_LINKED_FL
     current_bgc_state = bgc_not_in_process;
 
@@ -50264,9 +50272,12 @@ void gc_heap::get_and_reset_loh_alloc_info()
         gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
 
+        // We need to adjust size_before for UOH allocations that occurred during marking
+        // before we lose the values here.
         gc_history_per_heap* current_gc_data_per_heap = hp->get_gc_data_per_heap();
-        current_gc_data_per_heap->gen_data[loh_generation].size_before += hp->loh_a_bgc_marking + hp->loh_a_bgc_planning;
-        current_gc_data_per_heap->gen_data[poh_generation].size_before += hp->poh_a_bgc_marking + hp->poh_a_bgc_planning;
+        // loh/poh_a_bgc_planning should be the same as they were when init_records set size_before.
+        current_gc_data_per_heap->gen_data[loh_generation].size_before += hp->loh_a_bgc_marking;
+        current_gc_data_per_heap->gen_data[poh_generation].size_before += hp->poh_a_bgc_marking;
 
         total_loh_a_no_bgc += hp->loh_a_no_bgc;
         hp->loh_a_no_bgc = 0;
