@@ -27,6 +27,11 @@ namespace System.Net.Security.Tests
         [InlineData(false)]
         public void SslKeyLogFile_IsCreatedAndFilled(bool enabledBySwitch)
         {
+            if (PlatformDetection.IsDebugLibrary(typeof(SslStream).Assembly) && !enabledBySwitch)
+            {
+                throw new SkipTestException("AppCtxSwitch is not necessary for SSLKEYLOGFILE in Debug.");
+            }
+
             var psi = new ProcessStartInfo();
             var tempFile = Path.GetTempFileName();
             psi.Environment.Add("SSLKEYLOGFILE", tempFile);

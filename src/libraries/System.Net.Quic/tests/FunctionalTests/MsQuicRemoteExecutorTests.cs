@@ -25,6 +25,11 @@ namespace System.Net.Quic.Tests
         [InlineData(false)]
         public void SslKeyLogFile_IsCreatedAndFilled(bool enabledBySwitch)
         {
+            if (PlatformDetection.IsDebugLibrary(typeof(QuicConnection).Assembly) && !enabledBySwitch)
+            {
+                throw new SkipTestException("AppCtxSwitch is not necessary for SSLKEYLOGFILE in Debug.");
+            }
+
             var psi = new ProcessStartInfo();
             var tempFile = Path.GetTempFileName();
             psi.Environment.Add("SSLKEYLOGFILE", tempFile);
