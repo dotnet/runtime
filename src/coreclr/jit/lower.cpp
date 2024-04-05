@@ -4642,8 +4642,8 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 GenTree* Lowering::LowerSwiftErrorRet(GenTree* swiftErrorRet)
 {
     assert(swiftErrorRet->OperIs(GT_SWIFT_ERROR_RET));
-    GenTree* const nextNode = swiftErrorRet->gtNext;
-    LIR::Range& blockRange = BlockRange();
+    GenTree* const nextNode   = swiftErrorRet->gtNext;
+    LIR::Range&    blockRange = BlockRange();
     blockRange.Remove(swiftErrorRet);
     blockRange.InsertAtEnd(swiftErrorRet);
     return nextNode;

@@ -7950,8 +7950,8 @@ void CodeGen::genReturn(GenTree* treeNode)
 void CodeGen::genSwiftErrorReturn(GenTree* treeNode)
 {
     assert(treeNode->OperIs(GT_SWIFT_ERROR_RET));
-    GenTree* swiftErrorNode = treeNode->gtGetOp1();
-    const regNumber srcReg = genConsumeReg(swiftErrorNode);
+    GenTree*        swiftErrorNode = treeNode->gtGetOp1();
+    const regNumber srcReg         = genConsumeReg(swiftErrorNode);
     inst_Mov(swiftErrorNode->TypeGet(), REG_SWIFT_ERROR, srcReg, true, EA_PTRSIZE);
 }
 #endif // SWIFT_SUPPORT
