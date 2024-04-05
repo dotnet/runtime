@@ -470,13 +470,13 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     // We have set info.compArgsCount in compCompile()
     noway_assert(varDscInfo->varNum == info.compArgsCount);
 
-    // Now we have parameters created in the right order. Figure out how they're passed.
-    lvaClassifyParameterABI();
-
     assert(varDscInfo->intRegArgNum <= MAX_REG_ARG);
 
     codeGen->intRegState.rsCalleeRegArgCount   = varDscInfo->intRegArgNum;
     codeGen->floatRegState.rsCalleeRegArgCount = varDscInfo->floatRegArgNum;
+
+    // Now we have parameters created in the right order. Figure out how they're passed.
+    lvaClassifyParameterABI();
 
 #if FEATURE_FASTTAILCALL
     // Save the stack usage information
@@ -662,10 +662,26 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         varDsc->lvOnFrame = true;
 
 #ifdef SWIFT_SUPPORT
-        if ((info.compCallConv == CorInfoCallConvExtension::Swift) &&
-            lvaInitSpecialSwiftParam(argLst, varDscInfo, strip(corInfoType), typeHnd))
+        if (info.compCallConv == CorInfoCallConvExtension::Swift)
         {
-            continue;
+            if (varTypeIsSIMD(varDsc))
+            {
+                IMPL_LIMITATION("SIMD types are currently unsupported in Swift reverse pinvokes");
+            }
+
+            if (lvaInitSpecialSwiftParam(argLst, varDscInfo, strip(corInfoType), typeHnd))
+            {
+                continue;
+            }
+
+            if (varDsc->TypeGet() == TYP_STRUCT)
+            {
+                // Struct parameters are lowered to separate primitives in the
+                // Swift calling convention. We cannot handle these patterns
+                // efficiently, so we always DNER them and home them to stack
+                // in the prolog.
+                lvaSetVarDoNotEnregister(varDscInfo->varNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+            }
         }
 #endif
 
@@ -1736,6 +1752,59 @@ void Compiler::lvaClassifyParameterABI()
     {
         SwiftABIClassifier classifier(cInfo);
         lvaClassifyParameterABI(classifier);
+
+        regMaskTP argRegs = RBM_NONE;
+
+        // The calling convention details computed by the old ABI classifier
+        // are wrong since it does not handle the Swift ABI for structs
+        // appropriately. Grab them from the new ABI information.
+        for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+        {
+            LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
+            const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+
+            if (dsc->TypeGet() == TYP_STRUCT)
+            {
+                const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(dsc->GetLayout()->GetClassHandle());
+                dsc->lvIsImplicitByRef                 = lowering->byReference;
+            }
+
+            if ((dsc->TypeGet() == TYP_STRUCT) && !lvaIsImplicitByRefLocal(lclNum) &&
+                !abiInfo.HasExactlyOneStackSegment())
+            {
+                dsc->lvIsRegArg = false;
+            }
+            else
+            {
+                assert(abiInfo.NumSegments == 1);
+                if (abiInfo.Segments[0].IsPassedInRegister())
+                {
+                    dsc->lvIsRegArg = true;
+                    dsc->SetArgReg(abiInfo.Segments[0].GetRegister());
+                    dsc->SetOtherArgReg(REG_NA);
+                }
+                else
+                {
+                    dsc->lvIsRegArg = false;
+                    dsc->SetArgReg(REG_STK);
+                    dsc->SetOtherArgReg(REG_NA);
+                    dsc->SetStackOffset(abiInfo.Segments[0].GetStackOffset());
+                }
+            }
+
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& segment = abiInfo.Segments[i];
+                if (segment.IsPassedInRegister())
+                {
+                    argRegs |= segment.GetRegisterMask();
+                }
+            }
+        }
+
+        // genFnPrologCalleeRegArgs expect these to be the counts of registers it knows how to handle.
+        codeGen->intRegState.rsCalleeRegArgCount   = genCountBits(argRegs & RBM_ARG_REGS);
+        codeGen->floatRegState.rsCalleeRegArgCount = genCountBits(argRegs & RBM_FLTARG_REGS);
     }
     else
 #endif
@@ -1758,6 +1827,11 @@ void Compiler::lvaClassifyParameterABI()
         const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
 
         assert(abiInfo.NumSegments > 0);
+
+        if ((dsc->TypeGet() == TYP_STRUCT) && (info.compCallConv == CorInfoCallConvExtension::Swift))
+        {
+            continue;
+        }
 
         unsigned numSegmentsToCompare = abiInfo.NumSegments;
         if (dsc->lvIsHfa())
@@ -1818,6 +1892,35 @@ void Compiler::lvaClassifyParameterABI()
         }
     }
 #endif // DEBUG
+}
+
+//--------------------------------------------------------------------------------------------
+// lvaHaveSwiftStructStackParamsToReassemble:
+//   Check if this compilation has any Swift parameters that are passed on the
+//   stack and that need to be reassembled on the local stack frame.
+//
+// Return value:
+//   True if so.
+//
+bool Compiler::lvaHasAnySwiftStackParamToReassemble()
+{
+#ifdef SWIFT_SUPPORT
+    if (info.compCallConv != CorInfoCallConvExtension::Swift)
+    {
+        return false;
+    }
+
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+        if (abiInfo.HasAnyStackSegment() && !abiInfo.HasExactlyOneStackSegment())
+        {
+            return true;
+        }
+    }
+#endif
+
+    return false;
 }
 
 /*****************************************************************************
@@ -2386,6 +2489,17 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     {
         return false;
     }
+
+#ifdef SWIFT_SUPPORT
+    // Swift structs are not passed in a way that match their layout and
+    // require reassembling on the local stack frame. Skip promotion for these
+    // (which would result in dependent promotion anyway).
+    if ((compiler->info.compCallConv == CorInfoCallConvExtension::Swift) && varDsc->lvIsParam)
+    {
+        JITDUMP("  struct promotion of V%02u is disabled because it is a parameter to a Swift function");
+        return false;
+    }
+#endif
 
     CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
     assert(typeHnd != NO_CLASS_HANDLE);
@@ -3187,7 +3301,7 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
             if (varDsc->lvIsParam && !varDsc->lvIsStructField)
             {
                 structPassingKind howToReturnStruct;
-                getArgTypeForStruct(layout->GetClassHandle(), &howToReturnStruct, this->info.compIsVarArgs,
+                getArgTypeForStruct(layout->GetClassHandle(), &howToReturnStruct, info.compIsVarArgs,
                                     varDsc->lvExactSize());
 
                 if (howToReturnStruct == SPK_ByReference)
@@ -5580,17 +5694,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         if (!varDsc->lvOnFrame)
         {
-            if (!varDsc->lvIsParam
-#if !defined(TARGET_AMD64)
-                || (varDsc->lvIsRegArg
-#if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
-                    && compIsProfilerHookNeeded() &&
-                    !lvaIsPreSpilled(lclNum, codeGen->regSet.rsMaskPreSpillRegs(false)) // We need assign stack offsets
-                                                                                        // for prespilled arguments
-#endif
-                    )
-#endif // !defined(TARGET_AMD64)
-            )
+            if (!varDsc->lvIsParam || lvaParamHasLocalStackSpace(lclNum))
             {
                 doAssignStkOffs = false; // Not on frame or an incoming stack arg
             }
@@ -5764,6 +5868,27 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 
     // Update the arg initial register locations.
     lvaUpdateArgsWithInitialReg();
+
+#ifdef SWIFT_SUPPORT
+    if (info.compCallConv == CorInfoCallConvExtension::Swift)
+    {
+        // We already assigned argument offsets in lvaClassifyParameterABI.
+        // Just get them from there.
+        // TODO-Cleanup: We can use similar logic for all backends once we have
+        // the new ABI info for all targets.
+        for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+        {
+            LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
+            const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+
+            if (abiInfo.HasExactlyOneStackSegment())
+            {
+                dsc->SetStackOffset(abiInfo.Segments[0].GetStackOffset());
+            }
+        }
+        return;
+    }
+#endif
 
     /* Is there a "this" argument? */
 
@@ -6943,45 +7068,21 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
             if (varDsc->lvIsParam)
             {
-#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
-
-                // On Windows AMD64 we can use the caller-reserved stack area that is already setup
-                assert(varDsc->GetStackOffset() != BAD_STK_OFFS);
-                continue;
-
-#else // !TARGET_AMD64
-
-                //  A register argument that is not enregistered ends up as
-                //  a local variable which will need stack frame space.
-                //
-                if (!varDsc->lvIsRegArg)
-                {
-                    continue;
-                }
-
 #ifdef TARGET_ARM64
-                if (info.compIsVarArgs && (varDsc->GetArgReg() != theFixedRetBuffReg(info.compCallConv)))
+                if (info.compIsVarArgs && varDsc->lvIsRegArg &&
+                    (varDsc->GetArgReg() != theFixedRetBuffReg(info.compCallConv)))
                 {
                     // Stack offset to varargs (parameters) should point to home area which will be preallocated.
                     const unsigned regArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg(), info.compCallConv);
                     varDsc->SetStackOffset(-initialStkOffs + regArgNum * REGSIZE_BYTES);
                     continue;
                 }
-
 #endif
 
-#ifdef TARGET_ARM
-                // On ARM we spill the registers in codeGen->regSet.rsMaskPreSpillRegArg
-                // in the prolog, thus they don't need stack frame space.
-                //
-                if ((codeGen->regSet.rsMaskPreSpillRegs(false) & genRegMask(varDsc->GetArgReg())) != 0)
+                if (!lvaParamHasLocalStackSpace(lclNum))
                 {
-                    assert(varDsc->GetStackOffset() != BAD_STK_OFFS);
                     continue;
                 }
-#endif
-
-#endif // !TARGET_AMD64
             }
 
             /* Make sure the type is appropriate */
@@ -7233,6 +7334,58 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
     noway_assert(compLclFrameSize + originalFrameSize ==
                  (unsigned)-(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
+}
+
+//------------------------------------------------------------------------
+// lvaParamHasLocalStackSpace: Check if a local that represents a parameter has
+// space allocated for it in the local stack frame.
+//
+// Arguments:
+//   lclNum - the variable number
+//
+// Return Value:
+//   true if the local does not have reusable stack space created by the caller
+//   already.
+//
+bool Compiler::lvaParamHasLocalStackSpace(unsigned lclNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+
+#ifdef SWIFT_SUPPORT
+    if ((info.compCallConv == CorInfoCallConvExtension::Swift) && !lvaIsImplicitByRefLocal(lclNum) &&
+        !lvaParameterPassingInfo[lclNum].HasExactlyOneStackSegment())
+    {
+        return true;
+    }
+#endif
+
+#if defined(WINDOWS_AMD64_ABI)
+    // On Windows AMD64 we can use the caller-reserved stack area that is already setup
+    return false;
+#else // !WINDOWS_AMD64_ABI
+
+    //  A register argument that is not enregistered ends up as
+    //  a local variable which will need stack frame space.
+    //
+    if (!varDsc->lvIsRegArg)
+    {
+        return false;
+    }
+
+#ifdef TARGET_ARM
+    // On ARM we spill the registers in codeGen->regSet.rsMaskPreSpillRegArg
+    // in the prolog, thus they don't need stack frame space.
+    //
+    if ((codeGen->regSet.rsMaskPreSpillRegs(false) & genRegMask(varDsc->GetArgReg())) != 0)
+    {
+        assert(varDsc->GetStackOffset() != BAD_STK_OFFS);
+        return false;
+    }
+#endif
+
+#endif // !WINDOWS_AMD64_ABI
+
+    return true;
 }
 
 int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs)
@@ -7514,9 +7667,9 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         //
         const bool mustProcessParams = true;
 #else
-        // OSR must also assign offsets here.
+        // OSR/Swift must also assign offsets here.
         //
-        const bool mustProcessParams = opts.IsOSR();
+        const bool mustProcessParams = opts.IsOSR() || (info.compCallConv == CorInfoCallConvExtension::Swift);
 #endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86)
 
         if (varDsc->lvIsStructField && (!varDsc->lvIsParam || mustProcessParams))
@@ -8125,7 +8278,7 @@ unsigned Compiler::lvaFrameSize(FrameLayoutState curState)
 //
 // Return Value:
 //    The offset.
-
+//
 int Compiler::lvaGetSPRelativeOffset(unsigned varNum)
 {
     assert(!compLocallocUsed);

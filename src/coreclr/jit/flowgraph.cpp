@@ -2293,8 +2293,9 @@ PhaseStatus Compiler::fgAddInternal()
     madeChanges |= fgCreateFiltersForGenericExceptions();
 
     // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
-    // required. Similarly, we need a scratch BB for poisoning. Create it here.
-    if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame())
+    // required. Similarly, we need a scratch BB for poisoning and when we have Swift parameters to reassemble.
+    // Create it here.
+    if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame() || lvaHasAnySwiftStackParamToReassemble())
     {
         madeChanges |= fgEnsureFirstBBisScratch();
         fgFirstBB->SetFlags(BBF_DONT_REMOVE);

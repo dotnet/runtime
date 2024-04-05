@@ -76,6 +76,9 @@
   <data name="EnumConverterInvalidValue" xml:space="preserve">
     <value>The value '{0}' is not a valid value for the enum '{1}'.</value>
   </data>
+  <data name="EnumInvalidValue" xml:space="preserve">
+    <value>Type provided must be an Enum.</value>
+  </data>
   <data name="ErrorInvalidEventHandler" xml:space="preserve">
     <value>Invalid event handler for the {0} event.</value>
   </data>

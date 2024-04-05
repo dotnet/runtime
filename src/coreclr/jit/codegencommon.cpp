@@ -4970,6 +4970,110 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
     }
 }
 
+#ifdef SWIFT_SUPPORT
+
+//-----------------------------------------------------------------------------
+// genHomeSwiftStructParameters:
+//  Reassemble Swift struct parameters if necessary.
+//
+// Parameters:
+//   handleStack - If true, reassemble the segments that were passed on the stack.
+//                 If false, reassemble the segments that were passed in registers.
+//
+void CodeGen::genHomeSwiftStructParameters(bool handleStack)
+{
+    for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
+    {
+        if (lclNum == compiler->lvaSwiftSelfArg)
+        {
+            continue;
+        }
+
+        LclVarDsc* dsc = compiler->lvaGetDesc(lclNum);
+        if ((dsc->TypeGet() != TYP_STRUCT) || compiler->lvaIsImplicitByRefLocal(lclNum) || !dsc->lvOnFrame)
+        {
+            continue;
+        }
+
+        JITDUMP("Homing Swift parameter V%02u: ", lclNum);
+        const ABIPassingInformation& abiInfo = compiler->lvaParameterPassingInfo[lclNum];
+        DBEXEC(VERBOSE, abiInfo.Dump());
+
+        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+        {
+            const ABIPassingSegment& seg = abiInfo.Segments[i];
+            if (seg.IsPassedOnStack() != handleStack)
+            {
+                continue;
+            }
+
+            if (seg.IsPassedInRegister())
+            {
+                RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? &floatRegState : &intRegState;
+                regMaskTP regs     = seg.GetRegisterMask();
+
+                if ((regState->rsCalleeRegArgMaskLiveIn & regs) != RBM_NONE)
+                {
+                    var_types storeType = seg.GetRegisterStoreType();
+                    assert(storeType != TYP_UNDEF);
+                    GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), seg.GetRegister(), lclNum,
+                                              seg.Offset);
+
+                    regState->rsCalleeRegArgMaskLiveIn &= ~regs;
+                }
+            }
+            else
+            {
+                var_types loadType = TYP_UNDEF;
+                switch (seg.Size)
+                {
+                    case 1:
+                        loadType = TYP_UBYTE;
+                        break;
+                    case 2:
+                        loadType = TYP_USHORT;
+                        break;
+                    case 4:
+                        loadType = TYP_INT;
+                        break;
+                    case 8:
+                        loadType = TYP_LONG;
+                        break;
+                    default:
+                        assert(!"Unexpected segment size for struct parameter not passed implicitly by ref");
+                        continue;
+                }
+
+                int offset;
+                if (isFramePointerUsed())
+                {
+                    offset = -genCallerSPtoFPdelta();
+                }
+                else
+                {
+                    offset = -genCallerSPtoInitialSPdelta();
+                }
+
+                offset += (int)seg.GetStackOffset();
+
+                // Move the incoming segment to the local stack frame. We can
+                // use REG_SCRATCH as a temporary register here as we ensured
+                // that during LSRA build.
+#ifdef TARGET_XARCH
+                GetEmitter()->emitIns_R_AR(ins_Load(loadType), emitTypeSize(loadType), REG_SCRATCH,
+                                           genFramePointerReg(), offset);
+#else
+                genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), REG_SCRATCH, genFramePointerReg(),
+                                     offset, REG_SCRATCH);
+#endif
+
+                GetEmitter()->emitIns_S_R(ins_Store(loadType), emitTypeSize(loadType), REG_SCRATCH, lclNum, seg.Offset);
+            }
+        }
+    }
+}
+#endif
+
 /*-----------------------------------------------------------------------------
  *
  *  Save the generic context argument.
@@ -6154,18 +6258,6 @@ void CodeGen::genFnProlog()
         intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SECRET_STUB_PARAM;
     }
 
-#ifdef SWIFT_SUPPORT
-    if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) && ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
-    {
-        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
-        intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
-    }
-    else if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
-    {
-        intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
-    }
-#endif
-
     //
     // Zero out the frame as needed
     //
@@ -6256,6 +6348,25 @@ void CodeGen::genFnProlog()
     /*-----------------------------------------------------------------------------
      * Take care of register arguments first
      */
+
+#ifdef SWIFT_SUPPORT
+    if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
+    {
+        if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) &&
+            ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
+        {
+            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
+            intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
+        }
+
+        if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+        {
+            intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
+        }
+
+        genHomeSwiftStructParameters(/* handleStack */ false);
+    }
+#endif
 
     // Home incoming arguments and generate any required inits.
     // OSR handles this by moving the values from the original frame.
