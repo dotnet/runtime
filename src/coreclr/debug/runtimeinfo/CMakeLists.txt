@@ -44,12 +44,12 @@ add_library(cdac_data_descriptor STATIC data-descriptor.c)
 
 set(GENERATED_CDAC_DESCRIPTOR_DIR "${CMAKE_CURRENT_BINARY_DIR}/cdac")
 
-if (CLR_CLR_HOST_WIN32)
-set(DOTNET_CMD "${CLR_REPO_ROOT_DIR}/dotnet.cmd")
-set(CONTRACT_DESCRIPTOR_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}\\cdac\\contract-descriptor.c")
+if(CLR_CMAKE_HOST_WIN32)
+    set(DOTNET_CMD "${CLR_REPO_ROOT_DIR}/dotnet.cmd")
+    set(CONTRACT_DESCRIPTOR_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}\\cdac\\contract-descriptor.c")
 else()
-set(DOTNET_CMD "${CLR_REPO_ROOT_DIR}/dotnet.sh")
-set(CONTRACT_DESCRIPTOR_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/cdac/contract-descriptor.c")
+    set(DOTNET_CMD "${CLR_REPO_ROOT_DIR}/dotnet.sh")
+    set(CONTRACT_DESCRIPTOR_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/cdac/contract-descriptor.c")
 endif()
 set(CDAC_BUILD_TOOL_CSPROJ "${CLR_DIR}/tools/cdac-build-tool/cdac-build-tool.csproj")
 
