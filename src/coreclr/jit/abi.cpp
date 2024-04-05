@@ -42,6 +42,28 @@ regNumber ABIPassingSegment::GetRegister() const
 }
 
 //-----------------------------------------------------------------------------
+// GetRegisterMask:
+//   Get the mask of registers that this segment is passed in.
+//
+// Return Value:
+//   The register mask.
+//
+regMaskTP ABIPassingSegment::GetRegisterMask() const
+{
+    assert(IsPassedInRegister());
+    regMaskTP reg = genRegMask(m_register);
+
+#ifdef TARGET_ARM
+    if (genIsValidFloatReg(m_register) && (Size == 8))
+    {
+        reg |= genRegMask(REG_NEXT(m_register));
+    }
+#endif
+
+    return reg;
+}
+
+//-----------------------------------------------------------------------------
 // GetStackOffset:
 //   Get the stack offset where this segment is passed.
 //
@@ -152,6 +174,56 @@ ABIPassingSegment ABIPassingSegment::OnStack(unsigned stackOffset, unsigned offs
     segment.Offset        = offset;
     segment.Size          = size;
     return segment;
+}
+
+//-----------------------------------------------------------------------------
+// HasAnyRegisterSegment:
+//   Check if any part of this value is passed in a register.
+//
+// Return Value:
+//   True if so.
+//
+bool ABIPassingInformation::HasAnyRegisterSegment() const
+{
+    for (unsigned i = 0; i < NumSegments; i++)
+    {
+        if (Segments[i].IsPassedInRegister())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+//-----------------------------------------------------------------------------
+// HasAnyStackSegment:
+//   Check if any part of this value is passed on the stack.
+//
+// Return Value:
+//   True if so.
+//
+bool ABIPassingInformation::HasAnyStackSegment() const
+{
+    for (unsigned i = 0; i < NumSegments; i++)
+    {
+        if (Segments[i].IsPassedOnStack())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+//-----------------------------------------------------------------------------
+// HasExactlyOneStackSegment:
+//   Check if this value is passed as a single stack segment.
+//
+// Return Value:
+//   True if so.
+//
+bool ABIPassingInformation::HasExactlyOneStackSegment() const
+{
+    return (NumSegments == 1) && Segments[0].IsPassedOnStack();
 }
 
 //-----------------------------------------------------------------------------
@@ -304,6 +376,39 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
         // and let CodeGen::genFnProlog handle the rest.
         return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_SWIFT_ERROR, 0,
                                                                                       TARGET_POINTER_SIZE));
+    }
+
+    if (type == TYP_STRUCT)
+    {
+        const CORINFO_SWIFT_LOWERING* lowering = comp->GetSwiftLowering(structLayout->GetClassHandle());
+        if (lowering->byReference)
+        {
+            return m_classifier.Classify(comp, TYP_I_IMPL, nullptr, WellKnownArg::None);
+        }
+
+        ArrayStack<ABIPassingSegment> segments(comp->getAllocator(CMK_ABI));
+        for (unsigned i = 0; i < lowering->numLoweredElements; i++)
+        {
+            var_types             elemType = JITtype2varType(lowering->loweredElements[i]);
+            ABIPassingInformation elemInfo = m_classifier.Classify(comp, elemType, nullptr, WellKnownArg::None);
+
+            for (unsigned j = 0; j < elemInfo.NumSegments; j++)
+            {
+                ABIPassingSegment newSegment = elemInfo.Segments[j];
+                newSegment.Offset += lowering->offsets[i];
+                segments.Push(newSegment);
+            }
+        }
+
+        ABIPassingInformation result;
+        result.NumSegments = static_cast<unsigned>(segments.Height());
+        result.Segments    = new (comp, CMK_ABI) ABIPassingSegment[result.NumSegments];
+        for (int i = 0; i < segments.Height(); i++)
+        {
+            result.Segments[i] = segments.Bottom(i);
+        }
+
+        return result;
     }
 
     return m_classifier.Classify(comp, type, structLayout, wellKnownParam);

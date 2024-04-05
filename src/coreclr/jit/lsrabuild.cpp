@@ -2291,6 +2291,32 @@ void LinearScan::buildIntervals()
     regsInUseThisLocation                   = RBM_NONE;
     regsInUseNextLocation                   = RBM_NONE;
 
+#ifdef SWIFT_SUPPORT
+    if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
+    {
+        for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
+        {
+            LclVarDsc* argDsc = compiler->lvaGetDesc(lclNum);
+
+            if ((argDsc->lvRefCnt() == 0) && !compiler->opts.compDbgCode)
+            {
+                continue;
+            }
+
+            const ABIPassingInformation& abiInfo = compiler->lvaParameterPassingInfo[lclNum];
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& seg = abiInfo.Segments[i];
+                if (seg.IsPassedInRegister())
+                {
+                    RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
+                    regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
+                }
+            }
+        }
+    }
+#endif
+
     for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
     {
         LclVarDsc* argDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
@@ -2558,11 +2584,24 @@ void LinearScan::buildIntervals()
             // assert(block->isRunRarely());
         }
 
+        // For Swift calls there can be an arbitrary amount of codegen related
+        // to homing of decomposed struct parameters passed on stack. We cannot
+        // do that in the prolog. We handle registers in the prolog and the
+        // stack args in the scratch BB that we have ensured exists. The
+        // handling clobbers REG_SCRATCH, so kill it here.
+        if ((block == compiler->fgFirstBB) && compiler->lvaHasAnySwiftStackParamToReassemble())
+        {
+            assert(compiler->fgFirstBBisScratch());
+            addRefsForPhysRegMask(genRegMask(REG_SCRATCH), currentLoc + 1, RefTypeKill, true);
+            currentLoc += 2;
+        }
+
         // For frame poisoning we generate code into scratch BB right after prolog since
         // otherwise the prolog might become too large. In this case we will put the poison immediate
         // into the scratch register, so it will be killed here.
-        if (compiler->compShouldPoisonFrame() && compiler->fgFirstBBisScratch() && block == compiler->fgFirstBB)
+        if (compiler->compShouldPoisonFrame() && (block == compiler->fgFirstBB))
         {
+            assert(compiler->fgFirstBBisScratch());
             regMaskTP killed;
 #if defined(TARGET_XARCH)
             // Poisoning uses EAX for small vars and rep stosd that kills edi, ecx and eax for large vars.
