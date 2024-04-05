@@ -524,6 +524,15 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerRet(node->AsUnOp());
             break;
 
+        case GT_SWIFT_ERROR_RET:
+        {
+            GenTree* const nextNode = node->gtNext;
+            LIR::Range& blockRange = BlockRange();
+            blockRange.Remove(node);
+            blockRange.InsertAtEnd(node);
+            return nextNode;
+        }
+
         case GT_RETURNTRAP:
             ContainCheckReturnTrap(node->AsOp());
             break;

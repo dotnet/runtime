@@ -1962,6 +1962,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genReturn(treeNode);
             break;
 
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR_RET:
+        {
+            GenTree* swiftErrorNode = treeNode->gtGetOp1();
+            const regNumber srcReg = genConsumeReg(swiftErrorNode);
+            inst_Mov(swiftErrorNode->TypeGet(), REG_SWIFT_ERROR, srcReg, true, EA_PTRSIZE);
+            break;
+        }
+#endif // SWIFT_SUPPORT
+
         case GT_LEA:
             // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.
             genLeaInstruction(treeNode->AsAddrMode());

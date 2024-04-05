@@ -10879,6 +10879,18 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         }
     }
 
+#ifdef SWIFT_SUPPORT
+    if (lvaSwiftErrorArg != BAD_VAR_NUM)
+    {
+        assert(info.compCallConv == CorInfoCallConvExtension::Swift);
+        assert(lvaSwiftErrorArg != BAD_VAR_NUM);
+        GenTree* const swiftErrorNode = gtNewLclFldNode(lvaSwiftErrorLocal, TYP_I_IMPL, 0);
+        GenTree* const swiftErrorRet  = gtNewOperNode(GT_SWIFT_ERROR_RET, op1->TypeGet(), swiftErrorNode);
+        swiftErrorRet->SetHasOrderingSideEffect();
+        impAppendTree(swiftErrorRet, CHECK_SPILL_NONE, impCurStmtDI);
+    }
+#endif // SWIFT_SUPPORT
+
     impAppendTree(op1, CHECK_SPILL_NONE, impCurStmtDI);
 #ifdef DEBUG
     // Remember at which BC offset the tree was finished

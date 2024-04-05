@@ -7935,17 +7935,6 @@ void CodeGen::genReturn(GenTree* treeNode)
 
     genStackPointerCheck(doStackPointerCheck, compiler->lvaReturnSpCheck);
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
-
-#ifdef SWIFT_SUPPORT
-    // If this method has a SwiftError* out parameter, load the SwiftError pseudolocal value into the error register.
-    // TODO-CQ: Introduce GenTree node that models returning a normal and Swift error value.
-    if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
-    {
-        assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
-        assert(compiler->lvaSwiftErrorLocal != BAD_VAR_NUM);
-        GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_ERROR, compiler->lvaSwiftErrorLocal, 0);
-    }
-#endif // SWIFT_SUPPORT
 }
 
 //------------------------------------------------------------------------
