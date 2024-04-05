@@ -387,6 +387,16 @@ void CodeGen::genCodeForBBlist()
         compiler->compCurStmt     = nullptr;
         compiler->compCurLifeTree = nullptr;
 
+#ifdef SWIFT_SUPPORT
+        // Reassemble Swift struct parameters on the local stack frame in the
+        // scratch BB right after the prolog. There can be arbitrary amounts of
+        // codegen related to doing this, so it cannot be done in the prolog.
+        if (compiler->fgBBisScratch(block) && compiler->lvaHasAnySwiftStackParamToReassemble())
+        {
+            genHomeSwiftStructParameters(/* handleStack */ true);
+        }
+#endif
+
         // Emit poisoning into scratch BB that comes right after prolog.
         // We cannot emit this code in the prolog as it might make the prolog too large.
         if (compiler->compShouldPoisonFrame() && compiler->fgBBisScratch(block))
@@ -396,7 +406,6 @@ void CodeGen::genCodeForBBlist()
 
         // Traverse the block in linear order, generating code for each node as we
         // as we encounter it.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         // Set the use-order numbers for each node.
@@ -1780,7 +1789,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
 
     // If the op1 is already in the dstReg - nothing to do.
     // Otherwise load the op1 (the address) into the dstReg to copy the struct on the stack by value.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86
     assert(dstReg != REG_SPBASE);

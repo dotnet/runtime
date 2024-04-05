@@ -1361,7 +1361,6 @@ void Compiler::fgAllocEHTable()
     // twice the number of EH clauses in the IL, which should be good in practice.
     // In extreme cases, we might need to abandon this and reallocate. See
     // fgAddEHTableEntry() for more details.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     compHndBBtabAllocCount = info.compXcptnsCount; // force the resizing code to hit more frequently in DEBUG
@@ -1682,7 +1681,6 @@ void Compiler::fgSortEHTable()
     // but ARM did. It turns out not sorting the table can cause the EH table to incorrectly
     // set the bbHndIndex value in some nested cases, and that can lead to a security exploit
     // that allows the execution of arbitrary code.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (verbose)
@@ -2542,7 +2540,6 @@ bool Compiler::fgNormalizeEHCase3()
                     if (EHblkDsc::ebdIsSameTry(ehOuter, ehInner))
                     {
                         // We can't touch this 'try', since it's mutual protect.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
                         if (verbose)
                         {
@@ -2729,7 +2726,6 @@ bool Compiler::fgNormalizeEHCase3()
                             if (innerIsTryRegion && ehOuter->ebdIsSameTry(mutualTryBeg, mutualTryLast))
                             {
                                 // We can't touch this 'try', since it's mutual protect.
-                                CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
                                 if (verbose)
@@ -3195,7 +3191,6 @@ void Compiler::fgVerifyHandlerTab()
                 // blocks in the nested EH region. However, if funclets have been created, this is no longer true, since
                 // this 'try' might be in a handler that is pulled out to the funclet region, while the outer 'try'
                 // remains in the main function region.
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(FEATURE_EH_FUNCLETS)
                 if (fgFuncletsCreated)
@@ -4203,7 +4198,6 @@ bool Compiler::fgRelocateEHRegions()
                 // Currently it is not good to move the rarely run handler regions to the end of the method
                 // because fgDetermineFirstColdBlock() must put the start of any handler region in the hot
                 // section.
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if 0
                 // Now try to move the entire handler region if it can be moved.

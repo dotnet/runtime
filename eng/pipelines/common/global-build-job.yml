@@ -12,6 +12,13 @@ parameters:
   targetRid: ''
   timeoutInMinutes: ''
   dependsOn: []
+  # The following parameter is used to specify dependencies on other global build for the same platform.
+  # We provide this mechanism to allow for global builds to depend on other global builds and use the multiplexing
+  # that platform-matrix.yml enables.
+  # Each item can have the following properties:
+  # - nameSuffix: The suffix of the job name to depend on.
+  # - buildConfig: The configuration of the job to depend on.
+  dependsOnGlobalBuilds: []
   pool: ''
   platform: ''
   condition: true
@@ -62,8 +69,12 @@ jobs:
     workspace:
       clean: all
 
-    ${{ if ne(parameters.dependsOn,'') }}:
-      dependsOn: ${{ parameters.dependsOn }}
+    ${{ if or(ne(parameters.dependsOn,''), ne(parameters.dependsOnGlobalBuilds,'')) }}:
+      dependsOn:
+      - ${{ each build in parameters.dependsOn }}:
+        - ${{ build }}
+      - ${{ each globalBuild in parameters.dependsOnGlobalBuilds }}:
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(globalBuild.buildConfig, parameters.buildConfig), globalBuild.nameSuffix) }}
 
     variables:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:

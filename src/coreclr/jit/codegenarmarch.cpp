@@ -4893,7 +4893,7 @@ void CodeGen::genPushCalleeSavedRegisters()
                      intRegState.rsCalleeRegArgMaskLiveIn);
 #endif
 
-    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP rsPushRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -5540,8 +5540,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         compiler->unwindSetFrameReg(REG_SAVED_LOCALLOC_SP, 0);
     }
 
-    if (jmpEpilog || genStackAllocRegisterMask(compiler->compLclFrameSize,
-                                               regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED) == RBM_NONE)
+    if (jmpEpilog ||
+        genStackAllocRegisterMask(compiler->compLclFrameSize, regSet.rsGetModifiedFltCalleeSavedRegsMask()) == RBM_NONE)
     {
         genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted);
     }
@@ -5708,7 +5708,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        0,             // disp
                                        true);         // isJump
             // clang-format on
-            CLANG_FORMAT_COMMENT_ANCHOR;
 #endif // TARGET_ARMARCH
         }
 #if FEATURE_FASTTAILCALL

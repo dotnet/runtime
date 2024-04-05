@@ -310,7 +310,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // Create a GT_EQ node that checks against g_TrapReturningThreads.  True jumps to Bottom,
         // false falls through to poll.  Add this to the end of Top.  Top is now BBJ_COND.  Bottom is
         // now a jump target
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef ENABLE_FAST_GCPOLL_HELPER
         // Prefer the fast gc poll helepr over the double indirection
@@ -2294,8 +2293,9 @@ PhaseStatus Compiler::fgAddInternal()
     madeChanges |= fgCreateFiltersForGenericExceptions();
 
     // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
-    // required. Similarly, we need a scratch BB for poisoning. Create it here.
-    if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame())
+    // required. Similarly, we need a scratch BB for poisoning and when we have Swift parameters to reassemble.
+    // Create it here.
+    if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame() || lvaHasAnySwiftStackParamToReassemble())
     {
         madeChanges |= fgEnsureFirstBBisScratch();
         fgFirstBB->SetFlags(BBF_DONT_REMOVE);

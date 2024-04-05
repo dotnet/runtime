@@ -335,14 +335,20 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             && tree->gtOverflow()
 #elif defined(TARGET_AMD64)
             // Amd64: src = float, dst = uint64 or overflow conversion.
-            // This goes through helper and hence src needs to be converted to double.
-            && (tree->gtOverflow() || (dstType == TYP_ULONG))
+            // src needs to be converted to double except for the following cases
+            //       dstType = int/uint/ulong for AVX512F
+            //       dstType = int for SSE41
+            // For pre-SSE41, the all src is converted to TYP_DOUBLE
+            // and goes through helpers.
+            && (tree->gtOverflow() || (dstType == TYP_LONG) ||
+                !(compOpportunisticallyDependsOn(InstructionSet_AVX512F) ||
+                  (dstType == TYP_INT && compOpportunisticallyDependsOn(InstructionSet_SSE41))))
 #elif defined(TARGET_ARM)
             // Arm: src = float, dst = int64/uint64 or overflow conversion.
             && (tree->gtOverflow() || varTypeIsLong(dstType))
 #else
             // x86: src = float, dst = uint32/int64/uint64 or overflow conversion.
-            && (tree->gtOverflow() || varTypeIsLong(dstType) || (dstType == TYP_UINT))
+            && (tree->gtOverflow() || varTypeIsIntegral(dstType))
 #endif
         )
         {
@@ -368,25 +374,39 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                 return nullptr;
 #else
+#if defined(TARGET_AMD64)
+                // Following nodes are handled when lowering the nodes
+                //     float  -> ulong/uint/int for AVX512F
+                //     double -> ulong/uint/long/int for AVX512F
+                //     float  -> int for SSE41
+                //     double -> int/uint/long for SSE41
+                // For all other conversions, we use helper functions.
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F) ||
+                    ((dstType != TYP_ULONG) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
+                {
+                    if (tree->CastOp() != oper)
+                    {
+                        tree->CastOp() = oper;
+                    }
+                    return nullptr;
+                }
+#endif // TARGET_AMD64
                 switch (dstType)
                 {
                     case TYP_INT:
+#ifdef TARGET_XARCH
+                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT, oper);
+#endif // TARGET_XARCH
                         return nullptr;
 
                     case TYP_UINT:
-#if defined(TARGET_ARM) || defined(TARGET_AMD64)
+#if defined(TARGET_ARM)
                         return nullptr;
-#else  // TARGET_X86
+#endif
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
-#endif // TARGET_X86
 
                     case TYP_LONG:
-#ifdef TARGET_AMD64
-                        // SSE2 has instructions to convert a float/double directly to a long
-                        return nullptr;
-#else  // !TARGET_AMD64
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
-#endif // !TARGET_AMD64
 
                     case TYP_ULONG:
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG, oper);
@@ -1681,7 +1701,6 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
             {
                 // Create a temp assignment for the argument
                 // Put the temp in the gtCallLateArgs list
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
                 if (comp->verbose)
@@ -1984,7 +2003,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     // The logic here must remain in sync with GetNonStandardAddedArgCount(), which is used to map arguments
     // in the implementation of fast tail call.
     // *********** END NOTE *********
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_ARM)
     // A non-standard calling convention using wrapper delegate invoke is used on ARM, only, for wrapper
@@ -2030,8 +2048,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
     // We are allowed to have a ret buffer argument combined
     // with any of the remaining non-standard arguments
-    //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
     if (call->IsVirtualStub() && addStubCellArg)
     {
@@ -2158,7 +2174,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif // TARGET_X86
 
     /* Morph the user arguments */
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_ARM)
 
@@ -2729,7 +2744,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         }
 
         // Now we know if the argument goes in registers or not and how big it is.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_ARM
         // If we ever allocate a floating point argument to the stack, then all
@@ -4622,16 +4636,14 @@ GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
 //
 GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
 {
-    if (!fgGlobalMorph)
-    {
-        return nullptr;
-    }
-
     unsigned   lclNum         = lclNode->GetLclNum();
     LclVarDsc* varDsc         = lvaGetDesc(lclNum);
     unsigned   fieldOffset    = 0;
     unsigned   newLclNum      = BAD_VAR_NUM;
     bool       isStillLastUse = false;
+
+    assert(lvaIsImplicitByRefLocal(lclNum) ||
+           (varDsc->lvIsStructField && lvaIsImplicitByRefLocal(varDsc->lvParentLcl)));
 
     if (lvaIsImplicitByRefLocal(lclNum))
     {
@@ -4682,15 +4694,11 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
             }
         }
     }
-    else if (varDsc->lvIsStructField && lvaIsImplicitByRefLocal(varDsc->lvParentLcl))
+    else
     {
         // This was a field reference to an implicit-by-reference struct parameter that was dependently promoted.
         newLclNum   = varDsc->lvParentLcl;
         fieldOffset = varDsc->lvFldOffset;
-    }
-    else
-    {
-        return nullptr;
     }
 
     // Add a level of indirection to this node. The "base" will be a local node referring to "newLclNum".
@@ -4753,7 +4761,16 @@ GenTree* Compiler::fgMorphExpandLocal(GenTreeLclVarCommon* lclNode)
 #ifdef TARGET_X86
     expandedTree = fgMorphExpandStackArgForVarArgs(lclNode);
 #else
-    expandedTree = fgMorphExpandImplicitByRefArg(lclNode);
+#if FEATURE_IMPLICIT_BYREFS
+    if (fgGlobalMorph)
+    {
+        LclVarDsc* dsc = lvaGetDesc(lclNode);
+        if (dsc->lvIsImplicitByRef || (dsc->lvIsStructField && lvaIsImplicitByRefLocal(dsc->lvParentLcl)))
+        {
+            expandedTree = fgMorphExpandImplicitByRefArg(lclNode);
+        }
+    }
+#endif
 #endif
 
     if (expandedTree != nullptr)
@@ -5317,7 +5334,6 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 
     // To reach here means that the return types of the caller and callee are tail call compatible.
     // In the case of structs that can be returned in a register, compRetNativeType is set to the actual return type.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (callee->IsTailPrefixedCall())
@@ -5460,7 +5476,6 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     // We will currently decide to not fast tail call on Windows armarch if the caller or callee is a vararg
     // method. This is due to the ABI differences for native vararg methods for these platforms. There is
     // work required to shuffle arguments to the correct locations.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
     if (TargetOS::IsWindows && TargetArchitecture::IsArmArch && (info.compIsVarArgs || callee->IsVarargs()))
     {
@@ -7376,7 +7391,6 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
                     // Local copy for implicit byref promotion that was undone. Do
                     // not introduce new references to it, all uses have been
                     // morphed to access the parameter.
-                    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
                     LclVarDsc* param = lvaGetDesc(firstField->lvParentLcl);
@@ -7643,7 +7657,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     // In the event the call indicates the block isn't a GC safe point
     // and the call is unmanaged with a GC transition suppression request
     // then insert a GC poll.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
     if (IsGcSafePoint(call))
     {
@@ -12390,7 +12403,6 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
                             // (x >>> y) | (x << (-y + N))
                             // where N == bitsize(x), M is const, and
                             // M & (N - 1) == N - 1
-                            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifndef TARGET_64BIT
                             if (!shiftIndexWithoutAdd->IsCnsIntOrI() && (rotatedValueBitSize == 64))
@@ -13591,7 +13603,6 @@ void Compiler::fgMorphStmts(BasicBlock* block)
                 /* This must be a tailcall that caused a GCPoll to get
                 injected. We haven't actually morphed the call yet
                 but the flag still got set, clear it here...  */
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
                 morphedTree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
@@ -14065,7 +14076,6 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
     else
     {
         // We'll jump to the genReturnBB.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !defined(TARGET_X86)
         if (info.compFlags & CORINFO_FLG_SYNCH)
@@ -14965,7 +14975,7 @@ PhaseStatus Compiler::fgPromoteStructs()
 //
 PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
 {
-#if FEATURE_IMPLICIT_BYREFS
+#if FEATURE_IMPLICIT_BYREFS && !defined(UNIX_AMD64_ABI)
     if (!fgDidEarlyLiveness)
     {
         return PhaseStatus::MODIFIED_NOTHING;

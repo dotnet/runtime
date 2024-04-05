@@ -117,6 +117,16 @@ void RegSet::rsClearRegsModified()
 #endif // DEBUG
 
     rsModifiedRegsMask = RBM_NONE;
+
+#ifdef SWIFT_SUPPORT
+    // If this method has a SwiftError* parameter, we will return SwiftError::Value in REG_SWIFT_ERROR,
+    // so don't treat it as callee-save.
+    if (m_rsCompiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+    {
+        rsAllCalleeSavedMask &= ~RBM_SWIFT_ERROR;
+        rsIntCalleeSavedMask &= ~RBM_SWIFT_ERROR;
+    }
+#endif // SWIFT_SUPPORT
 }
 
 void RegSet::rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppressDump))
@@ -257,6 +267,11 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo)
     rsMaskPreSpillRegArg = RBM_NONE;
     rsMaskPreSpillAlign  = RBM_NONE;
 #endif
+
+#ifdef SWIFT_SUPPORT
+    rsAllCalleeSavedMask = RBM_CALLEE_SAVED;
+    rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
+#endif // SWIFT_SUPPORT
 
 #ifdef DEBUG
     rsModifiedRegsMaskInitialized = false;

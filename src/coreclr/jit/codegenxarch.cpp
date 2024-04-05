@@ -1719,7 +1719,6 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isRemovableJ
     //
     // Thus only on x86 do we need to assert that the stack level at the target block matches the current stack level.
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef UNIX_X86_ABI
     // bbTgtStkDepth is a (pure) argument count (stack alignment padding should be excluded).
@@ -6638,7 +6637,6 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #endif // !defined(UNIX_AMD64_ABI)
         {
             // Register argument
-            CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_X86
             noway_assert(isRegParamType(genActualType(varDsc->TypeGet())) ||
                          ((varDsc->TypeGet() == TYP_STRUCT) &&
@@ -7604,13 +7602,16 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     noway_assert((dstSize == EA_ATTR(genTypeSize(TYP_INT))) || (dstSize == EA_ATTR(genTypeSize(TYP_LONG))));
 
     // We shouldn't be seeing uint64 here as it should have been converted
-    // into a helper call by either front-end or lowering phase.
-    assert(!varTypeIsUnsigned(dstType) || (dstSize != EA_ATTR(genTypeSize(TYP_LONG))));
+    // into a helper call by either front-end or lowering phase, unless we have AVX512F
+    // accelerated conversions.
+    assert(!varTypeIsUnsigned(dstType) || (dstSize != EA_ATTR(genTypeSize(TYP_LONG))) ||
+           compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
 
     // If the dstType is TYP_UINT, we have 32-bits to encode the
     // float number. Any of 33rd or above bits can be the sign bit.
     // To achieve it we pretend as if we are converting it to a long.
-    if (varTypeIsUnsigned(dstType) && (dstSize == EA_ATTR(genTypeSize(TYP_INT))))
+    if (varTypeIsUnsigned(dstType) && (dstSize == EA_ATTR(genTypeSize(TYP_INT))) &&
+        !compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
     {
         dstType = TYP_LONG;
     }
@@ -7618,7 +7619,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     // Note that we need to specify dstType here so that it will determine
     // the size of destination integer register and also the rex.w prefix.
     genConsumeOperands(treeNode->AsOp());
-    instruction ins = ins_FloatConv(TYP_INT, srcType, emitTypeSize(srcType));
+    instruction ins = ins_FloatConv(dstType, srcType, emitTypeSize(srcType));
     GetEmitter()->emitInsBinary(ins, emitTypeSize(dstType), treeNode, op1);
     genProduceReg(treeNode);
 }
@@ -9125,7 +9126,6 @@ void CodeGen::genAmd64EmitterUnitTestsSse2()
     //
     // Loads
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
     genDefineTempLabel(genCreateTempLabel());
 
@@ -9494,8 +9494,10 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         }
     }
 
-    // If initReg is one of RBM_CALLEE_TRASH, then it needs to be zero'ed before using.
-    if ((RBM_CALLEE_TRASH & genRegMask(initReg)) != 0)
+    // If initReg is trashed, either because it was an arg to the enter
+    // callback, or because the enter callback itself trashes it, then it needs
+    // to be zero'ed again before using.
+    if (((RBM_PROFILER_ENTER_TRASH | RBM_ARG_0 | RBM_ARG_1) & genRegMask(initReg)) != 0)
     {
         *pInitRegZeroed = false;
     }
@@ -9531,8 +9533,10 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // "mov r11, helper addr; call r11"
     genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN, REG_DEFAULT_PROFILER_CALL_TARGET);
 
-    // If initReg is one of RBM_CALLEE_TRASH, then it needs to be zero'ed before using.
-    if ((RBM_CALLEE_TRASH & genRegMask(initReg)) != 0)
+    // If initReg is trashed, either because it was an arg to the enter
+    // callback, or because the enter callback itself trashes it, then it needs
+    // to be zero'ed again before using.
+    if (((RBM_PROFILER_ENTER_TRASH | RBM_PROFILER_ENTER_ARG_0 | RBM_PROFILER_ENTER_ARG_1) & genRegMask(initReg)) != 0)
     {
         *pInitRegZeroed = false;
     }
@@ -9756,7 +9760,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
     // x86/x64 doesn't support push of xmm/ymm regs, therefore consider only integer registers for pushing onto stack
     // here. Space for float registers to be preserved is stack allocated and saved as part of prolog sequence and not
     // here.
-    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+    regMaskTP rsPushRegs = regSet.rsGetModifiedOsrIntCalleeSavedRegsMask();
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -9837,7 +9841,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     // x86/x64 doesn't support push of xmm/ymm regs, therefore consider only integer registers for pushing onto stack
     // here. Space for float registers to be preserved is stack allocated and saved as part of prolog sequence and not
     // here.
-    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskTP rsPushRegs = regSet.rsGetModifiedIntCalleeSavedRegsMask();
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -9895,7 +9899,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     //
     if (doesSupersetOfNormalPops)
     {
-        regMaskTP rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+        regMaskTP rsPopRegs = regSet.rsGetModifiedOsrIntCalleeSavedRegsMask();
         regMaskTP tier0CalleeSaves =
             ((regMaskTP)compiler->info.compPatchpointInfo->CalleeSaveRegisters()) & RBM_OSR_INT_CALLEE_SAVED;
         regMaskTP additionalCalleeSaves = rsPopRegs & ~tier0CalleeSaves;
@@ -9915,7 +9919,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
     // Registers saved by a normal prolog
     //
-    regMaskTP      rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskTP      rsPopRegs = regSet.rsGetModifiedIntCalleeSavedRegsMask();
     const unsigned popCount  = genPopCalleeSavedRegistersFromMask(rsPopRegs);
     noway_assert(compiler->compCalleeRegsPushed == popCount);
 }
@@ -10102,7 +10106,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
             regMaskTP const tier0CalleeSaves           = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
             regMaskTP const tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
-            regMaskTP const osrIntCalleeSaves          = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+            regMaskTP const osrIntCalleeSaves          = regSet.rsGetModifiedOsrIntCalleeSavedRegsMask();
             regMaskTP const allIntCalleeSaves          = osrIntCalleeSaves | tier0IntCalleeSaves;
             unsigned const  tier0FrameSize             = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
             unsigned const  tier0IntCalleeSaveUsedSize = genCountBits(allIntCalleeSaves) * REGSIZE_BYTES;
@@ -10742,7 +10746,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     compiler->unwindEndProlog();
 
     // TODO We may need EBP restore sequence here if we introduce PSPSym
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef UNIX_X86_ABI
     // Add a padding for 16-byte alignment
@@ -10890,7 +10893,6 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     else
     {
         // Grab a non-argument, non-callee saved XMM reg
-        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef UNIX_AMD64_ABI
         // System V x64 first temp reg is xmm8
         regNumber zeroSIMDReg = genRegNumFromMask(RBM_XMM8);
