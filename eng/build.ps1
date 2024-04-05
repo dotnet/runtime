@@ -12,6 +12,7 @@ Param(
   [string]$testscope,
   [switch]$testnobuild,
   [ValidateSet("x86","x64","arm","arm64","wasm")][string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
+  [switch]$cross = $false,
   [string][Alias('s')]$subset,
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
@@ -138,7 +139,7 @@ if (-not $PSBoundParameters.ContainsKey("subset") -and $properties.Length -gt 0 
 }
 
 if ($subset -eq 'help') {
-  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary"
+  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary /tl:false"
   exit 0
 }
 

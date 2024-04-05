@@ -3231,6 +3231,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface13*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface14)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface14*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -5789,7 +5793,7 @@ ClrDataAccess::RawGetMethodName(
             SIZE_T maxPrecodeSize = sizeof(StubPrecode);
 
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-            maxPrecodeSize = max(maxPrecodeSize, sizeof(ThisPtrRetBufPrecode));
+            maxPrecodeSize = max((size_t)maxPrecodeSize, sizeof(ThisPtrRetBufPrecode));
 #endif
 
             for (SIZE_T i = 0; i < maxPrecodeSize / PRECODE_ALIGNMENT; i++)

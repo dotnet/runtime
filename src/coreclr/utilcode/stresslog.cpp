@@ -227,7 +227,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
         // in this case, interpret the number as GB
         maxBytesPerThread *= (1024 * 1024 * 1024);
     }
-    theLog.MaxSizePerThread = (unsigned)min(maxBytesPerThread,0xffffffff);
+    theLog.MaxSizePerThread = (unsigned)min(maxBytesPerThread,(size_t)0xffffffff);
 
     size_t maxBytesTotal = maxBytesTotalArg;
     if (maxBytesTotal < STRESSLOG_CHUNK_SIZE * 256)
@@ -235,7 +235,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
         // in this case, interpret the number as GB
         maxBytesTotal *= (1024 * 1024 * 1024);
     }
-    theLog.MaxSizeTotal = (unsigned)min(maxBytesTotal, 0xffffffff);
+    theLog.MaxSizeTotal = (unsigned)min(maxBytesTotal, (size_t)0xffffffff);
     theLog.totalChunk = 0;
     theLog.facilitiesToLog = facilities | LF_ALWAYS;
     theLog.levelToLog = level;

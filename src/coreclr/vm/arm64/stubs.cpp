@@ -277,8 +277,7 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundstate,
                                     DWORD threadId,
-                                    int funCallDepth,
-                                    HostCallPreference hostCallPreference)
+                                    int funCallDepth)
 {
     T_CONTEXT context;
     T_KNONVOLATILE_CONTEXT_POINTERS nonVolContextPtrs;
@@ -357,20 +356,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         {
             // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
             // Use it now to see if we've unwound to managed code yet.
-            BOOL fFailedReaderLock = FALSE;
-            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc, hostCallPreference, &fFailedReaderLock);
-            if (fFailedReaderLock)
-            {
-                // We don't know if we would have been able to find a JIT
-                // manager, because we couldn't enter the reader lock without
-                // yielding (and our caller doesn't want us to yield).  So abort
-                // now.
-
-                // Invalidate the lazyState we're returning, so the caller knows
-                // we aborted before we could fully unwind
-                unwoundstate->_isValid = false;
-                return;
-            }
+            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc);
 
             if (fIsManagedCode)
                 break;
@@ -684,7 +670,6 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 #ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
 #endif
-        HOST_NOCALLS;
         MODE_ANY;
         SUPPORTS_DAC;
     }

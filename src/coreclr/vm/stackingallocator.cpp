@@ -188,7 +188,7 @@ bool StackingAllocator::AllocNewBlockForBytes(unsigned n)
         // request is larger than MaxBlockSize then allocate exactly that
         // amount.
         unsigned lower = MinBlockSize;
-        size_t allocSize = sizeof(StackBlock) + max(n, min(max(n * 4, lower), MaxBlockSize));
+        size_t allocSize = sizeof(StackBlock) + max(n, min(max(n * 4, lower), (unsigned)MaxBlockSize));
 
         // Allocate the block.
         // <TODO>@todo: Is it worth implementing a non-thread safe standard heap for

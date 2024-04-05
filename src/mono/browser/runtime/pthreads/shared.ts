@@ -11,6 +11,8 @@ import { set_thread_prefix } from "../logging";
 import { bindings_init } from "../startup";
 import { forceDisposeProxies } from "../gc-handles";
 import { monoMessageSymbol, GCHandleNull, PThreadPtrNull, WorkerToMainMessageType } from "../types/internal";
+import { threads_c_functions as tcwraps } from "../cwraps";
+import { forceThreadMemoryViewRefresh } from "../memory";
 
 // A duplicate in loader/assets.ts
 export const worker_empty_prefix = "          -    ";
@@ -24,7 +26,7 @@ const monoThreadInfoPartial: Partial<PThreadInfo> = {
 };
 export const monoThreadInfo: PThreadInfo = monoThreadInfoPartial as PThreadInfo;
 
-export function isMonoThreadMessage(x: unknown): x is MonoThreadMessage {
+export function isMonoThreadMessage (x: unknown): x is MonoThreadMessage {
     if (typeof (x) !== "object" || x === null) {
         return false;
     }
@@ -32,7 +34,7 @@ export function isMonoThreadMessage(x: unknown): x is MonoThreadMessage {
     return typeof (xmsg.type) === "string" && typeof (xmsg.cmd) === "string";
 }
 
-export function mono_wasm_install_js_worker_interop(context_gc_handle: GCHandle): void {
+export function mono_wasm_install_js_worker_interop (context_gc_handle: GCHandle): void {
     if (!WasmEnableThreads) return;
     bindings_init();
     mono_assert(!runtimeHelpers.proxyGCHandle, "JS interop should not be already installed on this worker.");
@@ -52,7 +54,7 @@ export function mono_wasm_install_js_worker_interop(context_gc_handle: GCHandle)
     }
 }
 
-export function mono_wasm_uninstall_js_worker_interop(): void {
+export function mono_wasm_uninstall_js_worker_interop (): void {
     if (!WasmEnableThreads) return;
     mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "JS interop is not installed on this worker.");
     mono_assert(runtimeHelpers.proxyGCHandle, "JSSynchronizationContext is not installed on this worker.");
@@ -66,7 +68,7 @@ export function mono_wasm_uninstall_js_worker_interop(): void {
 }
 
 // this is just for Debug build of the runtime, making it easier to debug worker threads
-export function update_thread_info(): void {
+export function update_thread_info (): void {
     if (!WasmEnableThreads) return;
     const threadType = !monoThreadInfo.isRegistered ? "emsc"
         : monoThreadInfo.isUI ? "-UI-"
@@ -99,24 +101,36 @@ export function update_thread_info(): void {
             const infoJson = JSON.stringify(monoThreadInfo, null, 2);
             const body = `const monoThreadInfo=${infoJson};\r\nconsole.log(monoThreadInfo);`;
             (globalThis as any).monoThreadInfoFn = new Function(body + "\r\n" + url);
-        }
-        catch (ex) {
+        } catch (ex) {
             runtimeHelpers.cspPolicy = true;
         }
     }
 }
 
-export function mono_wasm_pthread_ptr(): PThreadPtr {
+export function exec_synchronization_context_pump (): void {
+    if (!loaderHelpers.is_runtime_running()) {
+        return;
+    }
+    forceThreadMemoryViewRefresh();
+    tcwraps.mono_wasm_synchronization_context_pump();
+}
+
+export function mono_wasm_schedule_synchronization_context (): void {
+    if (!WasmEnableThreads) return;
+    Module.safeSetTimeout(exec_synchronization_context_pump, 0);
+}
+
+export function mono_wasm_pthread_ptr (): PThreadPtr {
     if (!WasmEnableThreads) return PThreadPtrNull;
     return (<any>Module)["_pthread_self"]();
 }
 
-export function mono_wasm_main_thread_ptr(): PThreadPtr {
+export function mono_wasm_main_thread_ptr (): PThreadPtr {
     if (!WasmEnableThreads) return PThreadPtrNull;
     return (<any>Module)["_emscripten_main_runtime_thread_id"]();
 }
 
-export function postMessageToMain(message: MonoWorkerToMainMessage, transfer?: Transferable[]) {
+export function postMessageToMain (message: MonoWorkerToMainMessage, transfer?: Transferable[]) {
     self.postMessage({
         [monoMessageSymbol]: message
     }, transfer ? transfer : []);

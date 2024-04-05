@@ -35,6 +35,7 @@ namespace ILCompiler.ObjectWriter
     {
         private readonly bool _useInlineRelocationAddends;
         private readonly ushort _machine;
+        private readonly bool _useSoftFPAbi;
         private readonly List<ElfSectionDefinition> _sections = new();
         private readonly List<ElfSymbol> _symbols = new();
         private uint _localSymbolCount;
@@ -61,6 +62,7 @@ namespace ILCompiler.ObjectWriter
                 _ => throw new NotSupportedException("Unsupported architecture")
             };
             _useInlineRelocationAddends = _machine is EM_386 or EM_ARM;
+            _useSoftFPAbi = _machine is EM_ARM && factory.Target.Abi == TargetAbi.NativeAotArmel;
 
             // By convention the symbol table starts with empty symbol
             _symbols.Add(new ElfSymbol {});
@@ -513,7 +515,7 @@ namespace ILCompiler.ObjectWriter
                 attributesBuilder.WriteAttribute(Tag_ABI_FP_number_model, 3); // IEEE 754
                 attributesBuilder.WriteAttribute(Tag_ABI_align_needed, 1); // 8-byte
                 attributesBuilder.WriteAttribute(Tag_ABI_align_preserved, 1); // 8-byte
-                attributesBuilder.WriteAttribute(Tag_ABI_VFP_args, 1); // FP parameters passes in VFP registers
+                attributesBuilder.WriteAttribute(Tag_ABI_VFP_args, _useSoftFPAbi ? 0ul : 1ul); // FP parameters passes in VFP registers
                 attributesBuilder.WriteAttribute(Tag_CPU_unaligned_access, 0); // None
                 attributesBuilder.EndSection();
             }
