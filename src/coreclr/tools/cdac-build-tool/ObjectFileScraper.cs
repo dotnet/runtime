@@ -40,9 +40,7 @@ public class ObjectFileScraper
         var headerStart = file.Position;
         var header = ReadHeader(file, r.LittleEndian);
         if (Verbose) {
-            Console.WriteLine ($"{inputPath}: namesStart = {header.NamesStart}");
-            Console.WriteLine ($"{inputPath}: typeCount = {header.TypeCount}");
-            Console.WriteLine ($"{inputPath}: fieldPoolCount = {header.FieldPoolCount}");
+            DumpHeaderDirectory(header);
         }
         var content = ReadContent(file, headerStart, header, r.LittleEndian);
         content.AddToModel(_builder);
@@ -119,7 +117,19 @@ public class ObjectFileScraper
         public byte GlobalPointerSpecSize;
     };
 
-
+    private void DumpHeaderDirectory(HeaderDirectory headerDirectory)
+    {
+        Console.WriteLine($"Baseline Start = {headerDirectory.BaselineStart}");
+        Console.WriteLine($"Types Start = {headerDirectory.TypesStart}");
+        Console.WriteLine($"Field Pool  Start = {headerDirectory.FieldPoolStart}");
+        Console.WriteLine($"Global Literals Start = {headerDirectory.GlobalLiteralValuesStart}");
+        Console.WriteLine($"Global Pointers Start = {headerDirectory.GlobalPointersStart}");
+        Console.WriteLine($"Names Start = {headerDirectory.NamesStart}");
+        Console.WriteLine($"TypeCount = {headerDirectory.TypeCount}");
+        Console.WriteLine($"FieldPoolCount = {headerDirectory.FieldPoolCount}");
+        Console.WriteLine($"GlobalLiteralValuesCount = {headerDirectory.GlobalLiteralValuesCount}");
+        Console.WriteLine($"GlobalPointerValuesCount = {headerDirectory.GlobalPointerValuesCount}");
+    }
 
     private uint Swap(bool isLittleEndian, uint value) => (isLittleEndian == BitConverter.IsLittleEndian) ? value : BinaryPrimitives.ReverseEndianness(value);
     private ushort Swap(bool isLittleEndian, ushort value) => (isLittleEndian == BitConverter.IsLittleEndian) ? value : BinaryPrimitives.ReverseEndianness(value);
