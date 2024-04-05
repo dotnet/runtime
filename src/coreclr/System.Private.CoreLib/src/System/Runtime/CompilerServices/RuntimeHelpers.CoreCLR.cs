@@ -417,6 +417,15 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        /// <summary>
+        /// Create a boxed object of the specified type from the data located at the target reference.
+        /// </summary>
+        /// <param name="target">The target data</param>
+        /// <param name="type">The type of box to create.</param>
+        /// <returns>A boxed object containing the specified data.</returns>
+        /// <exception cref="ArgumentNullException">The specified type handle is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">The specified type cannot have a boxed instance of itself created.</exception>
+        /// <exception cref="NotSupportedException">The passed in type is a by-ref-like type.</exception>
         public static unsafe object? Box(ref byte target, RuntimeTypeHandle type)
         {
             if (type.IsNullHandle())
