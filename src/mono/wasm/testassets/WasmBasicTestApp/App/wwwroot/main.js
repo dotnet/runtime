@@ -63,7 +63,15 @@ switch (testCase) {
                 if (loaded === total && loaded !== 0) {
                     testOutput("DownloadResourceProgress: Finished");
                 }
-            }
+            },
+            out: ()=>{
+                console.log("Emscripten out override works!");
+                console.log(console)
+            },
+            err: ()=>{
+                console.log("Emscripten err override works!");
+                console.error(console)
+            },
         });
         break;
 }
