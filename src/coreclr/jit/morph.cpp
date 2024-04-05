@@ -4636,16 +4636,14 @@ GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
 //
 GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
 {
-    if (!fgGlobalMorph)
-    {
-        return nullptr;
-    }
-
     unsigned   lclNum         = lclNode->GetLclNum();
     LclVarDsc* varDsc         = lvaGetDesc(lclNum);
     unsigned   fieldOffset    = 0;
     unsigned   newLclNum      = BAD_VAR_NUM;
     bool       isStillLastUse = false;
+
+    assert(lvaIsImplicitByRefLocal(lclNum) ||
+           (varDsc->lvIsStructField && lvaIsImplicitByRefLocal(varDsc->lvParentLcl)));
 
     if (lvaIsImplicitByRefLocal(lclNum))
     {
@@ -4696,15 +4694,11 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
             }
         }
     }
-    else if (varDsc->lvIsStructField && lvaIsImplicitByRefLocal(varDsc->lvParentLcl))
+    else
     {
         // This was a field reference to an implicit-by-reference struct parameter that was dependently promoted.
         newLclNum   = varDsc->lvParentLcl;
         fieldOffset = varDsc->lvFldOffset;
-    }
-    else
-    {
-        return nullptr;
     }
 
     // Add a level of indirection to this node. The "base" will be a local node referring to "newLclNum".
@@ -4767,7 +4761,16 @@ GenTree* Compiler::fgMorphExpandLocal(GenTreeLclVarCommon* lclNode)
 #ifdef TARGET_X86
     expandedTree = fgMorphExpandStackArgForVarArgs(lclNode);
 #else
-    expandedTree = fgMorphExpandImplicitByRefArg(lclNode);
+#if FEATURE_IMPLICIT_BYREFS
+    if (fgGlobalMorph)
+    {
+        LclVarDsc* dsc = lvaGetDesc(lclNode);
+        if (dsc->lvIsImplicitByRef || (dsc->lvIsStructField && lvaIsImplicitByRefLocal(dsc->lvParentLcl)))
+        {
+            expandedTree = fgMorphExpandImplicitByRefArg(lclNode);
+        }
+    }
+#endif
 #endif
 
     if (expandedTree != nullptr)
@@ -14972,7 +14975,7 @@ PhaseStatus Compiler::fgPromoteStructs()
 //
 PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
 {
-#if FEATURE_IMPLICIT_BYREFS
+#if FEATURE_IMPLICIT_BYREFS && !defined(UNIX_AMD64_ABI)
     if (!fgDidEarlyLiveness)
     {
         return PhaseStatus::MODIFIED_NOTHING;
