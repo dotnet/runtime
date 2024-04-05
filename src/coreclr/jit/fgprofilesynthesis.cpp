@@ -106,6 +106,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         // Reset
         //
         m_approximate               = false;
+        m_overflow                  = false;
         m_cappedCyclicProbabilities = 0;
 
         // Regularize the edgelikelihoods...
@@ -1241,6 +1242,11 @@ void ProfileSynthesis::GaussSeidelSolver()
             BasicBlock* const block     = dfs->GetPostOrder(j - 1);
             weight_t          newWeight = 0;
 
+            // If there's a block in a try, we can't expect to see
+            // entry and exit weights agree.
+            //
+            checkEntryExitWeight &= !block->hasTryIndex();
+
             // Some blocks have additional profile weights that don't come from flow edges.
             //
             if (block == entryBlock)
@@ -1366,11 +1372,7 @@ void ProfileSynthesis::GaussSeidelSolver()
                 }
                 else if (block->KindIs(BBJ_THROW))
                 {
-                    if (block->hasTryIndex())
-                    {
-                        checkEntryExitWeight = false;
-                    }
-                    else
+                    if (!block->hasTryIndex())
                     {
                         exitWeight += newWeight;
                         isExit = true;

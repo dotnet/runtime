@@ -5300,14 +5300,14 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     }
 
     JITDUMP("Checking Profile Weights (flags:0x%x)\n", checks);
-    unsigned problemBlocks     = 0;
-    unsigned unprofiledBlocks  = 0;
-    unsigned profiledBlocks    = 0;
-    bool     entryProfiled     = false;
-    bool     exitProfiled      = false;
-    bool     hasCatchableThrow = false;
-    weight_t entryWeight       = 0;
-    weight_t exitWeight        = 0;
+    unsigned problemBlocks    = 0;
+    unsigned unprofiledBlocks = 0;
+    unsigned profiledBlocks   = 0;
+    bool     entryProfiled    = false;
+    bool     exitProfiled     = false;
+    bool     hasTry           = false;
+    weight_t entryWeight      = 0;
+    weight_t exitWeight       = 0;
 
     // Verify each profiled block.
     //
@@ -5322,6 +5322,15 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         // There is some profile data to check.
         //
         profiledBlocks++;
+
+        // If there is a try region in the method, we won't be able
+        // to reliably verify entry/exit counts.
+        //
+        // Technically this checking will fail only if there's a try that
+        // must be exited via exception, but that's not worth checking for,
+        // either here or in the solver.
+        //
+        hasTry |= block->hasTryIndex();
 
         // Currently using raw counts. Consider using normalized counts instead?
         //
@@ -5361,7 +5370,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 
             if (isCatchableThrow)
             {
-                hasCatchableThrow = true;
+                assert(hasTry);
             }
             else
             {
@@ -5425,11 +5434,10 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     //
     if (verifyClassicWeights || verifyLikelyWeights)
     {
-        // If there's a catchable throw, significant weight might pass
-        // through throws to catches. We don't model that, and it
-        // can throw off entry-exit balance.
+        // If there's a try, significant weight might pass along exception edges.
+        // We don't model that, and it can throw off entry-exit balance.
         //
-        if (entryProfiled && exitProfiled && !hasCatchableThrow)
+        if (entryProfiled && exitProfiled && !hasTry)
         {
             // Note these may not agree, if fgEntryBB is a loop header.
             //
