@@ -47,6 +47,7 @@ steps:
                   -arch ${{ parameters.archType }}
                   /p:BuildMonoAotCrossCompiler=true
                   /p:BuildMonoAotCrossCompilerOnly=true
+                  /p:MonoLibClang="/usr/local/lib/libclang.so.16"
                   /p:CrossBuild=true
           displayName: "Build Mono Mini AOT cross compiler"
       - ${{ else }}:
