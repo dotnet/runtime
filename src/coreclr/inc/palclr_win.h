@@ -140,8 +140,4 @@
 typedef HMODULE NATIVE_LIBRARY_HANDLE;
 #endif // HOST_WINDOWS
 
-#ifndef FALLTHROUGH
-#define FALLTHROUGH __fallthrough
-#endif // FALLTHROUGH
-
 #endif	// __PALCLR_WIN_H__

@@ -3029,7 +3029,7 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     if (pDJI == NULL)
         return E_FAIL;
 
-    ULONG32 cMap = min(cMapMax, pDJI->GetSequenceMapCount());
+    ULONG32 cMap = min((ULONG32)cMapMax, pDJI->GetSequenceMapCount());
     DebuggerILToNativeMap * rgMapInt = pDJI->GetSequenceMap();
 
     NewArrayHolder<UINT> rguiILOffsetTemp = new (nothrow) UINT[cMap];
@@ -11566,17 +11566,26 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
                         //
                         // Set up the VM side of intercepting.
                         //
+                        StackFrame sfInterceptFramePointer;
+                        if (g_isNewExceptionHandlingEnabled)
+                        {
+                            sfInterceptFramePointer = StackFrame::FromRegDisplay(&(csi.m_activeFrame.registers));
+                        }
+                        else
+                        {
+#if defined (TARGET_ARM )|| defined (TARGET_ARM64 )
+                            // ARM requires the caller stack pointer, not the current stack pointer
+                            sfInterceptFramePointer = CallerStackFrame::FromRegDisplay(&(csi.m_activeFrame.registers));
+#else
+                            sfInterceptFramePointer = StackFrame::FromRegDisplay(&(csi.m_activeFrame.registers));
+#endif
+                        }
                         if (pExState->GetDebuggerState()->SetDebuggerInterceptInfo(csi.m_activeFrame.pIJM,
                                                               pThread,
                                                               csi.m_activeFrame.MethodToken,
                                                               csi.m_activeFrame.md,
                                                               foundOffset,
-#if defined (TARGET_ARM )|| defined (TARGET_ARM64 )
-                                                              // ARM requires the caller stack pointer, not the current stack pointer
-                                                              CallerStackFrame::FromRegDisplay(&(csi.m_activeFrame.registers)),
-#else
-                                                              StackFrame::FromRegDisplay(&(csi.m_activeFrame.registers)),
-#endif
+                                                              sfInterceptFramePointer,
                                                               pExState->GetFlags()
                                                              ))
                         {

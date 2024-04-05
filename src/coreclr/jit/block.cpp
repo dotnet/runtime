@@ -34,7 +34,7 @@ unsigned BasicBlock::s_nMaxTrees;
 FlowEdge* ShuffleHelper(unsigned hash, FlowEdge* res)
 {
     FlowEdge* head = res;
-    for (FlowEdge *prev = nullptr; res != nullptr; prev = res, res = res->getNextPredEdge())
+    for (FlowEdge* prev = nullptr; res != nullptr; prev = res, res = res->getNextPredEdge())
     {
         unsigned blkHash = (hash ^ (res->getSourceBlock()->bbNum << 16) ^ res->getSourceBlock()->bbNum);
         if (((blkHash % 1879) & 1) && prev != nullptr)
@@ -140,7 +140,8 @@ void FlowEdge::addLikelihood(weight_t addedLikelihood)
 //     comp  - Compiler instance
 //     block - The block whose successors are to be iterated
 //
-AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block)
+AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block)
+    : m_block(block)
 {
     m_numSuccs = 0;
     block->VisitAllSuccs(comp, [this](BasicBlock* succ) {
@@ -1891,7 +1892,8 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
 //    comp - compiler instance
 //    other - existing descriptor to copy
 //
-BBehfDesc::BBehfDesc(Compiler* comp, const BBehfDesc* other) : bbeCount(other->bbeCount)
+BBehfDesc::BBehfDesc(Compiler* comp, const BBehfDesc* other)
+    : bbeCount(other->bbeCount)
 {
     // Allocate and fill in a new dst tab
     //
