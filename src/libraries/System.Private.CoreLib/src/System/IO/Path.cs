@@ -37,7 +37,7 @@ namespace System.IO
         // the specified extension. If path is null, the function
         // returns null. If path does not contain a file extension,
         // the new file extension is appended to the path. If extension
-        // is null, any existing extension is removed from path.
+        // is null or empty, any existing extension is removed from path.
         [return: NotNullIfNotNull(nameof(path))]
         public static string? ChangeExtension(string? path, string? extension)
         {
@@ -47,11 +47,6 @@ namespace System.IO
             int subLength = path.Length;
             if (subLength == 0)
                 return string.Empty;
-
-            if(string.IsNullOrEmpty(extension))
-            {
-                return GetFileNameWithoutExtension(path);
-            }
 
             for (int i = path.Length - 1; i >= 0; i--)
             {
@@ -69,7 +64,7 @@ namespace System.IO
                 }
             }
 
-            if (extension == null)
+            if (string.IsNullOrEmpty(extension))
             {
                 return path.Substring(0, subLength);
             }
