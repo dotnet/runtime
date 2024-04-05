@@ -13,16 +13,16 @@ namespace Internal.Runtime.CompilerHelpers
     /// Math helpers for generated code. The helpers here are referenced by the runtime.
     /// </summary>
     [StackTraceHidden]
-    internal static partial class MathHelpers
+    internal static class MathHelpers
     {
-        private const double IntMaxValueOffset = 2147483648.0; // 2^31, int.MaxValue + 1
-        private const double UIntMaxValueOffset = 4294967296.0; // 2^32, uint.MaxValue + 1
+        private const double Int32MaxValueOffset = (double)int.MaxValue + 1;
+        private const double UInt32MaxValueOffset = (double)uint.MaxValue + 1;
 
         [RuntimeExport("Dbl2IntOvf")]
         public static int Dbl2IntOvf(double value)
         {
             // Note that this expression also works properly for val = NaN case
-            if (value is > -IntMaxValueOffset - 1 and < IntMaxValueOffset)
+            if (value is > -Int32MaxValueOffset - 1 and < Int32MaxValueOffset)
             {
                 return (int)value;
             }
@@ -35,7 +35,7 @@ namespace Internal.Runtime.CompilerHelpers
         public static uint Dbl2UIntOvf(double value)
         {
             // Note that this expression also works properly for val = NaN case
-            if (value is > -1.0 and < UIntMaxValueOffset)
+            if (value is > -1.0 and < UInt32MaxValueOffset)
             {
                 return (uint)value;
             }
@@ -47,7 +47,7 @@ namespace Internal.Runtime.CompilerHelpers
         [RuntimeExport("Dbl2LngOvf")]
         public static long Dbl2LngOvf(double value)
         {
-            const double two63 = IntMaxValueOffset * UIntMaxValueOffset;
+            const double two63 = Int32MaxValueOffset * UInt32MaxValueOffset;
 
             // Note that this expression also works properly for val = NaN case
             // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
@@ -63,7 +63,7 @@ namespace Internal.Runtime.CompilerHelpers
         [RuntimeExport("Dbl2ULngOvf")]
         public static ulong Dbl2ULngOvf(double value)
         {
-            const double two64 = UIntMaxValueOffset * UIntMaxValueOffset;
+            const double two64 = UInt32MaxValueOffset * UInt32MaxValueOffset;
             // Note that this expression also works properly for val = NaN case
             if (value is > -1.0 and < two64)
             {
