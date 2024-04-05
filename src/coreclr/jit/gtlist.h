@@ -290,7 +290,7 @@ GTNODE(END_LFIN         , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // End l
 //  Swift interop-specific nodes:
 //-----------------------------------------------------------------------------
 
-GTNODE(SWIFT_ERROR      , GenTree            ,0,0,GTK_LEAF)              // Error register value post-Swift call
+GTNODE(SWIFT_ERROR      , GenTree            ,0,0,GTK_LEAF)             // Error register value post-Swift call
 GTNODE(SWIFT_ERROR_RET  , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE) // Returns SwiftError pseudolocal's value in REG_SWIFT_ERROR
 
 //-----------------------------------------------------------------------------
