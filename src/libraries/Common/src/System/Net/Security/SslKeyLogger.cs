@@ -67,7 +67,15 @@ internal static class SslKeyLogger
         Debug.Assert(s_fileStream != null);
         Debug.Assert(!clientRandom.IsEmpty);
 
-        if (s_fileStream == null || clientRandom.IsEmpty)
+        if (s_fileStream == null ||
+            clientRandom.IsEmpty ||
+
+            // return early if there is nothing to log
+            (clientHandshakeTrafficSecret.IsEmpty &&
+            serverHandshakeTrafficSecret.IsEmpty &&
+            clientTrafficSecret0.IsEmpty &&
+            serverTrafficSecret0.IsEmpty &&
+            clientEarlyTrafficSecret.IsEmpty))
         {
             return;
         }
@@ -89,7 +97,6 @@ internal static class SslKeyLogger
 
     private static void WriteSecretCore(ReadOnlySpan<byte> labelUtf8, ReadOnlySpan<byte> clientRandomUtf8, ReadOnlySpan<byte> secret)
     {
-        Debug.Assert(s_fileStream != null);
         if (secret.Length == 0)
         {
             return;
@@ -107,7 +114,7 @@ internal static class SslKeyLogger
         HexEncode(secret, line.Slice(labelUtf8.Length + 1 + clientRandomUtf8.Length + 1));
         line[^1] = (byte)'\n';
 
-        s_fileStream.Write(line);
+        s_fileStream!.Write(line);
     }
 
     private static void HexEncode(ReadOnlySpan<byte> source, Span<byte> destination)
