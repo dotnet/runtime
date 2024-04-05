@@ -1085,7 +1085,7 @@ AllRegsMask GenTree::gtGetRegMask() const
 
     if (IsMultiRegCall())
     {
-        resultMask = AllRegsMask(GetRegNum());
+        resultMask = AllRegsMask(genRegMask(GetRegNum()));
         resultMask |= AsCall()->GetOtherRegMask();
     }
     else if (IsCopyOrReloadOfMultiRegCall())
@@ -1123,7 +1123,7 @@ AllRegsMask GenTree::gtGetRegMask() const
 #endif // FEATURE_ARG_SPLIT
     else
     {
-        resultMask = AllRegsMask(GetRegNum());
+        resultMask = AllRegsMask(genRegMask(GetRegNum()));
     }
 
     return resultMask;
