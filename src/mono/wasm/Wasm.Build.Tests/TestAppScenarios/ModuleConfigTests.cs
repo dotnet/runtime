@@ -30,7 +30,7 @@ public class ModuleConfigTests : AppTestBase
 
         var result = await RunSdkStyleAppForPublish(new(
             Configuration: "Debug",
-            TestScenario: "DownloadProgressFinishes",
+            TestScenario: "ModuleConfigTests",
             BrowserQueryString: new Dictionary<string, string> { ["failAssemblyDownload"] = failAssemblyDownload.ToString().ToLowerInvariant() }
         ));
         Assert.True(
@@ -63,7 +63,7 @@ public class ModuleConfigTests : AppTestBase
 
         var result = await RunSdkStyleAppForPublish(new(
             Configuration: "Debug",
-            TestScenario: "OutErrOverrideWorks"
+            TestScenario: "ModuleConfigTests"
         ));
         Assert.True(
             result.TestOutput.Any(m => m.Contains("Emscripten out override works.")),
