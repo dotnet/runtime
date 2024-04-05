@@ -33,21 +33,43 @@ namespace System.Buffers.Text
 
             if (source.Length >= 4)
             {
-                int dw = BinaryPrimitives.ReadInt32LittleEndian(source) & ~0x20202020;
-                if (dw == 0x45555254 /* 'EURT' */)
+                int dw = BinaryPrimitives.ReadInt32LittleEndian(source);
+                if (standardFormat == default(char) || standardFormat == 'G')
                 {
-                    bytesConsumed = 4;
-                    value = true;
-                    return true;
-                }
-
-                if (source.Length > 4)
-                {
-                    if (dw == 0x534c4146 /* 'SLAF' */ && (source[4] & ~0x20) == 'E')
+                    if (dw == 0x65757254 /* 'eurT' */)
                     {
-                        bytesConsumed = 5;
-                        value = false;
+                        bytesConsumed = 4;
+                        value = true;
                         return true;
+                    }
+    
+                    if (source.Length > 4)
+                    {
+                        if (dw == 0x736C6146 /* 'slaF' */ && source[4] == 'e')
+                        {
+                            bytesConsumed = 5;
+                            value = false;
+                            return true;
+                        }
+                    }
+                }
+                else if (standardFormat == 'l')
+                {
+                    if (dw == 0x65757274 /* 'eurt' */)
+                    {
+                        bytesConsumed = 4;
+                        value = true;
+                        return true;
+                    }
+    
+                    if (source.Length > 4)
+                    {
+                        if (dw == 0x736C6166 /* 'slaf' */ && source[4] == 'e')
+                        {
+                            bytesConsumed = 5;
+                            value = false;
+                            return true;
+                        }
                     }
                 }
             }
