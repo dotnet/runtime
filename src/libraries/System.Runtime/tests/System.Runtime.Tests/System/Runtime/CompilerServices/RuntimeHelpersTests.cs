@@ -571,6 +571,20 @@ namespace System.Runtime.CompilerServices.Tests
             });
         }
 
+        // We can't even get a RuntimeTypeHandle for a partially instantiated generic type on NativeAOT,
+        // so we don't even get to the method we're testing.
+        // So, let's not even waste time running this test on NativeAOT
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        public static void BoxPartiallyOpenGeneric()
+        {
+            Type t = typeof(Dictionary<,>).MakeGenericType(typeof(object), typeof(Dictionary<,>).GetGenericArguments()[1]);
+            Assert.Throws<ArgumentException>(() =>
+            {
+                byte value = 3;
+                RuntimeHelpers.Box(ref value, t.TypeHandle);
+            });
+        }
+
         [Fact]
         public static void BoxGenericTypeDefinition()
         {

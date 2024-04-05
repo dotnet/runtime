@@ -429,7 +429,7 @@ namespace System.Runtime.CompilerServices
 
             MethodTable* pMT = handle.AsMethodTable();
 
-            if (pMT->IsGenericTypeDefinition)
+            if (pMT->ContainsGenericVariables)
                 throw new ArgumentException(SR.Arg_TypeNotSupported);
 
             if (pMT->IsValueType)
@@ -556,6 +556,7 @@ namespace System.Runtime.CompilerServices
 
         // WFLAGS_HIGH_ENUM
         private const uint enum_flag_ContainsPointers = 0x01000000;
+        private const uint enum_flag_ContainsGenericVariables = 0x20000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
         private const uint enum_flag_Category_Mask = 0x000F0000;
@@ -662,6 +663,8 @@ namespace System.Runtime.CompilerServices
                 return genericsFlags == enum_flag_GenericsMask_GenericInst || genericsFlags == enum_flag_GenericsMask_SharedInst;
             }
         }
+
+        public bool ContainsGenericVariables => (Flags & enum_flag_ContainsGenericVariables) != 0;
 
         /// <summary>
         /// Gets a <see cref="TypeHandle"/> for the element type of the current type.

@@ -226,7 +226,7 @@ namespace System.Runtime.CompilerServices
 
             RuntimeType rtType = (RuntimeType)Type.GetTypeFromHandle(type)!;
 
-            if (rtType.IsGenericTypeDefinition
+            if (rtType.ContainsGenericParameters
                 || rtType.IsPointer
                 || rtType.IsFunctionPointer
                 || rtType.IsByRef
