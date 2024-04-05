@@ -132,6 +132,7 @@ namespace System.Runtime.Tests
         [Theory]
         [InlineData("mscorlib")]
         [InlineData("System.Threading.Overlapped")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "ILLink doesn't root forwarded types from rooted assemblies: https://github.com/dotnet/runtime/issues/99592")]
         public static void ShimsHaveOnlyTypeForwards(string assemblyName)
         {
             Assembly assembly = Assembly.Load(assemblyName);

@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="System.Linq">
+    <type fullname="System.Linq.Enumerable" />
+  </assembly>
+</linker>

@@ -129,7 +129,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
         }
 
         // Test as much as we can with simple C# examples inline below.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles), nameof(PlatformDetection.IsNotAppleMobile))]
         public void SimpleSignatureProviderCoverage()
         {
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(SignaturesToDecode<>).GetTypeInfo().Assembly)))
