@@ -22,14 +22,9 @@ namespace System.Net.Security.Tests
         { }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94843", ~TestPlatforms.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)] // SSLKEYLOGFILE is only supported on Linux for SslStream
         public void SslKeyLogFile_IsCreatedAndFilled()
         {
-            if (PlatformDetection.IsReleaseLibrary(typeof(SslStream).Assembly))
-            {
-                throw new SkipTestException("Retrieving SSL secrets is not supported in Release mode.");
-            }
-
             var psi = new ProcessStartInfo();
             var tempFile = Path.GetTempFileName();
             psi.Environment.Add("SSLKEYLOGFILE", tempFile);

@@ -23,11 +23,6 @@ namespace System.Net.Quic.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SslKeyLogFile_IsCreatedAndFilled()
         {
-            if (PlatformDetection.IsReleaseLibrary(typeof(QuicConnection).Assembly))
-            {
-                throw new SkipTestException("Retrieving SSL secrets is not supported in Release mode.");
-            }
-
             var psi = new ProcessStartInfo();
             var tempFile = Path.GetTempFileName();
             psi.Environment.Add("SSLKEYLOGFILE", tempFile);
