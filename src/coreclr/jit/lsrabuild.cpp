@@ -2827,7 +2827,7 @@ void LinearScan::buildIntervals()
 #ifdef HAS_MORE_THAN_64_REGISTERS
     actualRegistersMask = AllRegsMask(availableIntRegs, availableFloatRegs, availableMaskRegs);
 #else
-    if (availableRegCount < (sizeof(regMaskTP) * 8))
+    if (availableRegCount < (sizeof(RegBitSet64) * 8))
     {
         // Mask out the bits that are between 64 ~ availableRegCount
         actualRegistersMask = AllRegsMask((1ULL << availableRegCount) - 1);

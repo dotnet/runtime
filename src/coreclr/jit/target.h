@@ -398,9 +398,9 @@ public:
 
     // TODO: this might go away once we have just `regMaskTP` gpr_float field
     FORCEINLINE bool      IsGprOrFloatPresent() const;
-    FORCEINLINE regMaskTP GetGprFloatCombinedMask() const;
+    FORCEINLINE RegBitSet64 GetGprFloatCombinedMask() const;
 #ifndef HAS_MORE_THAN_64_REGISTERS
-    FORCEINLINE regMaskTP GetAllRegistersMask() const;
+    FORCEINLINE RegBitSet64 GetAllRegistersMask() const;
 #endif // !HAS_MORE_THAN_64_REGISTERS
 
     FORCEINLINE regMaskOnlyOne operator[](int index) const;
@@ -689,7 +689,7 @@ inline unsigned theFixedRetBuffArgNum(CorInfoCallConvExtension callConv)
 //
 inline regMaskGpr fullIntArgRegMask(CorInfoCallConvExtension callConv)
 {
-    regMaskTP result = RBM_ARG_REGS;
+    regMaskGpr result = RBM_ARG_REGS;
     if (hasFixedRetBuffReg(callConv))
     {
         result |= theFixedRetBuffMask(callConv);

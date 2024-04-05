@@ -1058,7 +1058,7 @@ private:
 #ifdef HAS_MORE_THAN_64_REGISTERS
     FORCEINLINE void updateDeadCandidatesAtBlockStart(AllRegsMask& deadRegMask, VarToRegMap inVarToRegMap);
 #else
-    FORCEINLINE void updateDeadCandidatesAtBlockStart(regMaskTP deadRegMask, VarToRegMap inVarToRegMap);
+    FORCEINLINE void updateDeadCandidatesAtBlockStart(RegBitSet64 deadRegMask, VarToRegMap inVarToRegMap);
 #endif
 
 #ifdef TARGET_ARM
@@ -1152,14 +1152,14 @@ private:
 #ifdef HAS_MORE_THAN_64_REGISTERS
     FORCEINLINE void inActivateRegisters(AllRegsMask& inactiveMask);
 #else
-    FORCEINLINE void inActivateRegisters(regMaskTP inactiveMask);
+    FORCEINLINE void inActivateRegisters(RegBitSet64 inactiveMask);
 #endif
     void freeRegister(RegRecord* physRegRecord);
     void freeRegisters(AllRegsMask regsToFree);
 #ifdef HAS_MORE_THAN_64_REGISTERS
     FORCEINLINE void freeRegisterMask(AllRegsMask& freeMask);
 #else
-    FORCEINLINE void freeRegisterMask(regMaskTP freeMask);
+    FORCEINLINE void freeRegisterMask(RegBitSet64 freeMask);
 #endif
 
     // Get the type that this tree defines.

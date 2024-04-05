@@ -921,8 +921,8 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lo
     assert(spDelta <= 0);
     assert(-spDelta <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
 
-    regMaskTP maskSaveRegsInt   = regsToSaveMask.gprRegs();
-    regMaskTP maskSaveRegsFloat = regsToSaveMask.floatRegs(compiler);
+    regMaskGpr maskSaveRegsInt   = regsToSaveMask.gprRegs();
+    regMaskFloat maskSaveRegsFloat = regsToSaveMask.floatRegs(compiler);
 
     assert(compiler->IsGprRegMask(maskSaveRegsInt));
     assert(compiler->IsFloatRegMask(maskSaveRegsFloat));
@@ -930,7 +930,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lo
     unsigned regsToSaveCount = genCountBits(maskSaveRegsFloat) + genCountBits(maskSaveRegsInt);
 
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-    regMaskTP maskSaveRegsPredicate = regsToSaveMask.predicateRegs(compiler);
+    regMaskPredicate maskSaveRegsPredicate = regsToSaveMask.predicateRegs(compiler);
     assert(compiler->IsPredicateRegMask(maskSaveRegsPredicate));
     regsToSaveCount += genCountBits(maskSaveRegsPredicate);
 #endif
@@ -1070,7 +1070,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask,
     unsigned regsToRestoreCount = genCountBits(maskRestoreRegsInt) + genCountBits(maskRestoreRegsFloat);
 
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-    regMaskTP maskRestoreRegsPredicate = regsToRestoreMask.predicateRegs(compiler);
+    regMaskPredicate maskRestoreRegsPredicate = regsToRestoreMask.predicateRegs(compiler);
     assert(compiler->IsPredicateRegMask(maskRestoreRegsPredicate));
     regsToRestoreCount += genCountBits(maskRestoreRegsPredicate);
 #endif
@@ -5557,8 +5557,9 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // If initReg is trashed, either because it was an arg to the enter
     // callback, or because the enter callback itself trashes it, then it needs
     // to be zero'ed again before using.
-    if (((RBM_PROFILER_ENTER_TRASH | RBM_PROFILER_ENTER_ARG_FUNC_ID | RBM_PROFILER_ENTER_ARG_CALLER_SP) &
-         genRegMask(initReg)) != RBM_NONE)
+    AllRegsMask profileEnterTrash = AllRegsMask_PROFILER_ENTER_TRASH;
+    profileEnterTrash.AddRegMaskForType(RBM_PROFILER_ENTER_ARG_FUNC_ID | RBM_PROFILER_ENTER_ARG_CALLER_SP, TYP_INT);
+    if (profileEnterTrash.IsRegNumInMask(initReg))
     {
         *pInitRegZeroed = false;
     }

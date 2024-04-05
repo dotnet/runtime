@@ -977,7 +977,7 @@ inline regNumber genFirstRegNumFromMask(AllRegsMask& mask)
     /* Convert the mask to a register number */
     regNumber regNum;
 
-    regMaskTP gprOrFloatMask = mask.GetGprFloatCombinedMask();
+    RegBitSet64 gprOrFloatMask = mask.GetGprFloatCombinedMask();
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
     // Only check this condition if there are predicate register support
@@ -5347,7 +5347,7 @@ regMaskOnlyOne AllRegsMask::GetRegMaskForType(var_types type) const
 #endif
 }
 
-regMaskTP AllRegsMask::GetGprFloatCombinedMask() const
+RegBitSet64 AllRegsMask::GetGprFloatCombinedMask() const
 {
     return _combinedRegisters;
 }

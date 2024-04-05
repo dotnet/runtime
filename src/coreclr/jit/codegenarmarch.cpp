@@ -5577,7 +5577,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         compiler->unwindSetFrameReg(REG_SAVED_LOCALLOC_SP, 0);
     }
 
-    if (jmpEpilog || regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED) == RBM_NONE)
+    if (jmpEpilog || genStackAllocRegisterMask(compiler->compLclFrameSize,
+                                               regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED) == RBM_NONE)
         {
             genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted);
         }

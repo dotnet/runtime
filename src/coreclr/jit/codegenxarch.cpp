@@ -9504,7 +9504,9 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // If initReg is trashed, either because it was an arg to the enter
     // callback, or because the enter callback itself trashes it, then it needs
     // to be zero'ed again before using.
-    if (((RBM_PROFILER_ENTER_TRASH | RBM_ARG_0 | RBM_ARG_1) & genRegMask(initReg)) != 0)
+    AllRegsMask profileEnterTrash = AllRegsMask_PROFILER_ENTER_TRASH;
+    profileEnterTrash.AddRegMaskForType((RBM_ARG_0 | RBM_ARG_1), TYP_INT);
+    if (profileEnterTrash.IsRegNumInMask(initReg))
     {
         *pInitRegZeroed = false;
     }
@@ -9543,7 +9545,9 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // If initReg is trashed, either because it was an arg to the enter
     // callback, or because the enter callback itself trashes it, then it needs
     // to be zero'ed again before using.
-    if (((RBM_PROFILER_ENTER_TRASH | RBM_PROFILER_ENTER_ARG_0 | RBM_PROFILER_ENTER_ARG_1) & genRegMask(initReg)) != 0)
+    AllRegsMask profileEnterTrash = AllRegsMask_PROFILER_ENTER_TRASH;
+    profileEnterTrash.AddRegMaskForType((RBM_PROFILER_ENTER_ARG_0 | RBM_PROFILER_ENTER_ARG_1), TYP_INT);
+    if (profileEnterTrash.IsRegNumInMask(initReg))
     {
         *pInitRegZeroed = false;
     }
@@ -9583,8 +9587,8 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     // registers that profiler callback kills.
     if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg())
     {
-        regMaskOnlyOne thisPtrMask = genRegMask(compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum());
-        noway_assert((RBM_PROFILER_LEAVE_TRASH & thisPtrMask) == 0);
+        regNumber      thisPtrReg  = compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum();
+        noway_assert(!AllRegsMask_PROFILER_LEAVE_TRASH.IsRegNumInMask(thisPtrReg));
     }
 
     // At this point return value is computed and stored in RAX or XMM0.
@@ -10111,7 +10115,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             //
             PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
 
-            regMaskTP const  tier0CalleeSaves    = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
             regMaskGpr const tier0IntCalleeSaves = patchpointInfo->CalleeSaveGprRegisters() & RBM_OSR_INT_CALLEE_SAVED;
             regMaskGpr const osrIntCalleeSaves   = regSet.rsGetModifiedGprRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
             regMaskGpr const allIntCalleeSaves   = osrIntCalleeSaves | tier0IntCalleeSaves;

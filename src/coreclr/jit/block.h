@@ -1543,567 +1543,566 @@ public:
 #define handlerGetsXcptnObj(hndTyp) ((hndTyp) != BBCT_NONE && (hndTyp) != BBCT_FAULT && (hndTyp) != BBCT_FINALLY)
 
     // TODO-Cleanup: Get rid of bbStkDepth and use bbStackDepthOnEntry() instead
+    unsigned short bbStkDepth; // stack depth on entry
+
+    // Basic block predecessor lists. Predecessor lists are created by fgLinkBasicBlocks(), stored
+    // in 'bbPreds', and then maintained throughout compilation. 'fgPredsComputed' will be 'true' after the
+    // predecessor lists are created.
+    //
+    FlowEdge* bbPreds; // ptr to list of predecessors
+
+    // PredEdges: convenience method for enabling range-based `for` iteration over predecessor edges, e.g.:
+    //    for (FlowEdge* const edge : block->PredEdges()) ...
+    //
+    PredEdgeList PredEdges() const
     {
-        unsigned short bbStkDepth; // stack depth on entry
+        return PredEdgeList(bbPreds);
+    }
 
-        // Basic block predecessor lists. Predecessor lists are created by fgLinkBasicBlocks(), stored
-        // in 'bbPreds', and then maintained throughout compilation. 'fgPredsComputed' will be 'true' after the
-        // predecessor lists are created.
-        //
-        FlowEdge* bbPreds; // ptr to list of predecessors
+    // PredBlocks: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
+    //    for (BasicBlock* const predBlock : block->PredBlocks()) ...
+    //
+    PredBlockList<false> PredBlocks() const
+    {
+        return PredBlockList<false>(bbPreds);
+    }
 
-        // PredEdges: convenience method for enabling range-based `for` iteration over predecessor edges, e.g.:
-        //    for (FlowEdge* const edge : block->PredEdges()) ...
-        //
-        PredEdgeList PredEdges() const
-        {
-            return PredEdgeList(bbPreds);
-        }
+    // PredBlocksEditing: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
+    //    for (BasicBlock* const predBlock : block->PredBlocksEditing()) ...
+    // This iterator tolerates modifications to bbPreds.
+    //
+    PredBlockList<true> PredBlocksEditing() const
+    {
+        return PredBlockList<true>(bbPreds);
+    }
 
-        // PredBlocks: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
-        //    for (BasicBlock* const predBlock : block->PredBlocks()) ...
-        //
-        PredBlockList<false> PredBlocks() const
-        {
-            return PredBlockList<false>(bbPreds);
-        }
+    // Pred list maintenance
+    //
+    bool checkPredListOrder();
+    void ensurePredListOrder(Compiler * compiler);
+    void reorderPredList(Compiler * compiler);
 
-        // PredBlocksEditing: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
-        //    for (BasicBlock* const predBlock : block->PredBlocksEditing()) ...
-        // This iterator tolerates modifications to bbPreds.
-        //
-        PredBlockList<true> PredBlocksEditing() const
-        {
-            return PredBlockList<true>(bbPreds);
-        }
+    union
+    {
+        BasicBlock* bbIDom;          // Represent the closest dominator to this block (called the Immediate
+                                        // Dominator) used to compute the dominance tree.
+        FlowEdge* bbLastPred;        // Used early on by fgLinkBasicBlock/fgAddRefPred
+        void*     bbSparseProbeList; // Used early on by fgInstrument
+    };
 
-        // Pred list maintenance
-        //
-        bool checkPredListOrder();
-        void ensurePredListOrder(Compiler * compiler);
-        void reorderPredList(Compiler * compiler);
+    void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
 
-        union
-        {
-            BasicBlock* bbIDom;          // Represent the closest dominator to this block (called the Immediate
-                                         // Dominator) used to compute the dominance tree.
-            FlowEdge* bbLastPred;        // Used early on by fgLinkBasicBlock/fgAddRefPred
-            void*     bbSparseProbeList; // Used early on by fgInstrument
-        };
+    unsigned bbPreorderNum;  // the block's  preorder number in the graph [0...postOrderCount)
+    unsigned bbPostorderNum; // the block's postorder number in the graph [0...postOrderCount)
 
-        void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
-
-        unsigned bbPreorderNum;  // the block's  preorder number in the graph [0...postOrderCount)
-        unsigned bbPostorderNum; // the block's postorder number in the graph [0...postOrderCount)
-
-        IL_OFFSET bbCodeOffs;    // IL offset of the beginning of the block
-        IL_OFFSET bbCodeOffsEnd; // IL offset past the end of the block. Thus, the [bbCodeOffs..bbCodeOffsEnd)
-                                 // range is not inclusive of the end offset. The count of IL bytes in the block
-                                 // is bbCodeOffsEnd - bbCodeOffs, assuming neither are BAD_IL_OFFSET.
+    IL_OFFSET bbCodeOffs;    // IL offset of the beginning of the block
+    IL_OFFSET bbCodeOffsEnd; // IL offset past the end of the block. Thus, the [bbCodeOffs..bbCodeOffsEnd)
+                                // range is not inclusive of the end offset. The count of IL bytes in the block
+                                // is bbCodeOffsEnd - bbCodeOffs, assuming neither are BAD_IL_OFFSET.
 
 #ifdef DEBUG
-        void dspBlockILRange() const; // Display the block's IL range as [XXX...YYY), where XXX and YYY might be "???"
-                                      // for BAD_IL_OFFSET.
+    void dspBlockILRange() const; // Display the block's IL range as [XXX...YYY), where XXX and YYY might be "???"
+                                    // for BAD_IL_OFFSET.
 #endif                                // DEBUG
 
-        VARSET_TP bbVarUse; // variables used     by block (before a definition)
-        VARSET_TP bbVarDef; // variables assigned by block (before a use)
+    VARSET_TP bbVarUse; // variables used     by block (before a definition)
+    VARSET_TP bbVarDef; // variables assigned by block (before a use)
 
-        VARSET_TP bbLiveIn;  // variables live on entry
-        VARSET_TP bbLiveOut; // variables live on exit
+    VARSET_TP bbLiveIn;  // variables live on entry
+    VARSET_TP bbLiveOut; // variables live on exit
 
-        // Use, def, live in/out information for the implicit memory variable.
-        MemoryKindSet bbMemoryUse : MemoryKindCount; // must be set for any MemoryKinds this block references
-        MemoryKindSet bbMemoryDef : MemoryKindCount; // must be set for any MemoryKinds this block mutates
-        MemoryKindSet bbMemoryLiveIn : MemoryKindCount;
-        MemoryKindSet bbMemoryLiveOut : MemoryKindCount;
-        MemoryKindSet bbMemoryHavoc : MemoryKindCount; // If true, at some point the block does an operation
-                                                       // that leaves memory in an unknown state. (E.g.,
-                                                       // unanalyzed call, store through unknown pointer...)
+    // Use, def, live in/out information for the implicit memory variable.
+    MemoryKindSet bbMemoryUse : MemoryKindCount; // must be set for any MemoryKinds this block references
+    MemoryKindSet bbMemoryDef : MemoryKindCount; // must be set for any MemoryKinds this block mutates
+    MemoryKindSet bbMemoryLiveIn : MemoryKindCount;
+    MemoryKindSet bbMemoryLiveOut : MemoryKindCount;
+    MemoryKindSet bbMemoryHavoc : MemoryKindCount; // If true, at some point the block does an operation
+                                                    // that leaves memory in an unknown state. (E.g.,
+                                                    // unanalyzed call, store through unknown pointer...)
 
-        // We want to make phi functions for the special implicit var memory.  But since this is not a real
-        // lclVar, and thus has no local #, we can't use a GenTreePhiArg.  Instead, we use this struct.
-        struct MemoryPhiArg
+    // We want to make phi functions for the special implicit var memory.  But since this is not a real
+    // lclVar, and thus has no local #, we can't use a GenTreePhiArg.  Instead, we use this struct.
+    struct MemoryPhiArg
+    {
+        unsigned      m_ssaNum;  // SSA# for incoming value.
+        MemoryPhiArg* m_nextArg; // Next arg in the list, else NULL.
+
+        unsigned GetSsaNum()
         {
-            unsigned      m_ssaNum;  // SSA# for incoming value.
-            MemoryPhiArg* m_nextArg; // Next arg in the list, else NULL.
+            return m_ssaNum;
+        }
 
-            unsigned GetSsaNum()
-            {
-                return m_ssaNum;
-            }
-
-            MemoryPhiArg(unsigned ssaNum, MemoryPhiArg* nextArg = nullptr)
-                : m_ssaNum(ssaNum)
-                , m_nextArg(nextArg)
-            {
-            }
-
-            void* operator new(size_t sz, class Compiler* comp);
-        };
-        static MemoryPhiArg* EmptyMemoryPhiDef; // Special value (0x1, FWIW) to represent a to-be-filled in Phi arg list
-                                                // for Heap.
-        MemoryPhiArg* bbMemorySsaPhiFunc[MemoryKindCount]; // If the "in" Heap SSA var is not a phi definition, this
-                                                           // value is NULL.
-        // Otherwise, it is either the special value EmptyMemoryPhiDefn, to indicate
-        // that Heap needs a phi definition on entry, or else it is the linked list
-        // of the phi arguments.
-        unsigned bbMemorySsaNumIn[MemoryKindCount];  // The SSA # of memory on entry to the block.
-        unsigned bbMemorySsaNumOut[MemoryKindCount]; // The SSA # of memory on exit from the block.
-
-        VARSET_TP bbScope; // variables in scope over the block
-
-        void InitVarSets(class Compiler * comp);
-
-        /* The following are the standard bit sets for dataflow analysis.
-         *  We perform CSE and range-checks at the same time
-         *  and assertion propagation separately,
-         *  thus we can union them since the two operations are completely disjunct.
-         */
-
-        union
+        MemoryPhiArg(unsigned ssaNum, MemoryPhiArg* nextArg = nullptr)
+            : m_ssaNum(ssaNum)
+            , m_nextArg(nextArg)
         {
-            EXPSET_TP bbCseGen;             // CSEs computed by block
-            ASSERT_TP bbAssertionGen;       // assertions created by block (global prop)
-            ASSERT_TP bbAssertionOutIfTrue; // assertions available on exit along true/jump edge (BBJ_COND, local prop)
-        };
+        }
 
-        union
-        {
-            EXPSET_TP bbCseIn;       // CSEs available on entry
-            ASSERT_TP bbAssertionIn; // assertions available on entry (global prop)
-        };
+        void* operator new(size_t sz, class Compiler* comp);
+    };
+    static MemoryPhiArg* EmptyMemoryPhiDef; // Special value (0x1, FWIW) to represent a to-be-filled in Phi arg list
+                                            // for Heap.
+    MemoryPhiArg* bbMemorySsaPhiFunc[MemoryKindCount]; // If the "in" Heap SSA var is not a phi definition, this
+                                                        // value is NULL.
+    // Otherwise, it is either the special value EmptyMemoryPhiDefn, to indicate
+    // that Heap needs a phi definition on entry, or else it is the linked list
+    // of the phi arguments.
+    unsigned bbMemorySsaNumIn[MemoryKindCount];  // The SSA # of memory on entry to the block.
+    unsigned bbMemorySsaNumOut[MemoryKindCount]; // The SSA # of memory on exit from the block.
 
-        union
-        {
-            EXPSET_TP bbCseOut;              // CSEs available on exit
-            ASSERT_TP bbAssertionOut;        // assertions available on exit (global prop, local prop & !BBJ_COND)
-            ASSERT_TP bbAssertionOutIfFalse; // assertions available on exit along false/next edge (BBJ_COND, local
-                                             // prop)
-        };
+    VARSET_TP bbScope; // variables in scope over the block
 
-        void* bbEmitCookie;
+    void InitVarSets(class Compiler * comp);
 
-        //-------------------------------------------------------------------------
+    /* The following are the standard bit sets for dataflow analysis.
+        *  We perform CSE and range-checks at the same time
+        *  and assertion propagation separately,
+        *  thus we can union them since the two operations are completely disjunct.
+        */
+
+    union
+    {
+        EXPSET_TP bbCseGen;             // CSEs computed by block
+        ASSERT_TP bbAssertionGen;       // assertions created by block (global prop)
+        ASSERT_TP bbAssertionOutIfTrue; // assertions available on exit along true/jump edge (BBJ_COND, local prop)
+    };
+
+    union
+    {
+        EXPSET_TP bbCseIn;       // CSEs available on entry
+        ASSERT_TP bbAssertionIn; // assertions available on entry (global prop)
+    };
+
+    union
+    {
+        EXPSET_TP bbCseOut;              // CSEs available on exit
+        ASSERT_TP bbAssertionOut;        // assertions available on exit (global prop, local prop & !BBJ_COND)
+        ASSERT_TP bbAssertionOutIfFalse; // assertions available on exit along false/next edge (BBJ_COND, local
+                                            // prop)
+    };
+
+    void* bbEmitCookie;
+
+    //-------------------------------------------------------------------------
 
 #if MEASURE_BLOCK_SIZE
-        static size_t s_Size;
-        static size_t s_Count;
+    static size_t s_Size;
+    static size_t s_Count;
 #endif // MEASURE_BLOCK_SIZE
 
-        bool bbFallsThrough() const;
+    bool bbFallsThrough() const;
 
-        // Our slop fraction is 1/50 of the block weight.
-        static weight_t GetSlopFraction(weight_t weightBlk)
-        {
-            return weightBlk / 50.0;
-        }
+    // Our slop fraction is 1/50 of the block weight.
+    static weight_t GetSlopFraction(weight_t weightBlk)
+    {
+        return weightBlk / 50.0;
+    }
 
-        // Given an the edge b1 -> b2, calculate the slop fraction by
-        // using the higher of the two block weights
-        static weight_t GetSlopFraction(BasicBlock * b1, BasicBlock * b2)
-        {
-            return GetSlopFraction(max(b1->bbWeight, b2->bbWeight));
-        }
+    // Given an the edge b1 -> b2, calculate the slop fraction by
+    // using the higher of the two block weights
+    static weight_t GetSlopFraction(BasicBlock * b1, BasicBlock * b2)
+    {
+        return GetSlopFraction(max(b1->bbWeight, b2->bbWeight));
+    }
 
 #ifdef DEBUG
-        unsigned        bbTgtStkDepth; // Native stack depth on entry (for throw-blocks)
-        static unsigned s_nMaxTrees;   // The max # of tree nodes in any BB
+    unsigned        bbTgtStkDepth; // Native stack depth on entry (for throw-blocks)
+    static unsigned s_nMaxTrees;   // The max # of tree nodes in any BB
 
-        // This is used in integrity checks.  We semi-randomly pick a traversal stamp, label all blocks
-        // in the BB list with that stamp (in this field); then we can tell if (e.g.) predecessors are
-        // still in the BB list by whether they have the same stamp (with high probability).
-        unsigned bbTraversalStamp;
+    // This is used in integrity checks.  We semi-randomly pick a traversal stamp, label all blocks
+    // in the BB list with that stamp (in this field); then we can tell if (e.g.) predecessors are
+    // still in the BB list by whether they have the same stamp (with high probability).
+    unsigned bbTraversalStamp;
 
-        // bbID is a unique block identifier number that does not change: it does not get renumbered, like bbNum.
-        unsigned bbID;
+    // bbID is a unique block identifier number that does not change: it does not get renumbered, like bbNum.
+    unsigned bbID;
 #endif // DEBUG
 
-        unsigned    bbStackDepthOnEntry() const;
-        void        bbSetStack(StackEntry * stack);
-        StackEntry* bbStackOnEntry() const;
+    unsigned    bbStackDepthOnEntry() const;
+    void        bbSetStack(StackEntry * stack);
+    StackEntry* bbStackOnEntry() const;
 
-        // "bbNum" is one-based (for unknown reasons); it is sometimes useful to have the corresponding
-        // zero-based number for use as an array index.
-        unsigned bbInd() const
+    // "bbNum" is one-based (for unknown reasons); it is sometimes useful to have the corresponding
+    // zero-based number for use as an array index.
+    unsigned bbInd() const
+    {
+        assert(bbNum > 0);
+        return bbNum - 1;
+    }
+
+    Statement* firstStmt() const;
+    Statement* lastStmt() const;
+    bool       hasSingleStmt() const;
+
+    // Statements: convenience method for enabling range-based `for` iteration over the statement list, e.g.:
+    //    for (Statement* const stmt : block->Statements())
+    //
+    StatementList Statements() const
+    {
+        return StatementList(firstStmt());
+    }
+
+    // NonPhiStatements: convenience method for enabling range-based `for` iteration over the statement list,
+    // excluding any initial PHI statements, e.g.:
+    //    for (Statement* const stmt : block->NonPhiStatements())
+    //
+    StatementList NonPhiStatements() const
+    {
+        return StatementList(FirstNonPhiDef());
+    }
+
+    GenTree* lastNode() const;
+
+    bool endsWithJmpMethod(Compiler * comp) const;
+
+    bool endsWithTailCall(Compiler * comp, bool fastTailCallsOnly, bool tailCallsConvertibleToLoopOnly,
+                            GenTree** tailCall) const;
+
+    bool endsWithTailCallOrJmp(Compiler * comp, bool fastTailCallsOnly = false) const;
+
+    bool endsWithTailCallConvertibleToLoop(Compiler * comp, GenTree * *tailCall) const;
+
+    // Returns the first statement in the statement list of "this" that is
+    // not an SSA definition (a lcl = phi(...) store).
+    Statement* FirstNonPhiDef() const;
+    Statement* FirstNonPhiDefOrCatchArgStore() const;
+
+    BasicBlock()
+        : bbStmtList(nullptr)
+        , bbLiveIn(VarSetOps::UninitVal())
+        , bbLiveOut(VarSetOps::UninitVal())
+    {
+    }
+
+    // Iteratable collection of successors of a block.
+    template <typename TPosition>
+    class Successors
+    {
+        Compiler*   m_comp;
+        BasicBlock* m_block;
+
+    public:
+        Successors(Compiler* comp, BasicBlock* block)
+            : m_comp(comp)
+            , m_block(block)
         {
-            assert(bbNum > 0);
-            return bbNum - 1;
         }
 
-        Statement* firstStmt() const;
-        Statement* lastStmt() const;
-        bool       hasSingleStmt() const;
-
-        // Statements: convenience method for enabling range-based `for` iteration over the statement list, e.g.:
-        //    for (Statement* const stmt : block->Statements())
-        //
-        StatementList Statements() const
-        {
-            return StatementList(firstStmt());
-        }
-
-        // NonPhiStatements: convenience method for enabling range-based `for` iteration over the statement list,
-        // excluding any initial PHI statements, e.g.:
-        //    for (Statement* const stmt : block->NonPhiStatements())
-        //
-        StatementList NonPhiStatements() const
-        {
-            return StatementList(FirstNonPhiDef());
-        }
-
-        GenTree* lastNode() const;
-
-        bool endsWithJmpMethod(Compiler * comp) const;
-
-        bool endsWithTailCall(Compiler * comp, bool fastTailCallsOnly, bool tailCallsConvertibleToLoopOnly,
-                              GenTree** tailCall) const;
-
-        bool endsWithTailCallOrJmp(Compiler * comp, bool fastTailCallsOnly = false) const;
-
-        bool endsWithTailCallConvertibleToLoop(Compiler * comp, GenTree * *tailCall) const;
-
-        // Returns the first statement in the statement list of "this" that is
-        // not an SSA definition (a lcl = phi(...) store).
-        Statement* FirstNonPhiDef() const;
-        Statement* FirstNonPhiDefOrCatchArgStore() const;
-
-        BasicBlock()
-            : bbStmtList(nullptr)
-            , bbLiveIn(VarSetOps::UninitVal())
-            , bbLiveOut(VarSetOps::UninitVal())
-        {
-        }
-
-        // Iteratable collection of successors of a block.
-        template <typename TPosition>
-        class Successors
+        class iterator
         {
             Compiler*   m_comp;
             BasicBlock* m_block;
+            TPosition   m_pos;
 
         public:
-            Successors(Compiler* comp, BasicBlock* block)
+            iterator(Compiler* comp, BasicBlock* block)
                 : m_comp(comp)
                 , m_block(block)
+                , m_pos(comp, block)
             {
             }
 
-            class iterator
+            iterator()
+                : m_pos()
             {
-                Compiler*   m_comp;
-                BasicBlock* m_block;
-                TPosition   m_pos;
-
-            public:
-                iterator(Compiler* comp, BasicBlock* block)
-                    : m_comp(comp)
-                    , m_block(block)
-                    , m_pos(comp, block)
-                {
-                }
-
-                iterator()
-                    : m_pos()
-                {
-                }
-
-                void operator++(void)
-                {
-                    m_pos.Advance(m_comp, m_block);
-                }
-
-                BasicBlock* operator*()
-                {
-                    return m_pos.Current(m_comp, m_block);
-                }
-
-                bool operator==(const iterator& other)
-                {
-                    return m_pos == other.m_pos;
-                }
-
-                bool operator!=(const iterator& other)
-                {
-                    return m_pos != other.m_pos;
-                }
-            };
-
-            iterator begin()
-            {
-                return iterator(m_comp, m_block);
             }
 
-            iterator end()
+            void operator++(void)
             {
-                return iterator();
+                m_pos.Advance(m_comp, m_block);
+            }
+
+            BasicBlock* operator*()
+            {
+                return m_pos.Current(m_comp, m_block);
+            }
+
+            bool operator==(const iterator& other)
+            {
+                return m_pos == other.m_pos;
+            }
+
+            bool operator!=(const iterator& other)
+            {
+                return m_pos != other.m_pos;
             }
         };
 
-        template <typename TFunc>
-        BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler * comp, TFunc func);
-
-        template <typename TFunc>
-        BasicBlockVisit VisitAllSuccs(Compiler * comp, TFunc func);
-
-        template <typename TFunc>
-        BasicBlockVisit VisitEHSuccs(Compiler * comp, TFunc func);
-
-        template <typename TFunc>
-        BasicBlockVisit VisitRegularSuccs(Compiler * comp, TFunc func);
-
-        bool HasPotentialEHSuccs(Compiler * comp);
-
-        // Base class for Successor block/edge iterators.
-        //
-        class SuccList
+        iterator begin()
         {
-        protected:
-            // For one or two successors, pre-compute and stash the successors inline, in m_succs[], so we don't
-            // need to call a function or execute another `switch` to get them. Also, pre-compute the begin and end
-            // points of the iteration, for use by BBArrayIterator. `m_begin` and `m_end` will either point at
-            // `m_succs` or at the switch table successor array.
-            FlowEdge*        m_succs[2];
-            FlowEdge* const* m_begin;
-            FlowEdge* const* m_end;
+            return iterator(m_comp, m_block);
+        }
 
-            SuccList(const BasicBlock* block);
-        };
-
-        // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
-        // normally used via BasicBlock::Succs(), e.g.:
-        //    for (BasicBlock* const target : block->Succs()) ...
-        //
-        class BBSuccList : private SuccList
+        iterator end()
         {
-        public:
-            BBSuccList(const BasicBlock* block)
-                : SuccList(block)
-            {
-            }
+            return iterator();
+        }
+    };
 
-            BBArrayIterator begin() const
-            {
-                return BBArrayIterator(m_begin);
-            }
+    template <typename TFunc>
+    BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler * comp, TFunc func);
 
-            BBArrayIterator end() const
-            {
-                return BBArrayIterator(m_end);
-            }
-        };
+    template <typename TFunc>
+    BasicBlockVisit VisitAllSuccs(Compiler * comp, TFunc func);
 
-        // BBSuccEdgeList: adapter class for forward iteration of block successors edges, using range-based `for`,
-        // normally used via BasicBlock::SuccEdges(), e.g.:
-        //    for (FlowEdge* const succEdge : block->SuccEdges()) ...
-        //
-        class BBSuccEdgeList : private SuccList
+    template <typename TFunc>
+    BasicBlockVisit VisitEHSuccs(Compiler * comp, TFunc func);
+
+    template <typename TFunc>
+    BasicBlockVisit VisitRegularSuccs(Compiler * comp, TFunc func);
+
+    bool HasPotentialEHSuccs(Compiler * comp);
+
+    // Base class for Successor block/edge iterators.
+    //
+    class SuccList
+    {
+    protected:
+        // For one or two successors, pre-compute and stash the successors inline, in m_succs[], so we don't
+        // need to call a function or execute another `switch` to get them. Also, pre-compute the begin and end
+        // points of the iteration, for use by BBArrayIterator. `m_begin` and `m_end` will either point at
+        // `m_succs` or at the switch table successor array.
+        FlowEdge*        m_succs[2];
+        FlowEdge* const* m_begin;
+        FlowEdge* const* m_end;
+
+        SuccList(const BasicBlock* block);
+    };
+
+    // BBSuccList: adapter class for forward iteration of block successors, using range-based `for`,
+    // normally used via BasicBlock::Succs(), e.g.:
+    //    for (BasicBlock* const target : block->Succs()) ...
+    //
+    class BBSuccList : private SuccList
+    {
+    public:
+        BBSuccList(const BasicBlock* block)
+            : SuccList(block)
         {
-        public:
-            BBSuccEdgeList(const BasicBlock* block)
-                : SuccList(block)
-            {
-            }
+        }
 
-            FlowEdgeArrayIterator begin() const
-            {
-                return FlowEdgeArrayIterator(m_begin);
-            }
+        BBArrayIterator begin() const
+        {
+            return BBArrayIterator(m_begin);
+        }
 
-            FlowEdgeArrayIterator end() const
-            {
-                return FlowEdgeArrayIterator(m_end);
-            }
-        };
+        BBArrayIterator end() const
+        {
+            return BBArrayIterator(m_end);
+        }
+    };
 
-        // BBCompilerSuccList: adapter class for forward iteration of block successors, using range-based `for`,
-        // normally used via BasicBlock::Succs(), e.g.:
-        //    for (BasicBlock* const target : block->Succs(compiler)) ...
+    // BBSuccEdgeList: adapter class for forward iteration of block successors edges, using range-based `for`,
+    // normally used via BasicBlock::SuccEdges(), e.g.:
+    //    for (FlowEdge* const succEdge : block->SuccEdges()) ...
+    //
+    class BBSuccEdgeList : private SuccList
+    {
+    public:
+        BBSuccEdgeList(const BasicBlock* block)
+            : SuccList(block)
+        {
+        }
+
+        FlowEdgeArrayIterator begin() const
+        {
+            return FlowEdgeArrayIterator(m_begin);
+        }
+
+        FlowEdgeArrayIterator end() const
+        {
+            return FlowEdgeArrayIterator(m_end);
+        }
+    };
+
+    // BBCompilerSuccList: adapter class for forward iteration of block successors, using range-based `for`,
+    // normally used via BasicBlock::Succs(), e.g.:
+    //    for (BasicBlock* const target : block->Succs(compiler)) ...
+    //
+    // This version uses NumSucc(Compiler*)/GetSucc(Compiler*). See the documentation there for the explanation
+    // of the implications of this versus the version that does not take `Compiler*`.
+    class BBCompilerSuccList
+    {
+        Compiler*   m_comp;
+        BasicBlock* m_block;
+
+        // iterator: forward iterator for an array of BasicBlock*
         //
-        // This version uses NumSucc(Compiler*)/GetSucc(Compiler*). See the documentation there for the explanation
-        // of the implications of this versus the version that does not take `Compiler*`.
-        class BBCompilerSuccList
+        class iterator
         {
             Compiler*   m_comp;
             BasicBlock* m_block;
-
-            // iterator: forward iterator for an array of BasicBlock*
-            //
-            class iterator
-            {
-                Compiler*   m_comp;
-                BasicBlock* m_block;
-                unsigned    m_succNum;
-
-            public:
-                iterator(Compiler* comp, BasicBlock* block, unsigned succNum)
-                    : m_comp(comp)
-                    , m_block(block)
-                    , m_succNum(succNum)
-                {
-                }
-
-                BasicBlock* operator*() const
-                {
-                    assert(m_block != nullptr);
-                    BasicBlock* bTarget = m_block->GetSucc(m_succNum, m_comp);
-                    assert(bTarget != nullptr);
-                    return bTarget;
-                }
-
-                iterator& operator++()
-                {
-                    ++m_succNum;
-                    return *this;
-                }
-
-                bool operator!=(const iterator& i) const
-                {
-                    return m_succNum != i.m_succNum;
-                }
-            };
+            unsigned    m_succNum;
 
         public:
-            BBCompilerSuccList(Compiler* comp, BasicBlock* block)
+            iterator(Compiler* comp, BasicBlock* block, unsigned succNum)
                 : m_comp(comp)
                 , m_block(block)
+                , m_succNum(succNum)
             {
             }
 
-            iterator begin() const
+            BasicBlock* operator*() const
             {
-                return iterator(m_comp, m_block, 0);
+                assert(m_block != nullptr);
+                BasicBlock* bTarget = m_block->GetSucc(m_succNum, m_comp);
+                assert(bTarget != nullptr);
+                return bTarget;
             }
 
-            iterator end() const
+            iterator& operator++()
             {
-                return iterator(m_comp, m_block, m_block->NumSucc(m_comp));
+                ++m_succNum;
+                return *this;
+            }
+
+            bool operator!=(const iterator& i) const
+            {
+                return m_succNum != i.m_succNum;
             }
         };
 
-        // BBCompilerSuccEdgeList: adapter class for forward iteration of block successors edges, using range-based
-        // `for`, normally used via BasicBlock::SuccEdges(), e.g.:
-        //    for (FlowEdge* const succEdge : block->SuccEdges(compiler)) ...
+    public:
+        BBCompilerSuccList(Compiler* comp, BasicBlock* block)
+            : m_comp(comp)
+            , m_block(block)
+        {
+        }
+
+        iterator begin() const
+        {
+            return iterator(m_comp, m_block, 0);
+        }
+
+        iterator end() const
+        {
+            return iterator(m_comp, m_block, m_block->NumSucc(m_comp));
+        }
+    };
+
+    // BBCompilerSuccEdgeList: adapter class for forward iteration of block successors edges, using range-based
+    // `for`, normally used via BasicBlock::SuccEdges(), e.g.:
+    //    for (FlowEdge* const succEdge : block->SuccEdges(compiler)) ...
+    //
+    // This version uses NumSucc(Compiler*)/GetSucc(Compiler*). See the documentation there for the explanation
+    // of the implications of this versus the version that does not take `Compiler*`.
+    class BBCompilerSuccEdgeList
+    {
+        Compiler*   m_comp;
+        BasicBlock* m_block;
+
+        // iterator: forward iterator for an array of BasicBlock*
         //
-        // This version uses NumSucc(Compiler*)/GetSucc(Compiler*). See the documentation there for the explanation
-        // of the implications of this versus the version that does not take `Compiler*`.
-        class BBCompilerSuccEdgeList
+        class iterator
         {
             Compiler*   m_comp;
             BasicBlock* m_block;
-
-            // iterator: forward iterator for an array of BasicBlock*
-            //
-            class iterator
-            {
-                Compiler*   m_comp;
-                BasicBlock* m_block;
-                unsigned    m_succNum;
-
-            public:
-                iterator(Compiler* comp, BasicBlock* block, unsigned succNum)
-                    : m_comp(comp)
-                    , m_block(block)
-                    , m_succNum(succNum)
-                {
-                }
-
-                FlowEdge* operator*() const
-                {
-                    assert(m_block != nullptr);
-                    FlowEdge* succEdge = m_block->GetSuccEdge(m_succNum, m_comp);
-                    assert(succEdge != nullptr);
-                    return succEdge;
-                }
-
-                iterator& operator++()
-                {
-                    ++m_succNum;
-                    return *this;
-                }
-
-                bool operator!=(const iterator& i) const
-                {
-                    return m_succNum != i.m_succNum;
-                }
-            };
+            unsigned    m_succNum;
 
         public:
-            BBCompilerSuccEdgeList(Compiler* comp, BasicBlock* block)
+            iterator(Compiler* comp, BasicBlock* block, unsigned succNum)
                 : m_comp(comp)
                 , m_block(block)
+                , m_succNum(succNum)
             {
             }
 
-            iterator begin() const
+            FlowEdge* operator*() const
             {
-                return iterator(m_comp, m_block, 0);
+                assert(m_block != nullptr);
+                FlowEdge* succEdge = m_block->GetSuccEdge(m_succNum, m_comp);
+                assert(succEdge != nullptr);
+                return succEdge;
             }
 
-            iterator end() const
+            iterator& operator++()
             {
-                return iterator(m_comp, m_block, m_block->NumSucc(m_comp));
+                ++m_succNum;
+                return *this;
+            }
+
+            bool operator!=(const iterator& i) const
+            {
+                return m_succNum != i.m_succNum;
             }
         };
 
-        // Succs: convenience methods for enabling range-based `for` iteration over a block's successors, e.g.:
-        //    for (BasicBlock* const succ : block->Succs()) ...
-        //
-        // There are two options: one that takes a Compiler* and one that doesn't. These correspond to the
-        // NumSucc()/GetSucc() functions that do or do not take a Compiler*. See the comment for NumSucc()/GetSucc()
-        // for the distinction.
-        BBSuccList Succs() const
+    public:
+        BBCompilerSuccEdgeList(Compiler* comp, BasicBlock* block)
+            : m_comp(comp)
+            , m_block(block)
         {
-            return BBSuccList(this);
         }
 
-        BBCompilerSuccList Succs(Compiler * comp)
+        iterator begin() const
         {
-            return BBCompilerSuccList(comp, this);
+            return iterator(m_comp, m_block, 0);
         }
 
-        BBSuccEdgeList SuccEdges()
+        iterator end() const
         {
-            return BBSuccEdgeList(this);
+            return iterator(m_comp, m_block, m_block->NumSucc(m_comp));
         }
+    };
 
-        BBCompilerSuccEdgeList SuccEdges(Compiler * comp)
-        {
-            return BBCompilerSuccEdgeList(comp, this);
-        }
+    // Succs: convenience methods for enabling range-based `for` iteration over a block's successors, e.g.:
+    //    for (BasicBlock* const succ : block->Succs()) ...
+    //
+    // There are two options: one that takes a Compiler* and one that doesn't. These correspond to the
+    // NumSucc()/GetSucc() functions that do or do not take a Compiler*. See the comment for NumSucc()/GetSucc()
+    // for the distinction.
+    BBSuccList Succs() const
+    {
+        return BBSuccList(this);
+    }
 
-        // Clone block state and statements from `from` block to `to` block (which must be new/empty)
-        static void CloneBlockState(Compiler * compiler, BasicBlock * to, const BasicBlock* from);
+    BBCompilerSuccList Succs(Compiler * comp)
+    {
+        return BBCompilerSuccList(comp, this);
+    }
 
-        // Copy the block kind and take memory ownership of the targets.
-        void TransferTarget(BasicBlock * from);
+    BBSuccEdgeList SuccEdges()
+    {
+        return BBSuccEdgeList(this);
+    }
 
-        void MakeLIR(GenTree * firstNode, GenTree * lastNode);
-        bool IsLIR() const;
+    BBCompilerSuccEdgeList SuccEdges(Compiler * comp)
+    {
+        return BBCompilerSuccEdgeList(comp, this);
+    }
 
-        void SetDominatedByExceptionalEntryFlag()
-        {
-            SetFlags(BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY);
-        }
+    // Clone block state and statements from `from` block to `to` block (which must be new/empty)
+    static void CloneBlockState(Compiler * compiler, BasicBlock * to, const BasicBlock* from);
 
-        bool IsDominatedByExceptionalEntryFlag() const
-        {
-            return HasFlag(BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY);
-        }
+    // Copy the block kind and take memory ownership of the targets.
+    void TransferTarget(BasicBlock * from);
+
+    void MakeLIR(GenTree * firstNode, GenTree * lastNode);
+    bool IsLIR() const;
+
+    void SetDominatedByExceptionalEntryFlag()
+    {
+        SetFlags(BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY);
+    }
+
+    bool IsDominatedByExceptionalEntryFlag() const
+    {
+        return HasFlag(BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY);
+    }
 
 #ifdef DEBUG
-        bool Contains(const GenTree* node) const
+    bool Contains(const GenTree* node) const
+    {
+        assert(IsLIR());
+        for (Iterator iter = begin(); iter != end(); ++iter)
         {
-            assert(IsLIR());
-            for (Iterator iter = begin(); iter != end(); ++iter)
+            if (*iter == node)
             {
-                if (*iter == node)
-                {
-                    return true;
-                }
+                return true;
             }
-            return false;
         }
+        return false;
+    }
 #endif // DEBUG
     };
 

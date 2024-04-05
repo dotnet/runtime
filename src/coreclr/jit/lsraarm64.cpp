@@ -1337,7 +1337,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     int       srcCount      = 0;
     int       dstCount      = 0;
-    regMaskTP dstCandidates = RBM_NONE;
 
     if (HWIntrinsicInfo::IsMultiReg(intrin.id))
     {
@@ -1553,7 +1552,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
         {
-            regMaskTP predMask = HWIntrinsicInfo::IsLowMaskedOperation(intrin.id) ? RBM_LOWMASK : RBM_ALLMASK;
+            regMaskPredicate predMask = HWIntrinsicInfo::IsLowMaskedOperation(intrin.id) ? RBM_LOWMASK : RBM_ALLMASK;
             srcCount += BuildOperandUses(intrin.op1, predMask);
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
@@ -1810,11 +1809,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     if ((dstCount == 1) || (dstCount == 2))
     {
-        BuildDef(intrinsicTree, dstCandidates);
+        BuildDef(intrinsicTree);
 
         if (dstCount == 2)
         {
-            BuildDef(intrinsicTree, dstCandidates, 1);
+            BuildDef(intrinsicTree, RBM_NONE, 1);
         }
     }
     else

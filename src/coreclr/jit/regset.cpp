@@ -144,6 +144,9 @@ void RegSet::rsClearRegsModified()
 #endif // DEBUG
 
     rsModifiedRegsMask.Clear();
+
+#ifdef SWIFT_SUPPORT
+    // If this method has a SwiftError* parameter, we will return SwiftError::Value in REG_SWIFT_ERROR,
     // so don't treat it as callee-save.
     if (m_rsCompiler->lvaSwiftErrorArg != BAD_VAR_NUM)
     {

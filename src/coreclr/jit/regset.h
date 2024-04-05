@@ -95,32 +95,6 @@ public:
         assert(rsModifiedRegsMaskInitialized);
         return rsModifiedRegsMask;
     }
-
-    regMaskTP rsGetModifiedCalleeSavedRegsMask() const
-    {
-        assert(rsModifiedRegsMaskInitialized);
-        return (rsModifiedRegsMask & rsAllCalleeSavedMask);
-    }
-
-    regMaskTP rsGetModifiedIntCalleeSavedRegsMask() const
-    {
-        assert(rsModifiedRegsMaskInitialized);
-        return (rsModifiedRegsMask & rsIntCalleeSavedMask);
-    }
-
-#ifdef TARGET_AMD64
-    regMaskTP rsGetModifiedOsrIntCalleeSavedRegsMask() const
-    {
-        assert(rsModifiedRegsMaskInitialized);
-        return (rsModifiedRegsMask & (rsIntCalleeSavedMask | RBM_EBP));
-    }
-#endif // TARGET_AMD64
-
-    regMaskTP rsGetModifiedFltCalleeSavedRegsMask() const
-    {
-        assert(rsModifiedRegsMaskInitialized);
-        return (rsModifiedRegsMask & RBM_FLT_CALLEE_SAVED);
-    }
 #endif
 
     regMaskGpr rsGetModifiedGprRegsMask() const

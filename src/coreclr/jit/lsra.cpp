@@ -4418,7 +4418,7 @@ void LinearScan::updateDeadCandidatesAtBlockStart(AllRegsMask& deadRegMask, VarT
 }
 #else
 
-void LinearScan::updateDeadCandidatesAtBlockStart(regMaskTP deadRegMask, VarToRegMap inVarToRegMap)
+void LinearScan::updateDeadCandidatesAtBlockStart(RegBitSet64 deadRegMask, VarToRegMap inVarToRegMap)
 {
     while (deadRegMask != RBM_NONE)
     {
@@ -4892,7 +4892,7 @@ void LinearScan::inActivateRegisters(AllRegsMask& inactiveMask)
     }
 }
 #else
-void LinearScan::inActivateRegisters(regMaskTP inactiveMask)
+void LinearScan::inActivateRegisters(RegBitSet64 inactiveMask)
 {
     while (inactiveMask != RBM_NONE)
     {
@@ -5001,7 +5001,7 @@ void LinearScan::freeRegisterMask(AllRegsMask& freeMask)
 }
 
 #else
-void LinearScan::freeRegisterMask(regMaskTP freeMask)
+void LinearScan::freeRegisterMask(RegBitSet64 freeMask)
 {
     while (freeMask != RBM_NONE)
     {
