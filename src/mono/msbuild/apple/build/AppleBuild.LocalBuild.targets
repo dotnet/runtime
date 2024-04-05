@@ -34,8 +34,59 @@
     <GenerateCMakeProject>false</GenerateCMakeProject>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'">
+    <!-- Suppress trimming warnings as these are tests -->
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <NoWarn>$(NoWarn);IL2103;IL2105;IL2025;IL2111</NoWarn>
+    <!-- Warns about missing Xamarin.iOS.dll -->
+    <NoWarn Condition="'$(EnableSoftTrimming)' == 'true'">$(NoWarn);IL2035</NoWarn>
+    <!-- https://github.com/dotnet/sdk/issues/18581 tracks needing to set 2 properties to disable warnings. -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+  </PropertyGroup>
+
+  <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this
+  should be considered if we ever want to change the Condition of the ConfigureTrimming target -->
+  <Target Name="ConfigureTrimming" Condition="('$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true') and '$(UseNativeAOTRuntime)' != 'true' and '$(SkipConfigureTrimming)' != 'true'">
+    <PropertyGroup>
+      <TrimMode Condition="'$(EnableSoftTrimming)' == 'true'">copyused</TrimMode>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- Mark all the assemblies for link. We will explicitly mark the non-trimmable ones -->
+      <AppleAssembliesToBundle TrimMode="$(TrimMode)" />
+
+      <!-- Don't trim the main assembly.
+           TrimMode="" is needed so the root assemblies are correctly identified -->
+      <AppleAssembliesToBundle TrimMode="" Condition="'%(FileName)' == '$(AssemblyName)'" />
+
+      <!-- TODO: find out why these assemblies aren't copied by copyused even though they're referenced -->
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.ComponentModel.EventBasedAsync'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Diagnostics.FileVersionInfo'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Drawing.Primitives'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.IO.Pipelines'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Memory'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Net.WebHeaderCollection'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Runtime.Serialization.Formatters'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.AccessControl'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Claims'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Permissions'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Transactions.Local'" />
+
+      <TrimmerRootAssembly
+          Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == '$(AssemblyName).dll'"
+          Include="%(AppleAssembliesToBundle.Identity)" />
+      <!-- PrepareForILLink target sets the IntermediateAssembly as an entry point for ILLink
+          which doesn't exist at the path when BuildTestsOnHelix -->
+      <IntermediateAssembly Remove="@(IntermediateAssembly)" />
+
+      <ManagedAssemblyToLink Include="@(AppleAssembliesToBundle)">
+        <RelativePath>%(Filename)%(Extension)</RelativePath>
+      </ManagedAssemblyToLink>
+    </ItemGroup>
+  </Target>
+
   <!-- Use local runtime pack -->
-  <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences" DependsOnTargets="_PrepareAndValidateAppleInputs">
+  <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences" DependsOnTargets="_PrepareAndValidateAppleInputs;ConfigureTrimming">
     <ItemGroup>
       <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackLocationToUse)"
                            Condition="'$(MicrosoftNetCoreAppRuntimePackLocationToUse)' != '' and
