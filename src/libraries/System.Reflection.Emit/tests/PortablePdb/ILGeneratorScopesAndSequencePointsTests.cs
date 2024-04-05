@@ -198,12 +198,13 @@ namespace System.Reflection.Emit.Tests
             il1.MarkSequencePoint(srcDoc1, 8, 0, 9, 18);
             il1.Emit(OpCodes.Ldc_I4_2);
             il1.Emit(OpCodes.Stloc_1);
+            il1.MarkSequencePoint(srcDoc1, 0xfeefee, 0, 0xfeefee, 0); // hidden sequence point
             il1.Emit(OpCodes.Ldloc_0);
             il1.Emit(OpCodes.Ldloc_1);
             il1.Emit(OpCodes.Add);
             il1.Emit(OpCodes.Stloc_0);
+            il1.MarkSequencePoint(srcDoc1, 11, 1, 11, 20);
             il1.Emit(OpCodes.Ldloc_0);
-            il1.MarkSequencePoint(srcDoc1, 0xfeefee, 0, 0xfeefee, 0); // hidden sequence point
             il1.Emit(OpCodes.Ret);
 
             MethodBuilder entryPoint = tb.DefineMethod("Main", MethodAttributes.HideBySig | MethodAttributes.Public | MethodAttributes.Static);
@@ -255,14 +256,24 @@ namespace System.Reflection.Emit.Tests
             Assert.True(spcEnumerator.MoveNext());
             sp = spcEnumerator.Current;
             Assert.Equal(doc2, reader.GetDocument(sp.Document));
-            //Assert.Equal(8, sp.StartLine); 11
+            Assert.Equal(4, sp.Offset);
+            Assert.Equal(8, sp.StartLine);
             Assert.Equal(0, sp.StartColumn);
-            //Assert.Equal(9, sp.EndLine); 12
+            Assert.Equal(9, sp.EndLine);
             Assert.Equal(18, sp.EndColumn);       
             Assert.True(spcEnumerator.MoveNext());
             sp = spcEnumerator.Current;
             Assert.Equal(doc2, reader.GetDocument(sp.Document));
             Assert.True(sp.IsHidden);
+            Assert.Equal(6, sp.Offset);
+            Assert.True(spcEnumerator.MoveNext());
+            sp = spcEnumerator.Current;
+            Assert.Equal(doc2, reader.GetDocument(sp.Document));
+            Assert.Equal(10, sp.Offset);
+            Assert.Equal(11, sp.StartLine);
+            Assert.Equal(1, sp.StartColumn);
+            Assert.Equal(11, sp.EndLine);
+            Assert.Equal(20, sp.EndColumn);
             Assert.False(spcEnumerator.MoveNext());
 
             LocalScopeHandleCollection.Enumerator localScopes = reader.GetLocalScopes(MetadataTokens.MethodDefinitionHandle(method.MetadataToken)).GetEnumerator();

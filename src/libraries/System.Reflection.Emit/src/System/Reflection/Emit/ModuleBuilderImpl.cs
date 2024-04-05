@@ -448,23 +448,23 @@ namespace System.Reflection.Emit
             spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(GetDocument(pair.Key)));
             // First sequence point record
             PopulateSequencePointsBlob(spBlobBuilder, pair.Value);
+            int i = 0;
 
             while (enumerator.MoveNext())
             {
+                int previousNonHiddenStartLine = pair.Value[i].StartLine;
+                int previousNonHiddenStartColumn = pair.Value[i].StartColumn;
                 pair = enumerator.Current;
                 spBlobBuilder.WriteCompressedInteger(0);
                 spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(GetDocument(pair.Key)));
-                PopulateSequencePointsBlob(spBlobBuilder, pair.Value);
+                PopulateSequencePointsBlob(spBlobBuilder, pair.Value, previousNonHiddenStartLine, previousNonHiddenStartColumn);
             }
 
             return _pdbMetadata.GetOrAddBlob(spBlobBuilder);
         }
 
-        private static void PopulateSequencePointsBlob(BlobBuilder spBlobBuilder, List<SequencePoint> sequencePoints)
+        private static void PopulateSequencePointsBlob(BlobBuilder spBlobBuilder, List<SequencePoint> sequencePoints, int previousNonHiddenStartLine = -1, int previousNonHiddenStartColumn = -1)
         {
-            int previousNonHiddenStartLine = -1;
-            int previousNonHiddenStartColumn = -1;
-
             for (int i = 0; i < sequencePoints.Count; i++)
             {
                 // IL offset delta:
