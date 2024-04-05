@@ -693,7 +693,7 @@ void emitter::emitIns_R_R_I(
         code |= ((imm >> 5) & 0x3f) << 25;
         code |= ((imm >> 12) & 0x1) << 31;
         // TODO-RISCV64: Move jump logic to emitIns_J
-        id->idAddr()->iiaSetInstrCount(imm / sizeof(code_t));
+        id->idAddr()->iiaSetInstrCount(static_cast<int>(imm / sizeof(code_t)));
     }
     else if (ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc)
     {
@@ -988,9 +988,9 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 // This computes address from the immediate which is relocatable.
-void emitter::emitIns_R_AI(instruction ins,
-                           emitAttr    attr,
-                           regNumber   reg,
+void emitter::emitIns_R_AI(instruction  ins,
+                           emitAttr     attr,
+                           regNumber    reg,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(EA_IS_RELOC(attr)); // EA_PTR_DSP_RELOC
@@ -1290,8 +1290,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 void emitter::emitIns_Call(EmitCallType          callType,
                            CORINFO_METHOD_HANDLE methHnd,
                            INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                           void*    addr,
-                           ssize_t  argSize,
+                           void*            addr,
+                           ssize_t          argSize,
                            emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
@@ -1760,9 +1760,9 @@ void emitter::emitJumpDistBind()
         emitCounts_INS_OPTS_J * (6 << 2); // the max placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J)
     NATIVE_OFFSET psd = B_DIST_SMALL_MAX_POS - maxPlaceholderSize;
 
-/*****************************************************************************/
-/* If the default small encoding is not enough, we start again here.     */
-/*****************************************************************************/
+    /*****************************************************************************/
+    /* If the default small encoding is not enough, we start again here.     */
+    /*****************************************************************************/
 
 AGAIN:
 
@@ -1793,7 +1793,7 @@ AGAIN:
         UNATIVE_OFFSET dstOffs;
         NATIVE_OFFSET  jmpDist; // the relative jump distance, as it will be encoded
 
-/* Make sure the jumps are properly ordered */
+        /* Make sure the jumps are properly ordered */
 
 #ifdef DEBUG
         assert(lastSJ == nullptr || lastIG != jmp->idjIG || lastSJ->idjOffs < (jmp->idjOffs + adjSJ));
@@ -1847,7 +1847,6 @@ AGAIN:
         jmp->idjOffs += adjSJ;
 
         // If this is a jump via register, the instruction size does not change, so we are done.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
         /* Have we bound this jump's target already? */
 
@@ -1868,7 +1867,6 @@ AGAIN:
         else
         {
             /* First time we've seen this label, convert its target */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             tgtIG = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 
@@ -1948,8 +1946,8 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
-                if (ins > INS_jalr ||
-                    (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                if (ins > INS_jalr || (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr <
+                                                                       // beq/bne/blt/bltu/bge/bgeu
                 {
                     if (isValidSimm13(jmpDist + maxPlaceholderSize))
                     {
@@ -2022,8 +2020,8 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
-                if (ins > INS_jalr ||
-                    (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                if (ins > INS_jalr || (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr <
+                                                                       // beq/bne/blt/bltu/bge/bgeu
                 {
                     if (isValidSimm13(jmpDist + maxPlaceholderSize))
                     {
@@ -2748,48 +2746,48 @@ ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* src, const insGroup* ig
     return distVal;
 }
 
-static constexpr size_t NBitMask(uint8_t bits)
+static inline constexpr unsigned WordMask(uint8_t bits)
 {
-    return (static_cast<size_t>(1) << bits) - 1;
+    return static_cast<unsigned>((1ull << bits) - 1);
 }
 
 template <uint8_t MaskSize>
-static ssize_t LowerNBitsOfWord(ssize_t word)
+static unsigned LowerNBitsOfWord(ssize_t word)
 {
     static_assert(MaskSize < 32, "Given mask size is bigger than the word itself");
     static_assert(MaskSize > 0, "Given mask size cannot be zero");
 
-    static constexpr size_t kMask = NBitMask(MaskSize);
+    static constexpr unsigned kMask = WordMask(MaskSize);
 
-    return word & kMask;
+    return static_cast<unsigned>(word & kMask);
 }
 
 template <uint8_t MaskSize>
-static ssize_t UpperNBitsOfWord(ssize_t word)
+static unsigned UpperNBitsOfWord(ssize_t word)
 {
-    static constexpr size_t kShift = 32 - MaskSize;
+    static constexpr unsigned kShift = 32 - MaskSize;
 
     return LowerNBitsOfWord<MaskSize>(word >> kShift);
 }
 
 template <uint8_t MaskSize>
-static ssize_t UpperNBitsOfWordSignExtend(ssize_t word)
+static unsigned UpperNBitsOfWordSignExtend(ssize_t word)
 {
     static constexpr unsigned kSignExtend = 1 << (31 - MaskSize);
 
     return UpperNBitsOfWord<MaskSize>(word + kSignExtend);
 }
 
-static ssize_t UpperWordOfDoubleWord(ssize_t immediate)
+static unsigned UpperWordOfDoubleWord(ssize_t immediate)
 {
-    return immediate >> 32;
+    return static_cast<unsigned>(immediate >> 32);
 }
 
-static ssize_t LowerWordOfDoubleWord(ssize_t immediate)
+static unsigned LowerWordOfDoubleWord(ssize_t immediate)
 {
-    static constexpr size_t kWordMask = NBitMask(32);
+    static constexpr size_t kWordMask = WordMask(32);
 
-    return immediate & kWordMask;
+    return static_cast<unsigned>(immediate & kWordMask);
 }
 
 template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
@@ -2815,28 +2813,28 @@ static ssize_t UpperWordOfDoubleWordDoubleSignExtend(ssize_t doubleWord)
     return UpperWordOfDoubleWord(DoubleWordSignExtend<UpperMaskSize, LowerMaskSize>(doubleWord));
 }
 
-/*static*/ unsigned emitter::TrimSignedToImm12(int imm12)
+/*static*/ unsigned emitter::TrimSignedToImm12(ssize_t imm12)
 {
     assert(isValidSimm12(imm12));
 
     return static_cast<unsigned>(LowerNBitsOfWord<12>(imm12));
 }
 
-/*static*/ unsigned emitter::TrimSignedToImm13(int imm13)
+/*static*/ unsigned emitter::TrimSignedToImm13(ssize_t imm13)
 {
     assert(isValidSimm13(imm13));
 
     return static_cast<unsigned>(LowerNBitsOfWord<13>(imm13));
 }
 
-/*static*/ unsigned emitter::TrimSignedToImm20(int imm20)
+/*static*/ unsigned emitter::TrimSignedToImm20(ssize_t imm20)
 {
     assert(isValidSimm20(imm20));
 
     return static_cast<unsigned>(LowerNBitsOfWord<20>(imm20));
 }
 
-/*static*/ unsigned emitter::TrimSignedToImm21(int imm21)
+/*static*/ unsigned emitter::TrimSignedToImm21(ssize_t imm21)
 {
     assert(isValidSimm21(imm21));
 
@@ -2890,8 +2888,8 @@ BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t im
     if (id->idReg2())
     {
         // special for INT64_MAX or UINT32_MAX
-        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_R0, NBitMask(12));
-        const ssize_t shiftValue = (immediate == INT64_MAX) ? 1 : 32;
+        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_R0, WordMask(12));
+        const unsigned shiftValue = (immediate == INT64_MAX) ? 1 : 32;
         dst += emitOutput_ITypeInstr(dst, INS_srli, reg1, reg1, shiftValue);
     }
     else
@@ -2904,10 +2902,10 @@ BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t im
 
 BYTE* emitter::emitOutputInstr_OptsI32(BYTE* dst, ssize_t immediate, regNumber reg1)
 {
-    const ssize_t upperWord = UpperWordOfDoubleWord(immediate);
+    const unsigned upperWord = UpperWordOfDoubleWord(immediate);
     dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, UpperNBitsOfWordSignExtend<20>(upperWord));
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<12>(upperWord));
-    const ssize_t lowerWord = LowerWordOfDoubleWord(immediate);
+    const unsigned lowerWord = LowerWordOfDoubleWord(immediate);
     dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 11);
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<11>(lowerWord >> 21));
     dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 11);
@@ -2966,7 +2964,7 @@ BYTE* emitter::emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsign
     const regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
     const instruction lastIns = (*ins == INS_jal) ? (*ins = INS_addi) : *ins;
-    const UINT32      high = immediate >> 11;
+    const ssize_t     high    = immediate >> 11;
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(high));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(high));

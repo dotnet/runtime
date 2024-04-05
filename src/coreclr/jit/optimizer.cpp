@@ -37,7 +37,8 @@ void Compiler::optInit()
     optCSEunmarks        = 0;
 }
 
-DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
+DataFlow::DataFlow(Compiler* pCompiler)
+    : m_pCompiler(pCompiler)
 {
 }
 
@@ -503,14 +504,12 @@ bool Compiler::optExtractInitTestIncr(
         if (initStmt->GetRootNode()->OperIs(GT_JTRUE))
         {
             bool doGetPrev = true;
-#ifdef OPT_CONFIG
             if (opts.optRepeat)
             {
                 // Previous optimization passes may have inserted compiler-generated
                 // statements other than duplicated loop conditions.
                 doGetPrev = (initStmt->GetPrevStmt() != nullptr);
             }
-#endif // OPT_CONFIG
             if (doGetPrev)
             {
                 initStmt = initStmt->GetPrevStmt();
@@ -891,7 +890,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
 
     switch (iterOperType)
     {
-// For small types, the iteration operator will narrow these values if big
+        // For small types, the iteration operator will narrow these values if big
 
 #define INIT_ITER_BY_TYPE(type)                                                                                        \
     constInitX = (type)constInit;                                                                                      \
@@ -910,7 +909,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             INIT_ITER_BY_TYPE(unsigned short);
             break;
 
-        // For the big types, 32 bit arithmetic is performed
+            // For the big types, 32 bit arithmetic is performed
 
         case TYP_INT:
             if (unsTest)
@@ -1694,7 +1693,6 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
 
     // The old loop body is unreachable now, but we will remove those
     // blocks after we finish unrolling.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (verbose)
@@ -1797,7 +1795,9 @@ void Compiler::optReplaceScalarUsesWithConst(BasicBlock* block, unsigned lclNum,
         bool MadeChanges = false;
 
         ReplaceVisitor(Compiler* comp, unsigned lclNum, ssize_t cnsVal)
-            : GenTreeVisitor(comp), m_lclNum(lclNum), m_cnsVal(cnsVal)
+            : GenTreeVisitor(comp)
+            , m_lclNum(lclNum)
+            , m_cnsVal(cnsVal)
         {
         }
 
@@ -1843,7 +1843,8 @@ Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* t
 
         Compiler::OptInvertCountTreeInfoType Result = {};
 
-        CountTreeInfoVisitor(Compiler* comp) : GenTreeVisitor(comp)
+        CountTreeInfoVisitor(Compiler* comp)
+            : GenTreeVisitor(comp)
         {
         }
 
@@ -2506,6 +2507,40 @@ PhaseStatus Compiler::optOptimizeLayout()
     // it has no impact on a release build.
     //
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//-----------------------------------------------------------------------------
+// optOptimizePostLayout: Optimize flow after block layout is finalized
+//
+// Returns:
+//   suitable phase status
+//
+PhaseStatus Compiler::optOptimizePostLayout()
+{
+    assert(opts.OptimizationEnabled());
+    PhaseStatus status = PhaseStatus::MODIFIED_NOTHING;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        // Reverse conditions to enable fallthrough flow into BBJ_COND's false target
+        if (block->KindIs(BBJ_COND) && block->CanRemoveJumpToTarget(block->GetTrueTarget(), this))
+        {
+            GenTree* const test = block->lastNode();
+            assert(test->OperIsConditionalJump());
+            GenTree* const cond = gtReverseCond(test);
+            assert(cond == test); // Ensure `gtReverseCond` did not create a new node
+
+            FlowEdge* const oldTrueEdge  = block->GetTrueEdge();
+            FlowEdge* const oldFalseEdge = block->GetFalseEdge();
+            block->SetTrueEdge(oldFalseEdge);
+            block->SetFalseEdge(oldTrueEdge);
+
+            assert(block->CanRemoveJumpToTarget(block->GetFalseTarget(), this));
+            status = PhaseStatus::MODIFIED_EVERYTHING;
+        }
+    }
+
+    return status;
 }
 
 //------------------------------------------------------------------------
@@ -3382,7 +3417,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
         switch (oper)
         {
             /* Constants can usually be narrowed by changing their value */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifndef TARGET_64BIT
             __int64 lval;
@@ -3484,8 +3518,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 return true;
 
-            /* Operands that are in memory can usually be narrowed
-               simply by changing their gtType */
+                /* Operands that are in memory can usually be narrowed
+                   simply by changing their gtType */
 
             case GT_LCL_VAR:
                 /* We only allow narrowing long -> int for a GT_LCL_VAR */
@@ -3743,7 +3777,8 @@ void Compiler::optRecordSsaUses(GenTree* tree, BasicBlock* block)
         };
 
         SsaRecordingVisitor(Compiler* compiler, BasicBlock* block)
-            : GenTreeVisitor<SsaRecordingVisitor>(compiler), m_block(block)
+            : GenTreeVisitor<SsaRecordingVisitor>(compiler)
+            , m_block(block)
         {
         }
 
@@ -4580,7 +4615,11 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
             const char* m_failReason;
 #endif
 
-            Value(GenTree* node) : m_node(node), m_hoistable(false), m_cctorDependent(false), m_invariant(false)
+            Value(GenTree* node)
+                : m_node(node)
+                , m_hoistable(false)
+                , m_cctorDependent(false)
+                , m_invariant(false)
             {
 #ifdef DEBUG
                 m_failReason = "unset";
@@ -4615,6 +4654,15 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                 // since NULLCHECK has no value, it will never be CSE,
                 // hence this check is not present in optIsCSEcandidate().
                 return true;
+            }
+            else if ((node->gtFlags & GTF_ORDER_SIDEEFF) != 0)
+            {
+                // If a node has an order side effect, we can't hoist it at all: we don't know what the order
+                // dependence actually is. For example, assertion prop might have determined a node can't throw
+                // an exception, and eliminated the GTF_EXCEPT flag, replacing it with GTF_ORDER_SIDEEFF. We
+                // can't hoist because we might then hoist above the expression that led assertion prop to make
+                // that decision. This can happen in JitOptRepeat, where hoisting can follow assertion prop.
+                return false;
             }
 
             // Tree must be a suitable CSE candidate for us to be able to hoist it.
@@ -4771,9 +4819,9 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                 // To be invariant the variable must be in SSA ...
                 bool isInvariant = lclVar->HasSsaName();
                 // and the SSA definition must be outside the loop we're hoisting from ...
-                isInvariant = isInvariant &&
-                              !m_loop->ContainsBlock(
-                                  m_compiler->lvaGetDesc(lclNum)->GetPerSsaData(lclVar->GetSsaNum())->GetBlock());
+                isInvariant =
+                    isInvariant && !m_loop->ContainsBlock(
+                                       m_compiler->lvaGetDesc(lclNum)->GetPerSsaData(lclVar->GetSsaNum())->GetBlock());
 
                 // and the VN of the tree is considered invariant as well.
                 //
@@ -4806,7 +4854,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                 }
                 else if (!top.m_hoistable)
                 {
-                    top.m_failReason = "not handled by cse";
+                    top.m_failReason = "not handled by hoisting or CSE";
                 }
 #endif
 
@@ -4889,7 +4937,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                     treeIsHoistable = IsNodeHoistable(tree);
                     if (!treeIsHoistable)
                     {
-                        INDEBUG(failReason = "not handled by cse";)
+                        INDEBUG(failReason = "not handled by hoisting or CSE";)
                     }
                 }
 
@@ -5426,7 +5474,9 @@ PhaseStatus Compiler::fgCanonicalizeFirstBB()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-LoopSideEffects::LoopSideEffects() : VarInOut(VarSetOps::UninitVal()), VarUseDef(VarSetOps::UninitVal())
+LoopSideEffects::LoopSideEffects()
+    : VarInOut(VarSetOps::UninitVal())
+    , VarUseDef(VarSetOps::UninitVal())
 {
     for (MemoryKind mk : allMemoryKinds())
     {

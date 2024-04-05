@@ -40,7 +40,8 @@ public:
     static constexpr weight_t epsilon = 0.001;
 
 private:
-    ProfileSynthesis(Compiler* compiler) : m_comp(compiler)
+    ProfileSynthesis(Compiler* compiler)
+        : m_comp(compiler)
     {
     }
 
@@ -51,6 +52,7 @@ private:
     static constexpr weight_t ilNextLikelihood   = 0.52;
     static constexpr weight_t loopBackLikelihood = 0.9;
     static constexpr weight_t loopExitLikelihood = 0.9;
+    static constexpr weight_t maxCount           = 1e12;
 
     void Run(ProfileSynthesisOption option);
 
@@ -74,6 +76,8 @@ private:
     void ComputeBlockWeights();
     void ComputeBlockWeight(BasicBlock* block);
 
+    void GaussSeidelSolver();
+
 private:
     Compiler* const        m_comp;
     FlowGraphDfsTree*      m_dfsTree                   = nullptr;
@@ -81,6 +85,8 @@ private:
     weight_t*              m_cyclicProbabilities       = nullptr;
     unsigned               m_improperLoopHeaders       = 0;
     unsigned               m_cappedCyclicProbabilities = 0;
+    bool                   m_approximate               = false;
+    bool                   m_overflow                  = false;
 };
 
 #endif // !_FGPROFILESYNTHESIS_H_

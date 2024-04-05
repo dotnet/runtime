@@ -19,7 +19,7 @@ namespace System.Text.RegularExpressions.Tests
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 (string pattern, RegexOptions options, string input, bool expectedSuccess)[] cases = PcreTestData_Cases(engine).ToArray();
-                Regex[] regexes = RegexHelpers.GetRegexesAsync(engine, cases.Select(c => (c.pattern, (CultureInfo?)null, (RegexOptions?)c.options, (TimeSpan?)null)).ToArray()).Result;
+                Regex[] regexes = RegexHelpers.GetRegexes(engine, cases.Select(c => (c.pattern, (CultureInfo?)null, (RegexOptions?)c.options, (TimeSpan?)null)).ToArray());
                 for (int i = 0; i < regexes.Length; i++)
                 {
                     yield return new object[] { regexes[i], cases[i].input, cases[i].expectedSuccess };

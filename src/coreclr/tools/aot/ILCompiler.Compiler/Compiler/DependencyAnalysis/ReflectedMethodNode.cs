@@ -68,7 +68,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     else
                     {
-                        if (ReflectionVirtualInvokeMapNode.NeedsVirtualInvokeInfo(factory, slotDefiningMethod) && !factory.VTable(slotDefiningMethod.OwningType).HasFixedSlots)
+                        if (ReflectionVirtualInvokeMapNode.NeedsVirtualInvokeInfo(factory, slotDefiningMethod) && !factory.VTable(slotDefiningMethod.OwningType).HasKnownVirtualMethodUse)
                             dependencies.Add(factory.VirtualMethodUse(slotDefiningMethod), "Virtually callable reflectable method");
                     }
                 }

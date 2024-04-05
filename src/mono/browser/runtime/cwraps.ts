@@ -33,6 +33,7 @@ const threading_cwraps: SigLine[] = WasmEnableThreads ? [
     [true, "mono_wasm_register_ui_thread", "void", []],
     [true, "mono_wasm_register_io_thread", "void", []],
     [true, "mono_wasm_print_thread_dump", "void", []],
+    [true, "mono_wasm_synchronization_context_pump", "void", []],
     [true, "mono_threads_wasm_sync_run_in_target_thread_done", "void", ["number"]],
 ] : [];
 
@@ -157,6 +158,7 @@ export interface t_ThreadingCwraps {
     mono_wasm_register_ui_thread(): void;
     mono_wasm_register_io_thread(): void;
     mono_wasm_print_thread_dump(): void;
+    mono_wasm_synchronization_context_pump(): void;
     mono_threads_wasm_sync_run_in_target_thread_done(sem: VoidPtr): void;
 }
 
@@ -283,7 +285,7 @@ export const enum I52Error {
 
 const fastCwrapTypes = ["void", "number", null];
 
-function cwrap(name: string, returnType: string | null, argTypes: string[] | undefined, opts: any): Function {
+function cwrap (name: string, returnType: string | null, argTypes: string[] | undefined, opts: any): Function {
     // Attempt to bypass emscripten's generated wrapper if it is safe to do so
     let fce =
         // Special cwrap options disable the fast path
@@ -314,7 +316,7 @@ function cwrap(name: string, returnType: string | null, argTypes: string[] | und
     return fce;
 }
 
-export function init_c_exports(): void {
+export function init_c_exports (): void {
     const fns = [...fn_signatures];
     for (const sig of fns) {
         const wf: any = wrapped_c_functions;

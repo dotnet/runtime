@@ -11,6 +11,10 @@
 
 FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
 {
+#if defined(HOST_X86) || defined(HOST_AMD64)
+    const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
+    return (val > 0) ? ((val >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)val) : 0;
+#else
     const double two63  = 2147483648.0 * 4294967296.0;
     uint64_t ret;
     if (val < two63)
@@ -23,61 +27,42 @@ FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
         ret = (int64_t)(val - two63) + I64(0x8000000000000000);
     }
     return ret;
+#endif //HOST_X86 || HOST_AMD64
 }
 FCIMPLEND
 
-#undef min
-#undef max
-#include <cmath>
-
-FCIMPL2_FF(float, RhpFltRem, float dividend, float divisor)
+FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
 {
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-
-    if (divisor==0 || !std::isfinite(dividend))
-    {
-        return -nanf("");
-    }
-    else if (!std::isfinite(divisor) && !std::isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-    return fmodf(dividend,divisor);
+#if defined(HOST_X86) || defined(HOST_AMD64)
+    const double int64_min = -2147483648.0 * 4294967296.0;
+    const double int64_max = 2147483648.0 * 4294967296.0;
+    return (val != val) ? 0 : (val <= int64_min) ? INT64_MIN : (val >= int64_max) ? INT64_MAX : (int64_t)val;
+#else
+    return (int64_t)val;
+#endif //HOST_X86 || HOST_AMD64
 }
 FCIMPLEND
 
-FCIMPL2_DD(double, RhpDblRem, double dividend, double divisor)
+FCIMPL1_D(int32_t, RhpDbl2Int, double val)
 {
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-    if (divisor==0 || !std::isfinite(dividend))
-    {
-        return -nan("");
-    }
-    else if (!std::isfinite(divisor) && !std::isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-    return(fmod(dividend,divisor));
+#if defined(HOST_X86) || defined(HOST_AMD64)
+    const double int32_min = -2147483648.0;
+    const double int32_max_plus_1 = 2147483648.0;
+    return (val != val) ? 0 : (val <= int32_min) ? INT32_MIN : (val >= int32_max_plus_1) ? INT32_MAX : (int32_t)val;
+#else
+    return (int32_t)val;
+#endif //HOST_X86 || HOST_AMD64
+}
+FCIMPLEND
+
+FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
+{
+#if defined(HOST_X86) || defined(HOST_AMD64)
+    const double uint_max = 4294967295.0;
+    return (val > 0) ? ((val >= uint_max) ? UINT32_MAX : (uint32_t)val) : 0;
+#else
+    return (uint32_t)val;
+#endif //HOST_X86 || HOST_AMD64
 }
 FCIMPLEND
 
@@ -105,24 +90,6 @@ EXTERN_C uint64_t QCALLTYPE RhpULMod(uint64_t i, uint64_t j)
     ASSERT(j && "Divide by zero!");
     return i % j;
 }
-
-FCIMPL1_D(int64_t, RhpDbl2Lng, double val)
-{
-    return (int64_t)val;
-}
-FCIMPLEND
-
-FCIMPL1_D(int32_t, RhpDbl2Int, double val)
-{
-    return (int32_t)val;
-}
-FCIMPLEND
-
-FCIMPL1_D(uint32_t, RhpDbl2UInt, double val)
-{
-    return (uint32_t)val;
-}
-FCIMPLEND
 
 FCIMPL1_L(double, RhpLng2Dbl, int64_t val)
 {
@@ -186,6 +153,10 @@ EXTERN_C int64_t F_CALL_CONV RhpLLsh(int64_t i, int32_t j)
 #endif // HOST_ARM
 
 #ifdef HOST_X86
+
+#undef min
+#undef max
+#include <cmath>
 
 FCIMPL1_D(double, acos, double x)
     return std::acos(x);
@@ -361,6 +332,14 @@ FCIMPLEND
 
 FCIMPL1_F(float, tanhf, float x)
     return std::tanhf(x);
+FCIMPLEND
+
+FCIMPL2_DD(double, fmod, double x, double y)
+    return std::fmod(x, y);
+FCIMPLEND
+
+FCIMPL2_FF(float, fmodf, float x, float y)
+    return std::fmodf(x, y);
 FCIMPLEND
 
 FCIMPL3_DDD(double, fma, double x, double y, double z)

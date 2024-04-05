@@ -163,7 +163,8 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         };
 
         BuildConnGraphVisitor(ObjectAllocator* allocator)
-            : GenTreeVisitor<BuildConnGraphVisitor>(allocator->comp), m_allocator(allocator)
+            : GenTreeVisitor<BuildConnGraphVisitor>(allocator->comp)
+            , m_allocator(allocator)
         {
         }
 
@@ -504,8 +505,8 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     assert(m_AnalysisDone);
 
     const bool         shortLifetime = false;
-    const unsigned int lclNum     = comp->lvaGrabTemp(shortLifetime DEBUGARG("MorphAllocObjNodeIntoStackAlloc temp"));
-    const int unsafeValueClsCheck = true;
+    const unsigned int lclNum = comp->lvaGrabTemp(shortLifetime DEBUGARG("MorphAllocObjNodeIntoStackAlloc temp"));
+    const int          unsafeValueClsCheck = true;
     comp->lvaSetStruct(lclNum, allocObj->gtAllocObjClsHnd, unsafeValueClsCheck);
 
     // Initialize the object memory if necessary.
@@ -766,7 +767,8 @@ void ObjectAllocator::RewriteUses()
         };
 
         RewriteUsesVisitor(ObjectAllocator* allocator)
-            : GenTreeVisitor<RewriteUsesVisitor>(allocator->comp), m_allocator(allocator)
+            : GenTreeVisitor<RewriteUsesVisitor>(allocator->comp)
+            , m_allocator(allocator)
         {
         }
 

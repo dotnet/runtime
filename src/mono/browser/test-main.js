@@ -252,7 +252,8 @@ function configureRuntime(dotnet, runArgs) {
         .withInteropCleanupOnExit()
         .withDumpThreadsOnNonZeroExit()
         .withConfig({
-            loadAllSatelliteResources: true
+            loadAllSatelliteResources: true,
+            jsThreadBlockingMode: "ThrowWhenBlockingWait",
         });
 
     if (ENVIRONMENT_IS_NODE) {

@@ -6,17 +6,15 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Xunit;
 
 namespace ComWrappersTests
 {
-    public class Program
+    internal class Program
     {
         static ComWrappers GlobalComWrappers;
 
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(IComInterface))]
-        [Fact]
-        public static int TestEntryPoint()
+        public static int Main()
         {
             TestComInteropNullPointers();
             TestComInteropRegistrationRequired();

@@ -516,7 +516,7 @@ void DumpUnwindInfo(Compiler*         comp,
     // pHeader is not guaranteed to be aligned. We put four 0xFF end codes at the end
     // to provide padding, and round down to get a multiple of 4 bytes in size.
     DWORD UNALIGNED* pdw = (DWORD UNALIGNED*)pHeader;
-    DWORD dw;
+    DWORD            dw;
 
     dw = *pdw++;
 
@@ -1112,7 +1112,6 @@ void UnwindPrologCodes::SetFinalSize(int headerBytes, int epilogBytes)
                   &upcMem[upcCodeSlot], prologBytes);
 
         // Note that the three UWC_END padding bytes still exist at the end of the array.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         // Zero out the epilog codes memory, to ensure we've copied the right bytes. Don't zero the padding bytes.
@@ -1149,9 +1148,9 @@ void UnwindPrologCodes::AppendEpilog(UnwindEpilogInfo* pEpi)
 
     int epiSize = pEpi->Size();
     memcpy_s(&upcMem[upcEpilogSlot], upcMemSize - upcEpilogSlot - 3, pEpi->GetCodes(),
-             epiSize); // -3 to avoid writing to the alignment padding
-    assert(pEpi->GetStartIndex() ==
-           upcEpilogSlot - upcCodeSlot); // Make sure we copied it where we expected to copy it.
+             epiSize);                                            // -3 to avoid writing to the alignment padding
+    assert(pEpi->GetStartIndex() == upcEpilogSlot - upcCodeSlot); // Make sure we copied it where we expected to copy
+                                                                  // it.
 
     upcEpilogSlot += epiSize;
     assert(upcEpilogSlot <= upcMemSize - 3);
@@ -1772,8 +1771,8 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
 
     // Start writing the header
 
-    noway_assert(headerFunctionLength <=
-                 0x3FFFFU); // We create fragments to prevent this from firing, so if it hits, we have an internal error
+    noway_assert(headerFunctionLength <= 0x3FFFFU); // We create fragments to prevent this from firing, so if it hits,
+                                                    // we have an internal error
 
     if ((headerEpilogCount > UW_MAX_EPILOG_COUNT) || (headerCodeWords > UW_MAX_CODE_WORDS_COUNT))
     {
@@ -2139,7 +2138,6 @@ void UnwindInfo::Split()
     // the actual offsets of the splits since we haven't issued the instructions yet, so store
     // an emitter location instead of an offset, and "finalize" the offset in the unwindEmit() phase,
     // like we do for the function length and epilog offsets.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (uwiComp->verbose)

@@ -24,7 +24,9 @@ PhaseStatus Compiler::optRedundantBranches()
     public:
         bool madeChanges;
 
-        OptRedundantBranchesDomTreeVisitor(Compiler* compiler) : DomTreeVisitor(compiler), madeChanges(false)
+        OptRedundantBranchesDomTreeVisitor(Compiler* compiler)
+            : DomTreeVisitor(compiler)
+            , madeChanges(false)
         {
         }
 
