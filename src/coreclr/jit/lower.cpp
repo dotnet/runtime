@@ -531,10 +531,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_CAST:
         {
             GenTree* nextNode = LowerCast(node);
+#if defined(TARGET_XARCH)
             if (nextNode != nullptr)
             {
                 return nextNode;
             }
+#endif // TARGET_XARCH
         }
         break;
 

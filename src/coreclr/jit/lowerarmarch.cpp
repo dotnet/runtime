@@ -778,7 +778,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 //    tree - GT_CAST node to be lowered
 //
 // Return Value:
-//    None.
+//    nextNode to be lowered if tree is modified else returns nullptr
 //
 // Notes:
 //    Casts from float/double to a smaller int type are transformed as follows:
