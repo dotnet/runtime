@@ -46286,11 +46286,11 @@ void gc_heap::background_sweep()
 
     // We also need to adjust size_before for UOH allocations that occurred during sweeping.
     gc_history_per_heap* current_gc_data_per_heap = get_gc_data_per_heap();
-    assert(hp->loh_a_bgc_marking == 0);
-    assert(hp->poh_a_bgc_marking == 0);
-    assert(hp->loh_a_no_bgc == 0);
-    current_gc_data_per_heap->gen_data[loh_generation].size_before += hp->loh_a_bgc_planning;
-    current_gc_data_per_heap->gen_data[poh_generation].size_before += hp->poh_a_bgc_planning;
+    assert(loh_a_bgc_marking == 0);
+    assert(poh_a_bgc_marking == 0);
+    assert(loh_a_no_bgc == 0);
+    current_gc_data_per_heap->gen_data[loh_generation].size_before += loh_a_bgc_planning;
+    current_gc_data_per_heap->gen_data[poh_generation].size_before += poh_a_bgc_planning;
 
 #ifdef DOUBLY_LINKED_FL
     current_bgc_state = bgc_not_in_process;
