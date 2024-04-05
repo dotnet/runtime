@@ -60,7 +60,14 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (options.WarnAsError)
             extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
+        (CommandResult res, string logPath) = BlazorBuildInternal(
+            options.Id,
+            options.Config,
+            publish: false,
+            setWasmDevel: false,
+            expectSuccess: options.ExpectSuccess,
+            workingDirectory: options.WorkingDirectory,
+            extraArgs);
 
         if (options.ExpectSuccess && options.AssertAppBundle)
         {
@@ -75,7 +82,14 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (options.WarnAsError)
             extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
+        (CommandResult res, string logPath) = BlazorBuildInternal(
+            options.Id,
+            options.Config,
+            publish: true,
+            setWasmDevel: false,
+            expectSuccess: options.ExpectSuccess,
+            workingDirectory: options.WorkingDirectory,
+            extraArgs);
 
         if (options.ExpectSuccess && options.AssertAppBundle)
         {
@@ -95,6 +109,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         bool publish = false,
         bool setWasmDevel = true,
         bool expectSuccess = true,
+        string? workingDirectory = null,
         params string[] extraArgs)
     {
         try
@@ -102,7 +117,12 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
             return BuildProjectWithoutAssert(
                         id,
                         config,
-                        new BuildProjectOptions(CreateProject: false, UseCache: false, Publish: publish, ExpectSuccess: expectSuccess),
+                        new BuildProjectOptions(
+                            CreateProject: false,
+                            UseCache: false,
+                            Publish: publish,
+                            ExpectSuccess: expectSuccess,
+                            WorkingDirectory: workingDirectory),
                         extraArgs.Concat(new[]
                         {
                             "-p:BlazorEnableCompression=false",
@@ -195,20 +215,44 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         runOptions.ServerEnvironment?.ToList().ForEach(
             kv => s_buildEnv.EnvVars[kv.Key] = kv.Value);
 
+        // if it's server-client in separate apps, create a new runCommand
+        // do we need to edit the proj path? probably different workingDirectory
+        // and then pass it to StartServerAndGetUrlAsync that will get url of server's app
+        // we will append it to browserUrl
+
+
+        Console.WriteLine($"workingDirectory is {workingDirectory}");
+        string? serverPortArg = null;
+        await using var serverRunner = new BrowserRunner(_testOutput); // can it be in the if-block?
+        if (runOptions.ServerProject is not null)
+        {
+            Console.WriteLine($"runOptions.ServerProject is {runOptions.ServerProject}");
+            // test consists of two separate apps, e.g. WASM client and AspNetCore server
+            using var runCommandServer = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(runOptions.ServerProject);
+            string serverUrlString = await serverRunner.StartServerAndGetUrlAsync(runCommandServer, runArgs, runOptions.OnServerMessage);
+            if (string.IsNullOrEmpty(serverUrlString))
+                throw new Exception("Server URL is empty");
+            serverPortArg = $"&serverPort={serverUrlString.Split(":").Last()}";
+        }
+
+        await using var runner = new BrowserRunner(_testOutput);
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(workingDirectory);
 
-        await using var runner = new BrowserRunner(_testOutput);
+        Console.WriteLine("About to run runner.RunAsync");
         var page = await runner.RunAsync(
             runCommand,
             runArgs,
             onConsoleMessage: OnConsoleMessage,
             onServerMessage: runOptions.OnServerMessage,
             onError: OnErrorMessage,
-            modifyBrowserUrl: browserUrl => browserUrl + runOptions.BrowserPath + runOptions.QueryString);
+            modifyBrowserUrl: browserUrl => browserUrl + runOptions.BrowserPath + runOptions.QueryString + serverPortArg);
 
+        Console.WriteLine("Waiting for page to load");
         _testOutput.WriteLine("Waiting for page to load");
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new () { Timeout = 1 * 60 * 1000 });
+        Console.WriteLine("Page loaded");
 
         if (runOptions.CheckCounter)
         {
@@ -225,8 +269,10 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (runOptions.Test is not null)
             await runOptions.Test(page);
 
+        Console.WriteLine("Waiting for additional 10secs");
         _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
         await Task.Delay(10_000);
+        Console.WriteLine("Finished waiting");
 
         void OnConsoleMessage(IPage page, IConsoleMessage msg)
         {

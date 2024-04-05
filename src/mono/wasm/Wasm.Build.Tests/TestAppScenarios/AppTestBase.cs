@@ -63,6 +63,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
     protected void BuildProject(
         string configuration,
         string? binFrameworkDir = null,
+        string? workingDirectory = null, // if different than _projectDir
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
         bool assertAppBundle = true,
         params string[] extraArgs)
@@ -71,6 +72,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
             Id: Id,
             Config: configuration,
             BinFrameworkDir: binFrameworkDir,
+            WorkingDirectory: workingDirectory,
             RuntimeType: runtimeType,
             AssertAppBundle: assertAppBundle), extraArgs);
         result.EnsureSuccessful();
@@ -99,7 +101,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
             query.Add("test", options.TestScenario);
 
         var queryString = query.Any() ? "?" + string.Join("&", query.Select(kvp => $"{kvp.Key}={kvp.Value}")) : "";
-
+        Console.WriteLine($"Running app with query string: {queryString}");
         var tcs = new TaskCompletionSource<int>();
         List<string> testOutput = new();
         List<string> consoleOutput = new();
@@ -114,7 +116,8 @@ public abstract class AppTestBase : BlazorWasmTestBase
                 OnServerMessage: OnServerMessage,
                 BrowserPath: options.BrowserPath,
                 QueryString: queryString,
-                Host: host);
+                Host: host,
+                ServerProject: Path.Combine(Directory.GetParent(_projectDir).FullName, "Server")); // ToDo: change and cleanup
 
         await BlazorRunTest(blazorRunOptions);
 

@@ -22,7 +22,8 @@ public record BlazorRunOptions
     string Config = "Debug",
     string? ExtraArgs = null,
     string BrowserPath = "",
-    string QueryString = ""
+    string QueryString = "",
+    string? ServerProject = null
 );
 
 public enum BlazorRunHost { DotnetRun, WebServer };

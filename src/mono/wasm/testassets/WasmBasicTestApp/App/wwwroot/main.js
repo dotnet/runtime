@@ -6,6 +6,7 @@ import { dotnet, exit } from './_framework/dotnet.js'
 // Read test case from query string
 const params = new URLSearchParams(location.search);
 const testCase = params.get("test");
+testOutput(`testCase is ${testCase}`);
 if (testCase == null) {
     exit(2, new Error("Missing test scenario. Supply query argument 'test'."));
 }
@@ -100,6 +101,45 @@ try {
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
             exit(0);
+            break;
+        case "SignalRClientTests":
+            const transport = params.get("transport");
+            const message = params.get("message");
+            const serverPortArg = params.get("serverPort");
+            if (!transport || !message || !serverPortArg) {
+                exit(2, new Error(`Query string with parameters 'message', 'transport' and 'serverPort' is required, query = ${params}`));
+            }
+            if (isNaN(serverPortArg)) {
+                exit(2, new Error(`Query string parameter 'serverPort' is not a number, query = ${params}`));
+            }
+            const serverPort = parseInt(serverPortArg);
+            exports.SignalRClientTests.GetQueryParameters(transport, message);
+
+            let startConnectionButton = document.createElement("button");
+            startConnectionButton.id = "startconnection"; // second: click this
+            startConnectionButton.addEventListener("click", function() {
+                testOutput("StartConnectionButton was clicked!");
+                exports.SignalRClientTests.Connect(serverPort);
+            });
+            document.body.appendChild(startConnectionButton);
+
+            let sendMessageButton = document.createElement("button");
+            sendMessageButton.id = "sendMessage"; // third: click this
+            sendMessageButton.addEventListener("click", function() {
+                testOutput("sendMessageButton was clicked!");
+                exports.SignalRClientTests.SignalRPassMessages(message);
+            });
+            document.body.appendChild(sendMessageButton);
+
+            let exitProgramButton = document.createElement("button");
+            exitProgramButton.id = "exitProgram"; // fourth: click this
+            exitProgramButton.addEventListener("click", function() {
+                testOutput("exitProgramButton was clicked!");
+                exports.SignalRClientTests.DisposeHubConnection();
+                exit(0);
+            });
+            document.body.appendChild(exitProgramButton);
+            testOutput("Buttons added to the body, the test can be started."); // first: wait for this message
             break;
         default:
             console.error(`Unknown test case: ${testCase}`);

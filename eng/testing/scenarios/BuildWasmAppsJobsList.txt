@@ -17,6 +17,7 @@ Wasm.Build.Tests.Blazor.NoopNativeRebuildTest
 Wasm.Build.Tests.Blazor.WorkloadRequiredTests
 Wasm.Build.Tests.Blazor.IcuTests
 Wasm.Build.Tests.Blazor.IcuShardingTests
+Wasm.Build.Tests.Blazor.SignalRClientTests
 Wasm.Build.Tests.BuildPublishTests
 Wasm.Build.Tests.ConfigSrcTests
 Wasm.Build.Tests.HybridGlobalizationTests

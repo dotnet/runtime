@@ -88,8 +88,16 @@ internal class BrowserRunner : IAsyncDisposable
 
         if (runTask.IsCompleted)
         {
-            var res = await runTask;
-            res.EnsureSuccessful();
+            try
+            {
+                var res = await runTask;
+                res.EnsureSuccessful();
+            }
+            catch (Exception ex)
+            {
+                _testOutput.WriteLine($"Exception: {ex}");
+                throw;
+            }
 
             throw new Exception($"Process ended before the url was found");
         }
@@ -126,7 +134,9 @@ internal class BrowserRunner : IAsyncDisposable
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null)
     {
-        var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage);
+        Console.WriteLine($"Starting app with cmd={cmd} and args={args}");
+        var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage); // this should be aspentcore app
+        Console.WriteLine($"Starting browser with url: {urlString}, modifyBrowserUrl={modifyBrowserUrl}");
         var browser = await SpawnBrowserAsync(urlString, headless);
         var context = await browser.NewContextAsync();
         return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
@@ -146,6 +156,7 @@ internal class BrowserRunner : IAsyncDisposable
 
         if (modifyBrowserUrl != null)
             browserUrl = modifyBrowserUrl(browserUrl);
+        Console.WriteLine($"browserUrl {browserUrl}");
 
         IPage page = await context.NewPageAsync();
 

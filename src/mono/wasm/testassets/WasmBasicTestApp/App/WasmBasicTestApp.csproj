@@ -4,9 +4,14 @@
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <!-- declare types in namespaces; ConfigureAwait; Prefer 'static readonly' fields -->
+    <NoWarn>CA1050;CA2007;CA1861</NoWarn>
   </PropertyGroup>
 
+  <!-- versions are pinned but when run from WBT level, it's taking in-tree runtime -->
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.1" />
     <ProjectReference Include="..\Library\Json.csproj" />
   </ItemGroup>
 

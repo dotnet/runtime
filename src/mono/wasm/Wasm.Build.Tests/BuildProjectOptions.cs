@@ -27,5 +27,6 @@ public record BuildProjectOptions
     string?             MainJS                    = null,
     bool                IsBrowserProject          = true,
     IDictionary<string, string>? ExtraBuildEnvironmentVariables = null,
-    string?             BinFrameworkDir           = null
+    string?             BinFrameworkDir           = null,
+    string?             WorkingDirectory          = null
 );
