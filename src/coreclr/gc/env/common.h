@@ -25,6 +25,9 @@
 #include <math.h>
 
 #include <new>
+#include <type_traits>
+#include <limits>
+#include <algorithm>
 
 #ifdef TARGET_UNIX
 #include <pthread.h>

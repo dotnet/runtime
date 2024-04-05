@@ -120,3 +120,139 @@ bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
     }
     return anyReg && anyStack;
 }
+
+//-----------------------------------------------------------------------------
+// FromSegment:
+//   Create ABIPassingInformation from a single segment.
+//
+// Parameters:
+//   comp    - Compiler instance
+//   segment - The single segment that represents the passing information
+//
+// Return Value:
+//   An instance of ABIPassingInformation.
+//
+ABIPassingInformation ABIPassingInformation::FromSegment(Compiler* comp, const ABIPassingSegment& segment)
+{
+    ABIPassingInformation info;
+    info.NumSegments = 1;
+    info.Segments    = new (comp, CMK_ABI) ABIPassingSegment(segment);
+    return info;
+}
+
+#ifdef DEBUG
+//-----------------------------------------------------------------------------
+// Dump:
+//   Dump the ABIPassingInformation to stdout.
+//
+void ABIPassingInformation::Dump() const
+{
+    if (NumSegments != 1)
+    {
+        printf("%u segments\n", NumSegments);
+    }
+
+    for (unsigned i = 0; i < NumSegments; i++)
+    {
+        if (NumSegments > 1)
+        {
+            printf("  [%u] ", i);
+        }
+
+        const ABIPassingSegment& seg = Segments[i];
+
+        if (Segments[i].IsPassedInRegister())
+        {
+            printf("[%02u..%02u) reg %s\n", seg.Offset, seg.Offset + seg.Size, getRegName(seg.GetRegister()));
+        }
+        else
+        {
+            printf("[%02u..%02u) stack @ +%02u\n", seg.Offset, seg.Offset + seg.Size, seg.GetStackOffset());
+        }
+    }
+}
+#endif
+
+//-----------------------------------------------------------------------------
+// RegisterQueue::Dequeue:
+//   Dequeue a register from the queue.
+//
+// Return Value:
+//   The dequeued register.
+//
+regNumber RegisterQueue::Dequeue()
+{
+    assert(Count() > 0);
+    return static_cast<regNumber>(m_regs[m_index++]);
+}
+
+//-----------------------------------------------------------------------------
+// RegisterQueue::Peek:
+//   Peek at the head of the queue.
+//
+// Return Value:
+//   The head register in the queue.
+//
+regNumber RegisterQueue::Peek()
+{
+    assert(Count() > 0);
+    return static_cast<regNumber>(m_regs[m_index]);
+}
+
+//-----------------------------------------------------------------------------
+// RegisterQueue::Clear:
+//   Clear the register queue.
+//
+void RegisterQueue::Clear()
+{
+    m_index = m_numRegs;
+}
+
+#ifdef SWIFT_SUPPORT
+//-----------------------------------------------------------------------------
+// Classify:
+//   Classify a parameter for the Swift ABI.
+//
+// Parameters:
+//   comp           - Compiler instance
+//   type           - The type of the parameter
+//   structLayout   - The layout of the struct. Expected to be non-null if
+//                    varTypeIsStruct(type) is true.
+//   wellKnownParam - Well known type of the parameter (if it may affect its ABI classification)
+//
+// Returns:
+//   Classification information for the parameter.
+//
+ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
+                                                   var_types    type,
+                                                   ClassLayout* structLayout,
+                                                   WellKnownArg wellKnownParam)
+{
+#ifdef TARGET_AMD64
+    if (wellKnownParam == WellKnownArg::RetBuffer)
+    {
+        return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_SWIFT_ARG_RET_BUFF, 0,
+                                                                                      TARGET_POINTER_SIZE));
+    }
+#endif
+
+    if (wellKnownParam == WellKnownArg::SwiftSelf)
+    {
+        return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_SWIFT_SELF, 0,
+                                                                                      TARGET_POINTER_SIZE));
+    }
+
+    if (wellKnownParam == WellKnownArg::SwiftError)
+    {
+        // We aren't actually going to pass the SwiftError* parameter in REG_SWIFT_ERROR.
+        // We won't be using this parameter at all, and shouldn't allocate registers/stack space for it,
+        // as that will mess with other args.
+        // Quirk: To work around the JIT for now, "pass" it in REG_SWIFT_ERROR,
+        // and let CodeGen::genFnProlog handle the rest.
+        return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_SWIFT_ERROR, 0,
+                                                                                      TARGET_POINTER_SIZE));
+    }
+
+    return m_classifier.Classify(comp, type, structLayout, wellKnownParam);
+}
+#endif
