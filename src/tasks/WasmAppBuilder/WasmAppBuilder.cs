@@ -224,7 +224,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             }
         }
 
-        bootConfig.debugLevel = helper.GetDebugLevel(bootConfig?.resources?.pdb?.Count > 0);
+        bootConfig.debugLevel = helper.GetDebugLevel(bootConfig.resources.pdb?.Count > 0);
 
         ProcessSatelliteAssemblies(args =>
         {
