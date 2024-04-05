@@ -2,5 +2,6 @@
   <PropertyGroup>
     <InMergedTestDirectory>true</InMergedTestDirectory>
     <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">false</BuildAsStandalone>
+    <BuildAsStandalone Condition="'$(BuildAllTestsAsStandalone)' == 'true'">true</BuildAsStandalone>
   </PropertyGroup>
 </Project>
