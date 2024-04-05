@@ -1,0 +1,10 @@
+# algorithmic contracts for coreclr
+# The format of this file is:
+#   # comment
+#   CONTRACT NAME, VERSION #optional trailing comment
+#
+# CONTRACT NAME is an arbitrary string, VERSION is an integer
+#
+# cdac-build-tool can take multiple "-c contract_file" arguments
+# so to conditionally include contracts, put optional contracts in a separate file
+SOSBreakingChangeVersion, 1 # example contract: runtime exports an SOS breaking change version global

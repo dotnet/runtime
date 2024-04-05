@@ -39,30 +39,31 @@ endif()
 install_clr(TARGETS runtimeinfo DESTINATIONS lib COMPONENT runtime)
 
 
-add_library(cdac_data_descriptor STATIC data-descriptor.c)
+add_library(cdac_data_descriptor OBJECT data-descriptor.c)
 
 
 set(GENERATED_CDAC_DESCRIPTOR_DIR "${CMAKE_CURRENT_BINARY_DIR}/cdac")
-
 if(CLR_CMAKE_HOST_WIN32)
     set(DOTNET_CMD "${CLR_REPO_ROOT_DIR}/dotnet.cmd")
-    set(CONTRACT_DESCRIPTOR_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}\\cdac\\contract-descriptor.c")
 else()
     set(DOTNET_CMD "${CLR_REPO_ROOT_DIR}/dotnet.sh")
-    set(CONTRACT_DESCRIPTOR_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/cdac/contract-descriptor.c")
 endif()
+
+set(CONTRACT_DESCRIPTOR_OUTPUT "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c")
 set(CDAC_BUILD_TOOL_CSPROJ "${CLR_DIR}/tools/cdac-build-tool/cdac-build-tool.csproj")
 
+set(CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.txt")
+
 add_custom_command(
-  OUTPUT "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c"
-  VERBATIM
-  COMMAND "${DOTNET_CMD}" run --project "${CDAC_BUILD_TOOL_CSPROJ}" -c "$<CONFIG>" -- compose -v -o "${CONTRACT_DESCRIPTOR_OUTPUT}" $<TARGET_OBJECTS:cdac_data_descriptor>
-  DEPENDS cdac_data_descriptor $<TARGET_OBJECTS:cdac_data_descriptor>
-  USES_TERMINAL
+    OUTPUT "${CONTRACT_DESCRIPTOR_OUTPUT}"
+    VERBATIM
+    COMMAND "${DOTNET_CMD}" run --project "${CDAC_BUILD_TOOL_CSPROJ}" -c "$<CONFIG>" -- compose -v -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -c "${CONTRACT_FILE}" $<TARGET_OBJECTS:cdac_data_descriptor>
+    DEPENDS cdac_data_descriptor $<TARGET_OBJECTS:cdac_data_descriptor> "${CONTRACT_FILE}"
+    USES_TERMINAL
 )
 
-add_library_clr(CDACContractDescriptor STATIC
-  "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c"
-  contract-aux-data.c
+add_library_clr(cdac_contract_descriptor OBJECT
+    "${CONTRACT_DESCRIPTOR_OUTPUT}"
+    contract-aux-data.c
 )
-add_dependencies(CDACContractDescriptor cdac_data_descriptor)
+add_dependencies(cdac_contract_descriptor cdac_data_descriptor)
