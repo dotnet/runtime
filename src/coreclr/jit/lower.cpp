@@ -525,13 +525,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_SWIFT_ERROR_RET:
-        {
-            GenTree* const nextNode = node->gtNext;
-            LIR::Range& blockRange = BlockRange();
-            blockRange.Remove(node);
-            blockRange.InsertAtEnd(node);
-            return nextNode;
-        }
+            return LowerSwiftErrorRet(node);
 
         case GT_RETURNTRAP:
             ContainCheckReturnTrap(node->AsOp());
@@ -4632,6 +4626,27 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
     }
     ContainCheckRet(ret);
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerSwiftErrorRet: Lower swift error return node by moving it to the end of its BBJ_RETURN block.
+//                     We wait to do this late in the JIT's phases,
+//                     as we typically expect BBJ_RETURN blocks to end with a GT_RETURN/GT_RETFILT node.
+//
+// Arguments:
+//     swiftErrorRet - The GT_SWIFT_ERROR_RET node.
+//
+// Return Value:
+//     The next node to be lowered.
+//
+GenTree* Lowering::LowerSwiftErrorRet(GenTree* swiftErrorRet)
+{
+    assert(swiftErrorRet->OperIs(GT_SWIFT_ERROR_RET));
+    GenTree* const nextNode = swiftErrorRet->gtNext;
+    LIR::Range& blockRange = BlockRange();
+    blockRange.Remove(swiftErrorRet);
+    blockRange.InsertAtEnd(swiftErrorRet);
+    return nextNode;
 }
 
 //----------------------------------------------------------------------------------------------

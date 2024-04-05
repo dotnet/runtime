@@ -1324,6 +1324,10 @@ protected:
 
     void genReturn(GenTree* treeNode);
 
+#ifdef SWIFT_SUPPORT
+    void genSwiftErrorReturn(GenTree* treeNode);
+#endif // SWIFT_SUPPORT
+
 #ifdef TARGET_XARCH
     void           genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdjustments);
     void           genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, bool trackSpAdjustments);

@@ -1964,12 +1964,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
 #ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR_RET:
-        {
-            GenTree* swiftErrorNode = treeNode->gtGetOp1();
-            const regNumber srcReg = genConsumeReg(swiftErrorNode);
-            inst_Mov(swiftErrorNode->TypeGet(), REG_SWIFT_ERROR, srcReg, true, EA_PTRSIZE);
+            genSwiftErrorReturn(treeNode);
             break;
-        }
 #endif // SWIFT_SUPPORT
 
         case GT_LEA:
