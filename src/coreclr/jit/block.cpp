@@ -1812,9 +1812,7 @@ bool BasicBlock::hasEHBoundaryIn() const
     bool returnVal = (bbCatchTyp != BBCT_NONE);
     if (!returnVal)
     {
-#if FEATURE_EH_FUNCLETS
         assert(!HasFlag(BBF_FUNCLET_BEG));
-#endif // FEATURE_EH_FUNCLETS
     }
     return returnVal;
 }
@@ -1833,16 +1831,7 @@ bool BasicBlock::hasEHBoundaryIn() const
 //
 bool BasicBlock::hasEHBoundaryOut() const
 {
-    bool returnVal = KindIs(BBJ_EHFILTERRET, BBJ_EHFINALLYRET, BBJ_EHFAULTRET);
-
-#if FEATURE_EH_FUNCLETS
-    if (bbKind == BBJ_EHCATCHRET)
-    {
-        returnVal = true;
-    }
-#endif // FEATURE_EH_FUNCLETS
-
-    return returnVal;
+    return KindIs(BBJ_EHFILTERRET, BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHCATCHRET);
 }
 
 //------------------------------------------------------------------------

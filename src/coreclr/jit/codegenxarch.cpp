@@ -210,127 +210,131 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
     BasicBlock* const nextBlock = block->Next();
 
-#if defined(FEATURE_EH_FUNCLETS)
-    // Generate a call to the finally, like this:
-    //      mov         rcx,qword ptr [rbp + 20H]       // Load rcx with PSPSym
-    //      call        finally-funclet
-    //      jmp         finally-return                  // Only for non-retless finally calls
-    // The jmp can be a NOP if we're going to the next block.
-    // If we're generating code for the main function (not a funclet), and there is no localloc,
-    // then RSP at this point is the same value as that stored in the PSPSym. So just copy RSP
-    // instead of loading the PSPSym in this case, or if PSPSym is not used (NativeAOT ABI).
-
-    if ((compiler->lvaPSPSym == BAD_VAR_NUM) ||
-        (!compiler->compLocallocUsed && (compiler->funCurrentFunc()->funKind == FUNC_ROOT)))
+    if (compiler->UsesFunclets())
     {
+        // Generate a call to the finally, like this:
+        //      mov         rcx,qword ptr [rbp + 20H]       // Load rcx with PSPSym
+        //      call        finally-funclet
+        //      jmp         finally-return                  // Only for non-retless finally calls
+        // The jmp can be a NOP if we're going to the next block.
+        // If we're generating code for the main function (not a funclet), and there is no localloc,
+        // then RSP at this point is the same value as that stored in the PSPSym. So just copy RSP
+        // instead of loading the PSPSym in this case, or if PSPSym is not used (NativeAOT ABI).
+
+        if ((compiler->lvaPSPSym == BAD_VAR_NUM) ||
+            (!compiler->compLocallocUsed && (compiler->funCurrentFunc()->funKind == FUNC_ROOT)))
+        {
 #ifndef UNIX_X86_ABI
-        inst_Mov(TYP_I_IMPL, REG_ARG_0, REG_SPBASE, /* canSkip */ false);
+            inst_Mov(TYP_I_IMPL, REG_ARG_0, REG_SPBASE, /* canSkip */ false);
 #endif // !UNIX_X86_ABI
-    }
-    else
-    {
-        GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ARG_0, compiler->lvaPSPSym, 0);
-    }
-    GetEmitter()->emitIns_J(INS_call, block->GetTarget());
-
-    if (block->HasFlag(BBF_RETLESS_CALL))
-    {
-        // We have a retless call, and the last instruction generated was a call.
-        // If the next block is in a different EH region (or is the end of the code
-        // block), then we need to generate a breakpoint here (since it will never
-        // get executed) to get proper unwind behavior.
-
-        if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
-        {
-            instGen(INS_BREAKPOINT); // This should never get executed
-        }
-    }
-    else
-    {
-// TODO-Linux-x86: Do we need to handle the GC information for this NOP or JMP specially, as is done for other
-// architectures?
-#ifndef JIT32_GCENCODER
-        // Because of the way the flowgraph is connected, the liveness info for this one instruction
-        // after the call is not (can not be) correct in cases where a variable has a last use in the
-        // handler.  So turn off GC reporting for this single instruction.
-        GetEmitter()->emitDisableGC();
-#endif // JIT32_GCENCODER
-
-        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
-
-        // Now go to where the finally funclet needs to return to.
-        if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
-        {
-            // Fall-through.
-            // TODO-XArch-CQ: Can we get rid of this instruction, and just have the call return directly
-            // to the next instruction? This would depend on stack walking from within the finally
-            // handler working without this instruction being in this special EH region.
-            instGen(INS_nop);
         }
         else
         {
-            inst_JMP(EJ_jmp, finallyContinuation);
+            GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ARG_0, compiler->lvaPSPSym, 0);
         }
+        GetEmitter()->emitIns_J(INS_call, block->GetTarget());
+
+        if (block->HasFlag(BBF_RETLESS_CALL))
+        {
+            // We have a retless call, and the last instruction generated was a call.
+            // If the next block is in a different EH region (or is the end of the code
+            // block), then we need to generate a breakpoint here (since it will never
+            // get executed) to get proper unwind behavior.
+
+            if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
+            {
+                instGen(INS_BREAKPOINT); // This should never get executed
+            }
+        }
+        else
+        {
+// TODO-Linux-x86: Do we need to handle the GC information for this NOP or JMP specially, as is done for other
+// architectures?
+#ifndef JIT32_GCENCODER
+            // Because of the way the flowgraph is connected, the liveness info for this one instruction
+            // after the call is not (can not be) correct in cases where a variable has a last use in the
+            // handler.  So turn off GC reporting for this single instruction.
+            GetEmitter()->emitDisableGC();
+#endif // JIT32_GCENCODER
+
+            BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
+
+            // Now go to where the finally funclet needs to return to.
+            if (nextBlock->NextIs(finallyContinuation) &&
+                !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
+            {
+                // Fall-through.
+                // TODO-XArch-CQ: Can we get rid of this instruction, and just have the call return directly
+                // to the next instruction? This would depend on stack walking from within the finally
+                // handler working without this instruction being in this special EH region.
+                instGen(INS_nop);
+            }
+            else
+            {
+                inst_JMP(EJ_jmp, finallyContinuation);
+            }
 
 #ifndef JIT32_GCENCODER
-        GetEmitter()->emitEnableGC();
+            GetEmitter()->emitEnableGC();
 #endif // JIT32_GCENCODER
+        }
     }
-
-#else // !FEATURE_EH_FUNCLETS
-
-    // If we are about to invoke a finally locally from a try block, we have to set the ShadowSP slot
-    // corresponding to the finally's nesting level. When invoked in response to an exception, the
-    // EE does this.
-    //
-    // We have a BBJ_CALLFINALLY possibly paired with a following BBJ_CALLFINALLYRET.
-    //
-    // We will emit :
-    //      mov [ebp - (n + 1)], 0
-    //      mov [ebp -  n     ], 0xFC
-    //      push &step
-    //      jmp  finallyBlock
-    // ...
-    // step:
-    //      mov [ebp -  n     ], 0
-    //      jmp leaveTarget
-    // ...
-    // leaveTarget:
-
-    noway_assert(isFramePointerUsed());
-
-    // Get the nesting level which contains the finally
-    unsigned finallyNesting = 0;
-    compiler->fgGetNestingLevel(block, &finallyNesting);
-
-    // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
-    unsigned filterEndOffsetSlotOffs;
-    filterEndOffsetSlotOffs = (unsigned)(compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
-
-    unsigned curNestingSlotOffs;
-    curNestingSlotOffs = (unsigned)(filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE));
-
-    // Zero out the slot for the next nesting level
-    GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar,
-                              curNestingSlotOffs - TARGET_POINTER_SIZE, 0);
-    GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, curNestingSlotOffs, LCL_FINALLY_MARK);
-
-    // Now push the address where the finally funclet should return to directly.
-    if (!block->HasFlag(BBF_RETLESS_CALL))
-    {
-        assert(block->isBBCallFinallyPair());
-        GetEmitter()->emitIns_J(INS_push_hide, nextBlock->GetFinallyContinuation());
-    }
+#if defined(FEATURE_EH_WINDOWS_X86)
     else
     {
-        // EE expects a DWORD, so we provide 0
-        inst_IV(INS_push_hide, 0);
+        // If we are about to invoke a finally locally from a try block, we have to set the ShadowSP slot
+        // corresponding to the finally's nesting level. When invoked in response to an exception, the
+        // EE does this.
+        //
+        // We have a BBJ_CALLFINALLY possibly paired with a following BBJ_CALLFINALLYRET.
+        //
+        // We will emit :
+        //      mov [ebp - (n + 1)], 0
+        //      mov [ebp -  n     ], 0xFC
+        //      push &step
+        //      jmp  finallyBlock
+        // ...
+        // step:
+        //      mov [ebp -  n     ], 0
+        //      jmp leaveTarget
+        // ...
+        // leaveTarget:
+
+        noway_assert(isFramePointerUsed());
+
+        // Get the nesting level which contains the finally
+        unsigned finallyNesting = 0;
+        compiler->fgGetNestingLevel(block, &finallyNesting);
+
+        // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
+        unsigned filterEndOffsetSlotOffs;
+        filterEndOffsetSlotOffs = (unsigned)(compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
+
+        unsigned curNestingSlotOffs;
+        curNestingSlotOffs = (unsigned)(filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE));
+
+        // Zero out the slot for the next nesting level
+        GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar,
+                                  curNestingSlotOffs - TARGET_POINTER_SIZE, 0);
+        GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, curNestingSlotOffs,
+                                  LCL_FINALLY_MARK);
+
+        // Now push the address where the finally funclet should return to directly.
+        if (!block->HasFlag(BBF_RETLESS_CALL))
+        {
+            assert(block->isBBCallFinallyPair());
+            GetEmitter()->emitIns_J(INS_push_hide, nextBlock->GetFinallyContinuation());
+        }
+        else
+        {
+            // EE expects a DWORD, so we provide 0
+            inst_IV(INS_push_hide, 0);
+        }
+
+        // Jump to the finally BB
+        inst_JMP(EJ_jmp, block->GetTarget());
     }
-
-    // Jump to the finally BB
-    inst_JMP(EJ_jmp, block->GetTarget());
-
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
     // The BBJ_CALLFINALLYRET is used because the BBJ_CALLFINALLY can't point to the
     // jump target using bbTargetEdge - that is already used to point
@@ -344,7 +348,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     return block;
 }
 
-#if defined(FEATURE_EH_FUNCLETS)
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
     // Set RAX to the address the VM should return to after the catch.
@@ -354,10 +357,11 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
     GetEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, block->GetTarget(), REG_INTRET);
 }
 
-#else // !FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_WINDOWS_X86)
 
 void CodeGen::genEHFinallyOrFilterRet(BasicBlock* block)
 {
+    assert(!compiler->UsesFunclets());
     // The last statement of the block must be a GT_RETFILT, which has already been generated.
     assert(block->lastNode() != nullptr);
     assert(block->lastNode()->OperGet() == GT_RETFILT);
@@ -383,7 +387,7 @@ void CodeGen::genEHFinallyOrFilterRet(BasicBlock* block)
     }
 }
 
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
 //  Move an immediate value into an integer register
 
@@ -2144,7 +2148,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genConsumeReg(treeNode);
             break;
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
         case GT_END_LFIN:
 
             // Have to clear the ShadowSP of the nesting level which encloses the finally. Generates:
@@ -2167,7 +2171,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, (unsigned)curNestingSlotOffs,
                                       0);
             break;
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
         case GT_PINVOKE_PROLOG:
             noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
@@ -6120,37 +6124,42 @@ void CodeGen::genCall(GenTreeCall* call)
                          compiler->lvaCallSpCheck, call->CallerPop() ? 0 : stackArgBytes, REG_ARG_0);
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
-#if !defined(FEATURE_EH_FUNCLETS)
-    //-------------------------------------------------------------------------
-    // Create a label for tracking of region protected by the monitor in synchronized methods.
-    // This needs to be here, rather than above where fPossibleSyncHelperCall is set,
-    // so the GC state vars have been updated before creating the label.
-
-    if ((call->gtCallType == CT_HELPER) && (compiler->info.compFlags & CORINFO_FLG_SYNCH))
+#if defined(FEATURE_EH_WINDOWS_X86)
+    if (!compiler->UsesFunclets())
     {
-        CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(call->gtCallMethHnd);
-        noway_assert(helperNum != CORINFO_HELP_UNDEF);
-        switch (helperNum)
+        //-------------------------------------------------------------------------
+        // Create a label for tracking of region protected by the monitor in synchronized methods.
+        // This needs to be here, rather than above where fPossibleSyncHelperCall is set,
+        // so the GC state vars have been updated before creating the label.
+
+        if ((call->gtCallType == CT_HELPER) && (compiler->info.compFlags & CORINFO_FLG_SYNCH))
         {
-            case CORINFO_HELP_MON_ENTER:
-            case CORINFO_HELP_MON_ENTER_STATIC:
-                noway_assert(compiler->syncStartEmitCookie == nullptr);
-                compiler->syncStartEmitCookie =
-                    GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
-                noway_assert(compiler->syncStartEmitCookie != nullptr);
-                break;
-            case CORINFO_HELP_MON_EXIT:
-            case CORINFO_HELP_MON_EXIT_STATIC:
-                noway_assert(compiler->syncEndEmitCookie == nullptr);
-                compiler->syncEndEmitCookie =
-                    GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
-                noway_assert(compiler->syncEndEmitCookie != nullptr);
-                break;
-            default:
-                break;
+            CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(call->gtCallMethHnd);
+            noway_assert(helperNum != CORINFO_HELP_UNDEF);
+            switch (helperNum)
+            {
+                case CORINFO_HELP_MON_ENTER:
+                case CORINFO_HELP_MON_ENTER_STATIC:
+                    noway_assert(compiler->syncStartEmitCookie == nullptr);
+                    compiler->syncStartEmitCookie =
+                        GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
+                                                   gcInfo.gcRegByrefSetCur);
+                    noway_assert(compiler->syncStartEmitCookie != nullptr);
+                    break;
+                case CORINFO_HELP_MON_EXIT:
+                case CORINFO_HELP_MON_EXIT_STATIC:
+                    noway_assert(compiler->syncEndEmitCookie == nullptr);
+                    compiler->syncEndEmitCookie =
+                        GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
+                                                   gcInfo.gcRegByrefSetCur);
+                    noway_assert(compiler->syncEndEmitCookie != nullptr);
+                    break;
+                default:
+                    break;
+            }
         }
     }
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
     unsigned stackAdjustBias = 0;
 
@@ -8847,13 +8856,12 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned            codeSize,
 
     int s_cached;
 
-#ifdef FEATURE_EH_FUNCLETS
     // We should do this before gcInfoBlockHdrSave since varPtrTableSize must be finalized before it
     if (compiler->ehAnyFunclets())
     {
+        assert(compiler->UsesFunclets());
         gcInfo.gcMarkFilterVarsPinned();
     }
-#endif
 
 #ifdef DEBUG
     size_t headerSize =
@@ -10430,8 +10438,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 }
 
-#if defined(FEATURE_EH_FUNCLETS)
-
 #if defined(TARGET_AMD64)
 
 /*****************************************************************************
@@ -10820,8 +10826,6 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 
 #endif // TARGET*
 }
-
-#endif // FEATURE_EH_FUNCLETS
 
 //-----------------------------------------------------------------------------
 // genZeroInitFrameUsingBlockInit: architecture-specific helper for genZeroInitFrame in the case
