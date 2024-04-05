@@ -4079,7 +4079,7 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
 
                 if ((regState->rsCalleeRegArgMaskLiveIn & regs) != RBM_NONE)
                 {
-                    var_types storeType = seg.GetRegisterStoreType();
+                    var_types storeType = seg.GetRegisterType();
                     assert(storeType != TYP_UNDEF);
                     GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), seg.GetRegister(), lclNum,
                                               seg.Offset);
