@@ -147,6 +147,7 @@
       ExtraConfig="@(WasmExtraConfig)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
+      IsPublish="$(_IsPublishing)"
       IncludeThreadsWorker="$(WasmEnableThreads)"
       PThreadPoolInitialSize="$(_WasmPThreadPoolInitialSize)"
       PThreadPoolUnusedSize="$(_WasmPThreadPoolUnusedSize)"
