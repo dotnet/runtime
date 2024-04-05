@@ -50292,8 +50292,10 @@ void gc_heap::get_and_reset_loh_alloc_info()
         hp->loh_a_no_bgc = 0;
         total_loh_a_bgc_marking += hp->loh_a_bgc_marking + hp->poh_a_bgc_marking;
         hp->loh_a_bgc_marking = 0;
-        total_loh_a_bgc_planning += hp->loh_a_bgc_planning + hp->loh_a_bgc_planning;
+        hp->poh_a_bgc_marking = 0;
+        total_loh_a_bgc_planning += hp->loh_a_bgc_planning + hp->poh_a_bgc_planning;
         hp->loh_a_bgc_planning = 0;
+        hp->poh_a_bgc_planning = 0;
     }
     dprintf (2, ("LOH alloc: outside bgc: %zd; bm: %zd; bp: %zd",
         total_loh_a_no_bgc,
