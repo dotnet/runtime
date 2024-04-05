@@ -224,6 +224,7 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="ArgumentNullException">The specified type handle is <c>null</c>.</exception>
         /// <exception cref="ArgumentException">The specified type cannot have a boxed instance of itself created.</exception>
         /// <exception cref="NotSupportedException">The passed in type is a by-ref-like type.</exception>
+        /// <remarks>This returns an object that is equivalent to executing the IL box instruction with the provided target address and type.</remarks>
         public static object? Box(ref byte target, RuntimeTypeHandle type)
         {
             if (type.Value is 0)
