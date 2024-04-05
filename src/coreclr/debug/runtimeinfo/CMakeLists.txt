@@ -40,6 +40,12 @@ install_clr(TARGETS runtimeinfo DESTINATIONS lib COMPONENT runtime)
 
 
 add_library(cdac_data_descriptor OBJECT data-descriptor.c)
+if(CLR_CMAKE_TARGET_WIN32)
+  # turn off whole program optimization:
+  # 1. it creates object files that cdac-build-tool can't read
+  # 2. we never link cdac_data_descriptor into the final product - it's only job is to be scraped
+  target_compile_options(cdac_data_descriptor PRIVATE /GL-)
+endif()
 
 
 set(GENERATED_CDAC_DESCRIPTOR_DIR "${CMAKE_CURRENT_BINARY_DIR}/cdac")
