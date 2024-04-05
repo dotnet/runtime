@@ -682,9 +682,14 @@ namespace System.Runtime.Intrinsics
         // New Surface Area
         //
 
-        static bool ISimdVector<Vector256<T>, T>.AnyMatches(Vector256<T> vector)
+        static bool ISimdVector<Vector256<T>, T>.AnyWhereAllBitsSet(Vector256<T> vector)
         {
-            return (vector != Vector256<T>.Zero);
+            return (Vector256.EqualsAny(vector, Vector256<T>.AllBitsSet));
+        }
+
+        static bool ISimdVector<Vector256<T>, T>.Any(Vector256<T> vector, T value)
+        {
+            return (Vector256.EqualsAny(vector, Vector256.Create((T)value)));
         }
 
         static int ISimdVector<Vector256<T>, T>.IndexOfLastMatch(Vector256<T> vector)
