@@ -27,7 +27,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                { "dotnet.native.js", true },
                { "dotnet.native.js.symbols", false },
                { "dotnet.native.wasm", false },
-               { "dotnet.native.worker.js", true },
+               { "dotnet.native.worker.mjs", true },
                { "dotnet.runtime.js", true },
                { "dotnet.runtime.js.map", false },
             };
@@ -43,7 +43,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         };
         if (assertOptions.RuntimeType is RuntimeVariant.MultiThreaded)
         {
-            res.Add("dotnet.native.worker.js");
+            res.Add("dotnet.native.worker.mjs");
         }
 
         if (!assertOptions.IsPublish)
@@ -107,7 +107,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         string buildType = assertOptions.IsPublish ? "publish" : "build";
         var nativeFilesToCheck = new List<string>() { "dotnet.native.wasm", "dotnet.native.js" };
         if (assertOptions.RuntimeType == RuntimeVariant.MultiThreaded)
-            nativeFilesToCheck.Add("dotnet.native.worker.js");
+            nativeFilesToCheck.Add("dotnet.native.worker.mjs");
         foreach (string nativeFilename in nativeFilesToCheck)
         {
             if (!actualDotnetFiles.TryGetValue(nativeFilename, out DotNetFileName? dotnetFile))
@@ -121,7 +121,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
             if (assertOptions.ExpectedFileType != NativeFilesType.FromRuntimePack)
             {
-                if (nativeFilename == "dotnet.native.worker.js")
+                if (nativeFilename == "dotnet.native.worker.mjs")
                 {
                     Console.WriteLine($"Skipping the verification whether {nativeFilename} is from the runtime pack. The check wouldn't be meaningful as the runtime pack file has the same size as the relinked file");
                     continue;
