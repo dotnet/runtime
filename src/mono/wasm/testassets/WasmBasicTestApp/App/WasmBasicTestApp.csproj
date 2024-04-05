@@ -5,8 +5,8 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <!-- declare types in namespaces; ConfigureAwait; Prefer 'static readonly' fields -->
-    <NoWarn>CA1050;CA2007;CA1861</NoWarn>
+    <!-- declare types in namespaces; ConfigureAwait; Prefer 'static readonly' fields; trim warnings -->
+    <NoWarn>CA1050;CA2007;CA1861;IL2104</NoWarn>
   </PropertyGroup>
 
   <!-- versions are pinned but when run from WBT level, it's taking in-tree runtime -->

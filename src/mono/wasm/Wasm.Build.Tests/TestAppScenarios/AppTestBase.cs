@@ -23,7 +23,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
     protected string Id { get; set; }
     protected string LogPath { get; set; }
 
-    protected void CopyTestAsset(string assetName, string generatedProjectNamePrefix = null)
+    protected void CopyTestAsset(string assetName, string generatedProjectNamePrefix = null, bool addMultithreading = false)
     {
         Id = $"{generatedProjectNamePrefix ?? assetName}_{GetRandomId()}";
         InitBlazorWasmProjectDir(Id);
@@ -34,8 +34,12 @@ public abstract class AppTestBase : BlazorWasmTestBase
         switch(assetName)
         {
             case "WasmBasicTestApp":
-                // WasmBasicTestApp consists of App + Library projects
+                // WasmBasicTestApp consists of App + Library + Server projects
                 _projectDir = Path.Combine(_projectDir!, "App");
+                break;
+            case "SignalRClientTests":
+                // WasmBasicTestApp consists of App + Library + Server projects
+                _projectDir = Path.Combine(_projectDir!, "Server");
                 break;
             case "BlazorHostedApp":
                 // BlazorHostedApp consists of BlazorHosted.Client and BlazorHosted.Server projects
@@ -63,7 +67,6 @@ public abstract class AppTestBase : BlazorWasmTestBase
     protected void BuildProject(
         string configuration,
         string? binFrameworkDir = null,
-        string? workingDirectory = null, // if different than _projectDir
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
         bool assertAppBundle = true,
         params string[] extraArgs)
@@ -72,15 +75,22 @@ public abstract class AppTestBase : BlazorWasmTestBase
             Id: Id,
             Config: configuration,
             BinFrameworkDir: binFrameworkDir,
-            WorkingDirectory: workingDirectory,
             RuntimeType: runtimeType,
             AssertAppBundle: assertAppBundle), extraArgs);
         result.EnsureSuccessful();
     }
 
-    protected void PublishProject(string configuration, params string[] extraArgs)
+    protected void PublishProject(
+        string configuration,
+        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
+        bool assertAppBundle = true,
+        params string[] extraArgs)
     {
-        (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(Id, configuration), extraArgs);
+        (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(
+            Id: Id,
+            Config: configuration,
+            RuntimeType: runtimeType,
+            AssertAppBundle: assertAppBundle), extraArgs);
         result.EnsureSuccessful();
     }
 
@@ -116,8 +126,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
                 OnServerMessage: OnServerMessage,
                 BrowserPath: options.BrowserPath,
                 QueryString: queryString,
-                Host: host,
-                ServerProject: Path.Combine(Directory.GetParent(_projectDir).FullName, "Server")); // ToDo: change and cleanup
+                Host: host);
 
         await BlazorRunTest(blazorRunOptions);
 

@@ -164,7 +164,7 @@ namespace Wasm.Build.Tests
                 commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
 
             var cmd = new DotNetCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(buildProjectOptions.WorkingDirectory ?? _projectDir!)
+                                    .WithWorkingDirectory(_projectDir!)
                                     .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
                                     .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables);
             if (UseWBTOverridePackTargets && s_buildEnv.IsWorkload)

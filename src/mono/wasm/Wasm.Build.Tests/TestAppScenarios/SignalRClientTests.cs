@@ -32,18 +32,22 @@ public class SignalRClientTests : AppTestBase
     public async Task SignalRPassMessages(string config, string transport)
     {
         CopyTestAsset("WasmBasicTestApp", "SignalRClientTests");
-        // string projectFile = Path.Combine(_projectDir!, "WasmBasicTestApp.csproj");
+        string? parentDirName = Directory.GetParent(_projectDir!)!.FullName;
+        if (parentDirName is null)
+            throw new Exception("parentDirName cannot be null");
+        // WASM client is MT
+        // string projectFile = Path.Combine(parentDirName, "App", "WasmBasicTestApp.csproj");
         // AddItemsPropertiesToProject(projectFile, "<WasmEnableThreads>true</WasmEnableThreads>");
-        BuildProject(configuration: config
-            // runtimeType: RuntimeVariant.MultiThreaded,
-            );
+        // publish WASM App to Server's directory
+        PublishProject(configuration: config, // ToDo: remove workingDirectory changes
+            runtimeType: RuntimeVariant.MultiThreaded,
+            assertAppBundle: false, // publish files are in non-Standard location
+            extraArgs: "-o ../Server/publish -p:WasmEnableThreads=true" );
+
         // build server project
-        string serverPath = Path.Combine(Directory.GetParent(_projectDir!)!.FullName, "Server");
         BuildProject(configuration: config,
-            workingDirectory: serverPath!,
             // runtimeType: RuntimeVariant.MultiThreaded,
-            assertAppBundle: false
-            );
+            assertAppBundle: false); // should we asset app bunlde?
         Console.WriteLine($"_projectDir={_projectDir}");
         Console.WriteLine($"Starting SignalRPassMessages test with config={config} and transport={transport}");
         try
