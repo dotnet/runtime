@@ -15,15 +15,18 @@ public class MiscTypesTesting : Server.Contract.IMiscTypesTesting
         {
             return null;
         }
-        else if (obj is DBNull)
+
+        if (obj is DBNull)
         {
             return DBNull.Value;
         }
-        else if (obj.GetType().IsValueType)
+
+        if (obj.GetType().IsValueType)
         {
             return CallMemberwiseClone(obj);
         }
-        else if (obj is string)
+
+        if (obj is string)
         {
             return obj;
         }
