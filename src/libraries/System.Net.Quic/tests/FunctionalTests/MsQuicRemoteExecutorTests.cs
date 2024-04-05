@@ -20,22 +20,38 @@ namespace System.Net.Quic.Tests
         public MsQuicRemoteExecutorTests()
             : base(null!) { }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SslKeyLogFile_IsCreatedAndFilled()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void SslKeyLogFile_IsCreatedAndFilled(bool enabledBySwitch)
         {
             var psi = new ProcessStartInfo();
             var tempFile = Path.GetTempFileName();
             psi.Environment.Add("SSLKEYLOGFILE", tempFile);
 
-            RemoteExecutor.Invoke(async () =>
+            RemoteExecutor.Invoke(async (enabledBySwitch) =>
             {
+                if (bool.Parse(enabledBySwitch))
+                {
+                    AppContext.SetSwitch("System.Net.Security.EnableSslKeyLogging", true);
+                }
+
                 (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
                 await clientConnection.DisposeAsync();
                 await serverConnection.DisposeAsync();
-            }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }
+            , enabledBySwitch.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
 
-            Assert.True(File.Exists(tempFile));
-            Assert.True(File.ReadAllText(tempFile).Length > 0);
+            if (enabledBySwitch)
+            {
+                Assert.True(File.Exists(tempFile));
+                var text = File.ReadAllText(tempFile);
+                Assert.True(text.Length > 0);
+            }
+            else
+            {
+                Assert.True(!File.Exists(tempFile) || File.ReadAllText(tempFile).Length == 0);
+            }
         }
     }
 }

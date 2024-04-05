@@ -21,16 +21,23 @@ namespace System.Net.Security.Tests
         public SslStreamRemoteExecutorTests()
         { }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Linux)] // SSLKEYLOGFILE is only supported on Linux for SslStream
-        public void SslKeyLogFile_IsCreatedAndFilled()
+        [InlineData(true)]
+        [InlineData(false)]
+        public void SslKeyLogFile_IsCreatedAndFilled(bool enabledBySwitch)
         {
             var psi = new ProcessStartInfo();
             var tempFile = Path.GetTempFileName();
             psi.Environment.Add("SSLKEYLOGFILE", tempFile);
 
-            RemoteExecutor.Invoke(async () =>
+            RemoteExecutor.Invoke(async (enabledBySwitch) =>
             {
+                if (bool.Parse(enabledBySwitch))
+                {
+                    AppContext.SetSwitch("System.Net.Security.EnableSslKeyLogging", true);
+                }
+
                 (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
                 using (clientStream)
                 using (serverStream)
@@ -50,10 +57,17 @@ namespace System.Net.Security.Tests
 
                     await TestHelper.PingPong(client, server);
                 }
-            }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, enabledBySwitch.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
 
-            Assert.True(File.Exists(tempFile));
-            Assert.True(File.ReadAllText(tempFile).Length > 0);
+            if (enabledBySwitch)
+            {
+                Assert.True(File.Exists(tempFile));
+                Assert.True(File.ReadAllText(tempFile).Length > 0);
+            }
+            else
+            {
+                Assert.True(!File.Exists(tempFile) || File.ReadAllText(tempFile).Length == 0);
+            }
         }
     }
 }
