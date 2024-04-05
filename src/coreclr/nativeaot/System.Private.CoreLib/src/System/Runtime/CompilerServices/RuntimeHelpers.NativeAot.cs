@@ -362,6 +362,15 @@ namespace System.Runtime.CompilerServices
             return RuntimeImports.RhNewObject(mt);
         }
 
+        /// <summary>
+        /// Get the size of an object of the given type.
+        /// </summary>
+        /// <param name="type">The type to get the size of.</param>
+        /// <returns>The size of instances of the type.</returns>
+        /// <exception cref="ArgumentException">The passed-in type is not a valid type to get the size of.</exception>
+        /// <remarks>
+        /// This API has the same behavior as if you were to use the IL sizeof instruction with the passed in type as the operand.
+        /// </remarks>
         public static unsafe int SizeOf(RuntimeTypeHandle type)
         {
             if (type.IsNull)

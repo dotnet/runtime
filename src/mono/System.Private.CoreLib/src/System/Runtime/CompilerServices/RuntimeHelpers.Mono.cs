@@ -215,6 +215,15 @@ namespace System.Runtime.CompilerServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int SizeOf(QCallTypeHandle handle);
 
+        /// <summary>
+        /// Get the size of an object of the given type.
+        /// </summary>
+        /// <param name="type">The type to get the size of.</param>
+        /// <returns>The size of instances of the type.</returns>
+        /// <exception cref="ArgumentException">The passed-in type is not a valid type to get the size of.</exception>
+        /// <remarks>
+        /// This API has the same behavior as if you were to use the IL sizeof instruction with the passed in type as the operand.
+        /// </remarks>
         public static int SizeOf(RuntimeTypeHandle type)
         {
             if (type.Value == IntPtr.Zero)
