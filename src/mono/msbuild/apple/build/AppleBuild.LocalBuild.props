@@ -46,7 +46,7 @@
 
     <ILLinkPropsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLink.Tasks', '$(Configuration)', '$(_NetCoreAppToolCurrent)', 'build', 'Microsoft.NET.ILLink.Tasks.props'))</ILLinkPropsPath>
     <ILLinkTargetsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLink.Tasks', '$(Configuration)', '$(_NetCoreAppToolCurrent)', 'build', 'Microsoft.NET.ILLink.targets'))</ILLinkTargetsPath>
-    <_ILLinkTasksAssembly>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLink.Tasks', '$(Configuration)', '$(_NetCoreAppToolCurrent)', 'ILLink.Tasks.dll'))</_ILLinkTasksAssembly>
+    <ILLinkTasksAssembly>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLink.Tasks', '$(Configuration)', '$(_NetCoreAppToolCurrent)', 'ILLink.Tasks.dll'))</ILLinkTasksAssembly>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeSrcDir)' == '' and '$(AppleBuildSupportDir)' != ''">
@@ -70,7 +70,7 @@
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
     <ILLinkPropsPath>$([MSBuild]::NormalizePath('$(BuildBaseDir)', '$(_NetCoreAppToolCurrent)', 'build', ''Microsoft.NET.ILLink.Tasks.props''))</ILLinkPropsPath>
     <ILLinkTargetsPath>$([MSBuild]::NormalizePath('$(BuildBaseDir)', '$(_NetCoreAppToolCurrent)', 'build', 'Microsoft.NET.ILLink.targets'))</ILLinkTargetsPath>
-    <_ILLinkTasksAssembly>$([MSBuild]::NormalizePath('$(BuildBaseDir)', '$(_NetCoreAppToolCurrent)', 'ILLink.Tasks.dll'))</_ILLinkTasksAssembly>
+    <ILLinkTasksAssembly>$([MSBuild]::NormalizePath('$(BuildBaseDir)', '$(_NetCoreAppToolCurrent)', 'ILLink.Tasks.dll'))</ILLinkTasksAssembly>
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
     <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
   </PropertyGroup>
