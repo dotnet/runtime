@@ -16,7 +16,7 @@ namespace System.Text.RegularExpressions.Tests
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 (CultureInfo Culture, string Pattern, string Input, RegexOptions Options, string[] Expected)[] cases = Groups_MemberData_Cases(engine).ToArray();
-                Regex[] regexes = RegexHelpers.GetRegexesAsync(engine, cases.Select(c => (c.Pattern, c.Culture, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray()).Result;
+                Regex[] regexes = RegexHelpers.GetRegexes(engine, cases.Select(c => (c.Pattern, c.Culture, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray());
                 for (int i = 0; i < regexes.Length; i++)
                 {
                     yield return new object[] { regexes[i], cases[i].Culture, cases[i].Input, cases[i].Expected };

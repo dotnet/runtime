@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import cwraps from "./cwraps";
-import { Module, mono_assert } from "./globals";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
 import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { _zero_region, localHeapViewU32 } from "./memory";
@@ -23,7 +23,8 @@ const _external_root_free_instances: WasmExternalRoot<any>[] = [];
  * Once you are done using the root buffer, you must call its release() method.
  * For small numbers of roots, it is preferable to use the mono_wasm_new_root and mono_wasm_new_roots APIs instead.
  */
-export function mono_wasm_new_root_buffer(capacity: number, name?: string): WasmRootBuffer {
+export function mono_wasm_new_root_buffer (capacity: number, name?: string): WasmRootBuffer {
+    if (WasmEnableThreads && runtimeHelpers.disableManagedTransition) throw new Error("External roots are not supported when threads are enabled");
     if (capacity <= 0)
         throw new Error("capacity >= 1");
 
@@ -43,7 +44,8 @@ export function mono_wasm_new_root_buffer(capacity: number, name?: string): Wasm
  * Allocates a WasmRoot pointing to a root provided and controlled by external code. Typicaly on managed stack.
  * Releasing this root will not de-allocate the root space. You still need to call .release().
  */
-export function mono_wasm_new_external_root<T extends MonoObject>(address: VoidPtr | MonoObjectRef): WasmRoot<T> {
+export function mono_wasm_new_external_root<T extends MonoObject> (address: VoidPtr | MonoObjectRef): WasmRoot<T> {
+    if (WasmEnableThreads && runtimeHelpers.disableManagedTransition) throw new Error("External roots are not supported in multithreaded mode");
     let result: WasmExternalRoot<T>;
 
     if (!address)
@@ -66,7 +68,8 @@ export function mono_wasm_new_external_root<T extends MonoObject>(address: VoidP
  * The result object has get() and set(value) methods, along with a .value property.
  * When you are done using the root you must call its .release() method.
  */
-export function mono_wasm_new_root<T extends MonoObject>(value: T | undefined = undefined): WasmRoot<T> {
+export function mono_wasm_new_root<T extends MonoObject> (value: T | undefined = undefined): WasmRoot<T> {
+    if (WasmEnableThreads && runtimeHelpers.disableManagedTransition) throw new Error("External roots are not supported in multithreaded mode");
     let result: WasmRoot<T>;
 
     if (_scratch_root_free_instances.length > 0) {
@@ -96,7 +99,7 @@ export function mono_wasm_new_root<T extends MonoObject>(value: T | undefined = 
  * mono_wasm_new_roots([a, b, ...]) returns an array of new roots initialized with each element.
  * Each root must be released with its release method, or using the mono_wasm_release_roots API.
  */
-export function mono_wasm_new_roots<T extends MonoObject>(count_or_values: number | T[]): WasmRoot<T>[] {
+export function mono_wasm_new_roots<T extends MonoObject> (count_or_values: number | T[]): WasmRoot<T>[] {
     let result;
 
     if (Array.isArray(count_or_values)) {
@@ -121,7 +124,7 @@ export function mono_wasm_new_roots<T extends MonoObject>(count_or_values: numbe
  *  even if you are not sure all of your roots have been created yet.
  * @param {... WasmRoot} roots
  */
-export function mono_wasm_release_roots(...args: WasmRoot<any>[]): void {
+export function mono_wasm_release_roots (...args: WasmRoot<any>[]): void {
     for (let i = 0; i < args.length; i++) {
         if (is_nullish(args[i]))
             continue;
@@ -130,7 +133,7 @@ export function mono_wasm_release_roots(...args: WasmRoot<any>[]): void {
     }
 }
 
-function _mono_wasm_release_scratch_index(index: number) {
+function _mono_wasm_release_scratch_index (index: number) {
     if (index === undefined)
         return;
 
@@ -139,7 +142,7 @@ function _mono_wasm_release_scratch_index(index: number) {
     _scratch_root_free_indices_count++;
 }
 
-function _mono_wasm_claim_scratch_index() {
+function _mono_wasm_claim_scratch_index () {
     if (is_nullish(_scratch_root_buffer) || !_scratch_root_free_indices) {
         _scratch_root_buffer = mono_wasm_new_root_buffer(maxScratchRoots, "js roots");
 
@@ -165,7 +168,7 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
     private __handle: number;
     private __ownsAllocation: boolean;
 
-    constructor(offset: VoidPtr, capacity: number, ownsAllocation: boolean, name?: string) {
+    constructor (offset: VoidPtr, capacity: number, ownsAllocation: boolean, name?: string) {
         const capacityBytes = capacity * 4;
 
         this.__offset = offset;
@@ -177,21 +180,21 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
         this.__ownsAllocation = ownsAllocation;
     }
 
-    _throw_index_out_of_range(): void {
+    _throw_index_out_of_range (): void {
         throw new Error("index out of range");
     }
 
-    _check_in_range(index: number): void {
+    _check_in_range (index: number): void {
         if ((index >= this.__count) || (index < 0))
             this._throw_index_out_of_range();
     }
 
-    get_address(index: number): MonoObjectRef {
+    get_address (index: number): MonoObjectRef {
         this._check_in_range(index);
         return <any>this.__offset + (index * 4);
     }
 
-    get_address_32(index: number): number {
+    get_address_32 (index: number): number {
         this._check_in_range(index);
         return this.__offset32 + index;
     }
@@ -199,38 +202,38 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
     // NOTE: These functions do not use the helpers from memory.ts because WasmRoot.get and WasmRoot.set
     //  are hot-spots when you profile any application that uses the bindings extensively.
 
-    get(index: number): ManagedPointer {
+    get (index: number): ManagedPointer {
         this._check_in_range(index);
         const offset = this.get_address_32(index);
         return <any>localHeapViewU32()[offset];
     }
 
-    set(index: number, value: ManagedPointer): ManagedPointer {
+    set (index: number, value: ManagedPointer): ManagedPointer {
         const address = this.get_address(index);
         cwraps.mono_wasm_write_managed_pointer_unsafe(address, value);
         return value;
     }
 
-    copy_value_from_address(index: number, sourceAddress: MonoObjectRef): void {
+    copy_value_from_address (index: number, sourceAddress: MonoObjectRef): void {
         const destinationAddress = this.get_address(index);
         cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
     }
 
-    _unsafe_get(index: number): number {
+    _unsafe_get (index: number): number {
         return localHeapViewU32()[this.__offset32 + index];
     }
 
-    _unsafe_set(index: number, value: ManagedPointer | NativePointer): void {
+    _unsafe_set (index: number, value: ManagedPointer | NativePointer): void {
         const address = <any>this.__offset + index;
         cwraps.mono_wasm_write_managed_pointer_unsafe(<VoidPtr><any>address, <ManagedPointer>value);
     }
 
-    clear(): void {
+    clear (): void {
         if (this.__offset)
             _zero_region(this.__offset, this.__count * 4);
     }
 
-    release(): void {
+    release (): void {
         if (this.__offset && this.__ownsAllocation) {
             mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when disposing a GC root");
             cwraps.mono_wasm_deregister_root(this.__offset);
@@ -241,7 +244,7 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
         this.__handle = (<any>this.__offset) = this.__count = this.__offset32 = 0;
     }
 
-    toString(): string {
+    toString (): string {
         return `[root buffer @${this.get_address(0)}, size ${this.__count} ]`;
     }
 }
@@ -250,76 +253,76 @@ class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
     private __buffer: WasmRootBuffer;
     private __index: number;
 
-    constructor(buffer: WasmRootBuffer, index: number) {
+    constructor (buffer: WasmRootBuffer, index: number) {
         this.__buffer = buffer;//TODO
         this.__index = index;
     }
 
-    get_address(): MonoObjectRef {
+    get_address (): MonoObjectRef {
         return this.__buffer.get_address(this.__index);
     }
 
-    get_address_32(): number {
+    get_address_32 (): number {
         return this.__buffer.get_address_32(this.__index);
     }
 
-    get address(): MonoObjectRef {
+    get address (): MonoObjectRef {
         return this.__buffer.get_address(this.__index);
     }
 
-    get(): T {
+    get (): T {
         const result = (<WasmRootBufferImpl>this.__buffer)._unsafe_get(this.__index);
         return <any>result;
     }
 
-    set(value: T): T {
+    set (value: T): T {
         const destinationAddress = this.__buffer.get_address(this.__index);
         cwraps.mono_wasm_write_managed_pointer_unsafe(destinationAddress, <ManagedPointer>value);
         return value;
     }
 
-    copy_from(source: WasmRoot<T>): void {
+    copy_from (source: WasmRoot<T>): void {
         const sourceAddress = source.address;
         const destinationAddress = this.address;
         cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
     }
 
-    copy_to(destination: WasmRoot<T>): void {
+    copy_to (destination: WasmRoot<T>): void {
         const sourceAddress = this.address;
         const destinationAddress = destination.address;
         cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
     }
 
-    copy_from_address(source: MonoObjectRef): void {
+    copy_from_address (source: MonoObjectRef): void {
         const destinationAddress = this.address;
         cwraps.mono_wasm_copy_managed_pointer(destinationAddress, source);
     }
 
-    copy_to_address(destination: MonoObjectRef): void {
+    copy_to_address (destination: MonoObjectRef): void {
         const sourceAddress = this.address;
         cwraps.mono_wasm_copy_managed_pointer(destination, sourceAddress);
     }
 
-    get value(): T {
+    get value (): T {
         return this.get();
     }
 
-    set value(value: T) {
+    set value (value: T) {
         this.set(value);
     }
 
-    valueOf(): T {
+    valueOf (): T {
         throw new Error("Implicit conversion of roots to pointers is no longer supported. Use .value or .address as appropriate");
     }
 
-    clear(): void {
+    clear (): void {
         // .set performs an expensive write barrier, and that is not necessary in most cases
         //  for clear since clearing a root cannot cause new objects to survive a GC
         const address32 = this.__buffer.get_address_32(this.__index);
         localHeapViewU32()[address32] = 0;
     }
 
-    release(): void {
+    release (): void {
         if (!this.__buffer)
             throw new Error("No buffer");
 
@@ -334,7 +337,7 @@ class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
         }
     }
 
-    toString(): string {
+    toString (): string {
         return `[root @${this.address}]`;
     }
 }
@@ -343,84 +346,84 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     private __external_address: MonoObjectRef = MonoObjectRefNull;
     private __external_address_32: number = <any>0;
 
-    constructor(address: NativePointer | ManagedPointer) {
+    constructor (address: NativePointer | ManagedPointer) {
         this._set_address(address);
     }
 
-    _set_address(address: NativePointer | ManagedPointer): void {
+    _set_address (address: NativePointer | ManagedPointer): void {
         this.__external_address = <MonoObjectRef><any>address;
         this.__external_address_32 = <number><any>address >>> 2;
     }
 
-    get address(): MonoObjectRef {
+    get address (): MonoObjectRef {
         return <MonoObjectRef><any>this.__external_address;
     }
 
-    get_address(): MonoObjectRef {
+    get_address (): MonoObjectRef {
         return <MonoObjectRef><any>this.__external_address;
     }
 
-    get_address_32(): number {
+    get_address_32 (): number {
         return this.__external_address_32;
     }
 
-    get(): T {
+    get (): T {
         const result = localHeapViewU32()[this.__external_address_32];
         return <any>result;
     }
 
-    set(value: T): T {
+    set (value: T): T {
         cwraps.mono_wasm_write_managed_pointer_unsafe(this.__external_address, <ManagedPointer>value);
         return value;
     }
 
-    copy_from(source: WasmRoot<T>): void {
+    copy_from (source: WasmRoot<T>): void {
         const sourceAddress = source.address;
         const destinationAddress = this.__external_address;
         cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
     }
 
-    copy_to(destination: WasmRoot<T>): void {
+    copy_to (destination: WasmRoot<T>): void {
         const sourceAddress = this.__external_address;
         const destinationAddress = destination.address;
         cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
     }
 
-    copy_from_address(source: MonoObjectRef): void {
+    copy_from_address (source: MonoObjectRef): void {
         const destinationAddress = this.__external_address;
         cwraps.mono_wasm_copy_managed_pointer(destinationAddress, source);
     }
 
-    copy_to_address(destination: MonoObjectRef): void {
+    copy_to_address (destination: MonoObjectRef): void {
         const sourceAddress = this.__external_address;
         cwraps.mono_wasm_copy_managed_pointer(destination, sourceAddress);
     }
 
-    get value(): T {
+    get value (): T {
         return this.get();
     }
 
-    set value(value: T) {
+    set value (value: T) {
         this.set(value);
     }
 
-    valueOf(): T {
+    valueOf (): T {
         throw new Error("Implicit conversion of roots to pointers is no longer supported. Use .value or .address as appropriate");
     }
 
-    clear(): void {
+    clear (): void {
         // .set performs an expensive write barrier, and that is not necessary in most cases
         //  for clear since clearing a root cannot cause new objects to survive a GC
         localHeapViewU32()[<any>this.__external_address >>> 2] = 0;
     }
 
-    release(): void {
+    release (): void {
         const maxPooledInstances = 128;
         if (_external_root_free_instances.length < maxPooledInstances)
             _external_root_free_instances.push(this);
     }
 
-    toString(): string {
+    toString (): string {
         return `[external root @${this.address}]`;
     }
 }

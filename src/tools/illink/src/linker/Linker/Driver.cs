@@ -100,7 +100,7 @@ namespace Mono.Linker
 		{
 			result = new Queue<string> ();
 			foreach (string arg in args) {
-				if (arg.StartsWith ("@")) {
+				if (arg.StartsWith ('@')) {
 					try {
 						string responseFileName = arg.Substring (1);
 						using (var responseFileText = new StreamReader (responseFileName))
@@ -933,7 +933,7 @@ namespace Mono.Linker
 		bool TryGetCustomAssembly (ref string arg, [NotNullWhen (true)] out Assembly? assembly)
 		{
 			assembly = null;
-			int pos = arg.IndexOf (",");
+			int pos = arg.IndexOf (',');
 			if (pos == -1)
 				return false;
 
@@ -963,7 +963,7 @@ namespace Mono.Linker
 				}
 				customStepName = parts[1];
 
-				if (!parts[0].StartsWith ("-") && !parts[0].StartsWith ("+")) {
+				if (!parts[0].StartsWith ('-') && !parts[0].StartsWith ('+')) {
 					Context.LogError (null, DiagnosticId.ExpectedSignToControlNewStepInsertion);
 					return false;
 				}
@@ -1239,7 +1239,7 @@ namespace Mono.Linker
 				return true;
 			}
 
-			if (arg.StartsWith ("-") || arg.StartsWith ("/")) {
+			if (arg.StartsWith ('-') || arg.StartsWith ('/')) {
 				action (true);
 				return true;
 			}
@@ -1272,7 +1272,7 @@ namespace Mono.Linker
 				return null;
 
 			var arg = arguments.Peek ();
-			if (arg.StartsWith ("-") || arg.StartsWith ("/"))
+			if (arg.StartsWith ('-') || arg.StartsWith ('/'))
 				return null;
 
 			arguments.Dequeue ();

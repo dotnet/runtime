@@ -70,16 +70,16 @@ bool Compiler::impILConsumesAddr(const BYTE* codeAddr)
 
     switch (opcode)
     {
-        // case CEE_LDFLDA: We're taking this one out as if you have a sequence
-        // like
-        //
-        //          ldloca.0
-        //          ldflda whatever
-        //
-        // of a primitivelike struct, you end up after morphing with addr of a local
-        // that's not marked as addrtaken, which is wrong. Also ldflda is usually used
-        // for structs that contain other structs, which isnt a case we handle very
-        // well now for other reasons.
+            // case CEE_LDFLDA: We're taking this one out as if you have a sequence
+            // like
+            //
+            //          ldloca.0
+            //          ldflda whatever
+            //
+            // of a primitivelike struct, you end up after morphing with addr of a local
+            // that's not marked as addrtaken, which is wrong. Also ldflda is usually used
+            // for structs that contain other structs, which isnt a case we handle very
+            // well now for other reasons.
 
         case CEE_LDFLD:
         {
@@ -430,7 +430,7 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
         {
             GenTree* call = expr->OperIs(GT_RET_EXPR) ? expr->AsRetExpr()->gtInlineCandidate : expr;
 
-            if (call->TypeIs(TYP_VOID) && call->AsCall()->TreatAsShouldHaveRetBufArg(this))
+            if (call->TypeIs(TYP_VOID) && call->AsCall()->TreatAsShouldHaveRetBufArg())
             {
                 GenTree* retBuf;
                 if (call->AsCall()->ShouldHaveRetBufArg())
@@ -670,7 +670,7 @@ void Compiler::impStoreTemp(unsigned         lclNum,
                             Statement**      pAfterStmt, /* = NULL */
                             const DebugInfo& di,         /* = DebugInfo() */
                             BasicBlock*      block       /* = NULL */
-                            )
+)
 {
     GenTree* store = gtNewTempStore(lclNum, val, curLevel, pAfterStmt, di, block);
 
@@ -815,7 +815,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
                                   Statement**      pAfterStmt, /* = nullptr */
                                   const DebugInfo& di,         /* = DebugInfo() */
                                   BasicBlock*      block       /* = nullptr */
-                                  )
+)
 {
     assert(varTypeIsStruct(store) && store->OperIsStore());
 
@@ -836,7 +836,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
     if (src->IsCall())
     {
         GenTreeCall* srcCall = src->AsCall();
-        if (srcCall->TreatAsShouldHaveRetBufArg(this))
+        if (srcCall->TreatAsShouldHaveRetBufArg())
         {
             // Case of call returning a struct via hidden retbuf arg.
             // Some calls have an "out buffer" that is not actually a ret buff
@@ -964,39 +964,6 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // So now we just return an empty node (pruning the GT_RET_EXPR)
             return src;
         }
-    }
-    else if (src->OperIs(GT_MKREFANY))
-    {
-        // Since we are assigning the result of a GT_MKREFANY, "destAddr" must point to a refany.
-        // TODO-CQ: we can do this without address-exposing the local on the LHS.
-        GenTreeFlags indirFlags = GTF_EMPTY;
-        GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
-        GenTree*     destAddrClone;
-        destAddr = impCloneExpr(destAddr, &destAddrClone, curLevel, pAfterStmt DEBUGARG("MKREFANY assignment"));
-
-        assert(OFFSETOF__CORINFO_TypedReference__dataPtr == 0);
-        assert(destAddr->gtType == TYP_I_IMPL || destAddr->gtType == TYP_BYREF);
-
-        // Append the store of the pointer value.
-        // TODO-Bug: the pointer value can be a byref. Use its actual type here instead of TYP_I_IMPL.
-        GenTree* ptrFieldStore = gtNewStoreIndNode(TYP_I_IMPL, destAddr, src->AsOp()->gtOp1, indirFlags);
-        if (pAfterStmt)
-        {
-            Statement* newStmt = gtNewStmt(ptrFieldStore, usedDI);
-            fgInsertStmtAfter(block, *pAfterStmt, newStmt);
-            *pAfterStmt = newStmt;
-        }
-        else
-        {
-            impAppendTree(ptrFieldStore, curLevel, usedDI);
-        }
-
-        GenTree* typeFieldOffset = gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL);
-        GenTree* typeFieldAddr   = gtNewOperNode(GT_ADD, genActualType(destAddr), destAddrClone, typeFieldOffset);
-        GenTree* typeFieldStore  = gtNewStoreIndNode(TYP_I_IMPL, typeFieldAddr, src->AsOp()->gtOp2);
-
-        // Return the store of the type value, to be appended.
-        return typeFieldStore;
     }
     else if (src->OperIs(GT_COMMA))
     {
@@ -1751,7 +1718,7 @@ bool Compiler::impSpillStackEntry(unsigned level,
                                   bool        bAssertOnRecursion,
                                   const char* reason
 #endif
-                                  )
+)
 {
 
 #ifdef DEBUG
@@ -2100,9 +2067,9 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
  *  If the tree has side-effects, it will be spilled to a temp.
  */
 
-GenTree* Compiler::impCloneExpr(GenTree*    tree,
-                                GenTree**   pClone,
-                                unsigned    curLevel,
+GenTree* Compiler::impCloneExpr(GenTree*               tree,
+                                GenTree**              pClone,
+                                unsigned               curLevel,
                                 Statement** pAfterStmt DEBUGARG(const char* reason))
 {
     if (!(tree->gtFlags & GTF_GLOB_EFFECT))
@@ -4257,7 +4224,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
     JITDUMP("\nimpFixupStructReturnType: retyping\n");
     DISPTREE(op);
 
-    if (op->IsCall() && op->AsCall()->TreatAsShouldHaveRetBufArg(this))
+    if (op->IsCall() && op->AsCall()->TreatAsShouldHaveRetBufArg())
     {
         // This must be one of those 'special' helpers that don't really have a return buffer, but instead
         // use it as a way to keep the trees cleaner with fewer address-taken temps. Well now we have to
@@ -4293,12 +4260,13 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
 
         // In contrast, we can only use multi-reg calls directly if they have the exact same ABI.
         // Calling convention equality is a conservative approximation for that check.
-        if (op->IsCall() && (op->AsCall()->GetUnmanagedCallConv() == info.compCallConv)
+        if (op->IsCall() &&
+            (op->AsCall()->GetUnmanagedCallConv() == info.compCallConv)
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // TODO-Review: this seems unnecessary. Return ABI doesn't change under varargs.
             && !op->AsCall()->IsVarargs()
 #endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                )
+        )
         {
             return op;
         }
@@ -5270,7 +5238,6 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
             // <BUGNUM> VSW 318822 </BUGNUM>
             //
             // So here we decide to make the resulting type to be a native int.
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             // Insert an explicit upcast if needed.
             op1 = *pOp1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, fUnsigned);
@@ -6205,7 +6172,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             bool                 ovfl, unordered, callNode;
             CORINFO_CLASS_HANDLE tokenType;
 
-            union {
+            union
+            {
                 int     intVal;
                 float   fltVal;
                 __int64 lngVal;
@@ -6952,7 +6920,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Create the store node and append it.
                 ClassLayout* layout = (lclTyp == TYP_STRUCT) ? typGetObjLayout(stelemClsHnd) : nullptr;
                 op1                 = (lclTyp == TYP_STRUCT) ? gtNewStoreBlkNode(layout, op1, op2)->AsIndir()
-                                             : gtNewStoreIndNode(lclTyp, op1, op2);
+                                                             : gtNewStoreIndNode(lclTyp, op1, op2);
                 if (varTypeIsStruct(op1))
                 {
                     op1 = impStoreStruct(op1, CHECK_SPILL_ALL);
@@ -7010,7 +6978,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 oper = GT_MUL;
                 goto MATH_MAYBE_CALL_OVF;
 
-            // Other binary math operations
+                // Other binary math operations
 
             case CEE_DIV:
                 oper = GT_DIV;
@@ -7299,7 +7267,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1  = gtNewOperNode(oper, TYP_INT, op1, op2);
                 }
 
-            // fall through
+                // fall through
 
             COND_JUMP:
 
@@ -7628,7 +7596,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 goto SPILL_APPEND;
 
-            /************************** Casting OPCODES ***************************/
+                /************************** Casting OPCODES ***************************/
 
             case CEE_CONV_OVF_I1:
                 lclTyp = TYP_BYTE;
@@ -7770,12 +7738,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (varTypeIsFloating(lclTyp))
                 {
-                    callNode = varTypeIsLong(impStackTop().val) || uns // uint->dbl gets turned into uint->long->dbl
+                    callNode = varTypeIsLong(impStackTop().val) ||
+                               uns // uint->dbl gets turned into uint->long->dbl
 #ifdef TARGET_64BIT
-                               // TODO-ARM64-Bug?: This was AMD64; I enabled it for ARM64 also. OK?
-                               // TYP_BYREF could be used as TYP_I_IMPL which is long.
-                               // TODO-CQ: remove this when we lower casts long/ulong --> float/double
-                               // and generate SSE2 code instead of going through helper calls.
+                                   // TODO-ARM64-Bug?: This was AMD64; I enabled it for ARM64 also. OK?
+                                   // TYP_BYREF could be used as TYP_I_IMPL which is long.
+                                   // TODO-CQ: remove this when we lower casts long/ulong --> float/double
+                                   // and generate SSE2 code instead of going through helper calls.
                                || (impStackTop().val->TypeGet() == TYP_BYREF)
 #endif
                         ;
@@ -7911,31 +7880,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         JITDUMP("\n ... CEE_POP struct ...\n");
                         DISPTREE(op1);
-#ifdef UNIX_AMD64_ABI
-                        // Non-calls, such as obj or ret_expr, have to go through this.
-                        // Calls with large struct return value have to go through this.
-                        // Helper calls with small struct return value also have to go
-                        // through this since they do not follow Unix calling convention.
-                        if (!op1->IsCall() ||
-                            !IsMultiRegReturnedType(op1->AsCall()->gtRetClsHnd,
-                                                    op1->AsCall()->GetUnmanagedCallConv()) ||
-                            op1->IsHelperCall())
-#endif // UNIX_AMD64_ABI
+                        // If the value being produced comes from loading
+                        // via an underlying address, just null check the address.
+                        if (op1->OperIs(GT_IND, GT_BLK))
                         {
-                            // If the value being produced comes from loading
-                            // via an underlying address, just null check the address.
-                            if (op1->OperIs(GT_IND, GT_BLK))
-                            {
-                                gtChangeOperToNullCheck(op1, block);
-                            }
-                            else
-                            {
-                                op1 = impGetNodeAddr(op1, CHECK_SPILL_ALL, nullptr);
-                            }
-
-                            JITDUMP("\n ... optimized to ...\n");
-                            DISPTREE(op1);
+                            gtChangeOperToNullCheck(op1, block);
                         }
+                        else
+                        {
+                            op1 = impGetNodeAddr(op1, CHECK_SPILL_ALL, nullptr);
+                        }
+
+                        JITDUMP("\n ... optimized to ...\n");
+                        DISPTREE(op1);
                     }
 
                     // If op1 is non-overflow cast, throw it away since it is useless.
@@ -8967,7 +8924,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #if BIGENDIAN
                         op1 = gtNewIconNode(0, lclTyp);
 #else
-                        op1                     = gtNewIconNode(1, lclTyp);
+                        op1 = gtNewIconNode(1, lclTyp);
 #endif
                         goto FIELD_DONE;
                     }
@@ -8982,7 +8939,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     ClassLayout* layout;
                     lclTyp = TypeHandleToVarType(fieldInfo.fieldType, clsHnd, &layout);
                     op1    = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(layout, op1, indirFlags)
-                                                 : gtNewIndir(lclTyp, op1, indirFlags);
+                                                    : gtNewIndir(lclTyp, op1, indirFlags);
                     if ((indirFlags & GTF_IND_INVARIANT) != 0)
                     {
                         // TODO-ASG: delete this zero-diff quirk.
@@ -9209,20 +9166,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         assert(!"Unexpected fieldAccessor");
                 }
 
-                /* V4.0 allows assignment of i4 constant values to i8 type vars when IL verifier is bypassed (full
-                trust apps). The reason this works is that JIT stores an i4 constant in GenTree union during
-                importation and reads from the union as if it were a long during code generation. Though this
-                can potentially read garbage, one can get lucky to have this working correctly.
+                    /* V4.0 allows assignment of i4 constant values to i8 type vars when IL verifier is bypassed (full
+                    trust apps). The reason this works is that JIT stores an i4 constant in GenTree union during
+                    importation and reads from the union as if it were a long during code generation. Though this
+                    can potentially read garbage, one can get lucky to have this working correctly.
 
-                This code pattern is generated by Dev10 MC++ compiler while storing to fields when compiled with
-                /O2 switch (default when compiling retail configs in Dev10) and a customer app has taken a
-                dependency on it. To be backward compatible, we will explicitly add an upward cast here so that
-                it works correctly always.
+                    This code pattern is generated by Dev10 MC++ compiler while storing to fields when compiled with
+                    /O2 switch (default when compiling retail configs in Dev10) and a customer app has taken a
+                    dependency on it. To be backward compatible, we will explicitly add an upward cast here so that
+                    it works correctly always.
 
-                Note that this is limited to x86 alone as there is no back compat to be addressed for Arm JIT
-                for V4.0.
-                */
-                CLANG_FORMAT_COMMENT_ANCHOR;
+                    Note that this is limited to x86 alone as there is no back compat to be addressed for Arm JIT
+                    for V4.0.
+                    */
 
 #ifndef TARGET_64BIT
                 // In UWP6.0 and beyond (post-.NET Core 2.0), we decided to let this cast from int to long be
@@ -9326,7 +9282,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             CORINFO_FIELD_INFO fi;
                             eeGetFieldInfo(&fldToken, CORINFO_ACCESS_SET, &fi);
                             unsigned flagsToCheck = CORINFO_FLG_FIELD_STATIC | CORINFO_FLG_FIELD_FINAL;
-                            if ((fi.fieldFlags & flagsToCheck) == flagsToCheck)
+                            if (((fi.fieldFlags & flagsToCheck) == flagsToCheck) &&
+                                ((info.compCompHnd->getClassAttribs(info.compClassHnd) & CORINFO_FLG_SHAREDINST) == 0))
                             {
 #ifdef FEATURE_READYTORUN
                                 if (opts.IsReadyToRun())
@@ -9613,31 +9570,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 op1 = impPopStack().val;
 
-                if (op1->OperIs(GT_MKREFANY))
-                {
-                    // The pointer may have side-effects
-                    if (op1->AsOp()->gtOp1->gtFlags & GTF_SIDE_EFFECT)
-                    {
-                        impAppendTree(op1->AsOp()->gtOp1, CHECK_SPILL_ALL, impCurStmtDI);
-#ifdef DEBUG
-                        impNoteLastILoffs();
-#endif
-                    }
+                // Get the address of the refany
+                GenTreeFlags indirFlags = GTF_EMPTY;
+                op1                     = impGetNodeAddr(op1, CHECK_SPILL_ALL, &indirFlags);
 
-                    // We already have the class handle
-                    op1 = op1->AsOp()->gtOp2;
-                }
-                else
-                {
-                    // Get the address of the refany
-                    GenTreeFlags indirFlags = GTF_EMPTY;
-                    op1                     = impGetNodeAddr(op1, CHECK_SPILL_ALL, &indirFlags);
-
-                    // Fetch the type from the correct slot
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                        gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
-                    op1 = gtNewIndir(TYP_BYREF, op1, indirFlags);
-                }
+                // Fetch the type from the correct slot
+                op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
+                                    gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
+                op1 = gtNewIndir(TYP_BYREF, op1, indirFlags);
 
                 // Convert native TypeHandle to RuntimeTypeHandle.
                 op1 = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, TYP_STRUCT, op1);
@@ -9860,10 +9800,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                assert((helper == CORINFO_HELP_UNBOX && op1->gtType == TYP_BYREF) || // Unbox helper returns a byref.
-                       (helper == CORINFO_HELP_UNBOX_NULLABLE &&
-                        varTypeIsStruct(op1)) // UnboxNullable helper returns a struct.
-                       );
+                assert((helper == CORINFO_HELP_UNBOX && op1->gtType == TYP_BYREF) ||   // Unbox helper returns a byref.
+                       (helper == CORINFO_HELP_UNBOX_NULLABLE && varTypeIsStruct(op1)) // UnboxNullable helper returns a
+                                                                                       // struct.
+                );
 
                 /*
                   ----------------------------------------------------------------------
@@ -10127,7 +10067,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Pop the exception object and create the 'throw' helper call
                 op1 = gtNewHelperCallNode(CORINFO_HELP_THROW, TYP_VOID, impPopStack().val);
 
-            // Fall through to clear out the eval stack.
+                // Fall through to clear out the eval stack.
 
             EVAL_APPEND:
                 if (verCurrentState.esStackDepth > 0)
@@ -10321,16 +10261,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             }
 
             case CEE_MKREFANY:
-
+            {
                 assert(!compIsForInlining());
 
-                // Being lazy here. Refanys are tricky in terms of gc tracking.
-                // Since it is uncommon, just don't perform struct promotion in any method that contains mkrefany.
-
-                JITDUMP("disabling struct promotion because of mkrefany\n");
-                fgNoStructPromotion = true;
-
-                oper = GT_MKREFANY;
                 assertImp(sz == sizeof(unsigned));
 
                 _impResolveToken(CORINFO_TOKENKIND_Class);
@@ -10351,13 +10284,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // @SPECVIOLATION: TYP_INT should not be allowed here by a strict reading of the spec.
                 // But JIT32 allowed it, so we continue to allow it.
-                assertImp(op1->TypeGet() == TYP_BYREF || op1->TypeGet() == TYP_I_IMPL || op1->TypeGet() == TYP_INT);
+                assertImp(op1->TypeIs(TYP_BYREF, TYP_I_IMPL, TYP_INT));
 
-                // MKREFANY returns a struct.  op2 is the class token.
-                op1 = gtNewOperNode(oper, TYP_STRUCT, op1, op2);
+                unsigned refAnyLcl = lvaGrabTemp(false DEBUGARG("mkrefany temp"));
+                lvaSetStruct(refAnyLcl, impGetRefAnyClass(), false);
 
-                impPushOnStack(op1, verMakeTypeInfo(impGetRefAnyClass()));
+                GenTree* storeData =
+                    gtNewStoreLclFldNode(refAnyLcl, op1->TypeGet(), OFFSETOF__CORINFO_TypedReference__dataPtr, op1);
+                GenTree* storeType =
+                    gtNewStoreLclFldNode(refAnyLcl, op2->TypeGet(), OFFSETOF__CORINFO_TypedReference__type, op2);
+                impAppendTree(storeData, CHECK_SPILL_ALL, impCurStmtDI);
+                impAppendTree(storeType, CHECK_SPILL_ALL, impCurStmtDI);
+
+                impPushOnStack(gtNewLclVarNode(refAnyLcl, TYP_STRUCT), verMakeTypeInfo(impGetRefAnyClass()));
                 break;
+            }
 
             case CEE_LDOBJ:
             {
@@ -10413,7 +10354,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 break;
 
-            /******************************** NYI *******************************/
+                /******************************** NYI *******************************/
 
             case 0xCC:
                 OutputDebugStringA("CLR: Invalid x86 breakpoint in IL stream\n");
@@ -10519,6 +10460,21 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
         {
             lclNum = lvaArg0Var;
         }
+#ifdef SWIFT_SUPPORT
+        else if (lclNum == lvaSwiftErrorArg)
+        {
+            // Convert any usages of the SwiftError pointer/ref parameter to pointers/refs to the SwiftError pseudolocal
+            // (set side effect flags so usages of references to pseudolocal aren't removed)
+            assert(info.compCallConv == CorInfoCallConvExtension::Swift);
+            assert(lvaSwiftErrorArg != BAD_VAR_NUM);
+            assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
+            const var_types type               = lvaGetDesc(lvaSwiftErrorArg)->TypeGet();
+            GenTree* const  swiftErrorLocalRef = gtNewLclVarAddrNode(lvaSwiftErrorLocal, type);
+            impPushOnStack(swiftErrorLocalRef, typeInfo(type));
+            JITDUMP("\nCreated GT_LCL_ADDR of SwiftError pseudolocal\n");
+            return;
+        }
+#endif // SWIFT_SUPPORT
 
         impLoadVar(lclNum, offset);
     }
@@ -10566,7 +10522,7 @@ void Compiler::impLoadLoc(unsigned ilLclNum, IL_OFFSET offset)
 // Returns:
 //     Tree with reference to struct local to use as call return value.
 
-GenTree* Compiler::impStoreMultiRegValueToVar(GenTree*             op,
+GenTree* Compiler::impStoreMultiRegValueToVar(GenTree*                    op,
                                               CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoCallConvExtension callConv))
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return"));
@@ -11854,7 +11810,7 @@ unsigned Compiler::impGetSpillTmpBase(BasicBlock* block)
 
     // Otherwise, choose one, and propagate to all members of the spill clique.
     // Grab enough temps for the whole stack.
-    unsigned baseTmp = lvaGrabTemps(verCurrentState.esStackDepth DEBUGARG("IL Stack Entries"));
+    unsigned          baseTmp = lvaGrabTemps(verCurrentState.esStackDepth DEBUGARG("IL Stack Entries"));
     SetSpillTempsBase callback(baseTmp);
 
     // We do *NOT* need to reset the SpillClique*Members because a block can only be the predecessor
@@ -12157,7 +12113,7 @@ void Compiler::impFixPredLists()
     unsigned XTnum = 0;
     bool     added = false;
 
-    for (EHblkDsc *HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
+    for (EHblkDsc* HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
         if (HBtab->HasFinallyHandler())
         {
@@ -12306,7 +12262,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
 {
     assert((pInlineInfo != nullptr && compIsForInlining()) || // Perform the actual inlining.
            (pInlineInfo == nullptr && !compIsForInlining())   // Calculate the static inlining hint for ngen.
-           );
+    );
 
     // If we're really inlining, we should just have one result in play.
     assert((pInlineInfo == nullptr) || (inlineResult == pInlineInfo->inlineResult));
@@ -12650,12 +12606,6 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     GenTree* curArgVal = arg->GetNode();
 
     assert(!curArgVal->OperIs(GT_RET_EXPR));
-
-    if (curArgVal->gtOper == GT_MKREFANY)
-    {
-        inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_IS_MKREFANY);
-        return;
-    }
 
     GenTree*   lclVarTree;
     const bool isAddressInLocal = impIsAddressInLocal(curArgVal, &lclVarTree);
@@ -13357,7 +13307,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             assert(!argInfo.argIsUsed);
 
             /* Reserve a temp for the expression.
-            * Use a large size node as we may change it later */
+             * Use a large size node as we may change it later */
 
             const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Inlining Arg"));
 

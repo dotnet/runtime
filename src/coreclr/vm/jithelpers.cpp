@@ -58,6 +58,9 @@
 
 #include "exinfo.h"
 
+using std::isfinite;
+using std::isnan;
+
 //========================================================================
 //
 // This file contains implementation of all JIT helpers. The helpers are
@@ -264,7 +267,7 @@ HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
         }
         else if (divisor == -1)
         {
-            if (dividend == _I32_MIN)
+            if (dividend == INT32_MIN)
             {
                 ehKind = kOverflowException;
                 goto ThrowExcep;
@@ -296,7 +299,7 @@ HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
         }
         else if (divisor == -1)
         {
-            if (dividend == _I32_MIN)
+            if (dividend == INT32_MIN)
             {
                 ehKind = kOverflowException;
                 goto ThrowExcep;
@@ -510,57 +513,6 @@ HCIMPL1_V(double, JIT_Lng2Dbl, INT64 val)
 }
 HCIMPLEND
 
-//--------------------------------------------------------------------------
-template <class ftype>
-ftype modftype(ftype value, ftype *iptr);
-template <> float modftype(float value, float *iptr) { return modff(value, iptr); }
-template <> double modftype(double value, double *iptr) { return modf(value, iptr); }
-
-// round to nearest, round to even if tied
-template <class ftype>
-ftype BankersRound(ftype value)
-{
-    if (value < 0.0) return -BankersRound <ftype> (-value);
-
-    ftype integerPart;
-    modftype( value, &integerPart );
-
-    // if decimal part is exactly .5
-    if ((value -(integerPart +0.5)) == 0.0)
-    {
-        // round to even
-        if (fmod(ftype(integerPart), ftype(2.0)) == 0.0)
-            return integerPart;
-
-        // Else return the nearest even integer
-        return (ftype)copysign(ceil(fabs(value+0.5)),
-                         value);
-    }
-
-    // Otherwise round to closest
-    return (ftype)copysign(floor(fabs(value)+0.5),
-                     value);
-}
-
-
-/*********************************************************************/
-// round double to nearest int (as double)
-HCIMPL1_V(double, JIT_DoubleRound, double val)
-{
-    FCALL_CONTRACT;
-    return BankersRound(val);
-}
-HCIMPLEND
-
-/*********************************************************************/
-// round float to nearest int (as float)
-HCIMPL1_V(float, JIT_FloatRound, float val)
-{
-    FCALL_CONTRACT;
-    return BankersRound(val);
-}
-HCIMPLEND
-
 /*********************************************************************/
 // Call fast Dbl2Lng conversion - used by functions below
 FORCEINLINE INT64 FastDbl2Lng(double val)
@@ -674,63 +626,11 @@ HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
 }
 HCIMPLEND
 
-#ifndef TARGET_WINDOWS
-namespace
-{
-    bool isnan(float val)
-    {
-        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
-        return (bits & 0x7FFFFFFFU) > 0x7F800000U;
-    }
-    bool isnan(double val)
-    {
-        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
-        return (bits & 0x7FFFFFFFFFFFFFFFULL) > 0x7FF0000000000000ULL;
-    }
-    bool isfinite(float val)
-    {
-        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
-        return (~bits & 0x7F800000U) != 0;
-    }
-    bool isfinite(double val)
-    {
-        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
-        return (~bits & 0x7FF0000000000000ULL) != 0;
-    }
-}
-#endif
-
 HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
 {
     FCALL_CONTRACT;
 
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-
-    if (divisor==0 || !isfinite(dividend))
-    {
-        UINT32 NaN = CLR_NAN_32;
-        return *(float *)(&NaN);
-    }
-    else if (!isfinite(divisor) && !isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-#if 0
-    // COMPILER BUG WITH FMODF() + /Oi, USE FMOD() INSTEAD
-    return fmodf(dividend,divisor);
-#else
-    return (float)fmod((double)dividend,(double)divisor);
-#endif
+    return fmodf(dividend, divisor);
 }
 HCIMPLEND
 
@@ -738,27 +638,7 @@ HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
 {
     FCALL_CONTRACT;
 
-    //
-    // From the ECMA standard:
-    //
-    // If [divisor] is zero or [dividend] is infinity
-    //   the result is NaN.
-    // If [divisor] is infinity,
-    //   the result is [dividend] (negated for -infinity***).
-    //
-    // ***"negated for -infinity" has been removed from the spec
-    //
-    if (divisor==0 || !isfinite(dividend))
-    {
-        UINT64 NaN = CLR_NAN_64;
-        return *(double *)(&NaN);
-    }
-    else if (!isfinite(divisor) && !isnan(divisor))
-    {
-        return dividend;
-    }
-    // else...
-    return(fmod(dividend,divisor));
+    return fmod(dividend, divisor);
 }
 HCIMPLEND
 
@@ -1306,7 +1186,7 @@ NOINLINE HCIMPL1(void, JIT_InitClass_Framed, MethodTable* pMT)
     // already have initialized the Global Class <Module>
     CONSISTENCY_CHECK(!pMT->IsGlobalClass());
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
     pMT->CheckRunClassInitThrowing();
 
     HELPER_METHOD_FRAME_END();
@@ -1359,7 +1239,7 @@ HCIMPL2(void, JIT_InitInstantiatedClass, CORINFO_CLASS_HANDLE typeHnd_, CORINFO_
         pMT = pTemplateMT;
     }
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
     pMT->EnsureInstanceActive();
     pMT->CheckRunClassInitThrowing();
     HELPER_METHOD_FRAME_END();
@@ -1611,7 +1491,7 @@ NOINLINE HCIMPL1(void*, JIT_GetGenericsGCStaticBase_Framed, MethodTable *pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     pMT->CheckRunClassInitThrowing();
 
@@ -1672,7 +1552,7 @@ NOINLINE HCIMPL1(void*, JIT_GetGenericsNonGCStaticBase_Framed, MethodTable *pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     // If pMT refers to a method table that requires some initialization work,
     // then pMT cannot to a method table that is shared by generic instantiations,
@@ -1752,9 +1632,7 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBase_Helper, MethodTable * pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    // For generics, we need to call CheckRestore() for some reason
-    if (pMT->HasGenericsStaticsInfo())
-        pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     // Get the TLM
     ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
@@ -1784,9 +1662,7 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    // For generics, we need to call CheckRestore() for some reason
-    if (pMT->HasGenericsStaticsInfo())
-        pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     // Get the TLM
     ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
@@ -2886,7 +2762,7 @@ HCIMPL3(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs
     HELPER_METHOD_FRAME_BEGIN_RET_1(ret);    // Set up a frame
 
     TypeHandle typeHnd(classHnd);
-    typeHnd.CheckRestore();
+    _ASSERTE(typeHnd.IsFullyLoaded());
     _ASSERTE(typeHnd.GetMethodTable()->IsArray());
 
     ret = AllocateArrayEx(typeHnd, pArgList, dwNumArgs);
@@ -2949,7 +2825,7 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 
     MethodTable *pMT = clsHnd.AsMethodTable();
 
-    pMT->CheckRestore();
+    _ASSERTE(pMT->IsFullyLoaded());
 
     _ASSERTE (pMT->IsValueType() && !pMT->IsByRefLike());
 

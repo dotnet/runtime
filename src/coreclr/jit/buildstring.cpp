@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#define STRINGIFY(L) #L
+#define STRINGIFY(L)     #L
 #define MAKESTRING(M, L) M(L)
-#define STRINGIZE(X) MAKESTRING(STRINGIFY, X)
+#define STRINGIZE(X)     MAKESTRING(STRINGIFY, X)
 
 #if defined(__clang__)
 #define BUILD_COMPILER                                                                                                 \

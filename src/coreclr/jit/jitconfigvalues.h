@@ -125,9 +125,8 @@ CONFIG_INTEGER(JitNoForceFallback, W("JitNoForceFallback"), 0) // Set to non-zer
                                                                // flags.
 CONFIG_INTEGER(JitNoForwardSub, W("JitNoForwardSub"), 0)       // Disables forward sub
 CONFIG_INTEGER(JitNoHoist, W("JitNoHoist"), 0)
-CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)                 // Disables inlining of all methods
-CONFIG_INTEGER(JitNoMemoryBarriers, W("JitNoMemoryBarriers"), 0) // If 1, don't generate memory barriers
-CONFIG_INTEGER(JitNoRegLoc, W("JitNoRegLoc"), 0)
+CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)                   // Disables inlining of all methods
+CONFIG_INTEGER(JitNoMemoryBarriers, W("JitNoMemoryBarriers"), 0)   // If 1, don't generate memory barriers
 CONFIG_INTEGER(JitNoStructPromotion, W("JitNoStructPromotion"), 0) // Disables struct promotion 1 - for all, 2 - for
                                                                    // params.
 CONFIG_INTEGER(JitNoUnroll, W("JitNoUnroll"), 0)
@@ -152,7 +151,6 @@ CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods")
 CONFIG_INTEGER(JitProfileChecks, W("JitProfileChecks"), -1)
 
 CONFIG_INTEGER(JitRequired, W("JITRequired"), -1)
-CONFIG_INTEGER(JitRoundFloat, W("JITRoundFloat"), DEFAULT_ROUND_LEVEL)
 CONFIG_INTEGER(JitStackAllocToLocalSize, W("JitStackAllocToLocalSize"), DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)
 CONFIG_INTEGER(JitSkipArrayBoundCheck, W("JitSkipArrayBoundCheck"), 0)
 CONFIG_INTEGER(JitSlowDebugChecksEnabled, W("JitSlowDebugChecksEnabled"), 1) // Turn on slow debug checks
@@ -177,7 +175,6 @@ CONFIG_INTEGER(RunAltJitCode, W("RunAltJitCode"), 1) // If non-zero, and the com
                                                      // code and fall back to the default compiler.
 CONFIG_INTEGER(RunComponentUnitTests, W("JitComponentUnitTests"), 0) // Run JIT component unit tests
 CONFIG_INTEGER(ShouldInjectFault, W("InjectFault"), 0)
-CONFIG_INTEGER(StressCOMCall, W("StressCOMCall"), 0)
 CONFIG_INTEGER(TailcallStress, W("TailcallStress"), 0)
 CONFIG_INTEGER(TreesBeforeAfterMorph, W("JitDumpBeforeAfterMorph"), 0) // If 1, display each tree before/after morphing
 
@@ -292,13 +289,6 @@ CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 1) // If set, align inner loop
 CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 0)
 #endif
 
-///
-/// JIT
-///
-#ifdef FEATURE_ENABLE_NO_RANGE_CHECKS
-CONFIG_INTEGER(JitNoRangeChks, W("JitNoRngChks"), 0) // If 1, don't generate range checks
-#endif
-
 // AltJitAssertOnNYI should be 0 on targets where JIT is under development or bring up stage, so as to facilitate
 // fallback to main JIT on hitting a NYI.
 CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 1) // Controls the AltJit behavior of NYI stuff
@@ -387,10 +377,10 @@ CONFIG_INTEGER(JitDisableSimdVN, W("JitDisableSimdVN"), 0) // Default 0, ValueNu
 //
 CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 
-#define CONST_CSE_ENABLE_ARM 0
-#define CONST_CSE_DISABLE_ALL 1
+#define CONST_CSE_ENABLE_ARM            0
+#define CONST_CSE_DISABLE_ALL           1
 #define CONST_CSE_ENABLE_ARM_NO_SHARING 2
-#define CONST_CSE_ENABLE_ALL 3
+#define CONST_CSE_ENABLE_ALL            3
 #define CONST_CSE_ENABLE_ALL_NO_SHARING 4
 
 // If nonzero, use the greedy RL policy.
@@ -521,14 +511,15 @@ CONFIG_STRING(JitEnableInductionVariableOptsRange, W("JitEnableInductionVariable
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
 
-CONFIG_INTEGER(JitEnableOptRepeat, W("JitEnableOptRepeat"), 0) // If zero, do not allow JitOptRepeat
-CONFIG_METHODSET(JitOptRepeat, W("JitOptRepeat"))              // Runs optimizer multiple times on specified methods
-CONFIG_INTEGER(JitOptRepeatCount, W("JitOptRepeatCount"), 2)   // Number of times to repeat opts when repeating
-CONFIG_STRING(JitOptRepeatRange, W("JitOptRepeatRange"))       // Enable JitOptRepeat based on method hash range
+CONFIG_STRING(JitOptRepeatRange, W("JitOptRepeatRange")) // Enable JitOptRepeat based on method hash range
 
 CONFIG_INTEGER(JitDoIfConversion, W("JitDoIfConversion"), 1) // Perform If conversion
 
 #endif // defined(OPT_CONFIG)
+
+CONFIG_INTEGER(JitEnableOptRepeat, W("JitEnableOptRepeat"), 1) // If zero, do not allow JitOptRepeat
+CONFIG_METHODSET(JitOptRepeat, W("JitOptRepeat"))              // Runs optimizer multiple times on specified methods
+CONFIG_INTEGER(JitOptRepeatCount, W("JitOptRepeatCount"), 2)   // Number of times to repeat opts when repeating
 
 // Max # of MapSelect's considered for a particular top-level invocation.
 CONFIG_INTEGER(JitVNMapSelBudget, W("JitVNMapSelBudget"), DEFAULT_MAP_SELECT_BUDGET)
@@ -696,6 +687,10 @@ CONFIG_INTEGER(JitCheckSynthesizedCounts, W("JitCheckSynthesizedCounts"), 0)
 // If instrumenting the method, run synthesis and save the synthesis results
 // as edge or block profile data. Do not actually instrument.
 CONFIG_INTEGER(JitPropagateSynthesizedCountsToProfileData, W("JitPropagateSynthesizedCountsToProfileData"), 0)
+// Use general (gauss-seidel) solver
+CONFIG_INTEGER(JitSynthesisUseSolver, W("JitSynthesisUseSolver"), 1)
+// Relative likelihood of exceptions for synthesis
+CONFIG_STRING(JitSynthesisExceptionScale, W("JitSynthesisExceptionScale"))
 #endif
 
 // Devirtualize virtual calls with getExactClasses (NativeAOT only for now)

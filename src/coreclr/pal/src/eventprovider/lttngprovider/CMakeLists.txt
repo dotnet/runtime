@@ -30,7 +30,6 @@ foreach(LTTNG_PROVIDER_FILE ${LTTNG_PROVIDER_OUTPUT})
   endif()
 endforeach()
 
-add_definitions(-DPAL_STDCPP_COMPAT=1)
 include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/lttng)
 
