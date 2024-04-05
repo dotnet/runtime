@@ -2620,22 +2620,18 @@ namespace System.ComponentModel
 
                 string? ICustomTypeDescriptor.GetComponentName() => null;
 
-                [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
                 TypeConverter ICustomTypeDescriptor.GetConverter() => _handler.GetConverter(_instance);
 
-                [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
                 EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
                 {
                     return _handler.GetDefaultEvent(_instance);
                 }
 
-                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
                 PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
                 {
                     return _handler.GetDefaultProperty(_instance);
                 }
 
-                [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
                 object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
                 {
                     return _handler.GetEditor(_instance, editorBaseType);
@@ -2646,19 +2642,16 @@ namespace System.ComponentModel
                     return _handler.GetEvents(_instance);
                 }
 
-                [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
                 EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[]? attributes)
                 {
                     return _handler.GetEvents(_instance, attributes);
                 }
 
-                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
                 {
                     return _handler.GetProperties(_instance, null);
                 }
 
-                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes)
                 {
                     return _handler.GetProperties(_instance, attributes);
@@ -2914,7 +2907,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
             TypeConverter ICustomTypeDescriptor.GetConverter()
             {
                 TypeConverter? converter = _primary.GetConverter() ?? _secondary.GetConverter();
@@ -2926,7 +2918,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
             EventDescriptor? ICustomTypeDescriptor.GetDefaultEvent()
             {
                 return _primary.GetDefaultEvent() ?? _secondary.GetDefaultEvent();
@@ -2935,7 +2926,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
             PropertyDescriptor? ICustomTypeDescriptor.GetDefaultProperty()
             {
                 return _primary.GetDefaultProperty() ?? _secondary.GetDefaultProperty();
@@ -2944,7 +2934,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
             object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
             {
                 ArgumentNullException.ThrowIfNull(editorBaseType);
@@ -2968,7 +2957,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
             EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[]? attributes)
             {
                 EventDescriptorCollection events = _primary.GetEvents(attributes) ?? _secondary.GetEvents(attributes);
@@ -2980,7 +2968,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
             PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
             {
                 PropertyDescriptorCollection properties = _primary.GetProperties() ?? _secondary.GetProperties();
@@ -2992,7 +2979,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
             PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes)
             {
                 PropertyDescriptorCollection properties =
@@ -3243,7 +3229,6 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
                 TypeConverter ICustomTypeDescriptor.GetConverter()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3266,7 +3251,6 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
                 EventDescriptor? ICustomTypeDescriptor.GetDefaultEvent()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3287,7 +3271,6 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
                 PropertyDescriptor? ICustomTypeDescriptor.GetDefaultProperty()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3307,7 +3290,6 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
                 object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
                 {
                     ArgumentNullException.ThrowIfNull(editorBaseType);
@@ -3351,7 +3333,6 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
                 EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[]? attributes)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3378,7 +3359,6 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3400,7 +3380,6 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3552,7 +3531,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
             public TypeConverter GetConverter()
             {
                 // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3580,7 +3558,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
             public EventDescriptor? GetDefaultEvent()
             {
                 // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3606,7 +3583,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
             public PropertyDescriptor? GetDefaultProperty()
             {
                 // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3632,7 +3608,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
             public object? GetEditor(Type editorBaseType)
             {
                 ArgumentNullException.ThrowIfNull(editorBaseType);
@@ -3687,7 +3662,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
             public EventDescriptorCollection GetEvents(Attribute[]? attributes)
             {
                 // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3715,7 +3689,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
             public PropertyDescriptorCollection GetProperties()
             {
                 // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3743,7 +3716,6 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
             public PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
             {
                 // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
