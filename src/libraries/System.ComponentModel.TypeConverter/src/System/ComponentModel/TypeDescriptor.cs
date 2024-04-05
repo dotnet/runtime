@@ -388,6 +388,7 @@ namespace System.ComponentModel
         /// <summary>
         /// This dynamically binds an EventDescriptor to a type.
         /// </summary>
+        [RequiresUnreferencedCode("Reflection-based type description providers are not trim-compatible.")]
         public static EventDescriptor CreateEvent(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
             string name,
@@ -401,6 +402,7 @@ namespace System.ComponentModel
         /// This creates a new event descriptor identical to an existing event descriptor. The new event descriptor
         /// has the specified metadata attributes merged with the existing metadata attributes.
         /// </summary>
+        [RequiresUnreferencedCode("Reflection-based type description providers are not trim-compatible.")]
         public static EventDescriptor CreateEvent(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
             EventDescriptor oldEventDescriptor,
