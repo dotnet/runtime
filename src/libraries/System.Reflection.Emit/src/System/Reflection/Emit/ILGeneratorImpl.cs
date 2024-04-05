@@ -808,7 +808,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                throw new ArgumentException(SR.InvalidOperation_InValidDocument, nameof(document));
+                throw new ArgumentException(SR.InvalidOperation_InvalidDocument, nameof(document));
             }
         }
 
@@ -858,7 +858,7 @@ namespace System.Reflection.Emit
 
     internal sealed class Scope
     {
-        public Scope(int offset, Scope? parent)
+        internal Scope(int offset, Scope? parent)
         {
             _startOffset = offset;
             _parent = parent;

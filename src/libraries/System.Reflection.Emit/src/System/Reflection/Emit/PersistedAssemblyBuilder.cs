@@ -135,7 +135,7 @@ namespace System.Reflection.Emit
             return _metadataBuilder;
         }
 
-        private void PopulateAssemblyMetadata(out BlobBuilder ilStream, out BlobBuilder fieldData, out MetadataBuilder pdbMetadata)
+        private void PopulateAssemblyMetadata(out BlobBuilder ilStream, out BlobBuilder fieldData, out MetadataBuilder pdbBuilder)
         {
             if (_module == null)
             {
@@ -163,7 +163,7 @@ namespace System.Reflection.Emit
                );
 
             _module.WriteCustomAttributes(_customAttributes, assemblyHandle);
-            _module.AppendMetadata(new MethodBodyStreamEncoder(ilStream), fieldData, out pdbMetadata);
+            _module.AppendMetadata(new MethodBodyStreamEncoder(ilStream), fieldData, out pdbBuilder);
             _isMetadataPopulated = true;
         }
 

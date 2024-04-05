@@ -212,11 +212,11 @@ namespace System.Reflection.Emit
         /// <exception cref="ArgumentNullException"><paramref name="document"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="document"/> is not valid.</exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="startLine"/> is not within range [0, 0x20000000).
-        /// <paramref name="endLine"/> is not within range [0, 0x20000000) or lower than <paramref name="startLine"/>.
-        /// <paramref name="startColumn"/> is not within range [0, 0x10000).
+        /// <paramref name="startLine"/> is not within range [0, 0x20000000) or
+        /// <paramref name="endLine"/> is not within range [0, 0x20000000) or lower than <paramref name="startLine"/> or
+        /// <paramref name="startColumn"/> is not within range [0, 0x10000) or
         /// <paramref name="endLine"/> is not within range [0, 0x10000) or
-        /// <paramref name="startLine"/> equal to <paramref name="endLine"/> and <paramref name="endLine"/> lower than or equal to <paramref name="startLine"/>.
+        /// <paramref name="startLine"/> equal to <paramref name="endLine"/> and it is not hidden sequence point and <paramref name="endLine"/> lower than or equal to <paramref name="startLine"/>.
         /// </exception>
         public void MarkSequencePoint(ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn)
         {
@@ -254,6 +254,8 @@ namespace System.Reflection.Emit
         /// <param name="startColumn">The column in the line where the sequence point begins.</param>
         /// <param name="endLine">The line where the sequence point ends.</param>
         /// <param name="endColumn">The column in the line where the sequence point ends.</param>
+        /// <exception cref="ArgumentException"><paramref name="document"/> is not valid.</exception>
+        /// <remarks>The parameters validated in the caller: <see cref="MarkSequencePoint"/>.</remarks>
         protected virtual void MarkSequencePointCore(ISymbolDocumentWriter document, int startLine, int startColumn, int endLine, int endColumn) { }
 
         #endregion

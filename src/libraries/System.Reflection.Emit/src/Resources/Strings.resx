@@ -297,10 +297,10 @@
   <data name="NotSupported_SymbolMethod" xml:space="preserve">
     <value>Not supported in an array method of a type definition that is not complete.</value>
   </data>
-  <data name="InvalidOperation_InValidDocument" xml:space="preserve">
+  <data name="InvalidOperation_InvalidDocument" xml:space="preserve">
     <value>Invalid source document.</value>
   </data>
   <data name="InvalidOperation_NotValidTypeBuilder" xml:space="preserve">
-    <value>Emitting symbols is not supported for contaning type.</value>
+    <value>Emitting symbols is not supported for containing type.</value>
   </data>
 </root>

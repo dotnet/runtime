@@ -408,32 +408,31 @@ namespace System.Reflection.Emit
 
         private void AddSymbolInfo(ILGeneratorImpl il, StandaloneSignatureHandle localSignatureHandle, MethodDefinitionHandle methodHandle)
         {
-            if (il.DocumentToSequencePoints.Count > 0)
-            {
-                Dictionary<SymbolDocumentWriter, List<SequencePoint>>.Enumerator enumerator = il.DocumentToSequencePoints.GetEnumerator();
-                if (il.DocumentToSequencePoints.Count == 1) // single document
-                {
-                    enumerator.MoveNext();
-                    DocumentHandle docHandle = GetDocument(enumerator.Current.Key);
-                    BlobBuilder spBlobBuilder = new BlobBuilder();
-                    spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(localSignatureHandle));
-                    PopulateSequencePointsBlob(spBlobBuilder, enumerator.Current.Value);
-                    _pdbMetadata.AddMethodDebugInformation(docHandle, _pdbMetadata.GetOrAddBlob(spBlobBuilder));
-                }
-                else
-                {
-                    // sequence points spans multiple docs
-                    _pdbMetadata.AddMethodDebugInformation(default, PopulateMultiDocSequencePointsBlob(enumerator, localSignatureHandle));
-                }
-            }
-            else
+            if (il.DocumentToSequencePoints.Count == 0)
             {
                 // empty sequence point
                 _pdbMetadata.AddMethodDebugInformation(default, default);
             }
+            else
+            {
+                Dictionary<SymbolDocumentWriter, List<SequencePoint>>.Enumerator enumerator = il.DocumentToSequencePoints.GetEnumerator();
+                if (il.DocumentToSequencePoints.Count > 1)
+                {
+                    // sequence points spans multiple docs
+                    _pdbMetadata.AddMethodDebugInformation(default, PopulateMultiDocSequencePointsBlob(enumerator, localSignatureHandle));
+                }
+                else // single document sequence point
+                {
+                    enumerator.MoveNext();
+                    BlobBuilder spBlobBuilder = new BlobBuilder();
+                    spBlobBuilder.WriteCompressedInteger(MetadataTokens.GetRowNumber(localSignatureHandle));
+                    PopulateSequencePointsBlob(spBlobBuilder, enumerator.Current.Value);
+                    _pdbMetadata.AddMethodDebugInformation(GetDocument(enumerator.Current.Key), _pdbMetadata.GetOrAddBlob(spBlobBuilder));
+                }
+            }
 
             Scope scope = il.Scope;
-            scope._endOffset = il.ILOffset;
+            scope._endOffset = il.ILOffset; // Outer most scope covers the entire method body, so haven't closed by the user.
 
             AddLocalScope(methodHandle, parentImport: default, MetadataTokens.LocalVariableHandle(_pdbMetadata.GetRowCount(TableIndex.LocalVariable) + 1), scope);
         }
