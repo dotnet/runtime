@@ -455,7 +455,8 @@ void Compiler::gsParamsToShadows()
             DoPostOrder = true
         };
 
-        ReplaceShadowParamsVisitor(Compiler* compiler) : GenTreeVisitor<ReplaceShadowParamsVisitor>(compiler)
+        ReplaceShadowParamsVisitor(Compiler* compiler)
+            : GenTreeVisitor<ReplaceShadowParamsVisitor>(compiler)
         {
         }
 

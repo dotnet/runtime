@@ -206,7 +206,9 @@ void Scev::Dump(Compiler* comp)
 //   ResetForLoop.
 //
 ScalarEvolutionContext::ScalarEvolutionContext(Compiler* comp)
-    : m_comp(comp), m_cache(comp->getAllocator(CMK_LoopIVOpts)), m_ephemeralCache(comp->getAllocator(CMK_LoopIVOpts))
+    : m_comp(comp)
+    , m_cache(comp->getAllocator(CMK_LoopIVOpts))
+    , m_ephemeralCache(comp->getAllocator(CMK_LoopIVOpts))
 {
 }
 
@@ -967,8 +969,8 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
                 ScevAddRec* addRec   = (ScevAddRec*)op1;
                 Scev*       newStart = Simplify(NewBinop(binop->Oper, addRec->Start, op2));
                 Scev*       newStep  = scev->OperIs(ScevOper::Mul, ScevOper::Lsh)
-                                    ? Simplify(NewBinop(binop->Oper, addRec->Step, op2))
-                                    : addRec->Step;
+                                           ? Simplify(NewBinop(binop->Oper, addRec->Step, op2))
+                                           : addRec->Step;
                 return NewAddRec(newStart, newStep);
             }
 

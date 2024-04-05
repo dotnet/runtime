@@ -37,6 +37,7 @@ namespace TestUnhandledExceptionTester
             testProcess.Start();
             testProcess.BeginErrorReadLine();
             testProcess.WaitForExit();
+            Console.WriteLine($"Test process {assembly} with argument {unhandledType} exited");
             testProcess.CancelErrorRead();
 
             int expectedExitCode;
@@ -111,6 +112,8 @@ namespace TestUnhandledExceptionTester
                     throw new Exception("Missing exception source frame");
                 }
             }
+
+            Console.WriteLine("Test process exited with expected error code and produced expected output");
         }
 
         [Fact]
@@ -118,7 +121,7 @@ namespace TestUnhandledExceptionTester
         {
             RunExternalProcess("main", "unhandled.dll");
             RunExternalProcess("foreign", "unhandled.dll");
-	    File.Delete(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "dependencytodelete.dll"));
+            File.Delete(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "dependencytodelete.dll"));
             RunExternalProcess("missingdependency", "unhandledmissingdependency.dll");
         }
     }
