@@ -45818,7 +45818,6 @@ void gc_heap::background_sweep()
     concurrent_print_time_delta ("Sw");
     dprintf (2, ("---- (GC%zu)Background Sweep Phase ----", VolatileLoad(&settings.gc_index)));
 
-    //block concurrent allocation for large objects
     dprintf (3, ("lh state: planning"));
 
     for (int i = 0; i <= max_generation; i++)
@@ -45869,6 +45868,7 @@ void gc_heap::background_sweep()
     sweep_ro_segments();
 #endif //FEATURE_BASICFREEZE
 
+    // Multiple threads will reach here.  This conditional avoids multiple volatile writes.
     if (current_c_gc_state != c_gc_state_planning)
     {
         current_c_gc_state = c_gc_state_planning;
@@ -46228,6 +46228,7 @@ void gc_heap::background_sweep()
             concurrent_print_time_delta ("Swe SOH");
             FIRE_EVENT(BGC1stSweepEnd, 0);
 
+            //block concurrent allocation for large objects
             enter_spin_lock (&more_space_lock_uoh);
             add_saved_spinlock_info (true, me_acquire, mt_bgc_uoh_sweep, msl_entered);
 
