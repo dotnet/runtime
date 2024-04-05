@@ -78,11 +78,11 @@ private:
 #endif // DEBUG
 
 #ifdef SWIFT_SUPPORT
-    regMaskTP rsAllCalleeSavedMask;
-    regMaskTP rsIntCalleeSavedMask;
+    AllRegsMask rsAllCalleeSavedMask;
+    regMaskGpr  rsIntCalleeSavedMask;
 #else  // !SWIFT_SUPPORT
-    static constexpr regMaskTP rsAllCalleeSavedMask = RBM_CALLEE_SAVED;
-    static constexpr regMaskTP rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
+    AllRegsMask rsAllCalleeSavedMask = AllRegsMask_CALLEE_SAVED;
+    regMaskGpr  rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
 #endif // !SWIFT_SUPPORT
 
 public:
@@ -96,6 +96,18 @@ public:
         return rsModifiedRegsMask;
     }
 #endif
+
+    AllRegsMask rsGetModifiedCalleeSavedRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return (rsModifiedRegsMask & rsAllCalleeSavedMask);
+    }
+
+    regMaskGpr rsGetModifiedIntCalleeSavedRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return (rsGetModifiedGprRegsMask() & rsIntCalleeSavedMask);
+    }
 
     regMaskGpr rsGetModifiedGprRegsMask() const
     {

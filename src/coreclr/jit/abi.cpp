@@ -48,10 +48,10 @@ regNumber ABIPassingSegment::GetRegister() const
 // Return Value:
 //   The register mask.
 //
-regMaskTP ABIPassingSegment::GetRegisterMask() const
+regMaskOnlyOne ABIPassingSegment::GetRegisterMask() const
 {
     assert(IsPassedInRegister());
-    regMaskTP reg = genRegMask(m_register);
+    regMaskOnlyOne reg = genRegMask(m_register);
 
 #ifdef TARGET_ARM
     if (genIsValidFloatReg(m_register) && (Size == 8))

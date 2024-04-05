@@ -2558,8 +2558,9 @@ void LinearScan::buildIntervals()
         // handling clobbers REG_SCRATCH, so kill it here.
         if ((block == compiler->fgFirstBB) && compiler->lvaHasAnySwiftStackParamToReassemble())
         {
+            AllRegsMask scratchMask = AllRegsMask(genRegMask(REG_SCRATCH));
             assert(compiler->fgFirstBBisScratch());
-            addRefsForPhysRegMask(genRegMask(REG_SCRATCH), currentLoc + 1, RefTypeKill, true);
+            addRefsForPhysRegMask(scratchMask, currentLoc + 1, RefTypeKill, true);
             currentLoc += 2;
         }
 

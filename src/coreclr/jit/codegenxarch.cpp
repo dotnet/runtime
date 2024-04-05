@@ -9853,7 +9853,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     // x86/x64 doesn't support push of xmm/ymm regs, therefore consider only integer registers for pushing onto stack
     // here. Space for float registers to be preserved is stack allocated and saved as part of prolog sequence and not
     // here.
-    regMaskGpr rsPushRegs = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskGpr rsPushRegs = regSet.rsGetModifiedIntCalleeSavedRegsMask();
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -9931,7 +9931,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
     // Registers saved by a normal prolog
     //
-    regMaskGpr     rsPopRegs = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskGpr     rsPopRegs = regSet.rsGetModifiedIntCalleeSavedRegsMask();
     const unsigned popCount  = genPopCalleeSavedRegistersFromMask(rsPopRegs);
     noway_assert(compiler->compCalleeRegsPushed == popCount);
 }

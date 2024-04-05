@@ -5010,7 +5010,7 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
             if (seg.IsPassedInRegister())
             {
                 RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? &floatRegState : &intRegState;
-                regMaskTP regs     = seg.GetRegisterMask();
+                regMaskOnlyOne regs     = seg.GetRegisterMask();
 
                 if ((regState->rsCalleeRegArgMaskLiveIn & regs) != RBM_NONE)
                 {
@@ -5503,8 +5503,8 @@ void CodeGen::genFinalizeFrame()
     noway_assert(!regSet.rsRegsModified(RBM_FPBASE));
 #endif
 
-    regMaskFloat maskPushRegsInt   = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
-    regMaskGpr   maskPushRegsFloat = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
+    regMaskFloat maskPushRegsInt   = regSet.rsGetModifiedCalleeSavedRegsMask().gprRegs();
+    regMaskGpr   maskPushRegsFloat = regSet.rsGetModifiedCalleeSavedRegsMask().GetGprFloatCombinedMask() & RBM_FLT_CALLEE_SAVED;
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     regMaskPredicate maskPushRegsPredicate = regSet.rsGetModifiedPredicateRegsMask() & RBM_MSK_CALLEE_SAVED;
 #endif

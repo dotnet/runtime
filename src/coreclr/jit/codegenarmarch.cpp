@@ -4915,8 +4915,9 @@ void CodeGen::genPushCalleeSavedRegisters()
                      intRegState.rsCalleeRegArgMaskLiveIn);
 #endif
 
-    regMaskGpr   rsPushGprRegs   = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
-    regMaskFloat rsPushFloatRegs = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
+    regMaskGpr   rsPushGprRegs = regSet.rsGetModifiedCalleeSavedRegsMask().gprRegs() & RBM_INT_CALLEE_SAVED;
+    regMaskFloat rsPushFloatRegs =
+        regSet.rsGetModifiedCalleeSavedRegsMask().GetGprFloatCombinedMask() & RBM_FLT_CALLEE_SAVED;
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     regMaskPredicate rsPushPredicateRegs = regSet.rsGetModifiedPredicateRegsMask() & RBM_MSK_CALLEE_SAVED;
 #endif

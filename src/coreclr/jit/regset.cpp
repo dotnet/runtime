@@ -150,7 +150,7 @@ void RegSet::rsClearRegsModified()
     // so don't treat it as callee-save.
     if (m_rsCompiler->lvaSwiftErrorArg != BAD_VAR_NUM)
     {
-        rsAllCalleeSavedMask &= ~RBM_SWIFT_ERROR;
+        rsAllCalleeSavedMask.RemoveRegNum(REG_SWIFT_ERROR, TYP_INT);
         rsIntCalleeSavedMask &= ~RBM_SWIFT_ERROR;
     }
 #endif // SWIFT_SUPPORT

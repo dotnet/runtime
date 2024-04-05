@@ -5386,7 +5386,7 @@ regMaskPredicate AllRegsMask::predicateRegs(const Compiler* compiler) const
     return _predicateRegs;
 #else
     regMaskOnlyOne allMask = compiler != nullptr ? compiler->get_RBM_ALLMASK() : (RBM_ALLMASK_EVEX);
-    return _combinedRegisters & compiler->get_RBM_ALLMASK();
+    return _combinedRegisters & allMask;
 #endif
 }
 #endif // FEATURE_MASKED_HW_INTRINSICS

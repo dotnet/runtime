@@ -5938,7 +5938,7 @@ void Compiler::generatePatchpointInfo()
     // Record callee save registers.
     // Currently only needed for x64.
     //
-    regMaskGpr rsPushGprRegs = codeGen->regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskGpr rsPushGprRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask().gprRegs();
     rsPushGprRegs |= RBM_FPBASE;
     patchpointInfo->SetCalleeSaveGprRegisters(rsPushGprRegs);
     JITDUMP("--OSR-- Tier0 callee saves: ");

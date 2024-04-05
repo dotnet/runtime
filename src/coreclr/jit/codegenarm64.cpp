@@ -36,8 +36,9 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskGpr   rsRestoreGprRegs   = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
-    regMaskFloat rsRestoreFloatRegs = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
+    regMaskFloat rsRestoreFloatRegs =
+        regSet.rsGetModifiedCalleeSavedRegsMask().GetGprFloatCombinedMask() & RBM_ALLFLOAT;
+    regMaskGpr rsRestoreGprRegs = regSet.rsGetModifiedCalleeSavedRegsMask().gprRegs();
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     regMaskPredicate rsRestorePredicateRegs = regSet.rsGetModifiedPredicateRegsMask() & RBM_MSK_CALLEE_SAVED;
 #endif
