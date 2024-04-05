@@ -47,6 +47,11 @@ namespace System.IO
             int subLength = path.Length;
             if (subLength == 0)
                 return string.Empty;
+            
+            if(string.IsNullOrEmpty(extension))
+            {
+                return GetFileNameWithoutExtension(path);
+            }
 
             for (int i = path.Length - 1; i >= 0; i--)
             {
