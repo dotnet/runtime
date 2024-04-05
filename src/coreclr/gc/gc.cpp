@@ -33912,15 +33912,9 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #ifdef MULTIPLE_HEAPS
                 for (int i = 0; i < n_heaps; i++)
                 {
-#ifdef USE_REGIONS
-                    g_heaps [i]->rearrange_uoh_segments();
-#endif //USE_REGIONS
                     g_heaps [i]->rearrange_heap_segments (TRUE);
                 }
 #else //MULTIPLE_HEAPS
-#ifdef USE_REGIONS
-                rearrange_uoh_segments();
-#endif //USE_REGIONS
                 rearrange_heap_segments (TRUE);
 #endif //MULTIPLE_HEAPS
 
