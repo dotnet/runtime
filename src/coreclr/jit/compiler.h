@@ -3204,6 +3204,14 @@ public:
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
 
+#if defined(TARGET_XARCH)
+    GenTree* gtNewSimdCvtNode(var_types              type,
+                              GenTree*               op1,
+                              CorInfoType            simdTargetBaseJitType,
+                              CorInfoType            simdSourceBaseJitType,
+                              unsigned               simdSize);
+#endif //TARGET_XARCH
+
     GenTree* gtNewSimdCreateBroadcastNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
