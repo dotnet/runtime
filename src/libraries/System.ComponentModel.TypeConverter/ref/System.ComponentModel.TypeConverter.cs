@@ -1411,9 +1411,17 @@ namespace System.ComponentModel
         internal TypeDescriptor() { }
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         [System.ObsoleteAttribute("TypeDescriptor.ComNativeDescriptorHandler has been deprecated. Use a type description provider to supply type information for COM types instead.")]
-        public static System.ComponentModel.IComNativeDescriptorHandler? ComNativeDescriptorHandler { get { throw null; } set { } }
+        public static System.ComponentModel.IComNativeDescriptorHandler? ComNativeDescriptorHandler {
+            [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("COM type descriptors are not trim-compatible.")]
+            get { throw null; }
+            [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("COM type descriptors are not trim-compatible.")]
+            set { }
+        }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static System.Type ComObjectType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
+        public static System.Type ComObjectType {
+            [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("COM type descriptors are not trim-compatible.")]
+            [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; }
+        }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Type InterfaceType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
         public static event System.ComponentModel.RefreshEventHandler? Refreshed { add { } remove { } }
