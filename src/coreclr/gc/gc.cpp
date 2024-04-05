@@ -45818,8 +45818,6 @@ void gc_heap::background_sweep()
     concurrent_print_time_delta ("Sw");
     dprintf (2, ("---- (GC%zu)Background Sweep Phase ----", VolatileLoad(&settings.gc_index)));
 
-    dprintf (3, ("lh state: planning"));
-
     for (int i = 0; i <= max_generation; i++)
     {
         generation* gen_to_reset = generation_of (i);
@@ -45868,7 +45866,9 @@ void gc_heap::background_sweep()
     sweep_ro_segments();
 #endif //FEATURE_BASICFREEZE
 
-    // Multiple threads will reach here.  This conditional avoids multiple volatile writes.
+    dprintf (3, ("lh state: planning"));
+
+    // Multiple threads may reach here.  This conditional partially avoids multiple volatile writes.
     if (current_c_gc_state != c_gc_state_planning)
     {
         current_c_gc_state = c_gc_state_planning;
