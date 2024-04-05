@@ -13,7 +13,7 @@ namespace Internal.Runtime.CompilerHelpers
     /// Math helpers for generated code. The helpers here are referenced by the runtime.
     /// </summary>
     [StackTraceHidden]
-    internal static class MathHelpers
+    internal static partial class MathHelpers
     {
         private const double Int32MaxValueOffset = (double)int.MaxValue + 1;
         private const double UInt32MaxValueOffset = (double)uint.MaxValue + 1;
