@@ -90,7 +90,7 @@
 
   <Import Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Project="$(ILLinkPropsPath)" />
   <!-- The ILLinkTasksAssembly cannot be overridden. This is the way to update the property from Microsoft.NET.ILLink.Tasks.props -->
-  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
+  <PropertyGroup>
     <ILLinkTasksAssembly>$(_ILLinkTasksAssembly)</ILLinkTasksAssembly>
   </PropertyGroup>
 
