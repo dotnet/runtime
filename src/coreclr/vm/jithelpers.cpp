@@ -625,16 +625,7 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
     return (val >= 0) ? ((val >= uint64_max_plus_1) ? UINT64_MAX : (UINT64)val) : 0;
 
 #else
-    const double two63  = 2147483648.0 * 4294967296.0;
-    UINT64 ret;
-    if (val < two63) {
-        ret = (INT64)(val);
-    }
-    else {
-        // subtract 0x8000000000000000, do the convert then add it back again
-        ret = (INT64)(val - two63) + I64(0x8000000000000000);
-    }
-    return ret;
+    return((UINT64)val);
 #endif // TARGET_X86 || TARGET_AMD64
 }
 HCIMPLEND

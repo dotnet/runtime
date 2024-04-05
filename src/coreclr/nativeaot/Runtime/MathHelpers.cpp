@@ -15,18 +15,7 @@ FCIMPL1_D(uint64_t, RhpDbl2ULng, double val)
     const double uint64_max_plus_1 = 4294967296.0 * 4294967296.0;
     return (val > 0) ? ((val >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)val) : 0;
 #else
-    const double two63  = 2147483648.0 * 4294967296.0;
-    uint64_t ret;
-    if (val < two63)
-    {
-        ret = (int64_t)(val);
-    }
-    else
-    {
-        // subtract 0x8000000000000000, do the convert then add it back again
-        ret = (int64_t)(val - two63) + I64(0x8000000000000000);
-    }
-    return ret;
+    return (uint64_t)val;
 #endif //HOST_X86 || HOST_AMD64
 }
 FCIMPLEND
