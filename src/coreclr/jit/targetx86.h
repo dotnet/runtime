@@ -54,8 +54,13 @@
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter,
                                            // filter-handler, fault) and directly execute 'finally' clauses.
 
+#ifdef FEATURE_EH_FUNCLETS
+  #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region,
+                                           // protected by "cloned finally" clauses.
+#else
   #define FEATURE_EH_CALLFINALLY_THUNKS 0  // Generate call-to-finally code in "thunks" in the enclosing EH region,
                                            // protected by "cloned finally" clauses.
+#endif
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based
                                            // frames for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
@@ -227,7 +232,6 @@
   // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
   // Note that x86 normally emits an optimized (source-register-specific) write barrier, but can emit
   // a call to a "general" write barrier.
-  CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
   #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_EAX | RBM_EDX)
