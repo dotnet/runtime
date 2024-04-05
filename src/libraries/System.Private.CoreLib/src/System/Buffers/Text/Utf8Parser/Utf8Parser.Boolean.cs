@@ -42,7 +42,7 @@ namespace System.Buffers.Text
                         value = true;
                         return true;
                     }
-    
+
                     if (source.Length > 4)
                     {
                         if (dw == 0x736C6146 /* 'slaF' */ && source[4] == 'e')
@@ -61,7 +61,7 @@ namespace System.Buffers.Text
                         value = true;
                         return true;
                     }
-    
+
                     if (source.Length > 4)
                     {
                         if (dw == 0x736C6166 /* 'slaf' */ && source[4] == 'e')
