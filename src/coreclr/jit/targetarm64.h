@@ -153,8 +153,8 @@
   // ARM64 write barrier ABI (see vm\arm64\asmhelpers.asm, vm\arm64\asmhelpers.S):
   // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
   //     On entry:
-  //       x14: the destination address (LHS of the assignment)
-  //       x15: the object reference (RHS of the assignment)
+  //       x14: the destination address of the store
+  //       x15: the object reference to be stored
   //     On exit:
   //       x12: trashed
   //       x14: incremented by 8

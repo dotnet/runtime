@@ -773,7 +773,7 @@ void Compiler::fgExtendDbgScopes()
 
 /*****************************************************************************
  *
- * For debuggable code, we allow redundant assignments to vars
+ * For debuggable code, we allow redundant stores to vars
  * by marking them live over their entire scope.
  */
 
@@ -1879,12 +1879,12 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 
                 if (isDeadStore && fgTryRemoveDeadStoreLIR(node, lclVarNode, block))
                 {
-                    GenTree* data = lclVarNode->Data();
-                    data->SetUnusedValue();
+                    GenTree* value = lclVarNode->Data();
+                    value->SetUnusedValue();
 
-                    if (data->isIndir())
+                    if (value->isIndir())
                     {
-                        Lowering::TransformUnusedIndirection(data->AsIndir(), this, block);
+                        Lowering::TransformUnusedIndirection(value->AsIndir(), this, block);
                     }
                 }
                 break;
@@ -2024,7 +2024,7 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
     {
         // We are only interested in avoiding the removal of nodes with direct side effects
         // (as opposed to side effects of their children).
-        // This default case should never include calls or assignments.
+        // This default case should never include calls or stores.
         assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));
         if (!node->gtSetFlags() && !node->OperMayThrow(this))
         {
@@ -2125,11 +2125,11 @@ bool Compiler::fgRemoveDeadStore(GenTree**           pTree,
     *pStoreRemoved = true;
 
     GenTreeLclVarCommon* store = tree->AsLclVarCommon();
-    GenTree*             data  = store->Data();
+    GenTree*             value = store->Data();
 
     // Check for side effects.
     GenTree* sideEffList = nullptr;
-    if ((data->gtFlags & GTF_SIDE_EFFECT) != 0)
+    if ((value->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
 #ifdef DEBUG
         if (verbose)
@@ -2140,7 +2140,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**           pTree,
         }
 #endif // DEBUG
 
-        gtExtractSideEffList(data, &sideEffList);
+        gtExtractSideEffList(value, &sideEffList);
     }
 
     // Test for interior statement

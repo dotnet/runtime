@@ -41,7 +41,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *    This should only be needed if some basic block are deleted/out of order,
  *    etc.
  *  Also,
- *  o At every assignment to a variable, siCheckVarScope() adds an open scope
+ *  o At every store to a variable, siCheckVarScope() adds an open scope
  *    for the variable being assigned to.
  *  o UpdateLifeVar() calls siUpdate() which closes scopes for variables which
  *    are not live anymore.

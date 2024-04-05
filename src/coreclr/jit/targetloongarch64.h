@@ -130,8 +130,8 @@
   // LOONGARCH64 write barrier ABI (see vm/loongarch64/asmhelpers.S):
   // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
   //     On entry:
-  //       t6: the destination address (LHS of the assignment)
-  //       t7: the object reference (RHS of the assignment)
+  //       t6: the destination address of the store
+  //       t7: the object reference to be stored
   //     On exit:
   //       t0: trashed
   //       t1: trashed

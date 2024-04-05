@@ -2614,7 +2614,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
     //
     // TODO: Ideally we would want to consider the impact of whether the struct is
     // passed as a parameter or assigned the return value of a call. Because once promoted,
-    // struct copying is done by field by field assignment instead of a more efficient
+    // struct copying is done by field by field store instead of a more efficient
     // rep.stos or xmm reg based copy.
     if (structPromotionInfo.fieldCnt > 3 && !varDsc->lvFieldAccessed)
     {
@@ -3570,7 +3570,7 @@ void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE 
 //
 // Notes:
 //
-//    This method models the type update rule for an assignment.
+//    This method models the type update rule for a store.
 //
 //    Updates currently should only happen for single-def user args or
 //    locals, when we are processing the expression actually being
