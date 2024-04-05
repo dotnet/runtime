@@ -182,7 +182,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         handle_signal(SIGINT, sigint_handler, &g_previous_sigint, 0 /* additionalFlags */, true /* skipIgnored */);
         handle_signal(SIGQUIT, sigquit_handler, &g_previous_sigquit, 0 /* additionalFlags */, true /* skipIgnored */);
 
-#if HAVE_MACH_EXCEPTIONS || defined(TARGET_TVOS)
+#if HAVE_MACH_EXCEPTIONS
         handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv);
 #else
         handle_signal(SIGTRAP, sigtrap_handler, &g_previous_sigtrap);
@@ -471,15 +471,7 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
     invoke_previous_action(&g_previous_sigfpe, code, siginfo, context);
 }
 
-#if defined(TARGET_TVOS)
-
-static bool SwitchStackAndExecuteHandler(int code, siginfo_t *siginfo, void *context, size_t sp)
-{
-    // Not yet implemented
-    _exit(0xdead);
-}
-
-#elif !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS
 
 /*++
 Function :
