@@ -27,8 +27,6 @@ namespace System.Numerics
         private const uint NegativeInfinityValue = 0xf8000000;
         private const uint ZeroValue = 0x00000000;
         private const int MaxSignificand = 9_999_999;
-        private static readonly Decimal32 PositiveInfinity = new Decimal32(PositiveInfinityValue);
-        private static readonly Decimal32 NegativeInfinity = new Decimal32(NegativeInfinityValue);
 
         public Decimal32(int significand, int exponent)
         {
@@ -62,6 +60,26 @@ namespace System.Numerics
             }
             return Parse(s.AsSpan(), style, provider);
         }
+        public static bool TryParse([NotNullWhen(true)] string? s, out Decimal32 result) => TryParse(s, NumberStyles.Number, provider: null, out result);
+        public static bool TryParse(ReadOnlySpan<char> s, out Decimal32 result) => TryParse(s, NumberStyles.Number, provider: null, out result);
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => TryParse(s, NumberStyles.Number, provider, out result);
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => TryParse(s, NumberStyles.Number, provider, out result);
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseDecimal32(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+        }
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+
+            if (s == null)
+            {
+                result = new Decimal32(0, 0);
+                return false;
+            }
+            return Number.TryParseDecimal32(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+        }
 
         private static ReadOnlySpan<int> Int32Powers10 =>
             [
@@ -86,68 +104,12 @@ namespace System.Numerics
                 throw new ArgumentException(SR.Arg_MustBeDecimal32);
             }
 
-            return CoreCompareTo(i);
-        }
-
-        private int CoreCompareTo(Decimal32 obj)
-        {
-            if (obj._value == _value)
-            {
-                return 0;
-            }
-
-            Number.DecimalIeee754<int> current = Number.UnpackDecimalIeee754<Decimal32, int, uint>(_value);
-            Number.DecimalIeee754<int> other = Number.UnpackDecimalIeee754<Decimal32, int, uint>(obj._value);
-
-            if (current.Signed && !other.Signed) return -1;
-
-            if (!current.Signed && other.Signed) return 1;
-
-            if (current.Exponent > other.Exponent)
-            {
-                return current.Signed ? -InternalUnsignedCompare(current, other) : InternalUnsignedCompare(current, other);
-            }
-
-            if (current.Exponent < other.Exponent)
-            {
-                return current.Signed ? InternalUnsignedCompare(other, current) : -InternalUnsignedCompare(current, other);
-            }
-
-            if (current.Significand == other.Significand) return 0;
-
-            if (current.Significand > other.Significand)
-            {
-                return current.Signed ? -1 : 1;
-            }
-            else
-            {
-                return current.Signed ? 1 : -1;
-            }
-
-            static int InternalUnsignedCompare(Number.DecimalIeee754<int> biggerExp, Number.DecimalIeee754<int> smallerExp)
-            {
-                if (biggerExp.Significand >= smallerExp.Significand) return 1;
-
-                int diffExponent = biggerExp.Exponent - smallerExp.Exponent;
-                if (diffExponent < NumberDigitsPrecision)
-                {
-                    int factor = Int32Powers10[diffExponent];
-                    int quotient = smallerExp.Significand / biggerExp.Significand;
-                    int remainder = smallerExp.Significand % biggerExp.Significand;
-
-                    if (quotient < factor) return 1;
-                    if (quotient > factor) return -1;
-                    if (remainder > 0) return -1;
-                    return 0;
-                }
-
-                return 1;
-            }
+            return Number.CompareDecimalIeee754<Decimal32, int, uint>(_value, i._value);
         }
 
         public bool Equals(Decimal32 other)
         {
-            return CoreCompareTo(other) == 0;
+            return Number.CompareDecimalIeee754<Decimal32, int, uint>(_value, other._value) == 0;
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -161,6 +123,8 @@ namespace System.Numerics
         }
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32>.NumberDigitsPrecision => NumberDigitsPrecision;
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal32>.MaxScale => 97;
 
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.CountDigits(int number) => FormattingHelpers.CountDigits((uint)number);
         static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.Power10(int exponent) => Int32Powers10[exponent];
@@ -185,6 +149,8 @@ namespace System.Numerics
 
         static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.NegativeInfinityBits => NegativeInfinityValue;
 
+        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.NumberBitsExponent => NumberBitsExponent;
+
         static uint IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.Zero => ZeroValue;
 
         static uint IDecimalIeee754UnpackInfo<Decimal32, int, uint>.SignMask => 0x8000_0000;
@@ -197,9 +163,12 @@ namespace System.Numerics
 
         static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.TwoPowerMostSignificantBitNumberOfSignificand => 8388608;
 
-        static int IDecimalIeee754ConstructorInfo<Decimal32, int, uint>.NumberBitsExponent => NumberBitsExponent;
+        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.NumberDigitsPrecision => NumberDigitsPrecision;
 
         static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.ConvertToExponent(uint value) => (int)value;
+
         static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.ConvertToSignificand(uint value) => (int)value;
+
+        static int IDecimalIeee754UnpackInfo<Decimal32, int, uint>.Power10(int exponent) => Int32Powers10[exponent];
     }
 }

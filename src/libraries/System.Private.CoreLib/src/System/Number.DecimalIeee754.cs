@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Numerics;
-using static System.Number;
 
 namespace System
 {
@@ -35,10 +34,12 @@ namespace System
         static abstract TValue SignMask { get; }
         static abstract int NumberBitsEncoding { get; }
         static abstract int NumberBitsExponent { get; }
+        static abstract int NumberDigitsPrecision { get; }
         static abstract int Bias { get; }
         static abstract TSignificand TwoPowerMostSignificantBitNumberOfSignificand { get; }
         static abstract int ConvertToExponent(TValue value);
         static abstract TSignificand ConvertToSignificand(TValue value);
+        static abstract TSignificand Power10(int exponent);
     }
 
     internal static partial class Number
@@ -115,6 +116,7 @@ namespace System
                     throw new OverflowException(SR.Overflow_Decimal);
                 }
                 unsignedSignificand *= TDecimal.Power10(numberZeroDigits);
+                exponent -= numberZeroDigits;
             }
 
             exponent += TDecimal.Bias;
@@ -187,6 +189,64 @@ namespace System
             }
 
             return new DecimalIeee754<TSignificand>(signed, exponent - TDecimal.Bias, significand);
+        }
+
+        internal static int CompareDecimalIeee754<TDecimal, TSignificand, TValue>(TValue currentValue, TValue otherValue)
+            where TDecimal : unmanaged, IDecimalIeee754UnpackInfo<TDecimal, TSignificand, TValue>
+            where TSignificand : IBinaryInteger<TSignificand>
+            where TValue : IBinaryInteger<TValue>
+        {
+            if (currentValue == otherValue)
+            {
+                return 0;
+            }
+            DecimalIeee754<TSignificand> current = UnpackDecimalIeee754<TDecimal, TSignificand, TValue>(currentValue);
+            DecimalIeee754<TSignificand> other = UnpackDecimalIeee754<TDecimal, TSignificand, TValue>(otherValue);
+
+            if (current.Signed && !other.Signed) return -1;
+
+            if (!current.Signed && other.Signed) return 1;
+
+            if (current.Exponent > other.Exponent)
+            {
+                return current.Signed ? -InternalUnsignedCompare(current, other) : InternalUnsignedCompare(current, other);
+            }
+
+            if (current.Exponent < other.Exponent)
+            {
+                return current.Signed ? InternalUnsignedCompare(other, current) : -InternalUnsignedCompare(current, other);
+            }
+
+            if (current.Significand == other.Significand) return 0;
+
+            if (current.Significand > other.Significand)
+            {
+                return current.Signed ? -1 : 1;
+            }
+            else
+            {
+                return current.Signed ? 1 : -1;
+            }
+
+            static int InternalUnsignedCompare(DecimalIeee754<TSignificand> biggerExp, DecimalIeee754<TSignificand> smallerExp)
+            {
+                if (biggerExp.Significand >= smallerExp.Significand) return 1;
+
+                int diffExponent = biggerExp.Exponent - smallerExp.Exponent;
+                if (diffExponent < TDecimal.NumberDigitsPrecision)
+                {
+                    TSignificand factor = TDecimal.Power10(diffExponent);
+                    TSignificand quotient = smallerExp.Significand / biggerExp.Significand;
+                    TSignificand remainder = smallerExp.Significand % biggerExp.Significand;
+
+                    if (quotient < factor) return 1;
+                    if (quotient > factor) return -1;
+                    if (remainder > TSignificand.Zero) return -1;
+                    return 0;
+                }
+
+                return 1;
+            }
         }
     }
 }
