@@ -1752,6 +1752,8 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void add_to_history();
 
+    PER_HEAP_ISOLATED_METHOD void get_and_reset_loh_alloc_info();
+
 #ifdef BGC_SERVO_TUNING
     // Currently BGC servo tuning is an experimental feature.
     class bgc_tuning
@@ -1998,8 +2000,6 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void check_and_adjust_bgc_tuning (int gen_number, size_t physical_size, ptrdiff_t virtual_fl_size);
 #endif //BGC_SERVO_TUNING
-    //!!! move?
-    PER_HEAP_ISOLATED_METHOD void get_and_reset_loh_alloc_info();
 
 #ifndef USE_REGIONS
     PER_HEAP_METHOD BOOL expand_soh_with_minimal_gc();
@@ -2231,6 +2231,8 @@ private:
     PER_HEAP_METHOD BOOL bgc_loh_allocate_spin();
 
     PER_HEAP_METHOD BOOL bgc_poh_allocate_spin();
+
+    PER_HEAP_METHOD void bgc_record_uoh_allocation(int gen_number, size_t size);
 #endif //BACKGROUND_GC
 
     PER_HEAP_METHOD void add_saved_spinlock_info (
@@ -3437,6 +3439,13 @@ private:
 
     PER_HEAP_FIELD_SINGLE_GC uint8_t* next_sweep_obj;
     PER_HEAP_FIELD_SINGLE_GC uint8_t* current_sweep_pos;
+
+    PER_HEAP_FIELD_SINGLE_GC uint64_t loh_a_no_bgc;
+    PER_HEAP_FIELD_SINGLE_GC uint64_t loh_a_bgc_marking;
+    PER_HEAP_FIELD_SINGLE_GC uint64_t loh_a_bgc_planning;
+    PER_HEAP_FIELD_SINGLE_GC uint64_t poh_a_bgc_marking;
+    PER_HEAP_FIELD_SINGLE_GC uint64_t poh_a_bgc_planning;
+
 #ifdef DOUBLY_LINKED_FL
     PER_HEAP_FIELD_SINGLE_GC heap_segment* current_sweep_seg;
 #endif //DOUBLY_LINKED_FL
@@ -3461,12 +3470,6 @@ private:
     PER_HEAP_FIELD_SINGLE_GC snoop_stats_data snoop_stat;
 #endif //SNOOP_STATS
 
-    //!!! move these??
-    PER_HEAP_FIELD_SINGLE_GC uint64_t   loh_a_no_bgc;
-    PER_HEAP_FIELD_SINGLE_GC uint64_t   loh_a_bgc_marking;
-    PER_HEAP_FIELD_SINGLE_GC uint64_t   loh_a_bgc_planning;
-    PER_HEAP_FIELD_SINGLE_GC uint64_t   poh_a_bgc_marking;
-    PER_HEAP_FIELD_SINGLE_GC uint64_t   poh_a_bgc_planning;
 #ifdef BGC_SERVO_TUNING
     PER_HEAP_FIELD_SINGLE_GC size_t     bgc_maxgen_end_fl_size;
 #endif //BGC_SERVO_TUNING

@@ -18425,33 +18425,14 @@ bool gc_heap::should_retry_other_heap (int gen_number, size_t size)
     }
 }
 
-allocation_state gc_heap::allocate_uoh (int gen_number,
-                                          size_t size,
-                                          alloc_context* acontext,
-                                          uint32_t flags,
-                                          int align_const)
+void gc_heap::bgc_record_uoh_allocation(int gen_number, size_t size)
 {
-    enter_msl_status msl_status = msl_entered;
+    assert(gen_number == loh_generation || gen_number == poh_generation);
 
-    // No variable values should be "carried over" from one state to the other.
-    // That's why there are local variable for each state
-    allocation_state uoh_alloc_state = a_state_start;
-
-#ifdef SPINLOCK_HISTORY
-    current_uoh_alloc_state = uoh_alloc_state;
-#endif //SPINLOCK_HISTORY
-
-#ifdef RECORD_LOH_STATE
-    EEThreadId current_thread_id;
-    current_thread_id.SetToCurrentThread ();
-#endif //RECORD_LOH_STATE
-
-#ifdef BACKGROUND_GC
     if (gc_heap::background_running_p())
     {
         background_uoh_alloc_count++;
 
-        //!!! add helper
         if (current_c_gc_state == c_gc_state_planning)
         {
             if (gen_number == loh_generation)
@@ -18474,7 +18455,39 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
                 poh_a_bgc_marking += size;
             }
         }
+    }
+    else
+    {
+        loh_a_no_bgc += size;
+    }
+}
 
+allocation_state gc_heap::allocate_uoh (int gen_number,
+                                          size_t size,
+                                          alloc_context* acontext,
+                                          uint32_t flags,
+                                          int align_const)
+{
+    enter_msl_status msl_status = msl_entered;
+
+    // No variable values should be "carried over" from one state to the other.
+    // That's why there are local variable for each state
+    allocation_state uoh_alloc_state = a_state_start;
+
+#ifdef SPINLOCK_HISTORY
+    current_uoh_alloc_state = uoh_alloc_state;
+#endif //SPINLOCK_HISTORY
+
+#ifdef RECORD_LOH_STATE
+    EEThreadId current_thread_id;
+    current_thread_id.SetToCurrentThread ();
+#endif //RECORD_LOH_STATE
+
+#ifdef BACKGROUND_GC
+    bgc_record_uoh_allocation(gen_number, size);
+
+    if (gc_heap::background_running_p())
+    {
         //if ((background_loh_alloc_count % bgc_alloc_spin_count_loh) == 0)
         {
             int spin_for_allocation = (gen_number == loh_generation) ?
@@ -18501,10 +18514,6 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
                 check_msl_status ("uoh a_state_acquire_seg", size);
             }
         }
-    }
-    else
-    {
-        loh_a_no_bgc += size;
     }
 #endif //BACKGROUND_GC
 
