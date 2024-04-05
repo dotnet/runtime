@@ -11,7 +11,7 @@ namespace System.IO.Tests
         [InlineData("", ".tmp", "")]
         [InlineData(null, ".tmp", null)]
         [InlineData("filename", ".tmp", "filename.tmp")]
-        [InlineData("filename.tmp", "", "filename.")]
+        [InlineData("filename.tmp", "", "filename")]
         [InlineData("filename.tmp", "...", "filename...")]
         [InlineData("filename.tmp", null, "filename")]
         [InlineData("filename.tmp.doc", ".tmp", "filename.tmp.tmp")]
