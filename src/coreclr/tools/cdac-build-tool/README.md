@@ -12,6 +12,46 @@ files that specify contracts.
 ```console
 % cdac-build-tool compose [-v] -o contract-descriptor.c -c contracts.txt data-descriptor.o
 ```
+## .NET runtime build integration
+
+`cdac-build-tool` is meant to run as a CMake custom command.
+It consumes a target platform object file and emits a C source
+file that contains a JSON contract descriptor.  The C source
+is the included in the normal build and link steps to create the runtime.
+
+The contract descriptor source file depends on `contract-aux-data.c` which is a source file that contains
+the definitions of the "indirect pointer data" that is referenced by the data descriptor.  This is typically the addresses of important global variables in the runtime.
+Constants and build flags are embedded directly in the JSON payload.
+
+Multiple data descriptor source files may be specified (for example if they are produced by different components of the runtime, or by different source languages).  The final JSON payload will be a composition of all the data descriptors.
+
+Multiple contracts text files may be specified.  This may be useful if some contracts are conditionally included (for example if they are platform-specific).  The final JSON payload will be a composition of all the contracts files.
+
+```mermaid
+flowchart TB
+  headers("runtime headers")
+  data_src("data-descriptor.c")
+  compile_data["clang"]
+  data_obj("data-descriptor.o")
+  contracts("contracts.txt")
+  globals("contract-aux-data.c")
+  build[["cdac-build-tool"]]
+  descriptor_src("contract-descriptor.c")
+  vm("runtime sources")
+  compile_runtime["clang"]
+  runtime_lib(["libcoreclr.so"])
+
+  headers -.-> data_src
+  headers -.-> globals
+  headers -.-> vm
+  data_src --> compile_data --> data_obj --> build
+  contracts ----> build
+  build --> descriptor_src
+  descriptor_src --> compile_runtime
+  globals -----> compile_runtime
+  vm ----> compile_runtime --> runtime_lib
+```
+
 
 ## Specifying data descriptors
 
