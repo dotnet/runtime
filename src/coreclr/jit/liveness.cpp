@@ -498,7 +498,6 @@ void Compiler::fgPerBlockLocalVarLiveness()
                 // 32-bit targets always pop the frame in the epilog.
                 // For 64-bit targets, we only do this in the epilog for IL stubs;
                 // for non-IL stubs the frame is popped after every PInvoke call.
-                CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_64BIT
                 if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
 #endif
@@ -811,10 +810,10 @@ void Compiler::fgExtendDbgLifetimes()
 
     fgExtendDbgScopes();
 
-/*-------------------------------------------------------------------------
- * Partly update liveness info so that we handle any funky BBF_INTERNAL
- * blocks inserted out of sequence.
- */
+    /*-------------------------------------------------------------------------
+     * Partly update liveness info so that we handle any funky BBF_INTERNAL
+     * blocks inserted out of sequence.
+     */
 
 #ifdef DEBUG
     if (verbose && 0)
@@ -1005,7 +1004,7 @@ void Compiler::fgExtendDbgLifetimes()
     //   So just ensure that they don't have a 0 ref cnt
 
     unsigned lclNum = 0;
-    for (LclVarDsc *varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+    for (LclVarDsc* varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
     {
         if (lclNum >= info.compArgsCount)
         {
@@ -1676,10 +1675,10 @@ GenTree* Compiler::fgTryRemoveDeadStoreEarly(Statement* stmt, GenTreeLclVarCommo
  * or subtree of a statement moving backward from startNode to endNode
  */
 
-void Compiler::fgComputeLife(VARSET_TP&       life,
-                             GenTree*         startNode,
-                             GenTree*         endNode,
-                             VARSET_VALARG_TP volatileVars,
+void Compiler::fgComputeLife(VARSET_TP&           life,
+                             GenTree*             startNode,
+                             GenTree*             endNode,
+                             VARSET_VALARG_TP     volatileVars,
                              bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
     // Don't kill vars in scope
@@ -2116,11 +2115,11 @@ bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclN
 // Return Value:
 //   true if we should skip the rest of the statement, false if we should continue
 //
-bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
-                                 LclVarDsc*       varDsc,
-                                 VARSET_VALARG_TP life,
-                                 bool*            doAgain,
-                                 bool*            pStmtInfoDirty,
+bool Compiler::fgRemoveDeadStore(GenTree**           pTree,
+                                 LclVarDsc*          varDsc,
+                                 VARSET_VALARG_TP    life,
+                                 bool*               doAgain,
+                                 bool*               pStmtInfoDirty,
                                  bool* pStoreRemoved DEBUGARG(bool* treeModf))
 {
     assert(!compRationalIRForm);
@@ -2186,7 +2185,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 #ifdef DEBUG
             *treeModf = true;
 #endif // DEBUG
-            // Update ordering, costs, FP levels, etc.
+       // Update ordering, costs, FP levels, etc.
             gtSetStmtInfo(compCurStmt);
 
             // Re-link the nodes for this statement
@@ -2278,7 +2277,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                 printf("\n");
             }
 #endif // DEBUG
-            // No side effects - Change the store to a GT_NOP node
+       // No side effects - Change the store to a GT_NOP node
             store->gtBashToNOP();
 
 #ifdef DEBUG

@@ -52,9 +52,6 @@ class EEContract : public BaseContract
 #define GC_TRIGGERS          do { STATIC_CONTRACT_GC_TRIGGERS; REQUEST_TEST(Contract::GC_Triggers,   Contract::GC_Disabled); } while(0)
 #define GC_NOTRIGGER         do { STATIC_CONTRACT_GC_NOTRIGGER; REQUEST_TEST(Contract::GC_NoTrigger,  Contract::GC_Disabled); } while(0)
 
-#define HOST_NOCALLS         do { STATIC_CONTRACT_HOST_NOCALLS; REQUEST_TEST(Contract::HOST_NoCalls, Contract::HOST_Disabled); } while(0)
-#define HOST_CALLS           do {  STATIC_CONTRACT_HOST_CALLS; REQUEST_TEST(Contract::HOST_Calls, Contract::HOST_Disabled); } while(0)
-
 #else   // ENABLE_CONTRACTS_IMPL
 
 #define MODE_COOPERATIVE
@@ -62,8 +59,6 @@ class EEContract : public BaseContract
 #define MODE_ANY
 #define GC_TRIGGERS
 #define GC_NOTRIGGER
-#define HOST_NOCALLS
-#define HOST_CALLS
 
 #endif  // ENABLE_CONTRACTS_IMPL
 

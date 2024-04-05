@@ -58,6 +58,9 @@
 
 #include "exinfo.h"
 
+using std::isfinite;
+using std::isnan;
+
 //========================================================================
 //
 // This file contains implementation of all JIT helpers. The helpers are
@@ -264,7 +267,7 @@ HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
         }
         else if (divisor == -1)
         {
-            if (dividend == _I32_MIN)
+            if (dividend == INT32_MIN)
             {
                 ehKind = kOverflowException;
                 goto ThrowExcep;
@@ -296,7 +299,7 @@ HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
         }
         else if (divisor == -1)
         {
-            if (dividend == _I32_MIN)
+            if (dividend == INT32_MIN)
             {
                 ehKind = kOverflowException;
                 goto ThrowExcep;

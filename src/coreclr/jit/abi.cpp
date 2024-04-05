@@ -140,6 +140,39 @@ ABIPassingInformation ABIPassingInformation::FromSegment(Compiler* comp, const A
     return info;
 }
 
+#ifdef DEBUG
+//-----------------------------------------------------------------------------
+// Dump:
+//   Dump the ABIPassingInformation to stdout.
+//
+void ABIPassingInformation::Dump() const
+{
+    if (NumSegments != 1)
+    {
+        printf("%u segments\n", NumSegments);
+    }
+
+    for (unsigned i = 0; i < NumSegments; i++)
+    {
+        if (NumSegments > 1)
+        {
+            printf("  [%u] ", i);
+        }
+
+        const ABIPassingSegment& seg = Segments[i];
+
+        if (Segments[i].IsPassedInRegister())
+        {
+            printf("[%02u..%02u) reg %s\n", seg.Offset, seg.Offset + seg.Size, getRegName(seg.GetRegister()));
+        }
+        else
+        {
+            printf("[%02u..%02u) stack @ +%02u\n", seg.Offset, seg.Offset + seg.Size, seg.GetStackOffset());
+        }
+    }
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // RegisterQueue::Dequeue:
 //   Dequeue a register from the queue.
@@ -206,6 +239,17 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
     if (wellKnownParam == WellKnownArg::SwiftSelf)
     {
         return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_SWIFT_SELF, 0,
+                                                                                      TARGET_POINTER_SIZE));
+    }
+
+    if (wellKnownParam == WellKnownArg::SwiftError)
+    {
+        // We aren't actually going to pass the SwiftError* parameter in REG_SWIFT_ERROR.
+        // We won't be using this parameter at all, and shouldn't allocate registers/stack space for it,
+        // as that will mess with other args.
+        // Quirk: To work around the JIT for now, "pass" it in REG_SWIFT_ERROR,
+        // and let CodeGen::genFnProlog handle the rest.
+        return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_SWIFT_ERROR, 0,
                                                                                       TARGET_POINTER_SIZE));
     }
 

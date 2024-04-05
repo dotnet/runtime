@@ -82,7 +82,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 {
                     CancellationTokenSource cts = new CancellationTokenSource();
                     var promise = response.Content.ReadAsStringAsync(cts.Token);
-                    Console.WriteLine("HttpClient_CancelInDifferentThread: ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
+                    WebWorkerTestHelper.Log("HttpClient_CancelInDifferentThread: ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
                     cts.Cancel();
                     var res = await promise;
                     throw new Exception("This should be unreachable: " + res);
