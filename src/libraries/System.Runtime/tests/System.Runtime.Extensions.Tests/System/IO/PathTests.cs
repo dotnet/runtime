@@ -16,6 +16,8 @@ namespace System.IO.Tests
             InlineData("", "", ""),
             InlineData("file.exe", null, "file"),
             InlineData("file.exe", "", "file"),
+			InlineData("file", null, "file"),
+			InlineData("file", "", "file"),
             InlineData("file", "exe", "file.exe"),
             InlineData("file", ".exe", "file.exe"),
             InlineData("file.txt", "exe", "file.exe"),
