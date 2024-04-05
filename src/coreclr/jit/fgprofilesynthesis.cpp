@@ -1425,7 +1425,7 @@ void ProfileSynthesis::GaussSeidelSolver()
         {
             // we can see slight overflow here in the exit residual, so use abs
             //
-            weight_t const entryExitResidual = abs(entryWeight - exitWeight);
+            weight_t const entryExitResidual = fabs(entryWeight - exitWeight);
             JITDUMP("Entry weight " FMT_WT " exit weight " FMT_WT " residual " FMT_WT "\n", entryWeight, exitWeight,
                     entryExitResidual);
             weight_t const entryExitRelResidual = entryExitResidual / entryWeight;
