@@ -442,11 +442,21 @@ namespace ILCompiler
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
 
+                bool isX86 = Context.Target.Architecture == TargetArchitecture.X86;
+
                 FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType");
 
                 // Load ByRef to the field with the value of the boxed valuetype
                 codeStream.EmitLdArg(0);
                 codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetField("Data")));
+
+                if (isX86)
+                {
+                    for (int i = 0; i < _targetMethod.Signature.Length; i++)
+                    {
+                        codeStream.EmitLdArg(i + 1);
+                    }
+                }
 
                 // Load the MethodTable of the boxed valuetype (this is the hidden generic context parameter expected
                 // by the (canonical) instance method, but normally not part of the signature in IL).
@@ -454,9 +464,12 @@ namespace ILCompiler
                 codeStream.Emit(ILOpcode.ldfld, emit.NewToken(eeTypeField));
 
                 // Load rest of the arguments
-                for (int i = 0; i < _targetMethod.Signature.Length; i++)
+                if (!isX86)
                 {
-                    codeStream.EmitLdArg(i + 1);
+                    for (int i = 0; i < _targetMethod.Signature.Length; i++)
+                    {
+                        codeStream.EmitLdArg(i + 1);
+                    }
                 }
 
                 // Call an instance method on the target valuetype that has a fake instantiation parameter
@@ -608,9 +621,18 @@ namespace ILCompiler
 
                         // Shared instance methods on generic valuetypes have a hidden parameter with the generic context.
                         // We add it to the signature so that we can refer to it from IL.
-                        parameters[0] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
-                        for (int i = 0; i < _methodRepresented.Signature.Length; i++)
-                            parameters[i + 1] = _methodRepresented.Signature[i];
+                        if (Context.Target.Architecture == TargetArchitecture.X86)
+                        {
+                            for (int i = 0; i < _methodRepresented.Signature.Length; i++)
+                                parameters[i] = _methodRepresented.Signature[i];
+                            parameters[_methodRepresented.Signature.Length] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
+                        }
+                        else
+                        {
+                            parameters[0] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
+                            for (int i = 0; i < _methodRepresented.Signature.Length; i++)
+                                parameters[i + 1] = _methodRepresented.Signature[i];
+                        }
 
                         _signature = new MethodSignature(_methodRepresented.Signature.Flags,
                             _methodRepresented.Signature.GenericParameterCount,

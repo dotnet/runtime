@@ -46,8 +46,9 @@ namespace System.Net.Quic.Tests
         }
     }
 
-    [Collection(nameof(DisableParallelization))]
+    [Collection(nameof(QuicTestCollection))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public class MsQuicTests : QuicTestBase, IClassFixture<CertificateSetup>
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
@@ -356,7 +357,10 @@ namespace System.Net.Quic.Tests
             }
         }
 
+        static bool SupportsAsyncCertValidation => QuicTestCollection.MsQuicVersion >= new Version(2, 4);
+
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99074", typeof(MsQuicTests), nameof(SupportsAsyncCertValidation))]
         public async Task CertificateCallbackThrowPropagates()
         {
             using CancellationTokenSource cts = new CancellationTokenSource(PassingTestTimeout);
@@ -1198,61 +1202,6 @@ namespace System.Net.Quic.Tests
                 Next = segment;
                 return segment;
             }
-        }
-
-        [Fact]
-        [OuterLoop("May take several seconds")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/85331", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version20348OrLower))]
-        public async Task ByteMixingOrNativeAVE_MinimalFailingTest()
-        {
-            const int writeSize = 64 * 1024;
-            const int NumberOfWrites = 512;
-            byte[] data1 = new byte[writeSize * NumberOfWrites];
-            byte[] data2 = new byte[writeSize * NumberOfWrites];
-            Array.Fill(data1, (byte)1);
-            Array.Fill(data2, (byte)2);
-
-            Task t1 = RunTest(data1);
-            Task t2 = RunTest(data2);
-
-            async Task RunTest(byte[] data)
-            {
-                await RunClientServer(
-                    iterations: 20,
-                    serverFunction: async connection =>
-                    {
-                        await using QuicStream stream = await connection.AcceptInboundStreamAsync();
-
-                        byte[] buffer = new byte[data.Length];
-                        int bytesRead = await ReadAll(stream, buffer);
-                        Assert.Equal(data.Length, bytesRead);
-                        AssertExtensions.SequenceEqual(data, buffer);
-
-                        for (int pos = 0; pos < data.Length; pos += writeSize)
-                        {
-                            await stream.WriteAsync(data[pos..(pos + writeSize)]);
-                        }
-                        await stream.WriteAsync(Memory<byte>.Empty, completeWrites: true);
-                    },
-                    clientFunction: async connection =>
-                    {
-                        await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
-
-                        for (int pos = 0; pos < data.Length; pos += writeSize)
-                        {
-                            await stream.WriteAsync(data[pos..(pos + writeSize)]);
-                        }
-                        await stream.WriteAsync(Memory<byte>.Empty, completeWrites: true);
-
-                        byte[] buffer = new byte[data.Length];
-                        int bytesRead = await ReadAll(stream, buffer);
-                        Assert.Equal(data.Length, bytesRead);
-                        AssertExtensions.SequenceEqual(data, buffer);
-                    }
-                );
-            }
-
-            await (new[] { t1, t2 }).WhenAllOrAnyFailed(millisecondsTimeout: 1000000);
         }
 
         [Fact]

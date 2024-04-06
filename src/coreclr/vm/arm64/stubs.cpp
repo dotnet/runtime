@@ -277,8 +277,7 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundstate,
                                     DWORD threadId,
-                                    int funCallDepth,
-                                    HostCallPreference hostCallPreference)
+                                    int funCallDepth)
 {
     T_CONTEXT context;
     T_KNONVOLATILE_CONTEXT_POINTERS nonVolContextPtrs;
@@ -357,20 +356,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         {
             // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
             // Use it now to see if we've unwound to managed code yet.
-            BOOL fFailedReaderLock = FALSE;
-            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc, hostCallPreference, &fFailedReaderLock);
-            if (fFailedReaderLock)
-            {
-                // We don't know if we would have been able to find a JIT
-                // manager, because we couldn't enter the reader lock without
-                // yielding (and our caller doesn't want us to yield).  So abort
-                // now.
-
-                // Invalidate the lazyState we're returning, so the caller knows
-                // we aborted before we could fully unwind
-                unwoundstate->_isValid = false;
-                return;
-            }
+            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc);
 
             if (fIsManagedCode)
                 break;
@@ -378,19 +364,19 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         }
     } while (true);
 
-#ifdef TARGET_UNIX
-    unwoundstate->captureX19_X29[0] = context.X19;
-    unwoundstate->captureX19_X29[1] = context.X20;
-    unwoundstate->captureX19_X29[2] = context.X21;
-    unwoundstate->captureX19_X29[3] = context.X22;
-    unwoundstate->captureX19_X29[4] = context.X23;
-    unwoundstate->captureX19_X29[5] = context.X24;
-    unwoundstate->captureX19_X29[6] = context.X25;
-    unwoundstate->captureX19_X29[7] = context.X26;
-    unwoundstate->captureX19_X29[8] = context.X27;
-    unwoundstate->captureX19_X29[9] = context.X28;
-    unwoundstate->captureX19_X29[10] = context.Fp;
-#endif
+#ifdef __APPLE__
+    unwoundstate->unwoundX19_X29[0] = context.X19;
+    unwoundstate->unwoundX19_X29[1] = context.X20;
+    unwoundstate->unwoundX19_X29[2] = context.X21;
+    unwoundstate->unwoundX19_X29[3] = context.X22;
+    unwoundstate->unwoundX19_X29[4] = context.X23;
+    unwoundstate->unwoundX19_X29[5] = context.X24;
+    unwoundstate->unwoundX19_X29[6] = context.X25;
+    unwoundstate->unwoundX19_X29[7] = context.X26;
+    unwoundstate->unwoundX19_X29[8] = context.X27;
+    unwoundstate->unwoundX19_X29[9] = context.X28;
+    unwoundstate->unwoundX19_X29[10] = context.Fp;
+#endif // __APPLE__
 
 #ifdef DACCESS_COMPILE
     // For DAC builds, we update the registers directly since we dont have context pointers
@@ -505,20 +491,20 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->Pc = pRD->ControlPC;
     pRD->pCurrentContext->Sp = pRD->SP;
 
-#ifdef TARGET_UNIX
-    pRD->pCurrentContext->X19 = m_MachState.ptrX19_X29[0] ? *m_MachState.ptrX19_X29[0] : m_MachState.captureX19_X29[0];
-    pRD->pCurrentContext->X20 = m_MachState.ptrX19_X29[1] ? *m_MachState.ptrX19_X29[1] : m_MachState.captureX19_X29[1];
-    pRD->pCurrentContext->X21 = m_MachState.ptrX19_X29[2] ? *m_MachState.ptrX19_X29[2] : m_MachState.captureX19_X29[2];
-    pRD->pCurrentContext->X22 = m_MachState.ptrX19_X29[3] ? *m_MachState.ptrX19_X29[3] : m_MachState.captureX19_X29[3];
-    pRD->pCurrentContext->X23 = m_MachState.ptrX19_X29[4] ? *m_MachState.ptrX19_X29[4] : m_MachState.captureX19_X29[4];
-    pRD->pCurrentContext->X24 = m_MachState.ptrX19_X29[5] ? *m_MachState.ptrX19_X29[5] : m_MachState.captureX19_X29[5];
-    pRD->pCurrentContext->X25 = m_MachState.ptrX19_X29[6] ? *m_MachState.ptrX19_X29[6] : m_MachState.captureX19_X29[6];
-    pRD->pCurrentContext->X26 = m_MachState.ptrX19_X29[7] ? *m_MachState.ptrX19_X29[7] : m_MachState.captureX19_X29[7];
-    pRD->pCurrentContext->X27 = m_MachState.ptrX19_X29[8] ? *m_MachState.ptrX19_X29[8] : m_MachState.captureX19_X29[8];
-    pRD->pCurrentContext->X28 = m_MachState.ptrX19_X29[9] ? *m_MachState.ptrX19_X29[9] : m_MachState.captureX19_X29[9];
-    pRD->pCurrentContext->Fp = m_MachState.ptrX19_X29[10] ? *m_MachState.ptrX19_X29[10] : m_MachState.captureX19_X29[10];
+#ifdef __APPLE__
+    pRD->pCurrentContext->X19 = (DWORD64)(m_MachState.unwoundX19_X29[0]);
+    pRD->pCurrentContext->X20 = (DWORD64)(m_MachState.unwoundX19_X29[1]);
+    pRD->pCurrentContext->X21 = (DWORD64)(m_MachState.unwoundX19_X29[2]);
+    pRD->pCurrentContext->X22 = (DWORD64)(m_MachState.unwoundX19_X29[3]);
+    pRD->pCurrentContext->X23 = (DWORD64)(m_MachState.unwoundX19_X29[4]);
+    pRD->pCurrentContext->X24 = (DWORD64)(m_MachState.unwoundX19_X29[5]);
+    pRD->pCurrentContext->X25 = (DWORD64)(m_MachState.unwoundX19_X29[6]);
+    pRD->pCurrentContext->X26 = (DWORD64)(m_MachState.unwoundX19_X29[7]);
+    pRD->pCurrentContext->X27 = (DWORD64)(m_MachState.unwoundX19_X29[8]);
+    pRD->pCurrentContext->X28 = (DWORD64)(m_MachState.unwoundX19_X29[9]);
+    pRD->pCurrentContext->Fp = (DWORD64)(m_MachState.unwoundX19_X29[10]);
     pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
-#else // TARGET_UNIX
+#else // __APPLE__
     pRD->pCurrentContext->X19 = *m_MachState.ptrX19_X29[0];
     pRD->pCurrentContext->X20 = *m_MachState.ptrX19_X29[1];
     pRD->pCurrentContext->X21 = *m_MachState.ptrX19_X29[2];
@@ -531,7 +517,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->X28 = *m_MachState.ptrX19_X29[9];
     pRD->pCurrentContext->Fp  = *m_MachState.ptrX19_X29[10];
     pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
-#endif
+#endif // __APPLE__
 
 #if !defined(DACCESS_COMPILE)
     pRD->pCurrentContextPointers->X19 = m_MachState.ptrX19_X29[0];
@@ -684,7 +670,6 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 #ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
 #endif
-        HOST_NOCALLS;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -731,7 +716,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 
 
     // Update the frame pointer in the current context.
-    pRD->pCurrentContextPointers->Fp = &m_pCalleeSavedFP;
+    pRD->pCurrentContextPointers->Fp = (DWORD64 *)&m_pCalleeSavedFP;
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 

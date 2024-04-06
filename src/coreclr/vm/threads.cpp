@@ -1513,7 +1513,6 @@ Thread::Thread()
     m_TraceCallCount = 0;
     m_ThrewControlForThread = 0;
     m_ThreadTasks = (ThreadTasks)0;
-    m_pLoadLimiter= NULL;
 
     // The state and the tasks must be 32-bit aligned for atomicity to be guaranteed.
     _ASSERTE((((size_t) &m_State) & 3) == 0);
@@ -1548,16 +1547,10 @@ Thread::Thread()
     m_RedirectContextInUse = false;
 #endif
 
-#ifdef FEATURE_COMINTEROP
-    m_pRCWStack = new RCWStackHeader();
-#endif
-
 #ifdef _DEBUG
     m_bGCStressing = FALSE;
     m_bUniqueStacking = FALSE;
 #endif
-
-    m_pPendingTypeLoad = NULL;
 
     m_dwAVInRuntimeImplOkayCount = 0;
 
@@ -1744,8 +1737,6 @@ void Thread::InitThread()
     }
 
     _ASSERTE(HasValidThreadHandle());
-
-    m_random.Init();
 
     // Set floating point mode to round to nearest
 #ifndef TARGET_UNIX
@@ -2647,11 +2638,6 @@ Thread::~Thread()
 
     MarkRedirectContextInUse(m_pSavedRedirectContext);
     m_pSavedRedirectContext = NULL;
-
-#ifdef FEATURE_COMINTEROP
-    if (m_pRCWStack)
-        delete m_pRCWStack;
-#endif
 
     if (m_pExceptionDuringStartup)
     {
@@ -5167,7 +5153,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
 ThreadStore::ThreadStore()
            : m_Crst(CrstThreadStore, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD)),
              m_ThreadCount(0),
-             m_MaxThreadCount(0),
              m_UnstartedThreadCount(0),
              m_BackgroundThreadCount(0),
              m_PendingThreadCount(0),
@@ -5286,8 +5271,6 @@ void ThreadStore::AddThread(Thread *newThread)
     s_pThreadStore->m_ThreadList.InsertTail(newThread);
 
     s_pThreadStore->m_ThreadCount++;
-    if (s_pThreadStore->m_MaxThreadCount < s_pThreadStore->m_ThreadCount)
-        s_pThreadStore->m_MaxThreadCount = s_pThreadStore->m_ThreadCount;
 
     if (newThread->IsUnstarted())
         s_pThreadStore->m_UnstartedThreadCount++;
@@ -7050,12 +7033,12 @@ bool Thread::InitRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool validCo
 }
 
 
-void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx)
+void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool fLightUnwind)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    ::FillRegDisplay(pRD, pctx);
+    ::FillRegDisplay(pRD, pctx, NULL, fLightUnwind);
 
 #if defined(DEBUG_REGDISPLAY) && !defined(TARGET_X86)
     CONSISTENCY_CHECK(!pRD->_pThread || pRD->_pThread == this);
@@ -7784,7 +7767,7 @@ OBJECTREF Thread::GetCulture(BOOL bUICulture)
 
     // This is the case when we're building CoreLib and haven't yet created
     // the system assembly.
-    if (SystemDomain::System()->SystemAssembly()==NULL || g_fForbidEnterEE) {
+    if (SystemDomain::System()->SystemAssembly()==NULL) {
         return NULL;
     }
 
@@ -7904,32 +7887,6 @@ INT32 Thread::ResetManagedThreadObjectInCoopMode(INT32 nPriority)
     }
 
     return nPriority;
-}
-
-BOOL Thread::IsRealThreadPoolResetNeeded()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if(!IsBackground())
-        return TRUE;
-
-    THREADBASEREF pObject = (THREADBASEREF)ObjectFromHandle(m_ExposedObject);
-
-    if(pObject != NULL)
-    {
-        INT32 nPriority = pObject->GetPriority();
-
-        if(nPriority != ThreadNative::PRIORITY_NORMAL)
-            return TRUE;
-    }
-
-    return FALSE;
 }
 
 void Thread::InternalReset(BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeeded, BOOL fResetAbort)
@@ -8276,12 +8233,7 @@ void Thread::InitializeSpecialUserModeApc()
         return;
     }
 
-    // In the future, once code paths using the special user-mode APC get some bake time, it should be used regardless of
-    // whether CET shadow stacks are enabled
-    if (AreCetShadowStacksEnabled())
-    {
-        s_pfnQueueUserAPC2Proc = pfnQueueUserAPC2Proc;
-    }
+    s_pfnQueueUserAPC2Proc = pfnQueueUserAPC2Proc;
 }
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC

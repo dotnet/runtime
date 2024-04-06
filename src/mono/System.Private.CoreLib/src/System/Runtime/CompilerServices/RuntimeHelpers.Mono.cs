@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Runtime.CompilerServices
@@ -137,9 +138,15 @@ namespace System.Runtime.CompilerServices
             RunModuleConstructor(module.Value);
         }
 
-        public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
+        public static unsafe IntPtr AllocateTypeAssociatedMemory(Type type, int size)
         {
-            throw new PlatformNotSupportedException();
+            if (type is not RuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
+
+            // We don't support unloading; the memory will never be freed.
+            return (IntPtr)NativeMemory.AllocZeroed((uint)size);
         }
 
         [Intrinsic]
@@ -204,5 +211,52 @@ namespace System.Runtime.CompilerServices
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool SufficientExecutionStack();
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void InternalBox(QCallTypeHandle type, ref byte target, ObjectHandleOnStack result);
+
+        /// <summary>
+        /// Create a boxed object of the specified type from the data located at the target reference.
+        /// </summary>
+        /// <param name="target">The target data</param>
+        /// <param name="type">The type of box to create.</param>
+        /// <returns>A boxed object containing the specified data.</returns>
+        /// <exception cref="ArgumentNullException">The specified type handle is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">The specified type cannot have a boxed instance of itself created.</exception>
+        /// <exception cref="NotSupportedException">The passed in type is a by-ref-like type.</exception>
+        /// <remarks>This returns an object that is equivalent to executing the IL box instruction with the provided target address and type.</remarks>
+        public static object? Box(ref byte target, RuntimeTypeHandle type)
+        {
+            if (type.Value is 0)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
+
+            // Compatibility with CoreCLR, throw on a null reference to the unboxed data.
+            if (Unsafe.IsNullRef(ref target))
+                throw new NullReferenceException();
+
+            RuntimeType rtType = (RuntimeType)Type.GetTypeFromHandle(type)!;
+
+            if (rtType.ContainsGenericParameters
+                || rtType.IsPointer
+                || rtType.IsFunctionPointer
+                || rtType.IsByRef
+                || rtType.IsGenericParameter
+                || rtType == typeof(void))
+            {
+                throw new ArgumentException(SR.Arg_TypeNotSupported);
+            }
+
+            if (!rtType.IsValueType)
+            {
+                return Unsafe.As<byte, object?>(ref target);
+            }
+
+            if (rtType.IsByRefLike)
+                throw new NotSupportedException(SR.NotSupported_ByRefLike);
+
+            object? result = null;
+            InternalBox(new QCallTypeHandle(ref rtType), ref target, ObjectHandleOnStack.Create(ref result));
+            return result;
+        }
     }
 }

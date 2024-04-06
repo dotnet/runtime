@@ -1225,9 +1225,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #if !FEATURE_FASTTAILCALL
         noway_assert(jmpNode->gtOper == GT_JMP);
 #else  // FEATURE_FASTTAILCALL
-        // armarch
-        // If jmpNode is GT_JMP then gtNext must be null.
-        // If jmpNode is a fast tail call, gtNext need not be null since it could have embedded stmts.
+       // armarch
+       // If jmpNode is GT_JMP then gtNext must be null.
+       // If jmpNode is a fast tail call, gtNext need not be null since it could have embedded stmts.
         noway_assert((jmpNode->gtOper != GT_JMP) || (jmpNode->gtNext == nullptr));
 
         // Could either be a "jmp method" or "fast tail call" implemented as epilog+jmp
@@ -1307,7 +1307,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        0,             // disp
                                        true);         // isJump
             // clang-format on
-            CLANG_FORMAT_COMMENT_ANCHOR;
         }
 #if FEATURE_FASTTAILCALL
         else
@@ -1573,9 +1572,9 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 }
 
 //  move an immediate value into an integer register
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
-                                     regNumber reg,
-                                     ssize_t   imm,
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
+                                     regNumber      reg,
+                                     ssize_t        imm,
                                      insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     emitter* emit = GetEmitter();
@@ -2418,7 +2417,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         // Floating point divide never raises an exception
         assert(varTypeIsFloating(tree->gtOp1));
         assert(varTypeIsFloating(tree->gtOp2));
-        assert(tree->gtOper == GT_DIV);
+        assert(tree->OperIs(GT_DIV));
 
         instruction ins = genGetInsForOper(tree);
         emit->emitIns_R_R_R(ins, emitActualTypeSize(targetType), tree->GetRegNum(), tree->gtOp1->GetRegNum(),
@@ -2480,7 +2479,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         }
 
         // check (MinInt / -1) => ArithmeticException
-        if (tree->gtOper == GT_DIV || tree->gtOper == GT_MOD)
+        if (tree->OperIs(GT_DIV, GT_MOD))
         {
             if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
             {
@@ -2514,55 +2513,20 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             // Generate the sdiv instruction
             if (size == EA_4BYTE)
             {
-                if (tree->OperGet() == GT_DIV)
-                {
-                    ins = INS_div_w;
-                }
-                else
-                {
-                    ins = INS_mod_w;
-                }
+                ins = tree->OperIs(GT_DIV) ? INS_div_w : INS_mod_w;
             }
             else
             {
-                if (tree->OperGet() == GT_DIV)
-                {
-                    ins = INS_div_d;
-                }
-                else
-                {
-                    ins = INS_mod_d;
-                }
+                ins = tree->OperIs(GT_DIV) ? INS_div_d : INS_mod_d;
             }
 
             emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
         }
-        else // if (tree->gtOper == GT_UDIV) GT_UMOD
+        else // tree->OperIs(GT_UDIV, GT_UMOD)
         {
-            // Only one possible exception
-            //     (AnyVal /  0) => DivideByZeroException
-            //
-            // Note that division by the constant 0 was already checked for above by the
-            // op2->IsIntegralConst(0) check
-            //
-
-            if (!divisorOp->IsCnsIntOrI())
-            {
-                // divisorOp is not a constant, so it could be zero
-                //
-                genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
-            }
-
             if (size == EA_4BYTE)
             {
-                if (tree->OperGet() == GT_UDIV)
-                {
-                    ins = INS_div_wu;
-                }
-                else
-                {
-                    ins = INS_mod_wu;
-                }
+                ins = tree->OperIs(GT_UDIV) ? INS_div_wu : INS_mod_wu;
 
                 // TODO-LOONGARCH64: here is just for signed-extension ?
                 emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, Reg1, Reg1, 0);
@@ -2570,14 +2534,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             }
             else
             {
-                if (tree->OperGet() == GT_UDIV)
-                {
-                    ins = INS_div_du;
-                }
-                else
-                {
-                    ins = INS_mod_du;
-                }
+                ins = tree->OperIs(GT_UDIV) ? INS_div_du : INS_mod_du;
             }
 
             emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
@@ -2927,32 +2884,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
-    assert(treeNode->OperGet() == GT_JMPTABLE);
-
-    unsigned     jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
-    unsigned     jmpTabOffs;
-    unsigned     jmpTabBase;
-
-    jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, true);
-
-    jmpTabOffs = 0;
-
-    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
-
-    for (unsigned i = 0; i < jumpCount; i++)
-    {
-        BasicBlock* target = *jumpTable++;
-        noway_assert(target->HasFlag(BBF_HAS_LABEL));
-
-        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
-
-        GetEmitter()->emitDataGenData(i, target);
-    };
-
-    GetEmitter()->emitDataGenEnd();
-
+    unsigned jmpTabBase = genEmitJumpTable(treeNode, true);
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
@@ -3401,7 +3333,7 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
                                callTarget,                                                    /* ireg */
                                REG_NA, 0, 0,                                                  /* xreg, xmul, disp */
                                false                                                          /* isJump */
-                               );
+    );
 
     regMaskTP killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
     regSet.verifyRegistersUsed(killMask);
@@ -4465,7 +4397,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                callTarget,                           /* ireg */
                                REG_NA, 0, 0,                         /* xreg, xmul, disp */
                                false                                 /* isJump */
-                               );
+    );
 
     regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
     regSet.verifyRegistersUsed(killMask);
@@ -5008,7 +4940,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & ~fullIntArgRegMask()) == 0);
+            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
+                          ~fullIntArgRegMask(compiler->info.compCallConv)) == 0);
 
 // the runtime side requires the codegen here to be consistent
 #ifdef PSEUDORANDOM_NOP_INSERTION
@@ -5021,7 +4954,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld_d, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
-        case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -5316,7 +5248,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                 // addrNode can either be a GT_LCL_ADDR<0> or an address expression
                 //
-                if (addrNode->IsLclVarAddr())
+                if (addrNode->isContained() && addrNode->IsLclVarAddr())
                 {
                     // We have a GT_BLK(GT_LCL_ADDR<0>)
                     //
@@ -5589,7 +5521,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
         // addrNode can either be a GT_LCL_ADDR<0> or an address expression
         //
-        if (addrNode->IsLclVarAddr())
+        if (addrNode->isContained() && addrNode->IsLclVarAddr())
         {
             // We have a GT_BLK(GT_LCL_ADDR<0>)
             //
@@ -6131,37 +6063,6 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 }
 
 //----------------------------------------------------------------------------------
-// genCodeForCpBlkHelper - Generate code for a CpBlk node by the means of the VM memcpy helper call
-//
-// Arguments:
-//    cpBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
-{
-    // Destination address goes in arg0, source address goes in arg1, and size goes in arg2.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
-
-    if (cpBlkNode->IsVolatile())
-    {
-        // issue a full memory barrier before a volatile CpBlk operation
-        instGen_MemoryBarrier();
-    }
-
-    genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
-
-    if (cpBlkNode->IsVolatile())
-    {
-        // issue a INS_BARRIER_RMB after a volatile CpBlk operation
-        instGen_MemoryBarrier(BARRIER_FULL);
-    }
-}
-
-//----------------------------------------------------------------------------------
 // genCodeForCpBlkUnroll: Generates CpBlk code by performing a loop unroll
 //
 // Arguments:
@@ -6344,31 +6245,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 }
 
 //------------------------------------------------------------------------
-// genCodeForInitBlkHelper - Generate code for an InitBlk node by the means of the VM memcpy helper call
-//
-// Arguments:
-//    initBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
-{
-    // Size goes in arg2, source address goes in arg1, and size goes in arg2.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
-
-    if (initBlkNode->IsVolatile())
-    {
-        // issue a full memory barrier before a volatile initBlock Operation
-        instGen_MemoryBarrier();
-    }
-
-    genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
-}
-
-//------------------------------------------------------------------------
 // genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
 //    It's needed for cases when size is too big to unroll and we're not allowed
 //    to use memset call due to atomicity requirements.
@@ -6413,27 +6289,6 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         GetEmitter()->emitIns_R_I(INS_bnez, EA_8BYTE, offsetReg, -2 << 2);
 
         gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
-    }
-}
-
-// Generate code for a load from some address + offset
-//   base: tree node which can be either a local address or arbitrary node
-//   offset: distance from the base from which to load
-void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset)
-{
-    emitter* emit = GetEmitter();
-
-    if (base->OperIs(GT_LCL_ADDR))
-    {
-        if (base->gtOper == GT_LCL_ADDR)
-        {
-            offset += base->AsLclFld()->GetLclOffs();
-        }
-        emit->emitIns_R_S(ins, size, dst, base->AsLclVarCommon()->GetLclNum(), offset);
-    }
-    else
-    {
-        emit->emitIns_R_R_I(ins, size, dst, base->GetRegNum(), offset);
     }
 }
 
@@ -6581,7 +6436,7 @@ void CodeGen::genCall(GenTreeCall* call)
             for (unsigned i = 0; i < regCount; ++i)
             {
                 var_types regType      = pRetTypeDesc->GetReturnRegType(i);
-                returnReg              = pRetTypeDesc->GetABIReturnReg(i);
+                returnReg              = pRetTypeDesc->GetABIReturnReg(i, call->GetUnmanagedCallConv());
                 regNumber allocatedReg = call->GetRegNumByIdx(i);
                 inst_Mov(regType, allocatedReg, returnReg, /* canSkip */ true);
             }
@@ -6792,19 +6647,19 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             else
 #endif // FEATURE_READYTORUN
                 if (call->gtCallType == CT_HELPER)
-            {
-                CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
-                noway_assert(helperNum != CORINFO_HELP_UNDEF);
+                {
+                    CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
+                    noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
-                void* pAddr = nullptr;
-                addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
-                assert(pAddr == nullptr);
-            }
-            else
-            {
-                // Direct call to a non-virtual user function.
-                addr = call->gtDirectCallAddress;
-            }
+                    void* pAddr = nullptr;
+                    addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
+                    assert(pAddr == nullptr);
+                }
+                else
+                {
+                    // Direct call to a non-virtual user function.
+                    addr = call->gtDirectCallAddress;
+                }
 
             assert(addr != nullptr);
 
@@ -7237,8 +7092,8 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
 //------------------------------------------------------------------------
 // genCreateAndStoreGCInfo: Create and record GC Info for the function.
 //
-void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
-                                      unsigned prologSize,
+void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
+                                      unsigned            prologSize,
                                       unsigned epilogSize DEBUGARG(void* codePtr))
 {
     IAllocator*    allowZeroAlloc = new (compiler, CMK_GC) CompIAllocator(compiler->getAllocatorGC());
@@ -7304,14 +7159,14 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
 }
 
 //------------------------------------------------------------------------
-// genCodeForStoreBlk: Produce code for a GT_STORE_DYN_BLK/GT_STORE_BLK node.
+// genCodeForStoreBlk: Produce code for a GT_STORE_BLK node.
 //
 // Arguments:
 //    tree - the node
 //
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
-    assert(blkOp->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
+    assert(blkOp->OperIs(GT_STORE_BLK));
 
     if (blkOp->gtBlkOpGcUnsafe)
     {
@@ -7330,17 +7185,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         case GenTreeBlk::BlkOpKindLoop:
             assert(!isCopyBlk);
             genCodeForInitBlkLoop(blkOp);
-            break;
-
-        case GenTreeBlk::BlkOpKindHelper:
-            if (isCopyBlk)
-            {
-                genCodeForCpBlkHelper(blkOp);
-            }
-            else
-            {
-                genCodeForInitBlkHelper(blkOp);
-            }
             break;
 
         case GenTreeBlk::BlkOpKindUnroll:
@@ -7770,7 +7614,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
                            callTarget,                                                    /* ireg */
                            REG_NA, 0, 0,                                                  /* xreg, xmul, disp */
                            false                                                          /* isJump */
-                           );
+        );
 
         regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
         regSet.verifyRegistersUsed(killMask);
@@ -7869,7 +7713,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 {
     assert(compiler->compGeneratingProlog);
 
-    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP rsPushRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -8034,7 +7878,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskTP regsToRestoreMask = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP regsToRestoreMask = regSet.rsGetModifiedCalleeSavedRegsMask();
 
     assert(isFramePointerUsed());
 
@@ -8707,7 +8551,11 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
     genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);
 
-    if ((genRegMask(initReg) & RBM_PROFILER_ENTER_TRASH) != RBM_NONE)
+    // If initReg is trashed, either because it was an arg to the enter
+    // callback, or because the enter callback itself trashes it, then it needs
+    // to be zero'ed again before using.
+    if (((RBM_PROFILER_ENTER_TRASH | RBM_PROFILER_ENTER_ARG_FUNC_ID | RBM_PROFILER_ENTER_ARG_CALLER_SP) &
+         genRegMask(initReg)) != RBM_NONE)
     {
         *pInitRegZeroed = false;
     }

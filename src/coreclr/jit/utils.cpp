@@ -323,7 +323,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
                 minSiz -= strlen(sep) + strlen(nam);
 
                 // What kind of separator should we use for this range (if it is indeed going to be a range)?
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
                 if (genIsValidIntReg(regNum))
                 {
@@ -355,7 +354,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
                     }
 #elif defined(TARGET_X86)
                     // No register ranges
-                    CLANG_FORMAT_COMMENT_ANCHOR;
 #elif defined(TARGET_LOONGARCH64)
                     if (REG_A0 <= regNum && regNum <= REG_T8)
                     {
@@ -1107,7 +1105,8 @@ void Counter::dump(FILE* output)
  *  Histogram class.
  */
 
-Histogram::Histogram(const unsigned* const sizeTable) : m_sizeTable(sizeTable)
+Histogram::Histogram(const unsigned* const sizeTable)
+    : m_sizeTable(sizeTable)
 {
     unsigned sizeCount = 0;
     do
@@ -1839,7 +1838,8 @@ void HelperCallProperties::init()
 //
 // You must use ';' as a separator; whitespace no longer works
 
-AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc) : m_alloc(alloc)
+AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc)
+    : m_alloc(alloc)
 {
     WCHAR          prevChar   = '?';     // dummy
     LPWSTR         nameStart  = nullptr; // start of the name currently being processed. nullptr if no current name
@@ -1926,7 +1926,9 @@ bool AssemblyNamesList2::IsInList(const char* assemblyName)
 // MethodSet
 //=============================================================================
 
-MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc) : m_pInfos(nullptr), m_alloc(alloc)
+MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc)
+    : m_pInfos(nullptr)
+    , m_alloc(alloc)
 {
     FILE* methodSetFile = _wfopen(filename, W("r"));
     if (methodSetFile == nullptr)
@@ -2155,7 +2157,8 @@ double CachedCyclesPerSecond()
 }
 
 #ifdef FEATURE_JIT_METHOD_PERF
-CycleCount::CycleCount() : cps(CachedCyclesPerSecond())
+CycleCount::CycleCount()
+    : cps(CachedCyclesPerSecond())
 {
 }
 
@@ -2299,7 +2302,7 @@ unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
 
     u64 = UINT64(INT64(d));
 #else
-    u64   = UINT64(d);
+    u64 = UINT64(d);
 #endif // TARGET_XARCH
 
     return u64;
@@ -3436,6 +3439,11 @@ uint32_t BitOperations::Log2(uint64_t value)
 // Return Value:
 //    The population count (number of bits set) of value
 //
+#if defined(_MSC_VER)
+// Disable optimizations for PopCount to avoid the compiler from generating intrinsics
+// not supported on all platforms.
+#pragma optimize("", off)
+#endif // _MSC_VER
 uint32_t BitOperations::PopCount(uint32_t value)
 {
 #if defined(_MSC_VER)
@@ -3488,6 +3496,9 @@ uint32_t BitOperations::PopCount(uint64_t value)
     return static_cast<uint32_t>(result);
 #endif
 }
+#if defined(_MSC_VER)
+#pragma optimize("", on)
+#endif // _MSC_VER
 
 //------------------------------------------------------------------------
 // BitOperations::ReverseBits: Reverses the bits in an integer value
@@ -4037,7 +4048,7 @@ T GetSignedMagic(T denom, int* shift /*out*/)
     UT  t;
     T   result_magic;
 
-    absDenom = abs(denom);
+    absDenom = std::abs(denom);
     t        = two_nminus1 + (UT(denom) >> bits_minus_1);
     absNc    = t - 1 - (t % absDenom);        // absolute value of nc
     p        = bits_minus_1;                  // initialize p
@@ -4091,7 +4102,7 @@ int64_t GetSigned64Magic(int64_t d, int* shift /*out*/)
     return GetSignedMagic<int64_t>(d, shift);
 }
 #endif
-}
+} // namespace MagicDivide
 
 namespace CheckedOps
 {
@@ -4285,4 +4296,4 @@ bool CastFromDoubleOverflows(double fromValue, var_types toType)
             unreached();
     }
 }
-}
+} // namespace CheckedOps

@@ -2373,7 +2373,9 @@ namespace System
         #region Private Data Members
 
 #pragma warning disable CA1823
+#pragma warning disable CS0169
         private readonly object m_keepalive; // This will be filled with a LoaderAllocator reference when this RuntimeType represents a collectible type
+#pragma warning restore CS0169
 #pragma warning restore CA1823
         private IntPtr m_cache;
         internal IntPtr m_handle;
@@ -2757,7 +2759,12 @@ namespace System
                 MethodBase? rtTypeMethodBase = GetMethodBase(reflectedType, classRtMethodHandle);
                 // a class may not implement all the methods of an interface (abstract class) so null is a valid value
                 Debug.Assert(rtTypeMethodBase is null || rtTypeMethodBase is RuntimeMethodInfo);
-                im.TargetMethods[i] = (MethodInfo)rtTypeMethodBase!;
+                RuntimeMethodInfo? targetMethod = (RuntimeMethodInfo?)rtTypeMethodBase;
+                // the TargetMethod provided to us by runtime internals may be a generic method instance,
+                //  potentially with invalid arguments. TargetMethods in the InterfaceMap should never be
+                //  instances, only definitions.
+                im.TargetMethods[i] = (targetMethod is { IsGenericMethod: true, IsGenericMethodDefinition: false })
+                    ? targetMethod.GetGenericMethodDefinition() : targetMethod!;
             }
 
             return im;

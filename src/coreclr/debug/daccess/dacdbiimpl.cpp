@@ -1202,7 +1202,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
     TADDR pTargetIL; // target address of start of IL blob
 
     // This works for methods in dynamic modules, and methods overridden by a profiler.
-    pTargetIL = pModule->GetDynamicIL(mdMethodToken, TRUE);
+    pTargetIL = pModule->GetDynamicIL(mdMethodToken);
 
     // Method not overridden - get the original copy of the IL by going to the PE file/RVA
     // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
@@ -1577,16 +1577,8 @@ void DacDbiInterfaceImpl::GetStaticsBases(TypeHandle thExact,
                                          PTR_BYTE *  ppNonGCStaticsBase)
  {
     MethodTable * pMT = thExact.GetMethodTable();
-    Module * pModuleForStatics = pMT->GetModuleForStatics();
-    if (pModuleForStatics != NULL)
-    {
-        PTR_DomainLocalModule pLocalModule = pModuleForStatics->GetDomainLocalModule();
-        if (pLocalModule != NULL)
-        {
-            *ppGCStaticsBase = pLocalModule->GetGCStaticsBasePointer(pMT);
-            *ppNonGCStaticsBase = pLocalModule->GetNonGCStaticsBasePointer(pMT);
-        }
-    }
+    *ppGCStaticsBase = pMT->GetGCStaticsBasePointer();
+    *ppNonGCStaticsBase = pMT->GetNonGCStaticsBasePointer();
 } // DacDbiInterfaceImpl::GetStaticsBases
 
 //-----------------------------------------------------------------------------
@@ -5627,10 +5619,13 @@ void DacDbiInterfaceImpl::LookupEnCVersions(Module*          pModule,
     DebuggerJitInfo * pDJI = NULL;
     EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
     {
-        pDMI = g_pDebugger->GetOrCreateMethodInfo(pModule, mdMethod);
-        if (pDMI != NULL)
+        if (g_pDebugger != NULL)
         {
-            pDJI = pDMI->FindJitInfo(pMD, CORDB_ADDRESS_TO_TADDR(pNativeStartAddress));
+            pDMI = g_pDebugger->GetOrCreateMethodInfo(pModule, mdMethod);
+            if (pDMI != NULL)
+            {
+                pDJI = pDMI->FindJitInfo(pMD, CORDB_ADDRESS_TO_TADDR(pNativeStartAddress));
+            }
         }
     }
     EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
@@ -7455,13 +7450,13 @@ HRESULT DacDbiInterfaceImpl::GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode vm
 #ifdef FEATURE_REJIT
     ILCodeVersion ilCode(vmILCodeVersionNode.GetDacPtr());
     pData->m_state = ilCode.GetRejitState();
-    pData->m_pbIL = PTR_TO_CORDB_ADDRESS(dac_cast<ULONG_PTR>(ilCode.GetIL()));
+    pData->m_pbIL = PTR_TO_CORDB_ADDRESS(dac_cast<TADDR>(ilCode.GetIL()));
     pData->m_dwCodegenFlags = ilCode.GetJitFlags();
     const InstrumentedILOffsetMapping* pMapping = ilCode.GetInstrumentedILMap();
     if (pMapping)
     {
         pData->m_cInstrumentedMapEntries = (ULONG)pMapping->GetCount();
-        pData->m_rgInstrumentedMapEntries = PTR_TO_CORDB_ADDRESS(dac_cast<ULONG_PTR>(pMapping->GetOffsets()));
+        pData->m_rgInstrumentedMapEntries = PTR_TO_CORDB_ADDRESS(dac_cast<TADDR>(pMapping->GetOffsets()));
     }
     else
     {
@@ -7479,6 +7474,10 @@ HRESULT DacDbiInterfaceImpl::GetDefinesBitField(ULONG32 *pDefines)
     DD_ENTER_MAY_THROW;
     if (pDefines == NULL)
         return E_INVALIDARG;
+
+    if (g_pDebugger == NULL)
+        return CORDBG_E_NOTREADY;
+        
     *pDefines = g_pDebugger->m_defines;
     return S_OK;
 }
@@ -7488,6 +7487,10 @@ HRESULT DacDbiInterfaceImpl::GetMDStructuresVersion(ULONG32* pMDStructuresVersio
     DD_ENTER_MAY_THROW;
     if (pMDStructuresVersion == NULL)
         return E_INVALIDARG;
+
+    if (g_pDebugger == NULL)
+        return CORDBG_E_NOTREADY;
+
     *pMDStructuresVersion = g_pDebugger->m_mdDataStructureVersion;
     return S_OK;
 }

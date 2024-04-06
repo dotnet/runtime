@@ -10,7 +10,7 @@ import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, emscriptenModule, exportedRu
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { installUnhandledErrorHandler, mono_exit, registerEmscriptenExitHandlers } from "./exit";
 import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
-import { mono_download_assets, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm } from "./assets";
+import { mono_download_assets, preloadWorkers, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
@@ -23,7 +23,7 @@ export class HostBuilder implements DotnetHostBuilder {
     private instance?: RuntimeAPI;
 
     // internal
-    withModuleConfig(moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
+    withModuleConfig (moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
         try {
             deep_merge_module(emscriptenModule, moduleConfig);
             return this;
@@ -34,7 +34,7 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     // internal
-    withOnConfigLoaded(onConfigLoaded: (config: MonoConfig) => void | Promise<void>): DotnetHostBuilder {
+    withOnConfigLoaded (onConfigLoaded: (config: MonoConfig) => void | Promise<void>): DotnetHostBuilder {
         try {
             deep_merge_module(emscriptenModule, {
                 onConfigLoaded
@@ -47,7 +47,7 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     // internal
-    withConsoleForwarding(): DotnetHostBuilder {
+    withConsoleForwarding (): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 forwardConsoleLogsToWS: true
@@ -60,7 +60,7 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     // internal
-    withExitOnUnhandledError(): DotnetHostBuilder {
+    withExitOnUnhandledError (): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 exitOnUnhandledError: true
@@ -74,7 +74,7 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     // internal
-    withAsyncFlushOnExit(): DotnetHostBuilder {
+    withAsyncFlushOnExit (): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 asyncFlushOnExit: true
@@ -87,7 +87,7 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     // internal
-    withExitCodeLogging(): DotnetHostBuilder {
+    withExitCodeLogging (): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 logExitCode: true
@@ -100,7 +100,7 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     // internal
-    withElementOnExit(): DotnetHostBuilder {
+    withElementOnExit (): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 appendElementOnExit: true
@@ -113,7 +113,7 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     // internal
-    withInteropCleanupOnExit(): DotnetHostBuilder {
+    withInteropCleanupOnExit (): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 interopCleanupOnExit: true
@@ -126,7 +126,7 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     // internal
-    withDumpThreadsOnNonZeroExit(): DotnetHostBuilder {
+    withDumpThreadsOnNonZeroExit (): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 dumpThreadsOnNonZeroExit: true
@@ -139,21 +139,8 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     // internal
-    withAssertAfterExit(): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                assertAfterExit: true
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
     //  todo fallback later by debugLevel
-    withWaitingForDebugger(level: number): DotnetHostBuilder {
+    withWaitingForDebugger (level: number): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 waitForDebugger: level
@@ -165,7 +152,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withInterpreterPgo(value: boolean, autoSaveDelay?: number): DotnetHostBuilder {
+    withInterpreterPgo (value: boolean, autoSaveDelay?: number): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 interpreterPgo: value,
@@ -178,7 +165,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withConfig(config: MonoConfig): DotnetHostBuilder {
+    withConfig (config: MonoConfig): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, config);
             return this;
@@ -188,7 +175,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withConfigSrc(configSrc: string): DotnetHostBuilder {
+    withConfigSrc (configSrc: string): DotnetHostBuilder {
         try {
             mono_assert(configSrc && typeof configSrc === "string", "must be file path or URL");
             deep_merge_module(emscriptenModule, { configSrc });
@@ -199,7 +186,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder {
+    withVirtualWorkingDirectory (vfsPath: string): DotnetHostBuilder {
         try {
             mono_assert(vfsPath && typeof vfsPath === "string", "must be directory path");
             deep_merge_config(monoConfig, {
@@ -212,7 +199,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withEnvironmentVariable(name: string, value: string): DotnetHostBuilder {
+    withEnvironmentVariable (name: string, value: string): DotnetHostBuilder {
         try {
             const environmentVariables: { [key: string]: string } = {};
             environmentVariables[name] = value;
@@ -226,7 +213,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withEnvironmentVariables(variables: { [i: string]: string; }): DotnetHostBuilder {
+    withEnvironmentVariables (variables: { [i: string]: string; }): DotnetHostBuilder {
         try {
             mono_assert(variables && typeof variables === "object", "must be dictionary object");
             deep_merge_config(monoConfig, {
@@ -239,7 +226,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withDiagnosticTracing(enabled: boolean): DotnetHostBuilder {
+    withDiagnosticTracing (enabled: boolean): DotnetHostBuilder {
         try {
             mono_assert(typeof enabled === "boolean", "must be boolean");
             deep_merge_config(monoConfig, {
@@ -252,7 +239,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withDebugging(level: number): DotnetHostBuilder {
+    withDebugging (level: number): DotnetHostBuilder {
         try {
             mono_assert(level !== undefined && level !== null && typeof level === "number", "must be number");
             deep_merge_config(monoConfig, {
@@ -265,7 +252,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withApplicationArguments(...args: string[]): DotnetHostBuilder {
+    withApplicationArguments (...args: string[]): DotnetHostBuilder {
         try {
             mono_assert(args && Array.isArray(args), "must be array of strings");
             deep_merge_config(monoConfig, {
@@ -278,7 +265,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withRuntimeOptions(runtimeOptions: string[]): DotnetHostBuilder {
+    withRuntimeOptions (runtimeOptions: string[]): DotnetHostBuilder {
         try {
             mono_assert(runtimeOptions && Array.isArray(runtimeOptions), "must be array of strings");
             deep_merge_config(monoConfig, {
@@ -291,7 +278,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withMainAssembly(mainAssemblyName: string): DotnetHostBuilder {
+    withMainAssembly (mainAssemblyName: string): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 mainAssemblyName
@@ -303,7 +290,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withApplicationArgumentsFromQuery(): DotnetHostBuilder {
+    withApplicationArgumentsFromQuery (): DotnetHostBuilder {
         try {
             if (!globalThis.window) {
                 throw new Error("Missing window to the query parameters from");
@@ -322,7 +309,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withApplicationEnvironment(applicationEnvironment?: string): DotnetHostBuilder {
+    withApplicationEnvironment (applicationEnvironment?: string): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 applicationEnvironment,
@@ -334,7 +321,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withApplicationCulture(applicationCulture?: string): DotnetHostBuilder {
+    withApplicationCulture (applicationCulture?: string): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 applicationCulture,
@@ -346,7 +333,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder {
+    withResourceLoader (loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder {
         try {
             loaderHelpers.loadBootResource = loadBootResource;
             return this;
@@ -356,7 +343,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    async create(): Promise<RuntimeAPI> {
+    async create (): Promise<RuntimeAPI> {
         try {
             if (!this.instance) {
                 this.instance = await createApi();
@@ -368,7 +355,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    async run(): Promise<number> {
+    async run (): Promise<number> {
         try {
             mono_assert(emscriptenModule.config, "Null moduleConfig.config");
             if (!this.instance) {
@@ -382,7 +369,7 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 }
 
-export async function createApi(): Promise<RuntimeAPI> {
+export async function createApi (): Promise<RuntimeAPI> {
     if (ENVIRONMENT_IS_WEB && loaderHelpers.config.forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
         setup_proxy_console("main", globalThis.console, globalThis.location.origin);
     }
@@ -392,7 +379,7 @@ export async function createApi(): Promise<RuntimeAPI> {
     return globalObjectsRoot.api;
 }
 
-export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI | EmscriptenModuleInternal> {
+export async function createEmscripten (moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI | EmscriptenModuleInternal> {
     // extract ModuleConfig
     if (typeof moduleFactory === "function") {
         const extension = moduleFactory(globalObjectsRoot.api) as any;
@@ -401,11 +388,9 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
         }
         Object.assign(emscriptenModule, extension);
         deep_merge_module(emscriptenModule, extension);
-    }
-    else if (typeof moduleFactory === "object") {
+    } else if (typeof moduleFactory === "object") {
         deep_merge_module(emscriptenModule, moduleFactory);
-    }
-    else {
+    } else {
         throw new Error("Can't use moduleFactory callback of createDotnetRuntime function.");
     }
 
@@ -423,7 +408,7 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
 }
 
 // in the future we can use feature detection to load different flavors
-function importModules() {
+function importModules () {
     const jsModuleRuntimeAsset = resolve_single_asset_path("js-module-runtime");
     const jsModuleNativeAsset = resolve_single_asset_path("js-module-native");
 
@@ -447,7 +432,7 @@ function importModules() {
     return [jsModuleRuntimePromise, jsModuleNativePromise];
 }
 
-async function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
+async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
     const { initializeExports, initializeReplacements, configureRuntimeStartup, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals, passEmscriptenInternals } = es6Modules[0];
     const { default: emscriptenFactory } = es6Modules[1];
     setRuntimeGlobals(globalObjectsRoot);
@@ -467,7 +452,7 @@ async function initializeModules(es6Modules: [RuntimeModuleExportsInternal, Nati
     });
 }
 
-async function createEmscriptenMain(): Promise<RuntimeAPI> {
+async function createEmscriptenMain (): Promise<RuntimeAPI> {
     if (!emscriptenModule.configSrc && (!loaderHelpers.config || Object.keys(loaderHelpers.config).length === 0 || (!loaderHelpers.config.assets && !loaderHelpers.config.resources))) {
         // if config file location nor assets are provided
         emscriptenModule.configSrc = "./blazor.boot.json";
@@ -487,9 +472,9 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
     setTimeout(async () => {
         try {
             init_globalization();
+            preloadWorkers();
             await mono_download_assets();
-        }
-        catch (err) {
+        } catch (err) {
             mono_exit(1, err);
         }
     }, 0);
@@ -506,7 +491,7 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
     return exportedRuntimeAPI;
 }
 
-async function createEmscriptenWorker(): Promise<EmscriptenModuleInternal> {
+async function createEmscriptenWorker (): Promise<EmscriptenModuleInternal> {
     setupPreloadChannelToMainThread();
 
     await loaderHelpers.afterConfigLoaded.promise;
@@ -517,8 +502,7 @@ async function createEmscriptenWorker(): Promise<EmscriptenModuleInternal> {
         try {
             // load subset which is on JS heap rather than in WASM linear memory
             await mono_download_assets();
-        }
-        catch (err) {
+        } catch (err) {
             mono_exit(1, err);
         }
     }, 0);

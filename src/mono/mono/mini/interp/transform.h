@@ -340,6 +340,8 @@ typedef struct
 	int inline_depth;
 	int patchpoint_data_n;
 	int *patchpoint_data;
+	// This marks each stack slot offset that might contain refs throughout the execution of this method
+	MonoBitSet *ref_slots;
 	guint has_localloc : 1;
 	// If method compilation fails due to certain limits being exceeded, we disable inlining
 	// and retry compilation.
@@ -353,6 +355,8 @@ typedef struct
 	guint need_optimization_retry : 1;
 	guint disable_ssa : 1;
 	guint eh_vars_computed : 1;
+	guint retry_compilation : 1;
+	guint retry_with_inlining : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0
@@ -541,6 +545,8 @@ interp_foreach_ins_var (TransformData *td, InterpInst *ins, gpointer data, void 
 void
 interp_foreach_ins_svar (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int*, gpointer));
 
+void
+interp_mark_ref_slots_for_var (TransformData *td, int var);
 
 /* Forward definitions for simd methods */
 static gboolean

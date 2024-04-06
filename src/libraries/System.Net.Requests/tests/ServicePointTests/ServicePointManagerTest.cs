@@ -181,7 +181,7 @@ namespace System.Net.Tests
         [Fact]
         public static void UseNagleAlgorithm_Roundtrips()
         {
-            Assert.True(ServicePointManager.UseNagleAlgorithm);
+            Assert.False(ServicePointManager.UseNagleAlgorithm);
             try
             {
                 ServicePointManager.UseNagleAlgorithm = false;
@@ -213,7 +213,6 @@ namespace System.Net.Tests
                 AssertExtensions.Throws<ArgumentNullException>("address", () => ServicePointManager.FindServicePoint(null));
                 AssertExtensions.Throws<ArgumentNullException>("uriString", () => ServicePointManager.FindServicePoint((string)null, null));
                 AssertExtensions.Throws<ArgumentNullException>("address", () => ServicePointManager.FindServicePoint((Uri)null, null));
-                Assert.Throws<NotSupportedException>(() => ServicePointManager.FindServicePoint("http://anything", new FixedWebProxy("https://anything")));
 
                 ServicePoint sp = ServicePointManager.FindServicePoint($"http://{Guid.NewGuid():N}", null);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => sp.ConnectionLeaseTimeout = -2);
@@ -325,7 +324,7 @@ namespace System.Net.Tests
                 Assert.Equal(new Version(1, 1), sp.ProtocolVersion);
                 Assert.Equal(-1, sp.ReceiveBufferSize);
                 Assert.True(sp.SupportsPipelining, "SupportsPipelining");
-                Assert.True(sp.UseNagleAlgorithm, "UseNagleAlgorithm");
+                Assert.False(sp.UseNagleAlgorithm, "UseNagleAlgorithm");
             }).Dispose();
         }
 

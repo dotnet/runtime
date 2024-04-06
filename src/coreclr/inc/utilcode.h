@@ -10,14 +10,16 @@
 #ifndef __UtilCode_h__
 #define __UtilCode_h__
 
+#include <type_traits>
+#include <algorithm>
+#include <stdio.h>
+#include <limits.h>
+
 #include "crtwrap.h"
 #include "winwrap.h"
 #include <wchar.h>
-#include <stdio.h>
-#include <malloc.h>
 #include <ole2.h>
 #include <oleauto.h>
-#include <limits.h>
 #include "clrtypes.h"
 #include "safewrap.h"
 #include "volatile.h"
@@ -28,12 +30,6 @@
 #include "check.h"
 #include "safemath.h"
 #include "new.hpp"
-
-#ifdef PAL_STDCPP_COMPAT
-#include <type_traits>
-#else
-#include "clr_std/type_traits"
-#endif
 
 #include "contract.h"
 
@@ -224,7 +220,7 @@ typedef LPSTR   LPUTF8;
 #define MAKE_UTF8PTR_FROMWIDE_NOTHROW(ptrname, widestr) \
     CQuickBytes __qb##ptrname; \
     int __l##ptrname = (int)u16_strlen(widestr); \
-    LPUTF8 ptrname = 0; \
+    LPUTF8 ptrname = NULL; \
     if (__l##ptrname <= MAKE_MAX_LENGTH) { \
         __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
         ptrname = (LPUTF8) __qb##ptrname.AllocNoThrow(__l##ptrname); \
@@ -240,12 +236,12 @@ typedef LPSTR   LPUTF8;
                     if (WszWideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __lsize##ptrname, NULL, NULL) != 0) { \
                         ptrname[__l##ptrname] = 0; \
                     } else { \
-                        ptrname = 0; \
+                        ptrname = NULL; \
                     } \
                 } \
             } \
             else { \
-                ptrname = 0; \
+                ptrname = NULL; \
             } \
         } \
     } \
@@ -255,7 +251,7 @@ typedef LPSTR   LPUTF8;
 #define MAKE_WIDEPTR_FROMUTF8N_NOTHROW(ptrname, utf8str, n8chrs) \
     CQuickBytes __qb##ptrname; \
     int __l##ptrname; \
-    LPWSTR ptrname = 0; \
+    LPWSTR ptrname = NULL; \
     __l##ptrname = WszMultiByteToWideChar(CP_UTF8, 0, utf8str, n8chrs, 0, 0); \
     if (__l##ptrname <= MAKE_MAX_LENGTH) { \
         ptrname = (LPWSTR) __qb##ptrname.AllocNoThrow((__l##ptrname+1)*sizeof(WCHAR));  \
@@ -263,7 +259,7 @@ typedef LPSTR   LPUTF8;
             if (WszMultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8str, n8chrs, ptrname, __l##ptrname) != 0) { \
                 ptrname[__l##ptrname] = 0; \
             } else { \
-                ptrname = 0; \
+                ptrname = NULL; \
             } \
         } \
     }
@@ -301,28 +297,6 @@ inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
     *str = W('\0');
     return str;
 }
-
-//*****************************************************************************
-// Placement new is used to new and object at an exact location.  The pointer
-// is simply returned to the caller without actually using the heap.  The
-// advantage here is that you cause the ctor() code for the object to be run.
-// This is ideal for heaps of C++ objects that need to get init'd multiple times.
-// Example:
-//      void        *pMem = GetMemFromSomePlace();
-//      Foo *p = new (pMem) Foo;
-//      DoSomething(p);
-//      p->~Foo();
-//*****************************************************************************
-#ifndef __PLACEMENT_NEW_INLINE
-#define __PLACEMENT_NEW_INLINE
-inline void *__cdecl operator new(size_t, void *_P)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return (_P);
-}
-#endif // __PLACEMENT_NEW_INLINE
-
 
 /********************************************************************************/
 /* portability helpers */
@@ -1920,7 +1894,7 @@ public:
     ~CHashTableAndData()
     {
         WRAPPER_NO_CONTRACT;
-        if (m_pcEntries != NULL)
+        if (m_pcEntries != (TADDR)NULL)
             MemMgr::Free((BYTE*)m_pcEntries, MemMgr::RoundSize(m_iEntries * m_iEntrySize));
     }
 
@@ -2100,7 +2074,7 @@ int CHashTableAndData<MemMgr>::Grow()   // 1 if successful, 0 if not.
     int         iCurSize;               // Current size in bytes.
     int         iEntries;               // New # of entries.
 
-    _ASSERTE(m_pcEntries != NULL);
+    _ASSERTE(m_pcEntries != (TADDR)NULL);
     _ASSERTE(m_iFree == UINT32_MAX);
 
     // Compute the current size and new # of entries.
@@ -3932,37 +3906,6 @@ inline T* InterlockedCompareExchangeT(
 {
     //STATIC_ASSERT(comparand == 0);
     return InterlockedCompareExchangeT(destination, exchange, static_cast<T*>(comparand));
-}
-
-// NULL pointer variants of the above to avoid having to cast NULL
-// to the appropriate pointer type.
-template <typename T>
-inline T* InterlockedExchangeT(
-    T* volatile *   target,
-    int             value) // When NULL is provided as argument.
-{
-    //STATIC_ASSERT(value == 0);
-    return InterlockedExchangeT(target, nullptr);
-}
-
-template <typename T>
-inline T* InterlockedCompareExchangeT(
-    T* volatile *   destination,
-    int             exchange,  // When NULL is provided as argument.
-    T*              comparand)
-{
-    //STATIC_ASSERT(exchange == 0);
-    return InterlockedCompareExchangeT(destination, nullptr, comparand);
-}
-
-template <typename T>
-inline T* InterlockedCompareExchangeT(
-    T* volatile *   destination,
-    T*              exchange,
-    int             comparand) // When NULL is provided as argument.
-{
-    //STATIC_ASSERT(comparand == 0);
-    return InterlockedCompareExchangeT(destination, exchange, nullptr);
 }
 
 #undef InterlockedExchangePointer

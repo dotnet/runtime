@@ -43,7 +43,6 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
         // if they are fully-interruptible.  So if we have a catch
         // or finally that will keep frame-vars alive, we need to
         // force fully-interruptible.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         if (verbose)
@@ -65,7 +64,10 @@ CodeGenInterface* getCodeGenerator(Compiler* comp)
 
 // CodeGen constructor
 CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
-    : gcInfo(theCompiler), regSet(theCompiler, gcInfo), compiler(theCompiler), treeLifeUpdater(nullptr)
+    : gcInfo(theCompiler)
+    , regSet(theCompiler, gcInfo)
+    , compiler(theCompiler)
+    , treeLifeUpdater(nullptr)
 {
 }
 
@@ -84,7 +86,8 @@ void CodeGenInterface::CopyRegisterInfo()
 
 /*****************************************************************************/
 
-CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
+CodeGen::CodeGen(Compiler* theCompiler)
+    : CodeGenInterface(theCompiler)
 {
 #if defined(TARGET_XARCH)
     negBitmaskFlt  = nullptr;
@@ -120,7 +123,6 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 #endif
 
 #ifdef DEBUG
-    genTempLiveChg        = true;
     genTrnslLocalVarCount = 0;
 
     // Shouldn't be used before it is set in genFnProlog()
@@ -263,29 +265,6 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 #endif // defined(TARGET_X86) || defined(TARGET_ARM)
 
 /*****************************************************************************
- * Should we round simple operations (assignments, arithmetic operations, etc.)
- */
-
-// inline
-// static
-bool CodeGen::genShouldRoundFP()
-{
-    RoundLevel roundLevel = getRoundFloatLevel();
-
-    switch (roundLevel)
-    {
-        case ROUND_NEVER:
-        case ROUND_CMP_CONST:
-        case ROUND_CMP:
-            return false;
-
-        default:
-            assert(roundLevel == ROUND_ALWAYS);
-            return true;
-    }
-}
-
-/*****************************************************************************
  *
  *  Initialize some global variables.
  */
@@ -315,10 +294,8 @@ void CodeGen::genPrepForCompiler()
         }
     }
     VarSetOps::AssignNoCopy(compiler, genLastLiveSet, VarSetOps::MakeEmpty(compiler));
-    genLastLiveMask = RBM_NONE;
-#ifdef DEBUG
-    compiler->fgBBcountAtCodegen = compiler->fgBBcount;
-#endif
+    genLastLiveMask                        = RBM_NONE;
+    compiler->Metrics.BasicBlocksAtCodegen = compiler->fgBBcount;
 }
 
 //------------------------------------------------------------------------
@@ -414,9 +391,7 @@ void CodeGen::genMarkLabelsForCodegen()
             case BBJ_CALLFINALLY:
                 // The finally target itself will get marked by walking the EH table, below, and marking
                 // all handler begins.
-                CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if FEATURE_EH_CALLFINALLY_THUNKS
+                if (compiler->UsesCallFinallyThunks())
                 {
                     // For callfinally thunks, we need to mark the block following the callfinally/callfinallyret pair,
                     // as that's needed for identifying the range of the "duplicate finally" region in EH data.
@@ -431,8 +406,6 @@ void CodeGen::genMarkLabelsForCodegen()
                         bbToLabel->SetFlags(BBF_HAS_LABEL);
                     }
                 }
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
-
                 break;
 
             case BBJ_CALLFINALLYRET:
@@ -597,28 +570,6 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 // compHelperCallKillSet: Gets a register mask that represents the kill set for a helper call.
 // Not all JIT Helper calls follow the standard ABI on the target architecture.
 //
-// TODO-CQ: Currently this list is incomplete (not all helpers calls are
-//          enumerated) and not 100% accurate (some killsets are bigger than
-//          what they really are).
-//          There's some work to be done in several places in the JIT to
-//          accurately track the registers that are getting killed by
-//          helper calls:
-//              a) LSRA needs several changes to accommodate more precise killsets
-//                 for every helper call it sees (both explicitly [easy] and
-//                 implicitly [hard])
-//              b) Currently for AMD64, when we generate code for a helper call
-//                 we're independently over-pessimizing the killsets of the call
-//                 (independently from LSRA) and this needs changes
-//                 both in CodeGenAmd64.cpp and emitx86.cpp.
-//
-//                 The best solution for this problem would be to try to centralize
-//                 the killset information in a single place but then make the
-//                 corresponding changes so every code generation phase is in sync
-//                 about this.
-//
-//         The interim solution is to only add known helper calls that don't
-//         follow the AMD64 ABI and actually trash registers that are supposed to be non-volatile.
-//
 // Arguments:
 //   helper - The helper being inquired about
 //
@@ -629,6 +580,12 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 {
     switch (helper)
     {
+        // Most of the helpers are written in C++ and C# and we can't make
+        // any additional assumptions beyond the standard ABI. However, some are written in raw assembly,
+        // so we can narrow down the kill sets.
+        //
+        // TODO-CQ: Inspect all asm helpers and narrow down the kill sets for them.
+        //
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
             return RBM_CALLEE_TRASH_WRITEBARRIER;
@@ -970,7 +927,6 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
 {
 #if !FEATURE_FIXED_OUT_ARGS
     // Check for inserted throw blocks and adjust genStackLevel.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(UNIX_X86_ABI)
     if (isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block))
@@ -1119,7 +1075,6 @@ AGAIN:
        constant, or we have gone through a GT_NOP or GT_COMMA node. We never come back
        here if we find a scaled index.
     */
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
     assert(mul == 0);
 
@@ -1505,10 +1460,11 @@ void CodeGen::genExitCode(BasicBlock* block)
 void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk)
 {
     bool useThrowHlpBlk = compiler->fgUseThrowHelperBlocks();
-#if defined(UNIX_X86_ABI) && defined(FEATURE_EH_FUNCLETS)
+#if defined(UNIX_X86_ABI)
+    // TODO: Is this really UNIX_X86_ABI specific? Should we guard with compiler->UsesFunclets() instead?
     // Inline exception-throwing code in funclet to make it possible to unwind funclet frames.
     useThrowHlpBlk = useThrowHlpBlk && (compiler->funCurrentFunc()->funKind == FUNC_ROOT);
-#endif // UNIX_X86_ABI && FEATURE_EH_FUNCLETS
+#endif // UNIX_X86_ABI
 
     if (useThrowHlpBlk)
     {
@@ -1628,8 +1584,6 @@ void CodeGen::genCheckOverflow(GenTree* tree)
 }
 #endif
 
-#if defined(FEATURE_EH_FUNCLETS)
-
 /*****************************************************************************
  *
  *  Update the current funclet as needed by calling genUpdateCurrentFunclet().
@@ -1640,6 +1594,11 @@ void CodeGen::genCheckOverflow(GenTree* tree)
 
 void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
 {
+    if (!compiler->UsesFunclets())
+    {
+        return;
+    }
+
     if (block->HasFlag(BBF_FUNCLET_BEG))
     {
         compiler->funSetCurrentFunc(compiler->funGetFuncIdx(block));
@@ -1656,7 +1615,7 @@ void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
     }
     else
     {
-        assert(compiler->compCurrFuncIdx <= compiler->compFuncInfoCount);
+        assert(compiler->funCurrentFuncIdx() <= compiler->compFuncInfoCount);
         if (compiler->funCurrentFunc()->funKind == FUNC_FILTER)
         {
             assert(compiler->ehGetDsc(compiler->funCurrentFunc()->funEHIndex)->InFilterRegionBBRange(block));
@@ -1672,8 +1631,6 @@ void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
         }
     }
 }
-
-#endif // FEATURE_EH_FUNCLETS
 
 //----------------------------------------------------------------------
 // genGenerateCode: Generate code for the function.
@@ -1733,9 +1690,6 @@ void CodeGen::genGenerateMachineCode()
 
     /* Prepare the emitter */
     GetEmitter()->Init();
-#ifdef DEBUG
-    VarSetOps::AssignNoCopy(compiler, genTempOldLife, VarSetOps::MakeEmpty(compiler));
-#endif
 
 #ifdef DEBUG
     if (compiler->opts.disAsmSpilled && regSet.rsNeededSpillReg)
@@ -1918,7 +1872,7 @@ void CodeGen::genGenerateMachineCode()
                             (compiler->compCodeOpt() != Compiler::SMALL_CODE) &&
                                 !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)
 #endif
-                                );
+    );
 
     /* Now generate code for the function */
     genCodeForBBlist();
@@ -2042,7 +1996,7 @@ void CodeGen::genEmitMachineCode()
 
         printf("; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for "
                "code %d",
-               codeSize, prologSize, compiler->info.compPerfScore, instrCount,
+               codeSize, prologSize, compiler->Metrics.PerfScore, instrCount,
                GetEmitter()->emitTotalHotCodeSize + GetEmitter()->emitTotalColdCodeSize);
 
         if (dspMetrics)
@@ -2075,7 +2029,8 @@ void CodeGen::genEmitMachineCode()
         {
             printf("; ============================================================\n\n");
         }
-        printf(""); // in our logic this causes a flush
+
+        fflush(jitstdout());
     }
 
     if (verbose)
@@ -2237,14 +2192,13 @@ void CodeGen::genReportEH()
 
     unsigned EHCount = compiler->compHndBBtabCount;
 
-#if defined(FEATURE_EH_FUNCLETS)
     // Count duplicated clauses. This uses the same logic as below, where we actually generate them for reporting to the
     // VM.
     unsigned duplicateClauseCount = 0;
     unsigned enclosingTryIndex;
 
     // Duplicate clauses are not used by NativeAOT ABI
-    if (!isNativeAOT)
+    if (compiler->UsesFunclets() && !isNativeAOT)
     {
         for (XTnum = 0; XTnum < compiler->compHndBBtabCount; XTnum++)
         {
@@ -2259,11 +2213,10 @@ void CodeGen::genReportEH()
         EHCount += duplicateClauseCount;
     }
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
     unsigned clonedFinallyCount = 0;
 
     // Duplicate clauses are not used by NativeAOT ABI
-    if (!isNativeAOT)
+    if (compiler->UsesFunclets() && compiler->UsesCallFinallyThunks() && !isNativeAOT)
     {
         // We don't keep track of how many cloned finally there are. So, go through and count.
         // We do a quick pass first through the EH table to see if there are any try/finally
@@ -2291,27 +2244,33 @@ void CodeGen::genReportEH()
             EHCount += clonedFinallyCount;
         }
     }
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
-
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef DEBUG
     if (compiler->opts.dspEHTable)
     {
-#if defined(FEATURE_EH_FUNCLETS)
-#if FEATURE_EH_CALLFINALLY_THUNKS
-        printf("%d EH table entries, %d duplicate clauses, %d cloned finallys, %d total EH entries reported to VM\n",
-               compiler->compHndBBtabCount, duplicateClauseCount, clonedFinallyCount, EHCount);
-        assert(compiler->compHndBBtabCount + duplicateClauseCount + clonedFinallyCount == EHCount);
-#else  // !FEATURE_EH_CALLFINALLY_THUNKS
-        printf("%d EH table entries, %d duplicate clauses, %d total EH entries reported to VM\n",
-               compiler->compHndBBtabCount, duplicateClauseCount, EHCount);
-        assert(compiler->compHndBBtabCount + duplicateClauseCount == EHCount);
-#endif // !FEATURE_EH_CALLFINALLY_THUNKS
-#else  // !FEATURE_EH_FUNCLETS
-        printf("%d EH table entries, %d total EH entries reported to VM\n", compiler->compHndBBtabCount, EHCount);
-        assert(compiler->compHndBBtabCount == EHCount);
-#endif // !FEATURE_EH_FUNCLETS
+        if (compiler->UsesFunclets())
+        {
+            if (compiler->UsesCallFinallyThunks())
+            {
+                printf("%d EH table entries, %d duplicate clauses, %d cloned finallys, %d total EH entries reported to "
+                       "VM\n",
+                       compiler->compHndBBtabCount, duplicateClauseCount, clonedFinallyCount, EHCount);
+                assert(compiler->compHndBBtabCount + duplicateClauseCount + clonedFinallyCount == EHCount);
+            }
+            else
+            {
+                printf("%d EH table entries, %d duplicate clauses, %d total EH entries reported to VM\n",
+                       compiler->compHndBBtabCount, duplicateClauseCount, EHCount);
+                assert(compiler->compHndBBtabCount + duplicateClauseCount == EHCount);
+            }
+        }
+#if defined(FEATURE_EH_WINDOWS_X86)
+        else
+        {
+            printf("%d EH table entries, %d total EH entries reported to VM\n", compiler->compHndBBtabCount, EHCount);
+            assert(compiler->compHndBBtabCount == EHCount);
+        }
+#endif // FEATURE_EH_WINDOWS_X86
     }
 #endif // DEBUG
 
@@ -2379,7 +2338,6 @@ void CodeGen::genReportEH()
         ++XTnum;
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     // Now output duplicated clauses.
     //
     // If a funclet has been created by moving a handler out of a try region that it was originally nested
@@ -2602,7 +2560,6 @@ void CodeGen::genReportEH()
         assert(duplicateClauseCount == reportedDuplicateClauseCount);
     } // if (duplicateClauseCount > 0)
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
     if (clonedFinallyCount > 0)
     {
         unsigned reportedClonedFinallyCount = 0;
@@ -2656,10 +2613,7 @@ void CodeGen::genReportEH()
         }     // for each block
 
         assert(clonedFinallyCount == reportedClonedFinallyCount);
-    }  // if (clonedFinallyCount > 0)
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
-
-#endif // FEATURE_EH_FUNCLETS
+    } // if (clonedFinallyCount > 0)
 
     assert(XTnum == EHCount);
 }
@@ -2855,6 +2809,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *  assigned location, in the function prolog.
  */
 
+// std::max isn't constexpr until C++14 and we're still on C++11
+constexpr size_t const_max(size_t a, size_t b)
+{
+    return a > b ? a : b;
+}
+
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
@@ -2912,9 +2872,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     else // we are doing the integer registers
     {
         noway_assert(argMax <= MAX_REG_ARG);
-        if (hasFixedRetBuffReg())
+        if (hasFixedRetBuffReg(compiler->info.compCallConv))
         {
-            fixedRetBufIndex = theFixedRetBuffArgNum();
+            fixedRetBufIndex = theFixedRetBuffArgNum(compiler->info.compCallConv);
             // We have an additional integer register argument when hasFixedRetBuffReg() is true
             argMax = fixedRetBufIndex + 1;
             assert(argMax == (MAX_REG_ARG + 1));
@@ -2948,7 +2908,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         bool circular;     // true if this register participates in a circular dependency loop.
         bool hfaConflict;  // arg is part of an HFA that will end up in the same register
                            // but in a different slot (eg arg in s3 = v3.s[0], needs to end up in v3.s[3])
-    } regArgTab[max(MAX_REG_ARG + 1, MAX_FLOAT_REG_ARG)] = {};
+    } regArgTab[const_max(MAX_REG_ARG + 1, MAX_FLOAT_REG_ARG)] = {};
 
     unsigned   varNum;
     LclVarDsc* varDsc;
@@ -3003,6 +2963,29 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 }
             }
         }
+
+#ifdef SWIFT_SUPPORT
+        // The Swift self parameter is passed in a callee save register and is
+        // not part of the arg register order that this function relies on to
+        // handle conflicts. For this reason we always mark it as DNER and
+        // handle it outside the normal register arguments.
+        // TODO-CQ: Fix this.
+        if (varNum == compiler->lvaSwiftSelfArg)
+        {
+            continue;
+        }
+
+        // On a similar note, the SwiftError* parameter is not a real argument,
+        // and should not be allocated any registers/stack space.
+        // We mark it as being passed in REG_SWIFT_ERROR so it won't interfere with other args.
+        // In genFnProlog, we should have removed this callee-save register from intRegState.rsCalleeRegArgMaskLiveIn.
+        // TODO-CQ: Fix this.
+        if (varNum == compiler->lvaSwiftErrorArg)
+        {
+            assert((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_ERROR) == 0);
+            continue;
+        }
+#endif
 
         var_types regType = compiler->mangleVarArgsType(varDsc->TypeGet());
         // Change regType to the HFA type when we have a HFA argument
@@ -3110,7 +3093,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     slotRegType = compiler->GetEightByteType(structDesc, slotCounter);
                 }
 
-                regArgNum = genMapRegNumToRegArgNum(regNum, slotRegType);
+                regArgNum = genMapRegNumToRegArgNum(regNum, slotRegType, compiler->info.compCallConv);
 
                 if ((!doingFloat && (structDesc.IsIntegralSlot(slotCounter))) ||
                     (doingFloat && (structDesc.IsSseSlot(slotCounter))))
@@ -3144,7 +3127,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #endif // defined(UNIX_AMD64_ABI)
         {
             // Bingo - add it to our table
-            regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), regType);
+            regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), regType, compiler->info.compCallConv);
             slots     = 1;
 
             if (TargetArchitecture::IsArm32 ||
@@ -3207,7 +3190,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         for (int i = 0; i < slots; i++)
         {
             regType          = regArgTab[regArgNum + i].type;
-            regNumber regNum = genMapRegArgNumToRegNum(regArgNum + i, regType);
+            regNumber regNum = genMapRegArgNumToRegNum(regArgNum + i, regType, compiler->info.compCallConv);
 
 #if !defined(UNIX_AMD64_ABI)
             assert((i > 0) || (regNum == varDsc->GetArgReg()));
@@ -3231,9 +3214,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #ifdef TARGET_X86
                     noway_assert(varDsc->lvType == TYP_STRUCT);
 #else  // !TARGET_X86
-                    // For LSRA, it may not be in regArgMaskLive if it has a zero
-                    // refcnt.  This is in contrast with the non-LSRA case in which all
-                    // non-tracked args are assumed live on entry.
+       // For LSRA, it may not be in regArgMaskLive if it has a zero
+       // refcnt.  This is in contrast with the non-LSRA case in which all
+       // non-tracked args are assumed live on entry.
                     noway_assert((varDsc->lvRefCnt() == 0) || (varDsc->lvType == TYP_STRUCT) ||
                                  (varDsc->IsAddressExposed() && compiler->info.compIsVarArgs) ||
                                  (varDsc->IsAddressExposed() && compiler->opts.compUseSoftFP));
@@ -3348,7 +3331,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 noway_assert(!regArgTab[argNum].stackArg);
 
                 var_types regType = regArgTab[argNum].type;
-                regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType);
+                regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType, compiler->info.compCallConv);
 
                 regNumber destRegNum = REG_NA;
                 if (varTypeIsPromotable(varDsc) &&
@@ -3428,7 +3411,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 if (genRegMask(destRegNum) & regArgMaskLive)
                 {
                     /* we are trashing a live argument register - record it */
-                    unsigned destRegArgNum = genMapRegNumToRegArgNum(destRegNum, regType);
+                    unsigned destRegArgNum = genMapRegNumToRegArgNum(destRegNum, regType, compiler->info.compCallConv);
                     noway_assert(destRegArgNum < argMax);
                     regArgTab[destRegArgNum].trashBy = argNum;
                 }
@@ -3447,7 +3430,6 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
     /* At this point, everything that has the "circular" flag
      * set to "true" forms a circular dependency */
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (regArgMaskLive)
@@ -3575,7 +3557,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         noway_assert(genTypeSize(storeType) == TARGET_POINTER_SIZE);
 #endif // TARGET_X86
 
-        regNumber srcRegNum = genMapRegArgNumToRegNum(argNum, storeType);
+        regNumber srcRegNum = genMapRegArgNumToRegNum(argNum, storeType, compiler->info.compCallConv);
 
         // Stack argument - if the ref count is 0 don't care about it
 
@@ -3794,8 +3776,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 assert(xtraReg != REG_NA);
 
-                regNumber begRegNum = genMapRegArgNumToRegNum(begReg, destMemType);
+                regNumber begRegNum = genMapRegArgNumToRegNum(begReg, destMemType, compiler->info.compCallConv);
                 GetEmitter()->emitIns_Mov(insCopy, size, xtraReg, begRegNum, /* canSkip */ false);
+                assert(!genIsValidIntReg(xtraReg) || !genIsValidFloatReg(begRegNum));
 
                 regSet.verifyRegUsed(xtraReg);
 
@@ -3806,10 +3789,11 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     /* mov dest, src */
 
-                    regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType);
-                    regNumber srcRegNum  = genMapRegArgNumToRegNum(srcReg, destMemType);
+                    regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType, compiler->info.compCallConv);
+                    regNumber srcRegNum  = genMapRegArgNumToRegNum(srcReg, destMemType, compiler->info.compCallConv);
 
                     GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, srcRegNum, /* canSkip */ false);
+                    assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(srcRegNum));
 
                     regSet.verifyRegUsed(destRegNum);
 
@@ -3858,9 +3842,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 /* move the dest reg (begReg) in the extra reg */
 
-                regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType);
+                regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType, compiler->info.compCallConv);
 
                 GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, xtraReg, /* canSkip */ false);
+                assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(xtraReg));
 
                 regSet.verifyRegUsed(destRegNum);
                 /* mark the beginning register as processed */
@@ -3915,7 +3900,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
             assert(varDsc->lvIsHfa());
             assert((argNum >= firstArgNum) && (argNum <= lastArgNum));
-            assert(destRegNum == genMapRegArgNumToRegNum(argNum, regType));
+            assert(destRegNum == genMapRegArgNumToRegNum(argNum, regType, compiler->info.compCallConv));
 
             // Pass 0: move the conflicting part; Pass1: insert everything else
             //
@@ -3923,8 +3908,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             {
                 for (unsigned currentArgNum = firstArgNum; currentArgNum <= lastArgNum; currentArgNum++)
                 {
-                    const regNumber regNum = genMapRegArgNumToRegNum(currentArgNum, regType);
-                    bool            insertArg =
+                    const regNumber regNum =
+                        genMapRegArgNumToRegNum(currentArgNum, regType, compiler->info.compCallConv);
+                    bool insertArg =
                         ((pass == 0) && (currentArgNum == argNum)) || ((pass == 1) && (currentArgNum != argNum));
 
                     if (insertArg)
@@ -3935,6 +3921,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                         // todo -- suppress self move
                         GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_4BYTE, destRegNum, regNum,
                                                       regArgTab[currentArgNum].slot - 1, 0);
+                        assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(regNum));
                         regArgTab[currentArgNum].processed = true;
                         regArgMaskLive &= ~genRegMask(regNum);
                     }
@@ -3965,7 +3952,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             varNum                     = regArgTab[argNum].varNum;
             varDsc                     = compiler->lvaGetDesc(varNum);
             const var_types regType    = regArgTab[argNum].type;
-            const regNumber regNum     = genMapRegArgNumToRegNum(argNum, regType);
+            const regNumber regNum     = genMapRegArgNumToRegNum(argNum, regType, compiler->info.compCallConv);
             const var_types varRegType = varDsc->GetRegisterType();
 
 #if defined(UNIX_AMD64_ABI)
@@ -4108,6 +4095,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 }
 #endif
                 inst_Mov(destMemType, destRegNum, regNum, /* canSkip */ false, size);
+                assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(regNum));
             }
 
             /* mark the argument as processed */
@@ -4128,11 +4116,13 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             {
                 argRegCount          = 2;
                 int       nextArgNum = argNum + 1;
-                regNumber nextRegNum = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type);
+                regNumber nextRegNum =
+                    genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type, compiler->info.compCallConv);
                 noway_assert(regArgTab[nextArgNum].varNum == varNum);
                 // Emit a shufpd with a 0 immediate, which preserves the 0th element of the dest reg
                 // and moves the 0th element of the src reg into the 1st element of the dest reg.
                 GetEmitter()->emitIns_R_R_I(INS_shufpd, emitActualTypeSize(varRegType), destRegNum, nextRegNum, 0);
+                assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(nextRegNum));
                 // Set destRegNum to regNum so that we skip the setting of the register below,
                 // but mark argNum as processed and clear regNum from the live mask.
                 destRegNum = regNum;
@@ -4154,12 +4144,14 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                         {
                             int        nextArgNum  = argNum + i;
                             LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
-                            regNumber  nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type);
+                            regNumber  nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type,
+                                                                             compiler->info.compCallConv);
                             destRegNum             = fieldVarDsc->GetRegNum();
                             noway_assert(regArgTab[nextArgNum].varNum == varNum);
                             noway_assert(genIsValidFloatReg(nextRegNum));
                             noway_assert(genIsValidFloatReg(destRegNum));
                             GetEmitter()->emitIns_Mov(INS_mov, EA_8BYTE, destRegNum, nextRegNum, /* canSkip */ false);
+                            assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(nextRegNum));
                         }
                     }
 #if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
@@ -4175,11 +4167,13 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                             int         nextArgNum  = argNum + i;
                             regArgElem* nextArgElem = &regArgTab[nextArgNum];
                             var_types   nextArgType = nextArgElem->type;
-                            regNumber   nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, nextArgType);
+                            regNumber   nextRegNum =
+                                genMapRegArgNumToRegNum(nextArgNum, nextArgType, compiler->info.compCallConv);
                             noway_assert(nextArgElem->varNum == varNum);
                             noway_assert(genIsValidFloatReg(nextRegNum));
                             noway_assert(genIsValidFloatReg(destRegNum));
                             GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_4BYTE, destRegNum, nextRegNum, i, 0);
+                            assert(!genIsValidIntReg(destRegNum) || !genIsValidFloatReg(nextRegNum));
                         }
                     }
 #endif // defined(TARGET_ARM64) && defined(FEATURE_SIMD)
@@ -4194,7 +4188,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 int nextArgNum = argNum + regSlot;
                 assert(!regArgTab[nextArgNum].processed);
                 regArgTab[nextArgNum].processed = true;
-                regNumber nextRegNum            = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type);
+                regNumber nextRegNum =
+                    genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type, compiler->info.compCallConv);
                 regArgMaskLive &= ~genRegMask(nextRegNum);
             }
 #endif // FEATURE_MULTIREG_ARGS
@@ -4234,7 +4229,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
     regNumber tmp_reg    = REG_NA;
 #endif
 
-    for (LclVarDsc *varDsc = compiler->lvaTable; varNum < compiler->lvaCount; varNum++, varDsc++)
+    for (LclVarDsc* varDsc = compiler->lvaTable; varNum < compiler->lvaCount; varNum++, varDsc++)
     {
         /* Is this variable a parameter? */
 
@@ -4308,7 +4303,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
                 }
             }
         }
-#else // !TARGET_LOONGARCH64
+#else  // !TARGET_LOONGARCH64
         GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
 #endif // !TARGET_LOONGARCH64
 
@@ -4502,7 +4497,6 @@ void CodeGen::genCheckUseBlockInit()
     // find structs that are guaranteed to be block initialized.
     // If this logic changes, Compiler::fgVarNeedsExplicitZeroInit needs
     // to be modified.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_64BIT
 #if defined(TARGET_AMD64)
@@ -4514,6 +4508,7 @@ void CodeGen::genCheckUseBlockInit()
 #else // !defined(TARGET_AMD64)
 
     genUseBlockInit = (genInitStkLclCnt > 8);
+
 #endif
 #else
 
@@ -4967,6 +4962,110 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
     }
 }
 
+#ifdef SWIFT_SUPPORT
+
+//-----------------------------------------------------------------------------
+// genHomeSwiftStructParameters:
+//  Reassemble Swift struct parameters if necessary.
+//
+// Parameters:
+//   handleStack - If true, reassemble the segments that were passed on the stack.
+//                 If false, reassemble the segments that were passed in registers.
+//
+void CodeGen::genHomeSwiftStructParameters(bool handleStack)
+{
+    for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
+    {
+        if (lclNum == compiler->lvaSwiftSelfArg)
+        {
+            continue;
+        }
+
+        LclVarDsc* dsc = compiler->lvaGetDesc(lclNum);
+        if ((dsc->TypeGet() != TYP_STRUCT) || compiler->lvaIsImplicitByRefLocal(lclNum) || !dsc->lvOnFrame)
+        {
+            continue;
+        }
+
+        JITDUMP("Homing Swift parameter V%02u: ", lclNum);
+        const ABIPassingInformation& abiInfo = compiler->lvaParameterPassingInfo[lclNum];
+        DBEXEC(VERBOSE, abiInfo.Dump());
+
+        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+        {
+            const ABIPassingSegment& seg = abiInfo.Segments[i];
+            if (seg.IsPassedOnStack() != handleStack)
+            {
+                continue;
+            }
+
+            if (seg.IsPassedInRegister())
+            {
+                RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? &floatRegState : &intRegState;
+                regMaskTP regs     = seg.GetRegisterMask();
+
+                if ((regState->rsCalleeRegArgMaskLiveIn & regs) != RBM_NONE)
+                {
+                    var_types storeType = seg.GetRegisterStoreType();
+                    assert(storeType != TYP_UNDEF);
+                    GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), seg.GetRegister(), lclNum,
+                                              seg.Offset);
+
+                    regState->rsCalleeRegArgMaskLiveIn &= ~regs;
+                }
+            }
+            else
+            {
+                var_types loadType = TYP_UNDEF;
+                switch (seg.Size)
+                {
+                    case 1:
+                        loadType = TYP_UBYTE;
+                        break;
+                    case 2:
+                        loadType = TYP_USHORT;
+                        break;
+                    case 4:
+                        loadType = TYP_INT;
+                        break;
+                    case 8:
+                        loadType = TYP_LONG;
+                        break;
+                    default:
+                        assert(!"Unexpected segment size for struct parameter not passed implicitly by ref");
+                        continue;
+                }
+
+                int offset;
+                if (isFramePointerUsed())
+                {
+                    offset = -genCallerSPtoFPdelta();
+                }
+                else
+                {
+                    offset = -genCallerSPtoInitialSPdelta();
+                }
+
+                offset += (int)seg.GetStackOffset();
+
+                // Move the incoming segment to the local stack frame. We can
+                // use REG_SCRATCH as a temporary register here as we ensured
+                // that during LSRA build.
+#ifdef TARGET_XARCH
+                GetEmitter()->emitIns_R_AR(ins_Load(loadType), emitTypeSize(loadType), REG_SCRATCH,
+                                           genFramePointerReg(), offset);
+#else
+                genInstrWithConstant(ins_Load(loadType), emitTypeSize(loadType), REG_SCRATCH, genFramePointerReg(),
+                                     offset, REG_SCRATCH);
+#endif
+
+                GetEmitter()->emitIns_S_R(ins_Store(loadType), emitTypeSize(loadType), REG_SCRATCH, lclNum, seg.Offset);
+            }
+        }
+    }
+}
+#endif
+
 /*-----------------------------------------------------------------------------
  *
  *  Save the generic context argument.
@@ -5241,8 +5340,6 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
                                           block->IsLast());
 }
 
-#if defined(FEATURE_EH_FUNCLETS)
-
 /*****************************************************************************
  *
  *  Reserve space for a funclet prolog.
@@ -5250,6 +5347,7 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
 void CodeGen::genReserveFuncletProlog(BasicBlock* block)
 {
+    assert(compiler->UsesFunclets());
     assert(block != nullptr);
 
     /* Currently, no registers are live on entry to the prolog, except maybe
@@ -5280,6 +5378,7 @@ void CodeGen::genReserveFuncletProlog(BasicBlock* block)
 
 void CodeGen::genReserveFuncletEpilog(BasicBlock* block)
 {
+    assert(compiler->UsesFunclets());
     assert(block != nullptr);
 
     JITDUMP("Reserving funclet epilog IG for block " FMT_BB "\n", block->bbNum);
@@ -5287,8 +5386,6 @@ void CodeGen::genReserveFuncletEpilog(BasicBlock* block)
     GetEmitter()->emitCreatePlaceholderIG(IGPT_FUNCLET_EPILOG, block, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
                                           gcInfo.gcRegByrefSetCur, block->IsLast());
 }
-
-#endif // FEATURE_EH_FUNCLETS
 
 /*****************************************************************************
  *  Finalize the frame size and offset assignments.
@@ -5309,7 +5406,6 @@ void CodeGen::genFinalizeFrame()
     genCheckUseBlockInit();
 
     // Set various registers as "modified" for special code generation scenarios: Edit & Continue, P/Invoke calls, etc.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_X86)
 
@@ -5361,7 +5457,7 @@ void CodeGen::genFinalizeFrame()
         }
         noway_assert((regSet.rsGetModifiedRegsMask() & ~okRegs) == 0);
 #else  // !TARGET_AMD64 && !TARGET_ARM64
-        // On x86 we save all callee saved regs so the saved reg area size is consistent
+       // On x86 we save all callee saved regs so the saved reg area size is consistent
         regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
 #endif // !TARGET_AMD64 && !TARGET_ARM64
     }
@@ -5391,7 +5487,7 @@ void CodeGen::genFinalizeFrame()
     noway_assert(!regSet.rsRegsModified(RBM_FPBASE));
 #endif
 
-    regMaskTP maskCalleeRegsPushed = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP maskCalleeRegsPushed = regSet.rsGetModifiedCalleeSavedRegsMask();
 
 #ifdef TARGET_ARMARCH
     if (isFramePointerUsed())
@@ -5604,7 +5700,7 @@ void CodeGen::genFnProlog()
     }
 #endif // DEBUG
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(DEBUG)
+#if defined(DEBUG)
 
     // We cannot force 0-initialization of the PSPSym
     // as it will overwrite the real value
@@ -5614,7 +5710,7 @@ void CodeGen::genFnProlog()
         assert(!varDsc->lvMustInit);
     }
 
-#endif // FEATURE_EH_FUNCLETS && DEBUG
+#endif // DEBUG
 
     /*-------------------------------------------------------------------------
      *
@@ -5776,7 +5872,6 @@ void CodeGen::genFnProlog()
 
         // If there is a frame pointer used, due to frame pointer chaining it will point to the stored value of the
         // previous frame pointer. Thus, stkOffs can't be zero.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !defined(TARGET_AMD64)
         // However, on amd64 there is no requirement to chain frame pointers.
@@ -6064,14 +6159,13 @@ void CodeGen::genFnProlog()
     // Subtract the local frame size from SP.
     //
     //-------------------------------------------------------------------------
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     regMaskTP maskStackAlloc = RBM_NONE;
 
 #ifdef TARGET_ARM
     maskStackAlloc = genStackAllocRegisterMask(compiler->compLclFrameSize + extraFrameSize,
-                                               regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED);
+                                               regSet.rsGetModifiedFltCalleeSavedRegsMask());
 #endif // TARGET_ARM
 
     if (maskStackAlloc == RBM_NONE)
@@ -6090,7 +6184,7 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_AMD64
 
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
 #ifdef TARGET_ARM
     if (compiler->compLocallocUsed)
@@ -6116,11 +6210,11 @@ void CodeGen::genFnProlog()
 #endif // TARGET_AMD64
     compiler->unwindEndProlog();
 
-//-------------------------------------------------------------------------
-//
-// This is the end of the OS-reported prolog for purposes of unwinding
-//
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
+    //
+    // This is the end of the OS-reported prolog for purposes of unwinding
+    //
+    //-------------------------------------------------------------------------
 
 #ifdef TARGET_ARM
     if (needToEstablishFP)
@@ -6146,32 +6240,34 @@ void CodeGen::genFnProlog()
 
     genZeroInitFrame(untrLclHi, untrLclLo, initReg, &initRegZeroed);
 
-#if defined(FEATURE_EH_FUNCLETS)
-
-    genSetPSPSym(initReg, &initRegZeroed);
-
-#else // !FEATURE_EH_FUNCLETS
-
-    // when compInitMem is true the genZeroInitFrame will zero out the shadow SP slots
-    if (compiler->ehNeedsShadowSPslots() && !compiler->info.compInitMem)
+    if (compiler->UsesFunclets())
     {
-        // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
-        unsigned filterEndOffsetSlotOffs = compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE;
-
-        // Zero out the slot for nesting level 0
-        unsigned firstSlotOffs = filterEndOffsetSlotOffs - TARGET_POINTER_SIZE;
-
-        if (!initRegZeroed)
-        {
-            instGen_Set_Reg_To_Zero(EA_PTRSIZE, initReg);
-            initRegZeroed = true;
-        }
-
-        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, initReg, compiler->lvaShadowSPslotsVar,
-                                  firstSlotOffs);
+        genSetPSPSym(initReg, &initRegZeroed);
     }
+    else
+    {
+#if defined(FEATURE_EH_WINDOWS_X86)
+        // when compInitMem is true the genZeroInitFrame will zero out the shadow SP slots
+        if (compiler->ehNeedsShadowSPslots() && !compiler->info.compInitMem)
+        {
+            // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
+            unsigned filterEndOffsetSlotOffs =
+                compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE;
 
-#endif // !FEATURE_EH_FUNCLETS
+            // Zero out the slot for nesting level 0
+            unsigned firstSlotOffs = filterEndOffsetSlotOffs - TARGET_POINTER_SIZE;
+
+            if (!initRegZeroed)
+            {
+                instGen_Set_Reg_To_Zero(EA_PTRSIZE, initReg);
+                initRegZeroed = true;
+            }
+
+            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, initReg, compiler->lvaShadowSPslotsVar,
+                                      firstSlotOffs);
+        }
+#endif // FEATURE_EH_WINDOWS_X86
+    }
 
     genReportGenericContextArg(initReg, &initRegZeroed);
 
@@ -6231,6 +6327,25 @@ void CodeGen::genFnProlog()
      * Take care of register arguments first
      */
 
+#ifdef SWIFT_SUPPORT
+    if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
+    {
+        if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) &&
+            ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
+        {
+            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
+            intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
+        }
+
+        if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+        {
+            intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
+        }
+
+        genHomeSwiftStructParameters(/* handleStack */ false);
+    }
+#endif
+
     // Home incoming arguments and generate any required inits.
     // OSR handles this by moving the values from the original frame.
     //
@@ -6242,8 +6357,7 @@ void CodeGen::genFnProlog()
         // we've set the live-in regs with values from the Tier0 frame.
         //
         // Otherwise we'll do some of these fetches twice.
-        //
-        CLANG_FORMAT_COMMENT_ANCHOR;
+
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         genEnregisterOSRArgsAndLocals(initReg, &initRegZeroed);
 #else
@@ -6453,6 +6567,47 @@ void CodeGen::genFnProlog()
 #pragma warning(pop)
 #endif
 
+//----------------------------------------------------------------------------------
+// genEmitJumpTable: emit jump table and return its base offset
+//
+// Arguments:
+//    treeNode     - the GT_JMPTABLE node
+//    relativeAddr - if true, references are treated as 4-byte relative addresses,
+//                   otherwise they are absolute pointers
+//
+// Return Value:
+//    base offset to jump table
+//
+// Assumption:
+//    The current basic block in process ends with a switch statement
+//
+unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
+{
+    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
+    assert(treeNode->OperGet() == GT_JMPTABLE);
+
+    emitter*       emit       = GetEmitter();
+    const unsigned jumpCount  = compiler->compCurBB->GetSwitchTargets()->bbsCount;
+    FlowEdge**     jumpTable  = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
+    const unsigned jmpTabBase = emit->emitBBTableDataGenBeg(jumpCount, relativeAddr);
+
+    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
+
+    for (unsigned i = 0; i < jumpCount; i++)
+    {
+        BasicBlock* target = (*jumpTable)->getDestinationBlock();
+        jumpTable++;
+        noway_assert(target->HasFlag(BBF_HAS_LABEL));
+
+        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
+
+        emit->emitDataGenData(i, target);
+    };
+
+    emit->emitDataGenEnd();
+    return jmpTabBase;
+}
+
 //------------------------------------------------------------------------
 // getCallTarget - Get the node that evaluates to the call target
 //
@@ -6547,10 +6702,19 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
     // For certain indirect calls we may introduce helper calls before that we need to skip:
     // - CFG may introduce a call to the validator first
     // - Generic virtual methods may compute the target dynamically through a separate helper call
-    if (call->IsHelperCall(compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL) ||
-        call->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR))
+    // - memset/memcpy helper calls emitted for GT_STORE_BLK
+    if (call->IsHelperCall())
     {
-        return;
+        switch (compiler->eeGetHelperNum(call->gtCallMethHnd))
+        {
+            case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+            case CORINFO_HELP_VIRTUAL_FUNC_PTR:
+            case CORINFO_HELP_MEMSET:
+            case CORINFO_HELP_MEMCPY:
+                return;
+            default:
+                break;
+        }
     }
 
     genDefineInlineTempLabel(genPendingCallLabel);
@@ -6584,17 +6748,15 @@ void CodeGen::genGeneratePrologsAndEpilogs()
     genFnProlog();
 
     // Generate all the prologs and epilogs.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(FEATURE_EH_FUNCLETS)
+    if (compiler->UsesFunclets())
+    {
+        // Capture the data we're going to use in the funclet prolog and epilog generation. This is
+        // information computed during codegen, or during function prolog generation, like
+        // frame offsets. It must run after main function prolog generation.
 
-    // Capture the data we're going to use in the funclet prolog and epilog generation. This is
-    // information computed during codegen, or during function prolog generation, like
-    // frame offsets. It must run after main function prolog generation.
-
-    genCaptureFuncletPrologEpilogInfo();
-
-#endif // FEATURE_EH_FUNCLETS
+        genCaptureFuncletPrologEpilogInfo();
+    }
 
     // Walk the list of prologs and epilogs and generate them.
     // We maintain a list of prolog and epilog basic blocks in
@@ -6730,13 +6892,11 @@ unsigned Compiler::GetHfaCount(CORINFO_CLASS_HANDLE hClass)
 unsigned CodeGen::getFirstArgWithStackSlot()
 {
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    unsigned baseVarNum = 0;
     // Iterate over all the lvParam variables in the Lcl var table until we find the first one
     // that's passed on the stack.
-    LclVarDsc* varDsc = nullptr;
     for (unsigned i = 0; i < compiler->info.compArgsCount; i++)
     {
-        varDsc = compiler->lvaGetDesc(i);
+        LclVarDsc* varDsc = compiler->lvaGetDesc(i);
 
         // We should have found a stack parameter (and broken out of this loop) before
         // we find any non-parameters.
@@ -6744,13 +6904,12 @@ unsigned CodeGen::getFirstArgWithStackSlot()
 
         if (varDsc->GetArgReg() == REG_STK)
         {
-            baseVarNum = i;
-            break;
+            return i;
         }
     }
-    assert(varDsc != nullptr);
 
-    return baseVarNum;
+    assert(!"Expected to find a parameter passed on the stack");
+    return BAD_VAR_NUM;
 #elif defined(TARGET_AMD64)
     return 0;
 #else  // TARGET_X86
@@ -7356,6 +7515,26 @@ void CodeGen::genReportRichDebugInfoToFile()
 #endif
 
 //------------------------------------------------------------------------
+// SuccessfulSibling:
+//   Find the next sibling inline context that was successfully inlined.
+//
+// Parameters:
+//   context - the inline context. Can be nullptr in which case nullptr is returned.
+//
+// Returns:
+//   The sibling, or nullptr if there is no succesful sibling.
+//
+static InlineContext* SuccessfulSibling(InlineContext* context)
+{
+    while ((context != nullptr) && !context->IsSuccess())
+    {
+        context = context->GetSibling();
+    }
+
+    return context;
+}
+
+//------------------------------------------------------------------------
 // genRecordRichDebugInfoInlineTree:
 //   Recursively process a context in the inline tree and record information
 //   about it.
@@ -7366,26 +7545,28 @@ void CodeGen::genReportRichDebugInfoToFile()
 //
 void CodeGen::genRecordRichDebugInfoInlineTree(InlineContext* context, ICorDebugInfo::InlineTreeNode* nodes)
 {
-    if (context->IsSuccess())
-    {
-        // We expect 1 + NumInlines unique ordinals
-        assert(context->GetOrdinal() <= compiler->m_inlineStrategy->GetInlineCount());
+    assert(context->IsSuccess());
 
-        ICorDebugInfo::InlineTreeNode* node = &nodes[context->GetOrdinal()];
-        node->Method                        = context->GetCallee();
-        node->ILOffset                      = context->GetActualCallOffset();
-        node->Child                         = context->GetChild() == nullptr ? 0 : context->GetChild()->GetOrdinal();
-        node->Sibling = context->GetSibling() == nullptr ? 0 : context->GetSibling()->GetOrdinal();
+    // We expect 1 + NumInlines unique ordinals
+    assert(context->GetOrdinal() <= compiler->m_inlineStrategy->GetInlineCount());
+
+    InlineContext* successfulChild   = SuccessfulSibling(context->GetChild());
+    InlineContext* successfulSibling = SuccessfulSibling(context->GetSibling());
+
+    ICorDebugInfo::InlineTreeNode* node = &nodes[context->GetOrdinal()];
+    node->Method                        = context->GetCallee();
+    node->ILOffset                      = context->GetActualCallOffset();
+    node->Child                         = successfulChild == nullptr ? 0 : successfulChild->GetOrdinal();
+    node->Sibling                       = successfulSibling == nullptr ? 0 : successfulSibling->GetOrdinal();
+
+    if (successfulSibling != nullptr)
+    {
+        genRecordRichDebugInfoInlineTree(successfulSibling, nodes);
     }
 
-    if (context->GetSibling() != nullptr)
+    if (successfulChild != nullptr)
     {
-        genRecordRichDebugInfoInlineTree(context->GetSibling(), nodes);
-    }
-
-    if (context->GetChild() != nullptr)
-    {
-        genRecordRichDebugInfoInlineTree(context->GetChild(), nodes);
+        genRecordRichDebugInfoInlineTree(successfulChild, nodes);
     }
 }
 
@@ -7434,6 +7615,28 @@ void CodeGen::genReportRichDebugInfo()
 
         mappingIndex++;
     }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Reported inline tree:\n");
+        for (unsigned i = 0; i < numContexts; i++)
+        {
+            printf("  [#%d] %s @ %d, child = %d, sibling = %d\n", i,
+                   compiler->eeGetMethodFullName(inlineTree[i].Method), inlineTree[i].ILOffset, inlineTree[i].Child,
+                   inlineTree[i].Sibling);
+        }
+
+        printf("\nReported rich mappings:\n");
+        for (size_t i = 0; i < mappingIndex; i++)
+        {
+            printf("  [%zu] 0x%x <-> IL %d in #%d\n", i, mappings[i].NativeOffset, mappings[i].ILOffset,
+                   mappings[i].Inlinee);
+        }
+
+        printf("\n");
+    }
+#endif
 
     compiler->info.compCompHnd->reportRichMappings(inlineTree, numContexts, mappings, numRichMappings);
 }
@@ -7685,7 +7888,8 @@ void CodeGen::genReturn(GenTree* treeNode)
             {
                 if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
                 {
-                    gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i), retTypeDesc.GetReturnRegType(i));
+                    gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
+                                           retTypeDesc.GetReturnRegType(i));
                 }
             }
         }
@@ -7702,7 +7906,7 @@ void CodeGen::genReturn(GenTree* treeNode)
             {
                 if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
                 {
-                    gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i)));
+                    gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv)));
                 }
             }
         }
@@ -7712,23 +7916,39 @@ void CodeGen::genReturn(GenTree* treeNode)
 #if defined(DEBUG) && defined(TARGET_XARCH)
     bool doStackPointerCheck = compiler->opts.compStackCheckOnRet;
 
-#if defined(FEATURE_EH_FUNCLETS)
-    // Don't do stack pointer check at the return from a funclet; only for the main function.
-    if (compiler->funCurrentFunc()->funKind != FUNC_ROOT)
+    if (compiler->UsesFunclets())
     {
-        doStackPointerCheck = false;
+        // Don't do stack pointer check at the return from a funclet; only for the main function.
+        if (compiler->funCurrentFunc()->funKind != FUNC_ROOT)
+        {
+            doStackPointerCheck = false;
+        }
     }
-#else  // !FEATURE_EH_FUNCLETS
-    // Don't generate stack checks for x86 finally/filter EH returns: these are not invoked
-    // with the same SP as the main function. See also CodeGen::genEHFinallyOrFilterRet().
-    if (compiler->compCurBB->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET))
+    else
     {
-        doStackPointerCheck = false;
+#if defined(FEATURE_EH_WINDOWS_X86)
+        // Don't generate stack checks for x86 finally/filter EH returns: these are not invoked
+        // with the same SP as the main function. See also CodeGen::genEHFinallyOrFilterRet().
+        if (compiler->compCurBB->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET))
+        {
+            doStackPointerCheck = false;
+        }
+#endif // FEATURE_EH_WINDOWS_X86
     }
-#endif // !FEATURE_EH_FUNCLETS
 
     genStackPointerCheck(doStackPointerCheck, compiler->lvaReturnSpCheck);
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
+
+#ifdef SWIFT_SUPPORT
+    // If this method has a SwiftError* out parameter, load the SwiftError pseudolocal value into the error register.
+    // TODO-CQ: Introduce GenTree node that models returning a normal and Swift error value.
+    if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+    {
+        assert(compiler->info.compCallConv == CorInfoCallConvExtension::Swift);
+        assert(compiler->lvaSwiftErrorLocal != BAD_VAR_NUM);
+        GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_ERROR, compiler->lvaSwiftErrorLocal, 0);
+    }
+#endif // SWIFT_SUPPORT
 }
 
 //------------------------------------------------------------------------
@@ -7809,7 +8029,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         // On LoongArch64, for a struct like "{ int, double }", "retTypeDesc" will be "{ TYP_INT, TYP_DOUBLE }",
         // i. e. not include the padding for the first field, and so the general loop below won't work.
         var_types type  = retTypeDesc.GetReturnRegType(0);
-        regNumber toReg = retTypeDesc.GetABIReturnReg(0);
+        regNumber toReg = retTypeDesc.GetABIReturnReg(0, compiler->info.compCallConv);
         GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), 0);
         if (regCount > 1)
         {
@@ -7817,15 +8037,35 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             int offset = genTypeSize(type);
             type       = retTypeDesc.GetReturnRegType(1);
             offset     = (int)((unsigned int)offset < genTypeSize(type) ? genTypeSize(type) : offset);
-            toReg      = retTypeDesc.GetABIReturnReg(1);
+            toReg      = retTypeDesc.GetABIReturnReg(1, compiler->info.compCallConv);
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         }
-#else  // !TARGET_LOONGARCH64 && !TARGET_RISCV64
+#else // !TARGET_LOONGARCH64 && !TARGET_RISCV64
+
+#ifdef SWIFT_SUPPORT
+        const uint32_t* offsets = nullptr;
+        if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
+        {
+            CORINFO_CLASS_HANDLE          retTypeHnd = compiler->info.compMethodInfo->args.retTypeClass;
+            const CORINFO_SWIFT_LOWERING* lowering   = compiler->GetSwiftLowering(retTypeHnd);
+            assert(!lowering->byReference && (regCount == lowering->numLoweredElements));
+            offsets = lowering->offsets;
+        }
+#endif
+
         int offset = 0;
         for (unsigned i = 0; i < regCount; ++i)
         {
             var_types type  = retTypeDesc.GetReturnRegType(i);
-            regNumber toReg = retTypeDesc.GetABIReturnReg(i);
+            regNumber toReg = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
+
+#ifdef SWIFT_SUPPORT
+            if (offsets != nullptr)
+            {
+                offset = offsets[i];
+            }
+#endif
+
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
             offset += genTypeSize(type);
         }
@@ -7836,7 +8076,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         for (unsigned i = 0; i < regCount; ++i)
         {
             var_types type    = retTypeDesc.GetReturnRegType(i);
-            regNumber toReg   = retTypeDesc.GetABIReturnReg(i);
+            regNumber toReg   = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
             regNumber fromReg = op1->GetRegByIndex(i);
             if ((fromReg == REG_NA) && op1->OperIs(GT_COPY))
             {
@@ -7901,7 +8141,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 
     unsigned   lclNum = lclNode->GetLclNum();
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
-    if (op1->OperIs(GT_CALL))
+    if (actualOp1->OperIs(GT_CALL))
     {
         assert(regCount <= MAX_RET_REG_COUNT);
         noway_assert(varDsc->lvIsMultiRegRet);
@@ -7960,6 +8200,16 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         assert(regCount == varDsc->lvFieldCnt);
     }
 
+#ifdef SWIFT_SUPPORT
+    const uint32_t* offsets = nullptr;
+    if (actualOp1->IsCall() && (actualOp1->AsCall()->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift))
+    {
+        const CORINFO_SWIFT_LOWERING* lowering = compiler->GetSwiftLowering(actualOp1->AsCall()->gtRetClsHnd);
+        assert(!lowering->byReference && (regCount == lowering->numLoweredElements));
+        offsets = lowering->offsets;
+    }
+#endif
+
     for (unsigned i = 0; i < regCount; ++i)
     {
         regNumber reg     = genConsumeReg(op1, i);
@@ -8002,6 +8252,12 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // should consider the padding field within a struct.
             offset = (offset % genTypeSize(srcType)) ? AlignUp(offset, genTypeSize(srcType)) : offset;
+#endif
+#ifdef SWIFT_SUPPORT
+            if (offsets != nullptr)
+            {
+                offset = offsets[i];
+            }
 #endif
             // Several fields could be passed in one register, copy using the register type.
             // It could rewrite memory outside of the fields but local on the stack are rounded to POINTER_SIZE so
@@ -8334,7 +8590,6 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
         if ((size / TARGET_POINTER_SIZE) > 16)
         {
             // This will require more than 16 instructions, switch to rep stosd/memset call.
-            CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_XARCH)
             GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_EDI, (int)varNum, 0);
             assert(size % 4 == 0);
@@ -8351,7 +8606,9 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
             GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_0, (int)varNum, 0);
             instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ARG_1, static_cast<char>(poisonVal));
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_ARG_2, size);
-            genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
+
+            // Call non-managed memset
+            genEmitHelperCall(CORINFO_HELP_NATIVE_MEMSET, 0, EA_UNKNOWN);
             // May kill REG_SCRATCH, so we need to reload it.
             hasPoisonImm = false;
 #endif
@@ -8369,7 +8626,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
             bool fpBased;
             int  addr = compiler->lvaFrameAddress((int)varNum, &fpBased);
 #else
-            int addr     = 0;
+            int addr = 0;
 #endif
             int end = addr + (int)size;
             for (int offs = addr; offs < end;)
@@ -8515,3 +8772,31 @@ void CodeGen::genCodeForReuseVal(GenTree* treeNode)
         genDefineTempLabel(genCreateTempLabel());
     }
 }
+
+#ifdef SWIFT_SUPPORT
+//---------------------------------------------------------------------
+// genCodeForSwiftErrorReg - generate code for a GT_SWIFT_ERROR node
+//
+// Arguments
+//    tree - the GT_SWIFT_ERROR node
+//
+// Return value:
+//    None
+//
+void CodeGen::genCodeForSwiftErrorReg(GenTree* tree)
+{
+    assert(tree->OperIs(GT_SWIFT_ERROR));
+
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->GetRegNum();
+
+    // LSRA should have picked REG_SWIFT_ERROR as the destination register, too
+    // (see LinearScan::BuildNode for an explanation of why we want this)
+    assert(targetReg == REG_SWIFT_ERROR);
+
+    inst_Mov(targetType, targetReg, REG_SWIFT_ERROR, /* canSkip */ true);
+    genTransferRegGCState(targetReg, REG_SWIFT_ERROR);
+
+    genProduceReg(tree);
+}
+#endif // SWIFT_SUPPORT

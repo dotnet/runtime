@@ -804,8 +804,6 @@ MINI_OP(OP_LDTOKEN_FIELD, "ldtoken_field", VREG, VREG, NONE)
 
 /* SIMD opcodes. */
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM) || defined(TARGET_ARM64)
-
 MINI_OP(OP_ICONV_TO_R4_RAW, "iconv_to_r4_raw", FREG, IREG, NONE)
 
 /* Extract an element from a vector with a constant lane index.
@@ -852,8 +850,6 @@ MINI_OP(OP_EXPAND_I4, "expand_i4", XREG, IREG, NONE)
 MINI_OP(OP_EXPAND_R4, "expand_r4", XREG, FREG, NONE)
 MINI_OP(OP_EXPAND_I8, "expand_i8", XREG, IREG, NONE)
 MINI_OP(OP_EXPAND_R8, "expand_r8", XREG, FREG, NONE)
-
-#endif
 
 // wasm specific SIMD v128
 
@@ -1664,6 +1660,7 @@ MINI_OP(OP_ARM64_UZP2, "arm64_uzp2", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_ZIP1, "arm64_zip1", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_ZIP2, "arm64_zip2", XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_ST1_SCALAR, "arm64_st1_scalar", NONE, IREG, XREG, IREG)
+MINI_OP3(OP_ARM64_STM_SCALAR, "arm64_stm_scalar", NONE, IREG, VREG, IREG)
 MINI_OP3(OP_ARM64_STNP, "arm64_stnp", NONE, IREG, XREG, XREG)
 MINI_OP3(OP_ARM64_STNP_SCALAR, "arm64_stnp_scalar", NONE, IREG, XREG, XREG)
 MINI_OP3(OP_ARM64_STP, "arm64_stp", NONE, IREG, XREG, XREG)

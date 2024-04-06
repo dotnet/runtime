@@ -42,7 +42,7 @@ internal static partial class Interop
 
 #if FEATURE_WASM_MANAGED_THREADS
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InstallWebWorkerInterop(nint proxyContextGCHandle);
+        public static extern void InstallWebWorkerInterop(nint proxyContextGCHandle, void* beforeSyncJSImport, void* afterSyncJSImport, void* pumpHandler);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void UninstallWebWorkerInterop();
 
@@ -58,7 +58,7 @@ internal static partial class Interop
         public static extern void CancelPromisePost(nint targetNativeTID, nint taskHolderGCHandle);
 #else
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern unsafe void BindJSImport(void* signature, out int is_exception, out object result);
+        public static extern unsafe nint BindJSImportST(void* signature);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InvokeJSImportST(int importHandle, nint args);
         [MethodImpl(MethodImplOptions.InternalCall)]

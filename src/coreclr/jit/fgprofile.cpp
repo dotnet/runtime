@@ -309,7 +309,11 @@ protected:
     bool      m_modifiedFlow;
 
 protected:
-    Instrumentor(Compiler* comp) : m_comp(comp), m_schemaCount(0), m_instrCount(0), m_modifiedFlow(false)
+    Instrumentor(Compiler* comp)
+        : m_comp(comp)
+        , m_schemaCount(0)
+        , m_instrCount(0)
+        , m_modifiedFlow(false)
     {
     }
 
@@ -360,7 +364,8 @@ public:
 class NonInstrumentor : public Instrumentor
 {
 public:
-    NonInstrumentor(Compiler* comp) : Instrumentor(comp)
+    NonInstrumentor(Compiler* comp)
+        : Instrumentor(comp)
     {
     }
 };
@@ -376,7 +381,9 @@ private:
     BasicBlock* m_entryBlock;
 
 public:
-    BlockCountInstrumentor(Compiler* comp) : Instrumentor(comp), m_entryBlock(nullptr)
+    BlockCountInstrumentor(Compiler* comp)
+        : Instrumentor(comp)
+        , m_entryBlock(nullptr)
     {
     }
     bool ShouldProcess(BasicBlock* block) override
@@ -507,12 +514,11 @@ void BlockCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* const intermediary =
-                m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
-            intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED | BBF_NONE_QUIRK);
+            BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
+            intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED);
             intermediary->inheritWeight(block);
             FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
-            newEdge->setLikelihood(1.0);
+            intermediary->SetTargetEdge(newEdge);
             SetModifiedFlow();
 
             while (criticalPreds.Height() > 0)
@@ -567,8 +573,8 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     schemaElem.InstrumentationKind = m_comp->opts.compCollect64BitCounts
                                          ? ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount
                                          : ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
-    schemaElem.ILOffset = offset;
-    schemaElem.Offset   = 0;
+    schemaElem.ILOffset            = offset;
+    schemaElem.Offset              = 0;
 
     schema.push_back(schemaElem);
 
@@ -842,9 +848,9 @@ public:
         Duplicate
     };
 
-    virtual void Badcode()                     = 0;
-    virtual void VisitBlock(BasicBlock* block) = 0;
-    virtual void VisitTreeEdge(BasicBlock* source, BasicBlock* target) = 0;
+    virtual void Badcode()                                                               = 0;
+    virtual void VisitBlock(BasicBlock* block)                                           = 0;
+    virtual void VisitTreeEdge(BasicBlock* source, BasicBlock* target)                   = 0;
     virtual void VisitNonTreeEdge(BasicBlock* source, BasicBlock* target, EdgeKind kind) = 0;
 };
 
@@ -1240,7 +1246,9 @@ static int32_t EfficientEdgeCountBlockToKey(BasicBlock* block)
 // Based on "Optimally Profiling and Tracing Programs,"
 // Ball and Larus PLDI '92.
 //
-class EfficientEdgeCountInstrumentor : public Instrumentor, public SpanningTreeVisitor
+class EfficientEdgeCountInstrumentor
+    : public Instrumentor
+    , public SpanningTreeVisitor
 {
 private:
     // A particular edge probe. These are linked
@@ -1679,12 +1687,11 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* intermediary =
-                m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
-            intermediary->SetFlags(BBF_IMPORTED | BBF_NONE_QUIRK);
+            BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
+            intermediary->SetFlags(BBF_IMPORTED);
             intermediary->inheritWeight(block);
             FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
-            newEdge->setLikelihood(1.0);
+            intermediary->SetTargetEdge(newEdge);
             NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
             SetModifiedFlow();
 
@@ -1755,8 +1762,8 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         schemaElem.InstrumentationKind = m_comp->opts.compCollect64BitCounts
                                              ? ICorJitInfo::PgoInstrumentationKind::EdgeLongCount
                                              : ICorJitInfo::PgoInstrumentationKind::EdgeIntCount;
-        schemaElem.ILOffset = sourceKey;
-        schemaElem.Offset   = 0;
+        schemaElem.ILOffset            = sourceKey;
+        schemaElem.Offset              = 0;
 
         schema.push_back(schemaElem);
 
@@ -1905,7 +1912,9 @@ public:
     Compiler* m_compiler;
 
     HandleHistogramProbeVisitor(Compiler* compiler, TFunctor& functor)
-        : GenTreeVisitor<HandleHistogramProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
+        : GenTreeVisitor<HandleHistogramProbeVisitor>(compiler)
+        , m_functor(functor)
+        , m_compiler(compiler)
     {
     }
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -1937,7 +1946,9 @@ public:
     Compiler* m_compiler;
 
     ValueHistogramProbeVisitor(Compiler* compiler, TFunctor& functor)
-        : GenTreeVisitor<ValueHistogramProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
+        : GenTreeVisitor<ValueHistogramProbeVisitor>(compiler)
+        , m_functor(functor)
+        , m_compiler(compiler)
     {
     }
 
@@ -1947,7 +1958,7 @@ public:
         if (node->IsCall() && node->AsCall()->IsSpecialIntrinsic())
         {
             const NamedIntrinsic ni = m_compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
-            if ((ni == NI_System_Buffer_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
+            if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
             {
                 m_functor(m_compiler, node);
             }
@@ -1967,7 +1978,8 @@ private:
 
 public:
     BuildHandleHistogramProbeSchemaGen(Schema& schema, unsigned& schemaCount)
-        : m_schema(schema), m_schemaCount(schemaCount)
+        : m_schema(schema)
+        , m_schemaCount(schemaCount)
     {
     }
 
@@ -2005,8 +2017,8 @@ public:
         schemaElem.InstrumentationKind = compiler->opts.compCollect64BitCounts
                                              ? ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount
                                              : ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount;
-        schemaElem.ILOffset = (int32_t)call->gtHandleHistogramProfileCandidateInfo->ilOffset;
-        schemaElem.Offset   = 0;
+        schemaElem.ILOffset            = (int32_t)call->gtHandleHistogramProfileCandidateInfo->ilOffset;
+        schemaElem.Offset              = 0;
 
         m_schema.push_back(schemaElem);
 
@@ -2015,7 +2027,7 @@ public:
         // Re-using ILOffset and Other fields from schema item for TypeHandleHistogramCount
         schemaElem.InstrumentationKind = isTypeHistogram ? ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes
                                                          : ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods;
-        schemaElem.Count = ICorJitInfo::HandleHistogram32::SIZE;
+        schemaElem.Count               = ICorJitInfo::HandleHistogram32::SIZE;
         m_schema.push_back(schemaElem);
 
         m_schemaCount++;
@@ -2029,7 +2041,8 @@ class BuildValueHistogramProbeSchemaGen
 
 public:
     BuildValueHistogramProbeSchemaGen(Schema& schema, unsigned& schemaCount)
-        : m_schema(schema), m_schemaCount(schemaCount)
+        : m_schema(schema)
+        , m_schemaCount(schemaCount)
     {
     }
 
@@ -2038,8 +2051,8 @@ public:
         ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
         schemaElem.Count                                 = 1;
         schemaElem.InstrumentationKind                   = compiler->opts.compCollect64BitCounts
-                                             ? ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount
-                                             : ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
+                                                               ? ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount
+                                                               : ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
         schemaElem.ILOffset = (int32_t)call->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
         m_schema.push_back(schemaElem);
         m_schemaCount++;
@@ -2274,7 +2287,7 @@ public:
             return;
         }
 
-        assert(node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_Buffer_Memmove) ||
+        assert(node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_Memmove) ||
                node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual));
 
         const ICorJitInfo::PgoInstrumentationSchema& countEntry = m_schema[*m_currentSchemaIndex];
@@ -2334,7 +2347,8 @@ public:
 class HandleHistogramProbeInstrumentor : public Instrumentor
 {
 public:
-    HandleHistogramProbeInstrumentor(Compiler* comp) : Instrumentor(comp)
+    HandleHistogramProbeInstrumentor(Compiler* comp)
+        : Instrumentor(comp)
     {
     }
     bool ShouldProcess(BasicBlock* block) override
@@ -2352,7 +2366,8 @@ public:
 class ValueInstrumentor : public Instrumentor
 {
 public:
-    ValueInstrumentor(Compiler* comp) : Instrumentor(comp)
+    ValueInstrumentor(Compiler* comp)
+        : Instrumentor(comp)
     {
     }
     bool ShouldProcess(BasicBlock* block) override
@@ -2540,10 +2555,13 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
             // These are marked as [Intrinsic] only to be handled (unrolled) for constant inputs.
             // In other cases they have large managed implementations we want to profile.
             case NI_System_String_Equals:
-            case NI_System_Buffer_Memmove:
+            case NI_System_SpanHelpers_Memmove:
             case NI_System_MemoryExtensions_Equals:
             case NI_System_MemoryExtensions_SequenceEqual:
             case NI_System_MemoryExtensions_StartsWith:
+            case NI_System_SpanHelpers_Fill:
+            case NI_System_SpanHelpers_SequenceEqual:
+            case NI_System_SpanHelpers_ClearWithoutReferences:
 
             // Same here, these are only folded when JIT knows the exact types
             case NI_System_Type_IsAssignableFrom:
@@ -2726,7 +2744,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     uint8_t* profileMemory;
     HRESULT  res = info.compCompHnd->allocPgoInstrumentationBySchema(info.compMethodHnd, schema.data(),
-                                                                    (UINT32)schema.size(), &profileMemory);
+                                                                     (UINT32)schema.size(), &profileMemory);
 
     // Deal with allocation failures.
     //
@@ -2948,8 +2966,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         //
         if (fgPgoHaveWeights && !dataIsGood)
         {
-            JITDUMP("\nIncorporated count data had inconsistencies; blending profile...\n");
-            ProfileSynthesis::Run(this, ProfileSynthesisOption::BlendLikelihoods);
+            JITDUMP("\nIncorporated count data had inconsistencies; repairing profile...\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
         }
     }
 
@@ -3101,7 +3119,7 @@ private:
     // Map correlating block keys to blocks.
     //
     typedef JitHashTable<int32_t, JitSmallPrimitiveKeyFuncs<int32_t>, BasicBlock*> KeyToBlockMap;
-    KeyToBlockMap m_keyToBlockMap;
+    KeyToBlockMap                                                                  m_keyToBlockMap;
 
     // Key for finding an edge based on schema info.
     //
@@ -3110,7 +3128,9 @@ private:
         int32_t const m_sourceKey;
         int32_t const m_targetKey;
 
-        EdgeKey(int32_t sourceKey, int32_t targetKey) : m_sourceKey(sourceKey), m_targetKey(targetKey)
+        EdgeKey(int32_t sourceKey, int32_t targetKey)
+            : m_sourceKey(sourceKey)
+            , m_targetKey(targetKey)
         {
         }
 
@@ -3158,7 +3178,7 @@ private:
     // Map for correlating EdgeIntCount schema entries with edges
     //
     typedef JitHashTable<EdgeKey, EdgeKey, Edge*> EdgeKeyToEdgeMap;
-    EdgeKeyToEdgeMap m_edgeKeyToEdgeMap;
+    EdgeKeyToEdgeMap                              m_edgeKeyToEdgeMap;
 
     // Per block data
     //
@@ -3265,15 +3285,9 @@ public:
 
     // Are there are reparable issues with the reconstruction?
     //
-    // Ideally we'd also have || !m_negativeCount here, but this
-    // leads to lots of diffs in async methods.
-    //
-    // Looks like we might first need to resolve reconstruction
-    // shortcomings with irreducible loops.
-    //
     bool IsGood() const
     {
-        return !m_entryWeightZero;
+        return !(m_entryWeightZero || m_negativeCount);
     }
 
     void VisitBlock(BasicBlock*) override
@@ -3524,8 +3538,9 @@ void EfficientEdgeCountReconstructor::Solve()
     //
     if (m_badcode || m_mismatch || m_allWeightsZero)
     {
-        JITDUMP("... not solving because of the %s\n",
-                m_badcode ? "badcode" : m_allWeightsZero ? "zero counts" : "mismatch");
+        JITDUMP("... not solving because of the %s\n", m_badcode          ? "badcode"
+                                                       : m_allWeightsZero ? "zero counts"
+                                                                          : "mismatch");
         return;
     }
 
@@ -3859,18 +3874,22 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
 {
     // We expect one pseudo-edge and at least one normal edge.
     //
-    Edge*    pseudoEdge = nullptr;
-    unsigned nEdges     = 0;
+    Edge*    pseudoEdge       = nullptr;
+    weight_t pseudoEdgeWeight = 0;
+    unsigned nEdges           = 0;
+    weight_t successorWeight  = BB_ZERO_WEIGHT;
 
     for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
     {
         if (edge->m_isPseudoEdge)
         {
             assert(pseudoEdge == nullptr);
-            pseudoEdge = edge;
+            pseudoEdge       = edge;
+            pseudoEdgeWeight = edge->m_weight;
             continue;
         }
 
+        successorWeight += edge->m_weight;
         nEdges++;
     }
 
@@ -3887,28 +3906,25 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
 
     assert(nEdges == nSucc);
 
-    if (info->m_weight == BB_ZERO_WEIGHT)
+    if ((info->m_weight == BB_ZERO_WEIGHT) || (successorWeight == BB_ZERO_WEIGHT))
     {
-        JITDUMP("\nPropagate: OSR entry block weight is zero\n");
+        JITDUMP("\nPropagate: OSR entry block or successor weight is zero\n");
         EntryWeightZero();
         return;
     }
 
     // Transfer model edge weight onto the FlowEdges as likelihoods.
     //
-    assert(nEdges == nSucc);
-    weight_t totalLikelihood = 0;
+    JITDUMP("Normalizing OSR successor likelihoods with factor 1/" FMT_WT "\n", successorWeight);
 
     for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
     {
         assert(block == edge->m_sourceBlock);
 
-        // The pseudo edge doesn't correspond to a flow edge,
-        // but it carries away some flow.
+        // The pseudo edge doesn't correspond to a flow edge.
         //
         if (edge == pseudoEdge)
         {
-            totalLikelihood += edge->m_weight / info->m_weight;
             continue;
         }
 
@@ -3917,58 +3933,26 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
 
         assert(flowEdge != nullptr);
 
-        // Naive likelihood should have been set during pred initialization in fgAddRefPred
+        // Naive likelihood should have been set during pred initialization in fgLinkBasicBlocks
         //
         assert(flowEdge->hasLikelihood());
         weight_t likelihood = 0;
 
         if (nEdges == 1)
         {
-            // Conceptually we could assert(edge->m_weight == info->m_weight);
-            // but we can have inconsistencies.
-            //
             // Go with what we know for sure, edge should be 100% likely.
             //
             likelihood = 1.0;
             JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (uniq)\n", block->bbNum,
                     edge->m_targetBlock->bbNum, likelihood);
             flowEdge->setLikelihood(likelihood);
-            totalLikelihood += likelihood;
             break;
         }
 
-        assert(info->m_weight != BB_ZERO_WEIGHT);
-
-        // We may see nonsensical weights here, cap likelihood.
-        //
-        bool capped = false;
-        if (edge->m_weight > info->m_weight)
-        {
-            capped     = true;
-            likelihood = 1.0;
-        }
-        else
-        {
-            likelihood = edge->m_weight / info->m_weight;
-        }
-        JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (%s)\n", block->bbNum,
-                edge->m_targetBlock->bbNum, likelihood, capped ? "pgo -- capped" : "pgo");
+        likelihood = edge->m_weight / successorWeight;
+        JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (pgo)\n", block->bbNum,
+                edge->m_targetBlock->bbNum, likelihood);
         flowEdge->setLikelihood(likelihood);
-        totalLikelihood += likelihood;
-    }
-
-    // Note we expect real flow imbalances here as it's likely there
-    // was no observed flow from the OSR entry to some of its successors.
-    // Since we added in the pseudo edge likelihood above, the check below
-    // probably won't flag this.
-    //
-    // Seems like for OSR we will always want to run synthesis/repair.
-    //
-    if (totalLikelihood != 1.0)
-    {
-        // Consider what to do here... flag this method as needing immediate profile repairs?
-        //
-        JITDUMP(FMT_BB " total outgoing likelihood inaccurate: " FMT_WT "\n", block->bbNum, totalLikelihood);
     }
 }
 
@@ -3981,10 +3965,6 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
 //    info - model info for the block
 //    nSucc - number of successors of the block in the flow graph
 //
-// Notes:
-//    This block requires special handling because original method flow
-//    was interrupted here.
-//
 void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInfo* info, unsigned nSucc)
 {
     // There is at least one FlowEdge.
@@ -3992,8 +3972,9 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     // Check the reconstruction graph edges. For normal blocks, if we have
     // any pseudo-edges there should be only one pseudo-edge, and no regular edges.
     //
-    Edge*    pseudoEdge = nullptr;
-    unsigned nEdges     = 0;
+    Edge*    pseudoEdge      = nullptr;
+    unsigned nEdges          = 0;
+    weight_t successorWeight = BB_ZERO_WEIGHT;
 
     for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
     {
@@ -4004,14 +3985,15 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
             continue;
         }
 
+        successorWeight += edge->m_weight;
         nEdges++;
     }
 
     // If there is a pseudo edge,
     // There should be only one successor for block. The flow
     // from block to successor will not represent real flow.
-    // We set likelihood anyways so we can assert later
-    // that all flow edges have known likelihood.
+    // Likelihood should be set to 1.0 already, as we already know
+    // this block has only one successor.
     //
     // Note the flowEdge target may not be the same as the pseudo edge target.
     //
@@ -4020,9 +4002,9 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
         assert(nSucc == 1);
         assert(block == pseudoEdge->m_sourceBlock);
         assert(block->HasInitializedTarget());
-        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetTarget(), block);
+        FlowEdge* const flowEdge = block->GetTargetEdge();
         assert(flowEdge != nullptr);
-        flowEdge->setLikelihood(1.0);
+        assert(flowEdge->getLikelihood() == 1.0);
         return;
     }
 
@@ -4030,7 +4012,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     //
     // This can happen because bome BBJ_LEAVE blocks may have been missed during
     // our spanning tree walk since we don't know where all the finallies can return
-    // to just yet (specially, in WalkSpanningTree, we may not add the bbTarget of
+    // to just yet (specially, in WalkSpanningTree, we may not add the target of
     // a BBJ_LEAVE to the worklist).
     //
     // Worst case those missed blocks dominate other blocks so we can't limit
@@ -4043,19 +4025,19 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     //
     // (TODO: use synthesis here)
     //
-    if ((nEdges != nSucc) || (info->m_weight == BB_ZERO_WEIGHT))
+    if ((nEdges != nSucc) || (info->m_weight == BB_ZERO_WEIGHT) || (successorWeight == BB_ZERO_WEIGHT))
     {
         JITDUMP(FMT_BB " %s , setting outgoing likelihoods heuristically\n", block->bbNum,
                 (nEdges != nSucc) ? "has inaccurate flow model" : "has zero weight");
 
         weight_t equalLikelihood = 1.0 / nSucc;
 
-        for (BasicBlock* succ : block->Succs(m_comp))
+        for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
         {
-            FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(succ, block);
-            JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (heur)\n", block->bbNum, succ->bbNum,
-                    equalLikelihood);
-            flowEdge->setLikelihood(equalLikelihood);
+            BasicBlock* const succBlock = succEdge->getDestinationBlock();
+            JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (heur)\n", block->bbNum,
+                    succBlock->bbNum, equalLikelihood);
+            succEdge->setLikelihood(equalLikelihood);
         }
 
         return;
@@ -4064,7 +4046,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     // Transfer model edge weight onto the FlowEdges as likelihoods.
     //
     assert(nEdges == nSucc);
-    weight_t totalLikelihood = 0;
+    JITDUMP("Normalizing successor likelihoods with factor 1/" FMT_WT "\n", successorWeight);
 
     for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
     {
@@ -4076,45 +4058,17 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
         if (nEdges == 1)
         {
             assert(nSucc == 1);
-
-            // Conceptually we could assert(edge->m_weight == info->m_weight);
-            // but we can have inconsistencies.
-            //
-            // Go with what we know for sure, edge should be 100% likely.
-            //
             likelihood = 1.0;
             JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (uniq)\n", block->bbNum,
                     edge->m_targetBlock->bbNum, likelihood);
             flowEdge->setLikelihood(likelihood);
-            totalLikelihood += likelihood;
             break;
         }
 
-        assert(info->m_weight != BB_ZERO_WEIGHT);
-
-        // We may see nonsensical weights here, cap likelihood.
-        //
-        bool capped = false;
-        if (edge->m_weight > info->m_weight)
-        {
-            capped     = true;
-            likelihood = 1.0;
-        }
-        else
-        {
-            likelihood = edge->m_weight / info->m_weight;
-        }
-        JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (%s)\n", block->bbNum,
-                edge->m_targetBlock->bbNum, likelihood, capped ? "pgo -- capped" : "pgo");
+        likelihood = edge->m_weight / successorWeight;
+        JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (pgo)\n", block->bbNum,
+                edge->m_targetBlock->bbNum, likelihood);
         flowEdge->setLikelihood(likelihood);
-        totalLikelihood += likelihood;
-    }
-
-    if (totalLikelihood != 1.0)
-    {
-        // Consider what to do here... flag this method as needing immediate profile repairs?
-        //
-        JITDUMP(FMT_BB " total outgoing likelihood inaccurate: " FMT_WT "\n", block->bbNum, totalLikelihood);
     }
 }
 
@@ -4231,18 +4185,19 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // If it turns out often we fail at this stage, we might consider building a histogram of switch case
     // values at runtime, similar to what we do for classes at virtual call sites.
     //
-    const unsigned     caseCount    = block->GetSwitchTargets()->bbsCount;
-    BasicBlock** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
-    unsigned           dominantCase = caseCount;
+    const unsigned   caseCount    = block->GetSwitchTargets()->bbsCount;
+    FlowEdge** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
+    unsigned         dominantCase = caseCount;
 
     for (unsigned i = 0; i < caseCount; i++)
     {
-        if (jumpTab[i] == dominantEdge->m_targetBlock)
+        BasicBlock* jumpTarget = jumpTab[i]->getDestinationBlock();
+        if (jumpTarget == dominantEdge->m_targetBlock)
         {
             if (dominantCase != caseCount)
             {
                 JITDUMP("Both case %u and %u lead to " FMT_BB "-- can't optimize\n", i, dominantCase,
-                        jumpTab[i]->bbNum);
+                        jumpTarget->bbNum);
                 dominantCase = caseCount;
                 break;
             }
@@ -4974,13 +4929,13 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                     BasicBlock* otherDst;
                     if (bSrc->FalseTargetIs(bDst))
                     {
-                        otherDst = bSrc->GetTrueTarget();
+                        otherEdge = bSrc->GetTrueEdge();
                     }
                     else
                     {
-                        otherDst = bSrc->GetFalseTarget();
+                        otherEdge = bSrc->GetFalseEdge();
                     }
-                    otherEdge = fgGetPredForBlock(otherDst, bSrc);
+                    otherDst = otherEdge->getDestinationBlock();
 
                     // If we see min/max violations, just give up on the computations
                     //
@@ -5292,7 +5247,8 @@ void Compiler::fgDebugCheckProfileWeights()
     }
     else
     {
-        ProfileChecks checks = ProfileChecks::CHECK_HASLIKELIHOOD | ProfileChecks::RAISE_ASSERT;
+        ProfileChecks checks =
+            ProfileChecks::CHECK_HASLIKELIHOOD | ProfileChecks::CHECK_LIKELIHOODSUM | ProfileChecks::RAISE_ASSERT;
         fgDebugCheckProfileWeights(checks);
     }
 }
@@ -5303,6 +5259,9 @@ void Compiler::fgDebugCheckProfileWeights()
 //
 // Arguments:
 //   checks - checker options
+//
+// Returns:
+//   True if all enabled checks pass
 //
 // Notes:
 //   For each profiled block, check that the flow of counts into
@@ -5315,7 +5274,7 @@ void Compiler::fgDebugCheckProfileWeights()
 //   There's no point checking until we've built pred lists, as
 //   we can't easily reason about consistency without them.
 //
-void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
+bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 {
     // We can check classic (min/max, late computed) weights
     //   and/or
@@ -5324,13 +5283,14 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
     const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
     const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
+    const bool verifyLikelihoodSum  = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
     const bool assertOnFailure      = hasFlag(checks, ProfileChecks::RAISE_ASSERT);
     const bool checkAllBlocks       = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
     if (!(verifyClassicWeights || verifyLikelyWeights || verifyHasLikelihood))
     {
         JITDUMP("[profile weight checks disabled]\n");
-        return;
+        return true;
     }
 
     JITDUMP("Checking Profile Weights (flags:0x%x)\n", checks);
@@ -5474,6 +5434,10 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
             JITDUMP("Profile is self-consistent (%d profiled blocks, %d unprofiled)\n", profiledBlocks,
                     unprofiledBlocks);
         }
+        else if (verifyLikelihoodSum)
+        {
+            JITDUMP("All block successor flow edge likelihoods sum to 1.0\n");
+        }
         else if (verifyHasLikelihood)
         {
             JITDUMP("All flow edges have likelihoods\n");
@@ -5489,6 +5453,8 @@ void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
             assert(!"Inconsistent profile data");
         }
     }
+
+    return (problemBlocks == 0);
 }
 
 //------------------------------------------------------------------------
@@ -5614,10 +5580,10 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
 bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks)
 {
     const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
-    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
     const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
+    const bool verifyLikelihoodSum  = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
 
-    if (!(verifyClassicWeights || verifyLikelyWeights || verifyHasLikelihood))
+    if (!(verifyClassicWeights || verifyHasLikelihood || verifyLikelihoodSum))
     {
         return true;
     }
@@ -5641,17 +5607,10 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
         unsigned missingEdges      = 0;
         unsigned missingLikelihood = 0;
 
-        for (unsigned i = 0; i < numSuccs; i++)
+        for (FlowEdge* succEdge : block->SuccEdges(this))
         {
-            BasicBlock* succBlock = block->GetSucc(i, this);
-            FlowEdge*   succEdge  = fgGetPredForBlock(succBlock, block);
-
-            if (succEdge == nullptr)
-            {
-                missingEdges++;
-                JITDUMP("  " FMT_BB " can't find successor edge to " FMT_BB "\n", block->bbNum, succBlock->bbNum);
-                continue;
-            }
+            assert(succEdge != nullptr);
+            BasicBlock* succBlock = succEdge->getDestinationBlock();
 
             outgoingWeightMin += succEdge->edgeWeightMin();
             outgoingWeightMax += succEdge->edgeWeightMax();
@@ -5707,7 +5666,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
             }
         }
 
-        if (verifyLikelyWeights)
+        if (verifyLikelihoodSum)
         {
             if (!fgProfileWeightsConsistent(outgoingLikelihood, 1.0))
             {
@@ -5724,6 +5683,25 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
                 else
                 {
                     likelyWeightsValid = false;
+
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        for (const FlowEdge* succEdge : block->SuccEdges(this))
+                        {
+                            const BasicBlock* succBlock = succEdge->getDestinationBlock();
+                            if (succEdge->hasLikelihood())
+                            {
+                                printf("  " FMT_BB " -> " FMT_BB ": " FMT_WT "\n", block->bbNum, succBlock->bbNum,
+                                       succEdge->getLikelihood());
+                            }
+                            else
+                            {
+                                printf("  " FMT_BB " -> " FMT_BB ": no likelihood\n", block->bbNum, succBlock->bbNum);
+                            }
+                        }
+                    }
+#endif // DEBUG
                 }
             }
         }

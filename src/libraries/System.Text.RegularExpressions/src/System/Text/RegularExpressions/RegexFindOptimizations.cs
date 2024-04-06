@@ -94,7 +94,7 @@ namespace System.Text.RegularExpressions
                 if (RegexPrefixAnalyzer.FindFirstCharClass(root) is string charClass)
                 {
                     // See if the set is limited to holding only a few characters.
-                    Span<char> scratch = stackalloc char[5]; // max efficiently optimized by IndexOfAny today
+                    Span<char> scratch = stackalloc char[5]; // max efficiently optimized by IndexOfAny today without SearchValues, which isn't used for RTL
                     int scratchCount;
                     char[]? chars = null;
                     if (!RegexCharClass.IsNegated(charClass) &&
@@ -137,7 +137,28 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            // We're now left-to-right only and looking for sets.
+            // We're now left-to-right only and looking for multiple prefixes and/or sets.
+
+            // If there are multiple leading strings, we can search for any of them.
+            if (compiled)
+            {
+                if (RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: true) is { Length: > 1 } caseInsensitivePrefixes)
+                {
+                    LeadingPrefixes = caseInsensitivePrefixes;
+                    FindMode = FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight;
+                    return;
+                }
+
+                // TODO: While some benchmarks benefit from this significantly, others regressed a bit (in particular those with few
+                //       matches). Before enabling this, we need to investigate the performance impact on real-world scenarios,
+                //       and see if there are ways to reduce the impact.
+                //if (RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: false) is { Length: > 1 } caseSensitivePrefixes)
+                //{
+                //    LeadingPrefixes = caseSensitivePrefixes;
+                //    FindMode = FindNextStartingPositionMode.LeadingStrings_LeftToRight;
+                //    return;
+                //}
+            }
 
             // Build up a list of all of the sets that are a fixed distance from the start of the expression.
             List<FixedDistanceSet>? fixedDistanceSets = RegexPrefixAnalyzer.FindFixedDistanceSets(root, thorough: !interpreter);
@@ -244,6 +265,9 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets the leading prefix.  May be an empty string.</summary>
         public string LeadingPrefix { get; } = string.Empty;
 
+        /// <summary>Gets the leading prefixes.  May be an empty array.</summary>
+        public string[] LeadingPrefixes { get; } = Array.Empty<string>();
+
         /// <summary>When in fixed distance literal mode, gets the literal and how far it is from the start of the pattern.</summary>
         public (char Char, string? String, int Distance) FixedDistanceLiteral { get; }
 
@@ -254,7 +278,6 @@ namespace System.Text.RegularExpressions
         /// <summary>Data about a character class at a fixed offset from the start of any match to a pattern.</summary>
         public struct FixedDistanceSet(char[]? chars, string set, int distance)
         {
-
             /// <summary>The character class description.</summary>
             public string Set = set;
             /// <summary>Whether the <see cref="Set"/> is negated.</summary>
@@ -582,12 +605,22 @@ namespace System.Text.RegularExpressions
                 case FindNextStartingPositionMode.LeadingSet_LeftToRight:
                     {
                         FixedDistanceSet primarySet = FixedDistanceSets![0];
-                        char[]? chars = primarySet.Chars;
 
                         ReadOnlySpan<char> span = textSpan.Slice(pos);
+                        char[]? chars = primarySet.Chars;
                         if (chars is { Length: <= 5 }) // 5 == currently the max length efficiently handled by IndexOfAny{Except} without SearchValues
                         {
                             int i = primarySet.Negated ? span.IndexOfAnyExcept(chars) : span.IndexOfAny(chars);
+                            if (i >= 0)
+                            {
+                                pos += i;
+                                return true;
+                            }
+                        }
+                        else if (primarySet.Range is not null)
+                        {
+                            (char low, char high) = primarySet.Range.GetValueOrDefault();
+                            int i = primarySet.Negated ? span.IndexOfAnyExceptInRange(low, high) : span.IndexOfAnyInRange(low, high);
                             if (i >= 0)
                             {
                                 pos += i;
@@ -767,10 +800,16 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
+                // Not supported in the interpreter, but we could end up here for patterns so complex the compiler gave up on them.
+
+                case FindNextStartingPositionMode.LeadingStrings_LeftToRight:
+                case FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight:
+                    return true;
+
                 // Nothing special to look for.  Just return true indicating this is a valid position to try to match.
 
                 default:
-                    Debug.Assert(FindMode == FindNextStartingPositionMode.NoSearch);
+                    Debug.Assert(FindMode == FindNextStartingPositionMode.NoSearch, $"Unexpected FindMode {FindMode}");
                     return true;
             }
         }
@@ -809,6 +848,11 @@ namespace System.Text.RegularExpressions
         LeadingString_RightToLeft,
         /// <summary>A multi-character ordinal case-insensitive substring at the beginning of the pattern.</summary>
         LeadingString_OrdinalIgnoreCase_LeftToRight,
+
+        /// <summary>Multiple leading prefix strings</summary>
+        LeadingStrings_LeftToRight,
+        /// <summary>Multiple leading ordinal case-insensitive prefix strings</summary>
+        LeadingStrings_OrdinalIgnoreCase_LeftToRight,
 
         /// <summary>A set starting the pattern.</summary>
         LeadingSet_LeftToRight,

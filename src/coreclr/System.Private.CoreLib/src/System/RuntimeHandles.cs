@@ -87,6 +87,11 @@ namespace System
             return m_type == null;
         }
 
+        internal TypeHandle GetNativeTypeHandle()
+        {
+            return m_type.GetNativeTypeHandle();
+        }
+
         internal static bool IsTypeDefinition(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);
@@ -843,13 +848,6 @@ namespace System
             RuntimeMethodHandleInternal attrCtor,
             QCallTypeHandle sourceTypeHandle,
             QCallModule sourceModule);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IRuntimeMethodInfo? _GetCurrentMethod(ref StackCrawlMark stackMark);
-        internal static IRuntimeMethodInfo? GetCurrentMethod(ref StackCrawlMark stackMark)
-        {
-            return _GetCurrentMethod(ref stackMark);
-        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern MethodAttributes GetAttributes(RuntimeMethodHandleInternal method);

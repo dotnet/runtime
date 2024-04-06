@@ -64,7 +64,9 @@ namespace System.Runtime.InteropServices.JavaScript
             throw new InvalidOperationException();
         }
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static void ThrowException(ref JSMarshalerArgument arg)
         {
             arg.ToManaged(out Exception? ex);
@@ -85,7 +87,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 ConfigureAwaitOptions.ForceYielding); // this helps to finish the import before we bind the module in [JSImport]
         }
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static async Task<JSObject> CancellationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
         {
             if (jsTask.IsCompletedSuccessfully)
@@ -97,7 +101,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 CancelablePromise.CancelPromise((Task<JSObject>)s!);
             }, jsTask))
             {
-                return await jsTask.ConfigureAwait(true);
+                return await jsTask.ConfigureAwait(false);
             }
         }
 
@@ -153,7 +157,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 var type = signature.Sigs[i] = types[i + 1]._signatureType;
             }
             signature.IsAsync = types[0]._signatureType.Type == MarshalerType.Task;
-            signature.IsOneWay = types[0]._signatureType.Type == MarshalerType.OneWay;
+            signature.IsDiscardNoWait = types[0]._signatureType.Type == MarshalerType.DiscardNoWait;
 
             signature.Header[0].ImportHandle = signature.ImportHandle;
             signature.Header[0].FunctionNameLength = functionNameBytes;
@@ -225,6 +229,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (method.ReturnType == typeof(void))
                 {
                     method.Invoke(null, argsToPass);
+#if FEATURE_WASM_MANAGED_THREADS
+                    result = Task.FromResult(0);
+#endif
                 }
                 else if (method.ReturnType == typeof(int))
                 {
@@ -293,6 +300,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var signature = GetMethodSignature(signatures, null, null);
 
+            // this will hit JS side possibly on another thread, depending on JSProxyContext.CurrentThreadContext
             JavaScriptImports.BindCSFunction(monoMethod, assemblyName, nameSpace, shortClassName, methodName, signatureHash, (IntPtr)signature.Header);
 
             FreeMethodSignatureBuffer(signature);
@@ -310,7 +318,9 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 #endif
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
         {
             var temp = new IntPtrAndHandle { ptr = ptr };
@@ -326,7 +336,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var nameSpace = "";
             var shortClassName = className;
-            var idx = fqn.LastIndexOf(".");
+            var idx = fqn.LastIndexOf('.');
             if (idx != -1)
             {
                 nameSpace = fqn.Substring(0, idx);

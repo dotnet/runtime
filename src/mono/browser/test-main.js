@@ -250,10 +250,10 @@ function configureRuntime(dotnet, runArgs) {
         .withExitCodeLogging()
         .withElementOnExit()
         .withInteropCleanupOnExit()
-        .withAssertAfterExit()
         .withDumpThreadsOnNonZeroExit()
         .withConfig({
-            loadAllSatelliteResources: true
+            loadAllSatelliteResources: true,
+            jsThreadBlockingMode: "ThrowWhenBlockingWait",
         });
 
     if (ENVIRONMENT_IS_NODE) {

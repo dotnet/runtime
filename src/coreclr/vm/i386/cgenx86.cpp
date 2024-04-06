@@ -146,7 +146,6 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -170,7 +169,6 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -218,7 +216,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         PRECONDITION(m_MachState.isValid());               // InsureInit has been called
         SUPPORTS_DAC;
     }
@@ -398,7 +395,6 @@ void ExternalMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFlo
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -418,7 +414,6 @@ void StubDispatchFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -475,7 +470,6 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -533,7 +527,6 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 #ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
 #endif
-        HOST_NOCALLS;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -622,7 +615,6 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -701,7 +693,6 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -760,13 +751,12 @@ void PInvokeCalliFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
 
     VASigCookie *pVASigCookie = GetVASigCookie();
-    UpdateRegDisplayHelper(pRD, pVASigCookie->sizeOfArgs+sizeof(int));
+    UpdateRegDisplayHelper(pRD, pVASigCookie->sizeOfArgs);
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    PInvokeCalliFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
@@ -781,7 +771,6 @@ void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACT_END;

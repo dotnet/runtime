@@ -80,6 +80,9 @@ bool CodeGen::genInstrWithConstant(instruction ins,
         case INS_flw:
         case INS_ld:
         case INS_fld:
+        case INS_lbu:
+        case INS_lhu:
+        case INS_lwu:
             break;
 
         default:
@@ -1209,9 +1212,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #if !FEATURE_FASTTAILCALL
         noway_assert(jmpNode->gtOper == GT_JMP);
 #else  // FEATURE_FASTTAILCALL
-        // armarch
-        // If jmpNode is GT_JMP then gtNext must be null.
-        // If jmpNode is a fast tail call, gtNext need not be null since it could have embedded stmts.
+       // armarch
+       // If jmpNode is GT_JMP then gtNext must be null.
+       // If jmpNode is a fast tail call, gtNext need not be null since it could have embedded stmts.
         noway_assert((jmpNode->gtOper != GT_JMP) || (jmpNode->gtNext == nullptr));
 
         // Could either be a "jmp method" or "fast tail call" implemented as epilog+jmp
@@ -1291,7 +1294,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        0,             // disp
                                        true);         // isJump
             // clang-format on
-            CLANG_FORMAT_COMMENT_ANCHOR;
         }
 #if FEATURE_FASTTAILCALL
         else
@@ -1531,9 +1533,9 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 }
 
 //  move an immediate value into an integer register
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
-                                     regNumber reg,
-                                     ssize_t   imm,
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
+                                     regNumber      reg,
+                                     ssize_t        imm,
                                      insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     emitter* emit = GetEmitter();
@@ -2482,18 +2484,6 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         }
         else // if (tree->OperIs(GT_UDIV, GT_UMOD))
         {
-            // Only one possible exception
-            //     (AnyVal /  0) => DivideByZeroException
-            //
-            // Note that division by the constant 0 was already checked for above by the
-            // op2->IsIntegralConst(0) check
-
-            if (!divisorOp->IsCnsIntOrI())
-            {
-                // divisorOp is not a constant, so it could be zero
-                genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
-            }
-
             if (tree->OperIs(GT_UDIV))
             {
                 ins = is4 ? INS_divuw : INS_divu;
@@ -2511,7 +2501,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 // Generate code for InitBlk by performing a loop unroll
 // Preconditions:
 //   a) Both the size and fill byte value are integer constants.
-//   b) The size of the struct to initialize is smaller than INITBLK_UNROLL_LIMIT bytes.
+//   b) The size of the struct to initialize is smaller than getUnrollThreshold() bytes.
 void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 {
     assert(node->OperIs(GT_STORE_BLK));
@@ -2849,32 +2839,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
-    assert(treeNode->OperGet() == GT_JMPTABLE);
-
-    unsigned     jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
-    unsigned     jmpTabOffs;
-    unsigned     jmpTabBase;
-
-    jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, true);
-
-    jmpTabOffs = 0;
-
-    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
-
-    for (unsigned i = 0; i < jumpCount; i++)
-    {
-        BasicBlock* target = *jumpTable++;
-        noway_assert(target->HasFlag(BBF_HAS_LABEL));
-
-        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
-
-        GetEmitter()->emitDataGenData(i, target);
-    };
-
-    GetEmitter()->emitDataGenEnd();
-
+    unsigned jmpTabBase = genEmitJumpTable(treeNode, true);
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
@@ -3372,7 +3337,7 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
                                callTarget,                                                    /* ireg */
                                REG_NA, 0, 0,                                                  /* xreg, xmul, disp */
                                false                                                          /* isJump */
-                               );
+    );
 
     regMaskTP killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
     regSet.verifyRegistersUsed(killMask);
@@ -4393,7 +4358,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                callTarget,                           /* ireg */
                                REG_NA, 0, 0,                         /* xreg, xmul, disp */
                                false                                 /* isJump */
-                               );
+    );
 
     regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
     regSet.verifyRegistersUsed(killMask);
@@ -5088,7 +5053,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & ~fullIntArgRegMask()) == 0);
+            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
+                          ~fullIntArgRegMask(compiler->info.compCallConv)) == 0);
 
 // the runtime side requires the codegen here to be consistent
 #ifdef PSEUDORANDOM_NOP_INSERTION
@@ -5101,7 +5067,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
-        case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -6167,37 +6132,6 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 }
 
 //----------------------------------------------------------------------------------
-// genCodeForCpBlkHelper - Generate code for a CpBlk node by the means of the VM memcpy helper call
-//
-// Arguments:
-//    cpBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
-{
-    // Destination address goes in arg0, source address goes in arg1, and size goes in arg2.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
-
-    if (cpBlkNode->IsVolatile())
-    {
-        // issue a full memory barrier before a volatile CpBlk operation
-        instGen_MemoryBarrier();
-    }
-
-    genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
-
-    if (cpBlkNode->IsVolatile())
-    {
-        // issue a INS_BARRIER_RMB after a volatile CpBlk operation
-        instGen_MemoryBarrier(BARRIER_FULL);
-    }
-}
-
-//----------------------------------------------------------------------------------
 // genCodeForCpBlkUnroll: Generates CpBlk code by performing a loop unroll
 //
 // Arguments:
@@ -6207,7 +6141,7 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
 //    None
 //
 // Assumption:
-//  The size argument of the CpBlk node is a constant and <= CPBLK_UNROLL_LIMIT bytes.
+//  The size argument of the CpBlk node is a constant and <= getUnrollThreshold() bytes.
 //
 void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 {
@@ -6435,31 +6369,6 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 }
 
 //------------------------------------------------------------------------
-// genCodeForInitBlkHelper - Generate code for an InitBlk node by the means of the VM memcpy helper call
-//
-// Arguments:
-//    initBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
-{
-    // Size goes in arg2, source address goes in arg1, and size goes in arg2.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
-
-    if (initBlkNode->IsVolatile())
-    {
-        // issue a full memory barrier before a volatile initBlock Operation
-        instGen_MemoryBarrier();
-    }
-
-    genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
-}
-
-//------------------------------------------------------------------------
 // genCall: Produce code for a GT_CALL node
 //
 void CodeGen::genCall(GenTreeCall* call)
@@ -6603,7 +6512,7 @@ void CodeGen::genCall(GenTreeCall* call)
             for (unsigned i = 0; i < regCount; ++i)
             {
                 var_types regType      = pRetTypeDesc->GetReturnRegType(i);
-                returnReg              = pRetTypeDesc->GetABIReturnReg(i);
+                returnReg              = pRetTypeDesc->GetABIReturnReg(i, call->GetUnmanagedCallConv());
                 regNumber allocatedReg = call->GetRegNumByIdx(i);
                 inst_Mov(regType, allocatedReg, returnReg, /* canSkip */ true);
             }
@@ -6814,19 +6723,19 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             else
 #endif // FEATURE_READYTORUN
                 if (call->gtCallType == CT_HELPER)
-            {
-                CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
-                noway_assert(helperNum != CORINFO_HELP_UNDEF);
+                {
+                    CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
+                    noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
-                void* pAddr = nullptr;
-                addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
-                assert(pAddr == nullptr);
-            }
-            else
-            {
-                // Direct call to a non-virtual user function.
-                addr = call->gtDirectCallAddress;
-            }
+                    void* pAddr = nullptr;
+                    addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
+                    assert(pAddr == nullptr);
+                }
+                else
+                {
+                    // Direct call to a non-virtual user function.
+                    addr = call->gtDirectCallAddress;
+                }
 
             assert(addr != nullptr);
 
@@ -7253,8 +7162,8 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
 //------------------------------------------------------------------------
 // genCreateAndStoreGCInfo: Create and record GC Info for the function.
 //
-void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
-                                      unsigned prologSize,
+void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
+                                      unsigned            prologSize,
                                       unsigned epilogSize DEBUGARG(void* codePtr))
 {
     IAllocator*    allowZeroAlloc = new (compiler, CMK_GC) CompIAllocator(compiler->getAllocatorGC());
@@ -7301,14 +7210,14 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
 }
 
 //------------------------------------------------------------------------
-// genCodeForStoreBlk: Produce code for a GT_STORE_DYN_BLK/GT_STORE_BLK node.
+// genCodeForStoreBlk: Produce code for a GT_STORE_BLK node.
 //
 // Arguments:
 //    tree - the node
 //
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
-    assert(blkOp->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
+    assert(blkOp->OperIs(GT_STORE_BLK));
 
     if (blkOp->gtBlkOpGcUnsafe)
     {
@@ -7326,17 +7235,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         case GenTreeBlk::BlkOpKindLoop:
             assert(!isCopyBlk);
             genCodeForInitBlkLoop(blkOp);
-            break;
-
-        case GenTreeBlk::BlkOpKindHelper:
-            if (isCopyBlk)
-            {
-                genCodeForCpBlkHelper(blkOp);
-            }
-            else
-            {
-                genCodeForInitBlkHelper(blkOp);
-            }
             break;
 
         case GenTreeBlk::BlkOpKindUnroll:
@@ -7784,7 +7682,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
                            callTarget,                                                    /* ireg */
                            REG_NA, 0, 0,                                                  /* xreg, xmul, disp */
                            false                                                          /* isJump */
-                           );
+        );
 
         regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
         regSet.verifyRegistersUsed(killMask);
@@ -7887,8 +7785,13 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 {
     assert(compiler->compGeneratingProlog);
 
+    // The 'initReg' could have been calculated as one of the callee-saved registers (let's say T0, T1 and T2 are in
+    // use, so the next possible register is S1, which should be callee-save register). This is fine, as long as we
+    // save callee-saved registers before using 'initReg' for the first time. Instead, we can use REG_SCRATCH
+    // beforehand. We don't care if REG_SCRATCH will be overwritten, so we'll skip 'RegZeroed check'.
+    //
     // Unlike on x86/x64, we can also push float registers to stack
-    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP rsPushRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -7999,11 +7902,11 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
             calleeSaveSPDelta = AlignUp((UINT)offset, STACK_ALIGN);
             offset            = calleeSaveSPDelta - offset;
 
-            genStackPointerAdjustment(-calleeSaveSPDelta, initReg, pInitRegZeroed, /* reportUnwindData */ true);
+            genStackPointerAdjustment(-calleeSaveSPDelta, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
         }
         else
         {
-            genStackPointerAdjustment(-totalFrameSize, initReg, pInitRegZeroed, /* reportUnwindData */ true);
+            genStackPointerAdjustment(-totalFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
         }
     }
 
@@ -8011,6 +7914,8 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     genSaveCalleeSavedRegistersHelp(rsPushRegs, offset, 0);
     offset += (int)(genCountBits(rsPushRegs) << 3); // each reg has 8 bytes
+
+    // From now on, we can safely use initReg.
 
     emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RA, REG_SPBASE, offset);
     compiler->unwindSaveReg(REG_RA, offset);
@@ -8049,7 +7954,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskTP regsToRestoreMask = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP regsToRestoreMask = regSet.rsGetModifiedCalleeSavedRegsMask();
 
     // On RV64 we always use the FP (frame-pointer)
     assert(isFramePointerUsed());
@@ -8081,7 +7986,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                 unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compCalleeRegsPushed,
                 dspBool(compiler->compLocallocUsed));
 
-        if ((compiler->lvaOutgoingArgSpaceSize + (compiler->compCalleeRegsPushed << 3)) >= 2040)
+        if ((compiler->lvaOutgoingArgSpaceSize + (compiler->compCalleeRegsPushed << 3)) > 2047)
         {
             calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize & 0xfffffff0;
 
@@ -8093,8 +7998,8 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
             {
                 genStackPointerAdjustment(calleeSaveSPOffset, REG_RA, nullptr, /* reportUnwindData */ true);
             }
+            remainingSPSize    = totalFrameSize - calleeSaveSPOffset;
             calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize - calleeSaveSPOffset;
-            remainingSPSize    = remainingSPSize - calleeSaveSPOffset;
         }
         else
         {
@@ -8249,7 +8154,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     {
                         if (genIsValidIntReg(varDsc->GetArgReg()))
                         {
-                            assert(isValidIntArgReg(varDsc->GetArgReg()));
+                            assert(isValidIntArgReg(varDsc->GetArgReg(), compiler->info.compCallConv));
                             regArg[varDsc->GetArgReg() - REG_ARG_FIRST]     = varDsc->GetArgReg();
                             regArgInit[varDsc->GetArgReg() - REG_ARG_FIRST] = varDsc->GetArgInitReg();
                             regArgAttr[varDsc->GetArgReg() - REG_ARG_FIRST] =
@@ -8499,10 +8404,11 @@ void CodeGen::genFnPrologCalleeRegArgs()
     {
         for (int i = MAX_REG_ARG + MAX_FLOAT_REG_ARG - 1; i >= 0; i--)
         {
-            if (regArg[i] != REG_NA && !isValidIntArgReg(regArgInit[i]) && !isValidFloatArgReg(regArgInit[i]))
+            if (regArg[i] != REG_NA && !isValidIntArgReg(regArgInit[i], compiler->info.compCallConv) &&
+                !isValidFloatArgReg(regArgInit[i]))
             {
                 assert(regArg[i] != regArgInit[i]);
-                assert(isValidIntArgReg(regArg[i]) || isValidFloatArgReg(regArg[i]));
+                assert(isValidIntArgReg(regArg[i], compiler->info.compCallConv) || isValidFloatArgReg(regArg[i]));
 
                 GetEmitter()->emitIns_Mov(regArgAttr[i], regArgInit[i], regArg[i], false);
 
@@ -8542,9 +8448,10 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         assert(cur != indexList[count2] && "Attempt to move several values on same register.");
                     }
                     assert(cur < MAX_REG_ARG + MAX_FLOAT_REG_ARG);
-                    assert(isValidIntArgReg(regArg[cur]) || isValidFloatArgReg(regArg[cur]));
+                    assert(isValidIntArgReg(regArg[cur], compiler->info.compCallConv) ||
+                           isValidFloatArgReg(regArg[cur]));
 
-                    if (isValidIntArgReg(regArgInit[cur]))
+                    if (isValidIntArgReg(regArgInit[cur], compiler->info.compCallConv))
                     {
                         cur = regArgInit[cur] - REG_ARG_FIRST;
                     }
@@ -8634,7 +8541,11 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
     genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);
 
-    if ((genRegMask(initReg) & RBM_PROFILER_ENTER_TRASH))
+    // If initReg is trashed, either because it was an arg to the enter
+    // callback, or because the enter callback itself trashes it, then it needs
+    // to be zero'ed again before using.
+    if (((RBM_PROFILER_ENTER_TRASH | RBM_PROFILER_ENTER_ARG_FUNC_ID | RBM_PROFILER_ENTER_ARG_CALLER_SP) &
+         genRegMask(initReg)) != RBM_NONE)
     {
         *pInitRegZeroed = false;
     }

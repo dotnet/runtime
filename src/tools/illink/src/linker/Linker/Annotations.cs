@@ -34,6 +34,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using ILLink.Shared.TrimAnalysis;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -462,7 +463,7 @@ namespace Mono.Linker
 		/// DefaultInterfaceMethod is the method that implements <paramref name="method"/>.
 		/// </summary>
 		/// <param name="method">The interface method to find default implementations for</param>
-		public IEnumerable<(TypeDefinition ImplementingType, InterfaceImplementation InterfaceImpl, MethodDefinition DefaultInterfaceMethod)>? GetDefaultInterfaceImplementations (MethodDefinition method)
+		public IEnumerable<OverrideInformation>? GetDefaultInterfaceImplementations (MethodDefinition method)
 		{
 			return TypeMapInfo.GetDefaultInterfaceImplementations (method);
 		}
@@ -716,6 +717,11 @@ namespace Mono.Linker
 
 			if (FlowAnnotations.RequiresVirtualMethodDataFlowAnalysis (method) || HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method))
 				VirtualMethodsWithAnnotationsToValidate.Add (method);
+		}
+
+		internal List<(TypeReference, List<InterfaceImplementation>)>? GetRecursiveInterfaces (TypeDefinition type)
+		{
+			return TypeMapInfo.GetRecursiveInterfaces (type);
 		}
 	}
 }

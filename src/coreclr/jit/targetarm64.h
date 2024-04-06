@@ -42,7 +42,6 @@
                                            // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
   #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
-  #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
 
@@ -55,6 +54,9 @@
   #define REG_PREDICATE_LOW_LAST   REG_P7  // Some instructions can only use the first half of the predicate registers.
   #define REG_PREDICATE_HIGH_FIRST REG_P8  // Similarly, some instructions can only use the second half of the predicate registers.
   #define REG_PREDICATE_HIGH_LAST  REG_P15
+
+  #define REG_MASK_FIRST           REG_PREDICATE_FIRST
+  #define REG_MASK_LAST            REG_PREDICATE_LAST
 
   static_assert_no_msg(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
 
@@ -140,11 +142,19 @@
   #define REG_JUMP_THUNK_PARAM     REG_R12
   #define RBM_JUMP_THUNK_PARAM     RBM_R12
 
+  #define RBM_LOWMASK              (RBM_P0 | RBM_P1 | RBM_P2 | RBM_P3 | RBM_P4 | RBM_P5 | RBM_P6 | RBM_P7)
+  #define RBM_HIGHMASK             (RBM_P8 | RBM_P9 | RBM_P10 | RBM_P11 | RBM_P12 | RBM_P13 | RBM_P14 | RBM_P15)
+  #define RBM_ALLMASK              (RBM_LOWMASK | RBM_HIGHMASK)
+
+  // TODO-SVE: Fix when adding predicate register allocation
+  #define RBM_MSK_CALLEE_SAVED    (0)
+  #define RBM_MSK_CALLEE_TRASH    (0)
+
   // ARM64 write barrier ABI (see vm\arm64\asmhelpers.asm, vm\arm64\asmhelpers.S):
   // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
   //     On entry:
-  //       x14: the destination address (LHS of the assignment)
-  //       x15: the object reference (RHS of the assignment)
+  //       x14: the destination address of the store
+  //       x15: the object reference to be stored
   //     On exit:
   //       x12: trashed
   //       x14: incremented by 8
@@ -369,5 +379,13 @@
   #define REG_ZERO_INIT_FRAME_REG1 REG_R9
   #define REG_ZERO_INIT_FRAME_REG2 REG_R10
   #define REG_ZERO_INIT_FRAME_SIMD REG_V16
+
+  #define SWIFT_SUPPORT
+  #define REG_SWIFT_ERROR REG_R21
+  #define RBM_SWIFT_ERROR RBM_R21
+  #define REG_SWIFT_SELF  REG_R20
+  #define RBM_SWIFT_SELF  RBM_R20
+  #define REG_SWIFT_INTRET_ORDER REG_R0,REG_R1,REG_R2,REG_R3
+  #define REG_SWIFT_FLOATRET_ORDER REG_V0,REG_V1,REG_V2,REG_V3
 
 // clang-format on

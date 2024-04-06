@@ -48,9 +48,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Dispatches the call asynchronously and doesn't wait for result.
         /// </summary>
         /// <returns>The marshaler metadata.</returns>
-        public static JSMarshalerType OneWay { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
+        public static JSMarshalerType DiscardNoWait { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
-            Type = MarshalerType.OneWay
+            Type = MarshalerType.DiscardNoWait
         });
 
         /// <summary>

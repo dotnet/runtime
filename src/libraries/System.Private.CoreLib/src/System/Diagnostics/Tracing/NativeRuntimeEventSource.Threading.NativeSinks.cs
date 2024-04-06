@@ -94,7 +94,12 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public void ContentionLockCreated(Lock lockObj) => ContentionLockCreated(lockObj.LockIdForEvents, lockObj.ObjectIdForEvents);
+        public void ContentionLockCreated(Lock lockObj) =>
+            ContentionLockCreated(
+                lockObj.LockIdForEvents,
+#pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
+                ObjectIDForEvents(lockObj));
+#pragma warning restore CS9216
 
         [Event(81, Level = EventLevel.Informational, Message = Messages.ContentionStart, Task = Tasks.Contention, Opcode = EventOpcode.Start, Version = 2, Keywords = Keywords.ContentionKeyword)]
         private void ContentionStart(
@@ -115,7 +120,9 @@ namespace System.Diagnostics.Tracing
                 ContentionFlagsMap.Managed,
                 DefaultClrInstanceId,
                 lockObj.LockIdForEvents,
-                lockObj.ObjectIdForEvents,
+#pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
+                ObjectIDForEvents(lockObj),
+#pragma warning restore CS9216
                 lockObj.OwningThreadId);
 
         [Event(91, Level = EventLevel.Informational, Message = Messages.ContentionStop, Task = Tasks.Contention, Opcode = EventOpcode.Stop, Version = 1, Keywords = Keywords.ContentionKeyword)]
@@ -360,7 +367,7 @@ namespace System.Diagnostics.Tracing
         public unsafe void WaitHandleWaitStart(
             WaitHandleWaitSourceMap waitSource = WaitHandleWaitSourceMap.Unknown,
             object? associatedObject = null) =>
-            WaitHandleWaitStart(waitSource, *(nint*)Unsafe.AsPointer(ref associatedObject));
+            WaitHandleWaitStart(waitSource, ObjectIDForEvents(associatedObject));
 
         [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandleWait, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
         public void WaitHandleWaitStop(ushort ClrInstanceID = DefaultClrInstanceId)

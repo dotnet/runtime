@@ -21,7 +21,7 @@ namespace System.Text.RegularExpressions.Tests
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 (string Pattern, string Input, RegexOptions Options, int Beginning, int Length, bool ExpectedSuccess, string ExpectedValue)[] cases = Match_MemberData_Cases(engine).ToArray();
-                Regex[] regexes = RegexHelpers.GetRegexesAsync(engine, cases.Select(c => (c.Pattern, (CultureInfo?)null, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray()).Result;
+                Regex[] regexes = RegexHelpers.GetRegexes(engine, cases.Select(c => (c.Pattern, (CultureInfo?)null, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray());
                 for (int i = 0; i < regexes.Length; i++)
                 {
                     yield return new object[] { engine, cases[i].Pattern, cases[i].Input, cases[i].Options, regexes[i], cases[i].Beginning, cases[i].Length, cases[i].ExpectedSuccess, cases[i].ExpectedValue };
@@ -92,6 +92,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?:(?!(b)b)\1a)+", "babababa", RegexOptions.None, 0, 8, false, string.Empty);
                 yield return (@"(?:(?!(b)b)\1a)*", "babababa", RegexOptions.None, 0, 8, true, string.Empty);
                 yield return (@"(.*?)a(?!(a+)b\2c)\2(.*)", "baaabaac", RegexOptions.None, 0, 8, false, string.Empty);
+                yield return (@"(?!(abc))+\w\w\w", "abcdef", RegexOptions.None, 0, 6, true, "bcd");
 
                 // Zero-width positive lookbehind assertion
                 yield return (@"(\w){6}(?<=XXX)def", "abcXXXdef", RegexOptions.None, 0, 9, true, "abcXXXdef");
@@ -660,8 +661,15 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@$"^{aOptional}{{1,2}}?b", "aaab", RegexOptions.None, 0, 4, false, "");
                 yield return (@$"^{aOptional}{{2}}b", "aab", RegexOptions.None, 0, 3, true, "aab");
             }
+            yield return (@"(a+.|b+.)", "aaac", RegexOptions.None, 0, 4, true, "aaac");
+            yield return (@"(a+?.|b+?.)", "aaac", RegexOptions.None, 0, 4, true, "aa");
+            yield return (@"((a+?).|(b+?).)", "aaac", RegexOptions.None, 0, 4, true, "aa");
+            yield return (@"((a+?)+.|(b+?)+.)", "aaac", RegexOptions.None, 0, 4, true, "aaac");
+            yield return (@"((a+?)+?.|(b+?)+?.)", "aaac", RegexOptions.None, 0, 4, true, "aa");
             if (!RegexHelpers.IsNonBacktracking(engine))
             {
+                yield return (@"((?>a+).|(?>b+).)", "aaac", RegexOptions.None, 0, 4, true, "aaac");
+
                 yield return ("(?(dog2))", "dog2", RegexOptions.None, 0, 4, true, string.Empty);
                 yield return ("(?(a:b))", "a", RegexOptions.None, 0, 1, true, string.Empty);
                 yield return ("(?(a:))", "a", RegexOptions.None, 0, 1, true, string.Empty);

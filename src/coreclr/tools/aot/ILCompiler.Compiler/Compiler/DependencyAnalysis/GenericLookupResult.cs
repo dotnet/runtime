@@ -11,42 +11,6 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    // Represents a generic lookup within a canonical method body.
-    // TODO: unify with NativeFormat.FixupSignatureKind
-    public enum LookupResultType
-    {
-        Invalid,
-        MethodTable,             // a type
-        UnwrapNullable,     // a type (The type T described by a type spec that is generic over Nullable<T>)
-        NonGcStatic,        // the non-gc statics of a type
-        GcStatic,           // the gc statics of a type
-        Method,             // a method
-        InterfaceDispatchCell,  // the dispatch cell for calling an interface method
-        MethodDictionary,   // a dictionary for calling a generic method
-        UnboxingStub,       // the unboxing stub for a method
-        ArrayType,          // an array of type
-        DefaultCtor,        // default ctor of a type
-        AllocObject,        // the allocator of a type
-        GvmVtableOffset,    // vtable offset of a generic virtual method
-        ProfileCounter,     // profiling counter cell
-        MethodLdToken,      // a ldtoken result for a method
-        FieldLdToken,       // a ldtoken result for a field
-        Field,              // a field descriptor
-        IsInst,             // isinst helper
-        CastClass,          // castclass helper
-        AllocArray,         // the array allocator of a type
-        TypeSize,           // size of the type
-        FieldOffset,        // field offset
-        CallingConvention_NoInstParam,      // CallingConventionConverterThunk NO_INSTANTIATING_PARAM
-        CallingConvention_HasInstParam,     // CallingConventionConverterThunk HAS_INSTANTIATING_PARAM
-        CallingConvention_MaybeInstParam,   // CallingConventionConverterThunk MAYBE_INSTANTIATING_PARAM
-        VtableOffset,       // Offset of a virtual method into the type's vtable
-        Constrained,        // ConstrainedCallDesc
-        ConstrainedDirect,  // Direct ConstrainedCallDesc
-        Integer,            // Integer
-        UnboxingMethod,     // UnboxingMethod
-    }
-
     public struct GenericLookupResultContext
     {
         private readonly TypeSystemEntity _canonicalOwner;
@@ -873,7 +837,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // If we're producing a full vtable for the type, we don't need to report virtual method use.
             // We also don't report virtual method use for generic virtual methods - tracking those is orthogonal.
-            if (!factory.VTable(canonMethod.OwningType).HasFixedSlots && !canonMethod.HasInstantiation)
+            if (!factory.VTable(canonMethod.OwningType).HasKnownVirtualMethodUse && !canonMethod.HasInstantiation)
             {
                 // Report the method as virtually used so that types that could be used here at runtime
                 // have the appropriate implementations generated.

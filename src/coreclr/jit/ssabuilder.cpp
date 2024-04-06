@@ -783,7 +783,6 @@ void SsaBuilder::AddDefToEHSuccessorPhis(BasicBlock* block, unsigned lclNum, uns
         assert(phiFound);
 
         return BasicBlockVisit::Continue;
-
     });
 }
 
@@ -1181,6 +1180,7 @@ void SsaBuilder::RenameVariables()
 {
     JITDUMP("*************** In SsaBuilder::RenameVariables()\n");
 
+    m_pCompiler->Metrics.VarsInSsa = 0;
     // The first thing we do is treat parameters and must-init variables as if they have a
     // virtual definition before entry -- they start out at SSA name 1.
     for (unsigned lclNum = 0; lclNum < m_pCompiler->lvaCount; lclNum++)
@@ -1189,6 +1189,8 @@ void SsaBuilder::RenameVariables()
         {
             continue;
         }
+
+        m_pCompiler->Metrics.VarsInSsa++;
 
         LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclNum);
         assert(varDsc->lvTracked);
@@ -1240,7 +1242,9 @@ void SsaBuilder::RenameVariables()
 
     public:
         SsaRenameDomTreeVisitor(Compiler* compiler, SsaBuilder* builder, SsaRenameState* renameStack)
-            : DomTreeVisitor(compiler), m_builder(builder), m_renameStack(renameStack)
+            : DomTreeVisitor(compiler)
+            , m_builder(builder)
+            , m_renameStack(renameStack)
         {
         }
 

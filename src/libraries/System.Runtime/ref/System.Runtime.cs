@@ -4710,6 +4710,7 @@ namespace System
         public bool IsEmpty { get { throw null; } }
         public ref readonly T this[int index] { get { throw null; } }
         public int Length { get { throw null; } }
+        public static System.ReadOnlySpan<T> CastUp<TDerived>(System.ReadOnlySpan<TDerived> items) where TDerived : class?, T { throw null; }
         public void CopyTo(System.Span<T> destination) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("Equals() on ReadOnlySpan will always throw an exception. Use the equality operator instead.")]
@@ -5613,6 +5614,16 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public bool Equals(System.TimeSpan obj) { throw null; }
         public static bool Equals(System.TimeSpan t1, System.TimeSpan t2) { throw null; }
+        public static System.TimeSpan FromDays(int days) { throw null; }
+        public static System.TimeSpan FromDays(int days, int hours = 0, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromHours(int hours) { throw null; }
+        public static System.TimeSpan FromHours(int hours, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromMinutes(long minutes) { throw null; }
+        public static System.TimeSpan FromMinutes(long minutes, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromSeconds(long seconds) { throw null; }
+        public static System.TimeSpan FromSeconds(long seconds, long milliseconds = 0, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0) { throw null; }
+        public static System.TimeSpan FromMicroseconds(long microseconds) { throw null; }
         public static System.TimeSpan FromDays(double value) { throw null; }
         public static System.TimeSpan FromHours(double value) { throw null; }
         public static System.TimeSpan FromMicroseconds(double value) { throw null; }
@@ -8416,6 +8427,18 @@ namespace System.Diagnostics.CodeAnalysis
         public ExperimentalAttribute(string diagnosticId) { }
         public string DiagnosticId { get { throw null; } }
         public string? UrlFormat { get { throw null; } set { } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
+    public sealed class FeatureGuardAttribute : System.Attribute
+    {
+        public FeatureGuardAttribute(System.Type featureType) { }
+        public System.Type FeatureType { get { throw null; } }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Property, Inherited = false)]
+    public sealed class FeatureSwitchDefinitionAttribute : Attribute
+    {
+        public FeatureSwitchDefinitionAttribute(string switchName) { }
+        public string SwitchName { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class MaybeNullAttribute : System.Attribute
@@ -11611,6 +11634,7 @@ namespace System.Reflection
         NotNullableValueTypeConstraint = 8,
         DefaultConstructorConstraint = 16,
         SpecialConstraintMask = 28,
+        AllowByRefLike = 32,
     }
     public partial interface ICustomAttributeProvider
     {
@@ -13058,6 +13082,11 @@ namespace System.Runtime.CompilerServices
         public readonly bool IncludesInternals;
         public NullablePublicOnlyAttribute(bool value) { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = true, AllowMultiple = false)]
+    public sealed partial class ParamCollectionAttribute : System.Attribute
+    {
+        public ParamCollectionAttribute() { }
+    }
     public partial struct PoolingAsyncValueTaskMethodBuilder
     {
         private object _dummy;
@@ -13125,13 +13154,16 @@ namespace System.Runtime.CompilerServices
     public static partial class RuntimeFeature
     {
         public const string ByRefFields = "ByRefFields";
+        public const string ByRefLikeGenerics = "ByRefLikeGenerics";
         public const string CovariantReturnsOfClasses = "CovariantReturnsOfClasses";
         public const string DefaultImplementationsOfInterfaces = "DefaultImplementationsOfInterfaces";
         public const string NumericIntPtr = "NumericIntPtr";
         public const string PortablePdb = "PortablePdb";
         public const string UnmanagedSignatureCallingConvention = "UnmanagedSignatureCallingConvention";
         public const string VirtualStaticsInInterfaces = "VirtualStaticsInInterfaces";
+        [System.Diagnostics.CodeAnalysis.FeatureGuard(typeof(System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute))]
         public static bool IsDynamicCodeCompiled { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.FeatureSwitchDefinition("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
         public static bool IsDynamicCodeSupported { get { throw null; } }
         public static bool IsSupported(string feature) { throw null; }
     }
@@ -13140,6 +13172,7 @@ namespace System.Runtime.CompilerServices
         [System.ObsoleteAttribute("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData { get { throw null; } }
         public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size) { throw null; }
+        public static object? Box(ref byte target, System.RuntimeTypeHandle type) { throw null; }
         public static System.ReadOnlySpan<T> CreateSpan<T>(System.RuntimeFieldHandle fldHandle) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
         public static new bool Equals(object? o1, object? o2) { throw null; }
@@ -15326,6 +15359,12 @@ namespace System.Threading.Tasks
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.Threading.Tasks.Task<TResult> task1, System.Threading.Tasks.Task<TResult> task2) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(params System.Threading.Tasks.Task[] tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Runtime.CompilerServices.YieldAwaitable Yield() { throw null; }
     }
     public static partial class TaskAsyncEnumerableExtensions

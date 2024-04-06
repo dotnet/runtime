@@ -147,7 +147,7 @@ add_subdirectory(tools/aot/jitinterface)
 
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
   # NativeAOT only buildable for a subset of CoreCLR-supported configurations
-  if(CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CMAKE_HOST_ARCH_ARM)
+  if(CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CMAKE_HOST_ARCH_ARM OR (CLR_CMAKE_HOST_ARCH_I386 AND CLR_CMAKE_HOST_WIN32))
     add_subdirectory(nativeaot)
   endif()
 endif(NOT CLR_CROSS_COMPONENTS_BUILD)
@@ -202,11 +202,12 @@ if(CLR_CMAKE_HOST_UNIX)
     add_subdirectory(debug/createdump)
   endif(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
 
-  # Include the dummy c++ include files
-  include_directories("pal/inc/rt/cpp")
-
-  # This prevents inclusion of standard C compiler headers
-  add_compile_options(-nostdinc)
+  # The CoreCLR PAL used to redefine NULL, which caused a number of null conversion and arithmetic
+  # warnings and errors to be suppressed.
+  # Suppress these warnings here to avoid breaking the build.
+  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:-Wno-null-arithmetic>)
+  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wno-conversion-null>)
+  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wno-pointer-arith>)
 
   set (NATIVE_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nativeresources)
   include_directories(${NATIVE_RESOURCE_DIR})
@@ -218,7 +219,7 @@ if(CLR_CMAKE_HOST_UNIX)
   # given Windows .rc file. The target C++ file path is returned in the
   # variable specified by the TARGET_FILE parameter.
   function(build_resources SOURCE TARGET_NAME TARGET_FILE)
-
+    set_property(SOURCE ${SOURCE} APPEND PROPERTY COMPILE_DEFINITIONS "RC_INVOKED")
     set(PREPROCESSED_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.rc.i)
 
     preprocess_file(${SOURCE} ${PREPROCESSED_SOURCE})

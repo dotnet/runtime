@@ -869,8 +869,6 @@ void EEStartupHelper()
         // Set up the sync block
         SyncBlockCache::Start();
 
-        StackwalkCache::Init();
-
         // This isn't done as part of InitializeGarbageCollector() above because it
         // requires write barriers to have been set up on x86, which happens as part
         // of InitJITHelpers1.
@@ -935,7 +933,7 @@ void EEStartupHelper()
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
         // align up to GetOsPageSize(), with a maximum of 1 MB
-        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, GetOsPageSize()), 1024 * 1024);
+        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, GetOsPageSize()), (DWORD)(1024 * 1024));
         // allocate the buffer. this is never touched while the process is running, so it doesn't
         // contribute to the process' working set. it is needed only as a "shadow" for a mini-metadata
         // buffer that will be set up and reported / updated in the Watson process (the
@@ -1331,12 +1329,6 @@ part2:
             {
                 g_fEEShutDown |= ShutDown_Phase2;
 
-                // Shutdown finalizer before we suspend all background threads. Otherwise we
-                // never get to finalize anything.
-
-                // No longer process exceptions
-                g_fNoExceptions = true;
-
                 // <TODO>@TODO: This does things which shouldn't occur in part 2.  Namely,
                 // calling managed dll main callbacks (AppDomain::SignalProcessDetach), and
                 // RemoveAppDomainFromIPC.
@@ -1353,31 +1345,8 @@ part2:
                 TerminateDebugger();
 #endif // DEBUGGING_SUPPORTED
 
-                StubManager::TerminateStubManagers();
-
-#ifdef FEATURE_INTERPRETER
-                Interpreter::Terminate();
-#endif // FEATURE_INTERPRETER
-
                 //@TODO: find the right place for this
                 VirtualCallStubManager::UninitStatic();
-
-                // Unregister our vectored exception and continue handlers from the OS.
-                // This will ensure that if any other DLL unload (after ours) has an exception,
-                // we wont attempt to process that exception (which could lead to various
-                // issues including AV in the runtime).
-                //
-                // This should be done:
-                //
-                // 1) As the last action during the shutdown so that any unexpected AVs
-                //    in the runtime during shutdown do result in FailFast in VEH.
-                //
-                // 2) Only when the runtime is processing DLL_PROCESS_DETACH.
-                CLRRemoveVectoredHandlers();
-
-#if USE_DISASSEMBLER
-                Disassembler::StaticClose();
-#endif // USE_DISASSEMBLER
 
                 WriteJitHelperCountToSTRESSLOG();
 
@@ -1701,10 +1670,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
                     LOG((LF_STARTUP, INFO3, "EEShutDown invoked from EEDllMain"));
                     EEShutDown(TRUE); // shut down EE if it was started up
-                }
-                else
-                {
-                    CLRRemoveVectoredHandlers();
                 }
                 break;
             }

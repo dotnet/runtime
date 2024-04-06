@@ -40,13 +40,13 @@ namespace System.Runtime
             return h;
         }
 
-        [DllImport(RuntimeLibrary, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(RuntimeLibrary)]
         internal static extern unsafe IntPtr RhRegisterFrozenSegment(void* pSegmentStart, nuint allocSize, nuint commitSize, nuint reservedSize);
 
-        [DllImport(RuntimeLibrary, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(RuntimeLibrary)]
         internal static extern unsafe void RhUpdateFrozenSegment(IntPtr seg, void* allocated, void* committed);
 
-        [DllImport(RuntimeLibrary, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(RuntimeLibrary)]
         internal static extern void RhUnregisterFrozenSegment(IntPtr pSegmentHandle);
 
         [RuntimeImport(RuntimeLibrary, "RhpGetModuleSection")]
@@ -90,14 +90,6 @@ namespace System.Runtime
         //
         // Interlocked helpers
         //
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg8")]
-        internal static extern byte InterlockedCompareExchange(ref byte location1, byte value, byte comparand);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg16")]
-        internal static extern short InterlockedCompareExchange(ref short location1, short value, short comparand);
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
         internal static extern int InterlockedCompareExchange(ref int location1, int value, int comparand);

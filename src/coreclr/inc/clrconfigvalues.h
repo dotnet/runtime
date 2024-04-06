@@ -259,7 +259,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_legacyCorruptedStateExceptionsPolicy, W("le
 CONFIG_DWORD_INFO(INTERNAL_SuppressLostExceptionTypeAssert, W("SuppressLostExceptionTypeAssert"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseEntryPointFilter, W("UseEntryPointFilter"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Corhost_Swallow_Uncaught_Exceptions, W("Corhost_Swallow_Uncaught_Exceptions"), 0, "")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableNewExceptionHandling, W("EnableNewExceptionHandling"), 0, "Enable new exception handling.");
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_LegacyExceptionHandling, W("LegacyExceptionHandling"), 0, "Enable legacy exception handling.");
 
 
 ///
@@ -304,12 +304,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitDebuggable, W("JitDebuggable"), 0, "If set,
 #endif
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitEnableNoWayAssert, W("JitEnableNoWayAssert"), INTERNAL_JitEnableNoWayAssert_Default, "")
 
-#if defined(TARGET_RISCV64)
-// TODO-RISCV64-CQ: In RISCV64, currently jitc always generates JitFramed codes.
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JitFramed, W("JitFramed"), 1, "Forces EBP frames")
-#else
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JitFramed, W("JitFramed"), 0, "Forces EBP frames")
-#endif // TARGET_RISCV64
 CONFIG_DWORD_INFO(INTERNAL_JitThrowOnAssertionFailure, W("JitThrowOnAssertionFailure"), 0, "Throw managed exception on assertion failures during JIT instead of failfast")
 CONFIG_DWORD_INFO(INTERNAL_JitGCStress, W("JitGCStress"), 0, "GC stress mode for jit")
 CONFIG_DWORD_INFO(INTERNAL_JitHeartbeat, W("JitHeartbeat"), 0, "")
@@ -485,7 +480,7 @@ RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_ETW_ObjectAllocationEventsPerTypePerSec, W
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ProfAPI_ValidateNGENInstrumentation, W("ProfAPI_ValidateNGENInstrumentation"), 0, "This flag enables additional validations when using the IMetaDataEmit APIs for NGEN'ed images to ensure only supported edits are made.")
 
 #ifdef FEATURE_PERFMAP
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapEnabled, W("PerfMapEnabled"), 0, "This flag is used on Linux to enable writing /tmp/perf-$pid.map. It is disabled by default")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapEnabled, W("PerfMapEnabled"), 0, "This flag is used on Linux and macOS to enable writing /tmp/perf-$pid.map. It is disabled by default")
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_PerfMapJitDumpPath, W("PerfMapJitDumpPath"), "Specifies a path to write the perf jitdump file. Defaults to /tmp", CLRConfig::LookupOptions::TrimWhiteSpaceFromStringValue)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapIgnoreSignal, W("PerfMapIgnoreSignal"), 0, "When perf map is enabled, this option will configure the specified signal to be accepted and ignored as a marker in the perf logs.  It is disabled by default")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapShowOptimizationTiers, W("PerfMapShowOptimizationTiers"), 1, "Shows optimization tiers in the perf map for methods, as part of the symbol name. Useful for seeing separate stack frames for different optimization tiers of each method.")
@@ -765,6 +760,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F,                W("EnableAVX512F
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F_VL,             W("EnableAVX512F_VL"),          1, "Allows AVX512F_VL+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512VBMI,             W("EnableAVX512VBMI"),          1, "Allows AVX512VBMI+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512VBMI_VL,          W("EnableAVX512VBMI_VL"),       1, "Allows AVX512VBMI_VL+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX10v1,                W("EnableAVX10v1"),             1, "Allows AVX10v1+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXVNNI,                W("EnableAVXVNNI"),             1, "Allows AVXVNNI+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI1,                   W("EnableBMI1"),                1, "Allows BMI1+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI2,                   W("EnableBMI2"),                1, "Allows BMI2+ hardware intrinsics to be disabled")
