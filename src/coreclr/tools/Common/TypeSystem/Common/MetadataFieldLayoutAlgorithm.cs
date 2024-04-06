@@ -975,17 +975,6 @@ namespace Internal.TypeSystem
 
             if (type.IsValueType)
             {
-                // We ignore classLayoutSize for instanceSize for classes, e.g.
-                //
-                //  [StructLayout(LayoutKind.Explicit, Size = 1000)]
-                //  class Test
-                //  {
-                //      [FieldOffset(0)]
-                //      int fld;
-                //  }
-                //
-                // instanceSize for it is expected to be 4 (+ object header and padding), and not 1000.
-
                 if (classLayoutSize != 0)
                 {
                     instanceSize = LayoutInt.Max(new LayoutInt(classLayoutSize), instanceSize);
@@ -1000,6 +989,12 @@ namespace Internal.TypeSystem
                 {
                     instanceSize = LayoutInt.AlignUp(instanceSize, alignment, target);
                 }
+            }
+            else if (classLayoutSize != 0 && type.IsSequentialLayout && !type.ContainsGCPointers)
+            {
+                // For classes, we respect classLayoutSize only for SequentialLayout + no gc fields
+                LayoutInt specifiedInstanceSize = type.BaseType.InstanceByteCountUnaligned + new LayoutInt(classLayoutSize);
+                instanceSize = LayoutInt.Max(specifiedInstanceSize, instanceSize);
             }
 
             if (type.IsValueType)
