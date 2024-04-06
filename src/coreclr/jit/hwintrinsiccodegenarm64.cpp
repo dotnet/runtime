@@ -346,7 +346,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(hasImmediateOperand);
 
-            auto emitShift = [&](GenTree* op, regNumber reg) {
+            auto emitShift = [&](GenTree* op, regNumber reg)
+            {
                 HWIntrinsicImmOpHelper helper(this, op, node);
 
                 for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
@@ -461,6 +462,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             assert(!hasImmediateOperand);
 
             switch (intrin.numOperands)
+                    {
             {
                 case 1:
                     GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
@@ -477,6 +479,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     else
                     {
                         GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                        }
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt,
+                                                      INS_SCALABLE_OPTS_UNPREDICATED);
                     }
                     break;
 

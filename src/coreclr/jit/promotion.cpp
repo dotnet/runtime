@@ -277,9 +277,7 @@ struct PrimitiveAccess
     unsigned  Offset;
     var_types AccessType;
 
-    PrimitiveAccess(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType)
-    {
-    }
+    PrimitiveAccess(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType) {}
 };
 
 // Tracks all the accesses into one particular struct local.
@@ -973,7 +971,7 @@ public:
         , m_prom(prom)
         , m_candidateStores(prom->m_compiler->getAllocator(CMK_Promotion))
     {
-        m_uses = new (prom->m_compiler, CMK_Promotion) LocalUses*[prom->m_compiler->lvaCount]{};
+        m_uses = new (prom->m_compiler, CMK_Promotion) LocalUses* [prom->m_compiler->lvaCount] {};
     }
 
     //------------------------------------------------------------------------
@@ -2269,9 +2267,7 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
             DoPreOrder = true,
         };
 
-        Visitor(Compiler* comp, ReplaceVisitor* replacer) : GenTreeVisitor(comp), m_replacer(replacer)
-        {
-        }
+        Visitor(Compiler* comp, ReplaceVisitor* replacer) : GenTreeVisitor(comp), m_replacer(replacer) {}
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
@@ -2680,19 +2676,22 @@ void ReplaceVisitor::CheckForwardSubForLastUse(unsigned lclNum)
 //
 void ReplaceVisitor::WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs, unsigned size)
 {
-    VisitOverlappingReplacements(lcl, offs, size, [this, lcl](Replacement& rep) {
-        if (!rep.NeedsWriteBack)
-        {
-            return;
-        }
+    VisitOverlappingReplacements(lcl, offs, size,
+                                 [this, lcl](Replacement& rep)
+                                 {
+                                     if (!rep.NeedsWriteBack)
+                                     {
+                                         return;
+                                     }
 
-        GenTree*   readBack = Promotion::CreateWriteBack(m_compiler, lcl, rep);
-        Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
-        JITDUMP("Writing back %s before " FMT_STMT "\n", rep.Description, m_currentStmt->GetID());
-        DISPSTMT(stmt);
-        m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
-        ClearNeedsWriteBack(rep);
-    });
+                                     GenTree*   readBack = Promotion::CreateWriteBack(m_compiler, lcl, rep);
+                                     Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+                                     JITDUMP("Writing back %s before " FMT_STMT "\n", rep.Description,
+                                             m_currentStmt->GetID());
+                                     DISPSTMT(stmt);
+                                     m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
+                                     ClearNeedsWriteBack(rep);
+                                 });
 }
 
 //------------------------------------------------------------------------
@@ -2708,20 +2707,24 @@ void ReplaceVisitor::WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs
 //
 void ReplaceVisitor::WriteBackBeforeUse(GenTree** use, unsigned lcl, unsigned offs, unsigned size)
 {
-    VisitOverlappingReplacements(lcl, offs, size, [this, &use, lcl](Replacement& rep) {
-        if (!rep.NeedsWriteBack)
-        {
-            return;
-        }
+    VisitOverlappingReplacements(lcl, offs, size,
+                                 [this, &use, lcl](Replacement& rep)
+                                 {
+                                     if (!rep.NeedsWriteBack)
+                                     {
+                                         return;
+                                     }
 
-        GenTreeOp* comma = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
-                                                     Promotion::CreateWriteBack(m_compiler, lcl, rep), *use);
-        *use = comma;
-        use  = &comma->gtOp2;
+                                     GenTreeOp* comma =
+                                         m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
+                                                                   Promotion::CreateWriteBack(m_compiler, lcl, rep),
+                                                                   *use);
+                                     *use = comma;
+                                     use  = &comma->gtOp2;
 
-        ClearNeedsWriteBack(rep);
-        m_madeChanges = true;
-    });
+                                     ClearNeedsWriteBack(rep);
+                                     m_madeChanges = true;
+                                 });
 }
 
 //------------------------------------------------------------------------

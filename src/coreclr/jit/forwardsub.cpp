@@ -399,9 +399,7 @@ public:
         UseExecutionOrder = true
     };
 
-    EffectsVisitor(Compiler* compiler) : GenTreeVisitor<EffectsVisitor>(compiler), m_flags(GTF_EMPTY)
-    {
-    }
+    EffectsVisitor(Compiler* compiler) : GenTreeVisitor<EffectsVisitor>(compiler), m_flags(GTF_EMPTY) {}
 
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {

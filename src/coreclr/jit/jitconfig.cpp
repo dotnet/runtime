@@ -36,7 +36,8 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
         }
     }
 
-    auto commitPattern = [this, host](const char* start, const char* end) {
+    auto commitPattern = [this, host](const char* start, const char* end)
+    {
         if (end <= start)
         {
             return;
@@ -163,15 +164,17 @@ bool JitConfigValues::MethodSet::contains(CORINFO_METHOD_HANDLE methodHnd,
             (name->m_containsSignature != prevPattern->m_containsSignature))
         {
             printer.Truncate(0);
-            bool success = comp->eeRunFunctorWithSPMIErrorTrap([&]() {
-                comp->eePrintMethod(&printer, name->m_containsClassName ? classHnd : NO_CLASS_HANDLE, methodHnd,
-                                    sigInfo,
-                                    /* includeClassInstantiation */ name->m_classNameContainsInstantiation,
-                                    /* includeMethodInstantiation */ name->m_methodNameContainsInstantiation,
-                                    /* includeSignature */ name->m_containsSignature,
-                                    /* includeReturnType */ false,
-                                    /* includeThis */ false);
-            });
+            bool success = comp->eeRunFunctorWithSPMIErrorTrap(
+                [&]()
+                {
+                    comp->eePrintMethod(&printer, name->m_containsClassName ? classHnd : NO_CLASS_HANDLE, methodHnd,
+                                        sigInfo,
+                                        /* includeClassInstantiation */ name->m_classNameContainsInstantiation,
+                                        /* includeMethodInstantiation */ name->m_methodNameContainsInstantiation,
+                                        /* includeSignature */ name->m_containsSignature,
+                                        /* includeReturnType */ false,
+                                        /* includeThis */ false);
+                });
 
             if (!success)
                 continue;

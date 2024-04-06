@@ -6,9 +6,7 @@
 class HostAllocator final
 {
 private:
-    HostAllocator()
-    {
-    }
+    HostAllocator() {}
 
 public:
     template <typename T>
@@ -37,7 +35,7 @@ public:
 
 private:
     void* allocateHostMemory(size_t size);
-    void freeHostMemory(void* p);
+    void  freeHostMemory(void* p);
 };
 
 // Global operator new overloads that work with HostAllocator

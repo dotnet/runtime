@@ -34,9 +34,7 @@ class PatchpointTransformer
     Compiler* compiler;
 
 public:
-    PatchpointTransformer(Compiler* compiler) : ppCounterLclNum(BAD_VAR_NUM), compiler(compiler)
-    {
-    }
+    PatchpointTransformer(Compiler* compiler) : ppCounterLclNum(BAD_VAR_NUM), compiler(compiler) {}
 
     //------------------------------------------------------------------------
     // Run: run transformation for each block.

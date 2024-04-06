@@ -31,13 +31,9 @@ protected:
 #endif
 
 public:
-    virtual void Initialize()
-    {
-    }
+    virtual void Initialize() {}
 
-    virtual void SortCandidates()
-    {
-    }
+    virtual void SortCandidates() {}
 
     virtual bool PromotionCheck(CSE_Candidate* candidate)
     {
@@ -62,9 +58,7 @@ public:
         return false;
     }
 
-    virtual void AdjustHeuristic(CSE_Candidate* candidate)
-    {
-    }
+    virtual void AdjustHeuristic(CSE_Candidate* candidate) {}
 
     virtual const char* Name() const
     {
@@ -181,11 +175,11 @@ public:
     void CaptureLocalWeights();
     void GreedyPolicy();
 
-    void GetFeatures(CSEdsc* dsc, double* features);
+    void   GetFeatures(CSEdsc* dsc, double* features);
     double Preference(CSEdsc* dsc);
-    void GetStoppingFeatures(double* features);
+    void   GetStoppingFeatures(double* features);
     double StoppingPreference();
-    void BuildChoices(ArrayStack<Choice>& choices);
+    void   BuildChoices(ArrayStack<Choice>& choices);
 
     Choice& ChooseGreedy(ArrayStack<Choice>& choices, bool recompute);
 
@@ -227,12 +221,12 @@ private:
     bool      m_updateParameters;
     bool      m_greedy;
 
-    Choice& ChooseSoftmax(ArrayStack<Choice>& choices);
-    void Softmax(ArrayStack<Choice>& choices);
-    void SoftmaxPolicy();
-    void UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choices, double reward, double* delta);
-    void    UpdateParameters();
-    Choice* FindChoice(CSEdsc* dsc, ArrayStack<Choice>& choices);
+    Choice&     ChooseSoftmax(ArrayStack<Choice>& choices);
+    void        Softmax(ArrayStack<Choice>& choices);
+    void        SoftmaxPolicy();
+    void        UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choices, double reward, double* delta);
+    void        UpdateParameters();
+    Choice*     FindChoice(CSEdsc* dsc, ArrayStack<Choice>& choices);
     const char* Name() const;
 
 public:

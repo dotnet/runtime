@@ -250,9 +250,7 @@ void debugError(const char* msg, const char* file, unsigned line)
 }
 
 /*****************************************************************************/
-LogEnv::LogEnv(ICorJitInfo* aCompHnd) : compHnd(aCompHnd), compiler(nullptr)
-{
-}
+LogEnv::LogEnv(ICorJitInfo* aCompHnd) : compHnd(aCompHnd), compiler(nullptr) {}
 
 /*****************************************************************************/
 extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned line)

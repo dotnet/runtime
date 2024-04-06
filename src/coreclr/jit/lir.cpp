@@ -9,9 +9,7 @@
 #pragma hdrstop
 #endif
 
-LIR::Use::Use() : m_range(nullptr), m_edge(nullptr), m_user(nullptr)
-{
-}
+LIR::Use::Use() : m_range(nullptr), m_edge(nullptr), m_user(nullptr) {}
 
 LIR::Use::Use(const Use& other)
 {
@@ -280,9 +278,7 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
     return lclNum;
 }
 
-LIR::ReadOnlyRange::ReadOnlyRange() : m_firstNode(nullptr), m_lastNode(nullptr)
-{
-}
+LIR::ReadOnlyRange::ReadOnlyRange() : m_firstNode(nullptr), m_lastNode(nullptr) {}
 
 LIR::ReadOnlyRange::ReadOnlyRange(ReadOnlyRange&& other) : m_firstNode(other.m_firstNode), m_lastNode(other.m_lastNode)
 {
@@ -426,13 +422,9 @@ bool LIR::ReadOnlyRange::Contains(GenTree* node) const
 
 #endif
 
-LIR::Range::Range() : ReadOnlyRange()
-{
-}
+LIR::Range::Range() : ReadOnlyRange() {}
 
-LIR::Range::Range(Range&& other) : ReadOnlyRange(std::move(other))
-{
-}
+LIR::Range::Range(Range&& other) : ReadOnlyRange(std::move(other)) {}
 
 //------------------------------------------------------------------------
 // LIR::Range::Range: Creates a `Range` value given the first and last
@@ -442,9 +434,7 @@ LIR::Range::Range(Range&& other) : ReadOnlyRange(std::move(other))
 //    firstNode - The first node in the range.
 //    lastNode  - The last node in the range.
 //
-LIR::Range::Range(GenTree* firstNode, GenTree* lastNode) : ReadOnlyRange(firstNode, lastNode)
-{
-}
+LIR::Range::Range(GenTree* firstNode, GenTree* lastNode) : ReadOnlyRange(firstNode, lastNode) {}
 
 //------------------------------------------------------------------------
 // LIR::Range::FirstNonCatchArgNode: Returns the first node after all catch arg nodes in this range.
@@ -925,14 +915,16 @@ void LIR::Range::Remove(GenTree* node, bool markOperandsUnused)
 
     if (markOperandsUnused)
     {
-        node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
-            // The operand of JTRUE does not produce a value (just sets the flags).
-            if (operand->IsValue())
+        node->VisitOperands(
+            [](GenTree* operand) -> GenTree::VisitResult
             {
-                operand->SetUnusedValue();
-            }
-            return GenTree::VisitResult::Continue;
-        });
+                // The operand of JTRUE does not produce a value (just sets the flags).
+                if (operand->IsValue())
+                {
+                    operand->SetUnusedValue();
+                }
+                return GenTree::VisitResult::Continue;
+            });
     }
 
     GenTree* prev = node->gtPrev;
@@ -1186,7 +1178,7 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 // Returns:
 //    The computed subrange.
 //
-template <bool     markFlagsOperands>
+template <bool markFlagsOperands>
 LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
                                               GenTree*  start,
                                               bool*     isClosed,
@@ -1218,11 +1210,13 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
             }
 
             // Mark the node's operands
-            firstNode->VisitOperands([&markCount](GenTree* operand) -> GenTree::VisitResult {
-                operand->gtLIRFlags |= LIR::Flags::Mark;
-                markCount++;
-                return GenTree::VisitResult::Continue;
-            });
+            firstNode->VisitOperands(
+                [&markCount](GenTree* operand) -> GenTree::VisitResult
+                {
+                    operand->gtLIRFlags |= LIR::Flags::Mark;
+                    markCount++;
+                    return GenTree::VisitResult::Continue;
+                });
 
             if (markFlagsOperands && firstNode->OperConsumesFlags())
             {
@@ -1366,11 +1360,13 @@ LIR::ReadOnlyRange LIR::Range::GetRangeOfOperandTrees(GenTree* root, bool* isClo
 
     // Mark the root node's operands
     unsigned markCount = 0;
-    root->VisitOperands([&markCount](GenTree* operand) -> GenTree::VisitResult {
-        operand->gtLIRFlags |= LIR::Flags::Mark;
-        markCount++;
-        return GenTree::VisitResult::Continue;
-    });
+    root->VisitOperands(
+        [&markCount](GenTree* operand) -> GenTree::VisitResult
+        {
+            operand->gtLIRFlags |= LIR::Flags::Mark;
+            markCount++;
+            return GenTree::VisitResult::Continue;
+        });
 
     if (markCount == 0)
     {
@@ -1406,8 +1402,8 @@ public:
     //    range - a range to do the check.
     //    unusedDefs - map of defs that do no have users.
     //
-    CheckLclVarSemanticsHelper(Compiler*         compiler,
-                               const LIR::Range* range,
+    CheckLclVarSemanticsHelper(Compiler*                            compiler,
+                               const LIR::Range*                    range,
                                SmallHashTable<GenTree*, bool, 32U>& unusedDefs)
         : compiler(compiler)
         , range(range)
@@ -1554,7 +1550,7 @@ private:
     void PopLclVarRead(const AliasSet::NodeInfo& defInfo)
     {
         SmallHashTable<GenTree*, GenTree*>* reads;
-        const bool foundReads = unusedLclVarReads.TryGetValue(defInfo.LclNum(), &reads);
+        const bool                          foundReads = unusedLclVarReads.TryGetValue(defInfo.LclNum(), &reads);
         assert(foundReads);
 
         bool found = reads->TryRemove(defInfo.Node());
@@ -1569,11 +1565,11 @@ private:
     }
 
 private:
-    Compiler*         compiler;
-    const LIR::Range* range;
-    SmallHashTable<GenTree*, bool, 32U>& unusedDefs;
+    Compiler*                                                     compiler;
+    const LIR::Range*                                             range;
+    SmallHashTable<GenTree*, bool, 32U>&                          unusedDefs;
     SmallHashTable<int, SmallHashTable<GenTree*, GenTree*>*, 16U> unusedLclVarReads;
-    ArrayStack<SmallHashTable<GenTree*, GenTree*>*> lclVarReadsMapsCache;
+    ArrayStack<SmallHashTable<GenTree*, GenTree*>*>               lclVarReadsMapsCache;
 };
 
 //------------------------------------------------------------------------

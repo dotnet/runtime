@@ -8,9 +8,7 @@
 
 #include "sideeffects.h"
 
-LclVarSet::LclVarSet() : m_bitVector(nullptr), m_hasAnyLcl(false), m_hasBitVector(false)
-{
-}
+LclVarSet::LclVarSet() : m_bitVector(nullptr), m_hasAnyLcl(false), m_hasBitVector(false) {}
 
 //------------------------------------------------------------------------
 // LclVarSet::Add:
@@ -274,23 +272,25 @@ void AliasSet::AddNode(Compiler* compiler, GenTree* node)
 {
     // First, add all lclVar uses associated with the node to the set. This is necessary because the lclVar reads occur
     // at the position of the user, not at the position of the GenTreeLclVar node.
-    node->VisitOperands([compiler, this](GenTree* operand) -> GenTree::VisitResult {
-        if (operand->OperIsLocalRead())
+    node->VisitOperands(
+        [compiler, this](GenTree* operand) -> GenTree::VisitResult
         {
-            const unsigned lclNum = operand->AsLclVarCommon()->GetLclNum();
-            if (compiler->lvaTable[lclNum].IsAddressExposed())
+            if (operand->OperIsLocalRead())
             {
-                m_readsAddressableLocation = true;
-            }
+                const unsigned lclNum = operand->AsLclVarCommon()->GetLclNum();
+                if (compiler->lvaTable[lclNum].IsAddressExposed())
+                {
+                    m_readsAddressableLocation = true;
+                }
 
-            m_lclVarReads.Add(compiler, lclNum);
-        }
-        if (operand->isContained())
-        {
-            AddNode(compiler, operand);
-        }
-        return GenTree::VisitResult::Continue;
-    });
+                m_lclVarReads.Add(compiler, lclNum);
+            }
+            if (operand->isContained())
+            {
+                AddNode(compiler, operand);
+            }
+            return GenTree::VisitResult::Continue;
+        });
 
     NodeInfo nodeInfo(compiler, node);
     if (nodeInfo.ReadsAddressableLocation())
@@ -444,9 +444,7 @@ void AliasSet::Clear()
     m_lclVarWrites.Clear();
 }
 
-SideEffectSet::SideEffectSet() : m_sideEffectFlags(0), m_aliasSet()
-{
-}
+SideEffectSet::SideEffectSet() : m_sideEffectFlags(0), m_aliasSet() {}
 
 //------------------------------------------------------------------------
 // SideEffectSet::SideEffectSet:

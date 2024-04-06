@@ -1123,7 +1123,7 @@ Range RangeCheck::GetRangeFromType(var_types type)
 // Compute the range for a local var definition.
 Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
                                           GenTreeLclVarCommon* lcl,
-                                          bool monIncreasing DEBUGARG(int indent))
+                                          bool monIncreasing   DEBUGARG(int indent))
 {
     LclSsaVarDsc* ssaDef = GetSsaDefStore(lcl);
     if (ssaDef == nullptr)
@@ -1566,9 +1566,7 @@ struct MapMethodDefsData
     BasicBlock* block;
     Statement*  stmt;
 
-    MapMethodDefsData(RangeCheck* rc, BasicBlock* block, Statement* stmt) : rc(rc), block(block), stmt(stmt)
-    {
-    }
+    MapMethodDefsData(RangeCheck* rc, BasicBlock* block, Statement* stmt) : rc(rc), block(block), stmt(stmt) {}
 };
 
 Compiler::fgWalkResult MapMethodDefsVisitor(GenTree** ptr, Compiler::fgWalkData* data)

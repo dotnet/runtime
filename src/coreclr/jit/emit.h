@@ -118,7 +118,7 @@ inline const char* GCtypeStr(GCtype gcType)
 
 #if DEBUG_EMIT
 #define INTERESTING_JUMP_NUM -1 // set to 0 to see all jump info
-//#define INTERESTING_JUMP_NUM    0
+// #define INTERESTING_JUMP_NUM    0
 #endif
 
 /*****************************************************************************
@@ -129,13 +129,9 @@ inline const char* GCtypeStr(GCtype gcType)
 class emitLocation
 {
 public:
-    emitLocation() : ig(nullptr), codePos(0)
-    {
-    }
+    emitLocation() : ig(nullptr), codePos(0) {}
 
-    emitLocation(insGroup* _ig) : ig(_ig), codePos(0)
-    {
-    }
+    emitLocation(insGroup* _ig) : ig(_ig), codePos(0) {}
 
     emitLocation(insGroup* _ig, unsigned _codePos)
     {
@@ -147,9 +143,7 @@ public:
         CaptureLocation(emit);
     }
 
-    emitLocation(void* emitCookie) : ig((insGroup*)emitCookie), codePos(0)
-    {
-    }
+    emitLocation(void* emitCookie) : ig((insGroup*)emitCookie), codePos(0) {}
 
     // A constructor for code that needs to call it explicitly.
     void Init()
@@ -294,12 +288,15 @@ struct insGroup
 #define IGF_NOGCINTERRUPT 0x0020  // this IG is in a no-interrupt region (prolog, epilog, etc.)
 #define IGF_UPD_ISZ 0x0040        // some instruction sizes updated
 #define IGF_PLACEHOLDER 0x0080    // this is a placeholder group, to be filled in later
-#define IGF_EXTEND 0x0100         // this block is conceptually an extension of the previous block
-                                  // and the emitter should continue to track GC info as if there was no new block.
-#define IGF_HAS_ALIGN 0x0200      // this group contains an alignment instruction(s) at the end to align either the next
-                                  // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
-#define IGF_REMOVED_ALIGN 0x0400  // IG was marked as having an alignment instruction(s), but was later unmarked
-                                  // without updating the IG's size/offsets.
+#define IGF_EXTEND                                                                                                     \
+    0x0100 // this block is conceptually an extension of the previous block
+           // and the emitter should continue to track GC info as if there was no new block.
+#define IGF_HAS_ALIGN                                                                                                  \
+    0x0200 // this group contains an alignment instruction(s) at the end to align either the next
+           // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
+#define IGF_REMOVED_ALIGN                                                                                              \
+    0x0400                           // IG was marked as having an alignment instruction(s), but was later unmarked
+                                     // without updating the IG's size/offsets.
 #define IGF_HAS_REMOVABLE_JMP 0x0800 // this group ends with an unconditional jump which is a candidate for removal
 #ifdef TARGET_ARM64
 #define IGF_HAS_REMOVED_INSTR 0x1000 // this group has an instruction that was removed.
@@ -325,7 +322,8 @@ struct insGroup
     regMaskSmall igGCregs; // set of registers with live GC refs
 #endif                     // !(REGMASK_BITS <= 32)
 
-    union {
+    union
+    {
         BYTE*                    igData;   // addr of instruction descriptors
         insPlaceholderGroupData* igPhData; // when igFlags & IGF_PLACEHOLDER
     };
@@ -513,7 +511,7 @@ protected:
 #ifdef TARGET_AMD64
         OPSZP = OPSZ8,
 #else
-        OPSZP         = OPSZ4,
+        OPSZP = OPSZ4,
 #endif
     };
 
@@ -522,7 +520,7 @@ protected:
     static const emitAttr emitSizeDecode[];
 
     static emitter::opSize emitEncodeSize(emitAttr size);
-    static emitAttr emitDecodeSize(emitter::opSize ensz);
+    static emitAttr        emitDecodeSize(emitter::opSize ensz);
 
     // Currently, we only allow one IG for the prolog
     bool emitIGisInProlog(const insGroup* ig)
@@ -643,9 +641,9 @@ protected:
         static_assert_no_msg(IF_COUNT <= 128);
         insFormat _idInsFmt : 7;
 #elif defined(TARGET_LOONGARCH64)
-        unsigned    _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
+        unsigned _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_RISCV64)
-        unsigned    _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
+        unsigned _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_ARM64)
         static_assert_no_msg(IF_COUNT <= 1024);
         insFormat _idInsFmt : 10;
@@ -681,11 +679,9 @@ protected:
         { // not used for LOONGARCH64.
             return (insFormat)0;
         }
-        void idInsFmt(insFormat insFmt)
-        {
-        }
+        void idInsFmt(insFormat insFmt) {}
 #elif defined(TARGET_RISCV64)
-        insFormat   idInsFmt() const
+        insFormat idInsFmt() const
         {
             NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
             return (insFormat)0;
@@ -695,7 +691,7 @@ protected:
             NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
         }
 #else
-        insFormat   idInsFmt() const
+        insFormat idInsFmt() const
         {
             return _idInsFmt;
         }
@@ -730,7 +726,7 @@ protected:
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 /* _idOpSize defined below. */
 #else
-        opSize    _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
+        opSize _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
         // On Amd64, this is where the second DWORD begins
@@ -803,7 +799,7 @@ protected:
 #endif
 
 #ifdef TARGET_LOONGARCH64
-            // TODO-LoongArch64: maybe delete on future.
+                                   // TODO-LoongArch64: maybe delete on future.
             opSize _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
         insOpts    _idInsOpt : 6; // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
                                   // accessing a local on stack.
@@ -892,7 +888,7 @@ protected:
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
-/* Use whatever bits are left over for small constants */
+        /* Use whatever bits are left over for small constants */
 
 #define ID_BIT_SMALL_CNS (32 - ID_EXTRA_BITS)
         C_ASSERT(ID_BIT_SMALL_CNS > 0);
@@ -951,9 +947,10 @@ protected:
 
         void checkSizes();
 
-        union idAddrUnion {
-// TODO-Cleanup: We should really add a DEBUG-only tag to this union so we can add asserts
-// about reading what we think is here, to avoid unexpected corruption issues.
+        union idAddrUnion
+        {
+            // TODO-Cleanup: We should really add a DEBUG-only tag to this union so we can add asserts
+            // about reading what we think is here, to avoid unexpected corruption issues.
 
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
             emitLclVarAddr iiaLclVar;
@@ -2020,7 +2017,8 @@ protected:
         instrDescJmp* idjNext; // next jump in the group/method
         insGroup*     idjIG;   // containing group
 
-        union {
+        union
+        {
             BYTE* idjAddr; // address of jump ins (for patching)
         } idjTemp;
 
@@ -2210,7 +2208,7 @@ protected:
 #endif // TARGET_ARM
 
     insUpdateModes emitInsUpdateMode(instruction ins);
-    insFormat emitInsModeFormat(instruction ins, insFormat base);
+    insFormat      emitInsModeFormat(instruction ins, insFormat base);
 
     static const BYTE emitInsModeFmtTab[];
 #ifdef DEBUG
@@ -2225,7 +2223,7 @@ protected:
     ssize_t emitGetInsDsp(instrDesc* id);
     ssize_t emitGetInsAmd(instrDesc* id);
 
-    ssize_t emitGetInsCIdisp(instrDesc* id);
+    ssize_t  emitGetInsCIdisp(instrDesc* id);
     unsigned emitGetInsCIargs(instrDesc* id);
 
     inline emitAttr emitGetMemOpSize(instrDesc* id) const;
@@ -2238,7 +2236,7 @@ protected:
 #endif // TARGET_XARCH
 
     cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
-    unsigned emitInsCount;
+    unsigned       emitInsCount;
 
     /************************************************************************/
     /*           A few routines used for debug display purposes             */
@@ -2264,11 +2262,11 @@ protected:
     regMaskTP  debugPrevGCrefRegs;
     regMaskTP  debugPrevByrefRegs;
     void       emitDispInsIndent();
-    void emitDispGCDeltaTitle(const char* title);
-    void emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskTP curRegs);
-    void emitDispGCVarDelta();
-    void emitDispRegPtrListDelta();
-    void emitDispGCInfoDelta();
+    void       emitDispGCDeltaTitle(const char* title);
+    void       emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskTP curRegs);
+    void       emitDispGCVarDelta();
+    void       emitDispRegPtrListDelta();
+    void       emitDispGCInfoDelta();
 
     void emitDispIGflags(unsigned flags);
     void emitDispIG(insGroup* ig,
@@ -2325,9 +2323,7 @@ protected:
         EpilogList*  elNext;
         emitLocation elLoc;
 
-        EpilogList() : elNext(nullptr), elLoc()
-        {
-        }
+        EpilogList() : elNext(nullptr), elLoc() {}
     };
 
     EpilogList* emitEpilogList; // per method epilog list - head
@@ -2362,12 +2358,12 @@ public:
     /*    Methods to record a code position and later convert to offset     */
     /************************************************************************/
 
-    unsigned emitFindInsNum(const insGroup* ig, const instrDesc* id) const;
+    unsigned       emitFindInsNum(const insGroup* ig, const instrDesc* id) const;
     UNATIVE_OFFSET emitFindOffset(const insGroup* ig, unsigned insNum) const;
 
-/************************************************************************/
-/*        Members and methods used to issue (encode) instructions.      */
-/************************************************************************/
+    /************************************************************************/
+    /*        Members and methods used to issue (encode) instructions.      */
+    /************************************************************************/
 
 #ifdef DEBUG
     // If we have started issuing instructions from the list of instrDesc, this is set
@@ -2458,9 +2454,9 @@ public:
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     instrDesc* emitFirstInstrDesc(BYTE* idData) const;
-    void emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const;
-    size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
-    size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
+    void       emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const;
+    size_t     emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
+    size_t     emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
 
     bool emitHasFramePtr;
 
@@ -2511,13 +2507,13 @@ private:
 #endif // FEATURE_SIMD
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
-    void emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
-    void emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
-    void emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommon* varNode);
+    void      emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
+    void      emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
+    void      emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommon* varNode);
     insFormat emitMapFmtForIns(insFormat fmt, instruction ins);
     insFormat emitMapFmtAtoM(insFormat fmt);
-    void emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
-    void spillIntArgRegsToShadowSlots();
+    void      emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
+    void      spillIntArgRegsToShadowSlots();
 
 #ifdef TARGET_XARCH
     bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
@@ -2604,22 +2600,22 @@ private:
     // non-adaptive alignment on xarch, this points to the first align instruction of the series of align instructions.
     instrDescAlign* emitAlignLastGroup;
 
-    unsigned getLoopSize(insGroup* igLoopHeader,
+    unsigned getLoopSize(insGroup*            igLoopHeader,
                          unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted) DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
                              DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum)); // Get the smallest loop size
-    void emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
-    bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
-    bool emitSetLoopBackEdge(const BasicBlock* loopTopBlock);
+    void     emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
+    bool     emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
+    bool     emitSetLoopBackEdge(const BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
-    unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig,
+    unsigned emitCalculatePaddingForLoopAlignment(insGroup*     ig,
                                                   size_t offset DEBUG_ARG(bool isAlignAdjusted)
                                                       DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
                                                           DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum));
 
-    void emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
-    void emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
+    void            emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
+    void            emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
     instrDescAlign* emitAlignInNextIG(instrDescAlign* alignInstr);
-    void emitConnectAlignInstrWithCurIG();
+    void            emitConnectAlignInstrWithCurIG();
 
 #endif
 
@@ -2692,7 +2688,7 @@ private:
     void emitSetSecondRetRegGCType(instrDescCGCA* id, emitAttr secondRetSize);
 #endif // MULTIREG_HAS_SECOND_GC_RET
 
-    static void emitEncodeCallGCregs(regMaskTP regs, instrDesc* id);
+    static void     emitEncodeCallGCregs(regMaskTP regs, instrDesc* id);
     static unsigned emitDecodeCallGCregs(instrDesc* id);
 
     unsigned emitNxtIGnum;
@@ -2716,8 +2712,8 @@ private:
 
     insGroup* emitAllocAndLinkIG();
     insGroup* emitAllocIG();
-    void emitInitIG(insGroup* ig);
-    void emitInsertIGAfter(insGroup* insertAfterIG, insGroup* ig);
+    void      emitInitIG(insGroup* ig);
+    void      emitInsertIGAfter(insGroup* insertAfterIG, insGroup* ig);
 
     void emitNewIG();
 
@@ -2732,9 +2728,9 @@ private:
     static bool emitJmpInstHasNoCode(instrDesc* id);
 #endif
 
-    void emitGenIG(insGroup* ig);
+    void      emitGenIG(insGroup* ig);
     insGroup* emitSavIG(bool emitAdd = false);
-    void emitNxtIG(bool extend = false);
+    void      emitNxtIG(bool extend = false);
 
 #ifdef TARGET_ARM64
     void emitRemoveLastInstruction();
@@ -2864,8 +2860,8 @@ private:
     // Mark this instruction group as having a label; return the new instruction group.
     // Sets the emitter's record of the currently live GC variables
     // and registers.
-    void* emitAddLabel(VARSET_VALARG_TP GCvars,
-                       regMaskTP        gcrefRegs,
+    void* emitAddLabel(VARSET_VALARG_TP    GCvars,
+                       regMaskTP           gcrefRegs,
                        regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block = nullptr));
 
     // Same as above, except the label is added and is conceptually "inline" in
@@ -2873,7 +2869,7 @@ private:
     // continues to track GC info as if there was no label.
     void* emitAddInlineLabel();
 
-    void emitPrintLabel(const insGroup* ig) const;
+    void        emitPrintLabel(const insGroup* ig) const;
     const char* emitLabelString(const insGroup* ig) const;
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -3096,7 +3092,7 @@ public:
         return (offs >= emitGCrFrameOffsMin) && (offs < emitGCrFrameOffsMax);
     }
 
-    static instruction emitJumpKindToIns(emitJumpKind jumpKind);
+    static instruction  emitJumpKindToIns(emitJumpKind jumpKind);
     static emitJumpKind emitInsToJumpKind(instruction ins);
     static emitJumpKind emitReverseJumpKind(emitJumpKind jumpKind);
 
@@ -3161,7 +3157,8 @@ public:
 
     bool emitSimpleStkUsed; // using the "simple" stack table?
 
-    union {
+    union
+    {
         struct // if emitSimpleStkUsed==true
         {
 
@@ -3209,8 +3206,8 @@ public:
 
 #ifdef DEBUG
     const char* emitGetFrameReg();
-    void emitDispRegSet(regMaskTP regs);
-    void emitDispVarSet();
+    void        emitDispRegSet(regMaskTP regs);
+    void        emitDispVarSet();
 #endif
 
     void emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr);
@@ -3275,9 +3272,7 @@ public:
         UNATIVE_OFFSET dsdOffs;
         UNATIVE_OFFSET alignment; // in bytes, defaults to 4
 
-        dataSecDsc() : dsdList(nullptr), dsdLast(nullptr), dsdOffs(0), alignment(4)
-        {
-        }
+        dataSecDsc() : dsdList(nullptr), dsdLast(nullptr), dsdOffs(0), alignment(4) {}
     };
 
     dataSecDsc emitConsDsc;
@@ -3293,9 +3288,9 @@ public:
 
     COMP_HANDLE emitCmpHandle;
 
-/************************************************************************/
-/*               Helpers for interface to EE                            */
-/************************************************************************/
+    /************************************************************************/
+    /*               Helpers for interface to EE                            */
+    /************************************************************************/
 
 #ifdef DEBUG
 
@@ -3305,25 +3300,25 @@ public:
 #define emitRecordRelocationWithAddlDelta(location, target, fRelocType, addlDelta)                                     \
     emitRecordRelocationHelp(location, target, fRelocType, #fRelocType, addlDelta)
 
-    void emitRecordRelocationHelp(void*       location,       /* IN */
-                                  void*       target,         /* IN */
-                                  uint16_t    fRelocType,     /* IN */
-                                  const char* relocTypeName,  /* IN */
-                                  int32_t     addlDelta = 0); /* IN */
+    void emitRecordRelocationHelp(void*       location,      /* IN */
+                                  void*       target,        /* IN */
+                                  uint16_t    fRelocType,    /* IN */
+                                  const char* relocTypeName, /* IN */
+                                  int32_t     addlDelta = 0);    /* IN */
 
 #else // !DEBUG
 
     void emitRecordRelocationWithAddlDelta(void*    location,   /* IN */
                                            void*    target,     /* IN */
                                            uint16_t fRelocType, /* IN */
-                                           int32_t  addlDelta)  /* IN */
+                                           int32_t  addlDelta)   /* IN */
     {
         emitRecordRelocation(location, target, fRelocType, addlDelta);
     }
 
-    void emitRecordRelocation(void*    location,       /* IN */
-                              void*    target,         /* IN */
-                              uint16_t fRelocType,     /* IN */
+    void emitRecordRelocation(void*    location,      /* IN */
+                              void*    target,        /* IN */
+                              uint16_t fRelocType,    /* IN */
                               int32_t  addlDelta = 0); /* IN */
 
 #endif // !DEBUG
@@ -3343,9 +3338,9 @@ public:
     CORINFO_SIG_INFO* emitScratchSigInfo;
 #endif // DEBUG
 
-/************************************************************************/
-/*               Logic to collect and display statistics                */
-/************************************************************************/
+    /************************************************************************/
+    /*               Logic to collect and display statistics                */
+    /************************************************************************/
 
 #if EMITTER_STATS
 
@@ -3482,10 +3477,10 @@ public:
     }
 #endif // EMITTER_STATS
 
-/*************************************************************************
- *
- *  Define any target-dependent emitter members.
- */
+    /*************************************************************************
+     *
+     *  Define any target-dependent emitter members.
+     */
 
 #include "emitdef.h"
 

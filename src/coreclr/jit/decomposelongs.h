@@ -18,9 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 class DecomposeLongs
 {
 public:
-    DecomposeLongs(Compiler* compiler) : m_compiler(compiler)
-    {
-    }
+    DecomposeLongs(Compiler* compiler) : m_compiler(compiler) {}
 
     void PrepareForDecomposition();
     void DecomposeBlock(BasicBlock* block);
@@ -72,7 +70,7 @@ private:
     GenTree* RepresentOpAsLocalVar(GenTree* op, GenTree* user, GenTree** edge);
     GenTree* EnsureIntSized(GenTree* node, bool signExtend);
 
-    GenTree* StoreNodeToVar(LIR::Use& use);
+    GenTree*          StoreNodeToVar(LIR::Use& use);
     static genTreeOps GetHiOper(genTreeOps oper);
     static genTreeOps GetLoOper(genTreeOps oper);
 

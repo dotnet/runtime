@@ -34,7 +34,7 @@ unsigned BasicBlock::s_nMaxTrees;
 FlowEdge* ShuffleHelper(unsigned hash, FlowEdge* res)
 {
     FlowEdge* head = res;
-    for (FlowEdge *prev = nullptr; res != nullptr; prev = res, res = res->getNextPredEdge())
+    for (FlowEdge* prev = nullptr; res != nullptr; prev = res, res = res->getNextPredEdge())
     {
         unsigned blkHash = (hash ^ (res->getSourceBlock()->bbNum << 16) ^ res->getSourceBlock()->bbNum);
         if (((blkHash % 1879) & 1) && prev != nullptr)
@@ -143,26 +143,30 @@ void FlowEdge::addLikelihood(weight_t addedLikelihood)
 AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block)
 {
     m_numSuccs = 0;
-    block->VisitAllSuccs(comp, [this](BasicBlock* succ) {
-        if (m_numSuccs < ArrLen(m_successors))
-        {
-            m_successors[m_numSuccs] = succ;
-        }
+    block->VisitAllSuccs(comp,
+                         [this](BasicBlock* succ)
+                         {
+                             if (m_numSuccs < ArrLen(m_successors))
+                             {
+                                 m_successors[m_numSuccs] = succ;
+                             }
 
-        m_numSuccs++;
-        return BasicBlockVisit::Continue;
-    });
+                             m_numSuccs++;
+                             return BasicBlockVisit::Continue;
+                         });
 
     if (m_numSuccs > ArrLen(m_successors))
     {
         m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
 
         unsigned numSuccs = 0;
-        block->VisitAllSuccs(comp, [this, &numSuccs](BasicBlock* succ) {
-            assert(numSuccs < m_numSuccs);
-            m_pSuccessors[numSuccs++] = succ;
-            return BasicBlockVisit::Continue;
-        });
+        block->VisitAllSuccs(comp,
+                             [this, &numSuccs](BasicBlock* succ)
+                             {
+                                 assert(numSuccs < m_numSuccs);
+                                 m_pSuccessors[numSuccs++] = succ;
+                                 return BasicBlockVisit::Continue;
+                             });
 
         assert(numSuccs == m_numSuccs);
     }
@@ -231,9 +235,12 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
                 {
                     res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, blk, res);
 
-                    assert(filterBlk->VisitEHEnclosedHandlerSecondPassSuccs(this, [blk](BasicBlock* succ) {
-                        return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
-                    }) == BasicBlockVisit::Abort);
+                    assert(filterBlk->VisitEHEnclosedHandlerSecondPassSuccs(this,
+                                                                            [blk](BasicBlock* succ) {
+                                                                                return succ == blk
+                                                                                           ? BasicBlockVisit::Abort
+                                                                                           : BasicBlockVisit::Continue;
+                                                                            }) == BasicBlockVisit::Abort);
                 }
             }
 
@@ -306,9 +313,12 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
                 {
                     res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, blk, res);
 
-                    assert(filterBlk->VisitEHEnclosedHandlerSecondPassSuccs(this, [blk](BasicBlock* succ) {
-                        return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
-                    }) == BasicBlockVisit::Abort);
+                    assert(filterBlk->VisitEHEnclosedHandlerSecondPassSuccs(this,
+                                                                            [blk](BasicBlock* succ) {
+                                                                                return succ == blk
+                                                                                           ? BasicBlockVisit::Abort
+                                                                                           : BasicBlockVisit::Continue;
+                                                                            }) == BasicBlockVisit::Abort);
                 }
             }
 
@@ -690,7 +700,8 @@ void BasicBlock::dspSuccs(Compiler* compiler)
 // things strictly.
 void BasicBlock::dspKind() const
 {
-    auto dspBlockNum = [](const FlowEdge* e) -> const char* {
+    auto dspBlockNum = [](const FlowEdge* e) -> const char*
+    {
         static char buffers[3][64]; // static array of 3 to allow 3 concurrent calls in one printf()
         static int  nextBufferIndex = 0;
 

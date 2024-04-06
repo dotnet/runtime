@@ -214,9 +214,7 @@ public:
         UseExecutionOrder = true,
     };
 
-    SubstitutePlaceholdersAndDevirtualizeWalker(Compiler* comp) : GenTreeVisitor(comp)
-    {
-    }
+    SubstitutePlaceholdersAndDevirtualizeWalker(Compiler* comp) : GenTreeVisitor(comp) {}
 
     bool MadeChanges()
     {
@@ -1174,7 +1172,8 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     param.inlineCandidateInfo = inlineCandidateInfo;
     param.inlineInfo          = &inlineInfo;
     bool success              = eeRunWithErrorTrap<Param>(
-        [](Param* pParam) {
+        [](Param* pParam)
+        {
             // Init the local var info of the inlinee
             pParam->pThis->impInlineInitVars(pParam->inlineInfo);
 
@@ -1203,12 +1202,12 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 pParam->inlineInfo->inlineContext =
                     pParam->inlineInfo->InlineRoot->m_inlineStrategy
                         ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext,
-                                     pParam->inlineInfo->iciStmt, pParam->inlineInfo->iciCall);
+                                                  pParam->inlineInfo->iciStmt, pParam->inlineInfo->iciCall);
                 pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
                 pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHnd;
 
                 JITLOG_THIS(pParam->pThis,
-                            (LL_INFO100000, "INLINER: inlineInfo.tokenLookupContextHandle for %s set to 0x%p:\n",
+                                         (LL_INFO100000, "INLINER: inlineInfo.tokenLookupContextHandle for %s set to 0x%p:\n",
                              pParam->pThis->eeGetMethodFullName(pParam->fncHandle),
                              pParam->pThis->dspPtr(pParam->inlineInfo->tokenLookupContextHandle)));
 

@@ -945,8 +945,9 @@ void DefaultPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     {
         // Inline appears to be unprofitable
         JITLOG_THIS(m_RootCompiler,
-                    (LL_INFO100000, "Native estimate for function size exceeds threshold"
-                                    " for inlining %g > %g (multiplier = %g)\n",
+                    (LL_INFO100000,
+                     "Native estimate for function size exceeds threshold"
+                     " for inlining %g > %g (multiplier = %g)\n",
                      (double)m_CalleeNativeSizeEstimate / SIZE_SCALE, (double)threshold / SIZE_SCALE, m_Multiplier));
 
         // Fail the inline
@@ -963,8 +964,9 @@ void DefaultPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     {
         // Inline appears to be profitable
         JITLOG_THIS(m_RootCompiler,
-                    (LL_INFO100000, "Native estimate for function size is within threshold"
-                                    " for inlining %g <= %g (multiplier = %g)\n",
+                    (LL_INFO100000,
+                     "Native estimate for function size is within threshold"
+                     " for inlining %g <= %g (multiplier = %g)\n",
                      (double)m_CalleeNativeSizeEstimate / SIZE_SCALE, (double)threshold / SIZE_SCALE, m_Multiplier));
 
         // Update candidacy

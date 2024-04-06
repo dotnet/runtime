@@ -212,7 +212,7 @@ enum _regMask_enum : unsigned
 #if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
 #else
-typedef unsigned       regMaskTP;
+typedef unsigned regMaskTP;
 #endif
 
 #if REGMASK_BITS == 8
@@ -764,8 +764,8 @@ typedef __int64          target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 63)
 
 #else // !TARGET_64BIT
-typedef unsigned int   target_size_t;
-typedef int            target_ssize_t;
+typedef unsigned int target_size_t;
+typedef int          target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 31)
 
 #endif // !TARGET_64BIT

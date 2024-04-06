@@ -1182,33 +1182,33 @@ int LinearScan::BuildCall(GenTreeCall* call)
     else
 #endif // TARGET_X86
         if (hasMultiRegRetVal)
-    {
-        assert(retTypeDesc != nullptr);
-        dstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
-        assert((int)genCountBits(dstCandidates) == dstCount);
-    }
-    else if (varTypeUsesFloatReg(registerType))
-    {
+        {
+            assert(retTypeDesc != nullptr);
+            dstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
+            assert((int)genCountBits(dstCandidates) == dstCount);
+        }
+        else if (varTypeUsesFloatReg(registerType))
+        {
 #ifdef TARGET_X86
-        // The return value will be on the X87 stack, and we will need to move it.
-        dstCandidates = allRegs(registerType);
+            // The return value will be on the X87 stack, and we will need to move it.
+            dstCandidates = allRegs(registerType);
 #else  // !TARGET_X86
         dstCandidates = RBM_FLOATRET;
 #endif // !TARGET_X86
-    }
-    else
-    {
-        assert(varTypeUsesIntReg(registerType));
-
-        if (registerType == TYP_LONG)
-        {
-            dstCandidates = RBM_LNGRET;
         }
         else
         {
-            dstCandidates = RBM_INTRET;
+            assert(varTypeUsesIntReg(registerType));
+
+            if (registerType == TYP_LONG)
+            {
+                dstCandidates = RBM_LNGRET;
+            }
+            else
+            {
+                dstCandidates = RBM_INTRET;
+            }
         }
-    }
 
     // number of args to a call =
     // callRegArgs + (callargs - placeholders, setup, etc)

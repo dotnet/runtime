@@ -78,9 +78,9 @@ inline T genFindLowestBit(T value)
 }
 
 /*****************************************************************************
-*
-*  Return true if the given value has exactly zero or one bits set.
-*/
+ *
+ *  Return true if the given value has exactly zero or one bits set.
+ */
 
 template <typename T>
 inline bool genMaxOneBit(T value)
@@ -89,9 +89,9 @@ inline bool genMaxOneBit(T value)
 }
 
 /*****************************************************************************
-*
-*  Return true if the given value has exactly one bit set.
-*/
+ *
+ *  Return true if the given value has exactly one bit set.
+ */
 
 template <typename T>
 inline bool genExactlyOneBit(T value)
@@ -280,9 +280,7 @@ class Counter : public Dumpable
 public:
     int64_t Value;
 
-    Counter(int64_t initialValue = 0) : Value(initialValue)
-    {
-    }
+    Counter(int64_t initialValue = 0) : Value(initialValue) {}
 
     void dump(FILE* output);
 };
@@ -332,9 +330,7 @@ private:
 class NodeCounts : public Dumpable
 {
 public:
-    NodeCounts() : m_counts()
-    {
-    }
+    NodeCounts() : m_counts() {}
 
     void dump(FILE* output);
     void record(genTreeOps oper);
@@ -544,7 +540,7 @@ BasicBlockVisit BasicBlock::VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp
 //   3. As part of two pass EH, control may bypass filters and flow directly to
 //   filter-handlers
 //
-template <bool         skipJumpDest, typename TFunc>
+template <bool skipJumpDest, typename TFunc>
 static BasicBlockVisit VisitEHSuccs(Compiler* comp, BasicBlock* block, TFunc func)
 {
     if (!block->HasPotentialEHSuccs(comp))
@@ -1273,8 +1269,8 @@ inline Statement* Compiler::gtNewStmt(GenTree* expr, const DebugInfo& di)
 inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1)
 {
     assert((GenTree::OperKind(oper) & (GTK_UNOP | GTK_BINOP)) != 0);
-    assert((GenTree::OperKind(oper) & GTK_EXOP) ==
-           0); // Can't use this to construct any types that extend unary/binary operator.
+    assert((GenTree::OperKind(oper) & GTK_EXOP) == 0); // Can't use this to construct any types that extend unary/binary
+                                                       // operator.
     assert(op1 != nullptr || oper == GT_RETFILT || (oper == GT_RETURN && type == TYP_VOID));
 
     GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
@@ -1320,7 +1316,7 @@ inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags f
     node = new (this, LargeOpOpcode())
         GenTreeIntCon(gtGetTypeForIconFlags(flags), value, fields DEBUGARG(/*largeNode*/ true));
 #else
-    node             = new (this, GT_CNS_INT) GenTreeIntCon(gtGetTypeForIconFlags(flags), value, fields);
+    node = new (this, GT_CNS_INT) GenTreeIntCon(gtGetTypeForIconFlags(flags), value, fields);
 #endif
     node->gtFlags |= flags;
     return node;
@@ -2520,8 +2516,8 @@ inline
             assert(varDsc->lvIsParam);
 #endif // UNIX_AMD64_ABI
 #else  // !TARGET_AMD64
-            // For other targets, a stack parameter that is enregistered or prespilled
-            // for profiling on ARM will have a stack location.
+       // For other targets, a stack parameter that is enregistered or prespilled
+       // for profiling on ARM will have a stack location.
             assert((varDsc->lvIsParam && !varDsc->lvIsRegArg) || isPrespilledArg);
 #endif // !TARGET_AMD64
         }
@@ -2608,7 +2604,7 @@ inline
 #ifdef TARGET_ARM
                 varOffset = codeGen->genCallerSPtoInitialSPdelta() - codeGen->genCallerSPtoFPdelta();
 #else
-                varOffset                = -(codeGen->genTotalFrameSize());
+                varOffset = -(codeGen->genTotalFrameSize());
 #endif
             }
         }
@@ -2662,7 +2658,7 @@ inline
         *pBaseReg = REG_SPBASE;
     }
 #else
-    *pFPbased                            = FPbased;
+    *pFPbased = FPbased;
 #endif
 
     return varOffset;
@@ -4780,8 +4776,8 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
 
     ArrayStack<AllSuccessorEnumerator> blocks(getAllocator(CMK_DepthFirstSearch));
 
-    auto dfsFrom = [&](BasicBlock* firstBB) {
-
+    auto dfsFrom = [&](BasicBlock* firstBB)
+    {
         BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
         blocks.Emplace(this, firstBB);
         visitPreorder(firstBB, preOrderIndex++);
@@ -4807,7 +4803,6 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
                 visitPostorder(block, postOrderIndex++);
             }
         }
-
     };
 
     dfsFrom(fgFirstBB);
@@ -4852,15 +4847,17 @@ template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder(TFunc func)
 {
     BitVecTraits traits(m_blocksSize, m_dfsTree->GetCompiler());
-    bool result = BitVecOps::VisitBits(&traits, m_blocks, [=](unsigned index) {
-        // head block rpo index = PostOrderCount - 1 - headPreOrderIndex
-        // loop block rpo index = head block rpoIndex + index
-        // loop block po index = PostOrderCount - 1 - loop block rpo index
-        //                     = headPreOrderIndex - index
-        unsigned poIndex = m_header->bbPostorderNum - index;
-        assert(poIndex < m_dfsTree->GetPostOrderCount());
-        return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
-    });
+    bool         result = BitVecOps::VisitBits(&traits, m_blocks,
+                                               [=](unsigned index)
+                                               {
+                                           // head block rpo index = PostOrderCount - 1 - headPreOrderIndex
+                                           // loop block rpo index = head block rpoIndex + index
+                                           // loop block po index = PostOrderCount - 1 - loop block rpo index
+                                           //                     = headPreOrderIndex - index
+                                           unsigned poIndex = m_header->bbPostorderNum - index;
+                                           assert(poIndex < m_dfsTree->GetPostOrderCount());
+                                           return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
+                                       });
 
     return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
 }
@@ -4884,11 +4881,14 @@ template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksPostOrder(TFunc func)
 {
     BitVecTraits traits(m_blocksSize, m_dfsTree->GetCompiler());
-    bool result = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
-        unsigned poIndex = m_header->bbPostorderNum - index;
-        assert(poIndex < m_dfsTree->GetPostOrderCount());
-        return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
-    });
+    bool         result =
+        BitVecOps::VisitBitsReverse(&traits, m_blocks,
+                                    [=](unsigned index)
+                                    {
+                                        unsigned poIndex = m_header->bbPostorderNum - index;
+                                        assert(poIndex < m_dfsTree->GetPostOrderCount());
+                                        return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
+                                    });
 
     return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
 }
@@ -4933,15 +4933,17 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
 {
     BasicBlock* top           = m_header;
     unsigned    numLoopBlocks = 0;
-    VisitLoopBlocks([&](BasicBlock* block) {
-        if (block->bbNum < top->bbNum)
+    VisitLoopBlocks(
+        [&](BasicBlock* block)
         {
-            top = block;
-        }
+            if (block->bbNum < top->bbNum)
+            {
+                top = block;
+            }
 
-        numLoopBlocks++;
-        return BasicBlockVisit::Continue;
-    });
+            numLoopBlocks++;
+            return BasicBlockVisit::Continue;
+        });
 
     INDEBUG(BasicBlock* prev = nullptr);
     BasicBlock* cur = top;

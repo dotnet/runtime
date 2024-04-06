@@ -1371,7 +1371,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 LcMdArrayOptInfo* mdArrInfo = optInfo->AsLcMdArrayOptInfo();
                 LC_Array arrLen(LC_Array(LC_Array::MdArray, mdArrInfo->GetArrIndexForDim(getAllocator(CMK_LoopClone)),
                                          mdArrInfo->dim, LC_Array::None));
-                LC_Ident     arrLenIdent = LC_Ident::CreateArrAccess(arrLen);
+                LC_Ident arrLenIdent = LC_Ident::CreateArrAccess(arrLen);
                 LC_Condition cond(opLimitCondition, LC_Expr(ident), LC_Expr(arrLenIdent));
                 context->EnsureConditions(loop->GetIndex())->Push(cond);
 
@@ -1666,7 +1666,7 @@ void Compiler::optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore
 //      performs the optimizations assuming that the path in which the candidates
 //      were collected is the fast path in which the optimizations will be performed.
 //
-void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop* loop,
+void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
                                              LoopCloneContext* context DEBUGARG(bool dynamicPath))
 {
     JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loop->GetIndex());
@@ -1813,10 +1813,12 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
     // flow can reach the header, but that would require the handler to also be
     // part of the loop, which guarantees that the loop contains two distinct
     // EH regions.
-    loop->VisitLoopBlocks([](BasicBlock* block) {
-        assert(!block->KindIs(BBJ_RETURN));
-        return BasicBlockVisit::Continue;
-    });
+    loop->VisitLoopBlocks(
+        [](BasicBlock* block)
+        {
+            assert(!block->KindIs(BBJ_RETURN));
+            return BasicBlockVisit::Continue;
+        });
 #endif
 
     // Is the entry block a handler or filter start?  If so, then if we cloned, we could create a jump
@@ -2018,10 +2020,12 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     loop->Duplicate(&newPred, blockMap, LoopCloneContext::slowPathWeightScaleFactor);
 
     // Scale old blocks to the fast path weight.
-    loop->VisitLoopBlocks([=](BasicBlock* block) {
-        block->scaleBBWeight(LoopCloneContext::fastPathWeightScaleFactor);
-        return BasicBlockVisit::Continue;
-    });
+    loop->VisitLoopBlocks(
+        [=](BasicBlock* block)
+        {
+            block->scaleBBWeight(LoopCloneContext::fastPathWeightScaleFactor);
+            return BasicBlockVisit::Continue;
+        });
 
     // Perform the static optimizations on the fast path.
     optPerformStaticOptimizations(loop, context DEBUGARG(true));
@@ -2803,19 +2807,21 @@ bool Compiler::optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneConte
 
     LoopCloneVisitorInfo info(context, loop, nullptr, shouldCloneForArrayBounds, shouldCloneForGdvTests);
 
-    loop->VisitLoopBlocksReversePostOrder([=, &info](BasicBlock* block) {
-        compCurBB = block;
-        for (Statement* const stmt : block->Statements())
+    loop->VisitLoopBlocksReversePostOrder(
+        [=, &info](BasicBlock* block)
         {
-            info.stmt               = stmt;
-            const bool lclVarsOnly  = false;
-            const bool computeStack = false;
-            fgWalkTreePre(stmt->GetRootNodePointer(), optCanOptimizeByLoopCloningVisitor, &info, lclVarsOnly,
-                          computeStack);
-        }
+            compCurBB = block;
+            for (Statement* const stmt : block->Statements())
+            {
+                info.stmt               = stmt;
+                const bool lclVarsOnly  = false;
+                const bool computeStack = false;
+                fgWalkTreePre(stmt->GetRootNodePointer(), optCanOptimizeByLoopCloningVisitor, &info, lclVarsOnly,
+                              computeStack);
+            }
 
-        return BasicBlockVisit::Continue;
-    });
+            return BasicBlockVisit::Continue;
+        });
 
     return true;
 }

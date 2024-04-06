@@ -26,8 +26,9 @@
 #define ZERO 0
 
 #ifdef _MSC_VER
-#define CHECK_STRUCT_PADDING 0 // Set this to '1' to enable warning C4820 "'bytes' bytes padding added after
-                               // construct 'member_name'" on interesting structs/classes
+#define CHECK_STRUCT_PADDING                                                                                           \
+    0 // Set this to '1' to enable warning C4820 "'bytes' bytes padding added after
+      // construct 'member_name'" on interesting structs/classes
 #else
 #define CHECK_STRUCT_PADDING 0 // Never enable it for non-MSFT compilers
 #endif
@@ -487,17 +488,20 @@ public:
 #define VERIFY_GC_TABLES 0
 #define REARRANGE_ADDS 1
 
-#define FUNC_INFO_LOGGING 1 // Support dumping function info to a file. In retail, only NYIs, with no function name,
-                            // are dumped.
+#define FUNC_INFO_LOGGING                                                                                              \
+    1 // Support dumping function info to a file. In retail, only NYIs, with no function name,
+      // are dumped.
 
 /*****************************************************************************/
 /*****************************************************************************/
 /* Set these to 1 to collect and output various statistics about the JIT */
 
-#define CALL_ARG_STATS 0      // Collect stats about calls and call arguments.
-#define COUNT_BASIC_BLOCKS 0  // Create a histogram of basic block sizes, and a histogram of IL sizes in the simple
-                              // case of single block methods.
-#define COUNT_LOOPS 0         // Collect stats about loops, such as the total number of natural loops, a histogram of
+#define CALL_ARG_STATS 0 // Collect stats about calls and call arguments.
+#define COUNT_BASIC_BLOCKS                                                                                             \
+    0 // Create a histogram of basic block sizes, and a histogram of IL sizes in the simple
+      // case of single block methods.
+#define COUNT_LOOPS                                                                                                    \
+    0                         // Collect stats about loops, such as the total number of natural loops, a histogram of
                               // the number of loop exits, etc.
 #define DISPLAY_SIZES 0       // Display generated code, data, and GC information sizes.
 #define MEASURE_BLOCK_SIZE 0  // Collect stats about basic block and FlowEdge node sizes and memory allocations.
@@ -628,8 +632,9 @@ const bool dspGCtbls = true;
  */
 
 #ifdef TARGET_X86
-#define DOUBLE_ALIGN 1 // permit the double alignment of ESP in prolog,
-                       //  and permit the double alignment of local offsets
+#define DOUBLE_ALIGN                                                                                                   \
+    1 // permit the double alignment of ESP in prolog,
+      //  and permit the double alignment of local offsets
 #else
 #define DOUBLE_ALIGN 0 // no special handling for double alignment
 #endif
@@ -673,7 +678,7 @@ inline bool IsUninitialized(T data);
 #define MISALIGNED_RD_U2(src) (*castto(src, unsigned short*))
 
 #define MISALIGNED_WR_I2(dst, val) *castto(dst, short*) = val;
-#define MISALIGNED_WR_I4(dst, val) *castto(dst, int*)   = val;
+#define MISALIGNED_WR_I4(dst, val) *castto(dst, int*) = val;
 
 #define MISALIGNED_WR_ST(dst, val) *castto(dst, ssize_t*) = val;
 
@@ -813,7 +818,7 @@ public:
 #endif
 
     static Compiler* GetCompiler();
-    static void SetCompiler(Compiler* compiler);
+    static void      SetCompiler(Compiler* compiler);
 };
 
 #if defined(DEBUG)

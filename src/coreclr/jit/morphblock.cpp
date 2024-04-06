@@ -530,13 +530,15 @@ GenTree* MorphInitBlockHelper::EliminateCommas(GenTree** commaPool)
 {
     *commaPool = nullptr;
 
-    GenTree* sideEffects = nullptr;
-    auto addSideEffect   = [&sideEffects](GenTree* sideEff) {
+    GenTree* sideEffects   = nullptr;
+    auto     addSideEffect = [&sideEffects](GenTree* sideEff)
+    {
         sideEff->gtNext = sideEffects;
         sideEffects     = sideEff;
     };
 
-    auto addComma = [commaPool, &addSideEffect](GenTree* comma) {
+    auto addComma = [commaPool, &addSideEffect](GenTree* comma)
+    {
         addSideEffect(comma->gtGetOp1());
         comma->gtNext = *commaPool;
         *commaPool    = comma;
@@ -645,9 +647,7 @@ GenTree* MorphCopyBlockHelper::MorphCopyBlock(Compiler* comp, GenTree* tree)
 // Notes:
 //    Most class members are initialized via in-class member initializers.
 //
-MorphCopyBlockHelper::MorphCopyBlockHelper(Compiler* comp, GenTree* store) : MorphInitBlockHelper(comp, store, false)
-{
-}
+MorphCopyBlockHelper::MorphCopyBlockHelper(Compiler* comp, GenTree* store) : MorphInitBlockHelper(comp, store, false) {}
 
 //------------------------------------------------------------------------
 // PrepareSrc: Initialize member fields with information about the store's
@@ -1042,7 +1042,8 @@ void MorphCopyBlockHelper::TryPrimitiveCopy()
         return;
     }
 
-    auto doRetypeNode = [storeType](GenTree* op, LclVarDsc* varDsc, bool isUse) {
+    auto doRetypeNode = [storeType](GenTree* op, LclVarDsc* varDsc, bool isUse)
+    {
         if (op->OperIsIndir())
         {
             op->SetOper(isUse ? GT_IND : GT_STOREIND);
@@ -1182,7 +1183,8 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         addrSpillStore          = m_comp->gtNewTempStore(addrSpillTemp, addrSpill);
     }
 
-    auto grabAddr = [=, &result](unsigned offs) {
+    auto grabAddr = [=, &result](unsigned offs)
+    {
         GenTree* addrClone = nullptr;
         // Need address of the source.
         if (addrSpill)

@@ -727,8 +727,8 @@ private:
     //   remainderStrategy - The strategy we are using for the remainder
     //   dump              - Whether to JITDUMP decisions made
     //
-    bool CanSkipEntry(const Entry&             entry,
-                      const StructDeaths&      deaths,
+    bool CanSkipEntry(const Entry&                               entry,
+                      const StructDeaths&                        deaths,
                       const RemainderStrategy& remainderStrategy DEBUGARG(bool dump = false))
     {
         if (entry.ToReplacement != nullptr)

@@ -219,9 +219,7 @@ public:
     // Notes:
     //    See JitExpandArray constructor notes.
     //
-    JitExpandArrayStack(CompAllocator alloc, unsigned minSize = 1) : JitExpandArray<T>(alloc, minSize), m_used(0)
-    {
-    }
+    JitExpandArrayStack(CompAllocator alloc, unsigned minSize = 1) : JitExpandArray<T>(alloc, minSize), m_used(0) {}
 
     //------------------------------------------------------------------------
     // GetRef: Get a reference to the element at index `idx`.

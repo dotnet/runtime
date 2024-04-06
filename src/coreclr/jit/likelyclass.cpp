@@ -254,9 +254,8 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
                     // sort by m_count (descending)
                     jitstd::sort(sortedEntries, sortedEntries + knownHandles,
                                  [](const LikelyClassMethodHistogramEntry& h1,
-                                    const LikelyClassMethodHistogramEntry& h2) -> bool {
-                                     return h1.m_count > h2.m_count;
-                                 });
+                                    const LikelyClassMethodHistogramEntry& h2) -> bool
+                                 { return h1.m_count > h2.m_count; });
 
                     const UINT32 numberOfClasses = min(knownHandles, maxLikelyClasses);
 

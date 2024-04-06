@@ -35,12 +35,6 @@
 #define __has_cpp_attribute(x) (0)
 #endif
 
-#if __has_cpp_attribute(fallthrough)
-#define FALLTHROUGH [[fallthrough]]
-#else
-#define FALLTHROUGH
-#endif
-
 #include <algorithm>
 
 #if HAVE_SYS_TIME_H
