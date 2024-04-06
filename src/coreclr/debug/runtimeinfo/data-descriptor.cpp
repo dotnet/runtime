@@ -1,26 +1,15 @@
+#include "common.h"
+
 #include <stdint.h>
 #include <stddef.h>
 
-// example structures
 
-typedef struct ManagedThread ManagedThread;
-
-struct ManagedThread {
-    uint32_t garbage0;
-    uint32_t m_gcHandle;
-    uint32_t garbage1;
-    ManagedThread *m_next;
-};
-
-typedef struct ManagedThreadStore {
-    ManagedThread *threads;
-} ManagedThreadStore;
-
-static ManagedThreadStore g_managedThreadStore;
-
-// end example structures
+#include "threads.h"
 
 // begin blob definition
+
+extern "C"
+{
 
 struct TypeSpec
 {
@@ -372,7 +361,10 @@ struct MagicAndBlob {
     struct BinaryBlobDataDescriptor Blob;
 };
 
-const struct MagicAndBlob Blob = {
+DLLEXPORT size_t FooFaFa = 0x12345678;
+
+DLLEXPORT
+struct MagicAndBlob BlobDataDescriptor = {
     .magic = 0x00424F4C42434144ull,// "DACBLOB",
     .Blob = {
         .Directory = {
@@ -392,50 +384,18 @@ const struct MagicAndBlob Blob = {
             .GlobalLiteralSpecSize = sizeof(struct GlobalLiteralSpec),
             .GlobalPointerSpecSize = sizeof(struct GlobalPointerSpec),
         },
-        .EndMagic = { 0x01, 0x02, 0x03, 0x04 },
         .BaselineName = offsetof(struct CDacStringPoolSizes, cdac_string_pool_baseline_),
 
-        .NamesPool = ("\0" // starts with a nul
-#define CDAC_BASELINE(name) name "\0"
+        .Types = {
+#define CDAC_BASELINE(name)
 #define CDAC_TYPES_BEGIN()
-#define CDAC_TYPE_BEGIN(name) #name "\0"
-#define CDAC_TYPE_INDETERMINATE(name)
-#define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) #membername "\0" #membertyname "\0"
-#define CDAC_TYPE_END(name)
-#define CDAC_TYPES_END()
-#define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL_POINTER(name,value) #name "\0"
-#define CDAC_GLOBAL(name,tyname,value) #name "\0" #tyname "\0"
-#define CDAC_GLOBALS_END()
-#include "data-descriptor.h"
-#undef CDAC_BASELINE
-#undef CDAC_TYPES_BEGIN
-#undef CDAC_TYPES_END
-#undef CDAC_TYPE_BEGIN
-#undef CDAC_TYPE_INDETERMINATE
-#undef CDAC_TYPE_SIZE
-#undef CDAC_TYPE_FIELD
-#undef CDAC_TYPE_END
-#undef DECL_LEN
-#undef CDAC_GLOBALS_BEGIN
-#undef CDAC_GLOBAL_POINTER
-#undef CDAC_GLOBAL
-#undef CDAC_GLOBALS_END
-                  ),
-
-        .FieldPool = {
-#define CDAC_BASELINE(name) {0,},
-#define CDAC_TYPES_BEGIN()
-#define CDAC_TYPE_BEGIN(name)
-#define CDAC_TYPE_INDETERMINATE(name)
-#define CDAC_TYPE_SIZE(size)
-#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) { \
-    .Name = GET_FIELD_NAME(tyname,membername), \
-    .TypeName = GET_FIELDTYPE_NAME(tyname,membername), \
-    .FieldOffset = offset, \
-},
-#define CDAC_TYPE_END(name) { 0, },
+#define CDAC_TYPE_BEGIN(name) { \
+    .Name = GET_TYPE_NAME(name), \
+    .Fields = GET_TYPE_FIELDS(name),
+#define CDAC_TYPE_INDETERMINATE(name) .Size = 0,
+#define CDAC_TYPE_SIZE(size) .Size = size,
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset)
+#define CDAC_TYPE_END(name) },
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
 #define CDAC_GLOBAL_POINTER(name,value)
@@ -457,16 +417,18 @@ const struct MagicAndBlob Blob = {
 #undef CDAC_GLOBALS_END
         },
 
-        .Types = {
-#define CDAC_BASELINE(name)
+        .FieldPool = {
+#define CDAC_BASELINE(name) {0,},
 #define CDAC_TYPES_BEGIN()
-#define CDAC_TYPE_BEGIN(name) { \
-    .Name = GET_TYPE_NAME(name), \
-    .Fields = GET_TYPE_FIELDS(name),
-#define CDAC_TYPE_INDETERMINATE(name) .Size = 0,
-#define CDAC_TYPE_SIZE(size) .Size = size,
-#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset)
-#define CDAC_TYPE_END(name) },
+#define CDAC_TYPE_BEGIN(name)
+#define CDAC_TYPE_INDETERMINATE(name)
+#define CDAC_TYPE_SIZE(size)
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) { \
+    .Name = GET_FIELD_NAME(tyname,membername), \
+    .TypeName = GET_FIELDTYPE_NAME(tyname,membername), \
+    .FieldOffset = offset, \
+},
+#define CDAC_TYPE_END(name) { 0, },
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
 #define CDAC_GLOBAL_POINTER(name,value)
@@ -545,7 +507,40 @@ const struct MagicAndBlob Blob = {
 #undef CDAC_GLOBAL
 #undef CDAC_GLOBALS_END
         },
+
+        .NamesPool = ("\0" // starts with a nul
+#define CDAC_BASELINE(name) name "\0"
+#define CDAC_TYPES_BEGIN()
+#define CDAC_TYPE_BEGIN(name) #name "\0"
+#define CDAC_TYPE_INDETERMINATE(name)
+#define CDAC_TYPE_SIZE(size)
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) #membername "\0" #membertyname "\0"
+#define CDAC_TYPE_END(name)
+#define CDAC_TYPES_END()
+#define CDAC_GLOBALS_BEGIN()
+#define CDAC_GLOBAL_POINTER(name,value) #name "\0"
+#define CDAC_GLOBAL(name,tyname,value) #name "\0" #tyname "\0"
+#define CDAC_GLOBALS_END()
+#include "data-descriptor.h"
+#undef CDAC_BASELINE
+#undef CDAC_TYPES_BEGIN
+#undef CDAC_TYPES_END
+#undef CDAC_TYPE_BEGIN
+#undef CDAC_TYPE_INDETERMINATE
+#undef CDAC_TYPE_SIZE
+#undef CDAC_TYPE_FIELD
+#undef CDAC_TYPE_END
+#undef DECL_LEN
+#undef CDAC_GLOBALS_BEGIN
+#undef CDAC_GLOBAL_POINTER
+#undef CDAC_GLOBAL
+#undef CDAC_GLOBALS_END
+                  ),
+
+        .EndMagic = { 0x01, 0x02, 0x03, 0x04 },
     }
 };
 
 // end blob definition
+
+} // extern "C"

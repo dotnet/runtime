@@ -39,13 +39,17 @@ endif()
 install_clr(TARGETS runtimeinfo DESTINATIONS lib COMPONENT runtime)
 
 
-add_library(cdac_data_descriptor OBJECT data-descriptor.c)
+add_library(cdac_data_descriptor OBJECT data-descriptor.cpp)
 if(CLR_CMAKE_TARGET_WIN32)
   # turn off whole program optimization:
   # 1. it creates object files that cdac-build-tool can't read
   # 2. we never link cdac_data_descriptor into the final product - it's only job is to be scraped
   target_compile_options(cdac_data_descriptor PRIVATE /GL-)
 endif()
+target_include_directories(cdac_data_descriptor BEFORE PRIVATE ${VM_DIR})
+target_include_directories(cdac_data_descriptor BEFORE PRIVATE ${VM_DIR}/${ARCH_SOURCES_DIR})
+target_include_directories(cdac_data_descriptor PRIVATE ${CLR_DIR}/interop/inc)
+
 
 
 set(GENERATED_CDAC_DESCRIPTOR_DIR "${CMAKE_CURRENT_BINARY_DIR}/cdac")
@@ -70,6 +74,9 @@ add_custom_command(
 
 add_library_clr(cdac_contract_descriptor OBJECT
     "${CONTRACT_DESCRIPTOR_OUTPUT}"
-    contract-aux-data.c
+    contract-aux-data.cpp
 )
+target_include_directories(cdac_contract_descriptor BEFORE PRIVATE ${VM_DIR})
+target_include_directories(cdac_contract_descriptor BEFORE PRIVATE ${VM_DIR}/${ARCH_SOURCES_DIR})
+target_include_directories(cdac_contract_descriptor PRIVATE ${CLR_DIR}/interop/inc)
 add_dependencies(cdac_contract_descriptor cdac_data_descriptor)
