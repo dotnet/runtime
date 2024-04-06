@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -77,7 +76,7 @@ namespace TypeSystemTests
         public void TestExplicitTypeLayoutWithSize()
         {
             var explicitSizeType = _testModule.GetType("Explicit", "ExplicitSize");
-            Assert.Equal(24 + IntPtr.Size * 2, explicitSizeType.InstanceByteCount.AsInt);
+            Assert.Equal(40, explicitSizeType.InstanceByteCount.AsInt);
         }
 
         [Fact]
