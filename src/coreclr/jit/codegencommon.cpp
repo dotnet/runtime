@@ -2821,7 +2821,6 @@ struct RegNode
 {
     regNumber    reg;
     regNumber    copiedReg;
-    var_types    type;
     RegNodeEdge* incoming;
     RegNodeEdge* outgoing;
     RegNode*     next;
@@ -2837,10 +2836,8 @@ public:
     {
     }
 
-    RegNode* GetOrAdd(regNumber reg, var_types type)
+    RegNode* Get(regNumber reg)
     {
-        assert(type != TYP_STRUCT);
-
         for (int i = 0; i < m_nodes.Height(); i++)
         {
             RegNode* node = m_nodes.Bottom(i);
@@ -2848,23 +2845,23 @@ public:
             {
                 return node;
             }
-
-#ifdef TARGET_ARM
-            if ((node->type == TYP_DOUBLE) && (reg == REG_NEXT(node->reg)))
-            {
-                return node;
-            }
-#endif
         }
 
-        RegNode* node   = new (m_comp, CMK_Codegen) RegNode;
-        node->reg       = reg;
-        node->copiedReg = REG_NA;
-        node->type      = type;
-        node->incoming  = nullptr;
-        node->outgoing  = nullptr;
+        return nullptr;
+    }
 
-        m_nodes.Push(node);
+    RegNode* GetOrAdd(regNumber reg)
+    {
+        RegNode* node = Get(reg);
+        if (node == nullptr)
+        {
+            node = new (m_comp, CMK_Codegen) RegNode;
+            node->reg = reg;
+            node->copiedReg = REG_NA;
+            node->incoming = nullptr;
+            node->outgoing = nullptr;
+            m_nodes.Push(node);
+        }
         return node;
     }
 
@@ -2888,6 +2885,9 @@ public:
     RegNode* FindNodeToHandle()
     {
         RegNode* lastNode = nullptr;
+
+        // Prefer a node with no outgoing edges meaning that its value does not
+        // need to be saved.
         for (int i = 0; i < m_nodes.Height(); i++)
         {
             RegNode* reg = m_nodes.Bottom(i);
@@ -2904,6 +2904,30 @@ public:
             lastNode = reg;
         }
 
+        if (lastNode == nullptr)
+        {
+            return lastNode;
+        }
+
+        // All remaining nodes have an outgoing edge, so we will need to save
+        // the value of the register we pick. Prefer to pick one whose outgoing
+        // edge is the sole incoming edge of the target. This means we can
+        // always continue with that node after this one, and only need one
+        // temporary register.
+        for (int i = 0; i < m_nodes.Height(); i++)
+        {
+            RegNode* reg = m_nodes.Bottom(i);
+            if (reg->incoming == nullptr)
+            {
+                continue;
+            }
+
+            if (reg->outgoing->to->incoming->nextIncoming == nullptr)
+            {
+                return reg;
+            }
+        }
+
         return lastNode;
     }
 
@@ -2914,7 +2938,12 @@ public:
             // Unlink from source.
             assert(edge->from->outgoing == edge);
             edge->from->outgoing = nullptr;
-            *busyRegs &= ~genRegMask(edge->from->reg);
+
+            // Source no longer has outgoing edges, so its value is no longer
+            // needed for anything. Make the registers it was occupying
+            // available.
+            regNumber sourceReg = edge->from->copiedReg != REG_NA ? edge->from->copiedReg : edge->from->reg;
+            *busyRegs &= ~genRegMask(sourceReg);
         }
 
         node->incoming = nullptr;
@@ -2927,14 +2956,10 @@ public:
         for (int i = 0; i < m_nodes.Height(); i++)
         {
             RegNode* regNode = m_nodes.Bottom(i);
-            printf("  %s (%s)", getRegName(regNode->reg), varTypeName(regNode->type));
+            printf("  %s", getRegName(regNode->reg));
             for (RegNodeEdge* incoming = regNode->incoming; incoming != nullptr; incoming = incoming->nextIncoming)
             {
-                printf("\n    <- %s (%s)", getRegName(incoming->from->reg), varTypeName(incoming->from->type));
-                if (incoming->type != incoming->from->type)
-                {
-                    printf(" (edge type: %s)", varTypeName(incoming->type));
-                }
+                printf("\n    <- %s", getRegName(incoming->from->reg), varTypeName(incoming->type));
 
                 if (incoming->destOffset != 0)
                 {
@@ -3046,7 +3071,7 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
             }
 
             GetEmitter()->emitIns_S_R(ins_Store(storeType), emitActualTypeSize(storeType), seg.GetRegister(), lclNum,
-                                      seg.Offset - baseOffset);
+                seg.Offset - baseOffset);
         }
 
         if (!varDsc->lvIsInReg())
@@ -3054,9 +3079,7 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
             continue;
         }
 
-        var_types varRegType = genActualType(varDsc->GetRegisterType());
-
-        var_types edgeType = varRegType;
+        var_types edgeType = genActualType(varDsc->GetRegisterType());
         // Some parameters can be passed in multiple registers but enregistered
         // in a single one (e.g. SIMD types on arm64). In this case the edges
         // we add here represent insertions of each element.
@@ -3065,21 +3088,22 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
             edgeType = seg.GetRegisterType();
         }
 
-        RegNode* sourceReg = graph->GetOrAdd(seg.GetRegister(), seg.GetRegisterType());
-        RegNode* destReg   = graph->GetOrAdd(varDsc->GetRegNum(), varRegType);
-
-#ifdef TARGET_ARM
-        if (destReg->reg != varDsc->GetRegNum())
-        {
-            assert(varDsc->TypeGet() == TYP_FLOAT);
-            assert(varDsc->GetRegNum() == REG_NEXT(destReg->reg));
-            graph->AddEdge(sourceReg, destReg, edgeType, 4);
-            continue;
-        }
-#endif
+        RegNode* sourceReg = graph->GetOrAdd(seg.GetRegister());
+        RegNode* destReg   = graph->GetOrAdd(varDsc->GetRegNum());
 
         if ((sourceReg != destReg) || (baseOffset != seg.Offset))
         {
+#ifdef TARGET_ARM
+            if (edgeType == TYP_DOUBLE)
+            {
+                graph->AddEdge(sourceReg, destReg, TYP_FLOAT, seg.Offset - baseOffset);
+
+                sourceReg = graph->GetOrAdd(REG_NEXT(sourceReg->reg));
+                destReg = graph->GetOrAdd(REG_NEXT(destReg->reg));
+                graph->AddEdge(sourceReg, destReg, TYP_FLOAT, seg.Offset - baseOffset);
+                continue;
+            }
+#endif
             graph->AddEdge(sourceReg, destReg, edgeType, seg.Offset - baseOffset);
         }
     }
@@ -3145,26 +3169,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     // implement the support for this.
     RegGraph graph(compiler);
 
-#ifdef TARGET_ARM
-    // Float and double registers overlap on arm32. When we have double
-    // parameters, we want to represent those as double nodes in the graph. Pre
-    // create them here to ensure a previous float parameter doesn't create an
-    // overlapping float node.
-    for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
-    {
-        const ABIPassingInformation& abiInfo = compiler->lvaParameterPassingInfo[lclNum];
-        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
-        {
-            const ABIPassingSegment& seg = abiInfo.Segments[i];
-
-            if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()) && (seg.Size == 8))
-            {
-                graph.GetOrAdd(seg.GetRegister(), TYP_DOUBLE);
-            }
-        }
-    }
-#endif
-
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
         LclVarDsc* lclDsc = compiler->lvaGetDesc(lclNum);
@@ -3204,16 +3208,27 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
         if ((node->outgoing != nullptr) && (node->copiedReg == REG_NA))
         {
             var_types copyType = node->outgoing->type;
+            regMaskTP tempRegCandidates = genGetParameterHomingTempRegisterCandidates();
+
+            tempRegCandidates &= ~busyRegs;
+
             if (varTypeUsesFloatReg(copyType))
             {
-                node->copiedReg = genFirstRegNumFromMask(RBM_FLT_CALLEE_TRASH & ~busyRegs);
+                regMaskTP availRegs = tempRegCandidates & RBM_ALLFLOAT;
+                // We should have ensured temporary registers are available in
+                // genFinalizeFrame.
+                noway_assert(availRegs != RBM_NONE);
+                node->copiedReg = genFirstRegNumFromMask(availRegs);
+                busyRegs |= genRegMaskFloat(node->copiedReg);
             }
             else
             {
-                node->copiedReg = genFirstRegNumFromMask(RBM_INT_CALLEE_TRASH & ~busyRegs);
+                regMaskTP availRegs = tempRegCandidates & RBM_ALLINT;
+                noway_assert(availRegs != RBM_NONE);
+                node->copiedReg = genFirstRegNumFromMask(availRegs);
+                busyRegs |= genRegMask(node->copiedReg);
             }
 
-            busyRegs |= genRegMask(node->copiedReg);
             instruction ins = ins_Copy(node->reg, copyType);
             GetEmitter()->emitIns_Mov(ins, emitActualTypeSize(copyType), node->copiedReg, node->reg, /* canSkip */ false);
             if (node->copiedReg == initReg)
@@ -3276,6 +3291,12 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
         }
     }
 }
+
+regMaskTP CodeGen::genGetParameterHomingTempRegisterCandidates()
+{
+    return RBM_CALLEE_TRASH | intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn | regSet.rsGetModifiedRegsMask();
+}
+
 #endif
 
 /*****************************************************************************
@@ -4542,6 +4563,27 @@ void CodeGen::genFinalizeFrame()
     {
         noway_assert(isFramePointerUsed()); // Setup of Pinvoke frame currently requires an EBP style frame
         regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
+    }
+
+    // Parameter homing may need an additional register to handle conflicts if
+    // all callee trash registers are used by parameters.
+    regMaskTP homingCandidates = genGetParameterHomingTempRegisterCandidates();
+    if (((homingCandidates & ~intRegState.rsCalleeRegArgMaskLiveIn) & RBM_ALLINT) == RBM_NONE)
+    {
+        regMaskTP extraRegMask = RBM_ALLINT & ~homingCandidates;
+        assert(extraRegMask != RBM_NONE);
+        regNumber extraReg = genFirstRegNumFromMask(extraRegMask);
+        JITDUMP("No temporary registers are available for integer parameter homing. Adding %s\n", getRegName(extraReg));
+        regSet.rsSetRegsModified(genRegMask(extraReg));
+    }
+
+    if (((homingCandidates & ~floatRegState.rsCalleeRegArgMaskLiveIn) & RBM_ALLFLOAT) == RBM_NONE)
+    {
+        regMaskTP extraRegMask = RBM_ALLFLOAT & ~homingCandidates;
+        assert(extraRegMask != RBM_NONE);
+        regNumber extraReg = genFirstRegNumFromMask(extraRegMask);
+        JITDUMP("No temporary registers are available for float parameter homing. Adding %s\n", getRegName(extraReg));
+        regSet.rsSetRegsModified(genRegMask(extraReg));
     }
 
 #ifdef UNIX_AMD64_ABI

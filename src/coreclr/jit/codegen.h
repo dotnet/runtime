@@ -263,6 +263,7 @@ protected:
 
     void genEstablishFramePointer(int delta, bool reportUnwindData);
     void genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
+    regMaskTP genGetParameterHomingTempRegisterCandidates();
 
     var_types genParamStackStoreType(LclVarDsc* dsc, const ABIPassingSegment& seg);
     void genSpillOrAddRegisterParam(unsigned lclNum, class RegGraph* graph);
