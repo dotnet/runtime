@@ -2904,30 +2904,6 @@ public:
             lastNode = reg;
         }
 
-        if (lastNode == nullptr)
-        {
-            return lastNode;
-        }
-
-        // All remaining nodes have an outgoing edge, so we will need to save
-        // the value of the register we pick. Prefer to pick one whose outgoing
-        // edge is the sole incoming edge of the target. This means we can
-        // always continue with that node after this one, and only need one
-        // temporary register.
-        for (int i = 0; i < m_nodes.Height(); i++)
-        {
-            RegNode* reg = m_nodes.Bottom(i);
-            if (reg->incoming == nullptr)
-            {
-                continue;
-            }
-
-            if (reg->outgoing->to->incoming->nextIncoming == nullptr)
-            {
-                return reg;
-            }
-        }
-
         return lastNode;
     }
 
@@ -3189,13 +3165,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
     DBEXEC(VERBOSE, graph.Dump());
 
-    // TODO:
-    // - handle per register node instead of per edge to ensure destOffset == 0
-    // case always happens first below
-    // - arm32 insertions when a float is allocated to the second register of a double
-    // - cycle handling
-    // None of these problems seem to be hit in any tests, so we need to add
-    // some stress modes for this.
     regMaskTP busyRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
     while (true)
     {
