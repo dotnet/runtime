@@ -127,10 +127,6 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         retries++;
     }
 
-    // We ought to have converged, unless we know convergence is not possible
-    //
-    assert(!m_approximate || m_hasInfiniteLoop);
-
     // Update pgo info
     //
     const bool             hadPgoWeights = m_comp->fgPgoHaveWeights;

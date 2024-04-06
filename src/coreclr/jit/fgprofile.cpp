@@ -5290,7 +5290,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
     const bool verifyHasLikelihood  = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
     const bool verifyLikelihoodSum  = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
-    const bool assertOnFailure      = hasFlag(checks, ProfileChecks::RAISE_ASSERT);
+    const bool assertOnFailure      = hasFlag(checks, ProfileChecks::RAISE_ASSERT) && fgPgoConsistent;
     const bool checkAllBlocks       = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
     if (!(verifyClassicWeights || verifyLikelyWeights || verifyHasLikelihood))
@@ -5480,6 +5480,8 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         JITDUMP("Profile is NOT self-consistent, found %d problems (%d profiled blocks, %d unprofiled)\n",
                 problemBlocks, profiledBlocks, unprofiledBlocks);
 
+        // Note we only assert when we think the profile data should be consistent.
+        //
         if (assertOnFailure)
         {
             assert(!"Inconsistent profile data");
