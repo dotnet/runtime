@@ -3072,11 +3072,12 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
 #ifdef TARGET_ARM
             if (edgeType == TYP_DOUBLE)
             {
-                graph->AddEdge(sourceReg, destReg, TYP_FLOAT, seg.Offset - baseOffset);
+                assert(seg.Offset == baseOffset);
+                graph->AddEdge(sourceReg, destReg, TYP_FLOAT, 0);
 
                 sourceReg = graph->GetOrAdd(REG_NEXT(sourceReg->reg));
                 destReg = graph->GetOrAdd(REG_NEXT(destReg->reg));
-                graph->AddEdge(sourceReg, destReg, TYP_FLOAT, seg.Offset - baseOffset);
+                graph->AddEdge(sourceReg, destReg, TYP_FLOAT, 0);
                 continue;
             }
 #endif
@@ -3178,25 +3179,16 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
         {
             var_types copyType = node->outgoing->type;
             regMaskTP tempRegCandidates = genGetParameterHomingTempRegisterCandidates();
-
             tempRegCandidates &= ~busyRegs;
 
-            if (varTypeUsesFloatReg(copyType))
-            {
-                regMaskTP availRegs = tempRegCandidates & RBM_ALLFLOAT;
-                // We should have ensured temporary registers are available in
-                // genFinalizeFrame.
-                noway_assert(availRegs != RBM_NONE);
-                node->copiedReg = genFirstRegNumFromMask(availRegs);
-                busyRegs |= genRegMaskFloat(node->copiedReg);
-            }
-            else
-            {
-                regMaskTP availRegs = tempRegCandidates & RBM_ALLINT;
-                noway_assert(availRegs != RBM_NONE);
-                node->copiedReg = genFirstRegNumFromMask(availRegs);
-                busyRegs |= genRegMask(node->copiedReg);
-            }
+            regMaskTP regTypeMask = varTypeUsesFloatReg(copyType) ? RBM_ALLFLOAT : RBM_ALLINT;
+            regMaskTP availRegs = tempRegCandidates & regTypeMask;
+
+            // We should have ensured temporary registers are available in
+            // genFinalizeFrame.
+            noway_assert(availRegs != RBM_NONE);
+            node->copiedReg = genFirstRegNumFromMask(availRegs);
+            busyRegs |= genRegMask(node->copiedReg);
 
             instruction ins = ins_Copy(node->reg, copyType);
             GetEmitter()->emitIns_Mov(ins, emitActualTypeSize(copyType), node->copiedReg, node->reg, /* canSkip */ false);
