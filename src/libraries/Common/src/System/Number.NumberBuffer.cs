@@ -22,7 +22,8 @@ namespace System
         internal const int UInt64NumberBufferLength = 20 + 1;   // 20 for the longest input: 18,446,744,073,709,551,615
         internal const int UInt128NumberBufferLength = 39 + 1; // 39 for the longest input: 340,282,366,920,938,463,463,374,607,431,768,211,455
         internal const int Decimal32NumberBufferLength = 97 + 1 + 1; // 97 for the longest input + 1 for rounding
-        internal const int Decimal64NumberBufferLength = 385 + 1 + 1; // 96 for the longest input + 1 for rounding
+        internal const int Decimal64NumberBufferLength = 385 + 1 + 1; // 385 for the longest input + 1 for rounding
+        internal const int Decimal128NumberBufferLength = 6145 + 1 + 1; // 6145 for the longest input + 1 for rounding
 
         internal unsafe ref struct NumberBuffer
         {

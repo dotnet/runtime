@@ -998,7 +998,7 @@ namespace System
                 {
                     ThrowFormatException(value);
                 }
-                ThrowOverflowException(SR.Overflow_Decimal);
+                ThrowOverflowException(SR.Overflow_Decimal32);
             }
 
             return result;
@@ -1014,7 +1014,23 @@ namespace System
                 {
                     ThrowFormatException(value);
                 }
-                ThrowOverflowException(SR.Overflow_Decimal);
+                ThrowOverflowException(SR.Overflow_Decimal64);
+            }
+
+            return result;
+        }
+
+        internal static Decimal128 ParseDecimal128<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            ParsingStatus status = TryParseDecimal128(value, styles, info, out Decimal128 result);
+            if (status != ParsingStatus.OK)
+            {
+                if (status == ParsingStatus.Failed)
+                {
+                    ThrowFormatException(value);
+                }
+                ThrowOverflowException(SR.Overflow_Decimal128);
             }
 
             return result;
@@ -1275,6 +1291,28 @@ namespace System
             }
 
             result = new Decimal64(number.IsNegative ? -significand : significand, exponent);
+
+            return ParsingStatus.OK;
+        }
+
+        internal static ParsingStatus TryParseDecimal128<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out Decimal128 result)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[Decimal128NumberBufferLength]);
+
+            result = new Decimal128(0, 0);
+
+            if (!TryStringToNumber(value, styles, ref number, info))
+            {
+                return ParsingStatus.Failed;
+            }
+
+            if (!TryNumberToDecimalIeee754<Decimal128, Int128>(ref number, out Int128 significand, out int exponent))
+            {
+                return ParsingStatus.Overflow;
+            }
+
+            result = new Decimal128(number.IsNegative ? -significand : significand, exponent);
 
             return ParsingStatus.OK;
         }

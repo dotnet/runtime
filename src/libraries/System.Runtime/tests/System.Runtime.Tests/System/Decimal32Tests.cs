@@ -201,7 +201,6 @@ namespace System.Tests
             Assert.Equal(expected, result);
         }
 
-
         [Theory]
         [MemberData(nameof(Parse_Invalid_TestData))]
         public static void Parse_Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
@@ -213,6 +212,44 @@ namespace System.Tests
                 Assert.False(Decimal32.TryParse(value.AsSpan(), style, provider, out Decimal32 result));
                 Assert.Equal(default, result);
             }
+        }
+
+        [Fact]
+        public static void Midpoint_Rounding()
+        {
+            var number = new Decimal32(12345685, 0);
+            Assert.Equal(new Decimal32(1234568, 1), number);
+        }
+
+        [Fact]
+        public static void Rounding()
+        {
+            var number = new Decimal32(12345678, 0);
+            Assert.Equal(new Decimal32(1234568, 1), number);
+
+            number = new Decimal32(12345671, 0);
+            Assert.Equal(new Decimal32(1234567, 1), number);
+        }
+
+        [Fact]
+        public static void CompareTo_Other_ReturnsExpected()
+        {
+            for (int i = 1; i < 7; i++)
+            {
+                var d1 = new Decimal32(1, i);
+                var d2 = new Decimal32(int.Parse("1" + new string('0', i)), 0);
+                Assert.Equal(d1, d2);
+            }
+            Assert.Equal(new Decimal32(-1, 1), new Decimal32(-10, 0));
+            Assert.NotEqual(new Decimal32(1, 1), new Decimal32(-10, 0));
+            Assert.NotEqual(new Decimal32(-1, 1), new Decimal32(10, 0));
+        }
+
+        [Fact]
+        public static void GetHashCodeTest()
+        {
+            var d = new Decimal32(10, 20);
+            Assert.Equal(d.GetHashCode(), d.GetHashCode());
         }
     }
 }

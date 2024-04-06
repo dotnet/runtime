@@ -33,11 +33,6 @@ namespace System.Numerics
             _value = Number.CalDecimalIeee754<Decimal32, int, uint>(significand, exponent);
         }
 
-        internal Decimal32(uint value)
-        {
-            _value = value;
-        }
-
         public static Decimal32 Parse(string s) => Parse(s, NumberStyles.Number, provider: null);
 
         public static Decimal32 Parse(string s, NumberStyles style) => Parse(s, style, provider: null);

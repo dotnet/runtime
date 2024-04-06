@@ -214,5 +214,43 @@ namespace System.Tests
                 Assert.Equal(default, result);
             }
         }
+
+        [Fact]
+        public static void Midpoint_Rounding()
+        {
+            var number = new Decimal64(12345688888888885, 0);
+            Assert.Equal(new Decimal64(1234568888888888, 1), number);
+        }
+
+        [Fact]
+        public static void Rounding()
+        {
+            var number = new Decimal64(12345677777777778, 0);
+            Assert.Equal(new Decimal64(1234567777777778, 1), number);
+
+            number = new Decimal64(12345677777777771, 0);
+            Assert.Equal(new Decimal64(1234567777777777, 1), number);
+        }
+
+        [Fact]
+        public static void CompareTo_Other_ReturnsExpected()
+        {
+            for (int i = 1; i < 16; i++)
+            {
+                var d1 = new Decimal64(1, i);
+                var d2 = new Decimal64(long.Parse("1" + new string('0', i)), 0);
+                Assert.Equal(d1, d2);
+            }
+            Assert.Equal(new Decimal64(-1, 1), new Decimal64(-10, 0));
+            Assert.NotEqual(new Decimal64(1, 1), new Decimal64(-10, 0));
+            Assert.NotEqual(new Decimal64(-1, 1), new Decimal64(10, 0));
+        }
+
+        [Fact]
+        public static void GetHashCodeTest()
+        {
+            var d = new Decimal64(10, 20);
+            Assert.Equal(d.GetHashCode(), d.GetHashCode());
+        }
     }
 }

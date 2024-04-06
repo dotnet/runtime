@@ -3191,6 +3191,15 @@
   <data name="Overflow_Decimal" xml:space="preserve">
     <value>Value was either too large or too small for a Decimal.</value>
   </data>
+  <data name="Overflow_Decimal32" xml:space="preserve">
+    <value>Value was either too large or too small for a Decimal32.</value>
+  </data>
+  <data name="Overflow_Decimal64" xml:space="preserve">
+    <value>Value was either too large or too small for a Decimal64.</value>
+  </data>
+  <data name="Overflow_Decimal128" xml:space="preserve">
+    <value>Value was either too large or too small for a Decimal128.</value>
+  </data>
   <data name="Overflow_Duration" xml:space="preserve">
     <value>The duration cannot be returned for TimeSpan.MinValue because the absolute value of TimeSpan.MinValue exceeds the value of TimeSpan.MaxValue.</value>
   </data>
