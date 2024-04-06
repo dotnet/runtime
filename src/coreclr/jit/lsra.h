@@ -1609,6 +1609,8 @@ private:
                                  RegisterScore registerScore = NONE);
 
     void validateIntervals();
+
+    void stressSetRandomParameterPreferences();
 #endif // DEBUG
 
 #if TRACK_LSRA_STATS
