@@ -31,7 +31,7 @@ public:
         char*       m_list;
         MethodName* m_names;
 
-        MethodSet(const MethodSet& other) = delete;
+        MethodSet(const MethodSet& other)            = delete;
         MethodSet& operator=(const MethodSet& other) = delete;
 
     public:
@@ -56,8 +56,8 @@ public:
 
 private:
 #define CONFIG_INTEGER(name, key, defaultValue) int m_##name;
-#define CONFIG_STRING(name, key) const WCHAR* m_##name;
-#define CONFIG_METHODSET(name, key) MethodSet m_##name;
+#define CONFIG_STRING(name, key)                const WCHAR* m_##name;
+#define CONFIG_METHODSET(name, key)             MethodSet m_##name;
 #include "jitconfigvalues.h"
 
 public:
@@ -81,7 +81,7 @@ public:
 private:
     bool m_isInitialized;
 
-    JitConfigValues(const JitConfigValues& other) = delete;
+    JitConfigValues(const JitConfigValues& other)            = delete;
     JitConfigValues& operator=(const JitConfigValues& other) = delete;
 
 public:

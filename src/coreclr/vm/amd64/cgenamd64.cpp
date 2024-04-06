@@ -93,7 +93,6 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 #ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
 #endif
-        HOST_NOCALLS;
         MODE_ANY;
         SUPPORTS_DAC;
     }

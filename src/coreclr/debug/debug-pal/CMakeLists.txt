@@ -2,8 +2,6 @@ include_directories(../inc)
 include_directories(../../pal/inc)
 include_directories(${EP_GENERATED_HEADER_PATH})
 
-add_definitions(-DPAL_STDCPP_COMPAT)
-
 set(SHARED_EVENTPIPE_SOURCE_PATH ${CLR_SRC_NATIVE_DIR}/eventpipe)
 add_definitions(-DFEATURE_CORECLR)
 add_definitions(-DFEATURE_PERFTRACING)

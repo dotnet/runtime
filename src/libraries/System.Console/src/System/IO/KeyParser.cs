@@ -8,7 +8,7 @@ namespace System.IO;
 
 internal static class KeyParser
 {
-    private const char Escape = '\u001B';
+    private const char Escape = '\e';
     private const char Delete = '\u007F';
     private const char VtSequenceEndTag = '~';
     private const char ModifierSeparator = ';';

@@ -876,7 +876,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                         // broadcast -> LCL_VAR(TYP_(U)INT)
                         ssize_t        scalarValue = hwintrinsicChild->AsIntCon()->IconValue();
                         UNATIVE_OFFSET cnum        = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType),
-                                                                  genTypeSize(simdBaseType), simdBaseType);
+                                                                         genTypeSize(simdBaseType), simdBaseType);
                         return OperandDesc(compiler->eeFindJitDataOffs(cnum));
                     }
                     else
@@ -1124,9 +1124,9 @@ void CodeGen::inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTr
 }
 
 /*****************************************************************************
-*
-*  Generate an instruction of the form "op reg1, reg2, icon".
-*/
+ *
+ *  Generate an instruction of the form "op reg1, reg2, icon".
+ */
 
 void CodeGen::inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival)
 {
@@ -1256,8 +1256,8 @@ void CodeGen::inst_RV_RV_TT(instruction ins,
     emitter* emit = GetEmitter();
     noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
 
-// TODO-XArch-CQ: Commutative operations can have op1 be contained
-// TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+    // TODO-XArch-CQ: Commutative operations can have op1 be contained
+    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
     if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2))
@@ -2408,13 +2408,17 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
             switch (to)
             {
                 case TYP_INT:
-                    return INS_cvttss2si;
+                    return INS_cvttss2si32;
                 case TYP_LONG:
-                    return INS_cvttss2si;
+                    return INS_cvttss2si64;
                 case TYP_FLOAT:
                     return ins_Move_Extend(TYP_FLOAT, false);
                 case TYP_DOUBLE:
                     return INS_cvtss2sd;
+                case TYP_ULONG:
+                    return INS_vcvttss2usi64;
+                case TYP_UINT:
+                    return INS_vcvttss2usi32;
                 default:
                     unreached();
             }
@@ -2424,13 +2428,17 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
             switch (to)
             {
                 case TYP_INT:
-                    return INS_cvttsd2si;
+                    return INS_cvttsd2si32;
                 case TYP_LONG:
-                    return INS_cvttsd2si;
+                    return INS_cvttsd2si64;
                 case TYP_FLOAT:
                     return INS_cvtsd2ss;
                 case TYP_DOUBLE:
                     return ins_Move_Extend(TYP_DOUBLE, false);
+                case TYP_ULONG:
+                    return INS_vcvttsd2usi64;
+                case TYP_UINT:
+                    return INS_vcvttsd2usi32;
                 default:
                     unreached();
             }

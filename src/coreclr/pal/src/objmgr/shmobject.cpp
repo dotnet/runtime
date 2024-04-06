@@ -119,7 +119,7 @@ CSharedMemoryObject::Initialize(
             // Allocate local memory to hold the shared data
             //
 
-            m_pvSharedData = InternalMalloc(m_pot->GetSharedDataSize());
+            m_pvSharedData = malloc(m_pot->GetSharedDataSize());
             if (NULL == m_pvSharedData)
             {
                 ERROR("Failure allocating m_pvSharedData (local copy)\n");

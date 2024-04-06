@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { DotnetModuleInternal, CharPtrNull, MainThreadingMode } from "./types/internal";
+import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
 import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert } from "./globals";
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -274,21 +274,16 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
             mono_log_info("UI thread is alive!");
         }, 3000);
 
-        if (WasmEnableThreads &&
-            (runtimeHelpers.config.mainThreadingMode == MainThreadingMode.DeputyThread
-                || runtimeHelpers.config.mainThreadingMode == MainThreadingMode.DeputyAndIOThreads)) {
+        if (WasmEnableThreads) {
             // this will create thread and call start_runtime() on it
             runtimeHelpers.monoThreadInfo = monoThreadInfo;
             runtimeHelpers.isManagedRunningOnCurrentThread = false;
             update_thread_info();
             runtimeHelpers.managedThreadTID = tcwraps.mono_wasm_create_deputy_thread();
             runtimeHelpers.proxyGCHandle = await runtimeHelpers.afterMonoStarted.promise;
+            runtimeHelpers.ioThreadTID = tcwraps.mono_wasm_create_io_thread();
 
-            if (WasmEnableThreads && runtimeHelpers.config.mainThreadingMode == MainThreadingMode.DeputyAndIOThreads) {
-                runtimeHelpers.ioThreadTID = tcwraps.mono_wasm_create_io_thread();
-            }
-
-            // TODO make UI thread not managed
+            // TODO make UI thread not managed/attached https://github.com/dotnet/runtime/issues/100411
             tcwraps.mono_wasm_register_ui_thread();
             monoThreadInfo.isAttached = true;
             monoThreadInfo.isRegistered = true;
@@ -296,12 +291,14 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
             runtimeHelpers.runtimeReady = true;
             update_thread_info();
             bindings_init();
+
+            runtimeHelpers.disableManagedTransition = true;
         } else {
             // load mono runtime and apply environment settings (if necessary)
             await start_runtime();
         }
 
-        if (WasmEnableThreads && runtimeHelpers.config.mainThreadingMode == MainThreadingMode.DeputyAndIOThreads) {
+        if (WasmEnableThreads) {
             await runtimeHelpers.afterIOStarted.promise;
         }
 
@@ -539,10 +536,7 @@ export async function start_runtime () {
             monoThreadInfo.isRegistered = true;
             runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
             update_thread_info();
-            runtimeHelpers.proxyGCHandle = install_main_synchronization_context(
-                runtimeHelpers.config.jsThreadBlockingMode!,
-                runtimeHelpers.config.jsThreadInteropMode!,
-                runtimeHelpers.config.mainThreadingMode!);
+            runtimeHelpers.proxyGCHandle = install_main_synchronization_context(runtimeHelpers.config.jsThreadBlockingMode!);
             runtimeHelpers.isManagedRunningOnCurrentThread = true;
 
             // start finalizer thread, lazy

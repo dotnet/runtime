@@ -12,7 +12,7 @@ Diagnostic data contract addressed these challenges by eliminating the need for 
 Data contracts represent the manner in which a tool which is not the runtime can reliably understand and observe the behavior of the runtime. Contracts are defined by their documentation, and the runtime describes what contracts are applicable to understanding that runtime.
 
 ## Data Contract Descriptor
-The physical layout of this data is not defined in this document, but its practical effects are.
+The physical layout of this data is defined in [the contract descriptor](./contract_descriptor.md) doc. Its practical effects are discussed here.
 
 The Data Contract Descriptor has a set of records of the following forms.
 
