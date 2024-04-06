@@ -146,6 +146,11 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoSynthesized = true;
     m_comp->fgPgoConsistent  = !m_approximate;
 
+    if (m_approximate)
+    {
+        JITDUMP("Profile is inconsistent. Bypassing post-phase consistency checks.\n");
+    }
+
 #ifdef DEBUG
     if (JitConfig.JitCheckSynthesizedCounts() > 0)
     {
@@ -1186,6 +1191,7 @@ void ProfileSynthesis::GaussSeidelSolver()
     const FlowGraphDfsTree* const dfs                  = m_loops->GetDfsTree();
     unsigned const                blockCount           = dfs->GetPostOrderCount();
     bool                          checkEntryExitWeight = true;
+    bool                          showDetails          = false;
 
     // Remember the entry block
     //
@@ -1305,7 +1311,7 @@ void ProfileSynthesis::GaussSeidelSolver()
                 }
                 else
                 {
-                    if (loop != nullptr)
+                    if ((loop != nullptr) && showDetails)
                     {
                         JITDUMP(" .. not using Cp for " FMT_BB "; loop contains improper header\n", block->bbNum);
                     }
@@ -1376,8 +1382,12 @@ void ProfileSynthesis::GaussSeidelSolver()
                 }
             }
 
-            JITDUMP("iteration %u: " FMT_BB " :: old " FMT_WT " new " FMT_WT " change " FMT_WT "%s\n", i, block->bbNum,
-                    oldWeight, newWeight, change, isExit ? " [exit]" : "");
+            if (showDetails)
+            {
+                JITDUMP("iteration %u: " FMT_BB " :: old " FMT_WT " new " FMT_WT " change " FMT_WT "%s\n", i,
+                        block->bbNum, oldWeight, newWeight, change, isExit ? " [exit]" : "");
+            }
+
             countVector[block->bbNum] = newWeight;
 
             // Remember max absolute and relative change
@@ -1469,14 +1479,6 @@ void ProfileSynthesis::GaussSeidelSolver()
     JITDUMP("%s at iteration %u rel residual " FMT_WT " eigenvalue " FMT_WT "\n",
             converged ? "converged" : "failed to converge", i, relResidual, eigenvalue);
 
-    // TODO: computation above may be on the edge of diverging as there is
-    // nothing preventing a general cycle from having 1.0 likelihood. That
-    // is, there is nothing analogous to the capped cyclic check for more
-    // general cycles.
-    //
-    // We should track if the overall residual error (say L1 or L2 norm).
-    // If it is not decreasing, consider not using the data.
-    //
     // Propagate the computed weights to the blocks.
     //
     for (unsigned j = m_dfsTree->GetPostOrderCount(); j != 0; j--)
