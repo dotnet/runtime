@@ -1023,6 +1023,10 @@ private:
     {
         return false;
     }
+    bool stressInitialParamReg()
+    {
+        return false;
+    }
 #endif // !DEBUG
 
 public:

@@ -2420,6 +2420,7 @@ void LinearScan::buildIntervals()
         intRegState->rsCalleeRegArgMaskLiveIn |= RBM_SECRET_STUB_PARAM;
     }
 
+#ifdef DEBUG
     if (stressInitialParamReg())
     {
         CLRRandom rng;
@@ -2468,6 +2469,7 @@ void LinearScan::buildIntervals()
             interval->mergeRegisterPreferences(genRegMask(prefReg));
         }
     }
+#endif
 
     numPlacedArgLocals = 0;
     placedArgRegs      = RBM_NONE;
