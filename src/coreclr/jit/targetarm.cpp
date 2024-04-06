@@ -33,9 +33,7 @@ static_assert_no_msg(RBM_ALLDOUBLE == (RBM_ALLDOUBLE_HIGH >> 1));
 // Parameters:
 //   info - Info about the method being classified.
 //
-Arm32Classifier::Arm32Classifier(const ClassifierInfo& info) : m_info(info)
-{
-}
+Arm32Classifier::Arm32Classifier(const ClassifierInfo& info) : m_info(info) {}
 
 //-----------------------------------------------------------------------------
 // Classify:

@@ -435,9 +435,7 @@ public:
         Env      m_env;
 
     public:
-        Iter(Env env, BitSetValueArgType bs) : m_iter(env, bs), m_env(env)
-        {
-        }
+        Iter(Env env, BitSetValueArgType bs) : m_iter(env, bs), m_env(env) {}
 
         bool NextElem(unsigned* pElem)
         {

@@ -31,9 +31,7 @@ struct Replacement
     const char* Description = "";
 #endif
 
-    Replacement(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType)
-    {
-    }
+    Replacement(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType) {}
 
     bool Overlaps(unsigned otherStart, unsigned otherSize) const;
 };
@@ -51,13 +49,9 @@ public:
         unsigned Start = 0;
         unsigned End   = 0;
 
-        Segment()
-        {
-        }
+        Segment() {}
 
-        Segment(unsigned start, unsigned end) : Start(start), End(end)
-        {
-        }
+        Segment(unsigned start, unsigned end) : Start(start), End(end) {}
 
         bool IntersectsOrAdjacent(const Segment& other) const;
         bool Intersects(const Segment& other) const;
@@ -69,9 +63,7 @@ private:
     jitstd::vector<Segment> m_segments;
 
 public:
-    explicit StructSegments(CompAllocator allocator) : m_segments(allocator)
-    {
-    }
+    explicit StructSegments(CompAllocator allocator) : m_segments(allocator) {}
 
     void Add(const Segment& segment);
     void Subtract(const Segment& segment);
@@ -96,9 +88,7 @@ struct AggregateInfo
     // Max offset in the struct local of the unpromoted part.
     unsigned UnpromotedMax = 0;
 
-    AggregateInfo(CompAllocator alloc, unsigned lclNum) : Replacements(alloc), LclNum(lclNum), Unpromoted(alloc)
-    {
-    }
+    AggregateInfo(CompAllocator alloc, unsigned lclNum) : Replacements(alloc), LclNum(lclNum), Unpromoted(alloc) {}
 
     bool OverlappingReplacements(unsigned      offset,
                                  unsigned      size,
@@ -115,7 +105,7 @@ class AggregateInfoMap
 
 public:
     AggregateInfoMap(CompAllocator allocator, unsigned numLocals);
-    void Add(AggregateInfo* agg);
+    void           Add(AggregateInfo* agg);
     AggregateInfo* Lookup(unsigned lclNum);
 
     jitstd::vector<AggregateInfo*>::iterator begin()
@@ -146,10 +136,10 @@ class Promotion
 
     StructSegments SignificantSegments(ClassLayout* layout);
 
-    void ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
-                                             const jitstd::vector<Replacement>& replacements,
-                                             Statement**                        prevStmt);
-    void InsertInitStatement(Statement** prevStmt, GenTree* tree);
+    void            ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
+                                                        const jitstd::vector<Replacement>& replacements,
+                                                        Statement**                        prevStmt);
+    void            InsertInitStatement(Statement** prevStmt, GenTree* tree);
     static GenTree* CreateWriteBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement);
     static GenTree* CreateReadBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement);
 
@@ -198,13 +188,11 @@ class Promotion
 
     bool HaveCandidateLocals();
 
-    static bool IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
+    static bool     IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
     static GenTree* EffectiveUser(Compiler::GenTreeStack& ancestors);
 
 public:
-    explicit Promotion(Compiler* compiler) : m_compiler(compiler)
-    {
-    }
+    explicit Promotion(Compiler* compiler) : m_compiler(compiler) {}
 
     PhaseStatus Run();
 };
@@ -218,14 +206,10 @@ class StructDeaths
     friend class PromotionLiveness;
 
 private:
-    StructDeaths(BitVec deaths, AggregateInfo* agg) : m_deaths(deaths), m_aggregate(agg)
-    {
-    }
+    StructDeaths(BitVec deaths, AggregateInfo* agg) : m_deaths(deaths), m_aggregate(agg) {}
 
 public:
-    StructDeaths() : m_deaths(BitVecOps::UninitVal())
-    {
-    }
+    StructDeaths() : m_deaths(BitVecOps::UninitVal()) {}
 
     bool IsRemainderDying() const;
     bool IsReplacementDying(unsigned index) const;
@@ -236,15 +220,15 @@ struct BasicBlockLiveness;
 // Class to compute and track liveness information pertaining promoted structs.
 class PromotionLiveness
 {
-    Compiler*           m_compiler;
-    AggregateInfoMap&   m_aggregates;
-    BitVecTraits*       m_bvTraits                = nullptr;
-    unsigned*           m_structLclToTrackedIndex = nullptr;
-    unsigned            m_numVars                 = 0;
-    BasicBlockLiveness* m_bbInfo                  = nullptr;
-    bool                m_hasPossibleBackEdge     = false;
-    BitVec              m_liveIn;
-    BitVec              m_ehLiveVars;
+    Compiler*                                               m_compiler;
+    AggregateInfoMap&                                       m_aggregates;
+    BitVecTraits*                                           m_bvTraits                = nullptr;
+    unsigned*                                               m_structLclToTrackedIndex = nullptr;
+    unsigned                                                m_numVars                 = 0;
+    BasicBlockLiveness*                                     m_bbInfo                  = nullptr;
+    bool                                                    m_hasPossibleBackEdge     = false;
+    BitVec                                                  m_liveIn;
+    BitVec                                                  m_ehLiveVars;
     JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BitVec> m_aggDeaths;
 
 public:
@@ -253,9 +237,9 @@ public:
     {
     }
 
-    void Run();
-    bool IsReplacementLiveIn(BasicBlock* bb, unsigned structLcl, unsigned replacement);
-    bool IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacement);
+    void         Run();
+    bool         IsReplacementLiveIn(BasicBlock* bb, unsigned structLcl, unsigned replacement);
+    bool         IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     StructDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
 
 private:

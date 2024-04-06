@@ -239,13 +239,9 @@ void JitTls::SetCompiler(Compiler* compiler)
 
 #else // !defined(DEBUG)
 
-JitTls::JitTls(ICorJitInfo* jitInfo)
-{
-}
+JitTls::JitTls(ICorJitInfo* jitInfo) {}
 
-JitTls::~JitTls()
-{
-}
+JitTls::~JitTls() {}
 
 Compiler* JitTls::GetCompiler()
 {

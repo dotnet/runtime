@@ -31,13 +31,11 @@ public:
         char*       m_list;
         MethodName* m_names;
 
-        MethodSet(const MethodSet& other) = delete;
+        MethodSet(const MethodSet& other)            = delete;
         MethodSet& operator=(const MethodSet& other) = delete;
 
     public:
-        MethodSet()
-        {
-        }
+        MethodSet() {}
 
         inline const char* list() const
         {
@@ -81,13 +79,11 @@ public:
 private:
     bool m_isInitialized;
 
-    JitConfigValues(const JitConfigValues& other) = delete;
+    JitConfigValues(const JitConfigValues& other)            = delete;
     JitConfigValues& operator=(const JitConfigValues& other) = delete;
 
 public:
-    JitConfigValues()
-    {
-    }
+    JitConfigValues() {}
 
     inline bool isInitialized() const
     {

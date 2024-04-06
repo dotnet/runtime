@@ -67,9 +67,7 @@
 class IndirectCallTransformer
 {
 public:
-    IndirectCallTransformer(Compiler* compiler) : compiler(compiler)
-    {
-    }
+    IndirectCallTransformer(Compiler* compiler) : compiler(compiler) {}
 
     //------------------------------------------------------------------------
     // Run: run transformation for each block.
@@ -197,7 +195,7 @@ private:
         virtual const char*  Name()                       = 0;
         virtual void         ClearFlag()                  = 0;
         virtual GenTreeCall* GetCall(Statement* callStmt) = 0;
-        virtual void FixupRetExpr()                       = 0;
+        virtual void         FixupRetExpr()               = 0;
 
         //------------------------------------------------------------------------
         // CreateRemainder: split current block at the call stmt and
@@ -366,9 +364,7 @@ private:
         }
 
         // FixupRetExpr: no action needed as we handle this in the importer.
-        virtual void FixupRetExpr()
-        {
-        }
+        virtual void FixupRetExpr() {}
 
         //------------------------------------------------------------------------
         // CreateCheck: create check block, that checks fat pointer bit set.

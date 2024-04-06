@@ -811,10 +811,10 @@ void Compiler::fgExtendDbgLifetimes()
 
     fgExtendDbgScopes();
 
-/*-------------------------------------------------------------------------
- * Partly update liveness info so that we handle any funky BBF_INTERNAL
- * blocks inserted out of sequence.
- */
+    /*-------------------------------------------------------------------------
+     * Partly update liveness info so that we handle any funky BBF_INTERNAL
+     * blocks inserted out of sequence.
+     */
 
 #ifdef DEBUG
     if (verbose && 0)
@@ -1005,7 +1005,7 @@ void Compiler::fgExtendDbgLifetimes()
     //   So just ensure that they don't have a 0 ref cnt
 
     unsigned lclNum = 0;
-    for (LclVarDsc *varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+    for (LclVarDsc* varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
     {
         if (lclNum >= info.compArgsCount)
         {
@@ -1042,11 +1042,13 @@ void Compiler::fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveV
 {
     assert(block->HasPotentialEHSuccs(this));
 
-    block->VisitEHSuccs(this, [&](BasicBlock* succ) {
-        VarSetOps::UnionD(this, ehHandlerLiveVars, succ->bbLiveIn);
-        memoryLiveness |= succ->bbMemoryLiveIn;
-        return BasicBlockVisit::Continue;
-    });
+    block->VisitEHSuccs(this,
+                        [&](BasicBlock* succ)
+                        {
+                            VarSetOps::UnionD(this, ehHandlerLiveVars, succ->bbLiveIn);
+                            memoryLiveness |= succ->bbMemoryLiveIn;
+                            return BasicBlockVisit::Continue;
+                        });
 }
 
 class LiveVarAnalysis
@@ -1117,16 +1119,18 @@ class LiveVarAnalysis
         // successors. EH successors need to be handled more conservatively
         // (their live-in state is live in this entire basic block). Those are
         // handled below.
-        block->VisitRegularSuccs(m_compiler, [=](BasicBlock* succ) {
-            VarSetOps::UnionD(m_compiler, m_liveOut, succ->bbLiveIn);
-            m_memoryLiveOut |= succ->bbMemoryLiveIn;
-            if (succ->bbNum <= block->bbNum)
-            {
-                m_hasPossibleBackEdge = true;
-            }
+        block->VisitRegularSuccs(m_compiler,
+                                 [=](BasicBlock* succ)
+                                 {
+                                     VarSetOps::UnionD(m_compiler, m_liveOut, succ->bbLiveIn);
+                                     m_memoryLiveOut |= succ->bbMemoryLiveIn;
+                                     if (succ->bbNum <= block->bbNum)
+                                     {
+                                         m_hasPossibleBackEdge = true;
+                                     }
 
-            return BasicBlockVisit::Continue;
-        });
+                                     return BasicBlockVisit::Continue;
+                                 });
 
         /* For lvaKeepAliveAndReportThis methods, "this" has to be kept alive everywhere
            Note that a function may end in a throw on an infinite loop (as opposed to a return).
@@ -1676,10 +1680,10 @@ GenTree* Compiler::fgTryRemoveDeadStoreEarly(Statement* stmt, GenTreeLclVarCommo
  * or subtree of a statement moving backward from startNode to endNode
  */
 
-void Compiler::fgComputeLife(VARSET_TP&       life,
-                             GenTree*         startNode,
-                             GenTree*         endNode,
-                             VARSET_VALARG_TP volatileVars,
+void Compiler::fgComputeLife(VARSET_TP&           life,
+                             GenTree*             startNode,
+                             GenTree*             endNode,
+                             VARSET_VALARG_TP     volatileVars,
                              bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
     // Don't kill vars in scope
@@ -1773,22 +1777,24 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     JITDUMP("Removing dead call:\n");
                     DISPNODE(call);
 
-                    node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
-                        if (operand->IsValue())
+                    node->VisitOperands(
+                        [](GenTree* operand) -> GenTree::VisitResult
                         {
-                            operand->SetUnusedValue();
-                        }
+                            if (operand->IsValue())
+                            {
+                                operand->SetUnusedValue();
+                            }
 
-                        // Special-case PUTARG_STK: since this operator is not considered a value, DCE will not remove
-                        // these nodes.
-                        if (operand->OperIs(GT_PUTARG_STK))
-                        {
-                            operand->AsPutArgStk()->gtOp1->SetUnusedValue();
-                            operand->gtBashToNOP();
-                        }
+                            // Special-case PUTARG_STK: since this operator is not considered a value, DCE will not
+                            // remove these nodes.
+                            if (operand->OperIs(GT_PUTARG_STK))
+                            {
+                                operand->AsPutArgStk()->gtOp1->SetUnusedValue();
+                                operand->gtBashToNOP();
+                            }
 
-                        return GenTree::VisitResult::Continue;
-                    });
+                            return GenTree::VisitResult::Continue;
+                        });
 
                     blockRange.Remove(node);
 
@@ -2048,10 +2054,12 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
             JITDUMP("Removing dead node:\n");
             DISPNODE(node);
 
-            node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
-                operand->SetUnusedValue();
-                return GenTree::VisitResult::Continue;
-            });
+            node->VisitOperands(
+                [](GenTree* operand) -> GenTree::VisitResult
+                {
+                    operand->SetUnusedValue();
+                    return GenTree::VisitResult::Continue;
+                });
 
             if (node->OperConsumesFlags() && node->gtPrev->gtSetFlags())
             {
@@ -2116,11 +2124,11 @@ bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclN
 // Return Value:
 //   true if we should skip the rest of the statement, false if we should continue
 //
-bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
-                                 LclVarDsc*       varDsc,
-                                 VARSET_VALARG_TP life,
-                                 bool*            doAgain,
-                                 bool*            pStmtInfoDirty,
+bool Compiler::fgRemoveDeadStore(GenTree**           pTree,
+                                 LclVarDsc*          varDsc,
+                                 VARSET_VALARG_TP    life,
+                                 bool*               doAgain,
+                                 bool*               pStmtInfoDirty,
                                  bool* pStoreRemoved DEBUGARG(bool* treeModf))
 {
     assert(!compRationalIRForm);
@@ -2186,7 +2194,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 #ifdef DEBUG
             *treeModf = true;
 #endif // DEBUG
-            // Update ordering, costs, FP levels, etc.
+       // Update ordering, costs, FP levels, etc.
             gtSetStmtInfo(compCurStmt);
 
             // Re-link the nodes for this statement
@@ -2278,7 +2286,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                 printf("\n");
             }
 #endif // DEBUG
-            // No side effects - Change the store to a GT_NOP node
+       // No side effects - Change the store to a GT_NOP node
             store->gtBashToNOP();
 
 #ifdef DEBUG

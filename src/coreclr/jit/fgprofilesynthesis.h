@@ -40,9 +40,7 @@ public:
     static constexpr weight_t epsilon = 0.001;
 
 private:
-    ProfileSynthesis(Compiler* compiler) : m_comp(compiler)
-    {
-    }
+    ProfileSynthesis(Compiler* compiler) : m_comp(compiler) {}
 
     static constexpr weight_t exceptionScale     = 0.001;
     static constexpr weight_t blendFactor        = 0.99;

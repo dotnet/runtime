@@ -162,9 +162,7 @@ class MemoryKindIterator
     int value;
 
 public:
-    explicit inline MemoryKindIterator(int val) : value(val)
-    {
-    }
+    explicit inline MemoryKindIterator(int val) : value(val) {}
     inline MemoryKindIterator& operator++()
     {
         ++value;
@@ -191,9 +189,7 @@ public:
 // Empty struct that allows enumerating memory kinds via `for(MemoryKind kind : allMemoryKinds())`
 struct allMemoryKinds
 {
-    inline allMemoryKinds()
-    {
-    }
+    inline allMemoryKinds() {}
     inline MemoryKindIterator begin()
     {
         return MemoryKindIterator(0);
@@ -244,9 +240,7 @@ class PredEdgeList
     };
 
 public:
-    PredEdgeList(FlowEdge* pred) : m_begin(pred)
-    {
-    }
+    PredEdgeList(FlowEdge* pred) : m_begin(pred) {}
 
     iterator begin() const
     {
@@ -297,9 +291,7 @@ class PredBlockList
     };
 
 public:
-    PredBlockList(FlowEdge* pred) : m_begin(pred)
-    {
-    }
+    PredBlockList(FlowEdge* pred) : m_begin(pred) {}
 
     iterator begin() const
     {
@@ -322,9 +314,7 @@ class BBArrayIterator
     FlowEdge* const* m_edgeEntry;
 
 public:
-    BBArrayIterator(FlowEdge* const* edgeEntry) : m_edgeEntry(edgeEntry)
-    {
-    }
+    BBArrayIterator(FlowEdge* const* edgeEntry) : m_edgeEntry(edgeEntry) {}
 
     BasicBlock* operator*() const;
 
@@ -351,9 +341,7 @@ class FlowEdgeArrayIterator
     FlowEdge* const* m_edgeEntry;
 
 public:
-    FlowEdgeArrayIterator(FlowEdge* const* edgeEntry) : m_edgeEntry(edgeEntry)
-    {
-    }
+    FlowEdgeArrayIterator(FlowEdge* const* edgeEntry) : m_edgeEntry(edgeEntry) {}
 
     FlowEdge* operator*() const
     {
@@ -727,7 +715,8 @@ private:
     BBKinds bbKind; // jump (if any) at the end of this block
 
     /* The following union describes the jump target(s) of this block */
-    union {
+    union
+    {
         unsigned   bbTargetOffs; // PC offset (temporary only)
         FlowEdge*  bbTargetEdge; // successor edge for block kinds with only one successor (BBJ_ALWAYS, etc)
         FlowEdge*  bbTrueEdge;   // BBJ_COND successor edge when its condition is true (alias for bbTargetEdge)
@@ -1165,11 +1154,11 @@ public:
     }
 
 #ifdef DEBUG
-    void     dspFlags() const;         // Print the flags
-    unsigned dspPreds() const;         // Print the predecessors (bbPreds)
-    void dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
-                                       // regions are printed: see NumSucc() for details.
-    void dspKind() const;              // Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).
+    void     dspFlags() const;             // Print the flags
+    unsigned dspPreds() const;             // Print the predecessors (bbPreds)
+    void     dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
+                                           // regions are printed: see NumSucc() for details.
+    void dspKind() const;                  // Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).
 
     // Print a simple basic block header for various output, including a list of predecessors and successors.
     void dspBlockHeader(Compiler* compiler, bool showKind = true, bool showFlags = false, bool showPreds = true);
@@ -1402,12 +1391,14 @@ public:
 
 #define NO_BASE_TMP UINT_MAX // base# to use when we have none
 
-    union {
+    union
+    {
         unsigned bbStkTempsIn;       // base# for input stack temps
         int      bbCountSchemaIndex; // schema index for count instrumentation
     };
 
-    union {
+    union
+    {
         unsigned bbStkTempsOut;          // base# for output stack temps
         int      bbHistogramSchemaIndex; // schema index for histogram instrumentation
     };
@@ -1574,7 +1565,8 @@ public:
     void ensurePredListOrder(Compiler* compiler);
     void reorderPredList(Compiler* compiler);
 
-    union {
+    union
+    {
         BasicBlock* bbIDom;          // Represent the closest dominator to this block (called the Immediate
                                      // Dominator) used to compute the dominance tree.
         FlowEdge* bbLastPred;        // Used early on by fgLinkBasicBlock/fgAddRefPred
@@ -1623,9 +1615,7 @@ public:
             return m_ssaNum;
         }
 
-        MemoryPhiArg(unsigned ssaNum, MemoryPhiArg* nextArg = nullptr) : m_ssaNum(ssaNum), m_nextArg(nextArg)
-        {
-        }
+        MemoryPhiArg(unsigned ssaNum, MemoryPhiArg* nextArg = nullptr) : m_ssaNum(ssaNum), m_nextArg(nextArg) {}
 
         void* operator new(size_t sz, class Compiler* comp);
     };
@@ -1649,18 +1639,21 @@ public:
      *  thus we can union them since the two operations are completely disjunct.
      */
 
-    union {
+    union
+    {
         EXPSET_TP bbCseGen;             // CSEs computed by block
         ASSERT_TP bbAssertionGen;       // assertions created by block (global prop)
         ASSERT_TP bbAssertionOutIfTrue; // assertions available on exit along true/jump edge (BBJ_COND, local prop)
     };
 
-    union {
+    union
+    {
         EXPSET_TP bbCseIn;       // CSEs available on entry
         ASSERT_TP bbAssertionIn; // assertions available on entry (global prop)
     };
 
-    union {
+    union
+    {
         EXPSET_TP bbCseOut;              // CSEs available on exit
         ASSERT_TP bbAssertionOut;        // assertions available on exit (global prop, local prop & !BBJ_COND)
         ASSERT_TP bbAssertionOutIfFalse; // assertions available on exit along false/next edge (BBJ_COND, local prop)
@@ -1668,7 +1661,7 @@ public:
 
     void* bbEmitCookie;
 
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
 #if MEASURE_BLOCK_SIZE
     static size_t s_Size;
@@ -1703,8 +1696,8 @@ public:
     unsigned bbID;
 #endif // DEBUG
 
-    unsigned bbStackDepthOnEntry() const;
-    void bbSetStack(StackEntry* stack);
+    unsigned    bbStackDepthOnEntry() const;
+    void        bbSetStack(StackEntry* stack);
     StackEntry* bbStackOnEntry() const;
 
     // "bbNum" is one-based (for unknown reasons); it is sometimes useful to have the corresponding
@@ -1754,9 +1747,7 @@ public:
     Statement* FirstNonPhiDef() const;
     Statement* FirstNonPhiDefOrCatchArgStore() const;
 
-    BasicBlock() : bbStmtList(nullptr), bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal())
-    {
-    }
+    BasicBlock() : bbStmtList(nullptr), bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal()) {}
 
     // Iteratable collection of successors of a block.
     template <typename TPosition>
@@ -1766,9 +1757,7 @@ public:
         BasicBlock* m_block;
 
     public:
-        Successors(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block)
-        {
-        }
+        Successors(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block) {}
 
         class iterator
         {
@@ -1777,13 +1766,9 @@ public:
             TPosition   m_pos;
 
         public:
-            iterator(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block), m_pos(comp, block)
-            {
-            }
+            iterator(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block), m_pos(comp, block) {}
 
-            iterator() : m_pos()
-            {
-            }
+            iterator() : m_pos() {}
 
             void operator++(void)
             {
@@ -1854,9 +1839,7 @@ public:
     class BBSuccList : private SuccList
     {
     public:
-        BBSuccList(const BasicBlock* block) : SuccList(block)
-        {
-        }
+        BBSuccList(const BasicBlock* block) : SuccList(block) {}
 
         BBArrayIterator begin() const
         {
@@ -1876,9 +1859,7 @@ public:
     class BBSuccEdgeList : private SuccList
     {
     public:
-        BBSuccEdgeList(const BasicBlock* block) : SuccList(block)
-        {
-        }
+        BBSuccEdgeList(const BasicBlock* block) : SuccList(block) {}
 
         FlowEdgeArrayIterator begin() const
         {
@@ -1937,9 +1918,7 @@ public:
         };
 
     public:
-        BBCompilerSuccList(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block)
-        {
-        }
+        BBCompilerSuccList(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block) {}
 
         iterator begin() const
         {
@@ -1998,9 +1977,7 @@ public:
         };
 
     public:
-        BBCompilerSuccEdgeList(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block)
-        {
-        }
+        BBCompilerSuccEdgeList(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block) {}
 
         iterator begin() const
         {
@@ -2108,9 +2085,7 @@ class BasicBlockIterator
     BasicBlock* m_block;
 
 public:
-    BasicBlockIterator(BasicBlock* block) : m_block(block)
-    {
-    }
+    BasicBlockIterator(BasicBlock* block) : m_block(block) {}
 
     BasicBlock* operator*() const
     {
@@ -2144,9 +2119,7 @@ class BasicBlockSimpleList
     BasicBlock* m_begin;
 
 public:
-    BasicBlockSimpleList(BasicBlock* begin) : m_begin(begin)
-    {
-    }
+    BasicBlockSimpleList(BasicBlock* begin) : m_begin(begin) {}
 
     BasicBlockIterator begin() const
     {
@@ -2214,9 +2187,7 @@ struct BBswtDesc
     bool bbsHasDefault;      // true if last switch case is a default case
     bool bbsHasDominantCase; // true if switch has a dominant case
 
-    BBswtDesc() : bbsHasDefault(true), bbsHasDominantCase(false)
-    {
-    }
+    BBswtDesc() : bbsHasDefault(true), bbsHasDominantCase(false) {}
 
     BBswtDesc(const BBswtDesc* other);
 
@@ -2264,9 +2235,7 @@ struct BBehfDesc
     FlowEdge** bbeSuccs; // array of `FlowEdge*` pointing to BBJ_EHFINALLYRET block successors
     unsigned   bbeCount; // size of `bbeSuccs` array
 
-    BBehfDesc() : bbeSuccs(nullptr), bbeCount(0)
-    {
-    }
+    BBehfDesc() : bbeSuccs(nullptr), bbeCount(0) {}
 
     BBehfDesc(Compiler* comp, const BBehfDesc* other);
 };
@@ -2373,13 +2342,9 @@ struct BasicBlockList
     BasicBlockList* next;  // The next BasicBlock in the list, nullptr for end of list.
     BasicBlock*     block; // The BasicBlock of interest.
 
-    BasicBlockList() : next(nullptr), block(nullptr)
-    {
-    }
+    BasicBlockList() : next(nullptr), block(nullptr) {}
 
-    BasicBlockList(BasicBlock* blk, BasicBlockList* rest) : next(rest), block(blk)
-    {
-    }
+    BasicBlockList(BasicBlock* blk, BasicBlockList* rest) : next(rest), block(blk) {}
 };
 
 // FlowEdge implementations (that are required to be defined after the declaration of BasicBlock)
@@ -2435,13 +2400,13 @@ inline PredBlockList<allowEdits>::iterator::iterator(FlowEdge* pred) : m_pred(pr
     }
 }
 
-template <bool     allowEdits>
+template <bool allowEdits>
 inline BasicBlock* PredBlockList<allowEdits>::iterator::operator*() const
 {
     return m_pred->getSourceBlock();
 }
 
-template <bool                                       allowEdits>
+template <bool allowEdits>
 inline typename PredBlockList<allowEdits>::iterator& PredBlockList<allowEdits>::iterator::operator++()
 {
     if (allowEdits)
@@ -2480,7 +2445,8 @@ void* emitCodeGetCookie(const BasicBlock* block);
 class AllSuccessorEnumerator
 {
     BasicBlock* m_block;
-    union {
+    union
+    {
         // We store up to 4 successors inline in the enumerator. For ASP.NET
         // and libraries.pmi this is enough in 99.7% of cases.
         BasicBlock*  m_successors[4];

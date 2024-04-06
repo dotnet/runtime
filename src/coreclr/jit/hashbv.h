@@ -13,7 +13,7 @@
 #include <memory.h>
 #include <windows.h>
 
-//#define TESTING 1
+// #define TESTING 1
 
 #define LOG2_BITS_PER_ELEMENT 5
 #define LOG2_ELEMENTS_PER_NODE 2
@@ -124,12 +124,10 @@ public:
 
 public:
     hashBvNode(indexType base);
-    hashBvNode()
-    {
-    }
+    hashBvNode() {}
     static hashBvNode* Create(indexType base, Compiler* comp);
-    void Reconstruct(indexType base);
-    int numElements()
+    void               Reconstruct(indexType base);
+    int                numElements()
     {
         return ELEMENTS_PER_NODE;
     }
@@ -172,7 +170,8 @@ public:
     hashBvNode** nodeArr;
     hashBvNode*  initialVector[1];
 
-    union {
+    union
+    {
         Compiler* compiler;
         // for freelist
         hashBv* next;
@@ -186,9 +185,9 @@ public:
 public:
     hashBv(Compiler* comp);
     static hashBv* Create(Compiler* comp);
-    static void Init(Compiler* comp);
+    static void    Init(Compiler* comp);
     static hashBv* CreateFrom(hashBv* other, Compiler* comp);
-    void hbvFree();
+    void           hbvFree();
 #ifdef DEBUG
     void dump();
     void dumpFancy();
@@ -201,18 +200,18 @@ public:
     hashBvGlobalData* globalData();
 
     static hashBvNode*& nodeFreeList(hashBvGlobalData* globalData);
-    static hashBv*& hbvFreeList(hashBvGlobalData* data);
+    static hashBv*&     hbvFreeList(hashBvGlobalData* data);
 
     hashBvNode** getInsertionPointForIndex(indexType index);
 
 private:
     hashBvNode* getNodeForIndexHelper(indexType index, bool canAdd);
-    int getHashForIndex(indexType index, int table_size);
-    int getRehashForIndex(indexType thisIndex, int thisTableSize, int newTableSize);
+    int         getHashForIndex(indexType index, int table_size);
+    int         getRehashForIndex(indexType thisIndex, int thisTableSize, int newTableSize);
 
     // maintain free lists for vectors
     hashBvNode** getNewVector(int vectorLength);
-    int getNodeCount();
+    int          getNodeCount();
 
 public:
     inline hashBvNode* getOrAddNodeForIndex(indexType index)
@@ -221,7 +220,7 @@ public:
         return temp;
     }
     hashBvNode* getNodeForIndex(indexType index);
-    void removeNodeAtBase(indexType index);
+    void        removeNodeAtBase(indexType index);
 
 public:
     void setBit(indexType index);

@@ -722,14 +722,16 @@ Scev* ScalarEvolutionContext::MakeAddRecFromRecursiveScev(Scev* startScev, Scev*
         }
         else
         {
-            ScevVisit result = addOperand->Visit([=](Scev* node) {
-                if (node == recursiveScev)
+            ScevVisit result = addOperand->Visit(
+                [=](Scev* node)
                 {
-                    return ScevVisit::Abort;
-                }
+                    if (node == recursiveScev)
+                    {
+                        return ScevVisit::Abort;
+                    }
 
-                return ScevVisit::Continue;
-            });
+                    return ScevVisit::Continue;
+                });
 
             if (result == ScevVisit::Abort)
             {
@@ -967,8 +969,8 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
                 ScevAddRec* addRec   = (ScevAddRec*)op1;
                 Scev*       newStart = Simplify(NewBinop(binop->Oper, addRec->Start, op2));
                 Scev*       newStep  = scev->OperIs(ScevOper::Mul, ScevOper::Lsh)
-                                    ? Simplify(NewBinop(binop->Oper, addRec->Step, op2))
-                                    : addRec->Step;
+                                           ? Simplify(NewBinop(binop->Oper, addRec->Step, op2))
+                                           : addRec->Step;
                 return NewAddRec(newStart, newStep);
             }
 

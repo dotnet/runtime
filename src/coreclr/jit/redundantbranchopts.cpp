@@ -24,13 +24,9 @@ PhaseStatus Compiler::optRedundantBranches()
     public:
         bool madeChanges;
 
-        OptRedundantBranchesDomTreeVisitor(Compiler* compiler) : DomTreeVisitor(compiler), madeChanges(false)
-        {
-        }
+        OptRedundantBranchesDomTreeVisitor(Compiler* compiler) : DomTreeVisitor(compiler), madeChanges(false) {}
 
-        void PreOrderVisit(BasicBlock* block)
-        {
-        }
+        void PreOrderVisit(BasicBlock* block) {}
 
         void PostOrderVisit(BasicBlock* block)
         {
@@ -208,7 +204,8 @@ RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, target_ssize_t bound1, genTree
     IntegralRange range2 = {minValue, maxValue};
 
     // Update ranges based on inputs
-    auto setRange = [](genTreeOps oper, target_ssize_t bound, IntegralRange* range) -> bool {
+    auto setRange = [](genTreeOps oper, target_ssize_t bound, IntegralRange* range) -> bool
+    {
         switch (oper)
         {
             case GT_LT:
@@ -2186,22 +2183,26 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
             continue;
         }
 
-        BasicBlockVisit result = nextBlock->VisitAllSuccs(this, [this, toBlock, &stack](BasicBlock* succ) {
-            if (succ == toBlock)
-            {
-                return BasicBlockVisit::Abort;
-            }
+        BasicBlockVisit result =
+            nextBlock->VisitAllSuccs(this,
+                                     [this, toBlock, &stack](BasicBlock* succ)
+                                     {
+                                         if (succ == toBlock)
+                                         {
+                                             return BasicBlockVisit::Abort;
+                                         }
 
-            if (BitVecOps::IsMember(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
-            {
-                return BasicBlockVisit::Continue;
-            }
+                                         if (BitVecOps::IsMember(optReachableBitVecTraits, optReachableBitVec,
+                                                                 succ->bbNum))
+                                         {
+                                             return BasicBlockVisit::Continue;
+                                         }
 
-            BitVecOps::AddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum);
+                                         BitVecOps::AddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum);
 
-            stack.Push(succ);
-            return BasicBlockVisit::Continue;
-        });
+                                         stack.Push(succ);
+                                         return BasicBlockVisit::Continue;
+                                     });
 
         if (result == BasicBlockVisit::Abort)
         {

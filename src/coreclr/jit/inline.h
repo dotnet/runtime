@@ -205,9 +205,7 @@ public:
     static InlinePolicy* GetPolicy(Compiler* compiler, bool isPrejitRoot);
 
     // Obligatory virtual dtor
-    virtual ~InlinePolicy()
-    {
-    }
+    virtual ~InlinePolicy() {}
 
     // Get the current decision
     InlineDecision GetDecision() const
@@ -222,9 +220,9 @@ public:
     }
 
     // Policy observations
-    virtual void NoteSuccess() = 0;
-    virtual void NoteBool(InlineObservation obs, bool value) = 0;
-    virtual void NoteFatal(InlineObservation obs) = 0;
+    virtual void NoteSuccess()                                   = 0;
+    virtual void NoteBool(InlineObservation obs, bool value)     = 0;
+    virtual void NoteFatal(InlineObservation obs)                = 0;
     virtual void NoteInt(InlineObservation obs, int value)       = 0;
     virtual void NoteDouble(InlineObservation obs, double value) = 0;
 
@@ -262,13 +260,9 @@ public:
     // Name of the policy
     virtual const char* GetName() const = 0;
     // Detailed data value dump
-    virtual void DumpData(FILE* file) const
-    {
-    }
+    virtual void DumpData(FILE* file) const {}
     // Detailed data name dump
-    virtual void DumpSchema(FILE* file) const
-    {
-    }
+    virtual void DumpSchema(FILE* file) const {}
 
 #define XATTR_I4(x)                                                                                                    \
     if ((INT32)x != 0)                                                                                                 \
@@ -294,9 +288,7 @@ public:
         fprintf(file, " />\n");
     }
 
-    virtual void OnDumpXml(FILE* file, unsigned indent = 0) const
-    {
-    }
+    virtual void OnDumpXml(FILE* file, unsigned indent = 0) const {}
 
     // True if this is the inline targeted by data collection
     bool IsDataCollectionTarget()
@@ -321,7 +313,7 @@ protected:
 
 private:
     // No copying or assignment supported
-    InlinePolicy(const InlinePolicy&) = delete;
+    InlinePolicy(const InlinePolicy&)            = delete;
     InlinePolicy& operator=(const InlinePolicy&) = delete;
 
 protected:
@@ -558,7 +550,7 @@ public:
 
 private:
     // No copying or assignment allowed.
-    InlineResult(const InlineResult&) = delete;
+    InlineResult(const InlineResult&)            = delete;
     InlineResult& operator=(const InlineResult&) = delete;
 
     // Report/log/dump decision as appropriate
@@ -1026,7 +1018,7 @@ public:
     void DumpDataContents(FILE* file);
 
     // Dump xml-formatted description of inlines
-    void DumpXml(FILE* file = stderr, unsigned indent = 0);
+    void        DumpXml(FILE* file = stderr, unsigned indent = 0);
     static void FinalizeXml(FILE* file = stderr);
 
     // Cache for file position of this method in the inline xml

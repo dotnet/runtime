@@ -726,7 +726,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     {
         return;
     }
-#else // !TARGET_ARM
+#else  // !TARGET_ARM
     if ((ClrSafeInt<int>(offset) + ClrSafeInt<int>(size)).IsOverflow())
     {
         return;
@@ -1088,7 +1088,8 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
     GenTree* op2 = node->Op(2);
     GenTree* op3 = node->Op(3);
 
-    auto lowerOperand = [this](GenTree* op) {
+    auto lowerOperand = [this](GenTree* op)
+    {
         bool wasNegated = false;
 
         if (op->OperIsHWIntrinsic() &&

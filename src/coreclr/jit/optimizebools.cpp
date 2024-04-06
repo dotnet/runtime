@@ -74,10 +74,10 @@ public:
 
 private:
     Statement* optOptimizeBoolsChkBlkCond();
-    GenTree* optIsBoolComp(OptTestInfo* pOptTest);
-    bool optOptimizeBoolsChkTypeCostCond();
-    void optOptimizeBoolsUpdateTrees();
-    bool FindCompareChain(GenTree* condition, bool* isTestCondition);
+    GenTree*   optIsBoolComp(OptTestInfo* pOptTest);
+    bool       optOptimizeBoolsChkTypeCostCond();
+    void       optOptimizeBoolsUpdateTrees();
+    bool       FindCompareChain(GenTree* condition, bool* isTestCondition);
 };
 
 //-----------------------------------------------------------------------------
@@ -439,7 +439,8 @@ static bool GetIntersection(var_types  type,
     }
 
     // Convert to a canonical form with GT_GE or GT_LE (inclusive).
-    auto normalize = [](genTreeOps* cmp, ssize_t* cns) {
+    auto normalize = [](genTreeOps* cmp, ssize_t* cns)
+    {
         if (*cmp == GT_GT)
         {
             // "X > cns" -> "X >= cns + 1"

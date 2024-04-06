@@ -88,9 +88,7 @@ class IteratorPair
     TIterator m_end;
 
 public:
-    IteratorPair(TIterator begin, TIterator end) : m_begin(begin), m_end(end)
-    {
-    }
+    IteratorPair(TIterator begin, TIterator end) : m_begin(begin), m_end(end) {}
 
     inline TIterator begin()
     {
@@ -246,9 +244,7 @@ private:
 class ConfigIntArray
 {
 public:
-    ConfigIntArray() : m_values(nullptr), m_length(0)
-    {
-    }
+    ConfigIntArray() : m_values(nullptr), m_length(0) {}
 
     // Ensure the string has been parsed.
     void EnsureInit(const WCHAR* str)
@@ -270,7 +266,7 @@ public:
     }
 
 private:
-    void Init(const WCHAR* str);
+    void     Init(const WCHAR* str);
     int*     m_values;
     unsigned m_length;
 };
@@ -280,9 +276,7 @@ private:
 class ConfigDoubleArray
 {
 public:
-    ConfigDoubleArray() : m_values(nullptr), m_length(0)
-    {
-    }
+    ConfigDoubleArray() : m_values(nullptr), m_length(0) {}
 
     // Ensure the string has been parsed.
     void EnsureInit(const WCHAR* str)
@@ -304,7 +298,7 @@ public:
     }
 
 private:
-    void Init(const WCHAR* str);
+    void     Init(const WCHAR* str);
     double*  m_values;
     unsigned m_length;
 };
@@ -786,8 +780,8 @@ unsigned CountDigits(double num, unsigned base = 10);
 #endif // DEBUG
 
 /*****************************************************************************
-* Floating point utility class
-*/
+ * Floating point utility class
+ */
 class FloatingPointUtils
 {
 public:
@@ -1019,7 +1013,7 @@ private:
     CRITSEC_COOKIE m_pCs;
 
     // No copying or assignment allowed.
-    CritSecObject(const CritSecObject&) = delete;
+    CritSecObject(const CritSecObject&)            = delete;
     CritSecObject& operator=(const CritSecObject&) = delete;
 };
 
@@ -1043,7 +1037,7 @@ private:
     CritSecObject& m_CritSec;
 
     // No copying or assignment allowed.
-    CritSecHolder(const CritSecHolder&) = delete;
+    CritSecHolder(const CritSecHolder&)            = delete;
     CritSecHolder& operator=(const CritSecHolder&) = delete;
 };
 
@@ -1059,7 +1053,7 @@ int32_t GetSigned32Magic(int32_t d, int* shift /*out*/);
 #ifdef TARGET_64BIT
 int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
 #endif
-}
+} // namespace MagicDivide
 
 //
 // Profiling helpers
@@ -1160,6 +1154,6 @@ bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned
 bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigned);
 bool CastFromFloatOverflows(float fromValue, var_types toType);
 bool CastFromDoubleOverflows(double fromValue, var_types toType);
-}
+} // namespace CheckedOps
 
 #endif // _UTILS_H_

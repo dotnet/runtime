@@ -53,9 +53,9 @@ const emitJumpKind emitReverseJumpKinds[] = {
 }
 
 /*****************************************************************************
-* Look up the jump kind for an instruction. It better be a conditional
-* branch instruction with a jump kind!
-*/
+ * Look up the jump kind for an instruction. It better be a conditional
+ * branch instruction with a jump kind!
+ */
 
 /*static*/ emitJumpKind emitter::emitInsToJumpKind(instruction ins)
 {
@@ -539,8 +539,8 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(emitGetInsSC(id) <= 4);
             if (insOptsLSL(id->idInsOpt()))
             {
-                assert((emitGetInsSC(id) > 0) ||
-                       (id->idReg2() == REG_ZR)); // REG_ZR encodes SP and we allow a shift of zero
+                assert((emitGetInsSC(id) > 0) || (id->idReg2() == REG_ZR)); // REG_ZR encodes SP and we allow a shift of
+                                                                            // zero
             }
             break;
 
@@ -967,7 +967,7 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
     switch (fmt)
     {
 
-        // These are the formats with "destination" registers:
+            // These are the formats with "destination" registers:
 
         case IF_DI_1B: // DI_1B   X........hwiiiii iiiiiiiiiiiddddd      Rd       imm(i16,hw)
         case IF_DI_1D: // DI_1D   X........Nrrrrrr ssssss.....ddddd      Rd       imm(N,r,s)
@@ -1031,7 +1031,7 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
             // Tracked GC pointers cannot be placed into the SIMD registers.
             return false;
 
-        // These are the load/store formats with "target" registers:
+            // These are the load/store formats with "target" registers:
 
         case IF_LS_1A: // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
         case IF_LS_2A: // LS_2A   .X.......X...... ......nnnnnttttt      Rt Rn
@@ -1733,8 +1733,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     };
     // clang-format on
 
-    const static insFormat formatEncode9[9] = {IF_DR_2E, IF_DR_2G, IF_DI_1B, IF_DI_1D, IF_DV_3C,
-                                               IF_DV_2B, IF_DV_2C, IF_DV_2E, IF_DV_2F};
+    const static insFormat formatEncode9[9]  = {IF_DR_2E, IF_DR_2G, IF_DI_1B, IF_DI_1D, IF_DV_3C,
+                                                IF_DV_2B, IF_DV_2C, IF_DV_2E, IF_DV_2F};
     const static insFormat formatEncode6A[6] = {IF_DR_3A, IF_DR_3B, IF_DR_3C, IF_DI_2A, IF_DV_3A, IF_DV_3E};
     const static insFormat formatEncode6B[6] = {IF_LS_2D, IF_LS_3F, IF_LS_2E, IF_LS_2F, IF_LS_3G, IF_LS_2G};
     const static insFormat formatEncode5A[5] = {IF_LS_2A, IF_LS_2B, IF_LS_2C, IF_LS_3A, IF_LS_1A};
@@ -3748,13 +3748,13 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction     ins,
-                          emitAttr        attr,
-                          regNumber       reg,
-                          ssize_t         imm,
-                          insOpts         opt, /* = INS_OPTS_NONE */
+void emitter::emitIns_R_I(instruction ins,
+                          emitAttr    attr,
+                          regNumber   reg,
+                          ssize_t     imm,
+                          insOpts     opt,     /* = INS_OPTS_NONE */
                           insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */
-                          DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
+                              DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
     emitAttr  size      = EA_SIZE(attr);
     emitAttr  elemsize  = EA_UNKNOWN;
@@ -3940,8 +3940,8 @@ void emitter::emitIns_R_I(instruction     ins,
             // First try the standard 'byteShifted immediate' imm(i8,bySh)
             bsi.immBSVal = 0;
             canEncode    = canEncodeByteShiftedImm(imm, elemsize,
-                                                (ins == INS_mvni), // mvni supports the ones shifting variant (aka MSL)
-                                                &bsi);
+                                                   (ins == INS_mvni), // mvni supports the ones shifting variant (aka MSL)
+                                                   &bsi);
             if (canEncode)
             {
                 imm = bsi.immBSVal;
@@ -4955,8 +4955,8 @@ void emitter::emitIns_R_I_I(instruction ins,
                             regNumber   reg,
                             ssize_t     imm1,
                             ssize_t     imm2,
-                            insOpts     opt /* = INS_OPTS_NONE */
-                            DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = 0 */))
+                            insOpts opt /* = INS_OPTS_NONE */
+                                DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = 0 */))
 {
     emitAttr  size   = EA_SIZE(attr);
     insFormat fmt    = IF_NONE;
@@ -5792,15 +5792,15 @@ void emitter::emitIns_R_R_F(
 }
 
 /*****************************************************************************
-*
-*  Add an instruction referencing two registers and a constant.
-*  Also checks for a large immediate that needs a second instruction
-*  and will load it in reg1
-*
-*  - Supports instructions: add, adds, sub, subs, and, ands, eor and orr
-*  - Requires that reg1 is a general register and not SP or ZR
-*  - Requires that reg1 != reg2
-*/
+ *
+ *  Add an instruction referencing two registers and a constant.
+ *  Also checks for a large immediate that needs a second instruction
+ *  and will load it in reg1
+ *
+ *  - Supports instructions: add, adds, sub, subs, and, ands, eor and orr
+ *  - Requires that reg1 is a general register and not SP or ZR
+ *  - Requires that reg1 != reg2
+ */
 void emitter::emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm)
 {
     assert(isGeneralRegister(reg1));
@@ -6554,7 +6554,7 @@ void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
                                        int         varx1,
                                        int         varx2,
                                        int         offs1,
-                                       int offs2 DEBUG_ARG(unsigned var1RefsOffs) DEBUG_ARG(unsigned var2RefsOffs))
+                                       int offs2   DEBUG_ARG(unsigned var1RefsOffs) DEBUG_ARG(unsigned var2RefsOffs))
 {
     assert((ins == INS_stp) || (ins == INS_ldp));
     emitAttr  size  = EA_SIZE(attr);
@@ -7147,7 +7147,7 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
                                 regNumber   reg1,
                                 regNumber   reg2,
                                 regNumber   reg3,
-                                insOpts     opt,         /* = INS_OPTS_NONE */
+                                insOpts     opt, /* = INS_OPTS_NONE */
                                 int         shiftAmount) /* = -1 -- unset   */
 {
     emitAttr  size   = EA_SIZE(attr);
@@ -8482,9 +8482,9 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 // This generates code to populate the access for TLS on linux
-void emitter::emitIns_Adrp_Ldr_Add(emitAttr  attr,
-                                   regNumber reg1,
-                                   regNumber reg2,
+void emitter::emitIns_Adrp_Ldr_Add(emitAttr     attr,
+                                   regNumber    reg1,
+                                   regNumber    reg2,
                                    ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
@@ -8537,9 +8537,9 @@ void emitter::emitIns_Adrp_Ldr_Add(emitAttr  attr,
 }
 
 // This computes address from the immediate which is relocatable.
-void emitter::emitIns_R_AI(instruction ins,
-                           emitAttr    attr,
-                           regNumber   ireg,
+void emitter::emitIns_R_AI(instruction  ins,
+                           emitAttr     attr,
+                           regNumber    ireg,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(EA_IS_RELOC(attr));
@@ -9108,7 +9108,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     if (m_debugInfoSize > 0)
     {
         INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
-        id->idDebugOnlyInfo()->idMemCookie       = (size_t)methHnd; // method token
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
     }
 
 #ifdef LATE_DISASM
@@ -10438,9 +10438,9 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 }
 
 /*****************************************************************************
-*
-*  Output a short branch instruction.
-*/
+ *
+ *  Output a short branch instruction.
+ */
 BYTE* emitter::emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id)
 {
     code_t code = emitInsCode(ins, fmt);
@@ -10503,9 +10503,9 @@ BYTE* emitter::emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, 
 }
 
 /*****************************************************************************
-*
-*  Output a short address instruction.
-*/
+ *
+ *  Output a short address instruction.
+ */
 BYTE* emitter::emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg)
 {
     ssize_t loBits = (distVal & 3);
@@ -10533,9 +10533,9 @@ BYTE* emitter::emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt,
 }
 
 /*****************************************************************************
-*
-*  Output a short constant instruction.
-*/
+ *
+ *  Output a short constant instruction.
+ */
 BYTE* emitter::emitOutputShortConstant(
     BYTE* dst, instruction ins, insFormat fmt, ssize_t imm, regNumber reg, emitAttr opSize)
 {
@@ -10768,7 +10768,7 @@ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
 }
 
 /*****************************************************************************
-*
+ *
  *  Append the machine code corresponding to the given instruction descriptor
  *  to the code block at '*dp'; the base of the code block is 'bp', and 'ig'
  *  is the instruction group that contains the instruction. Updates '*dp' to
@@ -11164,8 +11164,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = emitInsCode(ins, fmt);
                 code |= insEncodeReg_Rd(id->idReg1()); // ddddd
                 dst += emitOutput_Instr(dst, code);
-                emitRecordRelocation(odst, id->idAddr()->iiaAddr, id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21
-                                                                                  : IMAGE_REL_ARM64_PAGEBASE_REL21);
+                emitRecordRelocation(odst, id->idAddr()->iiaAddr,
+                                     id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21
+                                                     : IMAGE_REL_ARM64_PAGEBASE_REL21);
             }
             else
             {
@@ -11208,8 +11209,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 assert(sz == sizeof(instrDesc));
                 assert(id->idAddr()->iiaAddr != nullptr);
-                emitRecordRelocation(odst, id->idAddr()->iiaAddr, id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADD_LO12
-                                                                                  : IMAGE_REL_ARM64_PAGEOFFSET_12A);
+                emitRecordRelocation(odst, id->idAddr()->iiaAddr,
+                                     id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADD_LO12
+                                                     : IMAGE_REL_ARM64_PAGEOFFSET_12A);
             }
             break;
 
@@ -12356,7 +12358,7 @@ void emitter::emitDispCond(insCond cond)
 {
     const static char* armCond[16] = {"eq", "ne", "hs", "lo", "mi", "pl", "vs", "vc",
                                       "hi", "ls", "ge", "lt", "gt", "le", "AL", "NV"}; // The last two are invalid
-    unsigned imm = (unsigned)cond;
+    unsigned           imm         = (unsigned)cond;
     assert((0 <= imm) && (imm < ArrLen(armCond)));
     printf(armCond[imm]);
 }
@@ -12369,7 +12371,7 @@ void emitter::emitDispFlags(insCflags flags)
 {
     const static char* armFlags[16] = {"0", "v",  "c",  "cv",  "z",  "zv",  "zc",  "zcv",
                                        "n", "nv", "nc", "ncv", "nz", "nzv", "nzc", "nzcv"};
-    unsigned imm = (unsigned)flags;
+    unsigned           imm          = (unsigned)flags;
     assert((0 <= imm) && (imm < ArrLen(armFlags)));
     printf(armFlags[imm]);
 }
@@ -12382,7 +12384,7 @@ void emitter::emitDispBarrier(insBarrier barrier)
 {
     const static char* armBarriers[16] = {"#0", "oshld", "oshst", "osh", "#4",  "nshld", "nshst", "nsh",
                                           "#8", "ishld", "ishst", "ish", "#12", "ld",    "st",    "sy"};
-    unsigned imm = (unsigned)barrier;
+    unsigned           imm             = (unsigned)barrier;
     assert((0 <= imm) && (imm < ArrLen(armBarriers)));
     printf(armBarriers[imm]);
 }
@@ -14681,9 +14683,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     switch (insFmt)
     {
-        //
-        //  Branch Instructions
-        //
+            //
+            //  Branch Instructions
+            //
 
         case IF_BI_0A:                                      // b, bl_local
         case IF_BI_0C:                                      // bl, b_tail
@@ -14936,9 +14938,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 break;
             }
 
-        //
-        //  Load/Store Instructions
-        //
+            //
+            //  Load/Store Instructions
+            //
 
         case IF_LS_1A: // ldr, ldrsw (literal, pc relative immediate)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
@@ -16617,7 +16619,7 @@ bool emitter::OptimizeLdrStr(instruction ins,
                              insFormat   fmt,
                              bool        localVar,
                              int         varx,
-                             int offs DEBUG_ARG(bool useRsvdReg))
+                             int offs    DEBUG_ARG(bool useRsvdReg))
 {
     assert(ins == INS_ldr || ins == INS_str);
 

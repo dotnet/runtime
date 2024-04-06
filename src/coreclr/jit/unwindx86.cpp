@@ -30,37 +30,21 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 }
 #endif // FEATURE_CFI_SUPPORT
 
-void Compiler::unwindBegProlog()
-{
-}
+void Compiler::unwindBegProlog() {}
 
-void Compiler::unwindEndProlog()
-{
-}
+void Compiler::unwindEndProlog() {}
 
-void Compiler::unwindBegEpilog()
-{
-}
+void Compiler::unwindBegEpilog() {}
 
-void Compiler::unwindEndEpilog()
-{
-}
+void Compiler::unwindEndEpilog() {}
 
-void Compiler::unwindPush(regNumber reg)
-{
-}
+void Compiler::unwindPush(regNumber reg) {}
 
-void Compiler::unwindAllocStack(unsigned size)
-{
-}
+void Compiler::unwindAllocStack(unsigned size) {}
 
-void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
-{
-}
+void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset) {}
 
-void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
-{
-}
+void Compiler::unwindSaveReg(regNumber reg, unsigned offset) {}
 
 //------------------------------------------------------------------------
 // Compiler::unwindReserve: Ask the VM to reserve space for the unwind information

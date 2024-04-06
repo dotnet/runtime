@@ -78,10 +78,12 @@ void DataFlow::ForwardAnalysis(TCallback& callback)
             // block dominates all other blocks in the 'try'. That will happen
             // as part of processing handlers below.
             //
-            block->VisitRegularSuccs(m_pCompiler, [&worklist](BasicBlock* succ) {
-                worklist.insert(worklist.end(), succ);
-                return BasicBlockVisit::Continue;
-            });
+            block->VisitRegularSuccs(m_pCompiler,
+                                     [&worklist](BasicBlock* succ)
+                                     {
+                                         worklist.insert(worklist.end(), succ);
+                                         return BasicBlockVisit::Continue;
+                                     });
         }
 
         if (m_pCompiler->bbIsTryBeg(block))

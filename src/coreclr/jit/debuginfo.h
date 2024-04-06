@@ -12,9 +12,7 @@ class InlineContext;
 class ILLocation
 {
 public:
-    ILLocation() : m_offset(BAD_IL_OFFSET), m_isStackEmpty(false), m_isCall(false)
-    {
-    }
+    ILLocation() : m_offset(BAD_IL_OFFSET), m_isStackEmpty(false), m_isCall(false) {}
 
     ILLocation(IL_OFFSET offset, bool isStackEmpty, bool isCall)
         : m_offset(offset), m_isStackEmpty(isStackEmpty), m_isCall(isCall)
@@ -72,13 +70,9 @@ private:
 class DebugInfo
 {
 public:
-    DebugInfo() : m_inlineContext(nullptr)
-    {
-    }
+    DebugInfo() : m_inlineContext(nullptr) {}
 
-    DebugInfo(InlineContext* inlineContext, ILLocation loc) : m_inlineContext(inlineContext), m_location(loc)
-    {
-    }
+    DebugInfo(InlineContext* inlineContext, ILLocation loc) : m_inlineContext(inlineContext), m_location(loc) {}
 
     InlineContext* GetInlineContext() const
     {
@@ -103,9 +97,7 @@ public:
 #ifdef DEBUG
     void Validate() const;
 #else
-    void Validate() const
-    {
-    }
+    void Validate() const {}
 #endif
 
 #ifdef DEBUG

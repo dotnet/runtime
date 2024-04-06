@@ -1063,7 +1063,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                                                           &genericLookup);
                     GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
                     call             = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
-                                               targetObjPointers, ctxTree);
+                                                           targetObjPointers, ctxTree);
                     call->setEntryPoint(genericLookup);
                 }
             }
@@ -1647,8 +1647,8 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
                                                // try/finally, which must be the last EH region.
 
     EHblkDsc* ehDsc = ehGetDsc(tryIndex);
-    assert(ehDsc->ebdEnclosingTryIndex ==
-           EHblkDsc::NO_ENCLOSING_INDEX); // There are no enclosing regions of the BBJ_RETURN block
+    assert(ehDsc->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX); // There are no enclosing regions of the
+                                                                         // BBJ_RETURN block
     assert(ehDsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX);
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
@@ -2266,7 +2266,7 @@ private:
         return nullptr;
     }
 };
-}
+} // namespace
 
 //------------------------------------------------------------------------
 // fgAddInternal: add blocks and trees to express special method semantics
@@ -2325,7 +2325,7 @@ PhaseStatus Compiler::fgAddInternal()
 #ifndef JIT32_GCENCODER
             lva0CopiedForGenericsCtxt = ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
 #else  // JIT32_GCENCODER
-            lva0CopiedForGenericsCtxt          = false;
+            lva0CopiedForGenericsCtxt = false;
 #endif // JIT32_GCENCODER
             noway_assert(lva0CopiedForGenericsCtxt || !lvaTable[info.compThisArg].IsAddressExposed());
             noway_assert(!lvaTable[info.compThisArg].lvHasILStoreOp);
@@ -3677,7 +3677,8 @@ PhaseStatus Compiler::fgSetBlockOrder()
 class GCSafePointSuccessorEnumerator
 {
     BasicBlock* m_block;
-    union {
+    union
+    {
         BasicBlock*  m_successors[2];
         BasicBlock** m_pSuccessors;
     };
@@ -3691,15 +3692,17 @@ public:
     GCSafePointSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block)
     {
         m_numSuccs = 0;
-        block->VisitRegularSuccs(comp, [this](BasicBlock* succ) {
-            if (m_numSuccs < ArrLen(m_successors))
-            {
-                m_successors[m_numSuccs] = succ;
-            }
+        block->VisitRegularSuccs(comp,
+                                 [this](BasicBlock* succ)
+                                 {
+                                     if (m_numSuccs < ArrLen(m_successors))
+                                     {
+                                         m_successors[m_numSuccs] = succ;
+                                     }
 
-            m_numSuccs++;
-            return BasicBlockVisit::Continue;
-        });
+                                     m_numSuccs++;
+                                     return BasicBlockVisit::Continue;
+                                 });
 
         if (m_numSuccs == 0)
         {
@@ -3723,11 +3726,13 @@ public:
             m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
 
             unsigned numSuccs = 0;
-            block->VisitRegularSuccs(comp, [this, &numSuccs](BasicBlock* succ) {
-                assert(numSuccs < m_numSuccs);
-                m_pSuccessors[numSuccs++] = succ;
-                return BasicBlockVisit::Continue;
-            });
+            block->VisitRegularSuccs(comp,
+                                     [this, &numSuccs](BasicBlock* succ)
+                                     {
+                                         assert(numSuccs < m_numSuccs);
+                                         m_pSuccessors[numSuccs++] = succ;
+                                         return BasicBlockVisit::Continue;
+                                     });
 
             assert(numSuccs == m_numSuccs);
         }
@@ -3996,18 +4001,21 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
     BasicBlock** postOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount];
     bool         hasCycle  = false;
 
-    auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {
+    auto visitPreorder = [](BasicBlock* block, unsigned preorderNum)
+    {
         block->bbPreorderNum  = preorderNum;
         block->bbPostorderNum = UINT_MAX;
     };
 
-    auto visitPostorder = [=](BasicBlock* block, unsigned postorderNum) {
+    auto visitPostorder = [=](BasicBlock* block, unsigned postorderNum)
+    {
         block->bbPostorderNum = postorderNum;
         assert(postorderNum < fgBBcount);
         postOrder[postorderNum] = block;
     };
 
-    auto visitEdge = [&hasCycle](BasicBlock* block, BasicBlock* succ) {
+    auto visitEdge = [&hasCycle](BasicBlock* block, BasicBlock* succ)
+    {
         // Check if block -> succ is a backedge, in which case the flow
         // graph has a cycle.
         if ((succ->bbPreorderNum <= block->bbPreorderNum) && (succ->bbPostorderNum == UINT_MAX))
@@ -4393,20 +4401,26 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 
         // Find the exit edges
         //
-        loop->VisitLoopBlocksReversePostOrder([=](BasicBlock* loopBlock) {
-            loopBlock->VisitRegularSuccs(comp, [=](BasicBlock* succBlock) {
-                if (!loop->ContainsBlock(succBlock))
-                {
-                    FlowEdge* const exitEdge = comp->fgGetPredForBlock(succBlock, loopBlock);
-                    JITDUMP(FMT_BB " -> " FMT_BB " is an exit edge\n", loopBlock->bbNum, succBlock->bbNum);
-                    loop->m_exitEdges.push_back(exitEdge);
-                }
+        loop->VisitLoopBlocksReversePostOrder(
+            [=](BasicBlock* loopBlock)
+            {
+                loopBlock->VisitRegularSuccs(comp,
+                                             [=](BasicBlock* succBlock)
+                                             {
+                                                 if (!loop->ContainsBlock(succBlock))
+                                                 {
+                                                     FlowEdge* const exitEdge =
+                                                         comp->fgGetPredForBlock(succBlock, loopBlock);
+                                                     JITDUMP(FMT_BB " -> " FMT_BB " is an exit edge\n",
+                                                             loopBlock->bbNum, succBlock->bbNum);
+                                                     loop->m_exitEdges.push_back(exitEdge);
+                                                 }
+
+                                                 return BasicBlockVisit::Continue;
+                                             });
 
                 return BasicBlockVisit::Continue;
             });
-
-            return BasicBlockVisit::Continue;
-        });
 
         // Find the entry edges
         //
@@ -4448,19 +4462,23 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
             {
                 // Ancestor loop; should contain all blocks of this loop
                 //
-                loop->VisitLoopBlocks([otherLoop](BasicBlock* loopBlock) {
-                    assert(otherLoop->ContainsBlock(loopBlock));
-                    return BasicBlockVisit::Continue;
-                });
+                loop->VisitLoopBlocks(
+                    [otherLoop](BasicBlock* loopBlock)
+                    {
+                        assert(otherLoop->ContainsBlock(loopBlock));
+                        return BasicBlockVisit::Continue;
+                    });
             }
             else
             {
                 // Non-ancestor loop; should have no blocks in common with current loop
                 //
-                loop->VisitLoopBlocks([otherLoop](BasicBlock* loopBlock) {
-                    assert(!otherLoop->ContainsBlock(loopBlock));
-                    return BasicBlockVisit::Continue;
-                });
+                loop->VisitLoopBlocks(
+                    [otherLoop](BasicBlock* loopBlock)
+                    {
+                        assert(!otherLoop->ContainsBlock(loopBlock));
+                        return BasicBlockVisit::Continue;
+                    });
             }
         }
 #endif
@@ -4669,7 +4687,8 @@ void FlowGraphNaturalLoop::Dump(FlowGraphNaturalLoop* loop)
             BasicBlock* firstInRange = nullptr;
             BasicBlock* lastInRange  = nullptr;
             first                    = true;
-            auto printRange          = [&]() {
+            auto printRange          = [&]()
+            {
                 // Dump current range if there is one; reset firstInRange.
                 if (firstInRange == nullptr)
                 {
@@ -4714,11 +4733,13 @@ void FlowGraphNaturalLoop::Dump(FlowGraphNaturalLoop* loop)
             // not well ordered such that `top` and `bottom` are not first/last in `bbNext` order.
             // Just dump all the blocks individually using the loop block visitor.
             first = true;
-            loop->VisitLoopBlocksReversePostOrder([&first](BasicBlock* block) {
-                printf("%s" FMT_BB, first ? "" : ";", block->bbNum);
-                first = false;
-                return BasicBlockVisit::Continue;
-            });
+            loop->VisitLoopBlocksReversePostOrder(
+                [&first](BasicBlock* block)
+                {
+                    printf("%s" FMT_BB, first ? "" : ";", block->bbNum);
+                    first = false;
+                    return BasicBlockVisit::Continue;
+                });
 
             // Print out the lexical top and bottom blocks, which will explain why we didn't print ranges.
             printf("\n  Lexical top: " FMT_BB, lexicalTopBlock->bbNum);
@@ -4838,9 +4859,7 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
             DoPreOrder = true,
         };
 
-        VisitDefsVisitor(Compiler* comp, TFunc& func) : GenTreeVisitor<VisitDefsVisitor>(comp), m_func(func)
-        {
-        }
+        VisitDefsVisitor(Compiler* comp, TFunc& func) : GenTreeVisitor<VisitDefsVisitor>(comp), m_func(func) {}
 
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
@@ -4863,15 +4882,17 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
 
     VisitDefsVisitor visitor(m_dfsTree->GetCompiler(), func);
 
-    BasicBlockVisit result = VisitLoopBlocks([&](BasicBlock* loopBlock) {
-        for (Statement* stmt : loopBlock->Statements())
+    BasicBlockVisit result = VisitLoopBlocks(
+        [&](BasicBlock* loopBlock)
         {
-            if (visitor.WalkTree(stmt->GetRootNodePointer(), nullptr) == Compiler::WALK_ABORT)
-                return BasicBlockVisit::Abort;
-        }
+            for (Statement* stmt : loopBlock->Statements())
+            {
+                if (visitor.WalkTree(stmt->GetRootNodePointer(), nullptr) == Compiler::WALK_ABORT)
+                    return BasicBlockVisit::Abort;
+            }
 
-        return BasicBlockVisit::Continue;
-    });
+            return BasicBlockVisit::Continue;
+        });
 
     return result == BasicBlockVisit::Continue;
 }
@@ -4903,15 +4924,17 @@ GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
     }
 
     GenTreeLclVarCommon* result = nullptr;
-    VisitDefs([&result, lclNum, lclNum2](GenTreeLclVarCommon* def) {
-        if ((def->GetLclNum() == lclNum) || (def->GetLclNum() == lclNum2))
+    VisitDefs(
+        [&result, lclNum, lclNum2](GenTreeLclVarCommon* def)
         {
-            result = def;
-            return false;
-        }
+            if ((def->GetLclNum() == lclNum) || (def->GetLclNum() == lclNum2))
+            {
+                result = def;
+                return false;
+            }
 
-        return true;
-    });
+            return true;
+        });
 
     return result;
 }
@@ -5016,13 +5039,15 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
             continue;
         }
 
-        bool result = VisitDefs([=](GenTreeLclVarCommon* def) {
-            if ((def->GetLclNum() != iterVar) || (def == iterTree))
-                return true;
+        bool result = VisitDefs(
+            [=](GenTreeLclVarCommon* def)
+            {
+                if ((def->GetLclNum() != iterVar) || (def == iterTree))
+                    return true;
 
-            JITDUMP("    Loop has extraneous def [%06u]\n", Compiler::dspTreeID(def));
-            return false;
-        });
+                JITDUMP("    Loop has extraneous def [%06u]\n", Compiler::dspTreeID(def));
+                return false;
+            });
 
         if (!result)
         {
@@ -5055,13 +5080,15 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 
     MatchInit(info, initBlock, init);
 
-    bool result = VisitDefs([=](GenTreeLclVarCommon* def) {
-        if ((def->GetLclNum() != info->IterVar) || (def == info->IterTree))
-            return true;
+    bool result = VisitDefs(
+        [=](GenTreeLclVarCommon* def)
+        {
+            if ((def->GetLclNum() != info->IterVar) || (def == info->IterTree))
+                return true;
 
-        JITDUMP("  Loop has extraneous def [%06u]\n", Compiler::dspTreeID(def));
-        return false;
-    });
+            JITDUMP("  Loop has extraneous def [%06u]\n", Compiler::dspTreeID(def));
+            return false;
+        });
 
     if (!result)
     {
@@ -5494,11 +5521,13 @@ bool FlowGraphNaturalLoop::InitBlockEntersLoopOnTrue(BasicBlock* initBlock)
 BasicBlock* FlowGraphNaturalLoop::GetLexicallyTopMostBlock()
 {
     BasicBlock* top = m_header;
-    VisitLoopBlocks([&top](BasicBlock* loopBlock) {
-        if (loopBlock->bbNum < top->bbNum)
-            top = loopBlock;
-        return BasicBlockVisit::Continue;
-    });
+    VisitLoopBlocks(
+        [&top](BasicBlock* loopBlock)
+        {
+            if (loopBlock->bbNum < top->bbNum)
+                top = loopBlock;
+            return BasicBlockVisit::Continue;
+        });
 
     return top;
 }
@@ -5517,11 +5546,13 @@ BasicBlock* FlowGraphNaturalLoop::GetLexicallyTopMostBlock()
 BasicBlock* FlowGraphNaturalLoop::GetLexicallyBottomMostBlock()
 {
     BasicBlock* bottom = m_header;
-    VisitLoopBlocks([&bottom](BasicBlock* loopBlock) {
-        if (loopBlock->bbNum > bottom->bbNum)
-            bottom = loopBlock;
-        return BasicBlockVisit::Continue;
-    });
+    VisitLoopBlocks(
+        [&bottom](BasicBlock* loopBlock)
+        {
+            if (loopBlock->bbNum > bottom->bbNum)
+                bottom = loopBlock;
+            return BasicBlockVisit::Continue;
+        });
 
     return bottom;
 }
@@ -5551,14 +5582,16 @@ bool FlowGraphNaturalLoop::HasDef(unsigned lclNum)
         defLclNum2 = dsc->lvParentLcl;
     }
 
-    bool result = VisitDefs([=](GenTreeLclVarCommon* lcl) {
-        if ((lcl->GetLclNum() == defLclNum1) || (lcl->GetLclNum() == defLclNum2))
+    bool result = VisitDefs(
+        [=](GenTreeLclVarCommon* lcl)
         {
-            return false;
-        }
+            if ((lcl->GetLclNum() == defLclNum1) || (lcl->GetLclNum() == defLclNum2))
+            {
+                return false;
+            }
 
-        return true;
-    });
+            return true;
+        });
 
     // If we stopped early we found a def.
     return !result;
@@ -5587,15 +5620,17 @@ bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
 #endif
 
     Compiler*       comp   = m_dfsTree->GetCompiler();
-    BasicBlockVisit result = VisitLoopBlocks([=](BasicBlock* block) {
-        if (comp->bbIsTryBeg(block))
+    BasicBlockVisit result = VisitLoopBlocks(
+        [=](BasicBlock* block)
         {
-            INDEBUG(*reason = "Loop has a `try` begin");
-            return BasicBlockVisit::Abort;
-        }
+            if (comp->bbIsTryBeg(block))
+            {
+                INDEBUG(*reason = "Loop has a `try` begin");
+                return BasicBlockVisit::Abort;
+            }
 
-        return BasicBlockVisit::Continue;
-    });
+            return BasicBlockVisit::Continue;
+        });
 
     return result != BasicBlockVisit::Abort;
 }
@@ -5616,43 +5651,47 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
 
     BasicBlock* bottom = GetLexicallyBottomMostBlock();
 
-    VisitLoopBlocksLexical([=](BasicBlock* blk) {
-        // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later
-        // with BasicBlock::CopyTarget().
-        BasicBlock* newBlk = comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /*extendRegion*/ true);
-        JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum,
-                (*insertAfter)->bbNum);
+    VisitLoopBlocksLexical(
+        [=](BasicBlock* blk)
+        {
+            // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later
+            // with BasicBlock::CopyTarget().
+            BasicBlock* newBlk = comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /*extendRegion*/ true);
+            JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum,
+                    (*insertAfter)->bbNum);
 
-        BasicBlock::CloneBlockState(comp, newBlk, blk);
+            BasicBlock::CloneBlockState(comp, newBlk, blk);
 
-        // We're going to create the preds below, which will set the bbRefs properly,
-        // so clear out the cloned bbRefs field.
-        newBlk->bbRefs = 0;
+            // We're going to create the preds below, which will set the bbRefs properly,
+            // so clear out the cloned bbRefs field.
+            newBlk->bbRefs = 0;
 
-        newBlk->scaleBBWeight(weightScale);
+            newBlk->scaleBBWeight(weightScale);
 
-        *insertAfter = newBlk;
-        map->Set(blk, newBlk, BlockToBlockMap::Overwrite);
+            *insertAfter = newBlk;
+            map->Set(blk, newBlk, BlockToBlockMap::Overwrite);
 
-        return BasicBlockVisit::Continue;
-    });
+            return BasicBlockVisit::Continue;
+        });
 
     // Now go through the new blocks, remapping their jump targets within the loop
     // and updating the preds lists.
-    VisitLoopBlocks([=](BasicBlock* blk) {
-        BasicBlock* newBlk = nullptr;
-        bool        b      = map->Lookup(blk, &newBlk);
-        assert(b && newBlk != nullptr);
+    VisitLoopBlocks(
+        [=](BasicBlock* blk)
+        {
+            BasicBlock* newBlk = nullptr;
+            bool        b      = map->Lookup(blk, &newBlk);
+            assert(b && newBlk != nullptr);
 
-        // Jump target should not be set yet
-        assert(!newBlk->HasInitializedTarget());
+            // Jump target should not be set yet
+            assert(!newBlk->HasInitializedTarget());
 
-        // Redirect the new block according to "blockMap".
-        // optSetMappedBlockTargets will set newBlk's successors, and add pred edges for the successors.
-        comp->optSetMappedBlockTargets(blk, newBlk, map);
+            // Redirect the new block according to "blockMap".
+            // optSetMappedBlockTargets will set newBlk's successors, and add pred edges for the successors.
+            comp->optSetMappedBlockTargets(blk, newBlk, map);
 
-        return BasicBlockVisit::Continue;
-    });
+            return BasicBlockVisit::Continue;
+        });
 }
 
 //------------------------------------------------------------------------
@@ -6165,10 +6204,12 @@ BlockToNaturalLoopMap* BlockToNaturalLoopMap::Build(FlowGraphNaturalLoops* loops
     // loops last and thus write their indices into the map last.
     for (FlowGraphNaturalLoop* loop : loops->InReversePostOrder())
     {
-        loop->VisitLoopBlocks([=](BasicBlock* block) {
-            indices[block->bbPostorderNum] = loop->GetIndex();
-            return BasicBlockVisit::Continue;
-        });
+        loop->VisitLoopBlocks(
+            [=](BasicBlock* block)
+            {
+                indices[block->bbPostorderNum] = loop->GetIndex();
+                return BasicBlockVisit::Continue;
+            });
     }
 
     return new (comp, CMK_Loops) BlockToNaturalLoopMap(loops, indices);
