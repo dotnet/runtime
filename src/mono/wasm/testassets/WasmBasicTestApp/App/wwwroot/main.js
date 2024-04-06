@@ -105,21 +105,17 @@ try {
         case "SignalRClientTests":
             const transport = params.get("transport");
             const message = params.get("message");
-            const serverPortArg = params.get("serverPort");
-            if (!transport || !message || !serverPortArg) {
-                exit(2, new Error(`Query string with parameters 'message', 'transport' and 'serverPort' is required, query = ${params}`));
+            if (!transport || !message) {
+                exit(2, new Error(`Query string with parameters 'message', 'transport' is required, query = ${params}`));
             }
-            if (isNaN(serverPortArg)) {
-                exit(2, new Error(`Query string parameter 'serverPort' is not a number, query = ${params}`));
-            }
-            const serverPort = parseInt(serverPortArg);
-            exports.SignalRClientTests.GetQueryParameters(transport, message);
+            console.log(`Starting SignalRClientTests with transport: ${transport}, message: ${message}`)
 
             let startConnectionButton = document.createElement("button");
             startConnectionButton.id = "startconnection"; // second: click this
             startConnectionButton.addEventListener("click", function() {
                 testOutput("StartConnectionButton was clicked!");
-                exports.SignalRClientTests.Connect(serverPort);
+                const baseUrl = window.location.protocol + "//" + window.location.host;;
+                exports.SignalRClientTests.Connect(baseUrl, transport);
             });
             document.body.appendChild(startConnectionButton);
 

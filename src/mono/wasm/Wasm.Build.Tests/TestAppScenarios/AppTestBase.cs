@@ -23,7 +23,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
     protected string Id { get; set; }
     protected string LogPath { get; set; }
 
-    protected void CopyTestAsset(string assetName, string generatedProjectNamePrefix = null, bool addMultithreading = false)
+    protected void CopyTestAsset(string assetName, string generatedProjectNamePrefix = null)
     {
         Id = $"{generatedProjectNamePrefix ?? assetName}_{GetRandomId()}";
         InitBlazorWasmProjectDir(Id);
@@ -36,10 +36,6 @@ public abstract class AppTestBase : BlazorWasmTestBase
             case "WasmBasicTestApp":
                 // WasmBasicTestApp consists of App + Library + Server projects
                 _projectDir = Path.Combine(_projectDir!, "App");
-                break;
-            case "SignalRClientTests":
-                // WasmBasicTestApp consists of App + Library + Server projects
-                _projectDir = Path.Combine(_projectDir!, "Server");
                 break;
             case "BlazorHostedApp":
                 // BlazorHostedApp consists of BlazorHosted.Client and BlazorHosted.Server projects

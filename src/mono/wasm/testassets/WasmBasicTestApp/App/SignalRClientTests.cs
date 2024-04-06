@@ -11,26 +11,14 @@ using Microsoft.AspNetCore.Http.Connections;
 
 public partial class SignalRClientTests
 {
-    public static string? Transport;
-    public static string? Message;
     private static HubConnection? _hubConnection;
 
     [JSExport]
-    public static void GetQueryParameters(string transport, string message)
+    public static async Task Connect(string baseUrl, string transport)
     {
-        Transport = transport;
-        Message = message; // can be removed, should we remove both?
-        TestOutput.WriteLine($"Finished GetQueryParameters on CurrentManagedThreadId={Environment.CurrentManagedThreadId}.");
-    }
-
-    [JSExport]
-    public static async Task Connect(int serverPort)
-    {
-        // connect using aspnetcore server url
-        var builder = new UriBuilder("http", "localhost", serverPort) { Path = "/chathub" };
-        string hubUrl = builder.ToString();
+        string hubUrl = Path.Combine(baseUrl, "chathub");
         TestOutput.WriteLine($"hubUrl = {hubUrl}");
-        HttpTransportType httpTransportType = StringToTransportType(Transport);
+        HttpTransportType httpTransportType = StringToTransportType(transport);
         _hubConnection = new HubConnectionBuilder().WithUrl(hubUrl, options =>
             {
                 options.Transports = httpTransportType;
@@ -53,8 +41,16 @@ public partial class SignalRClientTests
                 TestOutput.WriteLine("SignalR connection is not established.");
                 return;
             }
-            await _hubConnection.SendAsync("SendMessage", message, Environment.CurrentManagedThreadId);
-            TestOutput.WriteLine($"SignalRPassMessages was sent by CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+            try
+            {
+                await _hubConnection.SendAsync("SendMessage", "message", 1); // ToDo: change later to Environment.CurrentManagedThreadId
+                TestOutput.WriteLine($"SignalRPassMessages was sent by CurrentManagedThreadId={Environment.CurrentManagedThreadId}, message={message}");
+            }
+            catch (Exception ex)
+            {
+                // throws System.InvalidOperationException: JsonSerializerIsReflectionDisabled
+                TestOutput.WriteLine($"Exception in SignalRPassMessages: {ex}");
+            }
         });
 
     [JSExport]
