@@ -965,7 +965,7 @@ private:
 
     bool stressInitialParamReg()
     {
-        return true; // compiler->compStressCompile(Compiler::STRESS_INITIAL_PARAM_REG, 25);
+        return compiler->compStressCompile(Compiler::STRESS_INITIAL_PARAM_REG, 25);
     }
 
     // Dump support
