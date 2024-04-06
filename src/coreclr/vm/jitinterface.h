@@ -325,17 +325,6 @@ EXTERN_C FCDECL2(Object*, JIT_NewArr1OBJ_MP_InlineGetThread, CORINFO_CLASS_HANDL
 
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
 
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2Lng, double val);
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2IntSSE2, double val);
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2LngP4x87, double val);
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2LngSSE3, double val);
-EXTERN_C FCDECL1_V(INT64, JIT_Dbl2LngOvf, double val);
-
-EXTERN_C FCDECL1_V(INT32, JIT_Dbl2IntOvf, double val);
-
-EXTERN_C FCDECL2_VV(float, JIT_FltRem, float dividend, float divisor);
-EXTERN_C FCDECL2_VV(double, JIT_DblRem, double dividend, double divisor);
-
 #ifndef HOST_64BIT
 #ifdef TARGET_X86
 // JIThelp.asm
@@ -688,9 +677,7 @@ public:
         m_CodeHeaderRW = NULL;
 
         m_codeWriteBufferSize = 0;
-#ifdef USE_INDIRECT_CODEHEADER
         m_pRealCodeHeader = NULL;
-#endif
         m_pCodeHeap = NULL;
 
         if (m_pOffsetMapping != NULL)
@@ -801,9 +788,7 @@ public:
           m_CodeHeader(NULL),
           m_CodeHeaderRW(NULL),
           m_codeWriteBufferSize(0),
-#ifdef USE_INDIRECT_CODEHEADER
           m_pRealCodeHeader(NULL),
-#endif
           m_pCodeHeap(NULL),
           m_ILHeader(header),
 #ifdef FEATURE_EH_FUNCLETS
@@ -951,9 +936,7 @@ protected :
     CodeHeader*             m_CodeHeader;   // descriptor for JITTED code - read/execute address
     CodeHeader*             m_CodeHeaderRW; // descriptor for JITTED code - code write scratch buffer address
     size_t                  m_codeWriteBufferSize;
-#ifdef USE_INDIRECT_CODEHEADER
     BYTE*                   m_pRealCodeHeader;
-#endif
     HeapList*               m_pCodeHeap;
     COR_ILMETHOD_DECODER *  m_ILHeader;     // the code header as exist in the file
 #ifdef FEATURE_EH_FUNCLETS

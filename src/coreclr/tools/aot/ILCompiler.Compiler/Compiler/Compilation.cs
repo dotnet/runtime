@@ -210,9 +210,9 @@ namespace ILCompiler
             return intrinsicMethod;
         }
 
-        public bool HasFixedSlotVTable(TypeDesc type)
+        public bool NeedsSlotUseTracking(TypeDesc type)
         {
-            return NodeFactory.VTable(type).HasFixedSlots;
+            return !NodeFactory.VTable(type).HasKnownVirtualMethodUse;
         }
 
         public bool IsEffectivelySealed(TypeDesc type)
@@ -388,42 +388,36 @@ namespace ILCompiler
                 lookupKind = ReadyToRunHelperId.TypeHandle;
             }
 
-            // Can we do a fixed lookup? Start by checking if we can get to the dictionary.
-            // Context source having a vtable with fixed slots is a prerequisite.
-            if (contextSource == GenericContextSource.MethodParameter
-                || HasFixedSlotVTable(contextMethod.OwningType))
+            DictionaryLayoutNode dictionaryLayout;
+            if (contextSource == GenericContextSource.MethodParameter)
+                dictionaryLayout = _nodeFactory.GenericDictionaryLayout(contextMethod);
+            else
+                dictionaryLayout = _nodeFactory.GenericDictionaryLayout(contextMethod.OwningType);
+
+            // If the dictionary layout has fixed slots, we can compute the lookup now. Otherwise defer to helper.
+            if (dictionaryLayout.HasFixedSlots)
             {
-                DictionaryLayoutNode dictionaryLayout;
-                if (contextSource == GenericContextSource.MethodParameter)
-                    dictionaryLayout = _nodeFactory.GenericDictionaryLayout(contextMethod);
-                else
-                    dictionaryLayout = _nodeFactory.GenericDictionaryLayout(contextMethod.OwningType);
+                int pointerSize = _nodeFactory.Target.PointerSize;
 
-                // If the dictionary layout has fixed slots, we can compute the lookup now. Otherwise defer to helper.
-                if (dictionaryLayout.HasFixedSlots)
+                GenericLookupResult lookup = ReadyToRunGenericHelperNode.GetLookupSignature(_nodeFactory, lookupKind, targetOfLookup);
+                if (dictionaryLayout.TryGetSlotForEntry(lookup, out int dictionarySlot))
                 {
-                    int pointerSize = _nodeFactory.Target.PointerSize;
+                    int dictionaryOffset = dictionarySlot * pointerSize;
 
-                    GenericLookupResult lookup = ReadyToRunGenericHelperNode.GetLookupSignature(_nodeFactory, lookupKind, targetOfLookup);
-                    if (dictionaryLayout.TryGetSlotForEntry(lookup, out int dictionarySlot))
+                    if (contextSource == GenericContextSource.MethodParameter)
                     {
-                        int dictionaryOffset = dictionarySlot * pointerSize;
-
-                        if (contextSource == GenericContextSource.MethodParameter)
-                        {
-                            return GenericDictionaryLookup.CreateFixedLookup(contextSource, dictionaryOffset);
-                        }
-                        else
-                        {
-                            int vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(_nodeFactory, contextMethod.OwningType);
-                            int vtableOffset = EETypeNode.GetVTableOffset(pointerSize) + vtableSlot * pointerSize;
-                            return GenericDictionaryLookup.CreateFixedLookup(contextSource, vtableOffset, dictionaryOffset);
-                        }
+                        return GenericDictionaryLookup.CreateFixedLookup(contextSource, dictionaryOffset);
                     }
                     else
                     {
-                        return GenericDictionaryLookup.CreateNullLookup(contextSource);
+                        int vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(_nodeFactory, contextMethod.OwningType);
+                        int vtableOffset = EETypeNode.GetVTableOffset(pointerSize) + vtableSlot * pointerSize;
+                        return GenericDictionaryLookup.CreateFixedLookup(contextSource, vtableOffset, dictionaryOffset);
                     }
+                }
+                else
+                {
+                    return GenericDictionaryLookup.CreateNullLookup(contextSource);
                 }
             }
 

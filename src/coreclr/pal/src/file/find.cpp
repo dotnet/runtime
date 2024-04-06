@@ -138,7 +138,7 @@ FindFirstFileA(
         goto done;
     }
 
-    find_data = (find_obj *)InternalMalloc(sizeof(find_obj));
+    find_data = (find_obj *)malloc(sizeof(find_obj));
     if ( find_data == NULL )
     {
         ERROR("Unable to allocate memory for find_data\n");

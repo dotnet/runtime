@@ -527,7 +527,7 @@ namespace System.DirectoryServices.Protocols
                 {
                     int i = 0;
                     berValArray = Utility.AllocHGlobalIntPtrArray(tempValue.Length + 1);
-                    int structSize = Marshal.SizeOf(typeof(BerVal));
+                    int structSize = Marshal.SizeOf<BerVal>();
                     managedBervalArray = new BerVal[tempValue.Length];
                     void** pBerValArray = (void**)berValArray;
 
