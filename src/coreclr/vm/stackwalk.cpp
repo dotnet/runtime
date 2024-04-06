@@ -296,11 +296,13 @@ void CrawlFrame::InitializeExactGenericInstantiations()
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
     } CONTRACTL_END;
 
     if (pFunc != NULL && pFunc->HasClassOrMethodInstantiation() && pFunc->IsSharedByGenericInstantiations())
     {
+        // Turn into cooperative GC mode
+        GCX_COOP();
+
         // Get exact instantiations for shared generics where possible
         PTR_VOID pExactGenericArgsToken = GetExactGenericArgsToken();
 
