@@ -2063,7 +2063,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
 
         // GCX_COOP_THREAD_EXISTS ends here and we may switch to preemp mode now (if applicable).
     }
-    
+
     //
     // now process managed call frame if needed
     //
@@ -7586,7 +7586,7 @@ extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack e
 #if _DEBUG
         EECodeInfo codeInfo(ip);
         _ASSERTE(codeInfo.IsValid());
-        _ASSERTE(pMD == codeInfo.GetMethodDesc());
+        _ASSERTE(pMD->GetMemberDef() == codeInfo.GetMethodDesc()->GetMemberDef());
 #endif // _DEBUG
 
         pExInfo->m_StackTraceInfo.AppendElement(canAllocateMemory, ip, sp, pMD, &pExInfo->m_frameIter.m_crawl);
