@@ -2838,6 +2838,16 @@ public:
     {
     }
 
+    // -----------------------------------------------------------------------------
+    // GetOrAdd: Find (or create) the node representing a register.
+    //
+    // Parameters:
+    //   reg - Register
+    //
+    // Returns:
+    //   Node in the graph that represents "reg". If no node exists it is
+    //   created.
+    //
     RegNode* GetOrAdd(regNumber reg)
     {
         for (int i = 0; i < m_nodes.Height(); i++)
@@ -2859,6 +2869,16 @@ public:
         return node;
     }
 
+    // -----------------------------------------------------------------------------
+    // AddEdge: Add an edge to the graph, indicating that data needs to be
+    // moved from one register to another.
+    //
+    // Parameters:
+    //   from       - The source register node
+    //   to         - The destination register node
+    //   type       - The type of the data that is being moved from the source into the destination
+    //   destOffset - The offset in the destination register where the data should be put
+    //
     void AddEdge(RegNode* from, RegNode* to, var_types type, unsigned destOffset)
     {
         assert(type != TYP_STRUCT);
@@ -2876,6 +2896,13 @@ public:
         to->incoming       = edge;
     }
 
+    // -----------------------------------------------------------------------------
+    // FindNodeToHandle: Find the next register node to handle incoming moves to.
+    //
+    // Returns:
+    //   A register node to handle, based on heuristics that try to reduce the
+    //   amount of shuffling that needs to happen.
+    //
     RegNode* FindNodeToHandle()
     {
         RegNode* lastNode = nullptr;
@@ -2898,9 +2925,22 @@ public:
             lastNode = reg;
         }
 
+        // Otherwise we'll need to save some value regardless, so any node will
+        // do.
         return lastNode;
     }
 
+    // -----------------------------------------------------------------------------
+    // RemoveIncomingEdges: Mark that the incoming edges of a register nodes
+    // have been handled by deleting all its incoming edges from the graph.
+    //
+    // Parameters:
+    //   node     - The register node that has been handled and now contains its correct value
+    //   busyRegs - [in, out] Pointer to register mask of registers that have live values we may need.
+    //              This function may remove registers from this set since the source registers of the
+    //              incoming edges no longer have outgoing edges and thus do not need to have their values
+    //              preserved.
+    //
     void RemoveIncomingEdges(RegNode* node, regMaskTP* busyRegs)
     {
         for (RegNodeEdge* edge = node->incoming; edge != nullptr; edge = edge->nextIncoming)
@@ -2920,6 +2960,9 @@ public:
     }
 
 #ifdef DEBUG
+    // -----------------------------------------------------------------------------
+    // Dump: Dump a textual representation of the graph to jitstdout.
+    //
     void Dump()
     {
         printf("%d registers in register parameter interference graph\n", m_nodes.Height());
@@ -3081,11 +3124,11 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
 }
 
 // -----------------------------------------------------------------------------
-// genHomeIncomingRegisters: Move all register arguments to their initial assigned
-// location.
+// genHomeRegisterParams: Move all register parameters to their initial
+// assigned location.
 //
 // Parameters:
-//    initReg            - A register that this method should communicate if it trashes
+//    initReg            - A register that this method should communicate if it becomes non-zero
 //    initRegStillZeroed - [out] whether or not initReg is still zeroed
 //
 void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
@@ -3129,15 +3172,12 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     // We build an interference graph where each node represents a register,
     // and an edge regX -> regY represents moving (part of) register X to (part
     // of) register Y. Note that in the general case each register can have
-    // multiple incoming edges. Examples:
-    // 1. On arm32 float registers overlay the double registers. If a double is passed in d0 (i.e. s0 and s1)
-    //    we can have two float params going into s0 and s1, giving two incoming edges
-    // 2. On arm64/SysV x64 SIMD types can be passed in multiple registers but
-    //    enregistered in a single vector register
+    // multiple incoming edges. For example, on arm64/SysV x64 SIMD types can
+    // be passed in multiple registers but enregistered in a single vector
+    // register.
     // Currently we never have multiple outgoing edges but one could imagine
     // this situation if we allowed promotion when fields didn't fit exactly on
-    // top of the underlying registers. TODO-CQ: Lift this restriction and
-    // implement the support for this.
+    // top of the underlying registers.
     RegGraph graph(compiler);
 
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
