@@ -65,7 +65,7 @@ namespace System.Numerics
         private const ushort PositiveInfinityBits = 0x7F80;
         private const ushort NegativeInfinityBits = 0xFF80;
 
-        private const ushort PositiveQNaNBits = 0x7FC0;
+        // private const ushort PositiveQNaNBits = 0x7FC0;
         private const ushort NegativeQNaNBits = 0xFFC0;
 
         private const ushort MinValueBits = 0xFF7F;
@@ -399,7 +399,7 @@ namespace System.Numerics
         /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
-            return Number.FormatBFloat16(this, format, NumberFormatInfo.CurrentInfo);
+            return Number.FormatFloat(this, format, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -407,7 +407,7 @@ namespace System.Numerics
         /// </summary>
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatBFloat16(this, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatFloat(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -415,7 +415,7 @@ namespace System.Numerics
         /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
-            return Number.FormatBFloat16(this, format, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatFloat(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -428,13 +428,13 @@ namespace System.Numerics
         /// <returns></returns>
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatBFloat16(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+            return Number.TryFormatFloat(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
 
         /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
         public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatBFloat16(this, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
+            return Number.TryFormatFloat(this, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
         }
 
         //
@@ -1945,7 +1945,7 @@ namespace System.Numerics
         // IBinaryFloatParseAndFormatInfo
         //
 
-        static int IBinaryFloatParseAndFormatInfo<BFloat16>.NumberBufferLength => Number.BFloat16NumberBufferLength;
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.NumberBufferLength => 96 + 1 + 1; // 96 for the longest input + 1 for rounding (+1 for the null terminator)
 
         static ulong IBinaryFloatParseAndFormatInfo<BFloat16>.ZeroBits => 0;
         static ulong IBinaryFloatParseAndFormatInfo<BFloat16>.InfinityBits => PositiveInfinityBits;
