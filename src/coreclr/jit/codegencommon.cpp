@@ -2832,7 +2832,9 @@ class RegGraph
     ArrayStack<RegNode*> m_nodes;
 
 public:
-    RegGraph(Compiler* compiler) : m_comp(compiler), m_nodes(compiler->getAllocator(CMK_Codegen))
+    RegGraph(Compiler* compiler)
+        : m_comp(compiler)
+        , m_nodes(compiler->getAllocator(CMK_Codegen))
     {
     }
 
@@ -2855,11 +2857,11 @@ public:
         RegNode* node = Get(reg);
         if (node == nullptr)
         {
-            node = new (m_comp, CMK_Codegen) RegNode;
-            node->reg = reg;
+            node            = new (m_comp, CMK_Codegen) RegNode;
+            node->reg       = reg;
             node->copiedReg = REG_NA;
-            node->incoming = nullptr;
-            node->outgoing = nullptr;
+            node->incoming  = nullptr;
+            node->outgoing  = nullptr;
             m_nodes.Push(node);
         }
         return node;
@@ -2876,7 +2878,7 @@ public:
 
         // We currently never have multiple outgoing edges.
         assert(from->outgoing == nullptr);
-        from->outgoing     = edge;
+        from->outgoing = edge;
 
         edge->nextIncoming = to->incoming;
         to->incoming       = edge;
@@ -3047,7 +3049,7 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
             }
 
             GetEmitter()->emitIns_S_R(ins_Store(storeType), emitActualTypeSize(storeType), seg.GetRegister(), lclNum,
-                seg.Offset - baseOffset);
+                                      seg.Offset - baseOffset);
         }
 
         if (!varDsc->lvIsInReg())
@@ -3076,7 +3078,7 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
                 graph->AddEdge(sourceReg, destReg, TYP_FLOAT, 0);
 
                 sourceReg = graph->GetOrAdd(REG_NEXT(sourceReg->reg));
-                destReg = graph->GetOrAdd(REG_NEXT(destReg->reg));
+                destReg   = graph->GetOrAdd(REG_NEXT(destReg->reg));
                 graph->AddEdge(sourceReg, destReg, TYP_FLOAT, 0);
                 continue;
             }
@@ -3177,12 +3179,12 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
         if ((node->outgoing != nullptr) && (node->copiedReg == REG_NA))
         {
-            var_types copyType = node->outgoing->type;
+            var_types copyType          = node->outgoing->type;
             regMaskTP tempRegCandidates = genGetParameterHomingTempRegisterCandidates();
             tempRegCandidates &= ~busyRegs;
 
             regMaskTP regTypeMask = varTypeUsesFloatReg(copyType) ? RBM_ALLFLOAT : RBM_ALLINT;
-            regMaskTP availRegs = tempRegCandidates & regTypeMask;
+            regMaskTP availRegs   = tempRegCandidates & regTypeMask;
 
             // We should have ensured temporary registers are available in
             // genFinalizeFrame.
@@ -3191,7 +3193,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             busyRegs |= genRegMask(node->copiedReg);
 
             instruction ins = ins_Copy(node->reg, copyType);
-            GetEmitter()->emitIns_Mov(ins, emitActualTypeSize(copyType), node->copiedReg, node->reg, /* canSkip */ false);
+            GetEmitter()->emitIns_Mov(ins, emitActualTypeSize(copyType), node->copiedReg, node->reg,
+                                      /* canSkip */ false);
             if (node->copiedReg == initReg)
             {
                 *initRegStillZeroed = false;
@@ -3206,10 +3209,10 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                 continue;
             }
 
-            regNumber sourceReg = edge->from->copiedReg != REG_NA ? edge->from->copiedReg : edge->from->reg;
-            instruction ins = ins_Copy(sourceReg, genActualType(edge->type));
+            regNumber   sourceReg = edge->from->copiedReg != REG_NA ? edge->from->copiedReg : edge->from->reg;
+            instruction ins       = ins_Copy(sourceReg, genActualType(edge->type));
             GetEmitter()->emitIns_Mov(ins, emitActualTypeSize(edge->type), node->reg, sourceReg,
-                /* canSkip */ true);
+                                      /* canSkip */ true);
             break;
         }
 
@@ -3255,7 +3258,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
 regMaskTP CodeGen::genGetParameterHomingTempRegisterCandidates()
 {
-    return RBM_CALLEE_TRASH | intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn | regSet.rsGetModifiedRegsMask();
+    return RBM_CALLEE_TRASH | intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn |
+           regSet.rsGetModifiedRegsMask();
 }
 
 #endif
