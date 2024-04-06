@@ -10582,6 +10582,72 @@ namespace System.Net
 }
 namespace System.Numerics
 {
+    public readonly struct Decimal32
+        : System.IComparable,
+          System.IEquatable<Decimal32>
+    {
+        public Decimal32(int significand, int exponent) { throw null; }
+        public static Decimal32 Parse(string s) { throw null; }
+        public static Decimal32 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
+        public static Decimal32 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
+        public static Decimal32 Parse(string s, IFormatProvider? provider) { throw null; }
+        public static Decimal32 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Number, IFormatProvider? provider = null) { throw null; }
+        public static Decimal32 Parse(string s, System.Globalization.NumberStyles style, IFormatProvider? provider) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, out Decimal32 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, out Decimal32 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal32 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal32 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal32 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, System.Globalization.NumberStyles style, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal32 result) { throw null; }
+
+        public int CompareTo(object? value) { throw null; }
+        public bool Equals(Decimal32 other) { throw null; }
+    }
+
+    public readonly struct Decimal64
+        : System.IComparable,
+          System.IEquatable<Decimal64>
+    {
+        public Decimal64(long significand, int exponent) { throw null; }
+        public static Decimal64 Parse(string s) { throw null; }
+        public static Decimal64 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
+        public static Decimal64 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
+        public static Decimal64 Parse(string s, IFormatProvider? provider) { throw null; }
+        public static Decimal64 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Number, IFormatProvider? provider = null) { throw null; }
+        public static Decimal64 Parse(string s, System.Globalization.NumberStyles style, IFormatProvider? provider) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, out Decimal64 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, out Decimal64 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal64 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal64 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal64 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, System.Globalization.NumberStyles style, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal64 result) { throw null; }
+
+        public int CompareTo(object? value) { throw null; }
+        public bool Equals(Decimal64 other) { throw null; }
+    }
+
+    public readonly struct Decimal128
+        : System.IComparable,
+          System.IEquatable<Decimal128>
+    {
+        public Decimal128(Int128 significand, int exponent) { throw null; }
+        public static Decimal128 Parse(string s) { throw null; }
+        public static Decimal128 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
+        public static Decimal128 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
+        public static Decimal128 Parse(string s, IFormatProvider? provider) { throw null; }
+        public static Decimal128 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Number, IFormatProvider? provider = null) { throw null; }
+        public static Decimal128 Parse(string s, System.Globalization.NumberStyles style, IFormatProvider? provider) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, out Decimal128 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, out Decimal128 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal128 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal128 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal128 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, System.Globalization.NumberStyles style, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal128 result) { throw null; }
+
+        public int CompareTo(object? value) { throw null; }
+        public bool Equals(Decimal128 other) { throw null; }
+    }
+
     public static partial class BitOperations
     {
         public static bool IsPow2(int value) { throw null; }

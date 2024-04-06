@@ -422,6 +422,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormatProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormattable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Index.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Decimal128.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Decimal32.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Decimal64.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\BitVector256.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\ProbabilisticWithAsciiCharSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\SingleCharSearchValues.cs" />
