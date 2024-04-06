@@ -50,7 +50,10 @@ namespace System
     internal interface IBinaryFloatParseAndFormatInfo<TSelf> : IBinaryFloatingPointIeee754<TSelf>, IMinMaxValue<TSelf>
         where TSelf : unmanaged, IBinaryFloatParseAndFormatInfo<TSelf>
     {
-        static abstract int NumberBufferLength { get; } // Ceiling(Log10(5^(Abs(MinBinaryExponent) - 1))) + NormalMantissaBits + 1 + 1
+        /// <remarks>
+        /// Ceiling(Log10(5^(Abs(MinBinaryExponent) - 1))) + NormalMantissaBits + 1 + 1
+        /// </remarks>
+        static abstract int NumberBufferLength { get; }
 
         static abstract ulong ZeroBits { get; }
         static abstract ulong InfinityBits { get; }
@@ -61,8 +64,15 @@ namespace System
         static abstract int MinBinaryExponent { get; }
         static abstract int MaxBinaryExponent { get; }
 
-        static abstract int MinDecimalExponent { get; } // Floor(Log10(Epsilon))
-        static abstract int MaxDecimalExponent { get; } // Ceiling(Log10(MaxValue))
+        /// <remarks>
+        /// Floor(Log10(Epsilon))
+        /// </remarks>
+        static abstract int MinDecimalExponent { get; }
+
+        /// <remarks>
+        /// Ceiling(Log10(MaxValue))
+        /// </remarks>
+        static abstract int MaxDecimalExponent { get; }
 
         static abstract int ExponentBias { get; }
         static abstract ushort ExponentBits { get; }
@@ -73,29 +83,53 @@ namespace System
         static abstract ushort NormalMantissaBits { get; }
         static abstract ushort DenormalMantissaBits { get; }
 
-        static abstract int MinFastFloatDecimalExponent { get; } // Ceiling(Log10(2^(MinBinaryExponent - 1 - DenormalMantissaBits - 64)))
-        static abstract int MaxFastFloatDecimalExponent { get; } // MaxDecimalExponent - 1
+        /// <remarks>
+        /// Ceiling(Log10(2^(MinBinaryExponent - 1 - DenormalMantissaBits - 64)))
+        /// </remarks>
+        static abstract int MinFastFloatDecimalExponent { get; }
 
-        static abstract int MinExponentRoundToEven { get; } // -Floor(Log5(2^(64 - NormalMantissaBits)))
-        static abstract int MaxExponentRoundToEven { get; } // Floor(Log5(2^(NormalMantissaBits + 1)))
+        /// <remarks>
+        /// MaxDecimalExponent - 1
+        /// </remarks>
+        static abstract int MaxFastFloatDecimalExponent { get; }
 
-        static abstract int MaxExponentFastPath { get; } // Max(n) when 10^n can be precisely represented
+        /// <remarks>
+        /// -Floor(Log5(2^(64 - NormalMantissaBits)))
+        /// </remarks>
+        static abstract int MinExponentRoundToEven { get; }
+
+        /// <remarks>
+        /// Floor(Log5(2^(NormalMantissaBits + 1)))
+        /// </remarks>
+        static abstract int MaxExponentRoundToEven { get; }
+
+        /// <summary>
+        /// Max(n) when 10^n can be precisely represented
+        /// </summary>
+        static abstract int MaxExponentFastPath { get; }
         static abstract ulong MaxMantissaFastPath { get; }
 
         static abstract TSelf BitsToFloat(ulong bits);
 
         static abstract ulong FloatToBits(TSelf value);
 
-        // Maximum number of digits required to guarantee that any given floating point
-        // number can roundtrip. Some numbers may require less, but none will require more.
+        /// <summary>
+        /// Maximum number of digits required to guarantee that any given floating point
+        /// number can roundtrip. Some numbers may require less, but none will require more.
+        /// </summary>
+        /// <remarks>
+        /// Ceiling(Log10(2^NormalMantissaBits)) + 1
+        /// </remarks>
         static abstract int MaxRoundTripDigits { get; }
 
-        // SinglePrecisionCustomFormat and DoublePrecisionCustomFormat are used to ensure that
-        // custom format strings return the same string as in previous releases when the format
-        // would return x digits or less (where x is the value of the corresponding constant).
-        // In order to support more digits, we would need to update ParseFormatSpecifier to pre-parse
-        // the format and determine exactly how many digits are being requested and whether they
-        // represent "significant digits" or "digits after the decimal point".
+        /// <summary>
+        /// MaxPrecisionCustomFormat is used to ensure that
+        /// custom format strings return the same string as in previous releases when the format
+        /// would return x digits or less (where x is the value of the corresponding constant).
+        /// In order to support more digits, we would need to update ParseFormatSpecifier to pre-parse
+        /// the format and determine exactly how many digits are being requested and whether they
+        /// represent "significant digits" or "digits after the decimal point".
+        /// </summary>
         static abstract int MaxPrecisionCustomFormat { get; }
     }
 

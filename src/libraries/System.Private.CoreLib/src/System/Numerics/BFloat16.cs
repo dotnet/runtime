@@ -1977,6 +1977,10 @@ namespace System.Numerics
         static int IBinaryFloatParseAndFormatInfo<BFloat16>.MaxExponentFastPath => 3;
         static ulong IBinaryFloatParseAndFormatInfo<BFloat16>.MaxMantissaFastPath => 2UL << TrailingSignificandLength;
 
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.MaxRoundTripDigits => 4;
+
+        static int IBinaryFloatParseAndFormatInfo<BFloat16>.MaxPrecisionCustomFormat => 4;
+
         static BFloat16 IBinaryFloatParseAndFormatInfo<BFloat16>.BitsToFloat(ulong bits) => new BFloat16((ushort)(bits));
 
         static ulong IBinaryFloatParseAndFormatInfo<BFloat16>.FloatToBits(BFloat16 value) => value._value;
