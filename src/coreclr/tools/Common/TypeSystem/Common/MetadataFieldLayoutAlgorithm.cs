@@ -965,7 +965,7 @@ namespace Internal.TypeSystem
         {
             SizeAndAlignment result;
 
-            // Pad the length of structs to be 1 if they are empty so we have no zero-length structures
+            // Pad the length of structs to be 1 if they are empty, so we have no zero-length structures
             if (type.IsValueType && instanceSize == LayoutInt.Zero)
             {
                 instanceSize = LayoutInt.One;
@@ -973,29 +973,33 @@ namespace Internal.TypeSystem
 
             TargetDetails target = type.Context.Target;
 
-            if (classLayoutSize != 0)
+            if (type.IsValueType)
             {
-                LayoutInt parentSize;
-                if (type.IsValueType)
-                    parentSize = new LayoutInt(0);
+                // We ignore classLayoutSize for instanceSize for classes, e.g.
+                //
+                //  [StructLayout(LayoutKind.Explicit, Size = 1000)]
+                //  class Test
+                //  {
+                //      [FieldOffset(0)]
+                //      int fld;
+                //  }
+                //
+                // instanceSize for it is expected to be 4 (+ object header and padding), and not 1000.
+
+                if (classLayoutSize != 0)
+                {
+                    instanceSize = LayoutInt.Max(new LayoutInt(classLayoutSize), instanceSize);
+
+                    // Size of a struct with gc references is always expected to be aligned to pointer size
+                    if (type.ContainsGCPointers)
+                    {
+                        instanceSize = LayoutInt.AlignUp(instanceSize, new LayoutInt(target.PointerSize), target);
+                    }
+                }
                 else
-                    parentSize = type.BaseType.InstanceByteCountUnaligned;
-
-                LayoutInt specifiedInstanceSize = parentSize + new LayoutInt(classLayoutSize);
-
-                instanceSize = LayoutInt.Max(specifiedInstanceSize, instanceSize);
-            }
-            else
-            {
-                if (type.IsValueType)
                 {
                     instanceSize = LayoutInt.AlignUp(instanceSize, alignment, target);
                 }
-            }
-
-            if (type.ContainsGCPointers)
-            {
-                instanceSize = LayoutInt.AlignUp(instanceSize, new LayoutInt(target.PointerSize), target);
             }
 
             if (type.IsValueType)
