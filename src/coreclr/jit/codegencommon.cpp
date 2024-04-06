@@ -3256,13 +3256,23 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     }
 }
 
+#endif
+
+// -----------------------------------------------------------------------------
+// genGetParameterHomingTempRegisterCandidates: Get the registers that are
+// usable during register homing.
+//
+// Remarks:
+//   Register homing is expected to take into account that values in some of
+//   these registers may still be needed. For example because it is the final
+//   destination register of a parameter, or because a value passed in one of
+//   these registers is still needed.
+//
 regMaskTP CodeGen::genGetParameterHomingTempRegisterCandidates()
 {
     return RBM_CALLEE_TRASH | intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn |
            regSet.rsGetModifiedRegsMask();
 }
-
-#endif
 
 /*****************************************************************************
  * If any incoming stack arguments live in registers, load them.
