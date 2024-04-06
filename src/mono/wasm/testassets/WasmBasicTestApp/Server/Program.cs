@@ -46,4 +46,9 @@ app.UseDefaultFiles(new DefaultFilesOptions
     FileProvider = new PhysicalFileProvider(wasmPath)
 });
 
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(wasmPath)
+});
+
 app.Run();
