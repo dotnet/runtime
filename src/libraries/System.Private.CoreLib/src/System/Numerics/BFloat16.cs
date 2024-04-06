@@ -496,7 +496,7 @@ namespace System.Numerics
             // Only do rounding for finite numbers
             if (float.IsFinite(value))
             {
-                uint lower = bits & 0xFFFF;
+                uint lower = (ushort)bits;
                 // Determine the increment for rounding
                 // When upper is even, midpoint (0x8000) will tie to no increment, which is effectively a decrement of lower
                 uint lowerShift = (~upper) & (lower >> 15) & 1; // Upper is even & lower>=0x8000 (not 0)
