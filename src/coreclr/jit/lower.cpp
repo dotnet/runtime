@@ -384,7 +384,7 @@ bool Lowering::IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* childNode) 
     LclVarDsc* dsc = comp->lvaGetDesc(childNode->AsLclVarCommon());
     if (!dsc->IsAddressExposed())
     {
-        // Safe by IR invariants (no assignments occur between parent and node).
+        // Safe by IR invariants (no stores occur between parent and node).
         return true;
     }
 
@@ -529,8 +529,16 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_CAST:
-            LowerCast(node);
-            break;
+        {
+            GenTree* nextNode = LowerCast(node);
+#if defined(TARGET_XARCH)
+            if (nextNode != nullptr)
+            {
+                return nextNode;
+            }
+#endif // TARGET_XARCH
+        }
+        break;
 
         case GT_BITCAST:
             ContainCheckBitCast(node);
@@ -4792,7 +4800,6 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 
             addr->gtFlags |= lclStore->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEASG);
 
-            // Create the assignment node.
             lclStore->ChangeOper(GT_STORE_BLK);
             GenTreeBlk* objStore = lclStore->AsBlk();
             objStore->gtFlags    = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
@@ -9506,14 +9513,14 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
         return;
     }
 
-    GenTree* data = store->Data();
-    assert(store->TypeGet() == data->TypeGet());
+    GenTree* value = store->Data();
+    assert(store->TypeGet() == value->TypeGet());
 
     // Optimize *x = DCON to *x = ICON which can be slightly faster and/or smaller.
     //
-    if (data->IsCnsFltOrDbl())
+    if (value->IsCnsFltOrDbl())
     {
-        double    dblCns = data->AsDblCon()->DconValue();
+        double    dblCns = value->AsDblCon()->DconValue();
         ssize_t   intCns = 0;
         var_types type   = TYP_UNKNOWN;
         // XARCH: we can always contain the immediates.
@@ -9548,7 +9555,7 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
 
         if (type != TYP_UNKNOWN)
         {
-            data->BashToConst(intCns, type);
+            value->BashToConst(intCns, type);
 
             assert(!store->OperIsLocalStore() || comp->lvaGetDesc(store->AsLclVarCommon())->lvDoNotEnregister);
             if (store->OperIs(GT_STORE_LCL_VAR))

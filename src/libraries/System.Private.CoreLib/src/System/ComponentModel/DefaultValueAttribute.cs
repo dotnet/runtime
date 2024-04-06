@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
@@ -22,6 +23,9 @@ namespace System.ComponentModel
         // Delegate ad hoc created 'TypeDescriptor.ConvertFromInvariantString' reflection object cache
         private static object? s_convertFromInvariantString;
 
+        [FeatureSwitchDefinition("System.ComponentModel.DefaultValueAttribute.IsSupported")]
+        internal static bool IsSupported => AppContext.TryGetSwitch("System.ComponentModel.DefaultValueAttribute.IsSupported", out bool isSupported) ? isSupported : true;
+
         /// <summary>
         /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class, converting the specified value to the specified type, and using the U.S. English
@@ -34,6 +38,12 @@ namespace System.ComponentModel
         {
             // The null check and try/catch here are because attributes should never throw exceptions.
             // We would fail to load an otherwise normal class.
+
+            if (!IsSupported)
+            {
+                Debug.Assert(!IsSupported, "Runtime instantiation of this attribute is not allowed.");
+                return;
+            }
 
             if (type == null)
             {
@@ -229,7 +239,18 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the default value of the property this attribute is bound to.
         /// </summary>
-        public virtual object? Value => _value;
+        public virtual object? Value
+        {
+            get
+            {
+                if (!IsSupported)
+                {
+                    throw new ArgumentException(SR.RuntimeInstanceNotAllowed);
+                }
+                return _value;
+            }
+        }
+
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
