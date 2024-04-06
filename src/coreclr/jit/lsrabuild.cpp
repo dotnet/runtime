@@ -2889,8 +2889,8 @@ void LinearScan::stressSetRandomParameterPreferences()
 {
     CLRRandom rng;
     rng.Init(compiler->info.compMethodHash());
-    regMaskTP intRegs   = intRegState->rsCalleeRegArgMaskLiveIn;
-    regMaskTP floatRegs = floatRegState->rsCalleeRegArgMaskLiveIn;
+    regMaskTP intRegs   = compiler->codeGen->intRegState.rsCalleeRegArgMaskLiveIn;
+    regMaskTP floatRegs = compiler->codeGen->floatRegState.rsCalleeRegArgMaskLiveIn;
 
     for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
     {

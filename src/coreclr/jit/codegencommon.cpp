@@ -2838,7 +2838,7 @@ public:
     {
     }
 
-    RegNode* Get(regNumber reg)
+    RegNode* GetOrAdd(regNumber reg)
     {
         for (int i = 0; i < m_nodes.Height(); i++)
         {
@@ -2849,21 +2849,13 @@ public:
             }
         }
 
-        return nullptr;
-    }
+        RegNode* node   = new (m_comp, CMK_Codegen) RegNode;
+        node->reg       = reg;
+        node->copiedReg = REG_NA;
+        node->incoming  = nullptr;
+        node->outgoing  = nullptr;
 
-    RegNode* GetOrAdd(regNumber reg)
-    {
-        RegNode* node = Get(reg);
-        if (node == nullptr)
-        {
-            node            = new (m_comp, CMK_Codegen) RegNode;
-            node->reg       = reg;
-            node->copiedReg = REG_NA;
-            node->incoming  = nullptr;
-            node->outgoing  = nullptr;
-            m_nodes.Push(node);
-        }
+        m_nodes.Push(node);
         return node;
     }
 
