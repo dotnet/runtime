@@ -144,10 +144,7 @@ public:
        These together carry the exact instantiation information.
      */
     PTR_VOID GetExactGenericArgsToken();
-
-#ifndef DACCESS_COMPILE
     void InitializeExactGenericInstantiations();
-#endif
 
     inline CodeManState * GetCodeManState() { LIMITED_METHOD_DAC_CONTRACT; return & codeManState; }
     /*

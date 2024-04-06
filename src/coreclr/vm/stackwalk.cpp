@@ -290,19 +290,19 @@ PTR_VOID CrawlFrame::GetExactGenericArgsToken()
     }
 }
 
-#ifndef DACCESS_COMPILE
 void CrawlFrame::InitializeExactGenericInstantiations()
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        SUPPORTS_DAC;
+        DISABLED(NOTHROW);
+        DISABLED(GC_NOTRIGGER);
     } CONTRACTL_END;
+
+    // Turn into cooperative GC mode
+    GCX_COOP();
 
     if (pFunc != NULL && pFunc->HasClassOrMethodInstantiation() && pFunc->IsSharedByGenericInstantiations())
     {
-        // Turn into cooperative GC mode
-        GCX_COOP();
-
         // Get exact instantiations for shared generics where possible
         PTR_VOID pExactGenericArgsToken = GetExactGenericArgsToken();
 
@@ -312,16 +312,17 @@ void CrawlFrame::InitializeExactGenericInstantiations()
             MethodDesc* pConstructedFunc = NULL;
             if (Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(pFunc, pExactGenericArgsToken, &th, &pConstructedFunc))
             {
+#ifndef DACCESS_COMPILE
                 if (pConstructedFunc->IsSharedByGenericInstantiations())
                 {
                     pConstructedFunc = InstantiatedMethodDesc::FindOrCreateExactClassMethod(th.GetMethodTable(), pConstructedFunc);
                 }
+#endif // !DACCESS_COMPILE
                 pFunc = pConstructedFunc;
             }
         }
     }
 }
-#endif
 
     /* Is this frame at a safe spot for GC?
      */
@@ -3058,6 +3059,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
 #endif // FEATURE_EH_FUNCLETS
 
             m_crawl.pFunc = m_crawl.codeInfo.GetMethodDesc();
+            m_crawl.InitializeExactGenericInstantiations();
 
             // Cache values which may be updated by CheckForSkippedFrames()
             m_cachedCodeInfo = m_crawl.codeInfo;

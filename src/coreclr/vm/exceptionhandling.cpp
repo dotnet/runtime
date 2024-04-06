@@ -1504,10 +1504,13 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     CONTRACTL
     {
         MODE_ANY;
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
+    
+    // Turn into cooperative GC mode
+    GCX_COOP();
 
     pcfThisFrame->pRD = pRD;
 
@@ -1660,7 +1663,6 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
         pcfThisFrame->isFrameless = true;
         pcfThisFrame->pFunc = pcfThisFrame->codeInfo.GetMethodDesc();
         pcfThisFrame->InitializeExactGenericInstantiations();
-
         *puMethodStartPC = pcfThisFrame->codeInfo.GetStartAddress();
     }
     else
