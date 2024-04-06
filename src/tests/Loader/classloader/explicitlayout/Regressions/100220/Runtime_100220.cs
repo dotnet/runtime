@@ -8,6 +8,7 @@ using Xunit;
 public static class Runtime_100220
 {
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/100220", TestRuntimes.Mono)]
     public static int TestEntryPoint()
     {
         // Classes

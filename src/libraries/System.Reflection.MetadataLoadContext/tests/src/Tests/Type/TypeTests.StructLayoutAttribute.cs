@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -192,22 +191,6 @@ namespace System.Reflection.Tests
             Type t = typeof(IInterface).Project();
             StructLayoutAttribute s = t.StructLayoutAttribute;
             Assert.Null(s);
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/100220", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
-        public static void StructWithGCAndExplicitSizeIsAlignedByPtr()
-        {
-            Assert.True((Unsafe.SizeOf<StructWithGCAndExplicitSize>() % IntPtr.Size) == 0);
-        }
-
-        [StructLayout(LayoutKind.Explicit, Size = 9)]
-        private struct StructWithGCAndExplicitSize
-        {
-            [FieldOffset(0)]
-            public byte[] a;
-            [FieldOffset(8)]
-            public byte b;
         }
 
         private class UndecoratedClass { }
