@@ -174,12 +174,12 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         private async Task TryExecuteBackgroundServiceAsync(BackgroundService backgroundService)
         {
-            // backgroundService.ExecuteTask may not be set (e.g. if the derived class doesn't call base.StartAsync)
-            Task? backgroundTask = backgroundService.ExecuteTask;
             if (backgroundTask is null)
             {
                 return;
             }
+            // backgroundService.ExecuteTask may not be set (e.g. if the derived class doesn't call base.StartAsync)
+            Task? backgroundTask = backgroundService.ExecuteTask;
 
             try
             {
