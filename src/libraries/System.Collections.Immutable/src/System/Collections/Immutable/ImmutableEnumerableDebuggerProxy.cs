@@ -12,16 +12,38 @@ namespace System.Collections.Immutable
     /// </summary>
     /// <typeparam name="TKey">The type of the dictionary's keys.</typeparam>
     /// <typeparam name="TValue">The type of the dictionary's values.</typeparam>
-    internal sealed class ImmutableDictionaryDebuggerProxy<TKey, TValue> : ImmutableEnumerableDebuggerProxy<KeyValuePair<TKey, TValue>> where TKey : notnull
+    /// <remarks>
+    /// This class should only be used with immutable dictionaries, since it
+    /// caches the dictionary into an array for display in the debugger.
+    /// </remarks>
+    internal sealed class ImmutableDictionaryDebuggerProxy<TKey, TValue> where TKey : notnull
     {
+        /// <summary>
+        /// The dictionary to show to the debugger.
+        /// </summary>
+        private readonly IReadOnlyDictionary<TKey, TValue> _dictionary;
+
+        /// <summary>
+        /// The contents of the dictionary, cached into an array.
+        /// </summary>
+        private DebugViewDictionaryItem<TKey, TValue>[]? _cachedContents;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableDictionaryDebuggerProxy{TKey, TValue}"/> class.
         /// </summary>
-        /// <param name="dictionary">The enumerable to show in the debugger.</param>
+        /// <param name="dictionary">The dictionary to show in the debugger.</param>
         public ImmutableDictionaryDebuggerProxy(IReadOnlyDictionary<TKey, TValue> dictionary)
-            : base(enumerable: dictionary)
         {
+            Requires.NotNull(dictionary, nameof(dictionary));
+            _dictionary = dictionary;
         }
+
+        /// <summary>
+        /// Gets the contents of the dictionary for display in the debugger.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public DebugViewDictionaryItem<TKey, TValue>[] Contents => _cachedContents
+            ??= _dictionary.Select(kv => new DebugViewDictionaryItem<TKey, TValue>(kv)).ToArray(_dictionary.Count);
     }
 
     /// <summary>

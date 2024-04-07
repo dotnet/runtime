@@ -2733,12 +2733,17 @@ namespace System.Collections.Concurrent
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public KeyValuePair<TKey, TValue>[] Items
+        public DebugViewDictionaryItem<TKey, TValue>[] Items
         {
             get
             {
-                var items = new KeyValuePair<TKey, TValue>[_dictionary.Count];
-                _dictionary.CopyTo(items, 0);
+                var keyValuePairs = new KeyValuePair<TKey, TValue>[_dictionary.Count];
+                _dictionary.CopyTo(keyValuePairs, 0);
+                var items = new DebugViewDictionaryItem<TKey, TValue>[keyValuePairs.Length];
+                for (int i = 0; i < items.Length; i++)
+                {
+                    items[i] = new DebugViewDictionaryItem<TKey, TValue>(keyValuePairs[i]);
+                }
                 return items;
             }
         }
