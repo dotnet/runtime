@@ -4023,6 +4023,12 @@ public:
         return lvaGetDesc(lclVar->GetLclNum());
     }
 
+    const ABIPassingInformation& lvaGetParameterABIInfo(unsigned lclNum)
+    {
+        assert(lclNum < info.compArgsCount);
+        return lvaParameterPassingInfo[lclNum];
+    }
+
     unsigned lvaTrackedIndexToLclNum(unsigned trackedIndex)
     {
         assert(trackedIndex < lvaTrackedCount);
@@ -4092,16 +4098,7 @@ public:
                                                 // that writes to arg0
 
 #ifdef TARGET_X86
-    bool lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum)
-    {
-        if (!info.compIsVarArgs)
-        {
-            return false;
-        }
-
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        return varDsc->lvIsParam && !varDsc->lvIsRegArg && (lclNum != lvaVarargsHandleArg);
-    }
+    bool lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum);
 #endif // TARGET_X86
 
     bool lvaIsImplicitByRefLocal(unsigned lclNum) const;
