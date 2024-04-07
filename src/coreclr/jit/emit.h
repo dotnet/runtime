@@ -234,10 +234,8 @@ enum insGroupPlaceholderType : unsigned char
 {
     IGPT_PROLOG, // currently unused
     IGPT_EPILOG,
-#if defined(FEATURE_EH_FUNCLETS)
     IGPT_FUNCLET_PROLOG,
     IGPT_FUNCLET_EPILOG,
-#endif // FEATURE_EH_FUNCLETS
 };
 
 #if defined(_MSC_VER) && defined(TARGET_ARM)
@@ -317,18 +315,13 @@ struct insGroup
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
 // automatically marked properly.
-#if defined(FEATURE_EH_FUNCLETS)
 #ifdef DEBUG
 #define IGF_PROPAGATE_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)
 #else // DEBUG
 #define IGF_PROPAGATE_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG)
 #endif // DEBUG
-#else  // !FEATURE_EH_FUNCLETS
-#define IGF_PROPAGATE_MASK (IGF_EPILOG)
-#endif // !FEATURE_EH_FUNCLETS
 
     // Try to do better packing based on how large regMaskSmall is (8, 16, or 64 bits).
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !(REGMASK_BITS <= 32)
     regMaskSmall igGCregs; // set of registers with live GC refs
@@ -545,8 +538,6 @@ protected:
         return (ig != nullptr) && ((ig->igFlags & IGF_EPILOG) != 0);
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
-
     bool emitIGisInFuncletProlog(const insGroup* ig)
     {
         return (ig != nullptr) && ((ig->igFlags & IGF_FUNCLET_PROLOG) != 0);
@@ -556,8 +547,6 @@ protected:
     {
         return (ig != nullptr) && ((ig->igFlags & IGF_FUNCLET_EPILOG) != 0);
     }
-
-#endif // FEATURE_EH_FUNCLETS
 
     void emitRecomputeIGoffsets();
 
@@ -807,17 +796,16 @@ protected:
 #endif //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
-
         unsigned _idLclVar     : 1; // access a local on stack
-        unsigned _idLclVarPair : 1  // carries information for 2 GC lcl vars.
+        unsigned _idLclVarPair : 1; // carries information for 2 GC lcl vars.
 #endif
 
 #ifdef TARGET_LOONGARCH64
-                                   // TODO-LoongArch64: maybe delete on future.
-            opSize _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts    _idInsOpt : 6; // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
-                                  // accessing a local on stack.
-        unsigned _idLclVar : 1;   // access a local on stack.
+        // TODO-LoongArch64: maybe delete on future.
+        opSize  _idOpSize : 3;  // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts _idInsOpt : 6;  // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
+                                // accessing a local on stack.
+        unsigned _idLclVar : 1; // access a local on stack.
 #endif
 
 #ifdef TARGET_RISCV64
@@ -848,7 +836,6 @@ protected:
         // How many bits have been used beyond the first 32?
         // Define ID_EXTRA_BITFIELD_BITS to that number.
         //
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_ARM)
 #define ID_EXTRA_BITFIELD_BITS (16)
@@ -876,7 +863,6 @@ protected:
         // All instrDesc types are <= 56 bytes, but we also need m_debugInfoSize,
         // which is pointer sized, so 5 bits are required on 64-bit and 4 bits
         // on 32-bit.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef HOST_64BIT
         unsigned _idScaledPrevOffset : 5;
@@ -898,7 +884,6 @@ protected:
         // arm64:       60/55 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
@@ -915,7 +900,6 @@ protected:
         // arm64:        4/9 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
 #define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
@@ -940,7 +924,6 @@ protected:
         //
         // SMALL_IDSC_SIZE is this size, in bytes.
         //
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define SMALL_IDSC_SIZE 8
 
@@ -957,7 +940,6 @@ protected:
         }
 
     private:
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
         void checkSizes();
 
@@ -2364,15 +2346,11 @@ public:
     void emitBegFnEpilog(insGroup* igPh);
     void emitEndFnEpilog();
 
-#if defined(FEATURE_EH_FUNCLETS)
-
     void emitBegFuncletProlog(insGroup* igPh);
     void emitEndFuncletProlog();
 
     void emitBegFuncletEpilog(insGroup* igPh);
     void emitEndFuncletEpilog();
-
-#endif // FEATURE_EH_FUNCLETS
 
     /************************************************************************/
     /*    Methods to record a code position and later convert to offset     */
@@ -2571,7 +2549,6 @@ private:
     // instruction group depends on the instruction mix as well as DEBUG/non-DEBUG build type. See the
     // EMITTER_STATS output for various statistics related to this.
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 // ARM32/64, LoongArch and RISC-V can require a bigger prolog instruction group. One scenario
@@ -4021,7 +3998,8 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
         case INS_comiss:
         case INS_cvtss2sd:
         case INS_cvtss2si:
-        case INS_cvttss2si:
+        case INS_cvttss2si32:
+        case INS_cvttss2si64:
         case INS_divss:
         case INS_extractps:
         case INS_insertps:
@@ -4064,7 +4042,8 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
         case INS_comisd:
         case INS_cvtsd2si:
         case INS_cvtsd2ss:
-        case INS_cvttsd2si:
+        case INS_cvttsd2si32:
+        case INS_cvttsd2si64:
         case INS_divsd:
         case INS_maxsd:
         case INS_minsd:

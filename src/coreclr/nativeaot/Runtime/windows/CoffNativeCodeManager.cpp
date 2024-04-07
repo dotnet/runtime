@@ -29,7 +29,6 @@
 #define CONTRACTL_END
 #define NOTHROW
 #define GC_NOTRIGGER
-#define HOST_NOCALLS
 
 #include "../../inc/gcdecoder.cpp"
 #include "../../inc/gc_unwind_x86.h"

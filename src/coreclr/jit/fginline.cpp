@@ -433,7 +433,7 @@ private:
         GenTree* dst     = store;
         GenTree* inlinee = store->Data();
 
-        // We need to force all assignments from multi-reg nodes into the "lcl = node()" form.
+        // We need to force all stores from multi-reg nodes into the "lcl = node()" form.
         if (inlinee->IsMultiRegNode())
         {
             // Special case: we already have a local, the only thing to do is mark it appropriately. Except
@@ -607,7 +607,7 @@ private:
             //
             if (value->OperIs(GT_LCL_VAR) && (value->AsLclVar()->GetLclNum() == lclNum))
             {
-                JITDUMP("... removing self-assignment\n");
+                JITDUMP("... removing self-store\n");
                 DISPTREE(tree);
                 tree->gtBashToNOP();
                 m_madeChanges = true;
@@ -1582,7 +1582,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     }
 
     // Update optMethodFlags
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     unsigned optMethodFlagsBefore = optMethodFlags;

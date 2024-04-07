@@ -17,10 +17,6 @@
 #endif
 #endif
 
-// Clang-format messes with the indentation of comments if they directly precede an
-// ifdef. This macro allows us to anchor the comments to the regular flow of code.
-#define CLANG_FORMAT_COMMENT_ANCHOR ;
-
 // Clang-tidy replaces 0 with nullptr in some templated functions, causing a build
 // break. Replacing those instances with ZERO avoids this change
 #define ZERO 0
@@ -702,19 +698,19 @@ inline unsigned int roundUp(unsigned size, unsigned mult)
 
 inline unsigned int unsigned_abs(int x)
 {
-    return ((unsigned int)abs(x));
+    return ((unsigned int)std::abs(x));
 }
 
 #ifdef TARGET_64BIT
 inline size_t unsigned_abs(ssize_t x)
 {
-    return ((size_t)abs((__int64)x));
+    return ((size_t)std::abs((__int64)x));
 }
 
 #ifdef __APPLE__
 inline size_t unsigned_abs(__int64 x)
 {
-    return ((size_t)abs(x));
+    return ((size_t)std::abs(x));
 }
 #endif // __APPLE__
 #endif // TARGET_64BIT

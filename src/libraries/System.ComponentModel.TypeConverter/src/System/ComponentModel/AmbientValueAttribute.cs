@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel.Design;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
@@ -13,6 +15,11 @@ namespace System.ComponentModel
     public sealed class AmbientValueAttribute : Attribute
     {
         /// <summary>
+        /// This is the default value.
+        /// </summary>
+        private object? _value;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.AmbientValueAttribute'/> class, converting the
         /// specified value to the specified type, and using the U.S. English culture as the
         /// translation context.
@@ -22,9 +29,15 @@ namespace System.ComponentModel
         {
             // The try/catch here is because attributes should never throw exceptions. We would fail to
             // load an otherwise normal class.
+
+            if (!IDesignerHost.IsSupported)
+            {
+                return;
+            }
+
             try
             {
-                Value = TypeDescriptor.GetConverter(type).ConvertFromInvariantString(value);
+                _value = TypeDescriptor.GetConverter(type).ConvertFromInvariantString(value);
             }
             catch
             {
@@ -37,7 +50,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(char value)
         {
-            Value = value;
+            _value = value;
         }
 
         /// <summary>
@@ -46,7 +59,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(byte value)
         {
-            Value = value;
+            _value = value;
         }
 
         /// <summary>
@@ -55,7 +68,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(short value)
         {
-            Value = value;
+            _value = value;
         }
 
         /// <summary>
@@ -64,7 +77,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(int value)
         {
-            Value = value;
+            _value = value;
         }
 
         /// <summary>
@@ -73,7 +86,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(long value)
         {
-            Value = value;
+            _value = value;
         }
 
         /// <summary>
@@ -82,7 +95,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(float value)
         {
-            Value = value;
+            _value = value;
         }
 
         /// <summary>
@@ -91,7 +104,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(double value)
         {
-            Value = value;
+            _value = value;
         }
 
         /// <summary>
@@ -100,7 +113,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(bool value)
         {
-            Value = value;
+            _value = value;
         }
 
         /// <summary>
@@ -108,7 +121,7 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(string? value)
         {
-            Value = value;
+            _value = value;
         }
 
         /// <summary>
@@ -117,13 +130,22 @@ namespace System.ComponentModel
         /// </summary>
         public AmbientValueAttribute(object? value)
         {
-            Value = value;
+            _value = value;
         }
 
         /// <summary>
         /// Gets the ambient value of the property this attribute is bound to.
         /// </summary>
-        public object? Value { get; }
+        public object? Value {
+            get
+            {
+                if (!IDesignerHost.IsSupported)
+                {
+                    throw new ArgumentException(SR.RuntimeInstanceNotAllowed);
+                }
+                return _value;
+            }
+        }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {

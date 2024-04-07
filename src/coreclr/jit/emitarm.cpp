@@ -6504,7 +6504,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code |= (immHi << 16);
                 code |= immLo;
 
-                disp = abs(disp);
+                disp = std::abs(disp);
                 assert((disp & 0x00fffffe) == disp);
 
                 callInstrSize = SafeCvtAssert<unsigned char>(emitOutput_Thumb2Instr(dst, code));

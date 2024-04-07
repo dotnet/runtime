@@ -2406,7 +2406,6 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
                    blockTargetFieldWidth, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"); //
         }
 
-#if defined(FEATURE_EH_FUNCLETS)
         if (inDefaultOrder && (block == fgFirstFuncletBB))
         {
             printf("++++++%*s+++++++++++++++++++++++++++++++++++++%*s++++++++++++++++++++++++++%*s++++++++++"
@@ -2415,7 +2414,6 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
                    ibcColWidth, "++++++++++++",                                              //
                    blockTargetFieldWidth, "++++++++++++++++++++++++++++++++++++++++++++++"); //
         }
-#endif // FEATURE_EH_FUNCLETS
 
         fgTableDispBasicBlock(block, nextBlock, printEdgeLikelihoods, blockTargetFieldWidth, ibcColWidth);
 
@@ -2887,8 +2885,6 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
         }
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
-
     if (!found && comp->fgFuncletsCreated)
     {
         // There is no easy way to search just the funclets that were pulled out of
@@ -2906,8 +2902,6 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
             }
         }
     }
-
-#endif // FEATURE_EH_FUNCLETS
 
     assert(found && "BBJ_EHFINALLYRET predecessor of block that doesn't follow a BBJ_CALLFINALLY!");
     return found;
@@ -2969,7 +2963,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         return;
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     bool reachedFirstFunclet = false;
     if (fgFuncletsCreated)
     {
@@ -2983,7 +2976,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             assert(fgFirstFuncletBB->HasFlag(BBF_FUNCLET_BEG));
         }
     }
-#endif // FEATURE_EH_FUNCLETS
 
     /* Check bbNum, bbRefs and bbPreds */
     // First, pick a traversal stamp, and label all the blocks with it.
@@ -3071,7 +3063,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             assert(block->bbPreds == nullptr);
         }
 
-#if defined(FEATURE_EH_FUNCLETS)
         if (fgFuncletsCreated)
         {
             //
@@ -3096,7 +3087,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 assert(block->hasHndIndex() == true);
             }
         }
-#endif // FEATURE_EH_FUNCLETS
 
         if (checkBBRefs)
         {
@@ -3180,7 +3170,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 //    try {
                 //        try {
                 //            LEAVE L_OUTER; // this becomes a branch to a BBJ_CALLFINALLY in an outer try region
-                //                           // (in the FEATURE_EH_CALLFINALLY_THUNKS case)
+                //                           // (in the UsesCallFinallyThunks case)
                 //        } catch {
                 //        }
                 //    } finally {
@@ -3191,7 +3181,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 if (ehDsc->ebdTryBeg == succBlock)
                 {
                     // The BBJ_CALLFINALLY is the first block of it's `try` region. Don't check the predecessor.
-                    // Note that this case won't occur in the FEATURE_EH_CALLFINALLY_THUNKS case, since the
+                    // Note that this case won't occur in the UsesCallFinallyThunks case, since the
                     // BBJ_CALLFINALLY in that case won't exist in the `try` region of the `finallyIndex`.
                 }
                 else
