@@ -1178,7 +1178,6 @@ inline static bool isGeneralRegisterOrSP(regNumber reg)
 #ifdef FEATURE_MASKED_HW_INTRINSICS
 inline static bool isMaskReg(regNumber reg)
 {
-    // TODO: This assert will no longer be true
     return (reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST);
 }
 #endif // FEATURE_MASKED_HW_INTRINSICS

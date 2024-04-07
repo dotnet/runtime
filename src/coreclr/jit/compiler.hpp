@@ -5045,7 +5045,6 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
     return BasicBlockVisit::Continue;
 }
 
-// TODO: If there are lot of callers of RegisterType, simplify it.
 template <class T>
 FORCEINLINE int regIndexForType(T vt)
 {

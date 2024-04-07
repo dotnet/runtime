@@ -191,9 +191,6 @@ void RegSet::printModifiedRegsMask(regMaskOnlyOne              currentMask,
 void RegSet::rsSetGprRegsModified(regMaskGpr mask DEBUGARG(bool suppressDump))
 {
     assert(m_rsCompiler->IsGprRegMask(mask));
-    // TODO: Commented this, so that caller don't have to check if modifiedMask is not RBM_NONE
-    // It doesn't harm if this was RBM_NONE, as it will not modify the trackingMask
-    // assert(modifiedMask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
 #ifdef DEBUG
     printModifiedRegsMask(rsModifiedRegsMask.gprRegs(), mask DEBUG_ARG(suppressDump) DEBUG_ARG(RBM_INT_CALLEE_SAVED));
@@ -205,9 +202,6 @@ void RegSet::rsSetGprRegsModified(regMaskGpr mask DEBUGARG(bool suppressDump))
 void RegSet::rsSetFloatRegsModified(regMaskFloat mask DEBUGARG(bool suppressDump))
 {
     assert(m_rsCompiler->IsFloatRegMask(mask));
-    // TODO: Commented this, so that caller don't have to check if modifiedMask is not RBM_NONE
-    // It doesn't harm if this was RBM_NONE, as it will not modify the trackingMask
-    // assert(modifiedMask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
 #ifdef DEBUG
     printModifiedRegsMask(rsModifiedRegsMask.floatRegs(m_rsCompiler),
@@ -219,9 +213,6 @@ void RegSet::rsSetFloatRegsModified(regMaskFloat mask DEBUGARG(bool suppressDump
 
 void RegSet::rsSetRegModified(regNumber reg DEBUGARG(bool suppressDump))
 {
-    // TODO: Commented this, so that caller don't have to check if modifiedMask is not RBM_NONE
-    // It doesn't harm if this was RBM_NONE, as it will not modify the trackingMask
-    // assert(modifiedMask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
 
 #ifdef DEBUG

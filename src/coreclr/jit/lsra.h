@@ -1756,8 +1756,7 @@ private:
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     PhasedVar<regMaskPredicate> availableMaskRegs;
 #endif
-    PhasedVar<regMaskOnlyOne>* availableRegs[TYP_COUNT]; // TODO: probably separate this out based on gpr, vector,
-                                                         // predicate
+    PhasedVar<regMaskOnlyOne>* availableRegs[TYP_COUNT];
 
 #ifdef FEATURE_MASKED_HW_INTRINSICS
 #define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
@@ -1818,10 +1817,6 @@ private:
     // Register status
     //-----------------------------------------------------------------------
 
-    // TODO: One option is to also just have another current_AvailableREgs that
-    // gets reset for every refposition we are processing depending on the
-    // register type. That wawy we do not have to query and fetch the appropriate
-    // entry again and agin.
     AllRegsMask m_AvailableRegs;
 
     void resetAvailableRegs()
@@ -1884,10 +1879,6 @@ private:
 
     void clearConstantReg(regNumber reg, var_types regType)
     {
-        // TODO: If we decide to have curr_RegistersWithConstants, then here we will
-        // just operate on curr_RegistersWithConstants and assert
-        // assert(m_RegistersWithConstants[regIndexForType(regType)] == curr_RegistersWithConstants);
-        // but we will have to make sure that we save it back too??
         m_RegistersWithConstants.RemoveRegNum(reg, regType);
     }
     void setConstantReg(regNumber reg, var_types regType)
@@ -1929,8 +1920,7 @@ private:
     }
     weight_t spillCost[REG_COUNT];
 
-    AllRegsMask regsBusyUntilKill; // TODO: Likewise, probably have this global 32-bit and set it point to the specific
-                                   // version like gpr, vector, etc.
+    AllRegsMask regsBusyUntilKill;
     AllRegsMask regsInUseThisLocation;
     AllRegsMask regsInUseNextLocation;
 #ifdef TARGET_ARM64

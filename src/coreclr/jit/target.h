@@ -249,8 +249,6 @@ typedef unsigned __int64 regMaskOnlyOne;
 // 2. Have a data structure like struct to pass all these together
 typedef unsigned __int64 regMaskMixed; // TODO: Rename this to regMaskMixed
 
-// TODO: For LSRA, the select() method should be regMaskOnlyOne because we will be
-// allocating either GPR or Vector or Mask but not all
 typedef unsigned __int64 singleRegMask;
 
 #else
@@ -396,7 +394,6 @@ public:
     FORCEINLINE bool           IsFloatMaskPresent(Compiler* compiler, regMaskFloat maskToCheck) const;
     FORCEINLINE regMaskOnlyOne GetRegMaskForType(var_types type) const;
 
-    // TODO: this might go away once we have just `regMaskTP` gpr_float field
     FORCEINLINE bool      IsGprOrFloatPresent() const;
     FORCEINLINE RegBitSet64 GetGprFloatCombinedMask() const;
 #ifndef HAS_MORE_THAN_64_REGISTERS

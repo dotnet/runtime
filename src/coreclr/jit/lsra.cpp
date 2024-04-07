@@ -4084,7 +4084,6 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
 template <bool localVarsEnregistered>
 void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
 {
-    // TODO: Save current_ConstantRegs and current_AvailableRegs
     assert(currentBlock != nullptr);
     markBlockVisited(currentBlock);
 
@@ -4106,7 +4105,6 @@ void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
     {
         resetAllRegistersState();
     }
-    // TODO: Restore current_ConstantRegs and current_AvailableRegs
 }
 
 //------------------------------------------------------------------------
@@ -5781,7 +5779,7 @@ void LinearScan::allocateRegisters()
 
         // TODO: Can we combine this with the freeing of registers below? It might
         // mess with the dump, since this was previously being done before the call below
-        // to dumpRegRecords. TODO: Do not do anything if tempRegsToMakeInactive == RBM_NONE
+        // to dumpRegRecords.
         AllRegsMask tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
 #ifdef HAS_MORE_THAN_64_REGISTERS
         inActivateRegisters(tempRegsToMakeInactive);

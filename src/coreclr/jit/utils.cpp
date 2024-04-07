@@ -449,9 +449,6 @@ const char* dspRegRange(regMaskOnlyOne regMask, size_t& minSiz, const char* sep,
  */
 void dspRegMask(AllRegsMask mask, size_t minSiz)
 {
-    // TODO: Need to fix all the callers where we don't know if the input is gpr/float but is of type `regMaskOnlyOne`.
-    //      For now, I am just making `floatMask` as optional and default to RBM_NONE so we don't have to deal with
-    //      lot of build errors.
     const char* sep = "";
 
     printf("[");
