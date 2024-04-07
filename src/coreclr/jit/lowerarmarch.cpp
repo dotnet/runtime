@@ -1236,8 +1236,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 condSelNode->SetUnusedValue();
             }
-            //MakeSrcContained(condSelNode, node);
-            //node = condSelNode;
             break;
         }
 

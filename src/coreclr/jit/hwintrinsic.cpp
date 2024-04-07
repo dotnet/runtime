@@ -1427,30 +1427,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 break;
         }
 
-//#if defined(TARGET_ARM64)
-//        // Embedded masks need inserting as op1.
-//        if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsic))
-//        {
-//            numArgs++;
-//            assert(numArgs <= 4);
-//            switch (numArgs)
-//            {
-//                case 4:
-//                    op4 = op3;
-//                    FALLTHROUGH;
-//                case 3:
-//                    op3 = op2;
-//                    FALLTHROUGH;
-//                case 2:
-//                    op2 = op1;
-//                    FALLTHROUGH;
-//                default:
-//                    break;
-//            }
-//            op1 = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-//        }
-//#endif
-
         switch (numArgs)
         {
             case 0:
@@ -1630,17 +1606,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 
 #if defined(TARGET_ARM64)
-    //if (HWIntrinsicInfo::IsMaskedOperation(intrinsic))
-    //{
-    //    assert(numArgs > 0);
-    //    GenTree* op1 = retNode->AsHWIntrinsic()->Op(1);
-    //    if (!varTypeIsMask(op1))
-    //    {
-    //        // Op1 input is a vector. HWInstrinsic requires a mask.
-    //        retNode->AsHWIntrinsic()->Op(1) = gtNewSimdConvertVectorToMaskNode(retType, op1, simdBaseJitType, simdSize);
-    //    }
-    //}
-
     if (retType != nodeRetType)
     {
         // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
