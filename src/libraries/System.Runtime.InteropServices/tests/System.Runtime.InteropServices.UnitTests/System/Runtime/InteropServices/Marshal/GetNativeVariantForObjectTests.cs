@@ -189,7 +189,7 @@ namespace System.Runtime.InteropServices.Tests
 
                     var expectedBytes = new ReadOnlySpan<byte>(guid.ToByteArray());
                     var actualBytes = new ReadOnlySpan<byte>((void*)result.bstrVal, expectedBytes.Length);
-                    Assert.Equal(expectedBytes, actualBytes);
+                    Assert.True(expectedBytes.SequenceEqual(actualBytes));
 
                     object o = Marshal.GetObjectForNativeVariant(pNative);
                     Assert.Equal(guid, o);
