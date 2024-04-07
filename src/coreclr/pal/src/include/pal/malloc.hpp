@@ -46,12 +46,6 @@ extern "C"
     PAL_free(
         void *pvMem
         );
-
-    char *
-    __cdecl
-    PAL__strdup(
-        const char *c_szStr
-        );
 }
 
 namespace CorUnix{

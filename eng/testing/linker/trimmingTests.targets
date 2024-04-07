@@ -103,6 +103,9 @@
                                                  .Replace('{RepositoryEngineeringDir}', '$(RepositoryEngineeringDir)')
                                                  .Replace('{MonoAOTCompilerDir}', '$(MonoAOTCompilerDir)')
                                                  .Replace('{MonoProjectRoot}', '$(MonoProjectRoot)')
+                                                 .Replace('{BrowserProjectRoot}', '$(BrowserProjectRoot)')
+                                                 .Replace('{WasmProjectRoot}', '$(WasmProjectRoot)')
+                                                 .Replace('{WasiProjectRoot}', '$(WasiProjectRoot)')
                                                  .Replace('{MonoAOTCompilerTasksAssemblyPath}', '$(MonoAOTCompilerTasksAssemblyPath)')
                                                  .Replace('{MonoTargetsTasksAssemblyPath}', '$(MonoTargetsTasksAssemblyPath)')
                                                  .Replace('{WasmAppBuilderTasksAssemblyPath}', '$(WasmAppBuilderTasksAssemblyPath)')
@@ -116,7 +119,8 @@
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackDir}', '$(MicrosoftNetCoreAppRuntimePackDir)')
                                                  .Replace('{NativeSanitizersTargets}', '$(RepositoryEngineeringDir)nativeSanitizers.targets')
                                                  .Replace('{AppHostSourcePath}', '$(AppHostSourcePath)')
-                                                 .Replace('{SingleFileHostSourcePath}', '$(SingleFileHostSourcePath)'))"
+                                                 .Replace('{SingleFileHostSourcePath}', '$(SingleFileHostSourcePath)')
+                                                 .Replace('{SanitizerRuntimeFolder}', '$(DotNetHostBinDir)'))"
                       Overwrite="true" />
     <Copy SourceFiles="$(_projectSourceFile);
                        @(_additionalProjectSourceFiles)"

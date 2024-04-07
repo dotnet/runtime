@@ -45,8 +45,17 @@ namespace System.Runtime.InteropServices.JavaScript
         [JSImport("INTERNAL.dynamic_import")]
         public static partial Task<JSObject> DynamicImport(string moduleName, string moduleUrl);
 
+        [JSImport("INTERNAL.mono_wasm_bind_cs_function")]
+        public static partial void BindCSFunction(IntPtr monoMethod, string assemblyName, string namespaceName, string shortClassName, string methodName, int signatureHash, IntPtr signature);
+
+#if FEATURE_WASM_MANAGED_THREADS
+        [JSImport("INTERNAL.thread_available")]
+        public static partial Task ThreadAvailable();
+#endif
+
 #if DEBUG
         [JSImport("globalThis.console.log")]
+        [return: JSMarshalAs<JSType.DiscardNoWait>] // this means that the message will arrive out of order, especially across threads.
         public static partial void Log([JSMarshalAs<JSType.String>] string message);
 #endif
     }

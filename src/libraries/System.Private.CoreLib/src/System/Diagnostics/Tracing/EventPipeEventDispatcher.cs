@@ -7,7 +7,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics.Tracing
 {
-#if FEATURE_PERFTRACING
     internal sealed class EventPipeEventDispatcher
     {
         internal sealed class EventListenerSubscription
@@ -227,5 +226,4 @@ namespace System.Diagnostics.Tracing
             return new DateTime(inTicks, DateTimeKind.Utc);
         }
     }
-#endif // FEATURE_PERFTRACING
 }

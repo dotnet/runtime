@@ -42,7 +42,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void ComparerImplementations_Dictionary_WithWellKnownStringComparers()
         {
             Type nonRandomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
@@ -118,7 +118,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void ComparerImplementations_HashSet_WithWellKnownStringComparers()
         {
             Type nonRandomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
@@ -336,7 +336,6 @@ namespace System.Collections.Tests
             {
                 publicComparer = EqualityComparer<string>.Default;
             }
-
             foreach (var pair in new[] {
                 ("Hello", "Hello"), // exactly equal
                 ("Hello", "Goodbye"), // not equal at all

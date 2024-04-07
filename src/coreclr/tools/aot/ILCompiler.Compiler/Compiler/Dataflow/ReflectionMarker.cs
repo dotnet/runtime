@@ -30,6 +30,7 @@ namespace ILCompiler.Dataflow
         public NodeFactory Factory { get; }
         public FlowAnnotations Annotations { get; }
         public DependencyList Dependencies { get => _dependencies; }
+        public List<INodeWithRuntimeDeterminedDependencies> RuntimeDeterminedDependencies { get; } = new List<INodeWithRuntimeDeterminedDependencies>();
 
         internal enum AccessKind
         {
@@ -78,13 +79,13 @@ namespace ILCompiler.Dataflow
                     MarkEvent(origin, @event, reason, accessKind);
                     break;
                     // case InterfaceImplementation
-                    //  Nothing to do currently as Native AOT will preserve all interfaces on a preserved type
+                    //  This is handled in the MetadataType case above
             }
         }
 
         internal bool TryResolveTypeNameAndMark(string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, string reason, [NotNullWhen(true)] out TypeDesc? type)
         {
-            ModuleDesc? callingModule = ((diagnosticContext.Origin.MemberDefinition as MethodDesc)?.OwningType as MetadataType)?.Module;
+            ModuleDesc? callingModule = (diagnosticContext.Origin.MemberDefinition.GetOwningType() as MetadataType)?.Module;
 
             List<ModuleDesc> referencedModules = new();
             TypeDesc foundType = System.Reflection.TypeNameParser.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,

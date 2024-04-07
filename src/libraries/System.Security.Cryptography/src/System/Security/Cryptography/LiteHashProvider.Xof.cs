@@ -26,6 +26,34 @@ namespace System.Security.Cryptography
             return result;
         }
 
+        internal static void KmacStream(
+            string hashAlgorithmId,
+            ReadOnlySpan<byte> key,
+            ReadOnlySpan<byte> customizationString,
+            Stream source,
+            bool xof,
+            Span<byte> destination)
+        {
+            LiteKmac hash = CreateKmac(hashAlgorithmId, key, customizationString, xof);
+            int written = ProcessStream(hash, source, destination);
+            Debug.Assert(written == destination.Length);
+        }
+
+        internal static byte[] KmacStream(
+            string hashAlgorithmId,
+            ReadOnlySpan<byte> key,
+            ReadOnlySpan<byte> customizationString,
+            int outputLength,
+            Stream source,
+            bool xof)
+        {
+            byte[] result = new byte[outputLength];
+            LiteKmac hash = CreateKmac(hashAlgorithmId, key, customizationString, xof);
+            int written = ProcessStream(hash, source, result);
+            Debug.Assert(written == outputLength);
+            return result;
+        }
+
         internal static ValueTask XofStreamAsync(
             string hashAlgorithmId,
             Stream source,
@@ -38,7 +66,7 @@ namespace System.Security.Cryptography
             }
 
             LiteXof hash = CreateXof(hashAlgorithmId);
-            return ProcessStreamXofAsync(hash, source, destination, cancellationToken);
+            return ProcessStreamIndefiniteAsync(hash, source, destination, cancellationToken);
         }
 
         internal static ValueTask<byte[]> XofStreamAsync(
@@ -56,8 +84,44 @@ namespace System.Security.Cryptography
             return ProcessStreamAsync(hash, outputLength, source, cancellationToken);
         }
 
+        internal static ValueTask KmacStreamAsync(
+            string hashAlgorithmId,
+            ReadOnlySpan<byte> key,
+            Stream source,
+            bool xof,
+            Memory<byte> destination,
+            ReadOnlySpan<byte> customizationString,
+            CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            LiteKmac hash = CreateKmac(hashAlgorithmId, key, customizationString, xof);
+            return ProcessStreamIndefiniteAsync(hash, source, destination, cancellationToken);
+        }
+
+        internal static ValueTask<byte[]> KmacStreamAsync(
+            string hashAlgorithmId,
+            ReadOnlySpan<byte> key,
+            Stream source,
+            bool xof,
+            int outputLength,
+            ReadOnlySpan<byte> customizationString,
+            CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<byte[]>(cancellationToken);
+            }
+
+            LiteKmac hash = CreateKmac(hashAlgorithmId, key, customizationString, xof);
+            return ProcessStreamAsync(hash, outputLength, source, cancellationToken);
+        }
+
         // This takes ownership of the hash parameter and disposes of it when done.
-        private static async ValueTask ProcessStreamXofAsync<T>(
+        private static async ValueTask ProcessStreamIndefiniteAsync<T>(
             T hash,
             Stream source,
             Memory<byte> destination,

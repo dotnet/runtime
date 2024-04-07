@@ -2,7 +2,6 @@
   <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
   <PropertyGroup>
     <IsWasmProject Condition="'$(IsWasmProject)' == ''">true</IsWasmProject>
-    <WasmSharedPath>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'shared'))</WasmSharedPath>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
     <ArchiveTests Condition="'$(WasmBuildingForNestedPublish)' == 'true'">false</ArchiveTests>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
@@ -34,6 +33,9 @@
     <XUnitUseRandomizedTestOrderer Condition="'$(XUnitUseRandomizedTestOrderer)' == '' and '$(IsTestProject)' == 'true'">true</XUnitUseRandomizedTestOrderer>
     <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == ''">00:30:00</WasmXHarnessTestsTimeout>
     <RunWorkingDirectory>$(BundleDir)</RunWorkingDirectory>
+
+    <WasmCommonTargetsPath Condition="Exists('$(MSBuildThisFileDirectory)WasmApp.Common.props')">$(MSBuildThisFileDirectory)</WasmCommonTargetsPath>
+    <WasmCommonTargetsPath Condition="'$(WasmCommonTargetsPath)' == ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'build'))</WasmCommonTargetsPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
@@ -62,8 +64,8 @@
 
       So, set those parameters explicitly here.
       -->
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MonoProjectRoot)\wasm\build\ILLink.Substitutions.WasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MonoProjectRoot)\wasm\build\ILLink.Substitutions.NoWasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <ItemGroup>
@@ -108,9 +110,9 @@
       <BundleFiles Include="@(WasmAssembliesToBundle)"          TargetDir="publish\%(WasmAssembliesToBundle.RecursiveDir)" />
       <BundleFiles Include="$(RuntimeConfigFilePath)"           TargetDir="publish" />
 
-      <BundleFiles Include="$(WasmSharedPath)data\aot-tests\*"  TargetDir="publish" />
+      <BundleFiles Include="$(WasmProjectRoot)data\aot-tests\*" TargetDir="publish" />
       <!-- FIXME: what would be the correct place to do this? -->
-      <BundleFiles Include="$(MonoProjectRoot)src\mono\wasm\build\WasmApp.Common*"  TargetDir="publish" />
+      <BundleFiles Include="$(WasmProjectRoot)build\WasmApp.Common*"  TargetDir="publish" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(DebuggerSupport)' == 'true'">
@@ -183,31 +185,5 @@
 
   <Target Name="DeployHelixTargetsFile" AfterTargets="ArchiveTests" Condition="'$(HelixTargetsFile)' != ''">
     <Copy SourceFiles="$(HelixTargetsFile)" DestinationFiles="$(TestArchiveTestsDir)$(TestProjectName).helix.targets" SkipUnchangedFiles="true" />
-  </Target>
-
-  <Target Name="_GetNugetsForAOT" Returns="@(_NuGetsToBuild)">
-    <PropertyGroup>
-      <!-- Eg. Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm.6.0.0-dev.nupkg -->
-      <_AOTCrossNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RuntimeIdentifier).$(PackageVersionForWorkloadManifests).nupkg</_AOTCrossNuGetPath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Ref.$(PackageVersionForWorkloadManifests).nupkg"
-                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
-                      Properties="@(_DefaultPropsForNuGetBuild, ';')"
-                      Descriptor="Ref pack"/>
-
-      <!-- AOT Cross compiler -->
-      <_PropsForAOTCrossBuild Include="@(_DefaultPropsForNuGetBuild)" />
-      <_PropsForAOTCrossBuild Include="TestingWorkloads=true" />
-      <_PropsForAOTCrossBuild Include="RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)" />
-      <_PropsForAOTCrossBuild Include="TargetCrossRid=$(RuntimeIdentifier)" />
-      <_PropsForAOTCrossBuild Include="DisableSourceLink=true" />
-
-      <_NuGetsToBuild Include="$(_AOTCrossNuGetPath)"
-                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
-                      Properties="@(_PropsForAOTCrossBuild,';')"
-                      Descriptor="AOT Cross compiler"/>
-    </ItemGroup>
   </Target>
 </Project>

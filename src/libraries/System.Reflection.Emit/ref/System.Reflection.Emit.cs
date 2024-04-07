@@ -470,6 +470,24 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
         protected abstract void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, System.ReadOnlySpan<byte> binaryAttribute);
     }
+#if !BUILDING_CORELIB_REFERENCE
+    public sealed class PersistedAssemblyBuilder : System.Reflection.Emit.AssemblyBuilder
+    {
+        public PersistedAssemblyBuilder(System.Reflection.AssemblyName name, System.Reflection.Assembly coreAssembly, System.Collections.Generic.IEnumerable<System.Reflection.Emit.CustomAttributeBuilder>? assemblyAttributes = null) { }
+        public override string? FullName { get { throw null; } }
+        public override bool IsDynamic { get { throw null; } }
+        public override System.Reflection.Module ManifestModule { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
+        protected override System.Reflection.Emit.ModuleBuilder DefineDynamicModuleCore(string name) { throw null; }
+        protected override System.Reflection.Emit.ModuleBuilder? GetDynamicModuleCore(string name) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public System.Reflection.Metadata.Ecma335.MetadataBuilder GenerateMetadata(out System.Reflection.Metadata.BlobBuilder ilStream, out System.Reflection.Metadata.BlobBuilder mappedFieldData) { throw null; }
+        public override System.Reflection.AssemblyName GetName(bool copiedName) { throw null; }
+        public void Save(string assemblyFileName) { throw null; }
+        public void Save(System.IO.Stream stream) { throw null; }
+        protected override void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, System.ReadOnlySpan<byte> binaryAttribute) { throw null; }
+    }
+#endif
     public abstract partial class PropertyBuilder : System.Reflection.PropertyInfo
     {
         protected PropertyBuilder() { }

@@ -13,7 +13,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
-    public class WasmTemplateTests : WasmTemplateTestBase
+    public class WasmTemplateTests : BlazorWasmTestBase
     {
         public WasmTemplateTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -44,6 +44,7 @@ namespace Wasm.Build.Tests
                             ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
                             : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
 
+                mainJsContent = mainJsContent.Replace("runMain()", "dotnet.run()");
                 mainJsContent = mainJsContent.Replace("from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
 
                 return mainJsContent;
@@ -90,6 +91,19 @@ namespace Wasm.Build.Tests
             UpdateBrowserMainJs(DefaultTargetFramework);
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
+
+            AddItemsPropertiesToProject(projectFile, 
+                atTheEnd:
+                    """
+                    <Target Name="CheckLinkedFiles" AfterTargets="ILLink">
+                    <ItemGroup>
+                        <_LinkedOutFile Include="$(IntermediateOutputPath)\linked\*.dll" />
+                    </ItemGroup>
+                    <Error Text="No file was linked-out. Trimming probably doesn't work (PublishTrimmed=$(PublishTrimmed))" Condition="@(_LinkedOutFile->Count()) == 0" />
+                    </Target>
+                    """
+            );
+
             buildArgs = ExpandBuildArgs(buildArgs);
 
             BuildTemplateProject(buildArgs,
@@ -587,6 +601,30 @@ namespace Wasm.Build.Tests
                     // FIXME: The bundled file would be .wasm in case of webcil, so can't compare size
                     Assert.True(compressedOriginalAssembly_fi.Length == compressedBundledAssembly_fi.Length);
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void PublishPdb(bool copyOutputSymbolsToPublishDirectory)
+        {
+            string config = "Release";
+            string id = $"publishpdb_{copyOutputSymbolsToPublishDirectory.ToString().ToLower()}_{GetRandomId()}";
+            CreateWasmTemplateProject(id, "wasmbrowser");
+
+            (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(id, config), $"-p:CopyOutputSymbolsToPublishDirectory={copyOutputSymbolsToPublishDirectory.ToString().ToLower()}");
+            result.EnsureSuccessful();
+
+            string publishFrameworkPath = Path.GetFullPath(FindBlazorBinFrameworkDir(config, forPublish: true));
+            AssertFile(".pdb");
+            AssertFile(".pdb.gz");
+            AssertFile(".pdb.br");
+
+            void AssertFile(string suffix)
+            {
+                var fileName = $"{id}{suffix}";
+                Assert.True(copyOutputSymbolsToPublishDirectory == File.Exists(Path.Combine(publishFrameworkPath, fileName)), $"The {fileName} file {(copyOutputSymbolsToPublishDirectory ? "should" : "shouldn't")} exist in publish folder");
             }
         }
     }

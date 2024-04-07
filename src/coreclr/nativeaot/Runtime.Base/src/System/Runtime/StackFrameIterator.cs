@@ -60,24 +60,24 @@ namespace System.Runtime
 #pragma warning restore CA1822
 #endif // NATIVEAOT
 
-        internal bool Init(EH.PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault = false)
+        internal bool Init(EH.PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault = false, bool* fIsExceptionIntercepted = null)
         {
-            return InternalCalls.RhpSfiInit(ref this, pStackwalkCtx, instructionFault);
+            return InternalCalls.RhpSfiInit(ref this, pStackwalkCtx, instructionFault, fIsExceptionIntercepted);
         }
 
         internal bool Next()
         {
-            return Next(null, null);
+            return Next(null, null, null);
         }
 
-        internal bool Next(uint* uExCollideClauseIdx)
+        internal bool Next(uint* uExCollideClauseIdx, bool* fIsExceptionIntercepted)
         {
-            return Next(uExCollideClauseIdx, null);
+            return Next(uExCollideClauseIdx, null, fIsExceptionIntercepted);
         }
 
-        internal bool Next(uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke)
+        internal bool Next(uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted)
         {
-            return InternalCalls.RhpSfiNext(ref this, uExCollideClauseIdx, fUnwoundReversePInvoke);
+            return InternalCalls.RhpSfiNext(ref this, uExCollideClauseIdx, fUnwoundReversePInvoke, fIsExceptionIntercepted);
         }
     }
 }

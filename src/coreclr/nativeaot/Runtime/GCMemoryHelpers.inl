@@ -7,6 +7,21 @@
 // Unmanaged GC memory helpers
 //
 
+// A 'clump' is defined as the size of memory covered by 1 byte in the card table.
+#ifdef HOST_64BIT
+#define CLUMP_SIZE 0x800
+#define LOG2_CLUMP_SIZE 11
+#else
+#define CLUMP_SIZE 0x400
+#define LOG2_CLUMP_SIZE 10
+#endif
+
+// Global data cells exported by the GC.
+extern "C" unsigned char* g_ephemeral_low;
+extern "C" unsigned char* g_ephemeral_high;
+extern "C" unsigned char* g_lowest_address;
+extern "C" unsigned char* g_highest_address;
+
 #if defined(HOST_64BIT)
 static const int card_byte_shift = 11;
 static const int card_bundle_byte_shift = 21;

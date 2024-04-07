@@ -681,9 +681,9 @@ inline int __cdecl _vscprintf_unsafe(const char *_Format, va_list _ArgList)
     }
 }
 
-inline errno_t __cdecl _wfopen_unsafe(PAL_FILE * *ff, const WCHAR *fileName, const WCHAR *mode)
+inline errno_t __cdecl _wfopen_unsafe(FILE * *ff, const WCHAR *fileName, const WCHAR *mode)
 {
-    PAL_FILE *result = _wfopen(fileName, mode);
+    FILE *result = _wfopen(fileName, mode);
     if(result == 0) {
         return 1;
     } else {
@@ -692,9 +692,9 @@ inline errno_t __cdecl _wfopen_unsafe(PAL_FILE * *ff, const WCHAR *fileName, con
     }
 }
 
-inline errno_t __cdecl _fopen_unsafe(PAL_FILE * *ff, const char *fileName, const char *mode)
+inline errno_t __cdecl _fopen_unsafe(FILE * *ff, const char *fileName, const char *mode)
 {
-  PAL_FILE *result = PAL_fopen(fileName, mode);
+  FILE *result = fopen(fileName, mode);
   if(result == 0) {
     return 1;
   } else {

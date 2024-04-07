@@ -152,7 +152,7 @@ if [[ ( -z "$DOTNET_JitStress" ) && ( -z "$DOTNET_JitStressRegs" ) && ( -z "$DOT
     ERRORLEVEL=$?
     export DOTNET_JitDisasm=`cat $(BashDisasmListOutputFile)`
     export DOTNET_JitDisasmTesting=1
-    export DOTNET_JitDiffableDasm=1
+    export DOTNET_JitDisasmDiffable=1
     export DOTNET_JitStdOutFile=$(BashDisasmOutputFile)
     rm -f $(BashDisasmOutputFile)
     if [[ $ERRORLEVEL -ne 0 ]]
@@ -200,7 +200,7 @@ IF "%DOTNET_JitStress%"=="" IF "%DOTNET_JitStressRegs%"=="" IF "%DOTNET_Tailcall
     )', '%0d%0a')
     for /F "delims=" %%g in ($(BatchDisasmListOutputFile)) do set DOTNET_JitDisasm=%%g
     set DOTNET_JitDisasmTesting=1
-    set DOTNET_JitDiffableDasm=1
+    set DOTNET_JitDisasmDiffable=1
     set DOTNET_JitStdOutFile=$(BatchDisasmOutputFile)
     del $(BatchDisasmOutputFile) >nul 2>&1
 )

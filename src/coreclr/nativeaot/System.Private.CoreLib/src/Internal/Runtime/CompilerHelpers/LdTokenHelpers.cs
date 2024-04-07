@@ -3,8 +3,6 @@
 
 using System;
 
-using Internal.Reflection.Core.NonPortable;
-
 namespace Internal.Runtime.CompilerHelpers
 {
     /// <summary>
@@ -12,9 +10,9 @@ namespace Internal.Runtime.CompilerHelpers
     /// </summary>
     internal static class LdTokenHelpers
     {
-        private static RuntimeTypeHandle GetRuntimeTypeHandle(IntPtr pEEType)
+        private static unsafe RuntimeTypeHandle GetRuntimeTypeHandle(MethodTable* pEEType)
         {
-            return new RuntimeTypeHandle(new EETypePtr(pEEType));
+            return new RuntimeTypeHandle(pEEType);
         }
 
         private static unsafe RuntimeMethodHandle GetRuntimeMethodHandle(IntPtr pHandleSignature)

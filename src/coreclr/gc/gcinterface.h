@@ -1013,6 +1013,8 @@ public:
     virtual FinalizerWorkItem* GetExtraWorkForFinalization() PURE_VIRTUAL
 
     virtual uint64_t GetGenerationBudget(int generation) PURE_VIRTUAL
+
+    virtual size_t GetLOHThreshold() PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK

@@ -16,6 +16,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 		internal void GetReflectionAccessDiagnostics (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol, DynamicallyAccessedMemberTypes requiredMemberTypes, bool declaredOnly = false)
 		{
+			typeSymbol = typeSymbol.OriginalDefinition;
 			foreach (var member in typeSymbol.GetDynamicallyAccessedMembers (requiredMemberTypes, declaredOnly)) {
 				switch (member) {
 				case IMethodSymbol method:

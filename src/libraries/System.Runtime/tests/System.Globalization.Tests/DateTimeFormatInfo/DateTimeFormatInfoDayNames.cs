@@ -42,10 +42,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "es-419", new string[] { "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado" } };
             yield return new object[] { "es-ES", new string[] { "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado" } };
             yield return new object[] { "es-MX", new string[] { "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado" } };
-            var estonianDays = PlatformDetection.IsNodeJSOnWindows ?
-                new string[] { "Pühapäev", "Esmaspäev", "Teisipäev", "Kolmapäev", "Neljapäev", "Reede", "Laupäev" } :
-                new string[] { "pühapäev", "esmaspäev", "teisipäev", "kolmapäev", "neljapäev", "reede", "laupäev" }; // same as ICU
-            yield return new object[] { "et-EE", estonianDays };
+            yield return new object[] { "et-EE", new string[] { "pühapäev", "esmaspäev", "teisipäev", "kolmapäev", "neljapäev", "reede", "laupäev" } };
             yield return new object[] { "fa-IR", new string[] { "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه", "شنبه" } };
             yield return new object[] { "fi-FI", new string[] { "sunnuntai", "maanantai", "tiistai", "keskiviikko", "torstai", "perjantai", "lauantai" } };
             yield return new object[] { "fil-PH", new string[] { "Linggo", "Lunes", "Martes", "Miyerkules", "Huwebes", "Biyernes", "Sabado" } };

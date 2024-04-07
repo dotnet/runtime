@@ -1,280 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// The BigNumber class implements methods for formatting and parsing
-// big numeric values. To format and parse numeric values, applications should
-// use the Format and Parse methods provided by the numeric
-// classes (BigInteger). Those
-// Format and Parse methods share a common implementation
-// provided by this class, and are thus documented in detail here.
-//
-// Formatting
-//
-// The Format methods provided by the numeric classes are all of the
-// form
-//
-//  public static String Format(XXX value, String format);
-//  public static String Format(XXX value, String format, NumberFormatInfo info);
-//
-// where XXX is the name of the particular numeric class. The methods convert
-// the numeric value to a string using the format string given by the
-// format parameter. If the format parameter is null or
-// an empty string, the number is formatted as if the string "G" (general
-// format) was specified. The info parameter specifies the
-// NumberFormatInfo instance to use when formatting the number. If the
-// info parameter is null or omitted, the numeric formatting information
-// is obtained from the current culture. The NumberFormatInfo supplies
-// such information as the characters to use for decimal and thousand
-// separators, and the spelling and placement of currency symbols in monetary
-// values.
-//
-// Format strings fall into two categories: Standard format strings and
-// user-defined format strings. A format string consisting of a single
-// alphabetic character (A-Z or a-z), optionally followed by a sequence of
-// digits (0-9), is a standard format string. All other format strings are
-// used-defined format strings.
-//
-// A standard format string takes the form Axx, where A is an
-// alphabetic character called the format specifier and xx is a
-// sequence of digits called the precision specifier. The format
-// specifier controls the type of formatting applied to the number and the
-// precision specifier controls the number of significant digits or decimal
-// places of the formatting operation. The following table describes the
-// supported standard formats.
-//
-// C c - Currency format. The number is
-// converted to a string that represents a currency amount. The conversion is
-// controlled by the currency format information of the NumberFormatInfo
-// used to format the number. The precision specifier indicates the desired
-// number of decimal places. If the precision specifier is omitted, the default
-// currency precision given by the NumberFormatInfo is used.
-//
-// D d - Decimal format. This format is
-// supported for integral types only. The number is converted to a string of
-// decimal digits, prefixed by a minus sign if the number is negative. The
-// precision specifier indicates the minimum number of digits desired in the
-// resulting string. If required, the number will be left-padded with zeros to
-// produce the number of digits given by the precision specifier.
-//
-// E e Engineering (scientific) format.
-// The number is converted to a string of the form
-// "-d.ddd...E+ddd" or "-d.ddd...e+ddd", where each
-// 'd' indicates a digit (0-9). The string starts with a minus sign if the
-// number is negative, and one digit always precedes the decimal point. The
-// precision specifier indicates the desired number of digits after the decimal
-// point. If the precision specifier is omitted, a default of 6 digits after
-// the decimal point is used. The format specifier indicates whether to prefix
-// the exponent with an 'E' or an 'e'. The exponent is always consists of a
-// plus or minus sign and three digits.
-//
-// F f Fixed point format. The number is
-// converted to a string of the form "-ddd.ddd....", where each
-// 'd' indicates a digit (0-9). The string starts with a minus sign if the
-// number is negative. The precision specifier indicates the desired number of
-// decimal places. If the precision specifier is omitted, the default numeric
-// precision given by the NumberFormatInfo is used.
-//
-// G g - General format. The number is
-// converted to the shortest possible decimal representation using fixed point
-// or scientific format. The precision specifier determines the number of
-// significant digits in the resulting string. If the precision specifier is
-// omitted, the number of significant digits is determined by the type of the
-// number being converted (10 for int, 19 for long, 7 for
-// float, 15 for double, 19 for Currency, and 29 for
-// Decimal). Trailing zeros after the decimal point are removed, and the
-// resulting string contains a decimal point only if required. The resulting
-// string uses fixed point format if the exponent of the number is less than
-// the number of significant digits and greater than or equal to -4. Otherwise,
-// the resulting string uses scientific format, and the case of the format
-// specifier controls whether the exponent is prefixed with an 'E' or an
-// 'e'.
-//
-// N n Number format. The number is
-// converted to a string of the form "-d,ddd,ddd.ddd....", where
-// each 'd' indicates a digit (0-9). The string starts with a minus sign if the
-// number is negative. Thousand separators are inserted between each group of
-// three digits to the left of the decimal point. The precision specifier
-// indicates the desired number of decimal places. If the precision specifier
-// is omitted, the default numeric precision given by the
-// NumberFormatInfo is used.
-//
-// X x - Hexadecimal format. This format is
-// supported for integral types only. The number is converted to a string of
-// hexadecimal digits. The format specifier indicates whether to use upper or
-// lower case characters for the hexadecimal digits above 9 ('X' for 'ABCDEF',
-// and 'x' for 'abcdef'). The precision specifier indicates the minimum number
-// of digits desired in the resulting string. If required, the number will be
-// left-padded with zeros to produce the number of digits given by the
-// precision specifier.
-//
-// Some examples of standard format strings and their results are shown in the
-// table below. (The examples all assume a default NumberFormatInfo.)
-//
-// Value        Format  Result
-// 12345.6789   C       $12,345.68
-// -12345.6789  C       ($12,345.68)
-// 12345        D       12345
-// 12345        D8      00012345
-// 12345.6789   E       1.234568E+004
-// 12345.6789   E10     1.2345678900E+004
-// 12345.6789   e4      1.2346e+004
-// 12345.6789   F       12345.68
-// 12345.6789   F0      12346
-// 12345.6789   F6      12345.678900
-// 12345.6789   G       12345.6789
-// 12345.6789   G7      12345.68
-// 123456789    G7      1.234568E8
-// 12345.6789   N       12,345.68
-// 123456789    N4      123,456,789.0000
-// 0x2c45e      x       2c45e
-// 0x2c45e      X       2C45E
-// 0x2c45e      X8      0002C45E
-//
-// Format strings that do not start with an alphabetic character, or that start
-// with an alphabetic character followed by a non-digit, are called
-// user-defined format strings. The following table describes the formatting
-// characters that are supported in user defined format strings.
-//
-//
-// 0 - Digit placeholder. If the value being
-// formatted has a digit in the position where the '0' appears in the format
-// string, then that digit is copied to the output string. Otherwise, a '0' is
-// stored in that position in the output string. The position of the leftmost
-// '0' before the decimal point and the rightmost '0' after the decimal point
-// determines the range of digits that are always present in the output
-// string.
-//
-// # - Digit placeholder. If the value being
-// formatted has a digit in the position where the '#' appears in the format
-// string, then that digit is copied to the output string. Otherwise, nothing
-// is stored in that position in the output string.
-//
-// . - Decimal point. The first '.' character
-// in the format string determines the location of the decimal separator in the
-// formatted value; any additional '.' characters are ignored. The actual
-// character used as a the decimal separator in the output string is given by
-// the NumberFormatInfo used to format the number.
-//
-// , - Thousand separator and number scaling.
-// The ',' character serves two purposes. First, if the format string contains
-// a ',' character between two digit placeholders (0 or #) and to the left of
-// the decimal point if one is present, then the output will have thousand
-// separators inserted between each group of three digits to the left of the
-// decimal separator. The actual character used as a the decimal separator in
-// the output string is given by the NumberFormatInfo used to format the
-// number. Second, if the format string contains one or more ',' characters
-// immediately to the left of the decimal point, or after the last digit
-// placeholder if there is no decimal point, then the number will be divided by
-// 1000 times the number of ',' characters before it is formatted. For example,
-// the format string '0,,' will represent 100 million as just 100. Use of the
-// ',' character to indicate scaling does not also cause the formatted number
-// to have thousand separators. Thus, to scale a number by 1 million and insert
-// thousand separators you would use the format string '#,##0,,'.
-//
-// % - Percentage placeholder. The presence of
-// a '%' character in the format string causes the number to be multiplied by
-// 100 before it is formatted. The '%' character itself is inserted in the
-// output string where it appears in the format string.
-//
-// E+ E- e+ e-   - Scientific notation.
-// If any of the strings 'E+', 'E-', 'e+', or 'e-' are present in the format
-// string and are immediately followed by at least one '0' character, then the
-// number is formatted using scientific notation with an 'E' or 'e' inserted
-// between the number and the exponent. The number of '0' characters following
-// the scientific notation indicator determines the minimum number of digits to
-// output for the exponent. The 'E+' and 'e+' formats indicate that a sign
-// character (plus or minus) should always precede the exponent. The 'E-' and
-// 'e-' formats indicate that a sign character should only precede negative
-// exponents.
-//
-// \ - Literal character. A backslash character
-// causes the next character in the format string to be copied to the output
-// string as-is. The backslash itself isn't copied, so to place a backslash
-// character in the output string, use two backslashes (\\) in the format
-// string.
-//
-// 'ABC' "ABC" - Literal string. Characters
-// enclosed in single or double quotation marks are copied to the output string
-// as-is and do not affect formatting.
-//
-// ; - Section separator. The ';' character is
-// used to separate sections for positive, negative, and zero numbers in the
-// format string.
-//
-// Other - All other characters are copied to
-// the output string in the position they appear.
-//
-// For fixed point formats (formats not containing an 'E+', 'E-', 'e+', or
-// 'e-'), the number is rounded to as many decimal places as there are digit
-// placeholders to the right of the decimal point. If the format string does
-// not contain a decimal point, the number is rounded to the nearest
-// integer. If the number has more digits than there are digit placeholders to
-// the left of the decimal point, the extra digits are copied to the output
-// string immediately before the first digit placeholder.
-//
-// For scientific formats, the number is rounded to as many significant digits
-// as there are digit placeholders in the format string.
-//
-// To allow for different formatting of positive, negative, and zero values, a
-// user-defined format string may contain up to three sections separated by
-// semicolons. The results of having one, two, or three sections in the format
-// string are described in the table below.
-//
-// Sections:
-//
-// One - The format string applies to all values.
-//
-// Two - The first section applies to positive values
-// and zeros, and the second section applies to negative values. If the number
-// to be formatted is negative, but becomes zero after rounding according to
-// the format in the second section, then the resulting zero is formatted
-// according to the first section.
-//
-// Three - The first section applies to positive
-// values, the second section applies to negative values, and the third section
-// applies to zeros. The second section may be left empty (by having no
-// characters between the semicolons), in which case the first section applies
-// to all non-zero values. If the number to be formatted is non-zero, but
-// becomes zero after rounding according to the format in the first or second
-// section, then the resulting zero is formatted according to the third
-// section.
-//
-// For both standard and user-defined formatting operations on values of type
-// float and double, if the value being formatted is a NaN (Not
-// a Number) or a positive or negative infinity, then regardless of the format
-// string, the resulting string is given by the NaNSymbol,
-// PositiveInfinitySymbol, or NegativeInfinitySymbol property of
-// the NumberFormatInfo used to format the number.
-//
-// Parsing
-//
-// The Parse methods provided by the numeric classes are all of the form
-//
-//  public static XXX Parse(String s);
-//  public static XXX Parse(String s, int style);
-//  public static XXX Parse(String s, int style, NumberFormatInfo info);
-//
-// where XXX is the name of the particular numeric class. The methods convert a
-// string to a numeric value. The optional style parameter specifies the
-// permitted style of the numeric string. It must be a combination of bit flags
-// from the NumberStyles enumeration. The optional info parameter
-// specifies the NumberFormatInfo instance to use when parsing the
-// string. If the info parameter is null or omitted, the numeric
-// formatting information is obtained from the current culture.
-//
-// Numeric strings produced by the Format methods using the Currency,
-// Decimal, Engineering, Fixed point, General, or Number standard formats
-// (the C, D, E, F, G, and N format specifiers) are guaranteed to be parseable
-// by the Parse methods if the NumberStyles.Any style is
-// specified. Note, however, that the Parse methods do not accept
-// NaNs or Infinities.
-//
-
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -330,12 +63,12 @@ namespace System
 
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             {
-                return TryParseBigIntegerHexNumberStyle(value, style, out result);
+                return TryParseBigIntegerHexOrBinaryNumberStyle<BigIntegerHexParser<char>, char>(value, style, out result);
             }
 
             if ((style & NumberStyles.AllowBinarySpecifier) != 0)
             {
-                return TryParseBigIntegerBinaryNumberStyle(value, style, out result);
+                return TryParseBigIntegerHexOrBinaryNumberStyle<BigIntegerBinaryParser<char>, char>(value, style, out result);
             }
 
             return TryParseBigIntegerNumber(value, style, info, out result);
@@ -346,6 +79,11 @@ namespace System
             scoped Span<byte> buffer;
             byte[]? arrayFromPool = null;
 
+            if (value.Length == 0)
+            {
+                result = default;
+                return ParsingStatus.Failed;
+            }
             if (value.Length < 255)
             {
                 buffer = stackalloc byte[value.Length + 1 + 1];
@@ -361,7 +99,7 @@ namespace System
             {
                 NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, buffer);
 
-                if (!TryStringToNumber(value, style, ref number, info))
+                if (!TryStringToNumber(MemoryMarshal.Cast<char, Utf16Char>(value), style, ref number, info))
                 {
                     result = default;
                     ret = ParsingStatus.Failed;
@@ -396,16 +134,18 @@ namespace System
             return result;
         }
 
-        internal static ParsingStatus TryParseBigIntegerHexNumberStyle(ReadOnlySpan<char> value, NumberStyles style, out BigInteger result)
+        internal static ParsingStatus TryParseBigIntegerHexOrBinaryNumberStyle<TParser, TChar>(ReadOnlySpan<TChar> value, NumberStyles style, out BigInteger result)
+            where TParser : struct, IBigIntegerHexOrBinaryParser<TParser, TChar>
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            int whiteIndex = 0;
+            int whiteIndex;
 
             // Skip past any whitespace at the beginning.
             if ((style & NumberStyles.AllowLeadingWhite) != 0)
             {
                 for (whiteIndex = 0; whiteIndex < value.Length; whiteIndex++)
                 {
-                    if (!IsWhite(value[whiteIndex]))
+                    if (!IsWhite(uint.CreateTruncating(value[whiteIndex])))
                         break;
                 }
 
@@ -417,7 +157,7 @@ namespace System
             {
                 for (whiteIndex = value.Length - 1; whiteIndex >= 0; whiteIndex--)
                 {
-                    if (!IsWhite(value[whiteIndex]))
+                    if (!IsWhite(uint.CreateTruncating(value[whiteIndex])))
                         break;
                 }
 
@@ -429,220 +169,111 @@ namespace System
                 goto FailExit;
             }
 
-            const int DigitsPerBlock = 8;
+            // Remember the sign from original leading input
+            // Invalid digits will be caught in parsing below
+            uint signBits = TParser.GetSignBitsIfValid(uint.CreateTruncating(value[0]));
 
-            int totalDigitCount = value.Length;
-            int blockCount, partialDigitCount;
+            // Start from leading blocks. Leading blocks can be unaligned, or whole of 0/F's that need to be trimmed.
+            int leadingBitsCount = value.Length % TParser.DigitsPerBlock;
 
-            blockCount = Math.DivRem(totalDigitCount, DigitsPerBlock, out int remainder);
-            if (remainder == 0)
+            uint leading = signBits;
+            // First parse unaligned leading block if exists.
+            if (leadingBitsCount != 0)
             {
-                partialDigitCount = 0;
-            }
-            else
-            {
-                blockCount += 1;
-                partialDigitCount = DigitsPerBlock - remainder;
-            }
-
-            if (!HexConverter.IsHexChar(value[0])) goto FailExit;
-            bool isNegative = HexConverter.FromChar(value[0]) >= 8;
-            uint partialValue = (isNegative && partialDigitCount > 0) ? 0xFFFFFFFFu : 0;
-
-            uint[]? arrayFromPool = null;
-
-            Span<uint> bitsBuffer = ((uint)blockCount <= BigIntegerCalculator.StackAllocThreshold
-                ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
-                : arrayFromPool = ArrayPool<uint>.Shared.Rent(blockCount)).Slice(0, blockCount);
-
-            int bitsBufferPos = blockCount - 1;
-
-            try
-            {
-                for (int i = 0; i < value.Length; i++)
+                if (!TParser.TryParseUnalignedBlock(value[0..leadingBitsCount], out leading))
                 {
-                    char digitChar = value[i];
-
-                    if (!HexConverter.IsHexChar(digitChar)) goto FailExit;
-                    int hexValue = HexConverter.FromChar(digitChar);
-
-                    partialValue = (partialValue << 4) | (uint)hexValue;
-                    partialDigitCount++;
-
-                    if (partialDigitCount == DigitsPerBlock)
-                    {
-                        bitsBuffer[bitsBufferPos] = partialValue;
-                        bitsBufferPos--;
-                        partialValue = 0;
-                        partialDigitCount = 0;
-                    }
+                    goto FailExit;
                 }
 
-                Debug.Assert(partialDigitCount == 0 && bitsBufferPos == -1);
-
-                if (isNegative)
-                {
-                    NumericsHelpers.DangerousMakeTwosComplement(bitsBuffer);
-                }
-
-                // BigInteger requires leading zero blocks to be truncated.
-                bitsBuffer = bitsBuffer.TrimEnd(0u);
-
-                int sign;
-                uint[]? bits;
-
-                if (bitsBuffer.IsEmpty)
-                {
-                    sign = 0;
-                    bits = null;
-                }
-                else if (bitsBuffer.Length == 1 && bitsBuffer[0] <= int.MaxValue)
-                {
-                    sign = (int)bitsBuffer[0] * (isNegative ? -1 : 1);
-                    bits = null;
-                }
-                else
-                {
-                    sign = isNegative ? -1 : 1;
-                    bits = bitsBuffer.ToArray();
-                }
-
-                result = new BigInteger(sign, bits);
-                return ParsingStatus.OK;
-            }
-            finally
-            {
-                if (arrayFromPool != null)
-                {
-                    ArrayPool<uint>.Shared.Return(arrayFromPool);
-                }
+                // Fill leading sign bits
+                leading |= signBits << (leadingBitsCount * TParser.BitsPerDigit);
+                value = value[leadingBitsCount..];
             }
 
-        FailExit:
-            result = default;
-            return ParsingStatus.Failed;
-        }
-
-        internal static ParsingStatus TryParseBigIntegerBinaryNumberStyle(ReadOnlySpan<char> value, NumberStyles style, out BigInteger result)
-        {
-            int whiteIndex = 0;
-
-            // Skip past any whitespace at the beginning.
-            if ((style & NumberStyles.AllowLeadingWhite) != 0)
+            // Skip all the blocks consists of the same bit of sign
+            while (!value.IsEmpty && leading == signBits)
             {
-                for (whiteIndex = 0; whiteIndex < value.Length; whiteIndex++)
+                if (!TParser.TryParseSingleBlock(value[0..TParser.DigitsPerBlock], out leading))
                 {
-                    if (!IsWhite(value[whiteIndex]))
-                        break;
+                    goto FailExit;
                 }
-
-                value = value[whiteIndex..];
-            }
-
-            // Skip past any whitespace at the end.
-            if ((style & NumberStyles.AllowTrailingWhite) != 0)
-            {
-                for (whiteIndex = value.Length - 1; whiteIndex >= 0; whiteIndex--)
-                {
-                    if (!IsWhite(value[whiteIndex]))
-                        break;
-                }
-
-                value = value[..(whiteIndex + 1)];
+                value = value[TParser.DigitsPerBlock..];
             }
 
             if (value.IsEmpty)
             {
-                goto FailExit;
-            }
-
-            int totalDigitCount = value.Length;
-            int partialDigitCount;
-
-            (int blockCount, int remainder) = int.DivRem(totalDigitCount, BigInteger.kcbitUint);
-            if (remainder == 0)
-            {
-                partialDigitCount = 0;
-            }
-            else
-            {
-                blockCount++;
-                partialDigitCount = BigInteger.kcbitUint - remainder;
-            }
-
-            if (value[0] is not ('0' or '1')) goto FailExit;
-            bool isNegative = value[0] == '1';
-            uint currentBlock = isNegative ? 0xFF_FF_FF_FFu : 0x0;
-
-            uint[]? arrayFromPool = null;
-            Span<uint> buffer = ((uint)blockCount <= BigIntegerCalculator.StackAllocThreshold
-                ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
-                : arrayFromPool = ArrayPool<uint>.Shared.Rent(blockCount)).Slice(0, blockCount);
-
-            int bufferPos = blockCount - 1;
-
-            try
-            {
-                for (int i = 0; i < value.Length; i++)
+                // There's nothing beyond significant leading block. Return it as the result.
+                if ((int)(leading ^ signBits) >= 0)
                 {
-                    char digitChar = value[i];
-
-                    if (digitChar is not ('0' or '1')) goto FailExit;
-                    currentBlock = (currentBlock << 1) | (uint)(digitChar - '0');
-                    partialDigitCount++;
-
-                    if (partialDigitCount == BigInteger.kcbitUint)
-                    {
-                        buffer[bufferPos--] = currentBlock;
-                        partialDigitCount = 0;
-
-                        // we do not need to reset currentBlock now, because it should always set all its bits by left shift in subsequent iterations
-                    }
+                    // Small value that fits in Int32.
+                    // Delegate to the constructor for int.MinValue handling.
+                    result = new BigInteger((int)leading);
+                    return ParsingStatus.OK;
                 }
-
-                Debug.Assert(partialDigitCount == 0 && bufferPos == -1);
-
-                buffer = buffer.TrimEnd(0u);
-
-                int sign;
-                uint[]? bits;
-
-                if (buffer.IsEmpty)
+                else if (leading != 0)
                 {
-                    sign = 0;
-                    bits = null;
-                }
-                else if (buffer.Length == 1)
-                {
-                    sign = (int)buffer[0];
-                    bits = null;
+                    // The sign of result differs with leading digit.
+                    // Require to store in _bits.
 
-                    if ((!isNegative && sign < 0) || sign == int.MinValue)
-                    {
-                        bits = new[] { (uint)sign };
-                        sign = isNegative ? -1 : 1;
-                    }
+                    // Positive: sign=1, bits=[leading]
+                    // Negative: sign=-1, bits=[(leading ^ -1) + 1]=[-leading]
+                    result = new BigInteger((int)signBits | 1, [(leading ^ signBits) - signBits]);
+                    return ParsingStatus.OK;
                 }
                 else
                 {
-                    sign = isNegative ? -1 : 1;
-                    bits = buffer.ToArray();
+                    // -1 << 32, which requires an additional uint
+                    result = new BigInteger(-1, [0, 1]);
+                    return ParsingStatus.OK;
+                }
+            }
 
-                    if (isNegative)
-                    {
-                        NumericsHelpers.DangerousMakeTwosComplement(bits);
-                    }
+            // Now the size of bits array can be calculated, except edge cases of -2^32N
+            int wholeBlockCount = value.Length / TParser.DigitsPerBlock;
+            int totalUIntCount = wholeBlockCount + 1;
+
+            // Early out for too large input
+            if (totalUIntCount > BigInteger.MaxLength)
+            {
+                result = default;
+                return ParsingStatus.Overflow;
+            }
+
+            uint[] bits = new uint[totalUIntCount];
+            Span<uint> wholeBlockDestination = bits.AsSpan(0, wholeBlockCount);
+
+            if (!TParser.TryParseWholeBlocks(value, wholeBlockDestination))
+            {
+                goto FailExit;
+            }
+
+            bits[^1] = leading;
+
+            if (signBits != 0)
+            {
+                // For negative values, negate the whole array
+                if (bits.AsSpan().ContainsAnyExcept(0u))
+                {
+                    NumericsHelpers.DangerousMakeTwosComplement(bits);
+                }
+                else
+                {
+                    // For negative values with all-zero trailing digits,
+                    // It requires additional leading 1.
+                    bits = new uint[bits.Length + 1];
+                    bits[^1] = 1;
                 }
 
-                result = new BigInteger(sign, bits);
+                result = new BigInteger(-1, bits);
                 return ParsingStatus.OK;
             }
-            finally
+            else
             {
-                if (arrayFromPool is not null)
-                {
-                    ArrayPool<uint>.Shared.Return(arrayFromPool);
-                }
+                Debug.Assert(leading != 0);
+
+                // For positive values, it's done
+                result = new BigInteger(1, bits);
+                return ParsingStatus.OK;
             }
 
         FailExit:
@@ -657,7 +288,17 @@ namespace System
         // algorithm with a running time of O(N^2). And if it is greater than the threshold, use
         // a divide-and-conquer algorithm with a running time of O(NlogN).
         //
-        private static int s_naiveThreshold = 20000; // non-readonly for testing
+        // `1233`, which is approx the upper bound of most RSA key lengths, covers the majority
+        // of most common inputs and allows for the less naive algorithm to be used for
+        // large/uncommon inputs.
+        //
+#if DEBUG
+        // Mutable for unit testing...
+        internal static
+#else
+        internal const
+#endif
+        int s_naiveThreshold = 1233;
         private static ParsingStatus NumberToBigInteger(ref NumberBuffer number, out BigInteger result)
         {
             int currentBufferSize = 0;
@@ -1016,44 +657,6 @@ namespace System
             }
         }
 
-        internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
-        {
-            digits = -1;
-            if (format.Length == 0)
-            {
-                return 'R';
-            }
-
-            int i = 0;
-            char ch = format[i];
-            if (char.IsAsciiLetter(ch))
-            {
-                // The digits value must be >= 0 && <= 999_999_999,
-                // but it can begin with any number of 0s, and thus we may need to check more than 9
-                // digits.  Further, for compat, we need to stop when we hit a null char.
-                i++;
-                int n = 0;
-                while ((uint)i < (uint)format.Length && char.IsAsciiDigit(format[i]))
-                {
-                    // Check if we are about to overflow past our limit of 9 digits
-                    if (n >= 100_000_000)
-                    {
-                        throw new FormatException(SR.Argument_BadFormatSpecifier);
-                    }
-                    n = ((n * 10) + format[i++] - '0');
-                }
-
-                // If we're at the end of the digits rather than having stopped because we hit something
-                // other than a digit or overflowed, return the standard format info.
-                if (i >= format.Length || format[i] == '\0')
-                {
-                    digits = n;
-                    return ch;
-                }
-            }
-            return (char)0; // Custom format
-        }
-
         private static string? FormatBigIntegerToHex(bool targetSpan, BigInteger value, char format, int digits, NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
         {
             Debug.Assert(format == 'x' || format == 'X');
@@ -1247,7 +850,7 @@ namespace System
             return spanSuccess;
         }
 
-        private static string? FormatBigInteger(
+        private static unsafe string? FormatBigInteger(
             bool targetSpan, BigInteger value,
             string? formatString, ReadOnlySpan<char> formatSpan,
             NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
@@ -1376,23 +979,45 @@ namespace System
             {
                 // sign = true for negative and false for 0 and positive values
                 bool sign = (value._sign < 0);
-                // The cut-off point to switch (G)eneral from (F)ixed-point to (E)xponential form
-                int precision = 29;
                 int scale = cchMax - ichDst;
 
-                var sb = new ValueStringBuilder(stackalloc char[128]); // arbitrary stack cut-off
-                FormatProvider.FormatBigInteger(ref sb, precision, scale, sign, formatSpan, info, rgch, ichDst);
+                byte[]? buffer = ArrayPool<byte>.Shared.Rent(rgchBufSize + 1);
+                fixed (byte* ptr = buffer) // NumberBuffer expects pinned Digits
+                {
+                    scoped NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, buffer);
 
-                if (targetSpan)
-                {
-                    spanSuccess = sb.TryCopyTo(destination, out charsWritten);
-                    return null;
-                }
-                else
-                {
-                    charsWritten = 0;
-                    spanSuccess = false;
-                    return sb.ToString();
+                    for (int i = 0; i < rgch.Length - ichDst; i++)
+                        number.Digits[i] = (byte)rgch[ichDst + i];
+                    number.Digits[rgch.Length - ichDst] = 0;
+                    number.DigitsCount = rgch.Length - ichDst - 1; // The cut-off point to switch (G)eneral from (F)ixed-point to (E)xponential form
+                    number.Scale = scale;
+                    number.IsNegative = sign;
+
+                    scoped var vlb = new ValueListBuilder<Utf16Char>(stackalloc Utf16Char[128]); // arbitrary stack cut-off
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref vlb, ref number, formatSpan, info);
+                    }
+
+                    if (targetSpan)
+                    {
+                        spanSuccess = vlb.TryCopyTo(MemoryMarshal.Cast<char, Utf16Char>(destination), out charsWritten);
+                        vlb.Dispose();
+                        return null;
+                    }
+                    else
+                    {
+                        charsWritten = 0;
+                        spanSuccess = false;
+                        string result = MemoryMarshal.Cast<Utf16Char, char>(vlb.AsSpan()).ToString();
+                        vlb.Dispose();
+                        return result;
+                    }
                 }
             }
 
@@ -1436,5 +1061,98 @@ namespace System
                 return null;
             }
         }
+    }
+
+    internal interface IBigIntegerHexOrBinaryParser<TParser, TChar>
+        where TParser : struct, IBigIntegerHexOrBinaryParser<TParser, TChar>
+        where TChar : unmanaged, IBinaryInteger<TChar>
+    {
+        static abstract int BitsPerDigit { get; }
+
+        static virtual int DigitsPerBlock => sizeof(uint) * 8 / TParser.BitsPerDigit;
+
+        static abstract NumberStyles BlockNumberStyle { get; }
+
+        static abstract uint GetSignBitsIfValid(uint ch);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static virtual bool TryParseUnalignedBlock(ReadOnlySpan<TChar> input, out uint result)
+        {
+            if (typeof(TChar) == typeof(char))
+            {
+                return uint.TryParse(MemoryMarshal.Cast<TChar, char>(input), TParser.BlockNumberStyle, null, out result);
+            }
+
+            throw new NotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static virtual bool TryParseSingleBlock(ReadOnlySpan<TChar> input, out uint result)
+            => TParser.TryParseUnalignedBlock(input, out result);
+
+        static virtual bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<uint> destination)
+        {
+            Debug.Assert(destination.Length * TParser.DigitsPerBlock == input.Length);
+            ref TChar lastWholeBlockStart = ref Unsafe.Add(ref MemoryMarshal.GetReference(input), input.Length - TParser.DigitsPerBlock);
+
+            for (int i = 0; i < destination.Length; i++)
+            {
+                if (!TParser.TryParseSingleBlock(
+                    MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Subtract(ref lastWholeBlockStart, i * TParser.DigitsPerBlock), TParser.DigitsPerBlock),
+                    out destination[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    internal readonly struct BigIntegerHexParser<TChar> : IBigIntegerHexOrBinaryParser<BigIntegerHexParser<TChar>, TChar>
+        where TChar : unmanaged, IBinaryInteger<TChar>
+    {
+        public static int BitsPerDigit => 4;
+
+        public static NumberStyles BlockNumberStyle => NumberStyles.AllowHexSpecifier;
+
+        // A valid ASCII hex digit is positive (0-7) if it starts with 00110
+        public static uint GetSignBitsIfValid(uint ch) => (uint)((ch & 0b_1111_1000) == 0b_0011_0000 ? 0 : -1);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<uint> destination)
+        {
+            if (typeof(TChar) == typeof(char))
+            {
+                if (Convert.FromHexString(MemoryMarshal.Cast<TChar, char>(input), MemoryMarshal.AsBytes(destination), out _, out _) != OperationStatus.Done)
+                {
+                    return false;
+                }
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    MemoryMarshal.AsBytes(destination).Reverse();
+                }
+                else
+                {
+                    destination.Reverse();
+                }
+
+                return true;
+            }
+
+            throw new NotSupportedException();
+        }
+    }
+
+    internal readonly struct BigIntegerBinaryParser<TChar> : IBigIntegerHexOrBinaryParser<BigIntegerBinaryParser<TChar>, TChar>
+        where TChar : unmanaged, IBinaryInteger<TChar>
+    {
+        public static int BitsPerDigit => 1;
+
+        public static NumberStyles BlockNumberStyle => NumberStyles.AllowBinarySpecifier;
+
+        // Taking the LSB is enough for distinguishing 0/1
+        public static uint GetSignBitsIfValid(uint ch) => (uint)(((int)ch << 31) >> 31);
     }
 }

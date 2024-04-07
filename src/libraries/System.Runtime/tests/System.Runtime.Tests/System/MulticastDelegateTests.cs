@@ -15,6 +15,25 @@ namespace System.Tests
             Assert.NotNull(delegates);
             Assert.Equal(1, delegates.Length);
             Assert.True(dfoo.Equals(delegates[0]));
+
+            Assert.True(dfoo.HasSingleTarget);
+
+            int count = 0;
+            foreach (DFoo d in Delegate.EnumerateInvocationList(dfoo))
+            {
+                Assert.Same(d, dfoo);
+                count++;
+            }
+            Assert.Equal(1, count);
+        }
+
+        [Fact]
+        public static void EnumerateInvocationListNull()
+        {
+            foreach (Action d in Delegate.EnumerateInvocationList<Action>(null))
+            {
+                Assert.Fail();
+            }
         }
 
         [Fact]
@@ -45,6 +64,21 @@ namespace System.Tests
             Assert.NotEqual(d1, (object)dgoo);
 
             Assert.Equal(d1.GetHashCode(), d1.GetHashCode());
+        }
+
+        [Fact]
+        public static void ArrayDelegates()
+        {
+            // Delegate implementation may use Delegate[] arrays as sentinels. Validate that
+            // the sentinels are not confused with user provided targets.
+
+            Action da = new Delegate[5].MyExtension;
+            Assert.True(da.HasSingleTarget);
+            Assert.Equal(1, da.GetInvocationList().Length);
+
+            Func<int, int> dd = new Delegate[10].GetLength;
+            Assert.True(dd.HasSingleTarget);
+            Assert.Equal(1, dd.GetInvocationList().Length);
         }
 
         [Fact]
@@ -180,12 +214,23 @@ namespace System.Tests
             {
                 CheckIsSingletonDelegate((D)(expected[i]), (D)(invokeList[i]), target);
             }
-            Assert.Same(combo.Target, expected[expected.Length - 1].Target);
+            Assert.Same(combo.Target, expected[^1].Target);
             Assert.Same(combo.Target, target);
+            Assert.Equal(combo.HasSingleTarget, invokeList.Length == 1);
+            int count = 0;
+            foreach (D d in Delegate.EnumerateInvocationList(combo))
+            {
+                Assert.Same(d, invokeList[count]);
+                count++;
+            }
+            Assert.Equal(count, invokeList.Length);
+            Assert.Equal(combo.Method, invokeList[^1].Method);
         }
 
         private static void CheckIsSingletonDelegate(D expected, D actual, Tracker target)
         {
+            Assert.True(actual.HasSingleTarget);
+
             Assert.True(expected.Equals(actual));
             Delegate[] invokeList = actual.GetInvocationList();
             Assert.Equal(1, invokeList.Length);
@@ -252,6 +297,13 @@ namespace System.Tests
             public string Foo(int x) => new string('A', x);
 
             public string Goo(int x) => new string('A', x);
+        }
+    }
+
+    static class MulticastDelegateTestsExtensions
+    {
+        public static void MyExtension(this Delegate[] delegates)
+        {
         }
     }
 }

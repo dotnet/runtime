@@ -83,7 +83,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return ctorAllocatedObject;
         }
 
-        public sealed override MethodBase MetadataDefinitionMethod
+        internal sealed override MethodBase MetadataDefinitionMethod
         {
             get
             {

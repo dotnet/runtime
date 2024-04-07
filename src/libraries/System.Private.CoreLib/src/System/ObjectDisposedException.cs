@@ -29,14 +29,14 @@ namespace System
         {
         }
 
-        public ObjectDisposedException(string? objectName, string? message) : base(message)
+        public ObjectDisposedException(string? objectName, string? message) : base(message ?? SR.ObjectDisposed_Generic)
         {
             HResult = HResults.COR_E_OBJECTDISPOSED;
             _objectName = objectName;
         }
 
         public ObjectDisposedException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.ObjectDisposed_Generic, innerException)
         {
             HResult = HResults.COR_E_OBJECTDISPOSED;
         }

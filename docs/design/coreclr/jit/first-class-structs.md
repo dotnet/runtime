@@ -74,13 +74,6 @@ encountered by most phases of the JIT:
   if it's a promoted struct field, or to a `GT_LCL_FLD` or GT_IND` by `fgMorphField()`.
   * Proposed: A non-promoted struct typed field should be transformed into a `GT_OBJ`, so that consistently all struct
     nodes, even r-values, have `ClassLayout`.
-* `GT_MKREFANY`: This produces a "known" struct type, which is currently obtained by
-  calling `impGetRefAnyClass()` which is a call over the JIT/EE interface. This node is always
-  eliminated, and its source address used to create a copy. If it is on the rhs
-  of an assignment, it will be eliminated during the importer. If it is a call argument it will
-  be eliminated during morph.
-  * The presence of any of these in a method disables struct promotion. See `case CEE_MKREFANY` in the
-    `Importer`, where it is asserted that these are rare, and therefore not worth the trouble to handle.
 
 ### Struct “objects” as lvalues
 
@@ -94,10 +87,6 @@ encountered by most phases of the JIT:
       [#21705](https://github.com/dotnet/coreclr/pull/21705) they are no longer large nodes.
   * `GT_STORE_OBJ` and `GT_STORE_BLK` have the same structure as `GT_OBJ` and `GT_BLK`, respectively
     * `Data()` is op2
-  * `GT_STORE_DYN_BLK` (GenTreeStoreDynBlk extends GenTreeBlk)
-    * Additional child `gtDynamicSize`
-    * Note that these aren't really struct stores; they represent dynamically sized blocks
-      of arbitrary data.
   * For `GT_LCL_FLD` nodes, we store a pointer to `ClassLayout` in the node.
   * For `GT_LCL_VAR` nodes, the `ClassLayout` is obtained from the `LclVarDsc`.
 

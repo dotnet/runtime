@@ -18,13 +18,13 @@ namespace System.IO
         }
 
         public EndOfStreamException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_EndOfStreamException)
         {
             HResult = HResults.COR_E_ENDOFSTREAM;
         }
 
         public EndOfStreamException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_EndOfStreamException, innerException)
         {
             HResult = HResults.COR_E_ENDOFSTREAM;
         }

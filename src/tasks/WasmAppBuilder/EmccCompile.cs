@@ -193,7 +193,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 string tmpObjFile = Path.GetTempFileName();
                 try
                 {
-                    string command = $"{CompilerBinaryPath} {Arguments} -c -o \"{tmpObjFile}\" \"{srcFile}\"";
+                    string command = $"\"{CompilerBinaryPath}\" {Arguments} -c -o \"{tmpObjFile}\" \"{srcFile}\"";
                     var startTime = DateTime.Now;
 
                     // Log the command in a compact format which can be copy pasted

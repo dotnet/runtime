@@ -31,11 +31,6 @@
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" />
 
   <PropertyGroup>
-    <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">01:30:00</_workItemTimeout>
-    <_workItemTimeout Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">01:00:00</_workItemTimeout>
-
-    <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
-    <WasmSharedDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'shared'))</WasmSharedDir>
     <_ShippingPackagesPath>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'packages', $(Configuration), 'Shipping'))</_ShippingPackagesPath>
     <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
 
@@ -54,7 +49,7 @@
     <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
 
     <!-- on unix CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. -->
-    <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
+    <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\browser\emsdk\</EMSDK_PATH>
     <EmSdkDirForHelixPayload>$(HelixDependenciesStagingPath)\emsdk</EmSdkDirForHelixPayload>
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
@@ -146,17 +141,6 @@
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
-    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
-
-    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;BUILT_NUGETS_PATH=%HELIX_CORRELATION_PAYLOAD%/built-nugets&quot;" />
-    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;BUILT_NUGETS_PATH=$HELIX_CORRELATION_PAYLOAD/built-nugets&quot;" />
-
-    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
-    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
-  </ItemGroup>
-
   <PropertyGroup>
 
     <!--
@@ -217,8 +201,8 @@
       <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"                    Destination="build/WasmAppBuilder" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
-      <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm" />
-      <HelixCorrelationPayload Include="$(WasmSharedDir)"                        Destination="build/wasm-shared" />
+      <HelixCorrelationPayload Include="$(BrowserBuildTargetsDir)"               Destination="build/wasm" />
+      <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm-shared" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
     </ItemGroup>
@@ -247,9 +231,9 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
-        <!-- 
-          These WASM tests are problematic and slow right now, in this section it's about nodejs and chrome. 
-          Below is same section for V8. There is also Xharness timeout override in the test project. 
+        <!--
+          These WASM tests are problematic and slow right now, in this section it's about nodejs and chrome.
+          Below is same section for V8. There is also Xharness timeout override in the test project.
         -->
         <Timeout Condition="'%(FileName)' == 'System.Text.Json.Tests'">01:20:00</Timeout>
         <Timeout Condition="'%(FileName)' == 'System.Collections.Immutable.Tests'">01:20:00</Timeout>

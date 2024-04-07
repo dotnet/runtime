@@ -5,6 +5,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Globalization;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Moq;
 using Xunit;
 
@@ -1229,6 +1233,254 @@ namespace System.ComponentModel.Tests
         }
 
         class TwiceDerivedCultureInfo : DerivedCultureInfo
+        {
+        }
+
+        private long _concurrentError = 0;
+        private bool ConcurrentError
+        {
+            get => Interlocked.Read(ref _concurrentError) == 1;
+            set => Interlocked.Exchange(ref _concurrentError, value ? 1 : 0);
+        }
+
+        private void ConcurrentTest(TypeWithProperty instance)
+        {
+            var properties = TypeDescriptor.GetProperties(instance);
+            Thread.Sleep(10);
+            if (properties.Count > 0)
+            {
+                ConcurrentError = true;
+            }
+        }
+
+        [SkipOnPlatform(TestPlatforms.Browser, "Thread.Start is not supported on browsers.")]
+        [Fact]
+        public void ConcurrentGetProperties_ReturnsExpected()
+        {
+            const int Timeout = 60000;
+            int concurrentCount = Environment.ProcessorCount * 2;
+
+            using var finished = new CountdownEvent(concurrentCount);
+
+            var instances = new TypeWithProperty[concurrentCount];
+            for (int i = 0; i < concurrentCount; i++)
+            {
+                instances[i] = new TypeWithProperty();
+            }
+
+            for (int i = 0; i < concurrentCount; i++)
+            {
+                int i2 = i;
+                new Thread(() =>
+                {
+                    ConcurrentTest(instances[i2]);
+                    finished.Signal();
+                }).Start();
+            }
+
+            finished.Wait(Timeout);
+
+            if (finished.CurrentCount != 0)
+            {
+                Assert.Fail("Timeout. Possible deadlock.");
+            }
+            else
+            {
+                Assert.False(ConcurrentError, "Fallback type descriptor is used. Possible race condition.");
+            }
+        }
+
+        [SkipOnPlatform(TestPlatforms.Browser, "Thread.Start is not supported on browsers.")]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void ConcurrentAddProviderAndGetProvider()
+        {
+            // Use a timeout value lower than RemoteExecutor in order to get a nice Fail message.
+            const int Timeout = 50000;
+
+            RemoteInvokeOptions options = new()
+            {
+                TimeOut = 60000
+            };
+
+            RemoteExecutor.Invoke(() =>
+            {
+                using var finished = new CountdownEvent(2);
+
+                Thread t1 = new Thread(() =>
+                {
+                    ConcurrentAddProvider();
+                    finished.Signal();
+                });
+
+                Thread t2 = new Thread(() =>
+                {
+                    ConcurrentGetProvider();
+                    finished.Signal();
+                });
+
+                t1.Start();
+                t2.Start();
+                finished.Wait(Timeout);
+
+                if (finished.CurrentCount != 0)
+                {
+                    Assert.Fail("Timeout. Possible deadlock.");
+                }
+            }, options).Dispose();
+
+            static void ConcurrentAddProvider()
+            {
+                var provider = new EmptyPropertiesTypeProvider();
+                TypeDescriptor.AddProvider(provider, typeof(MyClass));
+
+                // This test primarily verifies no deadlock, but verify the values anyway.
+                Assert.True(TypeDescriptor.GetProvider(typeof(MyClass)).IsSupportedType(typeof(MyClass)));
+            }
+
+            static void ConcurrentGetProvider()
+            {
+                TypeDescriptionProvider provider = TypeDescriptor.GetProvider(typeof(TypeWithProperty));
+
+                // This test primarily verifies no deadlock, but verify the values anyway.
+                Assert.True(provider.IsSupportedType(typeof(TypeWithProperty)));
+            }
+        }
+
+        public sealed class EmptyPropertiesTypeProvider : TypeDescriptionProvider
+        {
+            private sealed class EmptyPropertyListDescriptor : ICustomTypeDescriptor
+            {
+                public AttributeCollection GetAttributes() => AttributeCollection.Empty;
+
+                public string? GetClassName() => null;
+
+                public string? GetComponentName() => null;
+
+                public TypeConverter? GetConverter() => new TypeConverter();
+
+                public EventDescriptor? GetDefaultEvent() => null;
+
+                public PropertyDescriptor? GetDefaultProperty() => null;
+
+                public object? GetEditor(Type editorBaseType) => null;
+
+                public EventDescriptorCollection GetEvents() => EventDescriptorCollection.Empty;
+
+                public EventDescriptorCollection GetEvents(Attribute[]? attributes) => GetEvents();
+
+                public PropertyDescriptorCollection GetProperties() => PropertyDescriptorCollection.Empty;
+
+                public PropertyDescriptorCollection GetProperties(Attribute[]? attributes) => GetProperties();
+
+                public object? GetPropertyOwner(PropertyDescriptor? pd) => null;
+            }
+            public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object? instance)
+            {
+                return new EmptyPropertyListDescriptor();
+            }
+        }
+
+        [TypeDescriptionProvider(typeof(EmptyPropertiesTypeProvider))]
+        public sealed class TypeWithProperty
+        {
+            public int OneProperty { get; set; }
+        }
+
+        public static IEnumerable<object[]> GetConverter_ByMultithread_ReturnsExpected_TestData()
+        {
+            yield return new object[] { typeof(MyClass), typeof(MyTypeConverter) };
+            yield return new object[] { typeof(MyInheritedClassWithCustomTypeDescriptionProvider), typeof(MyInheritedClassWithCustomTypeDescriptionProviderConverter) };
+            yield return new object[] { typeof(MyInheritedClassWithInheritedTypeDescriptionProvider), typeof(MyTypeConverter) };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetConverter_ByMultithread_ReturnsExpected_TestData))]
+        public async void GetConverter_ByMultithread_ReturnsExpected(Type typeForGetConverter, Type expectedConverterType)
+        {
+            TypeConverter[] actualConverters = await Task.WhenAll(
+                Enumerable.Range(0, 100).Select(_ =>
+                    Task.Run(() => TypeDescriptor.GetConverter(typeForGetConverter))));
+
+            Assert.All(actualConverters,
+                currentConverter => Assert.IsType(expectedConverterType, currentConverter));
+        }
+
+        public static IEnumerable<object[]> GetConverterWithAddProvider_ByMultithread_Success_TestData()
+        {
+            foreach (object[] currentTestCase in GetConverter_ByMultithread_ReturnsExpected_TestData())
+            {
+                yield return currentTestCase;
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]  // Mock will try to JIT
+        [MemberData(nameof(GetConverterWithAddProvider_ByMultithread_Success_TestData))]
+        public async void GetConverterWithAddProvider_ByMultithread_Success(Type typeForGetConverter, Type expectedConverterType)
+        {
+            TypeConverter[] actualConverters = await Task.WhenAll(
+                Enumerable.Range(0, 200).Select(_ =>
+                    Task.Run(() =>
+                    {
+                        var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
+                        var someInstance = new object();
+                        TypeDescriptor.AddProvider(mockProvider.Object, someInstance);
+                        return TypeDescriptor.GetConverter(typeForGetConverter);
+                    })));
+            Assert.All(actualConverters,
+                currentConverter => Assert.IsType(expectedConverterType, currentConverter));
+        }
+
+        [TypeDescriptionProvider(typeof(MyClassTypeDescriptionProvider))]
+        public class MyClass
+        {
+        }
+
+        [TypeDescriptionProvider(typeof(MyInheritedClassWithCustomTypeDescriptionProviderTypeDescriptionProvider))]
+        public class MyInheritedClassWithCustomTypeDescriptionProvider : MyClass
+        {
+        }
+
+        public class MyInheritedClassWithInheritedTypeDescriptionProvider : MyClass
+        {
+        }
+
+        public class MyClassTypeDescriptionProvider : TypeDescriptionProvider
+        {
+            public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
+            {
+                return new MyClassTypeDescriptor();
+            }
+        }
+
+        public class MyInheritedClassWithCustomTypeDescriptionProviderTypeDescriptionProvider : TypeDescriptionProvider
+        {
+            public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
+            {
+                return new MyInheritedClassWithCustomTypeDescriptionProviderTypeDescriptor();
+            }
+        }
+
+        public class MyClassTypeDescriptor : CustomTypeDescriptor
+        {
+            public override TypeConverter GetConverter()
+            {
+                return new MyTypeConverter();
+            }
+        }
+
+        public class MyInheritedClassWithCustomTypeDescriptionProviderTypeDescriptor : CustomTypeDescriptor
+        {
+            public override TypeConverter GetConverter()
+            {
+                return new MyInheritedClassWithCustomTypeDescriptionProviderConverter();
+            }
+        }
+
+        public class MyTypeConverter : TypeConverter
+        {
+        }
+
+        public class MyInheritedClassWithCustomTypeDescriptionProviderConverter : TypeConverter
         {
         }
     }

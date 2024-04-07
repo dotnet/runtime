@@ -397,7 +397,7 @@ namespace System.Globalization
                 // Do a quick search for the first element of "value".
                 int relativeIndex = isLetter ?
                     PackedSpanHelpers.PackedIndexOfIsSupported
-                        ? PackedSpanHelpers.IndexOfAny(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceMinusValueTailLength)
+                        ? PackedSpanHelpers.IndexOfAnyIgnoreCase(ref Unsafe.Add(ref searchSpace, offset), valueCharL, searchSpaceMinusValueTailLength)
                         : SpanHelpers.IndexOfAnyChar(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceMinusValueTailLength) :
                     SpanHelpers.IndexOfChar(ref Unsafe.Add(ref searchSpace, offset), valueChar, searchSpaceMinusValueTailLength);
                 if (relativeIndex < 0)

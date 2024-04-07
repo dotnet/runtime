@@ -209,6 +209,11 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// <param name="clientHello">The TLS ClientHello data.</param>
     private async void StartConnectionHandshake(QuicConnection connection, SslClientHelloInfo clientHello)
     {
+        // Yield to the threadpool immediately. This makes sure the connection options callback
+        // provided by the user is not invoked from the MsQuic thread and cannot delay acks
+        // or other operations on other connections.
+        await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+
         bool wrapException = false;
         CancellationToken cancellationToken = default;
 
@@ -220,7 +225,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         {
             using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token, connection.ConnectionShutdownToken);
             cancellationToken = linkedCts.Token;
-            // initial timeout for retrieving connection options
+            // Initial timeout for retrieving connection options.
             linkedCts.CancelAfter(handshakeTimeout);
 
             wrapException = true;
@@ -229,7 +234,7 @@ public sealed partial class QuicListener : IAsyncDisposable
 
             options.Validate(nameof(options));
 
-            // update handshake timetout based on the returned value
+            // Update handshake timeout based on the returned value.
             handshakeTimeout = options.HandshakeTimeout;
             linkedCts.CancelAfter(handshakeTimeout);
 
@@ -248,12 +253,12 @@ public sealed partial class QuicListener : IAsyncDisposable
                 NetEventSource.Info(connection, $"{connection} Connection closed by remote peer");
             }
 
-            // retrieve the exception which failed the handshake, the parameters are not going to be
-            // validated because the inner _connectedTcs is already transitioned to faulted state
+            // Retrieve the exception which failed the handshake, the parameters are not going to be
+            // validated because the inner _connectedTcs is already transitioned to faulted state.
             ValueTask task = connection.FinishHandshakeAsync(null!, null!, default);
             Debug.Assert(task.IsFaulted);
 
-            // unwrap AggregateException and propagate it to the accept queue
+            // Unwrap AggregateException and propagate it to the accept queue.
             Exception ex = task.AsTask().Exception!.InnerException!;
 
             await connection.DisposeAsync().ConfigureAwait(false);

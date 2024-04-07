@@ -277,5 +277,9 @@ namespace System.Net.Http.Headers
             decoded = null;
             return false;
         }
+
+        public string Separator => Parser is { } parser ? parser.Separator : HttpHeaderParser.DefaultSeparator;
+
+        public byte[] SeparatorBytes => Parser is { } parser ? parser.SeparatorBytes : HttpHeaderParser.DefaultSeparatorBytes;
     }
 }

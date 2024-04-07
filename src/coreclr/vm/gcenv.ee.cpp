@@ -1221,12 +1221,6 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
       GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    if (strcmp(privateKey, "GCLOHThreshold") == 0)
-    {
-        *value = g_pConfig->GetGCLOHThreshold();
-        return true;
-    }
-
     if (g_gcHeapHardLimitInfoSpecified)
     {
         if ((g_gcHeapHardLimitInfo.heapHardLimit != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimit") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimit; return true; }

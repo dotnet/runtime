@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Apphost Bundle Tests</Description>
+    <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
+    <AssemblyName>AppHost.Bundle.Tests</AssemblyName>
+    <PackageId>AppHost.Bundle.Tests</PackageId>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->
+    <TestsOutputName>ahb</TestsOutputName>
+    <UsesTestAssets>true</UsesTestAssets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
+    <ProjectReference Include="..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
+  </ItemGroup>
+
+</Project>

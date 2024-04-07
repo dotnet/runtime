@@ -189,6 +189,9 @@ VOID ParseNativeType(Module*                     pModule,
         case MarshalInfo::MARSHAL_TYPE_FIXED_WSTR:
             *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__UINT16), pargs->fs.fixedStringLength);
             break;
+        case MarshalInfo::MARSHAL_TYPE_POINTER:
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(void*), sizeof(void*));
+            break;
         case MarshalInfo::MARSHAL_TYPE_UNKNOWN:
         default:
             *pNFD = NativeFieldDescriptor(pFD);

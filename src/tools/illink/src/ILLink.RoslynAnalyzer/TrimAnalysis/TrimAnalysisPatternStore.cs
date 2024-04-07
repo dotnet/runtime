@@ -14,17 +14,23 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 	{
 		readonly Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisFieldAccessPattern> FieldAccessPatterns;
+		readonly Dictionary<IOperation, TrimAnalysisGenericInstantiationPattern> GenericInstantiationPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisMethodCallPattern> MethodCallPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ReflectionAccessPatterns;
+		readonly Dictionary<IOperation, FeatureCheckReturnValuePattern> FeatureCheckReturnValuePatterns;
 		readonly ValueSetLattice<SingleValue> Lattice;
 		readonly FeatureContextLattice FeatureContextLattice;
 
-		public TrimAnalysisPatternStore (ValueSetLattice<SingleValue> lattice, FeatureContextLattice featureContextLattice)
+		public TrimAnalysisPatternStore (
+			ValueSetLattice<SingleValue> lattice,
+			FeatureContextLattice featureContextLattice)
 		{
 			AssignmentPatterns = new Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> ();
 			FieldAccessPatterns = new Dictionary<IOperation, TrimAnalysisFieldAccessPattern> ();
+			GenericInstantiationPatterns = new Dictionary<IOperation, TrimAnalysisGenericInstantiationPattern> ();
 			MethodCallPatterns = new Dictionary<IOperation, TrimAnalysisMethodCallPattern> ();
 			ReflectionAccessPatterns = new Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ();
+			FeatureCheckReturnValuePatterns = new Dictionary<IOperation, FeatureCheckReturnValuePattern> ();
 			Lattice = lattice;
 			FeatureContextLattice = featureContextLattice;
 		}
@@ -57,6 +63,16 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			FieldAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, FeatureContextLattice, existingPattern);
 		}
 
+		public void Add (TrimAnalysisGenericInstantiationPattern pattern)
+		{
+			if (!GenericInstantiationPatterns.TryGetValue (pattern.Operation, out var existingPattern)) {
+				GenericInstantiationPatterns.Add (pattern.Operation, pattern);
+				return;
+			}
+
+			GenericInstantiationPatterns[pattern.Operation] = pattern.Merge (FeatureContextLattice, existingPattern);
+		}
+
 		public void Add (TrimAnalysisMethodCallPattern pattern)
 		{
 			if (!MethodCallPatterns.TryGetValue (pattern.Operation, out var existingPattern)) {
@@ -77,6 +93,16 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			ReflectionAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, FeatureContextLattice, existingPattern);
 		}
 
+		public void Add (FeatureCheckReturnValuePattern pattern)
+		{
+			if (!FeatureCheckReturnValuePatterns.TryGetValue (pattern.Operation, out var existingPattern)) {
+				FeatureCheckReturnValuePatterns.Add (pattern.Operation, pattern);
+				return;
+			}
+
+			Debug.Assert (existingPattern == pattern, "Return values should be identical");
+		}
+
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			foreach (var assignmentPattern in AssignmentPatterns.Values) {
@@ -89,6 +115,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					yield return diagnostic;
 			}
 
+			foreach (var genericInstantiationPattern in GenericInstantiationPatterns.Values) {
+				foreach (var diagnostic in genericInstantiationPattern.CollectDiagnostics (context))
+					yield return diagnostic;
+			}
+
 			foreach (var methodCallPattern in MethodCallPatterns.Values) {
 				foreach (var diagnostic in methodCallPattern.CollectDiagnostics (context))
 					yield return diagnostic;
@@ -96,6 +127,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			foreach (var reflectionAccessPattern in ReflectionAccessPatterns.Values) {
 				foreach (var diagnostic in reflectionAccessPattern.CollectDiagnostics (context))
+					yield return diagnostic;
+			}
+
+			foreach (var returnValuePattern in FeatureCheckReturnValuePatterns.Values) {
+				foreach (var diagnostic in returnValuePattern.CollectDiagnostics (context))
 					yield return diagnostic;
 			}
 		}

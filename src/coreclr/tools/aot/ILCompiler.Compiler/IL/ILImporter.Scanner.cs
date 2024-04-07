@@ -707,11 +707,7 @@ namespace Internal.IL
                     _dependencies.Add(_factory.InterfaceDispatchCell(method), reason);
                 }
             }
-            else if (_compilation.HasFixedSlotVTable(method.OwningType))
-            {
-                // No dependencies: virtual call through the vtable
-            }
-            else
+            else if (_compilation.NeedsSlotUseTracking(method.OwningType))
             {
                 MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
                         targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
@@ -1224,7 +1220,7 @@ namespace Internal.IL
                     break;
                 case ILOpcode.mul_ovf:
                 case ILOpcode.mul_ovf_un:
-                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    if (_compilation.TypeSystemContext.Target.PointerSize == 4)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LMulOfv), "_lmulovf");
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULMulOvf), "_ulmulovf");
@@ -1244,6 +1240,10 @@ namespace Internal.IL
                     else if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
+                        if (opcode == ILOpcode.div)
+                        {
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
+                        }
                     }
                     break;
                 case ILOpcode.rem:
@@ -1258,7 +1258,14 @@ namespace Internal.IL
                     else if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
+                        if (opcode == ILOpcode.rem)
+                        {
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
+                        }
                     }
+
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.DblRem), "rem");
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.FltRem), "rem");
                     break;
             }
         }
@@ -1354,13 +1361,12 @@ namespace Internal.IL
 
         private static bool IsEETypePtrOf(MethodDesc method)
         {
-            if (method.IsIntrinsic && (method.Name == "EETypePtrOf" || method.Name == "Of") && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.Name == "Of" && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return (owningType.Name == "EETypePtr" && owningType.Namespace == "System")
-                        || (owningType.Name == "MethodTable" && owningType.Namespace == "Internal.Runtime");
+                    return owningType.Name == "MethodTable" && owningType.Namespace == "Internal.Runtime";
                 }
             }
 

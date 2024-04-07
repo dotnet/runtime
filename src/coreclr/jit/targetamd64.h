@@ -41,9 +41,9 @@
   #define MAX_PASS_MULTIREG_BYTES      32  // Maximum size of a struct that could be passed in more than one register (Max is two SIMD16s)
   #define MAX_RET_MULTIREG_BYTES       32  // Maximum size of a struct that could be returned in more than one register  (Max is two SIMD16s)
   #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass a single argument in multiple registers.
-  #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
+  #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value.
 
-  #define MAX_MULTIREG_COUNT            2  // Maximum number of registers defined by a single instruction (including calls).
+  #define MAX_MULTIREG_COUNT            4  // Maximum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
 #else // !UNIX_AMD64_ABI
   #define WINDOWS_AMD64_ABI                // Uses the Windows ABI for AMD64
@@ -206,11 +206,11 @@
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
   #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
 
-  // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_RSI | RBM_RDI | RBM_CALLEE_TRASH_NOGC)
-
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI))
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_RAX | RBM_RCX)
+
+  // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
+  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_RSI | RBM_RDI | RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF)
 
   // We have two register classifications
   // * callee trash: aka     volatile or caller saved
@@ -562,5 +562,19 @@
 #else // !UNIX_AMD64_ABI
   #define RBM_STACK_PROBE_HELPER_TRASH RBM_RAX
 #endif // !UNIX_AMD64_ABI
+
+#ifdef UNIX_AMD64_ABI
+  #define SWIFT_SUPPORT
+  #define REG_SWIFT_ERROR REG_R12
+  #define RBM_SWIFT_ERROR RBM_R12
+  #define REG_SWIFT_SELF  REG_R13
+  #define RBM_SWIFT_SELF  RBM_R13
+
+  #define REG_SWIFT_INTRET_ORDER REG_RAX,REG_RDX,REG_RCX,REG_R8
+  #define REG_SWIFT_FLOATRET_ORDER REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3
+  #define REG_SWIFT_ARG_RET_BUFF REG_RAX
+  #define RBM_SWIFT_ARG_RET_BUFF RBM_RAX
+  #define SWIFT_RET_BUFF_ARGNUM  MAX_REG_ARG
+#endif
 
 // clang-format on

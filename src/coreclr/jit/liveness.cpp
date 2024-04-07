@@ -245,7 +245,6 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
 
         case GT_STOREIND:
         case GT_STORE_BLK:
-        case GT_STORE_DYN_BLK:
         case GT_MEMORYBARRIER: // Similar to Volatile indirections, we must handle this as a memory def.
             fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
             break;
@@ -891,17 +890,13 @@ void Compiler::fgExtendDbgLifetimes()
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
+            case BBJ_CALLFINALLY:
                 VarSetOps::UnionD(this, initVars, block->GetTarget()->bbScope);
                 break;
 
-            case BBJ_CALLFINALLY:
-                if (!block->HasFlag(BBF_RETLESS_CALL))
-                {
-                    assert(block->isBBCallAlwaysPair());
-                    PREFIX_ASSUME(!block->IsLast());
-                    VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
-                }
-                VarSetOps::UnionD(this, initVars, block->GetTarget()->bbScope);
+            case BBJ_CALLFINALLYRET:
+                VarSetOps::UnionD(this, initVars, block->bbScope);
+                VarSetOps::UnionD(this, initVars, block->GetFinallyContinuation()->bbScope);
                 break;
 
             case BBJ_COND:
@@ -1941,7 +1936,6 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_STOREIND:
             case GT_BOUNDS_CHECK:
             case GT_STORE_BLK:
-            case GT_STORE_DYN_BLK:
             case GT_JCMP:
             case GT_JTEST:
             case GT_JCC:

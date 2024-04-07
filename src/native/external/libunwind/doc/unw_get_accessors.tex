@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\begin{Name}{3}{unw\_get\_accessors}{David Mosberger-Tang}{Programming Library}{unw\_get\_accessors}unw\_get\_accessors -- get pointer to accessor call-backs
+\begin{Name}{3libunwind}{unw\_get\_accessors}{David Mosberger-Tang}{Programming Library}{unw\_get\_accessors}unw\_get\_accessors -- get pointer to accessor call-backs
 \end{Name}
 
 \section{Synopsis}
@@ -17,14 +17,14 @@
 \section{Description}
 
 The \Func{unw\_get\_accessors}() routine returns a pointer to a
-\Type{unw\_accessors\_t} structure, which contains the call-back
+\Type{unw\_accessors\_t} structure, which contains the callback
 routines that were specified when address space \Var{as} was created
-(see \Func{unw\_create\_addr\_space}(3)).  The returned pointer is
+(see \Func{unw\_create\_addr\_space}(3libunwind)).  The returned pointer is
 guaranteed to remain valid until address space \Var{as} is destroyed
-by a call to \Func{unw\_destroy\_addr\_space}(3).
+by a call to \Func{unw\_destroy\_addr\_space}(3libunwind).
 
 Note that \Func{unw\_get\_accessors}() can be used to retrieve the
-call-back routines for the local address space
+callback routines for the local address space
 \Var{unw\_local\_addr\_space}.
 
 \section{Return Value}
@@ -35,14 +35,14 @@ returns a valid (non-\Const{NULL}) pointer to an
 
 \section{Thread and Signal Safety}
 
-The \Func{unw\_get\_accessors}() routine is thread-safe as well as
+The \Func{unw\_get\_accessors}() routine is thread safe as well as
 safe to use from a signal handler.
 
 \section{See Also}
 
-\SeeAlso{libunwind(3)},
-\SeeAlso{unw\_create\_addr\_space(3)},
-\SeeAlso{unw\_destroy\_addr\_space(3)}
+\SeeAlso{libunwind(3libunwind)},
+\SeeAlso{unw\_create\_addr\_space(3libunwind)},
+\SeeAlso{unw\_destroy\_addr\_space(3libunwind)}
 
 \section{Author}
 

@@ -32,8 +32,6 @@ Implementation:
     - *after* any of the wasm build targets, use `AfterTargets="WasmBuildApp"` on that target
 - Avoid depending on this target, because it is available only when the workload is installed. Use `$(WasmNativeWorkload)` to check if it is installed.
 
-- When `Module.disableDotnet6Compatibility` is set it would not pollute global namespace.
-
 ## `Publish`
 
 Implementation:

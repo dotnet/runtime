@@ -176,9 +176,9 @@ namespace System.Globalization.Tests
                 yield return new object[] { "ms-BN", CalendarWeekRule.FirstDay };
                 yield return new object[] { "ms-MY", CalendarWeekRule.FirstDay };
                 yield return new object[] { "ms-SG", CalendarWeekRule.FirstDay };
-                yield return new object[] { "nb-NO", PlatformDetection.IsNodeJSOnWindows ? CalendarWeekRule.FirstDay : CalendarWeekRule.FirstFourDayWeek };
+                yield return new object[] { "nb-NO", CalendarWeekRule.FirstFourDayWeek };
                 yield return new object[] { "no-NO", CalendarWeekRule.FirstFourDayWeek };
-                yield return new object[] { "nl-AW", PlatformDetection.IsNodeJSOnWindows ? CalendarWeekRule.FirstFourDayWeek : CalendarWeekRule.FirstDay };
+                yield return new object[] { "nl-AW", CalendarWeekRule.FirstDay };
                 yield return new object[] { "nl-BE", CalendarWeekRule.FirstFourDayWeek };
                 yield return new object[] { "nl-NL", CalendarWeekRule.FirstFourDayWeek };
                 yield return new object[] { "pl-PL", CalendarWeekRule.FirstFourDayWeek };

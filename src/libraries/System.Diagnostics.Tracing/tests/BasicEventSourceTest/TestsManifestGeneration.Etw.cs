@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 #if USE_MDT_EVENTSOURCE
 using Microsoft.Diagnostics.Tracing;
 #else
@@ -14,8 +16,6 @@ using System.Diagnostics.Tracing;
 using Xunit;
 
 using SdtEventSources;
-using System.Diagnostics;
-using System.Threading;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Diagnostics.Tracing;
@@ -30,61 +30,67 @@ namespace BasicEventSourceTests
 
         /// ETW only works with elevated process
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/48798")]
+        [SkipOnCoreClr("Test should only be run in non-stress modes", ~RuntimeTestModes.RegularRun)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97255", typeof(PlatformDetection), nameof(PlatformDetection.IsX86Process))]
         public void Test_EventSource_EtwManifestGeneration()
         {
-            RemoteInvokeOptions options = new RemoteInvokeOptions { TimeOut = 300_000 /* ms */ };
-            RemoteExecutor.Invoke(() =>
+            var pid = Process.GetCurrentProcess().Id;
+            var etlFileName = $"file.{pid}.etl";
+
+            // Start the trace session
+            using (var traceSession = new TraceEventSession(nameof(Test_EventSource_EtwManifestGeneration), etlFileName))
             {
-                RemoteInvokeOptions localOptions = new RemoteInvokeOptions { TimeOut = 300_000 /* ms */ };
+                // Enable the provider of interest.
+                traceSession.EnableProvider(nameof(SimpleEventSource));
+
+                // Launch the target process to collect data
                 using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() =>
                 {
-                    var es = new SimpleEventSource();
-                    for (var i = 0; i < 100; i++)
+                    using var es = new SimpleEventSource();
+
+                    // 50 * 100 = 5 seconds
+                    for (var i = 0; i < 50; i++)
                     {
                         es.WriteSimpleInt(i);
                         Thread.Sleep(100);
                     }
-                }, localOptions))
+                }))
                 {
-                    var etlFileName = @"file.etl";
-                    var tracesession = new TraceEventSession("testname", etlFileName);
-
-                    tracesession.EnableProvider("SimpleEventSource");
-
-                    Thread.Sleep(TimeSpan.FromSeconds(5));
-
-                    tracesession.Flush();
-
-                    tracesession.DisableProvider("SimpleEventSource");
-                    tracesession.Dispose();
-
-                    var manifestExists = false;
-                    var max_retries = 50;
-
-                    for (int i = 0; i < max_retries; i++)
-                    {
-                        if (VerifyManifestAndRemoveFile(etlFileName))
-                        {
-                            manifestExists = true;
-                            break;
-                        }
-                        Thread.Sleep(1000);
-                    }
-                    Assert.True(manifestExists);
+                    handle.Process.WaitForExit();
                 }
-            }, options).Dispose();
+
+                // Flush session and disable the provider.
+                traceSession.Flush();
+                traceSession.DisableProvider(nameof(SimpleEventSource));
+            }
+
+            // Wait for the ETL file to flush to disk
+            Thread.Sleep(TimeSpan.FromSeconds(2));
+
+            Assert.True(VerifyManifestAndRemoveFile(etlFileName));
         }
 
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/48798")]
+        [SkipOnCoreClr("Test should only be run in non-stress modes", ~RuntimeTestModes.RegularRun)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97255", typeof(PlatformDetection), nameof(PlatformDetection.IsX86Process))]
         public void Test_EventSource_EtwManifestGenerationRollover()
         {
-            RemoteExecutor.Invoke(() =>
+            var pid = Process.GetCurrentProcess().Id;
+            var initialFileName = $"initialFile.{pid}.etl";
+            var rolloverFileName = $"rolloverFile.{pid}.etl";
+
+            // Start the trace session
+            using (var traceSession = new TraceEventSession(nameof(Test_EventSource_EtwManifestGenerationRollover), initialFileName))
             {
+                // Enable the provider of interest.
+                traceSession.EnableProvider(nameof(SimpleEventSource));
+
+                // Launch the target process to collect data
                 using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() =>
                 {
-                    var es = new SimpleEventSource();
+                    using var es = new SimpleEventSource();
+
+                    // 100 * 100 = 10 seconds
                     for (var i = 0; i < 100; i++)
                     {
                         es.WriteSimpleInt(i);
@@ -92,82 +98,67 @@ namespace BasicEventSourceTests
                     }
                 }))
                 {
-                    var initialFileName = @"initialFile.etl";
-                    var rolloverFileName = @"rolloverFile.etl";
-                    var tracesession = new TraceEventSession("testname", initialFileName);
-                    var max_retries = 50;
-
-                    tracesession.EnableProvider("SimpleEventSource");
-
+                    // Wait for some time to collect events
                     Thread.Sleep(TimeSpan.FromSeconds(5));
 
-                    tracesession.Flush();
+                    traceSession.Flush();
 
-                    tracesession.SetFileName(rolloverFileName);
+                    traceSession.SetFileName(rolloverFileName);
 
+                    // Wait for some time to collect events
                     Thread.Sleep(TimeSpan.FromSeconds(5));
 
-                    tracesession.Flush();
+                    // Wait for the target process to exit.
+                    handle.Process.WaitForExit();
 
-                    tracesession.DisableProvider("SimpleEventSource");
-                    tracesession.Dispose();
-
-                    bool initialFileHasManifest = false;
-                    bool rollOverFileHasManifest = false;
-
-                    for (int i = 0; i < max_retries; i++)
-                    {
-                        if (VerifyManifestAndRemoveFile(initialFileName))
-                        {
-                            initialFileHasManifest = true;
-                            break;
-                        }
-                        Thread.Sleep(1000);
-                    }
-                    for (int i = 0; i < max_retries; i++)
-                    {
-                        if (VerifyManifestAndRemoveFile(rolloverFileName))
-                        {
-                            rollOverFileHasManifest = true;
-                            break;
-                        }
-                        Thread.Sleep(1000);
-                    }
-                    Assert.True(initialFileHasManifest);
-                    Assert.True(rollOverFileHasManifest);
+                    // Flush session and disable the provider.
+                    traceSession.Flush();
+                    traceSession.DisableProvider(nameof(SimpleEventSource));
                 }
-            }).Dispose();
+            }
+
+            // Wait for the ETL files to flush to disk
+            Thread.Sleep(TimeSpan.FromSeconds(2));
+
+            Assert.True(VerifyManifestAndRemoveFile(initialFileName));
+            Assert.True(VerifyManifestAndRemoveFile(rolloverFileName));
         }
 
         private bool VerifyManifestAndRemoveFile(string fileName)
         {
             Assert.True(File.Exists(fileName));
 
-            ETWTraceEventSource source = new ETWTraceEventSource(fileName);
-
             Dictionary<string, int> providers = new Dictionary<string, int>();
             int eventCount = 0;
             var sawManifestData = false;
-            source.Dynamic.All += (eventData) =>
-            {
-                eventCount++;
-                if (!providers.ContainsKey(eventData.ProviderName))
-                {
-                    providers[eventData.ProviderName] = 0;
-                }
-                providers[eventData.ProviderName]++;
 
-                if (eventData.ProviderName.Equals("SimpleEventSource") && eventData.EventName.Equals("ManifestData"))
-                {
-                    sawManifestData = true;
-                }
-            };
-            source.Process();
-            //File.Delete(fileName);
-
-            if (!sawManifestData)
+            using (var source = new ETWTraceEventSource(fileName))
             {
-                Console.WriteLine("Did not see ManifestData event from SimpleEventSource, test will fail. Additional info:");
+                source.Dynamic.All += (eventData) =>
+                {
+                    eventCount++;
+                    if (!providers.ContainsKey(eventData.ProviderName))
+                    {
+                        providers[eventData.ProviderName] = 0;
+                    }
+                    providers[eventData.ProviderName]++;
+
+                    if (eventData.ProviderName.Equals(nameof(SimpleEventSource)) && eventData.EventName.Equals("ManifestData"))
+                    {
+                        sawManifestData = true;
+                    }
+                };
+                source.Process();
+            }
+
+            if (sawManifestData)
+            {
+                // Delete file if successfully processed.
+                File.Delete(fileName);
+            }
+            else
+            {
+                Console.WriteLine($"Did not see ManifestData event from {nameof(SimpleEventSource)}, test will fail. Additional info:");
                 Console.WriteLine($"    file name {fileName}");
                 Console.WriteLine($"    total event count {eventCount}");
                 Console.WriteLine($"    total providers {providers.Count}");

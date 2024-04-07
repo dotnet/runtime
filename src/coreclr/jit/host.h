@@ -3,7 +3,7 @@
 
 /*****************************************************************************/
 
-void jitprintf(const char* fmt, ...);
+int jitprintf(const char* fmt, ...);
 
 #ifdef DEBUG
 

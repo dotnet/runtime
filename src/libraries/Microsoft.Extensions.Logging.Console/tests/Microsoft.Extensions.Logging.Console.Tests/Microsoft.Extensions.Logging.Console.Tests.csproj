@@ -5,10 +5,10 @@
     <TestRuntime>true</TestRuntime>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <_WasmPThreadPoolSize Condition="'$(MonoWasmBuildVariant)' == 'multithread'">100</_WasmPThreadPoolSize>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Console\src\Microsoft.Extensions.Logging.Console.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 

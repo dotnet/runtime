@@ -80,7 +80,7 @@ ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags)
 ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers == MethodTable::enum_flag_ContainsPointers);
 
 #define MethodTable__m_ElementType        DBG_FRE(0x24, 0x20)
-ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_pMultipurposeSlot1));
+ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_ElementTypeHnd));
 
 #define SIZEOF__MethodTable             DBG_FRE(0x2c, 0x28)
 ASMCONSTANTS_C_ASSERT(SIZEOF__MethodTable == sizeof(MethodTable));
@@ -141,11 +141,11 @@ ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedTo
 
 #endif // FEATURE_COMINTEROP
 
-#define               Thread__m_fPreemptiveGCDisabled   0x08
+#define               Thread__m_fPreemptiveGCDisabled   0x04
 ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled));
 #define Thread_m_fPreemptiveGCDisabled Thread__m_fPreemptiveGCDisabled
 
-#define               Thread__m_pFrame                  0x0C
+#define               Thread__m_pFrame                  0x08
 ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
 #define Thread_m_pFrame Thread__m_pFrame
 

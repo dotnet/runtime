@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using Xunit;
@@ -784,7 +785,7 @@ namespace LibraryImportGenerator.UnitTests
             } };
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(CodeSnippetsToCompile))]
         public async Task ValidateSnippets(string id, string source, DiagnosticResult[] diagnostics)
         {
@@ -803,7 +804,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.IncorrectAttributeFieldType };
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(CodeSnippetsToCompile_InvalidCode))]
         public async Task ValidateSnippets_InvalidCodeGracefulFailure(string id, string source)
         {

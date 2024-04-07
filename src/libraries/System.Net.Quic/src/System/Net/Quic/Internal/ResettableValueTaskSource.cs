@@ -105,9 +105,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                 _state = State.Awaiting;
             }
             // None, Ready, Completed: return the current task.
-            if (state == State.None ||
-                state == State.Ready ||
-                state == State.Completed)
+            if (state is State.None or State.Ready or State.Completed)
             {
                 // Remember that the value task with the current version is being given out.
                 _hasWaiter = true;
@@ -167,8 +165,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
 
                 // If the _valueTaskSource has already been set, we don't want to lose the result by overwriting it.
                 // So keep it as is and store the result in _finalTaskSource.
-                if (state == State.None ||
-                    state == State.Awaiting)
+                if (state is State.None or State.Awaiting)
                 {
                     _state = final ? State.Completed : State.Ready;
                 }
@@ -178,16 +175,14 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                 {
                     // Set up the exception stack trace for the caller.
                     exception = exception.StackTrace is null ? ExceptionDispatchInfo.SetCurrentStackTrace(exception) : exception;
-                    if (state == State.None ||
-                        state == State.Awaiting)
+                    if (state is State.None or State.Awaiting)
                     {
                         _valueTaskSource.SetException(exception);
                     }
                 }
                 else
                 {
-                    if (state == State.None ||
-                        state == State.Awaiting)
+                    if (state is State.None or State.Awaiting)
                     {
                         _valueTaskSource.SetResult(final);
                     }

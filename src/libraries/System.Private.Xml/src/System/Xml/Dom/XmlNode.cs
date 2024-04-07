@@ -828,6 +828,7 @@ namespace System.Xml
         }
 
         // Gets or sets the namespace prefix of this node.
+        [AllowNull]
         public virtual string Prefix
         {
             get { return string.Empty; }

@@ -10,7 +10,6 @@
 #include "rhassert.h"
 #include "slist.h"
 #include "holder.h"
-#include "gcrhinterface.h"
 #include "shash.h"
 #include "rhbinder.h"
 #include "Crst.h"
@@ -25,6 +24,7 @@
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 
 #include "interoplibinterface.h"
 

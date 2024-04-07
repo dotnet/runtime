@@ -7,16 +7,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
     public class TestArtifact : IDisposable
     {
         private static readonly Lazy<bool> _preserveTestRuns = new Lazy<bool>(() =>
-            TestContext.GetTestContextVariableOrNull("PRESERVE_TEST_RUNS") == "1");
+            Environment.GetEnvironmentVariable("PRESERVE_TEST_RUNS") == "1");
 
         public static bool PreserveTestRuns() => _preserveTestRuns.Value;
-        public static string TestArtifactsPath => TestContext.TestArtifactsPath;
 
         public string Location { get; }
         public string Name { get; }
@@ -24,6 +24,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         protected string DirectoryToDelete { get; init; }
 
         private readonly List<TestArtifact> _copies = new List<TestArtifact>();
+        private readonly Mutex _subdirMutex = new Mutex();
 
         public TestArtifact(string location)
         {
@@ -42,6 +43,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             source._copies.Add(this);
         }
 
+        /// <summary>
+        /// Create a new test artifact.
+        /// </summary>
+        /// <param name="name">Name of the test artifact</param>
+        /// <returns>Test artifact containing no files</returns>
         public static TestArtifact Create(string name)
         {
             var (location, parentPath) = GetNewTestArtifactPath(name);
@@ -51,9 +57,37 @@ namespace Microsoft.DotNet.CoreSetup.Test
             };
         }
 
-        protected void RegisterCopy(TestArtifact artifact)
+        /// <summary>
+        /// Create a new test artifact populated with a copy of <paramref name="sourceDirectory"/>.
+        /// </summary>
+        /// <param name="name">Name of the test artifact</param>
+        /// <param name="sourceDirectory">Source directory to copy</param>
+        /// <returns>Test artifact containing a copy of <paramref name="sourceDirectory"/></returns>
+        public static TestArtifact CreateFromCopy(string name, string sourceDirectory)
         {
-            _copies.Add(artifact);
+            var artifact = Create(name);
+            CopyRecursive(sourceDirectory, artifact.Location, overwrite: true);
+            return artifact;
+        }
+
+        /// <summary>
+        /// Locate the first non-existent subdirectory of the form <name>-<count>
+        /// </summary>
+        /// <param name="name">Name of the directory</param>
+        /// <returns>Path to the created directory</returns>
+        public string GetUniqueSubdirectory(string name)
+        {
+            _subdirMutex.WaitOne();
+            int count = 0;
+            string dir;
+            do
+            {
+                dir = Path.Combine(Location, $"{name}-{count}");
+                count++;
+            } while (Directory.Exists(dir));
+
+            _subdirMutex.ReleaseMutex();
+            return dir;
         }
 
         public virtual void Dispose()
@@ -86,7 +120,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             Exception? lastException = null;
             for (int i = 0; i < 10; i++)
             {
-                var parentPath = Path.Combine(TestArtifactsPath, Path.GetRandomFileName());
+                var parentPath = Path.Combine(TestContext.TestArtifactsPath, Path.GetRandomFileName());
                 // Create a lock file next to the target folder
                 var lockPath = parentPath + ".lock";
                 var artifactPath = Path.Combine(parentPath, artifactName);

@@ -196,9 +196,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- The defaults currently root non-framework assemblies, which
          is a no-op for portable apps. If we later support more ways
          to customize the behavior we can allow linking portable apps
-         in some cases. If we're not running ILLink because e.g. this
-         is a NativeAOT app, value of SelfContained doesn't matter. -->
-    <NETSdkError Condition="'$(RunILLink)' != 'false' And '$(SelfContained)' != 'true'" ResourceName="ILLinkNotSupportedError" />
+         in some cases. -->
+    <NETSdkError Condition="'$(SelfContained)' != 'true'" ResourceName="ILLinkNotSupportedError" />
 
     <Warning Condition="'$(SuppressILLinkExplicitPackageReferenceWarning)' != 'true' And
                         '%(PackageReference.Identity)' == 'Microsoft.NET.ILLink.Tasks' And '%(PackageReference.IsImplicitlyDefined)' != 'true'"

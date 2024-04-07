@@ -21,13 +21,13 @@ namespace System
         }
 
         public EntryPointNotFoundException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_EntryPointNotFoundException)
         {
             HResult = HResults.COR_E_ENTRYPOINTNOTFOUND;
         }
 
         public EntryPointNotFoundException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_EntryPointNotFoundException, inner)
         {
             HResult = HResults.COR_E_ENTRYPOINTNOTFOUND;
         }

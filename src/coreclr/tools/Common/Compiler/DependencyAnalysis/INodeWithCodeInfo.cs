@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
         HasAssociatedData   = 0x10,
     }
 
-    public struct FrameInfo
+    public struct FrameInfo : IEquatable<FrameInfo>
     {
         public readonly FrameInfoFlags Flags;
         public readonly int StartOffset;
@@ -29,6 +29,24 @@ namespace ILCompiler.DependencyAnalysis
             StartOffset = startOffset;
             EndOffset = endOffset;
             BlobData = blobData;
+        }
+
+        public bool Equals(FrameInfo other)
+            => Flags == other.Flags
+            && StartOffset == other.StartOffset
+            && EndOffset == other.EndOffset
+            && ((ReadOnlySpan<byte>)BlobData).SequenceEqual(other.BlobData);
+
+        public override bool Equals(object obj) => obj is FrameInfo other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            HashCode hash = default;
+            hash.Add(Flags);
+            hash.Add(StartOffset);
+            hash.Add(EndOffset);
+            hash.AddBytes(BlobData);
+            return hash.ToHashCode();
         }
     }
 

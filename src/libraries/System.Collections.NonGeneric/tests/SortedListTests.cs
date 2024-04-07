@@ -243,17 +243,8 @@ namespace System.Collections.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttribute_NullSortedList_ThrowsArgumentNullException()
         {
-            bool threwNull = false;
-            try
-            {
-                DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(SortedList), null);
-            }
-            catch (TargetInvocationException ex)
-            {
-                threwNull = ex.InnerException is ArgumentNullException;
-            }
-
-            Assert.True(threwNull);
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(ArrayList)));
+            Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
         [Fact]

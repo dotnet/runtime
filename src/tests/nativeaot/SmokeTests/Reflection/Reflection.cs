@@ -70,6 +70,7 @@ internal static class ReflectionTest
         TestGenericLdtoken.Run();
         TestAbstractGenericLdtoken.Run();
         TestTypeHandlesVisibleFromIDynamicInterfaceCastable.Run();
+        TestCompilerGeneratedCode.Run();
 
         //
         // Mostly functionality tests
@@ -1041,7 +1042,9 @@ internal static class ReflectionTest
     {
         interface IUnreferenced { }
 
-        class UnreferencedBaseType : IUnreferenced { }
+        interface IReferenced { }
+
+        class UnreferencedBaseType : IUnreferenced, IReferenced { }
         class UnreferencedMidType : UnreferencedBaseType { }
         class ReferencedDerivedType : UnreferencedMidType { }
 
@@ -1060,8 +1063,9 @@ internal static class ReflectionTest
 
             Assert.Equal(count, 3);
 
-            // This one could in theory fail if we start trimming interface lists
+            // We expect to see only IReferenced but not IUnreferenced
             Assert.Equal(1, mi.GetParameters()[0].ParameterType.GetInterfaces().Length);
+            Assert.Equal(typeof(IReferenced), mi.GetParameters()[0].ParameterType.GetInterfaces()[0]);
         }
     }
 
@@ -1508,6 +1512,7 @@ internal static class ReflectionTest
             try
             {
                 Type.GetType("System.Span`1[[System.Byte, System.Runtime]][], System.Runtime");
+                Type.GetType("System.Collections.Generic.Dictionary`2[System.String]");
             }
             catch { }
 
@@ -1822,9 +1827,10 @@ internal static class ReflectionTest
                 typeof(GenericType<>).MakeGenericType(typeof(object)).GetMethod("Gimme");
             }
 
-            var t = (Type)s_type.MakeGenericType(typeof(double)).GetMethod("Gimme").Invoke(null, Array.Empty<object>());
+            var t = (Type)s_type.MakeGenericType(GetDouble()).GetMethod("Gimme").Invoke(null, Array.Empty<object>());
             if (t != typeof(double))
                 throw new Exception();
+            static Type GetDouble() => typeof(double);
         }
     }
 
@@ -2430,9 +2436,10 @@ internal static class ReflectionTest
 
         public static void Run()
         {
-            var mi = typeof(TestMdArrayLoad).GetMethod(nameof(MakeMdArray)).MakeGenericMethod(typeof(Atom));
+            var mi = typeof(TestMdArrayLoad).GetMethod(nameof(MakeMdArray)).MakeGenericMethod(GetAtom());
             if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(Atom[,,]))
                 throw new Exception();
+            static Type GetAtom() => typeof(Atom);
         }
     }
 
@@ -2444,9 +2451,10 @@ internal static class ReflectionTest
 
         public static void Run()
         {
-            var mi = typeof(TestByRefTypeLoad).GetMethod(nameof(MakeFnPtrType)).MakeGenericMethod(typeof(Atom));
+            var mi = typeof(TestByRefTypeLoad).GetMethod(nameof(MakeFnPtrType)).MakeGenericMethod(GetAtom());
             if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(delegate*<ref Atom>))
                 throw new Exception();
+            static Type GetAtom() => typeof(Atom);
         }
     }
 
@@ -2539,6 +2547,62 @@ internal static class ReflectionTest
             Console.WriteLine(nameof(TestEntryPoint));
             if (Assembly.GetEntryAssembly().EntryPoint == null)
                 throw new Exception();
+        }
+    }
+
+    class TestCompilerGeneratedCode
+    {
+        class Canary1 { }
+        class Canary2 { }
+        class Canary3 { }
+        class Canary4 { }
+
+        private static void ReflectionInLambda()
+        {
+            var func = () => {
+                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary1));
+                Assert.NotNull(helpersType);
+            };
+
+            func();
+        }
+
+        private static void ReflectionInLocalFunction()
+        {
+            func();
+
+            void func()
+            {
+                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary2));
+                Assert.NotNull(helpersType);
+            };
+        }
+
+        private static async void ReflectionInAsync()
+        {
+            await System.Threading.Tasks.Task.Delay(100);
+            Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary3));
+            Assert.NotNull(helpersType);
+        }
+
+        private static async void ReflectionInLambdaAsync()
+        {
+            await System.Threading.Tasks.Task.Delay(100);
+
+            var func = () => {
+                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary4));
+                Assert.NotNull(helpersType);
+            };
+
+            func();
+        }
+
+        public static void Run()
+        {
+            ReflectionInLambda();
+            ReflectionInLocalFunction();
+            ReflectionInAsync();
+            ReflectionInLambdaAsync();
         }
     }
 

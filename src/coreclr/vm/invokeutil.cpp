@@ -741,14 +741,14 @@ void InvokeUtil::ValidateObjectTarget(FieldDesc *pField, TypeHandle enclosingTyp
 
 // SetValidField
 // Given an target object, a value object and a field this method will set the field
-//  on the target object.  The field must be validate before calling this.
+//  on the target object.  The field must be validated before calling this.
 void InvokeUtil::SetValidField(CorElementType fldType,
                                TypeHandle fldTH,
                                FieldDesc *pField,
                                OBJECTREF *target,
                                OBJECTREF *valueObj,
                                TypeHandle declaringType,
-                               CLR_BOOL *pDomainInitialized) {
+                               CLR_BOOL *pIsClassInitialized) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -786,19 +786,18 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         pDeclMT = pField->GetModule()->GetGlobalMethodTable();
     }
 
-    if (*pDomainInitialized == FALSE)
+    if (*pIsClassInitialized == FALSE)
     {
         EX_TRY
         {
             pDeclMT->EnsureInstanceActive();
             pDeclMT->CheckRunClassInitThrowing();
-
-            *pDomainInitialized = TRUE;
+            *pIsClassInitialized = pDeclMT->IsClassInited();            
         }
         EX_CATCH_THROWABLE(&Throwable);
     }
 #ifdef _DEBUG
-    else if (*pDomainInitialized == TRUE && !declaringType.IsNull())
+    else if (*pIsClassInitialized == TRUE && !declaringType.IsNull())
        CONSISTENCY_CHECK(declaringType.GetMethodTable()->CheckActivated());
 #endif
 
@@ -973,9 +972,7 @@ void InvokeUtil::SetValidField(CorElementType fldType,
 
 // GetFieldValue
 // This method will return an ARG_SLOT containing the value of the field.
-// GetFieldValue
-// This method will return an ARG_SLOT containing the value of the field.
-OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJECTREF* target, TypeHandle declaringType, CLR_BOOL *pDomainInitialized) {
+OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJECTREF* target, TypeHandle declaringType, CLR_BOOL *pIsClassInitialized) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -999,7 +996,7 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
     {
         pDeclMT = declaringType.GetMethodTable();
 
-        // We don't allow getting the field just so we don't have more specical
+        // We don't allow getting the field just so we don't have more special
         // cases than we need to.  Then we need at least the throw check to ensure
         // we don't allow data corruption.
         if (Nullable::IsNullableType(pDeclMT))
@@ -1013,22 +1010,20 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
         pDeclMT = pField->GetModule()->GetGlobalMethodTable();
     }
 
-    if (*pDomainInitialized == FALSE)
+    if (*pIsClassInitialized == FALSE)
     {
         EX_TRY
         {
             pDeclMT->EnsureInstanceActive();
             pDeclMT->CheckRunClassInitThrowing();
-
-            *pDomainInitialized = TRUE;
+            *pIsClassInitialized = pDeclMT->IsClassInited();
         }
         EX_CATCH_THROWABLE(&Throwable);
     }
 #ifdef _DEBUG
-    else if (*pDomainInitialized == TRUE && !declaringType.IsNull())
+    else if (*pIsClassInitialized == TRUE && !declaringType.IsNull())
        CONSISTENCY_CHECK(declaringType.GetMethodTable()->CheckActivated());
 #endif
-
 
     if(Throwable != NULL)
     {
@@ -1084,7 +1079,7 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
 
     case ELEMENT_TYPE_VALUETYPE:
     {
-        // Value classes require createing a boxed version of the field and then
+        // Value classes require creating a boxed version of the field and then
         //  copying from the source...
         // Allocate an object to return...
         _ASSERTE(!fieldType.IsTypeDesc());

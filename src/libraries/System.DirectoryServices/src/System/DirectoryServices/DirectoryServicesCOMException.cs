@@ -53,14 +53,14 @@ namespace System.DirectoryServices
             return CreateFormattedComException(new COMException(errorMsg, hr));
         }
 
-        internal static unsafe Exception CreateFormattedComException(COMException e)
+        internal static Exception CreateFormattedComException(COMException e)
         {
             // get extended error information
-            const int ErrorBufferLength = 256;
-            char* errorBuffer = stackalloc char[ErrorBufferLength];
-            char nameBuffer = '\0';
+            char[] errorBuffer = new char[256];
+            char[] nameBuffer = Array.Empty<char>();
             int error = 0;
-            SafeNativeMethods.ADsGetLastError(out error, errorBuffer, ErrorBufferLength, &nameBuffer, 0);
+
+            Interop.Activeds.ADsGetLastError(out error, errorBuffer, errorBuffer.Length, nameBuffer, nameBuffer.Length);
 
             if (error != 0)
                 return new DirectoryServicesCOMException(new string(errorBuffer), error, e);

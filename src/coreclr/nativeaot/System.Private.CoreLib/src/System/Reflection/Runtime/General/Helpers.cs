@@ -36,20 +36,6 @@ namespace System.Reflection.Runtime.General
             return type.GetGenericArguments();
         }
 
-        public static RuntimeTypeInfo[] ToRuntimeTypeInfoArray(this Type[] types)
-        {
-            int count = types.Length;
-            if (count == 0)
-                return Array.Empty<RuntimeTypeInfo>();
-
-            RuntimeTypeInfo[] typeInfos = new RuntimeTypeInfo[count];
-            for (int i = 0; i < count; i++)
-            {
-                typeInfos[i] = types[i].ToRuntimeTypeInfo();
-            }
-            return typeInfos;
-        }
-
         public static Type[] ToTypeArray(this RuntimeTypeInfo[] typeInfos)
         {
             int count = typeInfos.Length;

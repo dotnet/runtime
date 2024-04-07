@@ -37,7 +37,7 @@ namespace System.Runtime.Tests
 
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // JitInfo metrics will be 0 in AOT scenarios
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void JitInfoIsPopulated()
         {
             TimeSpan beforeCompilationTime = System.Runtime.JitInfo.GetCompilationTime();
@@ -51,23 +51,29 @@ namespace System.Runtime.Tests
             long afterCompiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes();
             long afterCompiledMethodCount = System.Runtime.JitInfo.GetCompiledMethodCount();
 
-            if (PlatformDetection.IsMonoInterpreter)
+            if (PlatformDetection.IsMonoInterpreter || PlatformDetection.IsMonoAOT || PlatformDetection.IsReadyToRunCompiled)
             {
-                // special case the Mono interpreter where compilation time may be >0 but before and after will most likely be the same
-                Assert.True(beforeCompilationTime >= TimeSpan.Zero, $"Compilation time not greater than 0! ({beforeCompilationTime})");
-                Assert.True(beforeCompiledILBytes >= 0, $"Compiled IL bytes not greater than 0! ({beforeCompiledILBytes})");
-                Assert.True(beforeCompiledMethodCount >= 0, $"Compiled method count not greater than 0! ({beforeCompiledMethodCount})");
-
-                Assert.True(afterCompilationTime >= beforeCompilationTime, $"CompilationTime: after not greater than before! (after: {afterCompilationTime}, before: {beforeCompilationTime})");
-                Assert.True(afterCompiledILBytes >= beforeCompiledILBytes, $"Compiled IL bytes: after not greater than before! (after: {afterCompiledILBytes}, before: {beforeCompiledILBytes})");
-                Assert.True(afterCompiledMethodCount >= beforeCompiledMethodCount, $"Compiled method count: after not greater than before! (after: {afterCompiledMethodCount}, before: {beforeCompiledMethodCount})");
+                // JitInfo metrics may be 0 in AOT scenarios
+                Assert.True(beforeCompilationTime >= TimeSpan.Zero, $"Compilation time not greater or equal to 0! ({beforeCompilationTime})");
+                Assert.True(beforeCompiledILBytes >= 0, $"Compiled IL bytes not greater or equal to 0! ({beforeCompiledILBytes})");
+                Assert.True(beforeCompiledMethodCount >= 0, $"Compiled method count not greater or equal to 0! ({beforeCompiledMethodCount})");
             }
             else
             {
                 Assert.True(beforeCompilationTime > TimeSpan.Zero, $"Compilation time not greater than 0! ({beforeCompilationTime})");
                 Assert.True(beforeCompiledILBytes > 0, $"Compiled IL bytes not greater than 0! ({beforeCompiledILBytes})");
                 Assert.True(beforeCompiledMethodCount > 0, $"Compiled method count not greater than 0! ({beforeCompiledMethodCount})");
+            }
 
+            if (PlatformDetection.IsMonoInterpreter)
+            {
+                // Before and after will most likely be the same with the interpreter
+                Assert.True(afterCompilationTime >= beforeCompilationTime, $"CompilationTime: after not greater than before! (after: {afterCompilationTime}, before: {beforeCompilationTime})");
+                Assert.True(afterCompiledILBytes >= beforeCompiledILBytes, $"Compiled IL bytes: after not greater than before! (after: {afterCompiledILBytes}, before: {beforeCompiledILBytes})");
+                Assert.True(afterCompiledMethodCount >= beforeCompiledMethodCount, $"Compiled method count: after not greater than before! (after: {afterCompiledMethodCount}, before: {beforeCompiledMethodCount})");
+            }
+            else
+            {
                 Assert.True(afterCompilationTime > beforeCompilationTime, $"CompilationTime: after not greater than before! (after: {afterCompilationTime}, before: {beforeCompilationTime})");
                 Assert.True(afterCompiledILBytes > beforeCompiledILBytes, $"Compiled IL bytes: after not greater than before! (after: {afterCompiledILBytes}, before: {beforeCompiledILBytes})");
                 Assert.True(afterCompiledMethodCount > beforeCompiledMethodCount, $"Compiled method count: after not greater than before! (after: {afterCompiledMethodCount}, before: {beforeCompiledMethodCount})");
@@ -75,7 +81,7 @@ namespace System.Runtime.Tests
         }
 
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT), nameof(PlatformDetection.IsReflectionEmitSupported))] // JitInfo metrics will be 0 in AOT scenarios
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT), nameof(PlatformDetection.IsReflectionEmitSupported))] // JitInfo metrics will be 0 in full AOT scenarios
         public void JitInfoIsNotPopulated()
         {
             TimeSpan beforeCompilationTime = System.Runtime.JitInfo.GetCompilationTime();
@@ -89,13 +95,13 @@ namespace System.Runtime.Tests
             long afterCompiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes();
             long afterCompiledMethodCount = System.Runtime.JitInfo.GetCompiledMethodCount();
 
-            Assert.True(beforeCompilationTime == TimeSpan.Zero, $"Before Compilation time not eqeual to 0! ({beforeCompilationTime})");
-            Assert.True(beforeCompiledILBytes == 0, $"Before Compiled IL bytes not eqeual to 0! ({beforeCompiledILBytes})");
-            Assert.True(beforeCompiledMethodCount == 0, $"Before Compiled method count not eqeual to 0! ({beforeCompiledMethodCount})");
+            Assert.True(beforeCompilationTime == TimeSpan.Zero, $"Before Compilation time not equal to 0! ({beforeCompilationTime})");
+            Assert.True(beforeCompiledILBytes == 0, $"Before Compiled IL bytes not equal to 0! ({beforeCompiledILBytes})");
+            Assert.True(beforeCompiledMethodCount == 0, $"Before Compiled method count not equal to 0! ({beforeCompiledMethodCount})");
 
-            Assert.True(afterCompilationTime == TimeSpan.Zero, $"After Compilation time not eqeual to 0! ({afterCompilationTime})");
-            Assert.True(afterCompiledILBytes == 0, $"After Compiled IL bytes not eqeual to 0! ({afterCompiledILBytes})");
-            Assert.True(afterCompiledMethodCount == 0, $"After Compiled method count not eqeual to 0! ({afterCompiledMethodCount})");
+            Assert.True(afterCompilationTime == TimeSpan.Zero, $"After Compilation time not equal to 0! ({afterCompilationTime})");
+            Assert.True(afterCompiledILBytes == 0, $"After Compiled IL bytes not equal to 0! ({afterCompiledILBytes})");
+            Assert.True(afterCompiledMethodCount == 0, $"After Compiled method count not equal to 0! ({afterCompiledMethodCount})");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
@@ -126,26 +132,31 @@ namespace System.Runtime.Tests
             });
 
             t1.Start();
-            t1.Join();
 
-            long square = MakeAndInvokeDynamicSquareMethod(100);
-            Assert.True(square == 10000);
+            // Make sure that this thread does significantly more work than the other thread
+            for (int i = 0; i < 20; i++)
+            {
+                long square = MakeAndInvokeDynamicSquareMethod(100);
+                Assert.True(square == 10000);
+            }
+
+            t1.Join();
 
             TimeSpan t2_afterCompilationTime = System.Runtime.JitInfo.GetCompilationTime(currentThread: true);
             long t2_afterCompiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes(currentThread: true);
             long t2_afterCompiledMethodCount = System.Runtime.JitInfo.GetCompiledMethodCount(currentThread: true);
 
-            Assert.True(t2_beforeCompilationTime > TimeSpan.Zero, $"Thread 2 Compilation time not greater than 0! ({t2_beforeCompilationTime})");
-            Assert.True(t2_beforeCompiledILBytes > 0, $"Thread 2 Compiled IL bytes not greater than 0! ({t2_beforeCompiledILBytes})");
-            Assert.True(t2_beforeCompiledMethodCount > 0, $"Thread 2 Compiled method count not greater than 0! ({t2_beforeCompiledMethodCount})");
+            Assert.True(t2_beforeCompilationTime >= TimeSpan.Zero, $"Thread 2 Compilation time not greater or equal to 0! ({t2_beforeCompilationTime})");
+            Assert.True(t2_beforeCompiledILBytes >= 0, $"Thread 2 Compiled IL bytes not greater or equal to 0! ({t2_beforeCompiledILBytes})");
+            Assert.True(t2_beforeCompiledMethodCount >= 0, $"Thread 2 Compiled method count not greater or equal to 0! ({t2_beforeCompiledMethodCount})");
 
             Assert.True(t2_afterCompilationTime > t2_beforeCompilationTime, $"CompilationTime: after not greater than before! (after: {t2_afterCompilationTime}, before: {t2_beforeCompilationTime})");
             Assert.True(t2_afterCompiledILBytes > t2_beforeCompiledILBytes, $"Compiled IL bytes: after not greater than before! (after: {t2_afterCompiledILBytes}, before: {t2_beforeCompiledILBytes})");
             Assert.True(t2_afterCompiledMethodCount > t2_beforeCompiledMethodCount, $"Compiled method count: after not greater than before! (after: {t2_afterCompiledMethodCount}, before: {t2_beforeCompiledMethodCount})");
 
-            Assert.True(t1_beforeCompilationTime > TimeSpan.Zero, $"Thread 1 before compilation time not greater than 0! ({t1_beforeCompilationTime})");
-            Assert.True(t1_beforeCompiledILBytes > 0, $"Thread 1 before compiled IL bytes not greater than 0! ({t1_beforeCompiledILBytes})");
-            Assert.True(t1_beforeCompiledMethodCount > 0, $"Thread 1 before compiled method count not greater than 0! ({t1_beforeCompiledMethodCount})");
+            Assert.True(t1_beforeCompilationTime >= TimeSpan.Zero, $"Thread 1 before compilation time not or equal to 0! ({t1_beforeCompilationTime})");
+            Assert.True(t1_beforeCompiledILBytes >= 0, $"Thread 1 before compiled IL bytes not greater or equal to 0! ({t1_beforeCompiledILBytes})");
+            Assert.True(t1_beforeCompiledMethodCount >= 0, $"Thread 1 before compiled method count not greater or equal to 0! ({t1_beforeCompiledMethodCount})");
 
             Assert.True(t1_afterCompilationTime > t1_beforeCompilationTime, $"Thread 1 compilation time: after not greater than before! (after: {t1_afterCompilationTime}, before: {t1_beforeCompilationTime})");
             Assert.True(t1_afterCompiledILBytes > t1_beforeCompiledILBytes, $"Thread 1 compiled IL bytes: after not greater than before! (after: {t1_afterCompiledILBytes}, before: {t1_beforeCompiledILBytes})");

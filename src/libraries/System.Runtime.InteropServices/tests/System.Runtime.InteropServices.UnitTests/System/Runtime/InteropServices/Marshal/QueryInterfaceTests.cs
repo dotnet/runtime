@@ -30,7 +30,7 @@ namespace System.Runtime.InteropServices.Tests
             try
             {
                 Guid guid = new Guid(iidString);
-                Assert.Equal(0, Marshal.QueryInterface(ptr, in guid, out IntPtr ppv));
+                Assert.Equal(0, Marshal.QueryInterface(ptr, guid, out IntPtr ppv));
                 Assert.NotEqual(IntPtr.Zero, ppv);
                 try
                 {
@@ -64,7 +64,7 @@ namespace System.Runtime.InteropServices.Tests
             try
             {
                 Guid iid = new Guid(iidString);
-                Assert.Equal(E_NOINTERFACE, Marshal.QueryInterface(ptr, in iid, out IntPtr ppv));
+                Assert.Equal(E_NOINTERFACE, Marshal.QueryInterface(ptr, iid, out IntPtr ppv));
                 Assert.Equal(IntPtr.Zero, ppv);
                 Assert.Equal(new Guid(iidString), iid);
             }
@@ -77,8 +77,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void QueryInterface_ZeroPointer_ThrowsArgumentNullException()
         {
-            Guid iid = Guid.Empty;
-            AssertExtensions.Throws<ArgumentNullException>("pUnk", () => Marshal.QueryInterface(IntPtr.Zero, in iid, out IntPtr ppv));
+            AssertExtensions.Throws<ArgumentNullException>("pUnk", () => Marshal.QueryInterface(IntPtr.Zero, Guid.Empty, out IntPtr ppv));
         }
     }
 }

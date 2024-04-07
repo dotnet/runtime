@@ -149,6 +149,9 @@ public:
 
     // Return should this method context be excluded from the replay or not.
     bool IsMethodExcluded(MethodContext* mc);
+
+    // Reset for reading a new sequence of method indices
+    void Reset(const int* newIndexes, int newIndexCount);
 };
 #pragma pack(pop)
 

@@ -27,7 +27,7 @@
 
         <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(NeedsWasmtime)' == 'true'" />
   -->
-  
+
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" />
 
   <PropertyGroup>
@@ -48,8 +48,6 @@
 
     <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$(RepoRoot)src\mono\wasi\wasi-sdk\</WASI_SDK_PATH>
     <WasiBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasi', 'build'))</WasiBuildTargetsDir>
-    <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
-    <WasmSharedDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'shared'))</WasmSharedDir>
     <WasiSdkDirForHelixPayload>$(HelixDependenciesStagingPath)\wasi-sdk</WasiSdkDirForHelixPayload>
     <WasmtimeDirForHelixPayload>$(HelixDependenciesStagingPath)\wasmtime</WasmtimeDirForHelixPayload>
 
@@ -92,20 +90,8 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
-    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
-
-    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;BUILT_NUGETS_PATH=%HELIX_CORRELATION_PAYLOAD%/built-nugets&quot;" />
-    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;BUILT_NUGETS_PATH=$HELIX_CORRELATION_PAYLOAD/built-nugets&quot;" />
-
-    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
-    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
-
     <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;WASI_SDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\wasi-sdk&quot;" />
     <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;WASI_SDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/wasi-sdk&quot;" />
-
-    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1&quot;" />
-    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1&quot;" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(NeedsWasiSdk)' == 'true'">
@@ -125,7 +111,7 @@
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.wasi-wasm" />
 
       <HelixCorrelationPayload Include="$(WasiBuildTargetsDir)"       Destination="build/wasm" />
-      <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"       Destination="build/wasm" />
+      <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"       Destination="build/wasm-shared" />
       <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"         Destination="build/WasmAppBuilder" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"        Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"           Destination="build/cross" />
@@ -133,7 +119,6 @@
 
       <HelixCorrelationPayload Include="$(_ShippingPackagesPath)"     Destination="built-nugets" Condition="'$(NeedsBuiltNugets)' == 'true'" />
       <HelixCorrelationPayload Include="$(WasiSdkDirForHelixPayload)" Destination="build/wasi-sdk" Condition="'$(NeedsWasiSdk)' == 'true'" />
-      <HelixCorrelationPayload Include="$(WasmSharedDir)"             Destination="build/wasm-shared" />
     </ItemGroup>
   </Target>
 

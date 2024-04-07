@@ -25,6 +25,11 @@ namespace System.Linq
             where TSource : struct, INumber<TSource>
             where TResult : struct, INumber<TResult>
         {
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
             if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
                 return Sum<TSource, TResult>(span);

@@ -1117,11 +1117,11 @@ BOOL Thread::IsContextSafeToRedirect(const CONTEXT* pContext)
 #ifndef TARGET_UNIX
 
 #if !defined(TARGET_X86)
-    // In some cases (x86 WOW64, ARM32 on ARM64) Windows will not set the CONTEXT_EXCEPTION_REPORTING flag
-    // if the thread is executing in kernel mode (i.e. in the middle of a syscall or exception handling).
-    // Therefore, we should treat the absence of the CONTEXT_EXCEPTION_REPORTING flag as an indication that
-    // it is not safe to manipulate with the current state of the thread context.
-    // Note: the x86 WOW64 case is already handled in GetSafelyRedirectableThreadContext; in addition, this
+    // In some cases Windows will not set the CONTEXT_EXCEPTION_REPORTING flag if the thread is executing
+    // in kernel mode (i.e. in the middle of a syscall or exception handling). Therefore, we should treat
+    // the absence of the CONTEXT_EXCEPTION_REPORTING flag as an indication that it is not safe to
+    // manipulate with the current state of the thread context.
+    // Note: The x86 WOW64 case is already handled in GetSafelyRedirectableThreadContext; in addition, this
     // flag is never set on Windows7 x86 WOW64. So this check is valid for non-x86 architectures only.
     isSafeToRedirect = (pContext->ContextFlags & CONTEXT_EXCEPTION_REPORTING) != 0;
 #endif // !defined(TARGET_X86)
@@ -1382,7 +1382,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 
         // If a thread is Dead or Detached, abort is a NOP.
         //
-        if (m_State & (TS_Dead | TS_Detached | TS_TaskReset))
+        if (m_State & (TS_Dead | TS_Detached))
         {
             UnmarkThreadForAbort();
 
@@ -2098,9 +2098,6 @@ void Thread::RareDisablePreemptiveGC()
     {
         goto Exit;
     }
-
-    // This should NEVER be called if the TSNC_UnsafeSkipEnterCooperative bit is set!
-    _ASSERTE(!(m_StateNC & TSNC_UnsafeSkipEnterCooperative) && "DisablePreemptiveGC called while the TSNC_UnsafeSkipEnterCooperative bit is set");
 
     // Holding a spin lock in preemp mode and switch to coop mode could cause other threads spinning
     // waiting for GC
@@ -3973,7 +3970,8 @@ ThrowControlForThread(
         exceptionRecord.ExceptionFlags = 0;
 
         OBJECTREF throwable = ExceptionTracker::CreateThrowable(&exceptionRecord, TRUE);
-        DispatchManagedException(throwable);
+        pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+        DispatchManagedException(throwable, pfef->GetExceptionContext());
     }
     else
 #endif // FEATURE_EH_FUNCLETS
@@ -4287,7 +4285,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
                 // region, SysSweepThreadsForDebug would similarly identify the thread as synced
                 // after it leaves the forbid region.
 
-#if defined(FEATURE_THREAD_ACTIVATION) && defined(TARGET_WINDOWS)
+#if defined(FEATURE_THREAD_ACTIVATION)
                 // Inject an activation that will interrupt the thread and try to bring it to a safe point
                 thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
 #endif // FEATURE_THREAD_ACTIVATION && TARGET_WINDOWS
@@ -4424,7 +4422,7 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
                 goto Label_MarkThreadAsSynced;
             }
 
-#if defined(FEATURE_THREAD_ACTIVATION) && defined(TARGET_WINDOWS)
+#if defined(FEATURE_THREAD_ACTIVATION)
             // Inject an activation that will interrupt the thread and try to bring it to a safe point
             thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
 #endif // FEATURE_THREAD_ACTIVATION && TARGET_WINDOWS
@@ -6040,7 +6038,7 @@ bool Thread::InjectActivation(ActivationReason reason)
     _ASSERTE(success);
     return true;
 #elif defined(TARGET_UNIX)
-    _ASSERTE((reason == ActivationReason::SuspendForGC) || (reason == ActivationReason::ThreadAbort));
+    _ASSERTE((reason == ActivationReason::SuspendForGC) || (reason == ActivationReason::ThreadAbort) || (reason == ActivationReason::SuspendForDebugger));
 
     static ConfigDWORD injectionEnabled;
     if (injectionEnabled.val(CLRConfig::INTERNAL_ThreadSuspendInjection) == 0)

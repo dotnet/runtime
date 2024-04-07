@@ -229,7 +229,7 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             const string Pattern = @"\D+(?<digit>\d+)\D+(?<digit>\d+)?";
-            string[] inputs = { "abc123def456", "abc123def" };
+            string[] inputs = ["abc123def456", "abc123def"];
 
             Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
@@ -622,7 +622,7 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             const string Pattern = @"^([a-z]+)(\d+)?\.([a-z]+(\d)*)$";
-            string[] values = { "AC10", "Za203.CYM", "XYZ.CoA", "ABC.x170" };
+            string[] values = ["AC10", "Za203.CYM", "XYZ.CoA", "ABC.x170"];
 
             Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase);
 
@@ -1039,7 +1039,7 @@ namespace System.Text.RegularExpressions.Tests
 
             const string Input = "capybara,squirrel,chipmunk,porcupine";
             const string Pattern = @"\G(\w+\s?\w*),?";
-            string[] expected = new[] { "capybara", "squirrel", "chipmunk", "porcupine" };
+            string[] expected = ["capybara", "squirrel", "chipmunk", "porcupine"];
 
             Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern);
 
@@ -1182,11 +1182,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, "IsValidCSharpName", true };
                 yield return new object[] { engine, "_IsValidCSharpName", true };
                 yield return new object[] { engine, "__", true };
-                yield return new object[] { engine, "a\u2169", true  }; // \u2169 is in {Nl}
-                yield return new object[] { engine, "\u2169b", true  }; // \u2169 is in {Nl}
-                yield return new object[] { engine, "a\u0600", true  }; // \u0600 is in {Cf}
+                yield return new object[] { engine, "a\u2169", true };  // \u2169 is in {Nl}
+                yield return new object[] { engine, "\u2169b", true };  // \u2169 is in {Nl}
+                yield return new object[] { engine, "a\u0600", true };  // \u0600 is in {Cf}
                 yield return new object[] { engine, "\u0600b", false }; // \u0600 is in {Cf}
-                yield return new object[] { engine, "a\u0300", true  }; // \u0300 is in {Mn}
+                yield return new object[] { engine, "a\u0300", true };  // \u0300 is in {Mn}
                 yield return new object[] { engine, "\u0300b", false }; // \u0300 is in {Mn}
                 yield return new object[] { engine, "https://foo.com:443/bar/17/groups/0ad1/providers/Network/public/4e-ip?version=16", false };
                 yield return new object[] { engine, "david.jones@proseware.com", false };
@@ -1567,11 +1567,8 @@ namespace System.Text.RegularExpressions.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // consumes a lot of memory
         public async Task PatternsDataSet_GenerateInputsWithNonBacktracking_MatchWithAllEngines()
         {
-            MethodInfo? sampleMatchesMI = typeof(Regex).GetMethod("SampleMatches", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (sampleMatchesMI is null)
-            {
+            MethodInfo? sampleMatchesMI = typeof(Regex).GetMethod("SampleMatches", BindingFlags.NonPublic | BindingFlags.Instance) ??
                 throw new SkipTestException("Could not find Regex.SampleMatches");
-            }
             Func<Regex, int, int, IEnumerable<string>> sampleMatches = sampleMatchesMI.CreateDelegate<Func<Regex, int, int, IEnumerable<string>>>();
 
             DataSetExpression[] entries = s_patternsDataSet.Value;

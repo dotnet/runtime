@@ -17,7 +17,7 @@ namespace Microsoft.Interop
     {
         public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
             IncrementalMethodStubGenerationContext methodStub,
-            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorFactory> generatorFactoryCreator)
+            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), methodStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
@@ -27,7 +27,7 @@ namespace Microsoft.Interop
                 methodStub.VtableIndexData.SetLastError,
                 methodStub.VtableIndexData.ImplicitThisParameter,
                 diagnostics,
-                generatorFactoryCreator(methodStub.EnvironmentFlags, MarshalDirection.ManagedToUnmanaged));
+                generatorResolverCreator(methodStub.EnvironmentFlags, MarshalDirection.ManagedToUnmanaged));
 
             BlockSyntax code = stubGenerator.GenerateStubBody(
                 methodStub.VtableIndexData.Index,
@@ -63,7 +63,7 @@ namespace Microsoft.Interop
 
         public static (MethodDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
             IncrementalMethodStubGenerationContext methodStub,
-            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorFactory> generatorFactoryCreator)
+            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), methodStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
@@ -73,7 +73,7 @@ namespace Microsoft.Interop
             var stubGenerator = new UnmanagedToManagedStubGenerator(
                 elements,
                 diagnostics,
-                generatorFactoryCreator(methodStub.EnvironmentFlags, MarshalDirection.UnmanagedToManaged));
+                generatorResolverCreator(methodStub.EnvironmentFlags, MarshalDirection.UnmanagedToManaged));
 
             BlockSyntax code = stubGenerator.GenerateStubBody(
                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
@@ -145,12 +145,12 @@ namespace Microsoft.Interop
         public static BlockSyntax GenerateVirtualMethodTableSlotAssignments(
             IEnumerable<IncrementalMethodStubGenerationContext> vtableMethods,
             string vtableIdentifier,
-            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorFactory> generatorFactoryCreator)
+            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {
             List<StatementSyntax> statements = new();
             foreach (var method in vtableMethods)
             {
-                FunctionPointerTypeSyntax functionPointerType = GenerateUnmanagedFunctionPointerTypeForMethod(method, generatorFactoryCreator);
+                FunctionPointerTypeSyntax functionPointerType = GenerateUnmanagedFunctionPointerTypeForMethod(method, generatorResolverCreator);
 
                 // <vtableParameter>[<index>] = (void*)(<functionPointerType>)&ABI_<methodIdentifier>;
                 statements.Add(
@@ -170,14 +170,14 @@ namespace Microsoft.Interop
 
         private static FunctionPointerTypeSyntax GenerateUnmanagedFunctionPointerTypeForMethod(
             IncrementalMethodStubGenerationContext method,
-            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorFactory> generatorFactoryCreator)
+            Func<EnvironmentFlags, MarshalDirection, IMarshallingGeneratorResolver> generatorResolverCreator)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), method.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
             var stubGenerator = new UnmanagedToManagedStubGenerator(
                 AddImplicitElementInfos(method),
                 diagnostics,
-                generatorFactoryCreator(method.EnvironmentFlags, MarshalDirection.UnmanagedToManaged));
+                generatorResolverCreator(method.EnvironmentFlags, MarshalDirection.UnmanagedToManaged));
 
             List<FunctionPointerParameterSyntax> functionPointerParameters = new();
             var (paramList, retType, _) = stubGenerator.GenerateAbiMethodSignatureData();

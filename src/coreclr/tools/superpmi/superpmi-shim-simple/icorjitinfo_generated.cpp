@@ -18,6 +18,12 @@ bool interceptor_ICJI::isIntrinsic(
     return original_ICorJitInfo->isIntrinsic(ftn);
 }
 
+bool interceptor_ICJI::notifyMethodInfoUsage(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    return original_ICorJitInfo->notifyMethodInfoUsage(ftn);
+}
+
 uint32_t interceptor_ICJI::getMethodAttribs(
           CORINFO_METHOD_HANDLE ftn)
 {
@@ -146,9 +152,10 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(
 
 void interceptor_ICJI::expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
-    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
+    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
 }
 
 bool interceptor_ICJI::isIntrinsicType(
@@ -292,13 +299,6 @@ bool interceptor_ICJI::isValueClass(
           CORINFO_CLASS_HANDLE cls)
 {
     return original_ICorJitInfo->isValueClass(cls);
-}
-
-CorInfoInlineTypeCheck interceptor_ICJI::canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source)
-{
-    return original_ICorJitInfo->canInlineTypeCheck(cls, source);
 }
 
 uint32_t interceptor_ICJI::getClassAttribs(
@@ -496,18 +496,20 @@ bool interceptor_ICJI::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,
           CorInfoHelpFunc id,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CONST_LOOKUP* pLookup)
 {
-    return original_ICorJitInfo->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, pLookup);
+    return original_ICorJitInfo->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
 }
 
 void interceptor_ICJI::getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
           mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_LOOKUP* pLookup)
 {
-    original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
+    original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, callerHandle, pLookup);
 }
 
 CorInfoInitClassResult interceptor_ICJI::initClass(
@@ -568,6 +570,12 @@ bool interceptor_ICJI::isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls2)
 {
     return original_ICorJitInfo->isMoreSpecificType(cls1, cls2);
+}
+
+bool interceptor_ICJI::isExactType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->isExactType(cls);
 }
 
 TypeCompareState interceptor_ICJI::isEnum(
@@ -675,6 +683,12 @@ void interceptor_ICJI::getThreadLocalStaticBlocksInfo(
     original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
+void interceptor_ICJI::getThreadLocalStaticInfo_NativeAOT(
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+{
+    original_ICorJitInfo->getThreadLocalStaticInfo_NativeAOT(pInfo);
+}
+
 bool interceptor_ICJI::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {
@@ -728,6 +742,14 @@ void interceptor_ICJI::reportRichMappings(
           uint32_t numMappings)
 {
     original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+}
+
+void interceptor_ICJI::reportMetadata(
+          const char* key,
+          const void* value,
+          size_t length)
+{
+    original_ICorJitInfo->reportMetadata(key, value, length);
 }
 
 void* interceptor_ICJI::allocateArray(
@@ -839,6 +861,13 @@ bool interceptor_ICJI::getSystemVAmd64PassStructInRegisterDescriptor(
     return original_ICorJitInfo->getSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
 }
 
+void interceptor_ICJI::getSwiftLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_SWIFT_LOWERING* pLowering)
+{
+    original_ICorJitInfo->getSwiftLowering(structHnd, pLowering);
+}
+
 uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(
           CORINFO_CLASS_HANDLE structHnd)
 {
@@ -930,9 +959,10 @@ CORINFO_FIELD_HANDLE interceptor_ICJI::embedFieldHandle(
 void interceptor_ICJI::embedGenericHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fEmbedParent,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
-    original_ICorJitInfo->embedGenericHandle(pResolvedToken, fEmbedParent, pResult);
+    original_ICorJitInfo->embedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult);
 }
 
 void interceptor_ICJI::getLocationOfThisType(

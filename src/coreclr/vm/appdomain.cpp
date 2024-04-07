@@ -1118,9 +1118,6 @@ void SystemDomain::Init()
     // to allow stub caches to use the memory pool. Do not
     // initialize it here!
 
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapDisable) != 0)
-        g_fAllowNativeImages = false;
-
     m_pSystemPEAssembly = NULL;
     m_pSystemAssembly = NULL;
 
@@ -1326,7 +1323,7 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass));
 
         // We have delayed allocation of CoreLib's static handles until we load the object class
-        CoreLibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
+        CoreLibBinder::GetModule()->AllocateRegularStaticHandles();
 
         // Boolean has to be loaded first to break cycle in IComparisonOperations and IEqualityOperators
         CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_BOOLEAN);
@@ -1355,7 +1352,7 @@ void SystemDomain::LoadBaseSystemClasses()
         // further loading of nonprimitive types may need casting support.
         // initialize cast cache here.
         CastCache::Initialize();
-        ECall::PopulateManagedCastHelpers();
+        ECall::PopulateManagedHelpers();
 
         // used by IsImplicitInterfaceOfSZArray
         CoreLibBinder::GetClass(CLASS__IENUMERABLEGENERIC);
@@ -1401,6 +1398,8 @@ void SystemDomain::LoadBaseSystemClasses()
 
 #ifdef FEATURE_EH_FUNCLETS
         g_pEHClass = CoreLibBinder::GetClass(CLASS__EH);
+        g_pExceptionServicesInternalCallsClass = CoreLibBinder::GetClass(CLASS__EXCEPTIONSERVICES_INTERNALCALLS);
+        g_pStackFrameIteratorClass = CoreLibBinder::GetClass(CLASS__STACKFRAMEITERATOR);
 #endif
 
         // Make sure that FCall mapping for Monitor.Enter is initialized. We need it in case Monitor.Enter is used only as JIT helper.
@@ -1414,9 +1413,6 @@ void SystemDomain::LoadBaseSystemClasses()
         // all base system classes need to be loaded before profilers can trigger the type loading.
         g_profControlBlock.fBaseSystemClassesLoaded = TRUE;
     #endif // PROFILING_SUPPORTED
-
-        // Perform any once-only SafeHandle initialization.
-        SafeHandle::Init();
 
     #if defined(_DEBUG)
         g_CoreLib.Check();
@@ -2358,8 +2354,8 @@ void FileLoadLock::SetError(Exception *ex)
 
     m_cachedHR = ex->GetHR();
 
-    LOG((LF_LOADER, LL_WARNING, "LOADER: %x:***%s*\t!!!Non-transient error 0x%x\n",
-         m_pDomainAssembly->GetAppDomain(), m_pDomainAssembly->GetSimpleName(), m_cachedHR));
+    LOG((LF_LOADER, LL_WARNING, "LOADER: ***%s*\t!!!Non-transient error 0x%x\n",
+        m_pDomainAssembly->GetSimpleName(), m_cachedHR));
 
     m_pDomainAssembly->SetError(ex);
 
@@ -2609,15 +2605,19 @@ void AppDomain::LoadDomainAssembly(DomainAssembly *pFile,
 
 #ifndef DACCESS_COMPILE
 
-FileLoadLevel AppDomain::GetThreadFileLoadLevel()
-{
-    WRAPPER_NO_CONTRACT;
-    if (GetThread()->GetLoadLevelLimiter() == NULL)
-        return FILE_ACTIVE;
-    else
-        return (FileLoadLevel)(GetThread()->GetLoadLevelLimiter()->GetLoadLevel()-1);
-}
+thread_local LoadLevelLimiter* LoadLevelLimiter::t_currentLoadLevelLimiter = nullptr;
 
+namespace
+{
+    FileLoadLevel GetCurrentFileLoadLevel()
+    {
+        WRAPPER_NO_CONTRACT;
+        if (LoadLevelLimiter::GetCurrent() == NULL)
+            return FILE_ACTIVE;
+        else
+            return (FileLoadLevel)(LoadLevelLimiter::GetCurrent()->GetLoadLevel()-1);
+    }
+}
 
 Assembly *AppDomain::LoadAssembly(AssemblySpec* pIdentity,
                                   PEAssembly * pPEAssembly,
@@ -2711,7 +2711,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         PRECONDITION(CheckPointer(pPEAssembly));
         PRECONDITION(::GetAppDomain()==this);
         POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(RETVAL->GetLoadLevel() >= GetThreadFileLoadLevel()
+        POSTCONDITION(RETVAL->GetLoadLevel() >= GetCurrentFileLoadLevel()
                       || RETVAL->GetLoadLevel() >= targetLevel);
         POSTCONDITION(RETVAL->CheckNoError(targetLevel));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -2742,7 +2742,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         // Allocate the DomainAssembly a bit early to avoid GC mode problems. We could potentially avoid
         // a rare redundant allocation by moving this closer to FileLoadLock::Create, but it's not worth it.
-        NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(this, pPEAssembly, pLoaderAllocator);
+        NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator);
 
         LoadLockHolder lock(this);
 
@@ -2817,8 +2817,8 @@ DomainAssembly *AppDomain::LoadDomainAssembly(FileLoadLock *pLock, FileLoadLevel
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pLock));
-        PRECONDITION(pLock->GetDomainAssembly()->GetAppDomain() == this);
-        POSTCONDITION(RETVAL->GetLoadLevel() >= GetThreadFileLoadLevel()
+        PRECONDITION(AppDomain::GetCurrentDomain() == this);
+        POSTCONDITION(RETVAL->GetLoadLevel() >= GetCurrentFileLoadLevel()
                       || RETVAL->GetLoadLevel() >= targetLevel);
         POSTCONDITION(RETVAL->CheckNoError(targetLevel));
     }
@@ -2854,8 +2854,8 @@ DomainAssembly *AppDomain::LoadDomainAssembly(FileLoadLock *pLock, FileLoadLevel
         if (immediateTargetLevel > limit.GetLoadLevel())
             immediateTargetLevel = limit.GetLoadLevel();
 
-        LOG((LF_LOADER, LL_INFO100, "LOADER: %x:***%s*\t>>>Load initiated, %s/%s\n",
-             pFile->GetAppDomain(), pFile->GetSimpleName(),
+        LOG((LF_LOADER, LL_INFO100, "LOADER: ***%s*\t>>>Load initiated, %s/%s\n",
+             pFile->GetSimpleName(),
              fileLoadLevelName[immediateTargetLevel], fileLoadLevelName[targetLevel]));
 
         // Now loop and do the load incrementally to the target level.
@@ -2890,14 +2890,14 @@ DomainAssembly *AppDomain::LoadDomainAssembly(FileLoadLock *pLock, FileLoadLevel
 
             if (pLock->GetLoadLevel() == immediateTargetLevel-1)
             {
-                LOG((LF_LOADER, LL_INFO100, "LOADER: %x:***%s*\t<<<Load limited due to detected deadlock, %s\n",
-                     pFile->GetAppDomain(), pFile->GetSimpleName(),
+                LOG((LF_LOADER, LL_INFO100, "LOADER: ***%s*\t<<<Load limited due to detected deadlock, %s\n",
+                     pFile->GetSimpleName(),
                      fileLoadLevelName[immediateTargetLevel-1]));
             }
         }
 
-        LOG((LF_LOADER, LL_INFO100, "LOADER: %x:***%s*\t<<<Load completed, %s\n",
-             pFile->GetAppDomain(), pFile->GetSimpleName(),
+        LOG((LF_LOADER, LL_INFO100, "LOADER: ***%s*\t<<<Load completed, %s\n",
+             pFile->GetSimpleName(),
              fileLoadLevelName[pLock->GetLoadLevel()]));
 
     }
@@ -4116,7 +4116,7 @@ void DomainLocalModule::SetClassInitialized(MethodTable* pMT)
     }
     CONTRACTL_END;
 
-    BaseDomain::DomainLocalBlockLockHolder lh(GetDomainAssembly()->GetAppDomain());
+    BaseDomain::DomainLocalBlockLockHolder lh(AppDomain::GetCurrentDomain());
 
     _ASSERTE(!IsClassInitialized(pMT));
     _ASSERTE(!IsClassInitError(pMT));
@@ -4128,7 +4128,7 @@ void DomainLocalModule::SetClassInitError(MethodTable* pMT)
 {
     WRAPPER_NO_CONTRACT;
 
-    BaseDomain::DomainLocalBlockLockHolder lh(GetDomainAssembly()->GetAppDomain());
+    BaseDomain::DomainLocalBlockLockHolder lh(AppDomain::GetCurrentDomain());
 
     SetClassFlags(pMT, ClassInitFlags::ERROR_FLAG);
 }
@@ -4140,7 +4140,7 @@ void DomainLocalModule::SetClassFlags(MethodTable* pMT, DWORD dwFlags)
         GC_TRIGGERS;
         PRECONDITION(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
         // Assumes BaseDomain::DomainLocalBlockLockHolder is taken
-        PRECONDITION(GetDomainAssembly()->GetAppDomain()->OwnDomainLocalBlockLock());
+        PRECONDITION(AppDomain::GetCurrentDomain()->OwnDomainLocalBlockLock());
     } CONTRACTL_END;
 
     if (pMT->IsDynamicStatics())
@@ -4165,7 +4165,7 @@ void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
         // Assumes BaseDomain::DomainLocalBlockLockHolder is taken
-        PRECONDITION(GetDomainAssembly()->GetAppDomain()->OwnDomainLocalBlockLock());
+        PRECONDITION(AppDomain::GetCurrentDomain()->OwnDomainLocalBlockLock());
     }
     CONTRACTL_END;
 
@@ -4212,7 +4212,7 @@ void    DomainLocalModule::AllocateDynamicClass(MethodTable *pMT)
         THROWS;
         GC_TRIGGERS;
         // Assumes BaseDomain::DomainLocalBlockLockHolder is taken
-        PRECONDITION(GetDomainAssembly()->GetAppDomain()->OwnDomainLocalBlockLock());
+        PRECONDITION(AppDomain::GetCurrentDomain()->OwnDomainLocalBlockLock());
     }
     CONTRACTL_END;
 
@@ -4323,7 +4323,7 @@ void DomainLocalModule::PopulateClass(MethodTable *pMT)
 
     if (!IsClassAllocated(pMT, iClassIndex))
     {
-        BaseDomain::DomainLocalBlockLockHolder lh(GetDomainAssembly()->GetAppDomain());
+        BaseDomain::DomainLocalBlockLockHolder lh(AppDomain::GetCurrentDomain());
 
         if (!IsClassAllocated(pMT, iClassIndex))
         {
@@ -4630,7 +4630,6 @@ UINT32 BaseDomain::GetTypeID(PTR_MethodTable pMT) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
     return m_typeIDMap.GetTypeID(pMT, true);
@@ -4643,7 +4642,6 @@ UINT32 BaseDomain::LookupTypeID(PTR_MethodTable pMT)
     CONTRACTL {
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
-        PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
     return m_typeIDMap.LookupTypeID(pMT);
@@ -4670,7 +4668,6 @@ UINT32 BaseDomain::GetNonGCThreadStaticTypeIndex(PTR_MethodTable pMT)
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
     return m_NonGCThreadStaticBlockTypeIDMap.GetTypeID(pMT, false);
@@ -4695,7 +4692,6 @@ UINT32 BaseDomain::GetGCThreadStaticTypeIndex(PTR_MethodTable pMT)
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
     return m_GCThreadStaticBlockTypeIDMap.GetTypeID(pMT, false);

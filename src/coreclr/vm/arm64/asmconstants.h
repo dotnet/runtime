@@ -33,8 +33,8 @@
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
-#define               Thread__m_fPreemptiveGCDisabled   0x0C
-#define               Thread__m_pFrame                  0x10
+#define               Thread__m_fPreemptiveGCDisabled   0x04
+#define               Thread__m_pFrame                  0x08
 
 ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled));
 ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
@@ -96,7 +96,11 @@ ASMCONSTANTS_C_ASSERT(MachState__isValid == offsetof(MachState, _isValid))
 #define LazyMachState_captureX19_X29 MachState__captureX19_X29
 ASMCONSTANTS_C_ASSERT(LazyMachState_captureX19_X29 == offsetof(LazyMachState, captureX19_X29))
 
+#ifdef __APPLE__
+#define LazyMachState_captureSp     (MachState__isValid+8+88) // padding for alignment
+#else // __APPLE__
 #define LazyMachState_captureSp     (MachState__isValid+8) // padding for alignment
+#endif // __APPLE
 ASMCONSTANTS_C_ASSERT(LazyMachState_captureSp == offsetof(LazyMachState, captureSp))
 
 #define LazyMachState_captureIp     (LazyMachState_captureSp+8)
@@ -129,7 +133,7 @@ ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags)
 ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSize));
 
 #define MethodTable__m_ElementType     DBG_FRE(0x38, 0x30)
-ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_pMultipurposeSlot1));
+ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_ElementTypeHnd));
 
 #define ArrayBase__m_NumComponents     0x8
 ASMCONSTANTS_C_ASSERT(ArrayBase__m_NumComponents == offsetof(ArrayBase, m_NumComponents));

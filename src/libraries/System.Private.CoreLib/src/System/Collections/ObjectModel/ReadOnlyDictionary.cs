@@ -247,7 +247,7 @@ namespace System.Collections.ObjectModel
 
         IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
 
-        [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
+        [DebuggerTypeProxy(typeof(DictionaryKeyCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
@@ -303,7 +303,7 @@ namespace System.Collections.ObjectModel
             object ICollection.SyncRoot => (_collection is ICollection coll) ? coll.SyncRoot : this;
         }
 
-        [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
+        [DebuggerTypeProxy(typeof(DictionaryValueCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
