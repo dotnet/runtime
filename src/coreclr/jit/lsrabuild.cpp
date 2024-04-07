@@ -3387,7 +3387,17 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
 
         if (numArgs != 1)
         {
-            assert(numArgs == 2);
+#ifdef TARGET_ARM64
+            if (HWIntrinsicInfo::IsScalable(hwintrinsic->GetHWIntrinsicId()))
+            {
+                for (int argNum = 1; argNum <= numArgs; argNum++)
+                {
+                    BuildOperandUses(hwintrinsic->Op(argNum), candidates);
+                }
+                return (int)numArgs;
+            }
+#endif
+            assert(numArgs == 2);            
             assert(hwintrinsic->Op(2)->isContained());
             assert(hwintrinsic->Op(2)->IsCnsIntOrI());
         }

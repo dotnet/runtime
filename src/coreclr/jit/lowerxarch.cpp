@@ -2655,7 +2655,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::LowerHWIntrinsicCndSel: Lowers an AVX512 TernaryLogic call
+// Lowering::LowerHWIntrinsicTernaryLogic: Lowers an AVX512 TernaryLogic call
 //
 //  Arguments:
 //     node - The hardware intrinsic node.

@@ -1209,8 +1209,35 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
         case NI_Sve_Abs:
         {
-            GenTree* op1 = node->Op(1);
+            assert(HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId));
+            CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
+            var_types      simdBaseType    = node->GetSimdBaseType();
+            unsigned       simdSize        = node->GetSimdSize();
+            var_types      simdType        = Compiler::getSIMDTypeForSize(simdSize);
 
+            GenTree* trueMaskAllNode = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+            GenTree* trueVal         = node;
+            GenTree* falseVal        = comp->gtNewZeroConNode(simdType);
+
+            GenTreeHWIntrinsic* condSelNode =
+                comp->gtNewSimdHWIntrinsicNode(simdType, trueMaskAllNode, trueVal, falseVal, NI_Sve_ConditionalSelect,
+                                               simdBaseJitType, simdSize);
+
+            BlockRange().InsertBefore(node, trueMaskAllNode);
+            BlockRange().InsertBefore(node, falseVal);
+
+            LIR::Use use;
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                BlockRange().InsertAfter(node, condSelNode);
+                use.ReplaceWith(condSelNode);
+            }
+            else
+            {
+                condSelNode->SetUnusedValue();
+            }
+            //MakeSrcContained(condSelNode, node);
+            //node = condSelNode;
             break;
         }
 
@@ -3212,6 +3239,32 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     MakeSrcContained(node, intrin.op1);
                 }
                 break;
+
+            case NI_Sve_ConditionalSelect:
+            {
+                assert(intrin.numOperands == 3);
+                GenTree* op1      = intrin.op1;
+                GenTree* op2      = intrin.op2;
+                if (op2->OperIsHWIntrinsic())
+                {
+                    uint32_t maskSize = genTypeSize(node->GetSimdBaseType());
+                    uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());
+
+                    if ((maskSize == operSize) && IsInvariantInRange(op2, node))
+                    {
+                        MakeSrcContained(node, op2);
+                        op2->MakeEmbMaskOp();
+
+                        if (op1->IsVectorZero())
+                        {
+                            // When we are merging with zero, we can specialize
+                            // and avoid instantiating the vector constant.
+                            MakeSrcContained(node, op1);
+                        }
+                    }
+                }
+                break;
+            }
 
             default:
                 unreached();

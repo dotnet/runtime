@@ -17967,7 +17967,11 @@ bool GenTree::canBeContained() const
     }
     else if (OperIsHWIntrinsic() && !isContainableHWIntrinsic())
     {
+#ifdef TARGET_XARCH
         return isEvexEmbeddedMaskingCompatibleHWIntrinsic();
+#elif TARGET_ARM64
+        return HWIntrinsicInfo::IsEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId());
+#endif
     }
 
     return true;

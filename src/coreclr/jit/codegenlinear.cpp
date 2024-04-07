@@ -1653,7 +1653,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             // Update the life of the lcl var.
             genUpdateLife(tree);
         }
-#ifdef TARGET_XARCH
+//#ifdef TARGET_XARCH
 #ifdef FEATURE_HW_INTRINSICS
         else if (tree->OperIs(GT_HWINTRINSIC))
         {
@@ -1661,7 +1661,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genConsumeMultiOpOperands(hwintrinsic);
         }
 #endif // FEATURE_HW_INTRINSICS
-#endif // TARGET_XARCH
+//#endif // TARGET_XARCH
         else if (tree->OperIs(GT_BITCAST, GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ, GT_BSWAP, GT_BSWAP16))
         {
             genConsumeRegs(tree->gtGetOp1());
