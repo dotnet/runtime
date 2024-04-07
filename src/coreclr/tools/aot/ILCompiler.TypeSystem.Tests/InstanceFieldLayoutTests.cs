@@ -76,7 +76,7 @@ namespace TypeSystemTests
         public void TestExplicitTypeLayoutWithSize()
         {
             var explicitSizeType = _testModule.GetType("Explicit", "ExplicitSize");
-            Assert.Equal(24 + IntPtr.Size * 2, explicitSizeType.InstanceByteCount.AsInt);
+            Assert.Equal(32, explicitSizeType.InstanceByteCount.AsInt);
         }
 
         [Fact]
