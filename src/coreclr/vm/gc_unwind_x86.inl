@@ -1522,7 +1522,7 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
 #ifndef FEATURE_EH_FUNCLETS
     hasPartialArgInfo = info->ebpFrame;
 #else
-    // For x86/Funclets, interruptible code always has full arg info
+    // For funclets, interruptible code always has full arg info
     //
     // This should be aligned with emitFullArgInfo setting at
     // emitter::emitEndCodeGen (in JIT)

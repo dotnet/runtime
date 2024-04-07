@@ -457,7 +457,7 @@ size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
 
                     curOffs += (val & 0x07);
 #ifndef FEATURE_EH_FUNCLETS
-                    // For x86/Linux, non-ptr arg pushes can be reported even for EBP frames
+                    // For funclets, non-ptr arg pushes can be reported even for EBP frames
                     _ASSERTE(!header.ebpFrame);
 #endif // FEATURE_EH_FUNCLETS
                     argCnt++;
