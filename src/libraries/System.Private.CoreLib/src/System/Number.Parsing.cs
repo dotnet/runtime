@@ -902,7 +902,7 @@ namespace System
         {
             number.CheckConsistency();
 
-            byte* p = number.GetDigitsPointer();
+            byte* p = number.DigitsPtr;
             int c = *p;
             significand = TSignificand.Zero;
             exponent = 0;
