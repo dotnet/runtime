@@ -1471,8 +1471,8 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
     return insFormats[ins];
 }
 
-#define LD 1
-#define ST 2
+#define LD  1
+#define ST  2
 #define CMP 4
 #define RSH 8
 #define WID 16

@@ -6188,14 +6188,12 @@ bool Lowering::IsRMWIndirCandidate(GenTree* operand, GenTree* storeInd)
                 return false;
             }
 
-            node->VisitOperands(
-                [&markCount](GenTree* nodeOperand) -> GenTree::VisitResult
-                {
-                    assert((nodeOperand->gtLIRFlags & LIR::Flags::Mark) == 0);
-                    nodeOperand->gtLIRFlags |= LIR::Flags::Mark;
-                    markCount++;
-                    return GenTree::VisitResult::Continue;
-                });
+            node->VisitOperands([&markCount](GenTree* nodeOperand) -> GenTree::VisitResult {
+                assert((nodeOperand->gtLIRFlags & LIR::Flags::Mark) == 0);
+                nodeOperand->gtLIRFlags |= LIR::Flags::Mark;
+                markCount++;
+                return GenTree::VisitResult::Continue;
+            });
         }
     }
 

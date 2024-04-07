@@ -31,7 +31,11 @@ struct Replacement
     const char* Description = "";
 #endif
 
-    Replacement(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType) {}
+    Replacement(unsigned offset, var_types accessType)
+        : Offset(offset)
+        , AccessType(accessType)
+    {
+    }
 
     bool Overlaps(unsigned otherStart, unsigned otherSize) const;
 };
@@ -49,9 +53,15 @@ public:
         unsigned Start = 0;
         unsigned End   = 0;
 
-        Segment() {}
+        Segment()
+        {
+        }
 
-        Segment(unsigned start, unsigned end) : Start(start), End(end) {}
+        Segment(unsigned start, unsigned end)
+            : Start(start)
+            , End(end)
+        {
+        }
 
         bool IntersectsOrAdjacent(const Segment& other) const;
         bool Intersects(const Segment& other) const;
@@ -63,7 +73,10 @@ private:
     jitstd::vector<Segment> m_segments;
 
 public:
-    explicit StructSegments(CompAllocator allocator) : m_segments(allocator) {}
+    explicit StructSegments(CompAllocator allocator)
+        : m_segments(allocator)
+    {
+    }
 
     void Add(const Segment& segment);
     void Subtract(const Segment& segment);
@@ -88,7 +101,12 @@ struct AggregateInfo
     // Max offset in the struct local of the unpromoted part.
     unsigned UnpromotedMax = 0;
 
-    AggregateInfo(CompAllocator alloc, unsigned lclNum) : Replacements(alloc), LclNum(lclNum), Unpromoted(alloc) {}
+    AggregateInfo(CompAllocator alloc, unsigned lclNum)
+        : Replacements(alloc)
+        , LclNum(lclNum)
+        , Unpromoted(alloc)
+    {
+    }
 
     bool OverlappingReplacements(unsigned      offset,
                                  unsigned      size,
@@ -192,7 +210,10 @@ class Promotion
     static GenTree* EffectiveUser(Compiler::GenTreeStack& ancestors);
 
 public:
-    explicit Promotion(Compiler* compiler) : m_compiler(compiler) {}
+    explicit Promotion(Compiler* compiler)
+        : m_compiler(compiler)
+    {
+    }
 
     PhaseStatus Run();
 };
@@ -206,10 +227,17 @@ class StructDeaths
     friend class PromotionLiveness;
 
 private:
-    StructDeaths(BitVec deaths, AggregateInfo* agg) : m_deaths(deaths), m_aggregate(agg) {}
+    StructDeaths(BitVec deaths, AggregateInfo* agg)
+        : m_deaths(deaths)
+        , m_aggregate(agg)
+    {
+    }
 
 public:
-    StructDeaths() : m_deaths(BitVecOps::UninitVal()) {}
+    StructDeaths()
+        : m_deaths(BitVecOps::UninitVal())
+    {
+    }
 
     bool IsRemainderDying() const;
     bool IsReplacementDying(unsigned index) const;
@@ -233,7 +261,9 @@ class PromotionLiveness
 
 public:
     PromotionLiveness(Compiler* compiler, AggregateInfoMap& aggregates)
-        : m_compiler(compiler), m_aggregates(aggregates), m_aggDeaths(compiler->getAllocator(CMK_Promotion))
+        : m_compiler(compiler)
+        , m_aggregates(aggregates)
+        , m_aggDeaths(compiler->getAllocator(CMK_Promotion))
     {
     }
 
@@ -281,7 +311,10 @@ public:
     };
 
     ReplaceVisitor(Promotion* prom, AggregateInfoMap& aggregates, PromotionLiveness* liveness)
-        : GenTreeVisitor(prom->m_compiler), m_promotion(prom), m_aggregates(aggregates), m_liveness(liveness)
+        : GenTreeVisitor(prom->m_compiler)
+        , m_promotion(prom)
+        , m_aggregates(aggregates)
+        , m_liveness(liveness)
     {
     }
 

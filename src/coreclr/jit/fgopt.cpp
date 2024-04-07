@@ -230,8 +230,7 @@ bool Compiler::fgRemoveDeadBlocks()
     // or not.
     bool hasUnreachableBlock = false;
 
-    auto isBlockRemovable = [&](BasicBlock* block) -> bool
-    {
+    auto isBlockRemovable = [&](BasicBlock* block) -> bool {
         const bool isVisited   = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
         const bool isRemovable = !isVisited || (block->bbRefs == 0);
 
@@ -730,9 +729,8 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                 // Helper method to add flow
                 //
-                auto addConditionalFlow =
-                    [this, entryStateVar, &entryJumpTarget, &addedBlocks](BasicBlock* fromBlock, BasicBlock* toBlock)
-                {
+                auto addConditionalFlow = [this, entryStateVar, &entryJumpTarget, &addedBlocks](BasicBlock* fromBlock,
+                                                                                                BasicBlock* toBlock) {
                     // We may have previously though this try entry was unreachable, but now we're going to
                     // step through it on the way to the OSR entry. So ensure it has plausible profile weight.
                     //
@@ -3141,8 +3139,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
     // Note this is potentially expensive for large flow graphs and blocks
     // with lots of predecessors.
     //
-    auto newRunRarely = [](BasicBlock* block, BasicBlock* bPrev)
-    {
+    auto newRunRarely = [](BasicBlock* block, BasicBlock* bPrev) {
         // Figure out earliest block that might be impacted
         BasicBlock* bPrevPrev = nullptr;
         BasicBlock* tmpbb;
@@ -5253,17 +5250,15 @@ PhaseStatus Compiler::fgDfsBlocksAndRemove()
         while (true)
         {
             bool anyCallFinallyPairs = false;
-            fgRemoveUnreachableBlocks(
-                [=, &anyCallFinallyPairs](BasicBlock* block)
+            fgRemoveUnreachableBlocks([=, &anyCallFinallyPairs](BasicBlock* block) {
+                if (!m_dfsTree->Contains(block))
                 {
-                    if (!m_dfsTree->Contains(block))
-                    {
-                        anyCallFinallyPairs |= block->isBBCallFinallyPair();
-                        return true;
-                    }
+                    anyCallFinallyPairs |= block->isBBCallFinallyPair();
+                    return true;
+                }
 
-                    return false;
-                });
+                return false;
+            });
 
             if (!anyCallFinallyPairs)
             {
@@ -5370,11 +5365,10 @@ unsigned Compiler::fgMeasureIR()
             {
                 fgWalkTreePre(
                     stmt->GetRootNodePointer(),
-                    [](GenTree** slot, fgWalkData* data) -> Compiler::fgWalkResult
-                    {
-                        (*reinterpret_cast<unsigned*>(data->pCallbackData))++;
-                        return Compiler::WALK_CONTINUE;
-                    },
+                    [](GenTree** slot, fgWalkData* data) -> Compiler::fgWalkResult {
+                    (*reinterpret_cast<unsigned*>(data->pCallbackData))++;
+                    return Compiler::WALK_CONTINUE;
+                },
                     &nodeCount);
             }
         }
@@ -5450,7 +5444,11 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
     struct PredInfo
     {
-        PredInfo(BasicBlock* block, Statement* stmt) : m_block(block), m_stmt(stmt) {}
+        PredInfo(BasicBlock* block, Statement* stmt)
+            : m_block(block)
+            , m_stmt(stmt)
+        {
+        }
         BasicBlock* m_block;
         Statement*  m_stmt;
     };
@@ -5463,8 +5461,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     // If return value is true, retry.
     // May also add to retryBlocks.
     //
-    auto tailMergePreds = [&](BasicBlock* commSucc) -> bool
-    {
+    auto tailMergePreds = [&](BasicBlock* commSucc) -> bool {
         // Are there enough preds to make it interesting?
         //
         if (predInfo.Height() < 2)
@@ -5689,8 +5686,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         return false;
     };
 
-    auto tailMerge = [&](BasicBlock* block) -> bool
-    {
+    auto tailMerge = [&](BasicBlock* block) -> bool {
         if (block->countOfInEdges() < 2)
         {
             // Nothing to merge here
@@ -5755,8 +5751,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         return tailMergePreds(block);
     };
 
-    auto iterateTailMerge = [&](BasicBlock* block) -> void
-    {
+    auto iterateTailMerge = [&](BasicBlock* block) -> void {
         int numOpts = 0;
 
         while (tailMerge(block))
@@ -5842,8 +5837,7 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
     }
 
     // Verify that both successors are reached along non-critical edges.
-    auto getSuccCandidate = [=](BasicBlock* succ, Statement** firstStmt) -> bool
-    {
+    auto getSuccCandidate = [=](BasicBlock* succ, Statement** firstStmt) -> bool {
         if (succ->GetUniquePred(this) != block)
         {
             return false;
@@ -5975,7 +5969,10 @@ bool Compiler::gtTreeContainsTailCall(GenTree* tree)
             DoPreOrder = true
         };
 
-        HasTailCallCandidateVisitor(Compiler* comp) : GenTreeVisitor(comp) {}
+        HasTailCallCandidateVisitor(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {

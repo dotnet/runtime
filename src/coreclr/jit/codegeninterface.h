@@ -628,7 +628,9 @@ public:
             VariableLiveRange(CodeGenInterface::siVarLoc varLocation,
                               emitLocation               startEmitLocation,
                               emitLocation               endEmitLocation)
-                : m_StartEmitLocation(startEmitLocation), m_EndEmitLocation(endEmitLocation), m_VarLocation(varLocation)
+                : m_StartEmitLocation(startEmitLocation)
+                , m_EndEmitLocation(endEmitLocation)
+                , m_VarLocation(varLocation)
             {
             }
 
@@ -676,7 +678,8 @@ public:
 
         public:
             LiveRangeDumper(const LiveRangeList* liveRanges)
-                : m_startingLiveRange(liveRanges->end()), m_hasLiveRangesToDump(false){};
+                : m_startingLiveRange(liveRanges->end())
+                , m_hasLiveRangesToDump(false){};
 
             // Make the dumper point to the last "VariableLiveRange" opened or nullptr if all are closed
             void resetDumper(const LiveRangeList* list);

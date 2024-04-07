@@ -546,7 +546,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 
     ONE_FILE_PER_METHOD:;
 
-#define FILENAME_PATTERN "%s-%s-%s-%s.%s"
+#define FILENAME_PATTERN             "%s-%s-%s-%s.%s"
 #define FILENAME_PATTERN_WITH_NUMBER "%s-%s-%s-%s~%d.%s"
 
         const size_t MaxFileNameLength = MAX_PATH_FNAME - 20 /* give us some extra buffer */;
@@ -1249,7 +1249,10 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 
             public:
                 RegionGraph(Compiler* comp, unsigned* blkMap, unsigned blkMapSize)
-                    : m_comp(comp), m_rgnRoot(nullptr), m_blkMap(blkMap), m_blkMapSize(blkMapSize)
+                    : m_comp(comp)
+                    , m_rgnRoot(nullptr)
+                    , m_blkMap(blkMap)
+                    , m_blkMapSize(blkMapSize)
                 {
                     // Create a root region that encompasses the whole function.
                     m_rgnRoot =
@@ -1758,31 +1761,29 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
             fprintf(m_file, "%*scolor = blue;\n", m_indent, "");
             fprintf(m_file, "%*s", m_indent, "");
 
-            loop->VisitLoopBlocksReversePostOrder(
-                [=](BasicBlock* block)
+            loop->VisitLoopBlocksReversePostOrder([=](BasicBlock* block) {
+                if (BitVecOps::IsMember(&m_traits, m_outputBlocks, block->bbPostorderNum))
                 {
-                    if (BitVecOps::IsMember(&m_traits, m_outputBlocks, block->bbPostorderNum))
+                    return BasicBlockVisit::Continue;
+                }
+
+                if (block != loop->GetHeader())
+                {
+                    FlowGraphNaturalLoop* childLoop = m_loops->GetLoopByHeader(block);
+                    if (childLoop != nullptr)
                     {
+                        fprintf(m_file, "\n");
+                        Output(childLoop);
+                        fprintf(m_file, "\n%*s", m_indent, "");
                         return BasicBlockVisit::Continue;
                     }
+                }
 
-                    if (block != loop->GetHeader())
-                    {
-                        FlowGraphNaturalLoop* childLoop = m_loops->GetLoopByHeader(block);
-                        if (childLoop != nullptr)
-                        {
-                            fprintf(m_file, "\n");
-                            Output(childLoop);
-                            fprintf(m_file, "\n%*s", m_indent, "");
-                            return BasicBlockVisit::Continue;
-                        }
-                    }
+                fprintf(m_file, FMT_BB ";", block->bbNum);
+                BitVecOps::AddElemD(&m_traits, m_outputBlocks, block->bbPostorderNum);
 
-                    fprintf(m_file, FMT_BB ";", block->bbNum);
-                    BitVecOps::AddElemD(&m_traits, m_outputBlocks, block->bbPostorderNum);
-
-                    return BasicBlockVisit::Continue;
-                });
+                return BasicBlockVisit::Continue;
+            });
 
             m_indent -= 4;
             fprintf(m_file, "\n%*s}", m_indent, "");
@@ -1935,8 +1936,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
     // of the generated string. Note that any computation using `printedBlockWidth` must be done after all
     // calls to this function.
     auto dspBlockNum = [printEdgeLikelihoods, terseNext, nextBlock,
-                        &printedBlockWidth](const FlowEdge* e) -> const char*
-    {
+                        &printedBlockWidth](const FlowEdge* e) -> const char* {
         static char buffers[3][64]; // static array of 3 to allow 3 concurrent calls in one printf()
         static int  nextBufferIndex = 0;
 
@@ -2645,7 +2645,10 @@ void Compiler::fgStress64RsltMul()
 class BBPredsChecker
 {
 public:
-    BBPredsChecker(Compiler* compiler) : comp(compiler) {}
+    BBPredsChecker(Compiler* compiler)
+        : comp(compiler)
+    {
+    }
 
     unsigned CheckBBPreds(BasicBlock* block, unsigned curTraversalStamp);
 
@@ -3285,7 +3288,10 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
             DoPostOrder = true,
         };
 
-        NodeTypeValidator(Compiler* comp) : GenTreeVisitor(comp) {}
+        NodeTypeValidator(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
 
         fgWalkResult PostOrderVisit(GenTree** use, GenTree* user) const
         {
@@ -3517,14 +3523,12 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
             break;
     }
 
-    tree->VisitOperands(
-        [&](GenTree* operand) -> GenTree::VisitResult
-        {
-            fgDebugCheckFlags(operand, block);
-            expectedFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
+    tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
+        fgDebugCheckFlags(operand, block);
+        expectedFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
 
-            return GenTree::VisitResult::Continue;
-        });
+        return GenTree::VisitResult::Continue;
+    });
 
     fgDebugCheckFlagsHelper(tree, actualFlags, expectedFlags);
 }
@@ -3734,7 +3738,11 @@ void Compiler::fgDebugCheckLinkedLocals()
             UseExecutionOrder = true,
         };
 
-        DebugLocalSequencer(Compiler* comp) : GenTreeVisitor(comp), m_locals(comp->getAllocator(CMK_DebugOnly)) {}
+        DebugLocalSequencer(Compiler* comp)
+            : GenTreeVisitor(comp)
+            , m_locals(comp->getAllocator(CMK_DebugOnly))
+        {
+        }
 
         void Sequence(Statement* stmt)
         {
@@ -4013,7 +4021,9 @@ class UniquenessCheckWalker
 {
 public:
     UniquenessCheckWalker(Compiler* comp)
-        : comp(comp), nodesVecTraits(comp->compGenTreeID, comp), uniqueNodes(BitVecOps::MakeEmpty(&nodesVecTraits))
+        : comp(comp)
+        , nodesVecTraits(comp->compGenTreeID, comp)
+        , uniqueNodes(BitVecOps::MakeEmpty(&nodesVecTraits))
     {
     }
 
@@ -4131,9 +4141,17 @@ private:
         unsigned m_ssaNum;
 
     public:
-        SsaKey() : m_lclNum(BAD_VAR_NUM), m_ssaNum(SsaConfig::RESERVED_SSA_NUM) {}
+        SsaKey()
+            : m_lclNum(BAD_VAR_NUM)
+            , m_ssaNum(SsaConfig::RESERVED_SSA_NUM)
+        {
+        }
 
-        SsaKey(unsigned lclNum, unsigned ssaNum) : m_lclNum(lclNum), m_ssaNum(ssaNum) {}
+        SsaKey(unsigned lclNum, unsigned ssaNum)
+            : m_lclNum(lclNum)
+            , m_ssaNum(ssaNum)
+        {
+        }
 
         static bool Equals(const SsaKey& x, const SsaKey& y)
         {
@@ -4745,15 +4763,13 @@ void Compiler::fgDebugCheckLoops()
             assert(loop->EntryEdges().size() == 1);
             assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
 
-            loop->VisitRegularExitBlocks(
-                [=](BasicBlock* exit)
+            loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
+                for (BasicBlock* pred : exit->PredBlocks())
                 {
-                    for (BasicBlock* pred : exit->PredBlocks())
-                    {
-                        assert(loop->ContainsBlock(pred));
-                    }
-                    return BasicBlockVisit::Continue;
-                });
+                    assert(loop->ContainsBlock(pred));
+                }
+                return BasicBlockVisit::Continue;
+            });
         }
     }
 }
@@ -4770,14 +4786,15 @@ void Compiler::fgDebugCheckFlowGraphAnnotations()
         return;
     }
 
-    unsigned count =
-        fgRunDfs([](BasicBlock* block, unsigned preorderNum) { assert(block->bbPreorderNum == preorderNum); },
-                 [=](BasicBlock* block, unsigned postorderNum)
-                 {
-                     assert(block->bbPostorderNum == postorderNum);
-                     assert(m_dfsTree->GetPostOrder(postorderNum) == block);
-                 },
-                 [](BasicBlock* block, BasicBlock* succ) {});
+    unsigned count = fgRunDfs(
+        [](BasicBlock* block, unsigned preorderNum) {
+        assert(block->bbPreorderNum == preorderNum);
+    },
+        [=](BasicBlock* block, unsigned postorderNum) {
+        assert(block->bbPostorderNum == postorderNum);
+        assert(m_dfsTree->GetPostOrder(postorderNum) == block);
+    },
+        [](BasicBlock* block, BasicBlock* succ) {});
 
     assert(m_dfsTree->GetPostOrderCount() == count);
 

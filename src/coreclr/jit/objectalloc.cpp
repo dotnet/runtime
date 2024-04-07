@@ -163,7 +163,8 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         };
 
         BuildConnGraphVisitor(ObjectAllocator* allocator)
-            : GenTreeVisitor<BuildConnGraphVisitor>(allocator->comp), m_allocator(allocator)
+            : GenTreeVisitor<BuildConnGraphVisitor>(allocator->comp)
+            , m_allocator(allocator)
         {
         }
 
@@ -766,7 +767,8 @@ void ObjectAllocator::RewriteUses()
         };
 
         RewriteUsesVisitor(ObjectAllocator* allocator)
-            : GenTreeVisitor<RewriteUsesVisitor>(allocator->comp), m_allocator(allocator)
+            : GenTreeVisitor<RewriteUsesVisitor>(allocator->comp)
+            , m_allocator(allocator)
         {
         }
 

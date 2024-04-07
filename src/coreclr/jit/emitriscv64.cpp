@@ -1710,8 +1710,7 @@ void emitter::emitJumpDistBind()
 #if DEBUG_EMIT
     auto printJmpInfo = [this](const instrDescJmp* jmp, const insGroup* jmpIG, NATIVE_OFFSET extra,
                                UNATIVE_OFFSET srcInstrOffs, UNATIVE_OFFSET srcEncodingOffs, UNATIVE_OFFSET dstOffs,
-                               NATIVE_OFFSET jmpDist, const char* direction)
-    {
+                               NATIVE_OFFSET jmpDist, const char* direction) {
         assert(jmp->idDebugOnlyInfo() != nullptr);
         if (jmp->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
         {

@@ -78,7 +78,8 @@ RefInfoListNode* RefInfoList::removeListNode(GenTree* node, unsigned multiRegIdx
 //    compiler    - The compiler context.
 //    preallocate - The number of nodes to preallocate.
 //
-RefInfoListNodePool::RefInfoListNodePool(Compiler* compiler, unsigned preallocate) : m_compiler(compiler)
+RefInfoListNodePool::RefInfoListNodePool(Compiler* compiler, unsigned preallocate)
+    : m_compiler(compiler)
 {
     if (preallocate > 0)
     {
@@ -2603,21 +2604,19 @@ void LinearScan::buildIntervals()
                 VarSetOps::DiffD(compiler, expUseSet, nextBlock->bbLiveIn);
             }
 
-            block->VisitAllSuccs(compiler,
-                                 [=, &expUseSet](BasicBlock* succ)
-                                 {
-                                     if (VarSetOps::IsEmpty(compiler, expUseSet))
-                                     {
-                                         return BasicBlockVisit::Abort;
-                                     }
+            block->VisitAllSuccs(compiler, [=, &expUseSet](BasicBlock* succ) {
+                if (VarSetOps::IsEmpty(compiler, expUseSet))
+                {
+                    return BasicBlockVisit::Abort;
+                }
 
-                                     if (!isBlockVisited(succ))
-                                     {
-                                         VarSetOps::DiffD(compiler, expUseSet, succ->bbLiveIn);
-                                     }
+                if (!isBlockVisited(succ))
+                {
+                    VarSetOps::DiffD(compiler, expUseSet, succ->bbLiveIn);
+                }
 
-                                     return BasicBlockVisit::Continue;
-                                 });
+                return BasicBlockVisit::Continue;
+            });
 
             if (!VarSetOps::IsEmpty(compiler, expUseSet))
             {

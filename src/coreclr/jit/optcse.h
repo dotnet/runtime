@@ -31,9 +31,13 @@ protected:
 #endif
 
 public:
-    virtual void Initialize() {}
+    virtual void Initialize()
+    {
+    }
 
-    virtual void SortCandidates() {}
+    virtual void SortCandidates()
+    {
+    }
 
     virtual bool PromotionCheck(CSE_Candidate* candidate)
     {
@@ -58,7 +62,9 @@ public:
         return false;
     }
 
-    virtual void AdjustHeuristic(CSE_Candidate* candidate) {}
+    virtual void AdjustHeuristic(CSE_Candidate* candidate)
+    {
+    }
 
     virtual const char* Name() const
     {
@@ -145,7 +151,11 @@ class CSE_HeuristicParameterized : public CSE_HeuristicCommon
 protected:
     struct Choice
     {
-        Choice(CSEdsc* dsc, double preference) : m_dsc(dsc), m_preference(preference), m_softmax(0), m_performed(false)
+        Choice(CSEdsc* dsc, double preference)
+            : m_dsc(dsc)
+            , m_preference(preference)
+            , m_softmax(0)
+            , m_performed(false)
         {
         }
 

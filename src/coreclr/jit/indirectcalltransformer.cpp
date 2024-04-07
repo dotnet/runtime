@@ -67,7 +67,10 @@
 class IndirectCallTransformer
 {
 public:
-    IndirectCallTransformer(Compiler* compiler) : compiler(compiler) {}
+    IndirectCallTransformer(Compiler* compiler)
+        : compiler(compiler)
+    {
+    }
 
     //------------------------------------------------------------------------
     // Run: run transformation for each block.
@@ -155,7 +158,9 @@ private:
     {
     public:
         Transformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
-            : compiler(compiler), currBlock(block), stmt(stmt)
+            : compiler(compiler)
+            , currBlock(block)
+            , stmt(stmt)
         {
             remainderBlock = nullptr;
             checkBlock     = nullptr;
@@ -364,7 +369,9 @@ private:
         }
 
         // FixupRetExpr: no action needed as we handle this in the importer.
-        virtual void FixupRetExpr() {}
+        virtual void FixupRetExpr()
+        {
+        }
 
         //------------------------------------------------------------------------
         // CreateCheck: create check block, that checks fat pointer bit set.
@@ -469,7 +476,8 @@ private:
     {
     public:
         GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
-            : Transformer(compiler, block, stmt), returnTemp(BAD_VAR_NUM)
+            : Transformer(compiler, block, stmt)
+            , returnTemp(BAD_VAR_NUM)
         {
         }
 
@@ -1255,7 +1263,9 @@ private:
                 unsigned m_nodeCount;
 
                 ClonabilityVisitor(Compiler* compiler)
-                    : GenTreeVisitor(compiler), m_unclonableNode(nullptr), m_nodeCount(0)
+                    : GenTreeVisitor(compiler)
+                    , m_unclonableNode(nullptr)
+                    , m_nodeCount(0)
                 {
                 }
 

@@ -1737,8 +1737,7 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
     unsigned              errorCount    = 0;
     static const unsigned maxErrorCount = 50;
 
-    auto disasmRegion = [&](size_t executionAddress, size_t blockAddress, size_t blockSize)
-    {
+    auto disasmRegion = [&](size_t executionAddress, size_t blockAddress, size_t blockSize) {
         uint8_t* address       = (uint8_t*)executionAddress;
         uint8_t* codeBytes     = (uint8_t*)blockAddress;
         size_t   codeSizeBytes = blockSize;

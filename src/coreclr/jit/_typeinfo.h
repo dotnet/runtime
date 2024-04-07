@@ -48,13 +48,27 @@ private:
     };
 
 public:
-    typeInfo() : m_type(TYP_UNDEF), m_cls(NO_CLASS_HANDLE) {}
+    typeInfo()
+        : m_type(TYP_UNDEF)
+        , m_cls(NO_CLASS_HANDLE)
+    {
+    }
 
-    typeInfo(var_types type) : m_type(type), m_cls(NO_CLASS_HANDLE) {}
+    typeInfo(var_types type)
+        : m_type(type)
+        , m_cls(NO_CLASS_HANDLE)
+    {
+    }
 
-    typeInfo(CORINFO_CLASS_HANDLE cls) : m_type(TYP_REF), m_cls(cls) {}
+    typeInfo(CORINFO_CLASS_HANDLE cls)
+        : m_type(TYP_REF)
+        , m_cls(cls)
+    {
+    }
 
-    typeInfo(methodPointerInfo* methodPointerInfo) : m_type(TYP_I_IMPL), m_methodPointerInfo(methodPointerInfo)
+    typeInfo(methodPointerInfo* methodPointerInfo)
+        : m_type(TYP_I_IMPL)
+        , m_methodPointerInfo(methodPointerInfo)
     {
         assert(methodPointerInfo != nullptr);
         assert(methodPointerInfo->m_token.hMethod != nullptr);

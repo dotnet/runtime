@@ -1107,7 +1107,8 @@ void Counter::dump(FILE* output)
  *  Histogram class.
  */
 
-Histogram::Histogram(const unsigned* const sizeTable) : m_sizeTable(sizeTable)
+Histogram::Histogram(const unsigned* const sizeTable)
+    : m_sizeTable(sizeTable)
 {
     unsigned sizeCount = 0;
     do
@@ -1190,21 +1191,19 @@ void NodeCounts::dump(FILE* output)
         sorted[i].count = static_cast<unsigned>(m_counts[i]);
     }
 
-    jitstd::sort(sorted, sorted + ArrLen(sorted),
-                 [](const Entry& lhs, const Entry& rhs)
-                 {
-                     if (lhs.count > rhs.count)
-                     {
-                         return true;
-                     }
+    jitstd::sort(sorted, sorted + ArrLen(sorted), [](const Entry& lhs, const Entry& rhs) {
+        if (lhs.count > rhs.count)
+        {
+            return true;
+        }
 
-                     if (lhs.count < rhs.count)
-                     {
-                         return false;
-                     }
+        if (lhs.count < rhs.count)
+        {
+            return false;
+        }
 
-                     return static_cast<unsigned>(lhs.oper) < static_cast<unsigned>(rhs.oper);
-                 });
+        return static_cast<unsigned>(lhs.oper) < static_cast<unsigned>(rhs.oper);
+    });
 
     for (const Entry& entry : sorted)
     {
@@ -1841,7 +1840,8 @@ void HelperCallProperties::init()
 //
 // You must use ';' as a separator; whitespace no longer works
 
-AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc) : m_alloc(alloc)
+AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc)
+    : m_alloc(alloc)
 {
     WCHAR          prevChar   = '?';     // dummy
     LPWSTR         nameStart  = nullptr; // start of the name currently being processed. nullptr if no current name
@@ -1928,7 +1928,9 @@ bool AssemblyNamesList2::IsInList(const char* assemblyName)
 // MethodSet
 //=============================================================================
 
-MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc) : m_pInfos(nullptr), m_alloc(alloc)
+MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc)
+    : m_pInfos(nullptr)
+    , m_alloc(alloc)
 {
     FILE* methodSetFile = _wfopen(filename, W("r"));
     if (methodSetFile == nullptr)
@@ -2157,7 +2159,10 @@ double CachedCyclesPerSecond()
 }
 
 #ifdef FEATURE_JIT_METHOD_PERF
-CycleCount::CycleCount() : cps(CachedCyclesPerSecond()) {}
+CycleCount::CycleCount()
+    : cps(CachedCyclesPerSecond())
+{
+}
 
 bool CycleCount::GetCycles(unsigned __int64* time)
 {

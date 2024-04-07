@@ -249,7 +249,9 @@ public:
 
     // Deallocate a block of memory previously allocated by `allocate`.
     // The arena allocator does not release memory so this doesn't do anything.
-    void deallocate(void* p) {}
+    void deallocate(void* p)
+    {
+    }
 };
 
 // Global operator new overloads that work with CompAllocator
@@ -274,7 +276,10 @@ class CompIAllocator : public IAllocator
     char          m_zeroLenAllocTarg;
 
 public:
-    CompIAllocator(CompAllocator alloc) : m_alloc(alloc) {}
+    CompIAllocator(CompAllocator alloc)
+        : m_alloc(alloc)
+    {
+    }
 
     // Allocates a block of memory at least `sz` in size.
     virtual void* Alloc(size_t sz) override

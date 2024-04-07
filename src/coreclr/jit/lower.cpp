@@ -2320,8 +2320,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                 GenTree* result = nullptr;
 
                 auto newBinaryOp = [](Compiler* comp, genTreeOps oper, var_types type, GenTree* op1,
-                                      GenTree* op2) -> GenTree*
-                {
+                                      GenTree* op2) -> GenTree* {
 #ifdef FEATURE_SIMD
                     if (varTypeIsSIMD(op1))
                     {
@@ -8375,8 +8374,7 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
         return false;
     }
 
-    auto isNodeInvariant = [](Compiler* comp, GenTree* node, bool allowNull)
-    {
+    auto isNodeInvariant = [](Compiler* comp, GenTree* node, bool allowNull) {
         if (node == nullptr)
         {
             return allowNull;
@@ -9018,8 +9016,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     GenTree* startDumpNode = BlockRange().GetTreeRange(prevIndir, &isClosed).FirstNode();
     GenTree* endDumpNode   = indir->gtNext;
 
-    auto dumpWithMarks = [=]()
-    {
+    auto dumpWithMarks = [=]() {
         if (!comp->verbose)
         {
             return;
@@ -9101,8 +9098,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         }
 
         // Helper lambda to check if a single node interferes with 'indir'.
-        auto interferes = [=](GenTree* node)
-        {
+        auto interferes = [=](GenTree* node) {
             if (((node->gtFlags & GTF_ORDER_SIDEEFF) != 0) && node->OperSupportsOrderingSideEffect())
             {
                 // Cannot normally reorder GTF_ORDER_SIDEEFF and GTF_GLOB_REF,
@@ -9210,12 +9206,10 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 void Lowering::MarkTree(GenTree* node)
 {
     node->gtLIRFlags |= LIR::Flags::Mark;
-    node->VisitOperands(
-        [=](GenTree* op)
-        {
-            MarkTree(op);
-            return GenTree::VisitResult::Continue;
-        });
+    node->VisitOperands([=](GenTree* op) {
+        MarkTree(op);
+        return GenTree::VisitResult::Continue;
+    });
 }
 
 //------------------------------------------------------------------------
@@ -9227,12 +9221,10 @@ void Lowering::MarkTree(GenTree* node)
 void Lowering::UnmarkTree(GenTree* node)
 {
     node->gtLIRFlags &= ~LIR::Flags::Mark;
-    node->VisitOperands(
-        [=](GenTree* op)
-        {
-            UnmarkTree(op);
-            return GenTree::VisitResult::Continue;
-        });
+    node->VisitOperands([=](GenTree* op) {
+        UnmarkTree(op);
+        return GenTree::VisitResult::Continue;
+    });
 }
 
 #endif // TARGET_ARM64

@@ -2060,7 +2060,10 @@ class ProducingStreamBaseInstrs
 {
 public:
     ProducingStreamBaseInstrs(regNumber intReg1, regNumber intReg2, regNumber addrReg, emitter* emitter)
-        : intReg1(intReg1), intReg2(intReg2), addrReg(addrReg), emitter(emitter)
+        : intReg1(intReg1)
+        , intReg2(intReg2)
+        , addrReg(addrReg)
+        , emitter(emitter)
     {
     }
 
@@ -2121,7 +2124,11 @@ class ProducingStream
 {
 public:
     ProducingStream(regNumber intReg1, regNumber simdReg1, regNumber simdReg2, regNumber addrReg, emitter* emitter)
-        : intReg1(intReg1), simdReg1(simdReg1), simdReg2(simdReg2), addrReg(addrReg), emitter(emitter)
+        : intReg1(intReg1)
+        , simdReg1(simdReg1)
+        , simdReg2(simdReg2)
+        , addrReg(addrReg)
+        , emitter(emitter)
     {
     }
 
@@ -2244,7 +2251,11 @@ public:
 class InitBlockUnrollHelper
 {
 public:
-    InitBlockUnrollHelper(int dstOffset, unsigned byteCount) : dstStartOffset(dstOffset), byteCount(byteCount) {}
+    InitBlockUnrollHelper(int dstOffset, unsigned byteCount)
+        : dstStartOffset(dstOffset)
+        , byteCount(byteCount)
+    {
+    }
 
     int GetDstOffset() const
     {
@@ -2371,7 +2382,9 @@ class CopyBlockUnrollHelper
 {
 public:
     CopyBlockUnrollHelper(int srcOffset, int dstOffset, unsigned byteCount)
-        : srcStartOffset(srcOffset), dstStartOffset(dstOffset), byteCount(byteCount)
+        : srcStartOffset(srcOffset)
+        , dstStartOffset(dstOffset)
+        , byteCount(byteCount)
     {
     }
 
@@ -3088,8 +3101,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     regNumber src  = genConsumeReg(srcIndir->Addr());
     unsigned  size = tree->Size();
 
-    auto emitLoadStore = [&](bool load, unsigned regSize, regNumber tempReg, unsigned offset)
-    {
+    auto emitLoadStore = [&](bool load, unsigned regSize, regNumber tempReg, unsigned offset) {
         var_types memType;
         switch (regSize)
         {
@@ -3138,8 +3150,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
             tempRegs[i] = tree->ExtractTempReg(RBM_ALLFLOAT);
         }
 
-        auto emitSimdLoadStore = [&](bool load)
-        {
+        auto emitSimdLoadStore = [&](bool load) {
             unsigned offset   = 0;
             int      regIndex = 0;
             do

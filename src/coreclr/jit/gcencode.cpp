@@ -1818,7 +1818,7 @@ static int (*zeroFunc)() = zeroFN;
  */
 
 typedef unsigned pasMaskType;
-#define BITS_IN_pasMask (BITS_PER_BYTE * sizeof(pasMaskType))
+#define BITS_IN_pasMask     (BITS_PER_BYTE * sizeof(pasMaskType))
 #define HIGHEST_pasMask_BIT (((pasMaskType)0x1) << (BITS_IN_pasMask - 1))
 
 //-----------------------------------------------------------------------------
@@ -1851,8 +1851,8 @@ public:
     // Use these in the case where there actually are more ptrs than pasArgMask
     unsigned pasEnumGCoffsCount();
 #define pasENUM_START ((unsigned)-1)
-#define pasENUM_LAST ((unsigned)-2)
-#define pasENUM_END ((unsigned)-3)
+#define pasENUM_LAST  ((unsigned)-2)
+#define pasENUM_END   ((unsigned)-3)
     unsigned pasEnumGCoffs(unsigned iter, unsigned* offs);
 
 protected:
@@ -3647,7 +3647,8 @@ class GcInfoEncoderWithLogging
 
 public:
     GcInfoEncoderWithLogging(GcInfoEncoder* gcInfoEncoder, bool verbose)
-        : m_gcInfoEncoder(gcInfoEncoder), m_doLogging(verbose INDEBUG(|| JitConfig.JitGCInfoLogging() != 0))
+        : m_gcInfoEncoder(gcInfoEncoder)
+        , m_doLogging(verbose INDEBUG(|| JitConfig.JitGCInfoLogging() != 0))
     {
     }
 
@@ -4025,7 +4026,8 @@ struct InterruptibleRangeReporter
     Encoder* gcInfoEncoderWithLog;
 
     InterruptibleRangeReporter(unsigned _prevStart, Encoder* _gcInfo)
-        : prevStart(_prevStart), gcInfoEncoderWithLog(_gcInfo)
+        : prevStart(_prevStart)
+        , gcInfoEncoderWithLog(_gcInfo)
     {
     }
 

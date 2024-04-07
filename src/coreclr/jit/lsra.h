@@ -34,9 +34,9 @@ const unsigned int RegisterTypeCount    = 2;
  *****************************************************************************/
 typedef var_types RegisterType;
 
-#define IntRegisterType TYP_INT
+#define IntRegisterType   TYP_INT
 #define FloatRegisterType TYP_FLOAT
-#define MaskRegisterType TYP_MASK
+#define MaskRegisterType  TYP_MASK
 
 //------------------------------------------------------------------------
 // regType: Return the RegisterType to use for a given type
@@ -83,10 +83,16 @@ struct RefInfo
     RefPosition* ref;
     GenTree*     treeNode;
 
-    RefInfo(RefPosition* r, GenTree* t) : ref(r), treeNode(t) {}
+    RefInfo(RefPosition* r, GenTree* t)
+        : ref(r)
+        , treeNode(t)
+    {
+    }
 
     // default constructor for data structures
-    RefInfo() {}
+    RefInfo()
+    {
+    }
 };
 
 //------------------------------------------------------------------------
@@ -103,7 +109,10 @@ class RefInfoListNode final : public RefInfo
     RefInfoListNode* m_next; // The next node in the list
 
 public:
-    RefInfoListNode(RefPosition* r, GenTree* t) : RefInfo(r, t) {}
+    RefInfoListNode(RefPosition* r, GenTree* t)
+        : RefInfo(r, t)
+    {
+    }
 
     //------------------------------------------------------------------------
     // RefInfoListNode::Next: Returns the next node in the list.
@@ -128,9 +137,15 @@ class RefInfoList final
     RefInfoListNode* m_tail; // The tail of the list
 
 public:
-    RefInfoList() : m_head(nullptr), m_tail(nullptr) {}
+    RefInfoList()
+        : m_head(nullptr)
+        , m_tail(nullptr)
+    {
+    }
 
-    RefInfoList(RefInfoListNode* node) : m_head(node), m_tail(node)
+    RefInfoList(RefInfoListNode* node)
+        : m_head(node)
+        , m_tail(node)
     {
         assert(m_head->m_next == nullptr);
     }
@@ -366,7 +381,7 @@ enum LsraStat
 #define LSRA_STAT_DEF(enum_name, enum_str) enum_name,
 #include "lsra_stats.h"
 #undef LSRA_STAT_DEF
-#define REG_SEL_DEF(enum_name, value, short_str, orderSeqId) STAT_##enum_name,
+#define REG_SEL_DEF(enum_name, value, short_str, orderSeqId)      STAT_##enum_name,
 #define BUSY_REG_SEL_DEF(enum_name, value, short_str, orderSeqId) REG_SEL_DEF(enum_name, value, short_str, orderSeqId)
 #include "lsra_score.h"
     COUNT
@@ -379,11 +394,11 @@ struct LsraBlockInfo
     // 0 for fgFirstBB.
     unsigned int predBBNum;
     weight_t     weight;
-    bool         hasCriticalInEdge : 1;
+    bool         hasCriticalInEdge  : 1;
     bool         hasCriticalOutEdge : 1;
-    bool         hasEHBoundaryIn : 1;
-    bool         hasEHBoundaryOut : 1;
-    bool         hasEHPred : 1;
+    bool         hasEHBoundaryIn    : 1;
+    bool         hasEHBoundaryOut   : 1;
+    bool         hasEHPred          : 1;
 
 #if TRACK_LSRA_STATS
     // Per block maintained LSRA statistics.
@@ -393,7 +408,7 @@ struct LsraBlockInfo
 
 enum RegisterScore
 {
-#define REG_SEL_DEF(enum_name, value, short_str, orderSeqId) enum_name = value,
+#define REG_SEL_DEF(enum_name, value, short_str, orderSeqId)      enum_name = value,
 #define BUSY_REG_SEL_DEF(enum_name, value, short_str, orderSeqId) REG_SEL_DEF(enum_name, value, short_str, orderSeqId)
 #include "lsra_score.h"
     NONE = 0
@@ -808,8 +823,14 @@ private:
 
     // This controls the heuristics used to select registers
     // These can be combined.
-    enum LsraSelect{LSRA_SELECT_DEFAULT = 0, LSRA_SELECT_REVERSE_HEURISTICS = 0x04,
-                    LSRA_SELECT_REVERSE_CALLER_CALLEE = 0x08, LSRA_SELECT_NEAREST = 0x10, LSRA_SELECT_MASK = 0x1c};
+    enum LsraSelect
+    {
+        LSRA_SELECT_DEFAULT               = 0,
+        LSRA_SELECT_REVERSE_HEURISTICS    = 0x04,
+        LSRA_SELECT_REVERSE_CALLER_CALLEE = 0x08,
+        LSRA_SELECT_NEAREST               = 0x10,
+        LSRA_SELECT_MASK                  = 0x1c
+    };
     LsraSelect getSelectionHeuristics()
     {
         return (LsraSelect)(lsraStressMask & LSRA_SELECT_MASK);
@@ -828,9 +849,14 @@ private:
     }
 
     // This controls the order in which basic blocks are visited during allocation
-    enum LsraTraversalOrder{LSRA_TRAVERSE_LAYOUT = 0x20, LSRA_TRAVERSE_PRED_FIRST = 0x40,
-                            LSRA_TRAVERSE_RANDOM  = 0x60, // NYI
-                            LSRA_TRAVERSE_DEFAULT = LSRA_TRAVERSE_PRED_FIRST, LSRA_TRAVERSE_MASK = 0x60};
+    enum LsraTraversalOrder
+    {
+        LSRA_TRAVERSE_LAYOUT     = 0x20,
+        LSRA_TRAVERSE_PRED_FIRST = 0x40,
+        LSRA_TRAVERSE_RANDOM     = 0x60, // NYI
+        LSRA_TRAVERSE_DEFAULT    = LSRA_TRAVERSE_PRED_FIRST,
+        LSRA_TRAVERSE_MASK       = 0x60
+    };
     LsraTraversalOrder getLsraTraversalOrder()
     {
         if ((lsraStressMask & LSRA_TRAVERSE_MASK) == 0)
@@ -850,7 +876,12 @@ private:
 
     // This controls whether lifetimes should be extended to the entire method.
     // Note that this has no effect under MinOpts
-    enum LsraExtendLifetimes{LSRA_DONT_EXTEND = 0, LSRA_EXTEND_LIFETIMES = 0x80, LSRA_EXTEND_LIFETIMES_MASK = 0x80};
+    enum LsraExtendLifetimes
+    {
+        LSRA_DONT_EXTEND           = 0,
+        LSRA_EXTEND_LIFETIMES      = 0x80,
+        LSRA_EXTEND_LIFETIMES_MASK = 0x80
+    };
     LsraExtendLifetimes getLsraExtendLifeTimes()
     {
         return (LsraExtendLifetimes)(lsraStressMask & LSRA_EXTEND_LIFETIMES_MASK);
@@ -863,8 +894,13 @@ private:
     // This controls whether variables locations should be set to the previous block in layout order
     // (LSRA_BLOCK_BOUNDARY_LAYOUT), or to that of the highest-weight predecessor (LSRA_BLOCK_BOUNDARY_PRED -
     // the default), or rotated (LSRA_BLOCK_BOUNDARY_ROTATE).
-    enum LsraBlockBoundaryLocations{LSRA_BLOCK_BOUNDARY_PRED = 0, LSRA_BLOCK_BOUNDARY_LAYOUT = 0x100,
-                                    LSRA_BLOCK_BOUNDARY_ROTATE = 0x200, LSRA_BLOCK_BOUNDARY_MASK = 0x300};
+    enum LsraBlockBoundaryLocations
+    {
+        LSRA_BLOCK_BOUNDARY_PRED   = 0,
+        LSRA_BLOCK_BOUNDARY_LAYOUT = 0x100,
+        LSRA_BLOCK_BOUNDARY_ROTATE = 0x200,
+        LSRA_BLOCK_BOUNDARY_MASK   = 0x300
+    };
     LsraBlockBoundaryLocations getLsraBlockBoundaryLocations()
     {
         return (LsraBlockBoundaryLocations)(lsraStressMask & LSRA_BLOCK_BOUNDARY_MASK);
@@ -873,7 +909,12 @@ private:
 
     // This controls whether we always insert a GT_RELOAD instruction after a spill
     // Note that this can be combined with LSRA_SPILL_ALWAYS (or not)
-    enum LsraReload{LSRA_NO_RELOAD_IF_SAME = 0, LSRA_ALWAYS_INSERT_RELOAD = 0x400, LSRA_RELOAD_MASK = 0x400};
+    enum LsraReload
+    {
+        LSRA_NO_RELOAD_IF_SAME    = 0,
+        LSRA_ALWAYS_INSERT_RELOAD = 0x400,
+        LSRA_RELOAD_MASK          = 0x400
+    };
     LsraReload getLsraReload()
     {
         return (LsraReload)(lsraStressMask & LSRA_RELOAD_MASK);
@@ -884,7 +925,12 @@ private:
     }
 
     // This controls whether we spill everywhere
-    enum LsraSpill{LSRA_DONT_SPILL_ALWAYS = 0, LSRA_SPILL_ALWAYS = 0x800, LSRA_SPILL_MASK = 0x800};
+    enum LsraSpill
+    {
+        LSRA_DONT_SPILL_ALWAYS = 0,
+        LSRA_SPILL_ALWAYS      = 0x800,
+        LSRA_SPILL_MASK        = 0x800
+    };
     LsraSpill getLsraSpill()
     {
         return (LsraSpill)(lsraStressMask & LSRA_SPILL_MASK);
@@ -896,8 +942,12 @@ private:
 
     // This controls whether RefPositions that lower/codegen indicated as reg optional be
     // allocated a reg at all.
-    enum LsraRegOptionalControl{LSRA_REG_OPTIONAL_DEFAULT = 0, LSRA_REG_OPTIONAL_NO_ALLOC = 0x1000,
-                                LSRA_REG_OPTIONAL_MASK = 0x1000};
+    enum LsraRegOptionalControl
+    {
+        LSRA_REG_OPTIONAL_DEFAULT  = 0,
+        LSRA_REG_OPTIONAL_NO_ALLOC = 0x1000,
+        LSRA_REG_OPTIONAL_MASK     = 0x1000
+    };
 
     LsraRegOptionalControl getLsraRegOptionalControl()
     {
@@ -1343,7 +1393,7 @@ private:
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
         FORCEINLINE void resetMinimal(Interval* interval, RefPosition* refPosition);
 
-#define REG_SEL_DEF(stat, value, shortname, orderSeqId) FORCEINLINE void try_##stat();
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)      FORCEINLINE void try_##stat();
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
     };
@@ -1431,7 +1481,12 @@ private:
     //   - In LSRA_DUMP_POST, which is after register allocation, the registers are
     //     shown.
 
-    enum LsraTupleDumpMode{LSRA_DUMP_PRE, LSRA_DUMP_REFPOS, LSRA_DUMP_POST};
+    enum LsraTupleDumpMode
+    {
+        LSRA_DUMP_PRE,
+        LSRA_DUMP_REFPOS,
+        LSRA_DUMP_POST
+    };
     void lsraGetOperandString(GenTree* tree, LsraTupleDumpMode mode, char* operandString, unsigned operandStringLength);
     void lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDest);
     void DumpOperandDefs(
@@ -1490,7 +1545,8 @@ private:
     void dumpIntervalName(Interval* interval);
 
     // Events during the allocation phase that cause some dump output
-    enum LsraDumpEvent{
+    enum LsraDumpEvent
+    {
         // Conflicting def/use
         LSRA_EVENT_DEFUSE_CONFLICT,
         LSRA_EVENT_DEFUSE_FIXED_DELAY_USE,
@@ -2503,8 +2559,8 @@ public:
     //    we need an explicit move.
     //  - copyReg and moveReg must not exist with each other.
 
-    unsigned char reload : 1;
-    unsigned char spillAfter : 1;
+    unsigned char reload         : 1;
+    unsigned char spillAfter     : 1;
     unsigned char singleDefSpill : 1;
     unsigned char writeThru : 1; // true if this var is defined in a register and also spilled. spillAfter must NOT be
                                  // set.
@@ -2512,7 +2568,7 @@ public:
     unsigned char copyReg : 1;
     unsigned char moveReg : 1; // true if this var is moved to a new register
 
-    unsigned char isPhysRegRef : 1; // true if 'referent' points of a RegRecord, false if it points to an Interval
+    unsigned char isPhysRegRef  : 1; // true if 'referent' points of a RegRecord, false if it points to an Interval
     unsigned char isFixedRegRef : 1;
     unsigned char isLocalDefUse : 1;
 

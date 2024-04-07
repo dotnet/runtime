@@ -6283,7 +6283,9 @@ struct VNAssertionPropVisitorInfo
     Statement*  stmt;
     BasicBlock* block;
     VNAssertionPropVisitorInfo(Compiler* pThis, BasicBlock* block, Statement* stmt)
-        : pThis(pThis), stmt(stmt), block(block)
+        : pThis(pThis)
+        , stmt(stmt)
+        , block(block)
     {
     }
 };

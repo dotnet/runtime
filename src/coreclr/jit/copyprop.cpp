@@ -30,8 +30,7 @@
 //
 void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName)
 {
-    auto popDef = [=](unsigned defLclNum, unsigned defSsaNum)
-    {
+    auto popDef = [=](unsigned defLclNum, unsigned defSsaNum) {
         CopyPropSsaDefStack* stack = nullptr;
         if ((defSsaNum != SsaConfig::RESERVED_SSA_NUM) && curSsaName->Lookup(defLclNum, &stack))
         {
@@ -301,8 +300,7 @@ void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode
         return;
     }
 
-    auto pushDef = [=](unsigned defLclNum, unsigned defSsaNum)
-    {
+    auto pushDef = [=](unsigned defLclNum, unsigned defSsaNum) {
         // The default is "not available".
         LclSsaVarDsc* ssaDef = nullptr;
 
@@ -464,7 +462,9 @@ PhaseStatus Compiler::optVnCopyProp()
 
     public:
         CopyPropDomTreeVisitor(Compiler* compiler)
-            : DomTreeVisitor(compiler), m_curSsaName(compiler->getAllocator(CMK_CopyProp)), m_madeChanges(false)
+            : DomTreeVisitor(compiler)
+            , m_curSsaName(compiler->getAllocator(CMK_CopyProp))
+            , m_madeChanges(false)
         {
         }
 

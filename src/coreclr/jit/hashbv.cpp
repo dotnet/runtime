@@ -449,7 +449,9 @@ hashBv* hashBv::CreateFrom(hashBv* other, Compiler* comp)
     return result;
 }
 
-void hashBv::MergeLists(hashBvNode** root1, hashBvNode** root2) {}
+void hashBv::MergeLists(hashBvNode** root1, hashBvNode** root2)
+{
+}
 
 bool hashBv::TooSmall()
 {
@@ -615,17 +617,15 @@ void hashBv::dump()
     // DBEXEC(TRUE, printf("[%d(%d)(nodes:%d)]{ ", hashtable_size(), countBits(), this->numNodes));
 
     printf("{");
-    ForEachHbvBitSet(*this,
-                     [&](indexType index)
-                     {
-                         if (!first)
-                         {
-                             printf(" ");
-                         }
-                         printf("%d", index);
-                         first = false;
-                         return HbvWalk::Continue;
-                     });
+    ForEachHbvBitSet(*this, [&](indexType index) {
+        if (!first)
+        {
+            printf(" ");
+        }
+        printf("%d", index);
+        first = false;
+        return HbvWalk::Continue;
+    });
     printf("}\n");
 }
 
@@ -636,25 +636,23 @@ void hashBv::dumpFancy()
 
     printf("{");
     printf("count:%d", this->countBits());
-    ForEachHbvBitSet(*this,
-                     [&](indexType index)
-                     {
-                         if (last_1 != index - 1)
-                         {
-                             if (last_0 + 1 != last_1)
-                             {
-                                 printf(" %d-%d", last_0 + 1, last_1);
-                             }
-                             else
-                             {
-                                 printf(" %d", last_1);
-                             }
-                             last_0 = index - 1;
-                         }
-                         last_1 = index;
+    ForEachHbvBitSet(*this, [&](indexType index) {
+        if (last_1 != index - 1)
+        {
+            if (last_0 + 1 != last_1)
+            {
+                printf(" %d-%d", last_0 + 1, last_1);
+            }
+            else
+            {
+                printf(" %d", last_1);
+            }
+            last_0 = index - 1;
+        }
+        last_1 = index;
 
-                         return HbvWalk::Continue;
-                     });
+        return HbvWalk::Continue;
+    });
 
     // Print the last one
     if (last_0 + 1 != last_1)
@@ -936,8 +934,12 @@ bool hashBv::anySet()
 class AndAction
 {
 public:
-    static inline void PreAction(hashBv* lhs, hashBv* rhs) {}
-    static inline void PostAction(hashBv* lhs, hashBv* rhs) {}
+    static inline void PreAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
+    static inline void PostAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
     static inline bool DefaultResult()
     {
         return false;
@@ -994,8 +996,12 @@ public:
 class SubtractAction
 {
 public:
-    static inline void PreAction(hashBv* lhs, hashBv* rhs) {}
-    static inline void PostAction(hashBv* lhs, hashBv* rhs) {}
+    static inline void PreAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
+    static inline void PostAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
     static inline bool DefaultResult()
     {
         return false;
@@ -1046,8 +1052,12 @@ public:
 class XorAction
 {
 public:
-    static inline void PreAction(hashBv* lhs, hashBv* rhs) {}
-    static inline void PostAction(hashBv* lhs, hashBv* rhs) {}
+    static inline void PreAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
+    static inline void PostAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
     static inline bool DefaultResult()
     {
         return false;
@@ -1115,7 +1125,9 @@ public:
             rhs->Resize(rhs->numNodes);
         }
     }
-    static inline void PostAction(hashBv* lhs, hashBv* rhs) {}
+    static inline void PostAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
     static inline bool DefaultResult()
     {
         return false;
@@ -1170,8 +1182,12 @@ public:
 class CompareAction
 {
 public:
-    static inline void PreAction(hashBv* lhs, hashBv* rhs) {}
-    static inline void PostAction(hashBv* lhs, hashBv* rhs) {}
+    static inline void PreAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
+    static inline void PostAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
     static inline bool DefaultResult()
     {
         return true;
@@ -1209,8 +1225,12 @@ public:
 class IntersectsAction
 {
 public:
-    static inline void PreAction(hashBv* lhs, hashBv* rhs) {}
-    static inline void PostAction(hashBv* lhs, hashBv* rhs) {}
+    static inline void PreAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
+    static inline void PostAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
     static inline bool DefaultResult()
     {
         return false;

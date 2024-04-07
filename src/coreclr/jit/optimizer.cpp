@@ -37,7 +37,10 @@ void Compiler::optInit()
     optCSEunmarks        = 0;
 }
 
-DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler) {}
+DataFlow::DataFlow(Compiler* pCompiler)
+    : m_pCompiler(pCompiler)
+{
+}
 
 //------------------------------------------------------------------------
 // optSetBlockWeights: adjust block weights, as follows:
@@ -219,8 +222,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
     // At least one backedge must have been found (the one from endBlk).
     noway_assert(backedgeList);
 
-    auto reportBlockWeight = [&](BasicBlock* blk, const char* message)
-    {
+    auto reportBlockWeight = [&](BasicBlock* blk, const char* message) {
 #ifdef DEBUG
         if (verbose)
         {
@@ -1549,17 +1551,15 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
 
     ClrSafeInt<unsigned> loopCostSz; // Cost is size of one iteration
 
-    loop->VisitLoopBlocksReversePostOrder(
-        [=, &loopCostSz](BasicBlock* block)
+    loop->VisitLoopBlocksReversePostOrder([=, &loopCostSz](BasicBlock* block) {
+        for (Statement* const stmt : block->Statements())
         {
-            for (Statement* const stmt : block->Statements())
-            {
-                gtSetStmtInfo(stmt);
-                loopCostSz += stmt->GetCostSz();
-            }
+            gtSetStmtInfo(stmt);
+            loopCostSz += stmt->GetCostSz();
+        }
 
-            return BasicBlockVisit::Continue;
-        });
+        return BasicBlockVisit::Continue;
+    });
 
 #ifdef DEBUG
     // Today we will never see any BBJ_RETURN blocks because we cannot
@@ -1569,12 +1569,10 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     // flow can reach the header, but that would require the handler to also be
     // part of the loop, which guarantees that the loop contains two distinct
     // EH regions.
-    loop->VisitLoopBlocks(
-        [](BasicBlock* block)
-        {
-            assert(!block->KindIs(BBJ_RETURN));
-            return BasicBlockVisit::Continue;
-        });
+    loop->VisitLoopBlocks([](BasicBlock* block) {
+        assert(!block->KindIs(BBJ_RETURN));
+        return BasicBlockVisit::Continue;
+    });
 #endif
 
     // Compute the estimated increase in code size for the unrolled loop.
@@ -1649,12 +1647,10 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
         loop->Duplicate(&insertAfter, &blockMap, scaleWeight);
 
         // Replace all uses of the loop iterator with the current value.
-        loop->VisitLoopBlocks(
-            [=, &blockMap](BasicBlock* block)
-            {
-                optReplaceScalarUsesWithConst(blockMap[block], lvar, lval);
-                return BasicBlockVisit::Continue;
-            });
+        loop->VisitLoopBlocks([=, &blockMap](BasicBlock* block) {
+            optReplaceScalarUsesWithConst(blockMap[block], lvar, lval);
+            return BasicBlockVisit::Continue;
+        });
 
         // Remove the test we created in the duplicate; we're doing a full unroll.
         BasicBlock* testBlock = blockMap[iterInfo.TestBlock];
@@ -1800,7 +1796,9 @@ void Compiler::optReplaceScalarUsesWithConst(BasicBlock* block, unsigned lclNum,
         bool MadeChanges = false;
 
         ReplaceVisitor(Compiler* comp, unsigned lclNum, ssize_t cnsVal)
-            : GenTreeVisitor(comp), m_lclNum(lclNum), m_cnsVal(cnsVal)
+            : GenTreeVisitor(comp)
+            , m_lclNum(lclNum)
+            , m_cnsVal(cnsVal)
         {
         }
 
@@ -1846,7 +1844,10 @@ Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* t
 
         Compiler::OptInvertCountTreeInfoType Result = {};
 
-        CountTreeInfoVisitor(Compiler* comp) : GenTreeVisitor(comp) {}
+        CountTreeInfoVisitor(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
@@ -3129,16 +3130,14 @@ bool Compiler::optCanonicalizeExits(FlowGraphNaturalLoop* loop)
         // destination block of the exit edge may no longer be right, so we
         // cannot use VisitRegularExitBlocks. The canonicalization here works
         // despite this.
-        edge->getSourceBlock()->VisitRegularSuccs(this,
-                                                  [=, &changed](BasicBlock* succ)
-                                                  {
-                                                      if (!loop->ContainsBlock(succ))
-                                                      {
-                                                          changed |= optCanonicalizeExit(loop, succ);
-                                                      }
+        edge->getSourceBlock()->VisitRegularSuccs(this, [=, &changed](BasicBlock* succ) {
+            if (!loop->ContainsBlock(succ))
+            {
+                changed |= optCanonicalizeExit(loop, succ);
+            }
 
-                                                      return BasicBlockVisit::Continue;
-                                                  });
+            return BasicBlockVisit::Continue;
+        });
     }
 
     return changed;
@@ -3265,23 +3264,21 @@ weight_t Compiler::optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, b
 
     if (useEdgeWeights)
     {
-        from->VisitRegularSuccs(this,
-                                [&, to](BasicBlock* succ)
-                                {
-                                    *fromProfile &= succ->hasProfileWeight();
-                                    FlowEdge* edge       = fgGetPredForBlock(succ, from);
-                                    weight_t  edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2.0;
+        from->VisitRegularSuccs(this, [&, to](BasicBlock* succ) {
+            *fromProfile &= succ->hasProfileWeight();
+            FlowEdge* edge       = fgGetPredForBlock(succ, from);
+            weight_t  edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2.0;
 
-                                    if (succ == to)
-                                    {
-                                        takenCount += edgeWeight;
-                                    }
-                                    else
-                                    {
-                                        notTakenCount += edgeWeight;
-                                    }
-                                    return BasicBlockVisit::Continue;
-                                });
+            if (succ == to)
+            {
+                takenCount += edgeWeight;
+            }
+            else
+            {
+                notTakenCount += edgeWeight;
+            }
+            return BasicBlockVisit::Continue;
+        });
 
         // Watch out for cases where edge weights were not properly maintained
         // so that it appears no profile flow goes to 'to'.
@@ -3294,21 +3291,19 @@ weight_t Compiler::optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, b
         takenCount    = 0;
         notTakenCount = 0;
 
-        from->VisitRegularSuccs(this,
-                                [&, to](BasicBlock* succ)
-                                {
-                                    *fromProfile &= succ->hasProfileWeight();
-                                    if (succ == to)
-                                    {
-                                        takenCount += succ->bbWeight;
-                                    }
-                                    else
-                                    {
-                                        notTakenCount += succ->bbWeight;
-                                    }
+        from->VisitRegularSuccs(this, [&, to](BasicBlock* succ) {
+            *fromProfile &= succ->hasProfileWeight();
+            if (succ == to)
+            {
+                takenCount += succ->bbWeight;
+            }
+            else
+            {
+                notTakenCount += succ->bbWeight;
+            }
 
-                                    return BasicBlockVisit::Continue;
-                                });
+            return BasicBlockVisit::Continue;
+        });
     }
 
     if (!*fromProfile)
@@ -3784,7 +3779,8 @@ void Compiler::optRecordSsaUses(GenTree* tree, BasicBlock* block)
         };
 
         SsaRecordingVisitor(Compiler* compiler, BasicBlock* block)
-            : GenTreeVisitor<SsaRecordingVisitor>(compiler), m_block(block)
+            : GenTreeVisitor<SsaRecordingVisitor>(compiler)
+            , m_block(block)
         {
         }
 
@@ -4621,7 +4617,11 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
             const char* m_failReason;
 #endif
 
-            Value(GenTree* node) : m_node(node), m_hoistable(false), m_cctorDependent(false), m_invariant(false)
+            Value(GenTree* node)
+                : m_node(node)
+                , m_hoistable(false)
+                , m_cctorDependent(false)
+                , m_invariant(false)
             {
 #ifdef DEBUG
                 m_failReason = "unset";
@@ -5476,7 +5476,9 @@ PhaseStatus Compiler::fgCanonicalizeFirstBB()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-LoopSideEffects::LoopSideEffects() : VarInOut(VarSetOps::UninitVal()), VarUseDef(VarSetOps::UninitVal())
+LoopSideEffects::LoopSideEffects()
+    : VarInOut(VarSetOps::UninitVal())
+    , VarUseDef(VarSetOps::UninitVal())
 {
     for (MemoryKind mk : allMemoryKinds())
     {
@@ -5508,15 +5510,13 @@ void Compiler::optComputeLoopSideEffects()
 
         // The side effect code benefits from seeing things in RPO as it has some
         // limited treatment assignments it has seen the value of.
-        loop->VisitLoopBlocksReversePostOrder(
-            [=](BasicBlock* loopBlock)
-            {
-                FlowGraphNaturalLoop* loop = m_blockToLoop->GetLoop(loopBlock);
-                assert(loop != nullptr);
-                optComputeLoopSideEffectsOfBlock(loopBlock, loop);
+        loop->VisitLoopBlocksReversePostOrder([=](BasicBlock* loopBlock) {
+            FlowGraphNaturalLoop* loop = m_blockToLoop->GetLoop(loopBlock);
+            assert(loop != nullptr);
+            optComputeLoopSideEffectsOfBlock(loopBlock, loop);
 
-                return BasicBlockVisit::Continue;
-            });
+            return BasicBlockVisit::Continue;
+        });
     }
 }
 

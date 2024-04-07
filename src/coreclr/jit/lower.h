@@ -589,7 +589,9 @@ private:
         target_ssize_t Offset;
 
         SavedIndir(GenTreeIndir* indir, GenTreeLclVar* addrBase, target_ssize_t offset)
-            : Indir(indir), AddrBase(addrBase), Offset(offset)
+            : Indir(indir)
+            , AddrBase(addrBase)
+            , Offset(offset)
         {
         }
     };

@@ -1074,7 +1074,8 @@ bool DefaultPolicy::PropagateNeverToRuntime() const
 //    compiler -- compiler instance doing the inlining (root compiler)
 //    isPrejitRoot -- true if this compiler is prejitting the root method
 
-RandomPolicy::RandomPolicy(Compiler* compiler, bool isPrejitRoot) : DiscretionaryPolicy(compiler, isPrejitRoot)
+RandomPolicy::RandomPolicy(Compiler* compiler, bool isPrejitRoot)
+    : DiscretionaryPolicy(compiler, isPrejitRoot)
 {
     m_Random = compiler->m_inlineStrategy->GetRandom();
 }
@@ -2770,7 +2771,8 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
 //    compiler -- compiler instance doing the inlining (root compiler)
 //    isPrejitRoot -- true if this compiler is prejitting the root method
 
-ModelPolicy::ModelPolicy(Compiler* compiler, bool isPrejitRoot) : DiscretionaryPolicy(compiler, isPrejitRoot)
+ModelPolicy::ModelPolicy(Compiler* compiler, bool isPrejitRoot)
+    : DiscretionaryPolicy(compiler, isPrejitRoot)
 {
     // Empty
 }
@@ -2971,7 +2973,8 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 //    compiler -- compiler instance doing the inlining (root compiler)
 //    isPrejitRoot -- true if this compiler is prejitting the root method
 
-ProfilePolicy::ProfilePolicy(Compiler* compiler, bool isPrejitRoot) : DiscretionaryPolicy(compiler, isPrejitRoot)
+ProfilePolicy::ProfilePolicy(Compiler* compiler, bool isPrejitRoot)
+    : DiscretionaryPolicy(compiler, isPrejitRoot)
 {
     // Empty
 }
@@ -3171,7 +3174,8 @@ void ProfilePolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 //    compiler -- compiler instance doing the inlining (root compiler)
 //    isPrejitRoot -- true if this compiler is prejitting the root method
 
-FullPolicy::FullPolicy(Compiler* compiler, bool isPrejitRoot) : DiscretionaryPolicy(compiler, isPrejitRoot)
+FullPolicy::FullPolicy(Compiler* compiler, bool isPrejitRoot)
+    : DiscretionaryPolicy(compiler, isPrejitRoot)
 {
     // Empty
 }
@@ -3238,7 +3242,8 @@ void FullPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 //    compiler -- compiler instance doing the inlining (root compiler)
 //    isPrejitRoot -- true if this compiler is prejitting the root method
 
-SizePolicy::SizePolicy(Compiler* compiler, bool isPrejitRoot) : DiscretionaryPolicy(compiler, isPrejitRoot)
+SizePolicy::SizePolicy(Compiler* compiler, bool isPrejitRoot)
+    : DiscretionaryPolicy(compiler, isPrejitRoot)
 {
     // Empty
 }

@@ -242,7 +242,7 @@ union halfwordImm
     struct
     {
         unsigned immVal : 16; // bits  0..15
-        unsigned immHW : 2;   // bits 16..17
+        unsigned immHW  : 2;  // bits 16..17
     };
     unsigned immHWVal; // concat HW:Val forming a 18-bit unsigned immediate
 };
@@ -265,8 +265,8 @@ union byteShiftedImm
 {
     struct
     {
-        unsigned immVal : 8;  // bits  0..7
-        unsigned immBY : 2;   // bits  8..9
+        unsigned immVal  : 8; // bits  0..7
+        unsigned immBY   : 2; // bits  8..9
         unsigned immOnes : 1; // bit   10
     };
     unsigned immBSVal; // concat Ones:BY:Val forming a 10-bit unsigned immediate
@@ -291,7 +291,7 @@ union floatImm8
     struct
     {
         unsigned immMant : 4; // bits 0..3
-        unsigned immExp : 3;  // bits 4..6
+        unsigned immExp  : 3; // bits 4..6
         unsigned immSign : 1; // bits 7
     };
     unsigned immFPIVal; // concat Sign:Exp:Mant forming an 8-bit unsigned immediate
@@ -332,9 +332,9 @@ union condFlagsImm
 {
     struct
     {
-        insCond   cond : 4;  // bits  0..3
+        insCond   cond  : 4; // bits  0..3
         insCflags flags : 4; // bits  4..7
-        unsigned  imm5 : 5;  // bits  8..12
+        unsigned  imm5  : 5; // bits  8..12
     };
     unsigned immCFVal; // concat imm5:flags:cond forming an 13-bit unsigned immediate
 };

@@ -21,36 +21,36 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #if defined(TARGET_ARM)
 const unsigned MAX_PROLOG_SIZE_BYTES = 44;
 const unsigned MAX_EPILOG_SIZE_BYTES = 44;
-#define UWC_END 0xFF // "end" unwind code
+#define UWC_END                    0xFF // "end" unwind code
 #define UW_MAX_FRAGMENT_SIZE_BYTES (1U << 19)
-#define UW_MAX_CODE_WORDS_COUNT 15 // Max number that can be encoded in the "Code Words" field of the .pdata record
+#define UW_MAX_CODE_WORDS_COUNT    15 // Max number that can be encoded in the "Code Words" field of the .pdata record
 #define UW_MAX_EPILOG_START_INDEX                                                                                      \
     0xFFU // Max number that can be encoded in the "Epilog Start Index" field
           // of the .pdata record
 #elif defined(TARGET_ARM64)
 const unsigned MAX_PROLOG_SIZE_BYTES = 100;
 const unsigned MAX_EPILOG_SIZE_BYTES = 100;
-#define UWC_END 0xE4   // "end" unwind code
-#define UWC_END_C 0xE5 // "end_c" unwind code
+#define UWC_END                    0xE4 // "end" unwind code
+#define UWC_END_C                  0xE5 // "end_c" unwind code
 #define UW_MAX_FRAGMENT_SIZE_BYTES (1U << 20)
-#define UW_MAX_CODE_WORDS_COUNT 31
-#define UW_MAX_EPILOG_START_INDEX 0x3FFU
+#define UW_MAX_CODE_WORDS_COUNT    31
+#define UW_MAX_EPILOG_START_INDEX  0x3FFU
 #elif defined(TARGET_LOONGARCH64)
 const unsigned MAX_PROLOG_SIZE_BYTES = 200;
 const unsigned MAX_EPILOG_SIZE_BYTES = 200;
-#define UWC_END 0xE4   // "end" unwind code
-#define UWC_END_C 0xE5 // "end_c" unwind code
+#define UWC_END                    0xE4 // "end" unwind code
+#define UWC_END_C                  0xE5 // "end_c" unwind code
 #define UW_MAX_FRAGMENT_SIZE_BYTES (1U << 20)
-#define UW_MAX_CODE_WORDS_COUNT 31
-#define UW_MAX_EPILOG_START_INDEX 0x3FFU
+#define UW_MAX_CODE_WORDS_COUNT    31
+#define UW_MAX_EPILOG_START_INDEX  0x3FFU
 #elif defined(TARGET_RISCV64)
 const unsigned MAX_PROLOG_SIZE_BYTES = 200;
 const unsigned MAX_EPILOG_SIZE_BYTES = 200;
-#define UWC_END 0xE4   // "end" unwind code
-#define UWC_END_C 0xE5 // "end_c" unwind code
+#define UWC_END                    0xE4 // "end" unwind code
+#define UWC_END_C                  0xE5 // "end_c" unwind code
 #define UW_MAX_FRAGMENT_SIZE_BYTES (1U << 20)
-#define UW_MAX_CODE_WORDS_COUNT 31
-#define UW_MAX_EPILOG_START_INDEX 0x3FFU
+#define UW_MAX_CODE_WORDS_COUNT    31
+#define UW_MAX_EPILOG_START_INDEX  0x3FFU
 
 #endif // TARGET_RISCV64
 
@@ -90,10 +90,17 @@ class UnwindInfo;
 class UnwindBase
 {
 protected:
-    UnwindBase(Compiler* comp) : uwiComp(comp) {}
+    UnwindBase(Compiler* comp)
+        : uwiComp(comp)
+    {
+    }
 
-    UnwindBase() {}
-    ~UnwindBase() {}
+    UnwindBase()
+    {
+    }
+    ~UnwindBase()
+    {
+    }
 
     Compiler* uwiComp;
 };
@@ -138,7 +145,9 @@ public:
 // information for a function, including unwind info header, the prolog codes,
 // and any epilog codes.
 
-class UnwindPrologCodes : public UnwindBase, public UnwindCodesBase
+class UnwindPrologCodes
+    : public UnwindBase
+    , public UnwindCodesBase
 {
     // UPC_LOCAL_COUNT is the amount of memory local to this class. For ARM CoreLib, the maximum size is 34.
     // Here is a histogram of other interesting sizes:
@@ -251,8 +260,12 @@ public:
     // Copy the prolog codes from another prolog
     void CopyFrom(UnwindPrologCodes* pCopyFrom);
 
-    UnwindPrologCodes() {}
-    ~UnwindPrologCodes() {}
+    UnwindPrologCodes()
+    {
+    }
+    ~UnwindPrologCodes()
+    {
+    }
 
 #ifdef DEBUG
     void Dump(int indent = 0);
@@ -298,7 +311,9 @@ private:
 // Epilog unwind codes arrive in the order they will be emitted. Store them as an array,
 // adding new ones to the end of the array.
 
-class UnwindEpilogCodes : public UnwindBase, public UnwindCodesBase
+class UnwindEpilogCodes
+    : public UnwindBase
+    , public UnwindCodesBase
 {
     // UEC_LOCAL_COUNT is the amount of memory local to this class. For ARM CoreLib, the maximum size is 6,
     // while 89% of epilogs fit in 4. So, set it to 4 to maintain array alignment and hit most cases.
@@ -421,8 +436,12 @@ public:
 #endif // !TARGET_RISCV64
     }
 
-    UnwindEpilogCodes() {}
-    ~UnwindEpilogCodes() {}
+    UnwindEpilogCodes()
+    {
+    }
+    ~UnwindEpilogCodes()
+    {
+    }
 
 #ifdef DEBUG
     void Dump(int indent = 0);
@@ -530,8 +549,12 @@ public:
     // Match the codes to a set of epilog codes
     int Match(UnwindEpilogInfo* pEpi);
 
-    UnwindEpilogInfo() {}
-    ~UnwindEpilogInfo() {}
+    UnwindEpilogInfo()
+    {
+    }
+    ~UnwindEpilogInfo()
+    {
+    }
 
 #ifdef DEBUG
     void Dump(int indent = 0);
@@ -646,8 +669,12 @@ public:
     void Allocate(
         CorJitFuncKind funKind, void* pHotCode, void* pColdCode, UNATIVE_OFFSET funcEndOffset, bool isHotCode);
 
-    UnwindFragmentInfo() {}
-    ~UnwindFragmentInfo() {}
+    UnwindFragmentInfo()
+    {
+    }
+    ~UnwindFragmentInfo()
+    {
+    }
 
 #ifdef DEBUG
     void Dump(int indent = 0);
@@ -776,8 +803,12 @@ public:
 
     void CaptureLocation();
 
-    UnwindInfo() {}
-    ~UnwindInfo() {}
+    UnwindInfo()
+    {
+    }
+    ~UnwindInfo()
+    {
+    }
 
 #ifdef DEBUG
 
@@ -786,7 +817,9 @@ public:
     // the last instruction added in the emitter.
     void CheckOpsize(BYTE b1);
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    void CheckOpsize(BYTE b1) {} // nothing to do; all instructions are 4 bytes
+    void CheckOpsize(BYTE b1)
+    {
+    } // nothing to do; all instructions are 4 bytes
 #endif // defined(TARGET_ARM64)
 
     void Dump(bool isHotCode, int indent = 0);

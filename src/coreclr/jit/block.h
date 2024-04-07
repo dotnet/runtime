@@ -162,7 +162,10 @@ class MemoryKindIterator
     int value;
 
 public:
-    explicit inline MemoryKindIterator(int val) : value(val) {}
+    explicit inline MemoryKindIterator(int val)
+        : value(val)
+    {
+    }
     inline MemoryKindIterator& operator++()
     {
         ++value;
@@ -189,7 +192,9 @@ public:
 // Empty struct that allows enumerating memory kinds via `for(MemoryKind kind : allMemoryKinds())`
 struct allMemoryKinds
 {
-    inline allMemoryKinds() {}
+    inline allMemoryKinds()
+    {
+    }
     inline MemoryKindIterator begin()
     {
         return MemoryKindIterator(0);
@@ -240,7 +245,10 @@ class PredEdgeList
     };
 
 public:
-    PredEdgeList(FlowEdge* pred) : m_begin(pred) {}
+    PredEdgeList(FlowEdge* pred)
+        : m_begin(pred)
+    {
+    }
 
     iterator begin() const
     {
@@ -291,7 +299,10 @@ class PredBlockList
     };
 
 public:
-    PredBlockList(FlowEdge* pred) : m_begin(pred) {}
+    PredBlockList(FlowEdge* pred)
+        : m_begin(pred)
+    {
+    }
 
     iterator begin() const
     {
@@ -314,7 +325,10 @@ class BBArrayIterator
     FlowEdge* const* m_edgeEntry;
 
 public:
-    BBArrayIterator(FlowEdge* const* edgeEntry) : m_edgeEntry(edgeEntry) {}
+    BBArrayIterator(FlowEdge* const* edgeEntry)
+        : m_edgeEntry(edgeEntry)
+    {
+    }
 
     BasicBlock* operator*() const;
 
@@ -341,7 +355,10 @@ class FlowEdgeArrayIterator
     FlowEdge* const* m_edgeEntry;
 
 public:
-    FlowEdgeArrayIterator(FlowEdge* const* edgeEntry) : m_edgeEntry(edgeEntry) {}
+    FlowEdgeArrayIterator(FlowEdge* const* edgeEntry)
+        : m_edgeEntry(edgeEntry)
+    {
+    }
 
     FlowEdge* operator*() const
     {
@@ -1166,11 +1183,11 @@ public:
     const char* dspToString(int blockNumPadding = 0) const;
 #endif // DEBUG
 
-#define BB_UNITY_WEIGHT 100.0        // how much a normal execute once block weighs
-#define BB_UNITY_WEIGHT_UNSIGNED 100 // how much a normal execute once block weighs
-#define BB_LOOP_WEIGHT_SCALE 8.0     // synthetic profile scale factor for loops
-#define BB_ZERO_WEIGHT 0.0
-#define BB_MAX_WEIGHT FLT_MAX // maximum finite weight  -- needs rethinking.
+#define BB_UNITY_WEIGHT          100.0 // how much a normal execute once block weighs
+#define BB_UNITY_WEIGHT_UNSIGNED 100   // how much a normal execute once block weighs
+#define BB_LOOP_WEIGHT_SCALE     8.0   // synthetic profile scale factor for loops
+#define BB_ZERO_WEIGHT           0.0
+#define BB_MAX_WEIGHT            FLT_MAX // maximum finite weight  -- needs rethinking.
 
     weight_t bbWeight; // The dynamic execution weight of this block
 
@@ -1518,11 +1535,11 @@ public:
     bool hasEHBoundaryOut() const;
 
 // Some non-zero value that will not collide with real tokens for bbCatchTyp
-#define BBCT_NONE 0x00000000
-#define BBCT_FAULT 0xFFFFFFFC
-#define BBCT_FINALLY 0xFFFFFFFD
-#define BBCT_FILTER 0xFFFFFFFE
-#define BBCT_FILTER_HANDLER 0xFFFFFFFF
+#define BBCT_NONE                   0x00000000
+#define BBCT_FAULT                  0xFFFFFFFC
+#define BBCT_FINALLY                0xFFFFFFFD
+#define BBCT_FILTER                 0xFFFFFFFE
+#define BBCT_FILTER_HANDLER         0xFFFFFFFF
 #define handlerGetsXcptnObj(hndTyp) ((hndTyp) != BBCT_NONE && (hndTyp) != BBCT_FAULT && (hndTyp) != BBCT_FINALLY)
 
     // TODO-Cleanup: Get rid of bbStkDepth and use bbStackDepthOnEntry() instead
@@ -1615,7 +1632,11 @@ public:
             return m_ssaNum;
         }
 
-        MemoryPhiArg(unsigned ssaNum, MemoryPhiArg* nextArg = nullptr) : m_ssaNum(ssaNum), m_nextArg(nextArg) {}
+        MemoryPhiArg(unsigned ssaNum, MemoryPhiArg* nextArg = nullptr)
+            : m_ssaNum(ssaNum)
+            , m_nextArg(nextArg)
+        {
+        }
 
         void* operator new(size_t sz, class Compiler* comp);
     };
@@ -1747,7 +1768,12 @@ public:
     Statement* FirstNonPhiDef() const;
     Statement* FirstNonPhiDefOrCatchArgStore() const;
 
-    BasicBlock() : bbStmtList(nullptr), bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal()) {}
+    BasicBlock()
+        : bbStmtList(nullptr)
+        , bbLiveIn(VarSetOps::UninitVal())
+        , bbLiveOut(VarSetOps::UninitVal())
+    {
+    }
 
     // Iteratable collection of successors of a block.
     template <typename TPosition>
@@ -1757,7 +1783,11 @@ public:
         BasicBlock* m_block;
 
     public:
-        Successors(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block) {}
+        Successors(Compiler* comp, BasicBlock* block)
+            : m_comp(comp)
+            , m_block(block)
+        {
+        }
 
         class iterator
         {
@@ -1766,9 +1796,17 @@ public:
             TPosition   m_pos;
 
         public:
-            iterator(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block), m_pos(comp, block) {}
+            iterator(Compiler* comp, BasicBlock* block)
+                : m_comp(comp)
+                , m_block(block)
+                , m_pos(comp, block)
+            {
+            }
 
-            iterator() : m_pos() {}
+            iterator()
+                : m_pos()
+            {
+            }
 
             void operator++(void)
             {
@@ -1839,7 +1877,10 @@ public:
     class BBSuccList : private SuccList
     {
     public:
-        BBSuccList(const BasicBlock* block) : SuccList(block) {}
+        BBSuccList(const BasicBlock* block)
+            : SuccList(block)
+        {
+        }
 
         BBArrayIterator begin() const
         {
@@ -1859,7 +1900,10 @@ public:
     class BBSuccEdgeList : private SuccList
     {
     public:
-        BBSuccEdgeList(const BasicBlock* block) : SuccList(block) {}
+        BBSuccEdgeList(const BasicBlock* block)
+            : SuccList(block)
+        {
+        }
 
         FlowEdgeArrayIterator begin() const
         {
@@ -1893,7 +1937,9 @@ public:
 
         public:
             iterator(Compiler* comp, BasicBlock* block, unsigned succNum)
-                : m_comp(comp), m_block(block), m_succNum(succNum)
+                : m_comp(comp)
+                , m_block(block)
+                , m_succNum(succNum)
             {
             }
 
@@ -1918,7 +1964,11 @@ public:
         };
 
     public:
-        BBCompilerSuccList(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block) {}
+        BBCompilerSuccList(Compiler* comp, BasicBlock* block)
+            : m_comp(comp)
+            , m_block(block)
+        {
+        }
 
         iterator begin() const
         {
@@ -1952,7 +2002,9 @@ public:
 
         public:
             iterator(Compiler* comp, BasicBlock* block, unsigned succNum)
-                : m_comp(comp), m_block(block), m_succNum(succNum)
+                : m_comp(comp)
+                , m_block(block)
+                , m_succNum(succNum)
             {
             }
 
@@ -1977,7 +2029,11 @@ public:
         };
 
     public:
-        BBCompilerSuccEdgeList(Compiler* comp, BasicBlock* block) : m_comp(comp), m_block(block) {}
+        BBCompilerSuccEdgeList(Compiler* comp, BasicBlock* block)
+            : m_comp(comp)
+            , m_block(block)
+        {
+        }
 
         iterator begin() const
         {
@@ -2085,7 +2141,10 @@ class BasicBlockIterator
     BasicBlock* m_block;
 
 public:
-    BasicBlockIterator(BasicBlock* block) : m_block(block) {}
+    BasicBlockIterator(BasicBlock* block)
+        : m_block(block)
+    {
+    }
 
     BasicBlock* operator*() const
     {
@@ -2119,7 +2178,10 @@ class BasicBlockSimpleList
     BasicBlock* m_begin;
 
 public:
-    BasicBlockSimpleList(BasicBlock* begin) : m_begin(begin) {}
+    BasicBlockSimpleList(BasicBlock* begin)
+        : m_begin(begin)
+    {
+    }
 
     BasicBlockIterator begin() const
     {
@@ -2147,7 +2209,9 @@ class BasicBlockRangeList
     BasicBlock* m_end;
 
 public:
-    BasicBlockRangeList(BasicBlock* begin, BasicBlock* end) : m_begin(begin), m_end(end)
+    BasicBlockRangeList(BasicBlock* begin, BasicBlock* end)
+        : m_begin(begin)
+        , m_end(end)
     {
         assert(begin != nullptr);
         assert(end != nullptr);
@@ -2187,7 +2251,11 @@ struct BBswtDesc
     bool bbsHasDefault;      // true if last switch case is a default case
     bool bbsHasDominantCase; // true if switch has a dominant case
 
-    BBswtDesc() : bbsHasDefault(true), bbsHasDominantCase(false) {}
+    BBswtDesc()
+        : bbsHasDefault(true)
+        , bbsHasDominantCase(false)
+    {
+    }
 
     BBswtDesc(const BBswtDesc* other);
 
@@ -2212,7 +2280,8 @@ struct BBswtDesc
 // BBSwitchTargetList out-of-class-declaration implementations (here due to C++ ordering requirements).
 //
 
-inline BBSwitchTargetList::BBSwitchTargetList(BBswtDesc* bbsDesc) : m_bbsDesc(bbsDesc)
+inline BBSwitchTargetList::BBSwitchTargetList(BBswtDesc* bbsDesc)
+    : m_bbsDesc(bbsDesc)
 {
     assert(m_bbsDesc != nullptr);
     assert(m_bbsDesc->bbsDstTab != nullptr);
@@ -2235,7 +2304,11 @@ struct BBehfDesc
     FlowEdge** bbeSuccs; // array of `FlowEdge*` pointing to BBJ_EHFINALLYRET block successors
     unsigned   bbeCount; // size of `bbeSuccs` array
 
-    BBehfDesc() : bbeSuccs(nullptr), bbeCount(0) {}
+    BBehfDesc()
+        : bbeSuccs(nullptr)
+        , bbeCount(0)
+    {
+    }
 
     BBehfDesc(Compiler* comp, const BBehfDesc* other);
 };
@@ -2243,7 +2316,8 @@ struct BBehfDesc
 // BBEhfSuccList out-of-class-declaration implementations (here due to C++ ordering requirements).
 //
 
-inline BBEhfSuccList::BBEhfSuccList(BBehfDesc* bbeDesc) : m_bbeDesc(bbeDesc)
+inline BBEhfSuccList::BBEhfSuccList(BBehfDesc* bbeDesc)
+    : m_bbeDesc(bbeDesc)
 {
     assert(m_bbeDesc != nullptr);
     assert((m_bbeDesc->bbeSuccs != nullptr) || (m_bbeDesc->bbeCount == 0));
@@ -2342,9 +2416,17 @@ struct BasicBlockList
     BasicBlockList* next;  // The next BasicBlock in the list, nullptr for end of list.
     BasicBlock*     block; // The BasicBlock of interest.
 
-    BasicBlockList() : next(nullptr), block(nullptr) {}
+    BasicBlockList()
+        : next(nullptr)
+        , block(nullptr)
+    {
+    }
 
-    BasicBlockList(BasicBlock* blk, BasicBlockList* rest) : next(rest), block(blk) {}
+    BasicBlockList(BasicBlock* blk, BasicBlockList* rest)
+        : next(rest)
+        , block(blk)
+    {
+    }
 };
 
 // FlowEdge implementations (that are required to be defined after the declaration of BasicBlock)
@@ -2368,7 +2450,8 @@ inline BasicBlock* BBArrayIterator::operator*() const
 
 // Pred list iterator implementations (that are required to be defined after the declaration of BasicBlock and FlowEdge)
 
-inline PredEdgeList::iterator::iterator(FlowEdge* pred) : m_pred(pred)
+inline PredEdgeList::iterator::iterator(FlowEdge* pred)
+    : m_pred(pred)
 {
 #ifdef DEBUG
     m_next = (m_pred == nullptr) ? nullptr : m_pred->getNextPredEdge();
@@ -2390,7 +2473,8 @@ inline PredEdgeList::iterator& PredEdgeList::iterator::operator++()
 }
 
 template <bool allowEdits>
-inline PredBlockList<allowEdits>::iterator::iterator(FlowEdge* pred) : m_pred(pred)
+inline PredBlockList<allowEdits>::iterator::iterator(FlowEdge* pred)
+    : m_pred(pred)
 {
     bool initNextPointer = allowEdits;
     INDEBUG(initNextPointer = true);

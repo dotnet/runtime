@@ -206,7 +206,9 @@ void Scev::Dump(Compiler* comp)
 //   ResetForLoop.
 //
 ScalarEvolutionContext::ScalarEvolutionContext(Compiler* comp)
-    : m_comp(comp), m_cache(comp->getAllocator(CMK_LoopIVOpts)), m_ephemeralCache(comp->getAllocator(CMK_LoopIVOpts))
+    : m_comp(comp)
+    , m_cache(comp->getAllocator(CMK_LoopIVOpts))
+    , m_ephemeralCache(comp->getAllocator(CMK_LoopIVOpts))
 {
 }
 
@@ -722,16 +724,14 @@ Scev* ScalarEvolutionContext::MakeAddRecFromRecursiveScev(Scev* startScev, Scev*
         }
         else
         {
-            ScevVisit result = addOperand->Visit(
-                [=](Scev* node)
+            ScevVisit result = addOperand->Visit([=](Scev* node) {
+                if (node == recursiveScev)
                 {
-                    if (node == recursiveScev)
-                    {
-                        return ScevVisit::Abort;
-                    }
+                    return ScevVisit::Abort;
+                }
 
-                    return ScevVisit::Continue;
-                });
+                return ScevVisit::Continue;
+            });
 
             if (result == ScevVisit::Abort)
             {

@@ -8,7 +8,12 @@
 
 #include "sideeffects.h"
 
-LclVarSet::LclVarSet() : m_bitVector(nullptr), m_hasAnyLcl(false), m_hasBitVector(false) {}
+LclVarSet::LclVarSet()
+    : m_bitVector(nullptr)
+    , m_hasAnyLcl(false)
+    , m_hasBitVector(false)
+{
+}
 
 //------------------------------------------------------------------------
 // LclVarSet::Add:
@@ -119,7 +124,10 @@ void LclVarSet::Clear()
 }
 
 AliasSet::AliasSet()
-    : m_lclVarReads(), m_lclVarWrites(), m_readsAddressableLocation(false), m_writesAddressableLocation(false)
+    : m_lclVarReads()
+    , m_lclVarWrites()
+    , m_readsAddressableLocation(false)
+    , m_writesAddressableLocation(false)
 {
 }
 
@@ -134,7 +142,11 @@ AliasSet::AliasSet()
 //    node - The node in question.
 //
 AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
-    : m_compiler(compiler), m_node(node), m_flags(0), m_lclNum(0), m_lclOffs(0)
+    : m_compiler(compiler)
+    , m_node(node)
+    , m_flags(0)
+    , m_lclNum(0)
+    , m_lclOffs(0)
 {
     if (node->IsCall())
     {
@@ -272,25 +284,23 @@ void AliasSet::AddNode(Compiler* compiler, GenTree* node)
 {
     // First, add all lclVar uses associated with the node to the set. This is necessary because the lclVar reads occur
     // at the position of the user, not at the position of the GenTreeLclVar node.
-    node->VisitOperands(
-        [compiler, this](GenTree* operand) -> GenTree::VisitResult
+    node->VisitOperands([compiler, this](GenTree* operand) -> GenTree::VisitResult {
+        if (operand->OperIsLocalRead())
         {
-            if (operand->OperIsLocalRead())
+            const unsigned lclNum = operand->AsLclVarCommon()->GetLclNum();
+            if (compiler->lvaTable[lclNum].IsAddressExposed())
             {
-                const unsigned lclNum = operand->AsLclVarCommon()->GetLclNum();
-                if (compiler->lvaTable[lclNum].IsAddressExposed())
-                {
-                    m_readsAddressableLocation = true;
-                }
+                m_readsAddressableLocation = true;
+            }
 
-                m_lclVarReads.Add(compiler, lclNum);
-            }
-            if (operand->isContained())
-            {
-                AddNode(compiler, operand);
-            }
-            return GenTree::VisitResult::Continue;
-        });
+            m_lclVarReads.Add(compiler, lclNum);
+        }
+        if (operand->isContained())
+        {
+            AddNode(compiler, operand);
+        }
+        return GenTree::VisitResult::Continue;
+    });
 
     NodeInfo nodeInfo(compiler, node);
     if (nodeInfo.ReadsAddressableLocation())
@@ -444,7 +454,11 @@ void AliasSet::Clear()
     m_lclVarWrites.Clear();
 }
 
-SideEffectSet::SideEffectSet() : m_sideEffectFlags(0), m_aliasSet() {}
+SideEffectSet::SideEffectSet()
+    : m_sideEffectFlags(0)
+    , m_aliasSet()
+{
+}
 
 //------------------------------------------------------------------------
 // SideEffectSet::SideEffectSet:
@@ -458,7 +472,9 @@ SideEffectSet::SideEffectSet() : m_sideEffectFlags(0), m_aliasSet() {}
 //    compiler - The compiler context.
 //    node - The node to use for initialization.
 //
-SideEffectSet::SideEffectSet(Compiler* compiler, GenTree* node) : m_sideEffectFlags(0), m_aliasSet()
+SideEffectSet::SideEffectSet(Compiler* compiler, GenTree* node)
+    : m_sideEffectFlags(0)
+    , m_aliasSet()
 {
     AddNode(compiler, node);
 }

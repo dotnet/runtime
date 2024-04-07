@@ -28,7 +28,8 @@ const regMaskTP intArgMasks[] = {RBM_ECX, RBM_EDX};
 // Parameters:
 //   info - Info about the method being classified.
 //
-X86Classifier::X86Classifier(const ClassifierInfo& info) : m_regs(nullptr, 0)
+X86Classifier::X86Classifier(const ClassifierInfo& info)
+    : m_regs(nullptr, 0)
 {
     switch (info.CallConv)
     {

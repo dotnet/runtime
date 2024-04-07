@@ -14,7 +14,11 @@ public:
         UseExecutionOrder = true,
     };
 
-    LocalSequencer(Compiler* comp) : GenTreeVisitor(comp), m_prevNode(nullptr) {}
+    LocalSequencer(Compiler* comp)
+        : GenTreeVisitor(comp)
+        , m_prevNode(nullptr)
+    {
+    }
 
     //-------------------------------------------------------------------
     // Start: Start sequencing a statement. Must be called before other members

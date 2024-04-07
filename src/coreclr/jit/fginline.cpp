@@ -214,7 +214,10 @@ public:
         UseExecutionOrder = true,
     };
 
-    SubstitutePlaceholdersAndDevirtualizeWalker(Compiler* comp) : GenTreeVisitor(comp) {}
+    SubstitutePlaceholdersAndDevirtualizeWalker(Compiler* comp)
+        : GenTreeVisitor(comp)
+    {
+    }
 
     bool MadeChanges()
     {
@@ -1172,82 +1175,81 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     param.inlineCandidateInfo = inlineCandidateInfo;
     param.inlineInfo          = &inlineInfo;
     bool success              = eeRunWithErrorTrap<Param>(
-        [](Param* pParam)
+        [](Param* pParam) {
+        // Init the local var info of the inlinee
+        pParam->pThis->impInlineInitVars(pParam->inlineInfo);
+
+        if (pParam->inlineInfo->inlineResult->IsCandidate())
         {
-            // Init the local var info of the inlinee
-            pParam->pThis->impInlineInitVars(pParam->inlineInfo);
+            /* Clear the temp table */
+            memset(pParam->inlineInfo->lclTmpNum, -1, sizeof(pParam->inlineInfo->lclTmpNum));
 
-            if (pParam->inlineInfo->inlineResult->IsCandidate())
+            //
+            // Prepare the call to jitNativeCode
+            //
+
+            pParam->inlineInfo->InlinerCompiler = pParam->pThis;
+            if (pParam->pThis->impInlineInfo == nullptr)
             {
-                /* Clear the temp table */
-                memset(pParam->inlineInfo->lclTmpNum, -1, sizeof(pParam->inlineInfo->lclTmpNum));
+                pParam->inlineInfo->InlineRoot = pParam->pThis;
+            }
+            else
+            {
+                pParam->inlineInfo->InlineRoot = pParam->pThis->impInlineInfo->InlineRoot;
+            }
 
-                //
-                // Prepare the call to jitNativeCode
-                //
+            // The inline context is part of debug info and must be created
+            // before we start creating statements; we lazily create it as
+            // late as possible, which is here.
+            pParam->inlineInfo->inlineContext =
+                pParam->inlineInfo->InlineRoot->m_inlineStrategy
+                    ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext, pParam->inlineInfo->iciStmt,
+                                              pParam->inlineInfo->iciCall);
+            pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
+            pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHnd;
 
-                pParam->inlineInfo->InlinerCompiler = pParam->pThis;
-                if (pParam->pThis->impInlineInfo == nullptr)
-                {
-                    pParam->inlineInfo->InlineRoot = pParam->pThis;
-                }
-                else
-                {
-                    pParam->inlineInfo->InlineRoot = pParam->pThis->impInlineInfo->InlineRoot;
-                }
+            JITLOG_THIS(pParam->pThis,
+                                     (LL_INFO100000, "INLINER: inlineInfo.tokenLookupContextHandle for %s set to 0x%p:\n",
+                         pParam->pThis->eeGetMethodFullName(pParam->fncHandle),
+                         pParam->pThis->dspPtr(pParam->inlineInfo->tokenLookupContextHandle)));
 
-                // The inline context is part of debug info and must be created
-                // before we start creating statements; we lazily create it as
-                // late as possible, which is here.
-                pParam->inlineInfo->inlineContext =
-                    pParam->inlineInfo->InlineRoot->m_inlineStrategy
-                        ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext,
-                                                  pParam->inlineInfo->iciStmt, pParam->inlineInfo->iciCall);
-                pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
-                pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHnd;
+            JitFlags compileFlagsForInlinee = *pParam->pThis->opts.jitFlags;
 
-                JITLOG_THIS(pParam->pThis,
-                                         (LL_INFO100000, "INLINER: inlineInfo.tokenLookupContextHandle for %s set to 0x%p:\n",
-                             pParam->pThis->eeGetMethodFullName(pParam->fncHandle),
-                             pParam->pThis->dspPtr(pParam->inlineInfo->tokenLookupContextHandle)));
-
-                JitFlags compileFlagsForInlinee = *pParam->pThis->opts.jitFlags;
-
-                // The following flags are lost when inlining.
-                // (This is checked in Compiler::compInitOptions().)
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_TRACK_TRANSITIONS);
+            // The following flags are lost when inlining.
+            // (This is checked in Compiler::compInitOptions().)
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_TRACK_TRANSITIONS);
 
 #ifdef DEBUG
-                if (pParam->pThis->verbose)
-                {
-                    printf("\nInvoking compiler for the inlinee method %s :\n",
-                           pParam->pThis->eeGetMethodFullName(pParam->fncHandle));
-                }
+            if (pParam->pThis->verbose)
+            {
+                printf("\nInvoking compiler for the inlinee method %s :\n",
+                       pParam->pThis->eeGetMethodFullName(pParam->fncHandle));
+            }
 #endif // DEBUG
 
-                int result =
-                    jitNativeCode(pParam->fncHandle, pParam->inlineCandidateInfo->methInfo.scope,
-                                  pParam->pThis->info.compCompHnd, &pParam->inlineCandidateInfo->methInfo,
-                                  (void**)pParam->inlineInfo, nullptr, &compileFlagsForInlinee, pParam->inlineInfo);
+            int result =
+                jitNativeCode(pParam->fncHandle, pParam->inlineCandidateInfo->methInfo.scope,
+                              pParam->pThis->info.compCompHnd, &pParam->inlineCandidateInfo->methInfo,
+                              (void**)pParam->inlineInfo, nullptr, &compileFlagsForInlinee, pParam->inlineInfo);
 
-                if (result != CORJIT_OK)
+            if (result != CORJIT_OK)
+            {
+                // If we haven't yet determined why this inline fails, use
+                // a catch-all something bad happened observation.
+                InlineResult* innerInlineResult = pParam->inlineInfo->inlineResult;
+
+                if (!innerInlineResult->IsFailure())
                 {
-                    // If we haven't yet determined why this inline fails, use
-                    // a catch-all something bad happened observation.
-                    InlineResult* innerInlineResult = pParam->inlineInfo->inlineResult;
-
-                    if (!innerInlineResult->IsFailure())
-                    {
-                        innerInlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_FAILURE);
-                    }
+                    innerInlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_FAILURE);
                 }
             }
-        },
+        }
+    },
         &param);
     if (!success)
     {

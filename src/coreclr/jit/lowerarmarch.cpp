@@ -1088,8 +1088,7 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
     GenTree* op2 = node->Op(2);
     GenTree* op3 = node->Op(3);
 
-    auto lowerOperand = [this](GenTree* op)
-    {
+    auto lowerOperand = [this](GenTree* op) {
         bool wasNegated = false;
 
         if (op->OperIsHWIntrinsic() &&

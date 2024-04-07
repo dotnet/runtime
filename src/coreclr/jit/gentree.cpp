@@ -78,7 +78,8 @@ struct IndentStack
     const char**    indents;
 
     // Constructor for IndentStack.  Uses 'compiler' to determine the mode of printing.
-    IndentStack(Compiler* compiler) : stack(compiler->getAllocator(CMK_DebugOnly))
+    IndentStack(Compiler* compiler)
+        : stack(compiler->getAllocator(CMK_DebugOnly))
     {
         if (compiler->asciiTrees)
         {
@@ -3199,17 +3200,15 @@ AGAIN:
     }
 
     bool result = false;
-    tree->VisitOperands(
-        [lclNum, &result](GenTree* operand) -> GenTree::VisitResult
+    tree->VisitOperands([lclNum, &result](GenTree* operand) -> GenTree::VisitResult {
+        if (gtHasRef(operand, lclNum))
         {
-            if (gtHasRef(operand, lclNum))
-            {
-                result = true;
-                return GenTree::VisitResult::Abort;
-            }
+            result = true;
+            return GenTree::VisitResult::Abort;
+        }
 
-            return GenTree::VisitResult::Continue;
-        });
+        return GenTree::VisitResult::Continue;
+    });
 
     return result;
 }
@@ -3235,7 +3234,10 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
             DoLclVarsOnly = true,
         };
 
-        LocalsWithAddrOpVisitor(Compiler* comp) : GenTreeVisitor(comp) {}
+        LocalsWithAddrOpVisitor(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
@@ -3274,7 +3276,10 @@ bool Compiler::gtHasAddressExposedLocals(GenTree* tree)
             DoLclVarsOnly = true,
         };
 
-        Visitor(Compiler* comp) : GenTreeVisitor(comp) {}
+        Visitor(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
@@ -3881,8 +3886,7 @@ bool GenTreeOp::IsValidLongMul()
 
     if (gtOverflow())
     {
-        auto getMaxValue = [this](GenTree* op) -> int64_t
-        {
+        auto getMaxValue = [this](GenTree* op) -> int64_t {
             if (op->OperIs(GT_CAST))
             {
                 if (op->IsUnsigned())
@@ -3979,8 +3983,7 @@ unsigned Compiler::gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCo
     unsigned costEx = 0;
     unsigned costSz = 0;
 
-    auto update = [&level, &costEx, &costSz, lateArgs](GenTree* argNode, unsigned argLevel)
-    {
+    auto update = [&level, &costEx, &costSz, lateArgs](GenTree* argNode, unsigned argLevel) {
         if (argLevel > level)
         {
             level = argLevel;
@@ -6436,7 +6439,11 @@ bool Compiler::gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree
             DoPreOrder = true,
         };
 
-        Visitor(Compiler* compiler, GenTree* readTree) : GenTreeVisitor(compiler), m_readTree(readTree) {}
+        Visitor(Compiler* compiler, GenTree* readTree)
+            : GenTreeVisitor(compiler)
+            , m_readTree(readTree)
+        {
+        }
 
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
@@ -6495,7 +6502,9 @@ bool Compiler::gtTreeHasLocalRead(GenTree* tree, unsigned lclNum)
         unsigned   m_lclNum;
         LclVarDsc* m_lclDsc;
 
-        Visitor(Compiler* compiler, unsigned lclNum) : GenTreeVisitor(compiler), m_lclNum(lclNum)
+        Visitor(Compiler* compiler, unsigned lclNum)
+            : GenTreeVisitor(compiler)
+            , m_lclNum(lclNum)
         {
             m_lclDsc = compiler->lvaGetDesc(lclNum);
         }
@@ -9842,7 +9851,9 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     copy->gtCallMoreFlags = tree->gtCallMoreFlags;
     INDEBUG(copy->gtCallDebugFlags = tree->gtCallDebugFlags);
 
-    copy->gtArgs.InternalCopyFrom(this, &tree->gtArgs, [=](GenTree* node) { return gtCloneExpr(node); });
+    copy->gtArgs.InternalCopyFrom(this, &tree->gtArgs, [=](GenTree* node) {
+        return gtCloneExpr(node);
+    });
 
     // The call sig comes from the EE and doesn't change throughout the compilation process, meaning
     // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
@@ -9992,7 +10003,10 @@ void Compiler::gtUpdateStmtSideEffects(Statement* stmt)
             DoPostOrder = true,
         };
 
-        UpdateSideEffectsWalker(Compiler* comp) : GenTreeVisitor(comp) {}
+        UpdateSideEffectsWalker(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
@@ -10101,12 +10115,10 @@ void Compiler::gtUpdateNodeOperSideEffects(GenTree* tree)
 void Compiler::gtUpdateNodeSideEffects(GenTree* tree)
 {
     gtUpdateNodeOperSideEffects(tree);
-    tree->VisitOperands(
-        [tree](GenTree* operand) -> GenTree::VisitResult
-        {
-            tree->gtFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
-            return GenTree::VisitResult::Continue;
-        });
+    tree->VisitOperands([tree](GenTree* operand) -> GenTree::VisitResult {
+        tree->gtFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
+        return GenTree::VisitResult::Continue;
+    });
 }
 
 bool GenTree::gtSetFlags() const
@@ -10189,12 +10201,20 @@ bool GenTree::gtRequestSetFlags()
 }
 
 GenTreeUseEdgeIterator::GenTreeUseEdgeIterator()
-    : m_advance(nullptr), m_node(nullptr), m_edge(nullptr), m_statePtr(nullptr), m_state(-1)
+    : m_advance(nullptr)
+    , m_node(nullptr)
+    , m_edge(nullptr)
+    , m_statePtr(nullptr)
+    , m_state(-1)
 {
 }
 
 GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
-    : m_advance(nullptr), m_node(node), m_edge(nullptr), m_statePtr(nullptr), m_state(0)
+    : m_advance(nullptr)
+    , m_node(node)
+    , m_edge(nullptr)
+    , m_statePtr(nullptr)
+    , m_state(0)
 {
     assert(m_node != nullptr);
 
@@ -11697,9 +11717,9 @@ void Compiler::gtDispRegVal(GenTree* tree)
 }
 
 // We usually/commonly don't expect to print anything longer than this string,
-#define LONGEST_COMMON_LCL_VAR_DISPLAY "V99 PInvokeFrame"
+#define LONGEST_COMMON_LCL_VAR_DISPLAY        "V99 PInvokeFrame"
 #define LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH (sizeof(LONGEST_COMMON_LCL_VAR_DISPLAY))
-#define BUF_SIZE (LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH * 2)
+#define BUF_SIZE                              (LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH * 2)
 
 void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, const char** ilNameOut, unsigned* ilNumOut)
 {
@@ -12697,8 +12717,7 @@ void Compiler::gtDispTree(GenTree*                    tree,
 
         if (tree->OperIs(GT_FIELD_ADDR))
         {
-            auto disp = [&]()
-            {
+            auto disp = [&]() {
                 char buffer[256];
                 printf(" %s", eeGetFieldName(tree->AsFieldAddr()->gtFldHnd, true, buffer, sizeof(buffer)));
             };
@@ -12939,17 +12958,14 @@ void Compiler::gtDispTree(GenTree*                    tree,
         {
             GenTreeCall* call      = tree->AsCall();
             GenTree*     lastChild = nullptr;
-            call->VisitOperands(
-                [&lastChild](GenTree* operand) -> GenTree::VisitResult
-                {
-                    lastChild = operand;
-                    return GenTree::VisitResult::Continue;
-                });
+            call->VisitOperands([&lastChild](GenTree* operand) -> GenTree::VisitResult {
+                lastChild = operand;
+                return GenTree::VisitResult::Continue;
+            });
 
             if (call->gtCallType != CT_INDIRECT)
             {
-                auto disp = [&]()
-                {
+                auto disp = [&]() {
                     char buffer[256];
                     printf(" %s", eeGetMethodFullName(call->gtCallMethHnd, true, true, buffer, sizeof(buffer)));
                 };
@@ -13414,9 +13430,8 @@ void Compiler::gtDispTreeRange(LIR::Range& containingRange, GenTree* tree)
 //
 void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr */)
 {
-    auto displayOperand =
-        [](GenTree* operand, const char* message, IndentInfo operandArc, IndentStack& indentStack, size_t prefixIndent)
-    {
+    auto displayOperand = [](GenTree* operand, const char* message, IndentInfo operandArc, IndentStack& indentStack,
+                             size_t prefixIndent) {
         assert(operand != nullptr);
         assert(message != nullptr);
 
@@ -14279,8 +14294,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
     bool opHasSideEffects = (op->gtFlags & GTF_SIDE_EFFECT) != 0;
 
     // Helper function that creates a new IntCon node and morphs it, if required
-    auto NewMorphedIntConNode = [&](int value) -> GenTreeIntCon*
-    {
+    auto NewMorphedIntConNode = [&](int value) -> GenTreeIntCon* {
         GenTreeIntCon* icon = gtNewIconNode(value);
         if (fgGlobalMorph)
         {
@@ -14289,8 +14303,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         return icon;
     };
 
-    auto NewZeroExtendNode = [&](var_types type, GenTree* op1, var_types castToType) -> GenTree*
-    {
+    auto NewZeroExtendNode = [&](var_types type, GenTree* op1, var_types castToType) -> GenTree* {
         assert(varTypeIsIntegral(type));
         assert(!varTypeIsSmall(type));
         assert(!varTypeIsUnsigned(type));
@@ -17100,7 +17113,11 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
             return m_result;
         }
 
-        SideEffectExtractor(Compiler* compiler, GenTreeFlags flags) : GenTreeVisitor(compiler), m_flags(flags) {}
+        SideEffectExtractor(Compiler* compiler, GenTreeFlags flags)
+            : GenTreeVisitor(compiler)
+            , m_flags(flags)
+        {
+        }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
@@ -17379,7 +17396,11 @@ Compiler::FindLinkData Compiler::gtFindLink(Statement* stmt, GenTree* node)
             DoPreOrder = true,
         };
 
-        FindLinkWalker(Compiler* comp, GenTree* node) : GenTreeVisitor(comp), m_node(node) {}
+        FindLinkWalker(Compiler* comp, GenTree* node)
+            : GenTreeVisitor(comp)
+            , m_node(node)
+        {
+        }
 
         FindLinkData GetResult()
         {
@@ -17563,7 +17584,11 @@ bool Compiler::gtTreeContainsOper(GenTree* tree, genTreeOps oper)
         genTreeOps m_oper;
 
     public:
-        Visitor(Compiler* comp, genTreeOps oper) : GenTreeVisitor(comp), m_oper(oper) {}
+        Visitor(Compiler* comp, genTreeOps oper)
+            : GenTreeVisitor(comp)
+            , m_oper(oper)
+        {
+        }
 
         enum
         {
@@ -17602,7 +17627,10 @@ ExceptionSetFlags Compiler::gtCollectExceptions(GenTree* tree)
         ExceptionSetFlags m_preciseExceptions = ExceptionSetFlags::None;
 
     public:
-        ExceptionsWalker(Compiler* comp) : GenTreeVisitor<ExceptionsWalker>(comp) {}
+        ExceptionsWalker(Compiler* comp)
+            : GenTreeVisitor<ExceptionsWalker>(comp)
+        {
+        }
 
         enum
         {
@@ -17658,7 +17686,11 @@ bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit)
             DoPreOrder = true,
         };
 
-        ComplexityVisitor(Compiler* comp, unsigned limit) : GenTreeVisitor(comp), m_limit(limit) {}
+        ComplexityVisitor(Compiler* comp, unsigned limit)
+            : GenTreeVisitor(comp)
+            , m_limit(limit)
+        {
+        }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
@@ -19417,7 +19449,8 @@ FieldSeq* FieldSeqStore::Append(FieldSeq* a, FieldSeq* b)
     return nullptr;
 }
 
-FieldSeq::FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fieldKind) : m_offset(offset)
+FieldSeq::FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fieldKind)
+    : m_offset(offset)
 {
     assert(fieldHnd != NO_FIELD_HANDLE);
 

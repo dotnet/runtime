@@ -454,13 +454,13 @@ struct TernaryLogicInfo
     // We have 256 entries, so we compress as much as possible
     // This gives us 3-bytes per entry (21-bits)
 
-    TernaryLogicOperKind oper1 : 4;
+    TernaryLogicOperKind oper1    : 4;
     TernaryLogicUseFlags oper1Use : 3;
 
-    TernaryLogicOperKind oper2 : 4;
+    TernaryLogicOperKind oper2    : 4;
     TernaryLogicUseFlags oper2Use : 3;
 
-    TernaryLogicOperKind oper3 : 4;
+    TernaryLogicOperKind oper3    : 4;
     TernaryLogicUseFlags oper3Use : 3;
 
     static const TernaryLogicInfo& lookup(uint8_t control);
@@ -936,7 +936,12 @@ struct HWIntrinsicInfo
 struct HWIntrinsic final
 {
     HWIntrinsic(const GenTreeHWIntrinsic* node)
-        : op1(nullptr), op2(nullptr), op3(nullptr), op4(nullptr), numOperands(0), baseType(TYP_UNDEF)
+        : op1(nullptr)
+        , op2(nullptr)
+        , op3(nullptr)
+        , op4(nullptr)
+        , numOperands(0)
+        , baseType(TYP_UNDEF)
     {
         assert(node != nullptr);
 

@@ -1813,12 +1813,10 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
     // flow can reach the header, but that would require the handler to also be
     // part of the loop, which guarantees that the loop contains two distinct
     // EH regions.
-    loop->VisitLoopBlocks(
-        [](BasicBlock* block)
-        {
-            assert(!block->KindIs(BBJ_RETURN));
-            return BasicBlockVisit::Continue;
-        });
+    loop->VisitLoopBlocks([](BasicBlock* block) {
+        assert(!block->KindIs(BBJ_RETURN));
+        return BasicBlockVisit::Continue;
+    });
 #endif
 
     // Is the entry block a handler or filter start?  If so, then if we cloned, we could create a jump
@@ -2020,12 +2018,10 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     loop->Duplicate(&newPred, blockMap, LoopCloneContext::slowPathWeightScaleFactor);
 
     // Scale old blocks to the fast path weight.
-    loop->VisitLoopBlocks(
-        [=](BasicBlock* block)
-        {
-            block->scaleBBWeight(LoopCloneContext::fastPathWeightScaleFactor);
-            return BasicBlockVisit::Continue;
-        });
+    loop->VisitLoopBlocks([=](BasicBlock* block) {
+        block->scaleBBWeight(LoopCloneContext::fastPathWeightScaleFactor);
+        return BasicBlockVisit::Continue;
+    });
 
     // Perform the static optimizations on the fast path.
     optPerformStaticOptimizations(loop, context DEBUGARG(true));
@@ -2807,21 +2803,19 @@ bool Compiler::optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneConte
 
     LoopCloneVisitorInfo info(context, loop, nullptr, shouldCloneForArrayBounds, shouldCloneForGdvTests);
 
-    loop->VisitLoopBlocksReversePostOrder(
-        [=, &info](BasicBlock* block)
+    loop->VisitLoopBlocksReversePostOrder([=, &info](BasicBlock* block) {
+        compCurBB = block;
+        for (Statement* const stmt : block->Statements())
         {
-            compCurBB = block;
-            for (Statement* const stmt : block->Statements())
-            {
-                info.stmt               = stmt;
-                const bool lclVarsOnly  = false;
-                const bool computeStack = false;
-                fgWalkTreePre(stmt->GetRootNodePointer(), optCanOptimizeByLoopCloningVisitor, &info, lclVarsOnly,
-                              computeStack);
-            }
+            info.stmt               = stmt;
+            const bool lclVarsOnly  = false;
+            const bool computeStack = false;
+            fgWalkTreePre(stmt->GetRootNodePointer(), optCanOptimizeByLoopCloningVisitor, &info, lclVarsOnly,
+                          computeStack);
+        }
 
-            return BasicBlockVisit::Continue;
-        });
+        return BasicBlockVisit::Continue;
+    });
 
     return true;
 }

@@ -233,7 +233,9 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
 
 /*****************************************************************************/
 
-RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_rsGCInfo(gcInfo)
+RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo)
+    : m_rsCompiler(compiler)
+    , m_rsGCInfo(gcInfo)
 {
     /* Initialize the spill logic */
 
@@ -1064,6 +1066,8 @@ void RegSet::rsSpillChk()
 #else
 
 // inline
-void RegSet::rsSpillChk() {}
+void RegSet::rsSpillChk()
+{
+}
 
 #endif

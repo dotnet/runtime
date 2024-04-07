@@ -6,7 +6,9 @@
 class HostAllocator final
 {
 private:
-    HostAllocator() {}
+    HostAllocator()
+    {
+    }
 
 public:
     template <typename T>

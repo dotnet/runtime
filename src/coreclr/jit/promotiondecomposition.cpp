@@ -275,7 +275,9 @@ private:
         var_types PrimitiveType;
 
         RemainderStrategy(int type, unsigned primitiveOffset = 0, var_types primitiveType = TYP_UNDEF)
-            : Type(type), PrimitiveOffset(primitiveOffset), PrimitiveType(primitiveType)
+            : Type(type)
+            , PrimitiveOffset(primitiveOffset)
+            , PrimitiveType(primitiveType)
         {
         }
     };

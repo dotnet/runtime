@@ -215,7 +215,11 @@ public:
         unsigned m_bitNum;
 
     public:
-        Iter(Env env, const UINT64& bits) : m_bits(bits), m_bitNum(0) {}
+        Iter(Env env, const UINT64& bits)
+            : m_bits(bits)
+            , m_bitNum(0)
+        {
+        }
 
         bool NextElem(unsigned* pElem)
         {

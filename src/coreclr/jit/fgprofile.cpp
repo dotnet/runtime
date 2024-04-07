@@ -309,7 +309,13 @@ protected:
     bool      m_modifiedFlow;
 
 protected:
-    Instrumentor(Compiler* comp) : m_comp(comp), m_schemaCount(0), m_instrCount(0), m_modifiedFlow(false) {}
+    Instrumentor(Compiler* comp)
+        : m_comp(comp)
+        , m_schemaCount(0)
+        , m_instrCount(0)
+        , m_modifiedFlow(false)
+    {
+    }
 
 public:
     virtual bool ShouldProcess(BasicBlock* block)
@@ -320,11 +326,19 @@ public:
     {
         return ShouldProcess(block);
     }
-    virtual void Prepare(bool preImport) {}
-    virtual void BuildSchemaElements(BasicBlock* block, Schema& schema) {}
-    virtual void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) {}
-    virtual void InstrumentMethodEntry(Schema& schema, uint8_t* profileMemory) {}
-    unsigned     SchemaCount() const
+    virtual void Prepare(bool preImport)
+    {
+    }
+    virtual void BuildSchemaElements(BasicBlock* block, Schema& schema)
+    {
+    }
+    virtual void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
+    {
+    }
+    virtual void InstrumentMethodEntry(Schema& schema, uint8_t* profileMemory)
+    {
+    }
+    unsigned SchemaCount() const
     {
         return m_schemaCount;
     }
@@ -350,7 +364,10 @@ public:
 class NonInstrumentor : public Instrumentor
 {
 public:
-    NonInstrumentor(Compiler* comp) : Instrumentor(comp) {}
+    NonInstrumentor(Compiler* comp)
+        : Instrumentor(comp)
+    {
+    }
 };
 
 //------------------------------------------------------------------------
@@ -364,7 +381,11 @@ private:
     BasicBlock* m_entryBlock;
 
 public:
-    BlockCountInstrumentor(Compiler* comp) : Instrumentor(comp), m_entryBlock(nullptr) {}
+    BlockCountInstrumentor(Compiler* comp)
+        : Instrumentor(comp)
+        , m_entryBlock(nullptr)
+    {
+    }
     bool ShouldProcess(BasicBlock* block) override
     {
         return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
@@ -1225,7 +1246,9 @@ static int32_t EfficientEdgeCountBlockToKey(BasicBlock* block)
 // Based on "Optimally Profiling and Tracing Programs,"
 // Ball and Larus PLDI '92.
 //
-class EfficientEdgeCountInstrumentor : public Instrumentor, public SpanningTreeVisitor
+class EfficientEdgeCountInstrumentor
+    : public Instrumentor
+    , public SpanningTreeVisitor
 {
 private:
     // A particular edge probe. These are linked
@@ -1364,7 +1387,9 @@ public:
         block->bbSparseProbeList = nullptr;
     }
 
-    void VisitTreeEdge(BasicBlock* source, BasicBlock* target) override {}
+    void VisitTreeEdge(BasicBlock* source, BasicBlock* target) override
+    {
+    }
 
     void VisitNonTreeEdge(BasicBlock* source, BasicBlock* target, SpanningTreeVisitor::EdgeKind kind) override
     {
@@ -1887,7 +1912,9 @@ public:
     Compiler* m_compiler;
 
     HandleHistogramProbeVisitor(Compiler* compiler, TFunctor& functor)
-        : GenTreeVisitor<HandleHistogramProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
+        : GenTreeVisitor<HandleHistogramProbeVisitor>(compiler)
+        , m_functor(functor)
+        , m_compiler(compiler)
     {
     }
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -1919,7 +1946,9 @@ public:
     Compiler* m_compiler;
 
     ValueHistogramProbeVisitor(Compiler* compiler, TFunctor& functor)
-        : GenTreeVisitor<ValueHistogramProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
+        : GenTreeVisitor<ValueHistogramProbeVisitor>(compiler)
+        , m_functor(functor)
+        , m_compiler(compiler)
     {
     }
 
@@ -1949,7 +1978,8 @@ private:
 
 public:
     BuildHandleHistogramProbeSchemaGen(Schema& schema, unsigned& schemaCount)
-        : m_schema(schema), m_schemaCount(schemaCount)
+        : m_schema(schema)
+        , m_schemaCount(schemaCount)
     {
     }
 
@@ -2011,7 +2041,8 @@ class BuildValueHistogramProbeSchemaGen
 
 public:
     BuildValueHistogramProbeSchemaGen(Schema& schema, unsigned& schemaCount)
-        : m_schema(schema), m_schemaCount(schemaCount)
+        : m_schema(schema)
+        , m_schemaCount(schemaCount)
     {
     }
 
@@ -2316,7 +2347,10 @@ public:
 class HandleHistogramProbeInstrumentor : public Instrumentor
 {
 public:
-    HandleHistogramProbeInstrumentor(Compiler* comp) : Instrumentor(comp) {}
+    HandleHistogramProbeInstrumentor(Compiler* comp)
+        : Instrumentor(comp)
+    {
+    }
     bool ShouldProcess(BasicBlock* block) override
     {
         return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
@@ -2332,7 +2366,10 @@ public:
 class ValueInstrumentor : public Instrumentor
 {
 public:
-    ValueInstrumentor(Compiler* comp) : Instrumentor(comp) {}
+    ValueInstrumentor(Compiler* comp)
+        : Instrumentor(comp)
+    {
+    }
     bool ShouldProcess(BasicBlock* block) override
     {
         return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
@@ -3091,7 +3128,11 @@ private:
         int32_t const m_sourceKey;
         int32_t const m_targetKey;
 
-        EdgeKey(int32_t sourceKey, int32_t targetKey) : m_sourceKey(sourceKey), m_targetKey(targetKey) {}
+        EdgeKey(int32_t sourceKey, int32_t targetKey)
+            : m_sourceKey(sourceKey)
+            , m_targetKey(targetKey)
+        {
+        }
 
         EdgeKey(BasicBlock* sourceBlock, BasicBlock* targetBlock)
             : m_sourceKey(EfficientEdgeCountBlockToKey(sourceBlock))
@@ -3249,7 +3290,9 @@ public:
         return !(m_entryWeightZero || m_negativeCount);
     }
 
-    void VisitBlock(BasicBlock*) override {}
+    void VisitBlock(BasicBlock*) override
+    {
+    }
 
     void VisitTreeEdge(BasicBlock* source, BasicBlock* target) override
     {

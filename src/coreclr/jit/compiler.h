@@ -230,11 +230,17 @@ class LclSsaVarDsc
     bool m_hasGlobalUse = false;
 
 public:
-    LclSsaVarDsc() {}
+    LclSsaVarDsc()
+    {
+    }
 
-    LclSsaVarDsc(BasicBlock* block) : m_block(block) {}
+    LclSsaVarDsc(BasicBlock* block)
+        : m_block(block)
+    {
+    }
 
-    LclSsaVarDsc(BasicBlock* block, GenTreeLclVarCommon* defNode) : m_block(block)
+    LclSsaVarDsc(BasicBlock* block, GenTreeLclVarCommon* defNode)
+        : m_block(block)
     {
         SetDefNode(defNode);
     }
@@ -359,7 +365,12 @@ class SsaDefArray
 
 public:
     // Construct an empty SsaDefArray.
-    SsaDefArray() : m_array(nullptr), m_arraySize(0), m_count(0) {}
+    SsaDefArray()
+        : m_array(nullptr)
+        , m_arraySize(0)
+        , m_count(0)
+    {
+    }
 
     // Reset the array (used only if the SSA form is reconstructed).
     void Reset()
@@ -497,11 +508,11 @@ public:
     // note this only packs because var_types is a typedef of unsigned char
     var_types lvType : 5; // TYP_INT/LONG/FLOAT/DOUBLE/REF
 
-    unsigned char lvIsParam : 1;           // is this a parameter?
-    unsigned char lvIsRegArg : 1;          // is this an argument that was passed by register?
+    unsigned char lvIsParam           : 1; // is this a parameter?
+    unsigned char lvIsRegArg          : 1; // is this an argument that was passed by register?
     unsigned char lvFramePointerBased : 1; // 0 = off of REG_SPBASE (e.g., ESP), 1 = off of REG_FPBASE (e.g., EBP)
 
-    unsigned char lvOnFrame : 1;  // (part of) the variable lives on the frame
+    unsigned char lvOnFrame  : 1; // (part of) the variable lives on the frame
     unsigned char lvRegister : 1; // assigned to live in a register? For RyuJIT backend, this is only set if the
                                   // variable is in the same register for the entire function.
     unsigned char lvTracked : 1;  // is this a tracked variable?
@@ -523,16 +534,16 @@ private:
                             // We cannot reason reliably about the value of the variable.
 public:
     unsigned char lvDoNotEnregister : 1; // Do not enregister this variable.
-    unsigned char lvFieldAccessed : 1;   // The var is a struct local, and a field of the variable is accessed.  Affects
+    unsigned char lvFieldAccessed   : 1; // The var is a struct local, and a field of the variable is accessed.  Affects
                                          // struct promotion.
     unsigned char lvLiveInOutOfHndlr : 1; // The variable is live in or out of an exception handler, and therefore must
                                           // be on the stack (at least at those boundaries.)
 
-    unsigned char lvInSsa : 1;       // The variable is in SSA form (set by SsaBuilder)
-    unsigned char lvIsCSE : 1;       // Indicates if this LclVar is a CSE variable.
+    unsigned char lvInSsa       : 1; // The variable is in SSA form (set by SsaBuilder)
+    unsigned char lvIsCSE       : 1; // Indicates if this LclVar is a CSE variable.
     unsigned char lvHasLdAddrOp : 1; // has ldloca or ldarga opcode on this local.
 
-    unsigned char lvHasILStoreOp : 1;         // there is at least one STLOC or STARG on this local
+    unsigned char lvHasILStoreOp         : 1; // there is at least one STLOC or STARG on this local
     unsigned char lvHasMultipleILStoreOp : 1; // there is more than one STLOC on this local
 
     unsigned char lvIsTemp : 1; // Short-lifetime compiler temp
@@ -547,13 +558,13 @@ public:
 #if defined(TARGET_LOONGARCH64)
     unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for LA-ABI64.
     unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for LA-ABI64.
-    unsigned char lvIsSplit : 1;   // Set if the argument is splited.
+    unsigned char lvIsSplit   : 1; // Set if the argument is splited.
 #endif                             // defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_RISCV64)
     unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for RISCV64.
     unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for RISCV64.
-    unsigned char lvIsSplit : 1;   // Set if the argument is splited.
+    unsigned char lvIsSplit   : 1; // Set if the argument is splited.
 #endif                             // defined(TARGET_RISCV64)
 
     unsigned char lvSingleDef : 1; // variable has a single def. Used to identify ref type locals that can get type
@@ -582,7 +593,7 @@ public:
     unsigned char lvQuirkToLong : 1; // Quirk to allocate this LclVar as a 64-bit long
 #endif
 #ifdef DEBUG
-    unsigned char lvKeepType : 1;       // Don't change the type of this variable
+    unsigned char lvKeepType       : 1; // Don't change the type of this variable
     unsigned char lvNoLclFldStress : 1; // Can't apply local field stress on this one
 #endif
     unsigned char lvIsPtr : 1; // Might this be used in an address computation? (used by buffer overflow security
@@ -637,8 +648,8 @@ public:
 
 #ifdef DEBUG
     unsigned char lvClassInfoUpdated : 1; // true if this var has updated class handle or exactness
-    unsigned char lvIsHoist : 1;          // CSE temp for a hoisted tree
-    unsigned char lvIsMultiDefCSE : 1;    // CSE temp for a multi-def CSE
+    unsigned char lvIsHoist          : 1; // CSE temp for a hoisted tree
+    unsigned char lvIsMultiDefCSE    : 1; // CSE temp for a multi-def CSE
 #endif
 
     unsigned char lvImplicitlyReferenced : 1; // true if there are non-IR references to this local (prolog, epilog, gc,
@@ -1329,7 +1340,8 @@ public:
     IntegralRange() = default;
 
     IntegralRange(SymbolicIntegerValue lowerBound, SymbolicIntegerValue upperBound)
-        : m_lowerBound(lowerBound), m_upperBound(upperBound)
+        : m_lowerBound(lowerBound)
+        , m_upperBound(upperBound)
     {
         assert(lowerBound <= upperBound);
     }
@@ -1417,7 +1429,10 @@ private:
     var_types tdType;
 
 public:
-    TempDsc(int _tdNum, unsigned _tdSize, var_types _tdType) : tdNum(_tdNum), tdSize((BYTE)_tdSize), tdType(_tdType)
+    TempDsc(int _tdNum, unsigned _tdSize, var_types _tdType)
+        : tdNum(_tdNum)
+        , tdSize((BYTE)_tdSize)
+        , tdType(_tdType)
     {
 #ifdef DEBUG
         // temps must have a negative number (so they have a different number from all local variables)
@@ -8351,7 +8366,11 @@ public:
     template <typename Functor>
     bool eeRunFunctorWithSPMIErrorTrap(Functor f)
     {
-        return eeRunWithSPMIErrorTrap<Functor>([](Functor* pf) { (*pf)(); }, &f);
+        return eeRunWithSPMIErrorTrap<Functor>(
+            [](Functor* pf) {
+            (*pf)();
+        },
+            &f);
     }
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
@@ -9642,9 +9661,9 @@ public:
 
         // optimize maximally and/or favor speed over size?
 
-#define DEFAULT_MIN_OPTS_CODE_SIZE 60000
-#define DEFAULT_MIN_OPTS_INSTR_COUNT 20000
-#define DEFAULT_MIN_OPTS_BB_COUNT 2000
+#define DEFAULT_MIN_OPTS_CODE_SIZE    60000
+#define DEFAULT_MIN_OPTS_INSTR_COUNT  20000
+#define DEFAULT_MIN_OPTS_BB_COUNT     2000
 #define DEFAULT_MIN_OPTS_LV_NUM_COUNT 2000
 #define DEFAULT_MIN_OPTS_LV_REF_COUNT 8000
 
@@ -10250,11 +10269,11 @@ public:
         // (2) the code is hot/cold split, and we issued less code than we expected
         // in the cold section (the hot section will always be padded out to compTotalHotCodeSize).
 
-        bool compIsStatic : 1;           // Is the method static (no 'this' pointer)?
-        bool compIsVarArgs : 1;          // Does the method have varargs parameters?
-        bool compInitMem : 1;            // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
-        bool compProfilerCallback : 1;   // JIT inserted a profiler Enter callback
-        bool compPublishStubParam : 1;   // EAX captured in prolog will be available through an intrinsic
+        bool compIsStatic           : 1; // Is the method static (no 'this' pointer)?
+        bool compIsVarArgs          : 1; // Does the method have varargs parameters?
+        bool compInitMem            : 1; // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
+        bool compProfilerCallback   : 1; // JIT inserted a profiler Enter callback
+        bool compPublishStubParam   : 1; // EAX captured in prolog will be available through an intrinsic
         bool compHasNextCallRetAddr : 1; // The NextCallReturnAddress intrinsic is used.
 
         var_types compRetType;       // Return type of the method as declared in IL (including SIMD normalization)
@@ -11302,7 +11321,9 @@ protected:
     Compiler*            m_compiler;
     ArrayStack<GenTree*> m_ancestors;
 
-    GenTreeVisitor(Compiler* compiler) : m_compiler(compiler), m_ancestors(compiler->getAllocator(CMK_ArrayStack))
+    GenTreeVisitor(Compiler* compiler)
+        : m_compiler(compiler)
+        , m_ancestors(compiler->getAllocator(CMK_ArrayStack))
     {
         assert(compiler != nullptr);
 
@@ -11725,15 +11746,26 @@ class DomTreeVisitor
 protected:
     Compiler* m_compiler;
 
-    DomTreeVisitor(Compiler* compiler) : m_compiler(compiler) {}
+    DomTreeVisitor(Compiler* compiler)
+        : m_compiler(compiler)
+    {
+    }
 
-    void Begin() {}
+    void Begin()
+    {
+    }
 
-    void PreOrderVisit(BasicBlock* block) {}
+    void PreOrderVisit(BasicBlock* block)
+    {
+    }
 
-    void PostOrderVisit(BasicBlock* block) {}
+    void PostOrderVisit(BasicBlock* block)
+    {
+    }
 
-    void End() {}
+    void End()
+    {
+    }
 
 private:
     void WalkTree(const DomTreeNode* tree)
@@ -11804,7 +11836,10 @@ class EHClauses
         EHblkDsc* m_ehDsc;
 
     public:
-        iterator(EHblkDsc* ehDsc) : m_ehDsc(ehDsc) {}
+        iterator(EHblkDsc* ehDsc)
+            : m_ehDsc(ehDsc)
+        {
+        }
 
         EHblkDsc* operator*() const
         {
@@ -11824,7 +11859,9 @@ class EHClauses
     };
 
 public:
-    EHClauses(Compiler* comp) : m_begin(comp->compHndBBtab), m_end(comp->compHndBBtab + comp->compHndBBtabCount)
+    EHClauses(Compiler* comp)
+        : m_begin(comp->compHndBBtab)
+        , m_end(comp->compHndBBtab + comp->compHndBBtabCount)
     {
         assert((m_begin != nullptr) || (m_begin == m_end));
     }
@@ -11861,7 +11898,9 @@ class StringPrinter
 
 public:
     StringPrinter(CompAllocator alloc, char* buffer = nullptr, size_t bufferMax = 0)
-        : m_alloc(alloc), m_buffer(buffer), m_bufferMax(bufferMax)
+        : m_alloc(alloc)
+        , m_buffer(buffer)
+        , m_bufferMax(bufferMax)
     {
         if ((m_buffer == nullptr) || (m_bufferMax == 0))
         {

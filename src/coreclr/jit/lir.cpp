@@ -9,7 +9,12 @@
 #pragma hdrstop
 #endif
 
-LIR::Use::Use() : m_range(nullptr), m_edge(nullptr), m_user(nullptr) {}
+LIR::Use::Use()
+    : m_range(nullptr)
+    , m_edge(nullptr)
+    , m_user(nullptr)
+{
+}
 
 LIR::Use::Use(const Use& other)
 {
@@ -28,7 +33,10 @@ LIR::Use::Use(const Use& other)
 //
 // Return Value:
 //
-LIR::Use::Use(Range& range, GenTree** edge, GenTree* user) : m_range(&range), m_edge(edge), m_user(user)
+LIR::Use::Use(Range& range, GenTree** edge, GenTree* user)
+    : m_range(&range)
+    , m_edge(edge)
+    , m_user(user)
 {
     AssertIsValid();
 }
@@ -278,9 +286,15 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
     return lclNum;
 }
 
-LIR::ReadOnlyRange::ReadOnlyRange() : m_firstNode(nullptr), m_lastNode(nullptr) {}
+LIR::ReadOnlyRange::ReadOnlyRange()
+    : m_firstNode(nullptr)
+    , m_lastNode(nullptr)
+{
+}
 
-LIR::ReadOnlyRange::ReadOnlyRange(ReadOnlyRange&& other) : m_firstNode(other.m_firstNode), m_lastNode(other.m_lastNode)
+LIR::ReadOnlyRange::ReadOnlyRange(ReadOnlyRange&& other)
+    : m_firstNode(other.m_firstNode)
+    , m_lastNode(other.m_lastNode)
 {
 #ifdef DEBUG
     other.m_firstNode = nullptr;
@@ -297,7 +311,9 @@ LIR::ReadOnlyRange::ReadOnlyRange(ReadOnlyRange&& other) : m_firstNode(other.m_f
 //    firstNode - The first node in the range.
 //    lastNode  - The last node in the range.
 //
-LIR::ReadOnlyRange::ReadOnlyRange(GenTree* firstNode, GenTree* lastNode) : m_firstNode(firstNode), m_lastNode(lastNode)
+LIR::ReadOnlyRange::ReadOnlyRange(GenTree* firstNode, GenTree* lastNode)
+    : m_firstNode(firstNode)
+    , m_lastNode(lastNode)
 {
     assert((m_firstNode == nullptr) == (m_lastNode == nullptr));
     assert((m_firstNode == m_lastNode) || (Contains(m_lastNode)));
@@ -422,9 +438,15 @@ bool LIR::ReadOnlyRange::Contains(GenTree* node) const
 
 #endif
 
-LIR::Range::Range() : ReadOnlyRange() {}
+LIR::Range::Range()
+    : ReadOnlyRange()
+{
+}
 
-LIR::Range::Range(Range&& other) : ReadOnlyRange(std::move(other)) {}
+LIR::Range::Range(Range&& other)
+    : ReadOnlyRange(std::move(other))
+{
+}
 
 //------------------------------------------------------------------------
 // LIR::Range::Range: Creates a `Range` value given the first and last
@@ -434,7 +456,10 @@ LIR::Range::Range(Range&& other) : ReadOnlyRange(std::move(other)) {}
 //    firstNode - The first node in the range.
 //    lastNode  - The last node in the range.
 //
-LIR::Range::Range(GenTree* firstNode, GenTree* lastNode) : ReadOnlyRange(firstNode, lastNode) {}
+LIR::Range::Range(GenTree* firstNode, GenTree* lastNode)
+    : ReadOnlyRange(firstNode, lastNode)
+{
+}
 
 //------------------------------------------------------------------------
 // LIR::Range::FirstNonCatchArgNode: Returns the first node after all catch arg nodes in this range.
@@ -915,16 +940,14 @@ void LIR::Range::Remove(GenTree* node, bool markOperandsUnused)
 
     if (markOperandsUnused)
     {
-        node->VisitOperands(
-            [](GenTree* operand) -> GenTree::VisitResult
+        node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
+            // The operand of JTRUE does not produce a value (just sets the flags).
+            if (operand->IsValue())
             {
-                // The operand of JTRUE does not produce a value (just sets the flags).
-                if (operand->IsValue())
-                {
-                    operand->SetUnusedValue();
-                }
-                return GenTree::VisitResult::Continue;
-            });
+                operand->SetUnusedValue();
+            }
+            return GenTree::VisitResult::Continue;
+        });
     }
 
     GenTree* prev = node->gtPrev;
@@ -1210,13 +1233,11 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
             }
 
             // Mark the node's operands
-            firstNode->VisitOperands(
-                [&markCount](GenTree* operand) -> GenTree::VisitResult
-                {
-                    operand->gtLIRFlags |= LIR::Flags::Mark;
-                    markCount++;
-                    return GenTree::VisitResult::Continue;
-                });
+            firstNode->VisitOperands([&markCount](GenTree* operand) -> GenTree::VisitResult {
+                operand->gtLIRFlags |= LIR::Flags::Mark;
+                markCount++;
+                return GenTree::VisitResult::Continue;
+            });
 
             if (markFlagsOperands && firstNode->OperConsumesFlags())
             {
@@ -1360,13 +1381,11 @@ LIR::ReadOnlyRange LIR::Range::GetRangeOfOperandTrees(GenTree* root, bool* isClo
 
     // Mark the root node's operands
     unsigned markCount = 0;
-    root->VisitOperands(
-        [&markCount](GenTree* operand) -> GenTree::VisitResult
-        {
-            operand->gtLIRFlags |= LIR::Flags::Mark;
-            markCount++;
-            return GenTree::VisitResult::Continue;
-        });
+    root->VisitOperands([&markCount](GenTree* operand) -> GenTree::VisitResult {
+        operand->gtLIRFlags |= LIR::Flags::Mark;
+        markCount++;
+        return GenTree::VisitResult::Continue;
+    });
 
     if (markCount == 0)
     {

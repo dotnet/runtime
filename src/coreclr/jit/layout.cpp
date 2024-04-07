@@ -44,7 +44,12 @@ class ClassLayoutTable
     ClassLayout m_zeroSizedBlockLayout;
 
 public:
-    ClassLayoutTable() : m_layoutCount(0), m_layoutLargeCapacity(0), m_zeroSizedBlockLayout(0) {}
+    ClassLayoutTable()
+        : m_layoutCount(0)
+        , m_layoutLargeCapacity(0)
+        , m_zeroSizedBlockLayout(0)
+    {
+    }
 
     // Get a number that uniquely identifies the specified layout.
     unsigned GetLayoutNum(ClassLayout* layout) const

@@ -280,7 +280,10 @@ class Counter : public Dumpable
 public:
     int64_t Value;
 
-    Counter(int64_t initialValue = 0) : Value(initialValue) {}
+    Counter(int64_t initialValue = 0)
+        : Value(initialValue)
+    {
+    }
 
     void dump(FILE* output);
 };
@@ -330,7 +333,10 @@ private:
 class NodeCounts : public Dumpable
 {
 public:
-    NodeCounts() : m_counts() {}
+    NodeCounts()
+        : m_counts()
+    {
+    }
 
     void dump(FILE* output);
     void record(genTreeOps oper);
@@ -4776,8 +4782,7 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
 
     ArrayStack<AllSuccessorEnumerator> blocks(getAllocator(CMK_DepthFirstSearch));
 
-    auto dfsFrom = [&](BasicBlock* firstBB)
-    {
+    auto dfsFrom = [&](BasicBlock* firstBB) {
         BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
         blocks.Emplace(this, firstBB);
         visitPreorder(firstBB, preOrderIndex++);
@@ -4847,17 +4852,15 @@ template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder(TFunc func)
 {
     BitVecTraits traits(m_blocksSize, m_dfsTree->GetCompiler());
-    bool         result = BitVecOps::VisitBits(&traits, m_blocks,
-                                               [=](unsigned index)
-                                               {
-                                           // head block rpo index = PostOrderCount - 1 - headPreOrderIndex
-                                           // loop block rpo index = head block rpoIndex + index
-                                           // loop block po index = PostOrderCount - 1 - loop block rpo index
-                                           //                     = headPreOrderIndex - index
-                                           unsigned poIndex = m_header->bbPostorderNum - index;
-                                           assert(poIndex < m_dfsTree->GetPostOrderCount());
-                                           return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
-                                       });
+    bool         result = BitVecOps::VisitBits(&traits, m_blocks, [=](unsigned index) {
+        // head block rpo index = PostOrderCount - 1 - headPreOrderIndex
+        // loop block rpo index = head block rpoIndex + index
+        // loop block po index = PostOrderCount - 1 - loop block rpo index
+        //                     = headPreOrderIndex - index
+        unsigned poIndex = m_header->bbPostorderNum - index;
+        assert(poIndex < m_dfsTree->GetPostOrderCount());
+        return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
+    });
 
     return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
 }
@@ -4881,14 +4884,11 @@ template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksPostOrder(TFunc func)
 {
     BitVecTraits traits(m_blocksSize, m_dfsTree->GetCompiler());
-    bool         result =
-        BitVecOps::VisitBitsReverse(&traits, m_blocks,
-                                    [=](unsigned index)
-                                    {
-                                        unsigned poIndex = m_header->bbPostorderNum - index;
-                                        assert(poIndex < m_dfsTree->GetPostOrderCount());
-                                        return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
-                                    });
+    bool         result = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
+        unsigned poIndex = m_header->bbPostorderNum - index;
+        assert(poIndex < m_dfsTree->GetPostOrderCount());
+        return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
+    });
 
     return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
 }
@@ -4933,17 +4933,15 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
 {
     BasicBlock* top           = m_header;
     unsigned    numLoopBlocks = 0;
-    VisitLoopBlocks(
-        [&](BasicBlock* block)
+    VisitLoopBlocks([&](BasicBlock* block) {
+        if (block->bbNum < top->bbNum)
         {
-            if (block->bbNum < top->bbNum)
-            {
-                top = block;
-            }
+            top = block;
+        }
 
-            numLoopBlocks++;
-            return BasicBlockVisit::Continue;
-        });
+        numLoopBlocks++;
+        return BasicBlockVisit::Continue;
+    });
 
     INDEBUG(BasicBlock* prev = nullptr);
     BasicBlock* cur = top;

@@ -191,7 +191,9 @@ public:
         UseExecutionOrder = true
     };
 
-    ForwardSubVisitor(Compiler* compiler, unsigned lclNum) : GenTreeVisitor(compiler), m_lclNum(lclNum)
+    ForwardSubVisitor(Compiler* compiler, unsigned lclNum)
+        : GenTreeVisitor(compiler)
+        , m_lclNum(lclNum)
     {
         LclVarDsc* dsc = compiler->lvaGetDesc(m_lclNum);
         if (dsc->lvIsStructField)
@@ -399,7 +401,11 @@ public:
         UseExecutionOrder = true
     };
 
-    EffectsVisitor(Compiler* compiler) : GenTreeVisitor<EffectsVisitor>(compiler), m_flags(GTF_EMPTY) {}
+    EffectsVisitor(Compiler* compiler)
+        : GenTreeVisitor<EffectsVisitor>(compiler)
+        , m_flags(GTF_EMPTY)
+    {
+    }
 
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {

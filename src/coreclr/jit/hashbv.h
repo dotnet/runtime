@@ -15,13 +15,13 @@
 
 // #define TESTING 1
 
-#define LOG2_BITS_PER_ELEMENT 5
+#define LOG2_BITS_PER_ELEMENT  5
 #define LOG2_ELEMENTS_PER_NODE 2
-#define LOG2_BITS_PER_NODE (LOG2_BITS_PER_ELEMENT + LOG2_ELEMENTS_PER_NODE)
+#define LOG2_BITS_PER_NODE     (LOG2_BITS_PER_ELEMENT + LOG2_ELEMENTS_PER_NODE)
 
-#define BITS_PER_ELEMENT (1 << LOG2_BITS_PER_ELEMENT)
+#define BITS_PER_ELEMENT  (1 << LOG2_BITS_PER_ELEMENT)
 #define ELEMENTS_PER_NODE (1 << LOG2_ELEMENTS_PER_NODE)
-#define BITS_PER_NODE (1 << LOG2_BITS_PER_NODE)
+#define BITS_PER_NODE     (1 << LOG2_BITS_PER_NODE)
 
 #ifdef TARGET_AMD64
 typedef unsigned __int64 elemType;
@@ -124,7 +124,9 @@ public:
 
 public:
     hashBvNode(indexType base);
-    hashBvNode() {}
+    hashBvNode()
+    {
+    }
     static hashBvNode* Create(indexType base, Compiler* comp);
     void               Reconstruct(indexType base);
     int                numElements()

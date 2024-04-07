@@ -500,7 +500,9 @@ public:
         unsigned m_bitNum;
 
     public:
-        Iter(Env env, const BitSetShortLongRep& bs) : m_bs(bs), m_bitNum(0)
+        Iter(Env env, const BitSetShortLongRep& bs)
+            : m_bs(bs)
+            , m_bitNum(0)
         {
             if (BitSetOps::IsShort(env))
             {

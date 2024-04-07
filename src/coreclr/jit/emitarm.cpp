@@ -700,8 +700,8 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
 }
 
 // INST_FP is 1
-#define LD 2
-#define ST 4
+#define LD  2
+#define ST  4
 #define CMP 8
 
 // clang-format off

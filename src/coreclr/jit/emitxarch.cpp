@@ -567,52 +567,50 @@ bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
 
     bool result = false;
 
-    emitPeepholeIterateLastInstrs(
-        [&](instrDesc* id)
+    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
+        if (emitIsInstrWritingToReg(id, reg))
         {
-            if (emitIsInstrWritingToReg(id, reg))
+            switch (id->idIns())
             {
-                switch (id->idIns())
-                {
-                    // Conservative.
-                    case INS_call:
-                        return PEEPHOLE_ABORT;
+                // Conservative.
+                case INS_call:
+                    return PEEPHOLE_ABORT;
 
-                    // These instructions sign-extend.
-                    case INS_cwde:
-                    case INS_cdq:
-                    case INS_movsx:
-                    case INS_movsxd:
-                        return PEEPHOLE_ABORT;
+                // These instructions sign-extend.
+                case INS_cwde:
+                case INS_cdq:
+                case INS_movsx:
+                case INS_movsxd:
+                    return PEEPHOLE_ABORT;
 
-                    case INS_movzx:
-                        if ((size == EA_1BYTE) || (size == EA_2BYTE))
-                        {
-                            result = (id->idOpSize() <= size);
-                        }
-                        // movzx always zeroes the upper 32 bits.
-                        else if (size == EA_4BYTE)
-                        {
-                            result = true;
-                        }
-                        return PEEPHOLE_ABORT;
+                case INS_movzx:
+                    if ((size == EA_1BYTE) || (size == EA_2BYTE))
+                    {
+                        result = (id->idOpSize() <= size);
+                    }
+                    // movzx always zeroes the upper 32 bits.
+                    else if (size == EA_4BYTE)
+                    {
+                        result = true;
+                    }
+                    return PEEPHOLE_ABORT;
 
-                    default:
-                        break;
-                }
-
-                // otherwise rely on operation size.
-                if (size == EA_4BYTE)
-                {
-                    result = (id->idOpSize() == EA_4BYTE);
-                }
-                return PEEPHOLE_ABORT;
+                default:
+                    break;
             }
-            else
+
+            // otherwise rely on operation size.
+            if (size == EA_4BYTE)
             {
-                return PEEPHOLE_CONTINUE;
+                result = (id->idOpSize() == EA_4BYTE);
             }
-        });
+            return PEEPHOLE_ABORT;
+        }
+        else
+        {
+            return PEEPHOLE_CONTINUE;
+        }
+    });
 
     return result;
 }
@@ -648,41 +646,39 @@ bool emitter::AreUpperBitsSignExtended(regNumber reg, emitAttr size)
 
     bool result = false;
 
-    emitPeepholeIterateLastInstrs(
-        [&](instrDesc* id)
+    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
+        if (emitIsInstrWritingToReg(id, reg))
         {
-            if (emitIsInstrWritingToReg(id, reg))
+            switch (id->idIns())
             {
-                switch (id->idIns())
-                {
-                    // Conservative.
-                    case INS_call:
-                        return PEEPHOLE_ABORT;
+                // Conservative.
+                case INS_call:
+                    return PEEPHOLE_ABORT;
 
-                    case INS_movsx:
-                    case INS_movsxd:
-                        if ((size == EA_1BYTE) || (size == EA_2BYTE))
-                        {
-                            result = (id->idOpSize() <= size);
-                        }
-                        // movsx/movsxd always sign extends to 8 bytes. W-bit is set.
-                        else if (size == EA_4BYTE)
-                        {
-                            result = true;
-                        }
-                        break;
+                case INS_movsx:
+                case INS_movsxd:
+                    if ((size == EA_1BYTE) || (size == EA_2BYTE))
+                    {
+                        result = (id->idOpSize() <= size);
+                    }
+                    // movsx/movsxd always sign extends to 8 bytes. W-bit is set.
+                    else if (size == EA_4BYTE)
+                    {
+                        result = true;
+                    }
+                    break;
 
-                    default:
-                        break;
-                }
-
-                return PEEPHOLE_ABORT;
+                default:
+                    break;
             }
-            else
-            {
-                return PEEPHOLE_CONTINUE;
-            }
-        });
+
+            return PEEPHOLE_ABORT;
+        }
+        else
+        {
+            return PEEPHOLE_CONTINUE;
+        }
+    });
 
     return result;
 }
@@ -893,43 +889,41 @@ bool emitter::IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
 
     bool result = false;
 
-    emitPeepholeIterateLastInstrs(
-        [&](instrDesc* id)
+    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
+        instruction ins = id->idIns();
+
+        switch (ins)
         {
-            instruction ins = id->idIns();
-
-            switch (ins)
+            case INS_cmp:
             {
-                case INS_cmp:
-                {
-                    // We only care about 'cmp reg, reg'.
-                    if (id->idInsFmt() != IF_RRD_RRD)
-                        return PEEPHOLE_ABORT;
-
-                    if ((id->idReg1() == reg1) && (id->idReg2() == reg2))
-                    {
-                        result = (size == id->idOpSize());
-                    }
-
+                // We only care about 'cmp reg, reg'.
+                if (id->idInsFmt() != IF_RRD_RRD)
                     return PEEPHOLE_ABORT;
+
+                if ((id->idReg1() == reg1) && (id->idReg2() == reg2))
+                {
+                    result = (size == id->idOpSize());
                 }
 
-                default:
-                    break;
-            }
-
-            if (emitDoesInsModifyFlags(ins))
-            {
                 return PEEPHOLE_ABORT;
             }
 
-            if (emitIsInstrWritingToReg(id, reg1) || emitIsInstrWritingToReg(id, reg2))
-            {
-                return PEEPHOLE_ABORT;
-            }
+            default:
+                break;
+        }
 
-            return PEEPHOLE_CONTINUE;
-        });
+        if (emitDoesInsModifyFlags(ins))
+        {
+            return PEEPHOLE_ABORT;
+        }
+
+        if (emitIsInstrWritingToReg(id, reg1) || emitIsInstrWritingToReg(id, reg2))
+        {
+            return PEEPHOLE_ABORT;
+        }
+
+        return PEEPHOLE_CONTINUE;
+    });
 
     return result;
 }
@@ -1293,10 +1287,10 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 #define DEFAULT_BYTE_EVEX_PREFIX 0x62F07C0800000000ULL
 
 #define DEFAULT_BYTE_EVEX_PREFIX_MASK 0xFFFFFFFF00000000ULL
-#define BBIT_IN_BYTE_EVEX_PREFIX 0x0000001000000000ULL
-#define LBIT_IN_BYTE_EVEX_PREFIX 0x0000002000000000ULL
+#define BBIT_IN_BYTE_EVEX_PREFIX      0x0000001000000000ULL
+#define LBIT_IN_BYTE_EVEX_PREFIX      0x0000002000000000ULL
 #define LPRIMEBIT_IN_BYTE_EVEX_PREFIX 0x0000004000000000ULL
-#define ZBIT_IN_BYTE_EVEX_PREFIX 0x0000008000000000ULL
+#define ZBIT_IN_BYTE_EVEX_PREFIX      0x0000008000000000ULL
 
 //------------------------------------------------------------------------
 // AddEvexPrefix: Add default EVEX prefix with only LL' bits set.
@@ -1466,9 +1460,9 @@ bool emitter::TakesVexPrefix(instruction ins) const
 //   01  - 66     (66 0F - packed double)
 //   10  - F3     (F3 0F - scalar float
 //   11  - F2     (F2 0F - scalar double)
-#define DEFAULT_3BYTE_VEX_PREFIX 0xC4E07800000000ULL
+#define DEFAULT_3BYTE_VEX_PREFIX      0xC4E07800000000ULL
 #define DEFAULT_3BYTE_VEX_PREFIX_MASK 0xFFFFFF00000000ULL
-#define LBIT_IN_3BYTE_VEX_PREFIX 0x00000400000000ULL
+#define LBIT_IN_3BYTE_VEX_PREFIX      0x00000400000000ULL
 emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr attr)
 {
     // The 2-byte VEX encoding is preferred when possible, but actually emitting

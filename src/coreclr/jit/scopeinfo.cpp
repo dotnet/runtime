@@ -1889,9 +1889,8 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
             continue;
         }
 
-        auto reportRange =
-            [this, varDsc, varNum, &liveRangeIndex](siVarLoc* loc, UNATIVE_OFFSET start, UNATIVE_OFFSET end)
-        {
+        auto reportRange = [this, varDsc, varNum, &liveRangeIndex](siVarLoc* loc, UNATIVE_OFFSET start,
+                                                                   UNATIVE_OFFSET end) {
             if (varDsc->lvIsParam && (start == end))
             {
                 // If the length is zero, it means that the prolog is empty. In that case,

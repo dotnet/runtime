@@ -238,7 +238,10 @@ public:
     class VNMap : public JitHashTable<fromType, keyfuncs, ValueNum>
     {
     public:
-        VNMap(CompAllocator alloc) : JitHashTable<fromType, keyfuncs, ValueNum>(alloc) {}
+        VNMap(CompAllocator alloc)
+            : JitHashTable<fromType, keyfuncs, ValueNum>(alloc)
+        {
+        }
 
         bool Set(fromType k, ValueNum val)
         {
@@ -914,7 +917,12 @@ public:
         ValueNum vnIdx;
         ValueNum vnBound;
 
-        UnsignedCompareCheckedBoundInfo() : cmpOper(GT_NONE), vnIdx(NoVN), vnBound(NoVN) {}
+        UnsignedCompareCheckedBoundInfo()
+            : cmpOper(GT_NONE)
+            , vnIdx(NoVN)
+            , vnBound(NoVN)
+        {
+        }
     };
 
     struct CompareCheckedBoundArithInfo
@@ -926,7 +934,14 @@ public:
         ValueNum arrOp;
         unsigned cmpOper;
         ValueNum cmpOp;
-        CompareCheckedBoundArithInfo() : vnBound(NoVN), arrOper(GT_NONE), arrOp(NoVN), cmpOper(GT_NONE), cmpOp(NoVN) {}
+        CompareCheckedBoundArithInfo()
+            : vnBound(NoVN)
+            , arrOper(GT_NONE)
+            , arrOp(NoVN)
+            , cmpOper(GT_NONE)
+            , cmpOp(NoVN)
+        {
+        }
 #ifdef DEBUG
         void dump(ValueNumStore* vnStore)
         {
@@ -952,7 +967,13 @@ public:
         ValueNum cmpOpVN;
         bool     isUnsigned;
 
-        ConstantBoundInfo() : constVal(0), cmpOper(GT_NONE), cmpOpVN(NoVN), isUnsigned(false) {}
+        ConstantBoundInfo()
+            : constVal(0)
+            , cmpOper(GT_NONE)
+            , cmpOpVN(NoVN)
+            , isUnsigned(false)
+        {
+        }
 
 #ifdef DEBUG
         void dump(ValueNumStore* vnStore)
@@ -1299,7 +1320,8 @@ private:
         VNFunc   m_func;
         ValueNum m_args[NumArgs];
 
-        VNDefFuncApp() : m_func(VNF_COUNT)
+        VNDefFuncApp()
+            : m_func(VNF_COUNT)
         {
             for (size_t i = 0; i < NumArgs; i++)
             {
@@ -1308,7 +1330,9 @@ private:
         }
 
         template <typename... VNs>
-        VNDefFuncApp(VNFunc func, VNs... vns) : m_func(func), m_args{vns...}
+        VNDefFuncApp(VNFunc func, VNs... vns)
+            : m_func(func)
+            , m_args{vns...}
         {
             static_assert_no_msg(NumArgs == sizeof...(VNs));
         }
@@ -1479,7 +1503,11 @@ private:
     {
         ValueNum      vn;
         ValueNumList* next;
-        ValueNumList(const ValueNum& v, ValueNumList* n = nullptr) : vn(v), next(n) {}
+        ValueNumList(const ValueNum& v, ValueNumList* n = nullptr)
+            : vn(v)
+            , next(n)
+        {
+        }
     };
 
     // Keeps track of value numbers that are integer constants and also handles (GTG_ICON_HDL_MASK.)

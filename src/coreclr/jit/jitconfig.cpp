@@ -36,8 +36,7 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
         }
     }
 
-    auto commitPattern = [this, host](const char* start, const char* end)
-    {
+    auto commitPattern = [this, host](const char* start, const char* end) {
         if (end <= start)
         {
             return;
@@ -164,17 +163,15 @@ bool JitConfigValues::MethodSet::contains(CORINFO_METHOD_HANDLE methodHnd,
             (name->m_containsSignature != prevPattern->m_containsSignature))
         {
             printer.Truncate(0);
-            bool success = comp->eeRunFunctorWithSPMIErrorTrap(
-                [&]()
-                {
-                    comp->eePrintMethod(&printer, name->m_containsClassName ? classHnd : NO_CLASS_HANDLE, methodHnd,
-                                        sigInfo,
-                                        /* includeClassInstantiation */ name->m_classNameContainsInstantiation,
-                                        /* includeMethodInstantiation */ name->m_methodNameContainsInstantiation,
-                                        /* includeSignature */ name->m_containsSignature,
-                                        /* includeReturnType */ false,
-                                        /* includeThis */ false);
-                });
+            bool success = comp->eeRunFunctorWithSPMIErrorTrap([&]() {
+                comp->eePrintMethod(&printer, name->m_containsClassName ? classHnd : NO_CLASS_HANDLE, methodHnd,
+                                    sigInfo,
+                                    /* includeClassInstantiation */ name->m_classNameContainsInstantiation,
+                                    /* includeMethodInstantiation */ name->m_methodNameContainsInstantiation,
+                                    /* includeSignature */ name->m_containsSignature,
+                                    /* includeReturnType */ false,
+                                    /* includeThis */ false);
+            });
 
             if (!success)
                 continue;
@@ -196,7 +193,7 @@ void JitConfigValues::initialize(ICorJitHost* host)
     assert(!m_isInitialized);
 
 #define CONFIG_INTEGER(name, key, defaultValue) m_##name = host->getIntConfigValue(key, defaultValue);
-#define CONFIG_STRING(name, key) m_##name = host->getStringConfigValue(key);
+#define CONFIG_STRING(name, key)                m_##name = host->getStringConfigValue(key);
 #define CONFIG_METHODSET(name, key)                                                                                    \
     const WCHAR* name##value = host->getStringConfigValue(key);                                                        \
     m_##name.initialize(name##value, host);                                                                            \
@@ -215,7 +212,7 @@ void JitConfigValues::destroy(ICorJitHost* host)
     }
 
 #define CONFIG_INTEGER(name, key, defaultValue)
-#define CONFIG_STRING(name, key) host->freeStringConfigValue(m_##name);
+#define CONFIG_STRING(name, key)    host->freeStringConfigValue(m_##name);
 #define CONFIG_METHODSET(name, key) m_##name.destroy(host);
 
 #include "jitconfigvalues.h"

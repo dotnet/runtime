@@ -613,14 +613,18 @@ const unsigned short emitTypeActSz[] = {
  *  Initialize the emitter - called once, at DLL load time.
  */
 
-void emitter::emitInit() {}
+void emitter::emitInit()
+{
+}
 
 /*****************************************************************************
  *
  *  Shut down the emitter - called once, at DLL exit time.
  */
 
-void emitter::emitDone() {}
+void emitter::emitDone()
+{
+}
 
 /*****************************************************************************
  *
@@ -755,7 +759,9 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
 #endif // TARGET_XARCH
 }
 
-void emitter::emitEndCG() {}
+void emitter::emitEndCG()
+{
+}
 
 /*****************************************************************************
  *
@@ -1363,7 +1369,9 @@ int emitter::emitNextRandomNop()
  *  Done generating code to be scheduled; called once per method.
  */
 
-void emitter::emitEndFN() {}
+void emitter::emitEndFN()
+{
+}
 
 // member function iiaIsJitDataOffset for idAddrUnion, defers to Compiler::eeIsJitDataOffs
 bool emitter::instrDesc::idAddrUnion::iiaIsJitDataOffset() const
@@ -2689,7 +2697,9 @@ void emitter::emitSetFrameRangeGCRs(int offsLo, int offsHi)
  *  method.
  */
 
-void emitter::emitSetFrameRangeLcls(int offsLo, int offsHi) {}
+void emitter::emitSetFrameRangeLcls(int offsLo, int offsHi)
+{
+}
 
 /*****************************************************************************
  *
@@ -2697,7 +2707,9 @@ void emitter::emitSetFrameRangeLcls(int offsLo, int offsHi) {}
  *  method.
  */
 
-void emitter::emitSetFrameRangeArgs(int offsLo, int offsHi) {}
+void emitter::emitSetFrameRangeArgs(int offsLo, int offsHi)
+{
+}
 
 /*****************************************************************************
  *
@@ -3036,8 +3048,7 @@ void emitter::emitSplit(emitLocation*         startLoc,
     UNATIVE_OFFSET curSize;
     UNATIVE_OFFSET candidateSize;
 
-    auto splitIfNecessary = [&]()
-    {
+    auto splitIfNecessary = [&]() {
         if (curSize < maxSplitSize)
         {
             return;

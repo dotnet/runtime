@@ -1157,9 +1157,15 @@ struct FileLine
     unsigned m_line;
     char*    m_condStr;
 
-    FileLine() : m_file(nullptr), m_line(0), m_condStr(nullptr) {}
+    FileLine()
+        : m_file(nullptr)
+        , m_line(0)
+        , m_condStr(nullptr)
+    {
+    }
 
-    FileLine(const char* file, unsigned line, const char* condStr) : m_line(line)
+    FileLine(const char* file, unsigned line, const char* condStr)
+        : m_line(line)
     {
         size_t newSize = (strlen(file) + 1) * sizeof(char);
         m_file         = HostAllocator::getHostAllocator().allocate<char>(newSize);
@@ -1231,7 +1237,10 @@ struct NowayAssertCountMap
     size_t   count;
     FileLine fl;
 
-    NowayAssertCountMap() : count(0) {}
+    NowayAssertCountMap()
+        : count(0)
+    {
+    }
 
     struct compare
     {
@@ -1455,12 +1464,10 @@ void Compiler::compShutdown()
             opers[op] = {GenTree::s_gtNodeCounts[op], GenTree::s_gtTrueSizes[op], static_cast<genTreeOps>(op)};
         }
 
-        jitstd::sort(opers, opers + ArrLen(opers),
-                     [](const OperInfo& l, const OperInfo& r)
-                     {
-                         // We'll be sorting in descending order.
-                         return l.Count >= r.Count;
-                     });
+        jitstd::sort(opers, opers + ArrLen(opers), [](const OperInfo& l, const OperInfo& r) {
+            // We'll be sorting in descending order.
+            return l.Count >= r.Count;
+        });
 
         unsigned remainingCount      = totalCount;
         unsigned remainingCountLarge = 0;
@@ -4566,8 +4573,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Prepare for importation
     //
-    auto preImportPhase = [this]()
-    {
+    auto preImportPhase = [this]() {
         if (compIsForInlining())
         {
             // Notify root instance that an inline attempt is about to import IL
@@ -4792,7 +4798,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         // Tail merge
         //
-        DoPhase(this, PHASE_HEAD_TAIL_MERGE, [this]() { return fgHeadTailMerge(true); });
+        DoPhase(this, PHASE_HEAD_TAIL_MERGE, [this]() {
+            return fgHeadTailMerge(true);
+        });
 
         // Merge common throw blocks
         //
@@ -4862,8 +4870,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     unsigned const preMorphBBCount = fgBBcount;
     DoPhase(this, PHASE_MORPH_GLOBAL, &Compiler::fgMorphBlocks);
 
-    auto postMorphPhase = [this]()
-    {
+    auto postMorphPhase = [this]() {
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
         fgMarkDemotedImplicitByRefArgs();
         lvaRefCountState       = RCS_INVALID;
@@ -4918,7 +4925,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Second pass of tail merge
         //
-        DoPhase(this, PHASE_HEAD_TAIL_MERGE2, [this]() { return fgHeadTailMerge(false); });
+        DoPhase(this, PHASE_HEAD_TAIL_MERGE2, [this]() {
+            return fgHeadTailMerge(false);
+        });
 
         // Canonicalize entry to give a unique dominator tree root
         //
@@ -5273,7 +5282,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Now that lowering is completed we can proceed to perform register allocation
     //
-    auto linearScanPhase = [this]() { m_pLinearScan->doLinearScan(); };
+    auto linearScanPhase = [this]() {
+        m_pLinearScan->doLinearScan();
+    };
     DoPhase(this, PHASE_LINEAR_SCAN, linearScanPhase);
 
     // Copied from rpPredictRegUse()
@@ -5420,19 +5431,17 @@ bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
         return false;
     }
 
-    bool hasCall = loop->VisitLoopBlocks(
-                       [](BasicBlock* block)
-                       {
-                           for (GenTree* tree : LIR::AsRange(block))
-                           {
-                               if (tree->IsCall())
-                               {
-                                   return BasicBlockVisit::Abort;
-                               }
-                           }
+    bool hasCall = loop->VisitLoopBlocks([](BasicBlock* block) {
+        for (GenTree* tree : LIR::AsRange(block))
+        {
+            if (tree->IsCall())
+            {
+                return BasicBlockVisit::Abort;
+            }
+        }
 
-                           return BasicBlockVisit::Continue;
-                       }) == BasicBlockVisit::Abort;
+        return BasicBlockVisit::Continue;
+    }) == BasicBlockVisit::Abort;
 
     if (hasCall)
     {
@@ -5995,7 +6004,9 @@ void Compiler::RecomputeFlowGraphAnnotations()
 }
 
 /*****************************************************************************/
-void Compiler::ProcessShutdownWork(ICorStaticInfo* statInfo) {}
+void Compiler::ProcessShutdownWork(ICorStaticInfo* statInfo)
+{
+}
 
 /*****************************************************************************/
 
@@ -8324,7 +8335,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 /*****************************************************************************/
-void codeGeneratorCodeSizeBeg() {}
+void codeGeneratorCodeSizeBeg()
+{
+}
 
 /*****************************************************************************
  *
@@ -8332,7 +8345,9 @@ void codeGeneratorCodeSizeBeg() {}
  */
 
 /*****************************************************************************/
-void codeGeneratorCodeSizeEnd() {}
+void codeGeneratorCodeSizeEnd()
+{
+}
 /*****************************************************************************
  *
  *  Gather statistics - mainly used for the standalone
@@ -8935,7 +8950,8 @@ void CompTimeSummaryInfo::Print(FILE* f)
     fprintf(f, "\n");
 }
 
-JitTimer::JitTimer(unsigned byteCodeSize) : m_info(byteCodeSize)
+JitTimer::JitTimer(unsigned byteCodeSize)
+    : m_info(byteCodeSize)
 {
 #if MEASURE_CLRAPI_CALLS
     m_CLRcallInvokes = 0;
@@ -10489,12 +10505,10 @@ JITDBGAPI GenTree* __cdecl dFindTreeInTree(GenTree* tree, unsigned id)
     }
 
     GenTree* child = nullptr;
-    tree->VisitOperands(
-        [&child, id](GenTree* operand) -> GenTree::VisitResult
-        {
-            child = dFindTreeInTree(child, id);
-            return (child != nullptr) ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
-        });
+    tree->VisitOperands([&child, id](GenTree* operand) -> GenTree::VisitResult {
+        child = dFindTreeInTree(child, id);
+        return (child != nullptr) ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+    });
 
     return child;
 }

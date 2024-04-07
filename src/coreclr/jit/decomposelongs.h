@@ -18,7 +18,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 class DecomposeLongs
 {
 public:
-    DecomposeLongs(Compiler* compiler) : m_compiler(compiler) {}
+    DecomposeLongs(Compiler* compiler)
+        : m_compiler(compiler)
+    {
+    }
 
     void PrepareForDecomposition();
     void DecomposeBlock(BasicBlock* block);

@@ -125,10 +125,16 @@ public:
 
             GenTree* m_node;
 
-            Iterator(GenTree* begin) : m_node(begin) {}
+            Iterator(GenTree* begin)
+                : m_node(begin)
+            {
+            }
 
         public:
-            Iterator() : m_node(nullptr) {}
+            Iterator()
+                : m_node(nullptr)
+            {
+            }
 
             inline GenTree* operator*()
             {
@@ -163,10 +169,16 @@ public:
 
             GenTree* m_node;
 
-            ReverseIterator(GenTree* begin) : m_node(begin) {}
+            ReverseIterator(GenTree* begin)
+                : m_node(begin)
+            {
+            }
 
         public:
-            ReverseIterator() : m_node(nullptr) {}
+            ReverseIterator()
+                : m_node(nullptr)
+            {
+            }
 
             inline GenTree* operator*()
             {

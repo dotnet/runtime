@@ -63,7 +63,11 @@ class RegisterQueue
     unsigned int     m_index = 0;
 
 public:
-    RegisterQueue(const regNumber* regs, unsigned int numRegs) : m_regs(regs), m_numRegs(numRegs) {}
+    RegisterQueue(const regNumber* regs, unsigned int numRegs)
+        : m_regs(regs)
+        , m_numRegs(numRegs)
+    {
+    }
 
     unsigned Count()
     {
@@ -185,7 +189,10 @@ class SwiftABIClassifier
     PlatformClassifier m_classifier;
 
 public:
-    SwiftABIClassifier(const ClassifierInfo& info) : m_classifier(info) {}
+    SwiftABIClassifier(const ClassifierInfo& info)
+        : m_classifier(info)
+    {
+    }
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,

@@ -317,7 +317,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
     assert(len >= 1 && len <= 8);
 
 // Compose Int32 or Int64 values from ushort components
-#define MAKEINT32(c1, c2) ((UINT64)c2 << 16) | ((UINT64)c1 << 0)
+#define MAKEINT32(c1, c2)         ((UINT64)c2 << 16) | ((UINT64)c1 << 0)
 #define MAKEINT64(c1, c2, c3, c4) ((UINT64)c4 << 48) | ((UINT64)c3 << 32) | ((UINT64)c2 << 16) | ((UINT64)c1 << 0)
 
     if (len == 1)

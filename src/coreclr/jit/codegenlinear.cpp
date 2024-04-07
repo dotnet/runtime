@@ -645,8 +645,7 @@ void CodeGen::genCodeForBBlist()
 #endif // TARGET_AMD64
 
 #if FEATURE_LOOP_ALIGN
-        auto SetLoopAlignBackEdge = [=](const BasicBlock* block, const BasicBlock* target)
-        {
+        auto SetLoopAlignBackEdge = [=](const BasicBlock* block, const BasicBlock* target) {
             // This is the last place where we operate on blocks and after this, we operate
             // on IG. Hence, if we know that the destination of "block" is the first block
             // of a loop and that loop needs alignment (it has BBF_LOOP_ALIGN), then "block"

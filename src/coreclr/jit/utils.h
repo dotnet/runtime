@@ -88,7 +88,11 @@ class IteratorPair
     TIterator m_end;
 
 public:
-    IteratorPair(TIterator begin, TIterator end) : m_begin(begin), m_end(end) {}
+    IteratorPair(TIterator begin, TIterator end)
+        : m_begin(begin)
+        , m_end(end)
+    {
+    }
 
     inline TIterator begin()
     {
@@ -114,7 +118,8 @@ struct ConstLog2
 {
     enum
     {
-        value = ConstLog2<val / 2, acc + 1>::value
+        value = ConstLog2 < val / 2,
+        acc + 1 > ::value
     };
 };
 
@@ -244,7 +249,11 @@ private:
 class ConfigIntArray
 {
 public:
-    ConfigIntArray() : m_values(nullptr), m_length(0) {}
+    ConfigIntArray()
+        : m_values(nullptr)
+        , m_length(0)
+    {
+    }
 
     // Ensure the string has been parsed.
     void EnsureInit(const WCHAR* str)
@@ -276,7 +285,11 @@ private:
 class ConfigDoubleArray
 {
 public:
-    ConfigDoubleArray() : m_values(nullptr), m_length(0) {}
+    ConfigDoubleArray()
+        : m_values(nullptr)
+        , m_length(0)
+    {
+    }
 
     // Ensure the string has been parsed.
     void EnsureInit(const WCHAR* str)
@@ -398,7 +411,8 @@ template <typename T>
 class ScopedSetVariable
 {
 public:
-    ScopedSetVariable(T* pVariable, T value) : m_pVariable(pVariable)
+    ScopedSetVariable(T* pVariable, T value)
+        : m_pVariable(pVariable)
     {
         m_oldValue   = *m_pVariable;
         *m_pVariable = value;
@@ -436,7 +450,8 @@ class PhasedVar
 public:
     PhasedVar()
 #ifdef DEBUG
-        : m_initialized(false), m_writePhase(true)
+        : m_initialized(false)
+        , m_writePhase(true)
 #endif // DEBUG
     {
     }
@@ -698,7 +713,9 @@ class MethodSet
         MethodInfo* m_next;
 
         MethodInfo(char* methodName, int methodHash)
-            : m_MethodName(methodName), m_MethodHash(methodHash), m_next(nullptr)
+            : m_MethodName(methodName)
+            , m_MethodHash(methodHash)
+            , m_next(nullptr)
         {
         }
     };
@@ -1023,7 +1040,8 @@ private:
 class CritSecHolder
 {
 public:
-    CritSecHolder(CritSecObject& critSec) : m_CritSec(critSec)
+    CritSecHolder(CritSecObject& critSec)
+        : m_CritSec(critSec)
     {
         ClrEnterCriticalSection(m_CritSec.Val());
     }

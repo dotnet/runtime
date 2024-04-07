@@ -672,73 +672,69 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 {
     // Initialize
     //
-    loop->VisitLoopBlocks(
-        [](BasicBlock* loopBlock)
-        {
-            loopBlock->bbWeight = 0.0;
-            return BasicBlockVisit::Continue;
-        });
+    loop->VisitLoopBlocks([](BasicBlock* loopBlock) {
+        loopBlock->bbWeight = 0.0;
+        return BasicBlockVisit::Continue;
+    });
 
     // Process loop blocks in RPO. Just takes one pass through the loop blocks
     // as any cyclic contributions are handled by cyclic probabilities.
     //
-    loop->VisitLoopBlocksReversePostOrder(
-        [=](BasicBlock* block)
+    loop->VisitLoopBlocksReversePostOrder([=](BasicBlock* block) {
+        // Loop head gets external count of 1
+        //
+        if (block == loop->GetHeader())
         {
-            // Loop head gets external count of 1
-            //
-            if (block == loop->GetHeader())
+            JITDUMP("ccp: " FMT_BB " :: 1.0\n", block->bbNum);
+            block->bbWeight = 1.0;
+        }
+        else
+        {
+            FlowGraphNaturalLoop* const nestedLoop = m_loops->GetLoopByHeader(block);
+
+            if (nestedLoop != nullptr)
             {
-                JITDUMP("ccp: " FMT_BB " :: 1.0\n", block->bbNum);
-                block->bbWeight = 1.0;
+                // We should have figured this out already.
+                //
+                assert(m_cyclicProbabilities[nestedLoop->GetIndex()] != 0);
+
+                // Sum entry edges, multply by Cp
+                //
+                weight_t newWeight = 0.0;
+
+                for (FlowEdge* const edge : nestedLoop->EntryEdges())
+                {
+                    if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
+                    {
+                        newWeight += edge->getLikelyWeight();
+                    }
+                }
+
+                newWeight *= m_cyclicProbabilities[nestedLoop->GetIndex()];
+                block->bbWeight = newWeight;
+
+                JITDUMP("ccp (nested header): " FMT_BB " :: " FMT_WT "\n", block->bbNum, newWeight);
             }
             else
             {
-                FlowGraphNaturalLoop* const nestedLoop = m_loops->GetLoopByHeader(block);
+                weight_t newWeight = 0.0;
 
-                if (nestedLoop != nullptr)
+                for (FlowEdge* const edge : block->PredEdges())
                 {
-                    // We should have figured this out already.
-                    //
-                    assert(m_cyclicProbabilities[nestedLoop->GetIndex()] != 0);
-
-                    // Sum entry edges, multply by Cp
-                    //
-                    weight_t newWeight = 0.0;
-
-                    for (FlowEdge* const edge : nestedLoop->EntryEdges())
+                    if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
                     {
-                        if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
-                        {
-                            newWeight += edge->getLikelyWeight();
-                        }
+                        newWeight += edge->getLikelyWeight();
                     }
-
-                    newWeight *= m_cyclicProbabilities[nestedLoop->GetIndex()];
-                    block->bbWeight = newWeight;
-
-                    JITDUMP("ccp (nested header): " FMT_BB " :: " FMT_WT "\n", block->bbNum, newWeight);
                 }
-                else
-                {
-                    weight_t newWeight = 0.0;
 
-                    for (FlowEdge* const edge : block->PredEdges())
-                    {
-                        if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
-                        {
-                            newWeight += edge->getLikelyWeight();
-                        }
-                    }
+                block->bbWeight = newWeight;
 
-                    block->bbWeight = newWeight;
-
-                    JITDUMP("ccp: " FMT_BB " :: " FMT_WT "\n", block->bbNum, newWeight);
-                }
+                JITDUMP("ccp: " FMT_BB " :: " FMT_WT "\n", block->bbNum, newWeight);
             }
+        }
 
-            return BasicBlockVisit::Continue;
-        });
+        return BasicBlockVisit::Continue;
+    });
 
     // Now look at cyclic flow back to the head block.
     //

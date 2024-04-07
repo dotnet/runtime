@@ -461,7 +461,9 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     }
 
     // Remove hashtable entry for expr when we exit the present scope.
-    auto                                         code = [this, expr] { m_pSearchPath->Remove(expr); };
+    auto code = [this, expr] {
+        m_pSearchPath->Remove(expr);
+    };
     jitstd::utility::scoped_code<decltype(code)> finally(code);
 
     if (m_pSearchPath->GetCount() > MAX_SEARCH_DEPTH)
@@ -1566,7 +1568,12 @@ struct MapMethodDefsData
     BasicBlock* block;
     Statement*  stmt;
 
-    MapMethodDefsData(RangeCheck* rc, BasicBlock* block, Statement* stmt) : rc(rc), block(block), stmt(stmt) {}
+    MapMethodDefsData(RangeCheck* rc, BasicBlock* block, Statement* stmt)
+        : rc(rc)
+        , block(block)
+        , stmt(stmt)
+    {
+    }
 };
 
 Compiler::fgWalkResult MapMethodDefsVisitor(GenTree** ptr, Compiler::fgWalkData* data)
