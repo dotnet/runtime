@@ -43,7 +43,7 @@ public static class Runtime_100220
             Assert.Equal(1008, GetManagedSize(() => new MyClass1000NoGcSeq()));
             Assert.Equal(28, GetManagedSize(() => new BaseClassSeq()));
             Assert.Equal(44, GetManagedSize(() => new SubclassSeq()));
-            Assert.Equal(60, GetManagedSize(() => new SubclassSubclassSeq()));
+            Assert.Equal(52, GetManagedSize(() => new SubclassSubclassSeq()));
             Assert.Equal(36, GetManagedSize(() => new SubclassWithGcSeq()));
             Assert.Equal(16, GetManagedSize(() => new SubclassOfBaseWithGcSeq()));
 
@@ -67,7 +67,7 @@ public static class Runtime_100220
     public class BaseClassSeq
     {
         public byte A;
-        public long B;
+        public nint B;
     }
 
     [StructLayout(LayoutKind.Sequential, Size = 20)]
@@ -86,7 +86,7 @@ public static class Runtime_100220
     public class SubclassSeq : BaseClassSeq
     {
         public byte C;
-        public long D;
+        public nint D;
     }
 
     [StructLayout(LayoutKind.Sequential, Size = 32)]
@@ -99,7 +99,7 @@ public static class Runtime_100220
     public class SubclassSubclassSeq : SubclassSeq
     {
         public byte E;
-        public long F;
+        public nint F;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
