@@ -2839,6 +2839,30 @@ public:
     }
 
     // -----------------------------------------------------------------------------
+    // GetOrAdd: Find the node representing a register.
+    //
+    // Parameters:
+    //   reg - Register
+    //
+    // Returns:
+    //   Node in the graph that represents "reg". Returns nullptr if no such
+    //   node exists.
+    //
+    RegNode* Get(regNumber reg)
+    {
+        for (int i = 0; i < m_nodes.Height(); i++)
+        {
+            RegNode* node = m_nodes.Bottom(i);
+            if (node->reg == reg)
+            {
+                return node;
+            }
+        }
+
+        return nullptr;
+    }
+
+    // -----------------------------------------------------------------------------
     // GetOrAdd: Find (or create) the node representing a register.
     //
     // Parameters:
@@ -2850,22 +2874,18 @@ public:
     //
     RegNode* GetOrAdd(regNumber reg)
     {
-        for (int i = 0; i < m_nodes.Height(); i++)
+        RegNode* node = Get(reg);
+
+        if (node == nullptr)
         {
-            RegNode* node = m_nodes.Bottom(i);
-            if (node->reg == reg)
-            {
-                return node;
-            }
+            node            = new (m_comp, CMK_Codegen) RegNode;
+            node->reg       = reg;
+            node->copiedReg = REG_NA;
+            node->incoming  = nullptr;
+            node->outgoing  = nullptr;
+            m_nodes.Push(node);
         }
 
-        RegNode* node   = new (m_comp, CMK_Codegen) RegNode;
-        node->reg       = reg;
-        node->copiedReg = REG_NA;
-        node->incoming  = nullptr;
-        node->outgoing  = nullptr;
-
-        m_nodes.Push(node);
         return node;
     }
 
@@ -3208,6 +3228,47 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
         {
             break;
         }
+
+        assert(node->incoming != nullptr);
+
+#ifdef TARGET_ARM
+        // As an optimization on arm32 we handle the easy double move cases in
+        // a single move.
+        if (genIsValidFloatReg(node->reg) && (node->incoming->nextIncoming == nullptr) && (node->outgoing == nullptr) &&
+            (node->incoming->from->copiedReg == REG_NA))
+        {
+            RegNode* otherReg;
+            RegNode* lowReg;
+            RegNode* highReg;
+
+            if (genIsValidDoubleReg(node->reg))
+            {
+                otherReg = graph.Get(REG_NEXT(node->reg));
+                lowReg   = node;
+                highReg  = otherReg;
+            }
+            else
+            {
+                otherReg = graph.Get(REG_PREV(node->reg));
+                lowReg   = otherReg;
+                highReg  = node;
+            }
+
+            if ((otherReg != nullptr) && (otherReg->incoming != nullptr) &&
+                (otherReg->incoming->nextIncoming == nullptr) && (otherReg->incoming->from->copiedReg == REG_NA) &&
+                (otherReg->outgoing == nullptr) && genIsValidDoubleReg(lowReg->incoming->from->reg) &&
+                (highReg->incoming->from->reg == REG_NEXT(lowReg->incoming->from->reg)))
+            {
+                instruction ins = ins_Copy(lowReg->incoming->from->reg, TYP_DOUBLE);
+                GetEmitter()->emitIns_Mov(ins, EA_8BYTE, lowReg->reg, lowReg->incoming->from->reg, false);
+                graph.RemoveIncomingEdges(lowReg, &busyRegs);
+                graph.RemoveIncomingEdges(highReg, &busyRegs);
+                busyRegs |= genRegMask(lowReg->reg) | genRegMask(highReg->reg);
+                assert((lowReg->reg != initReg) && (highReg->reg != initReg));
+                continue;
+            }
+        }
+#endif
 
         if ((node->outgoing != nullptr) && (node->copiedReg == REG_NA))
         {
