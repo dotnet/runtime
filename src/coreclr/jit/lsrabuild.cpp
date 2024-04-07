@@ -3397,7 +3397,7 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
                 return (int)numArgs;
             }
 #endif
-            assert(numArgs == 2);            
+            assert(numArgs == 2);
             assert(hwintrinsic->Op(2)->isContained());
             assert(hwintrinsic->Op(2)->IsCnsIntOrI());
         }

@@ -1210,10 +1210,10 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Sve_Abs:
         {
             assert(HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId));
-            CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
-            var_types      simdBaseType    = node->GetSimdBaseType();
-            unsigned       simdSize        = node->GetSimdSize();
-            var_types      simdType        = Compiler::getSIMDTypeForSize(simdSize);
+            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+            var_types   simdBaseType    = node->GetSimdBaseType();
+            unsigned    simdSize        = node->GetSimdSize();
+            var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
 
             GenTree* trueMaskAllNode = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
             GenTree* trueVal         = node;
@@ -3241,8 +3241,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_ConditionalSelect:
             {
                 assert(intrin.numOperands == 3);
-                GenTree* op1      = intrin.op1;
-                GenTree* op2      = intrin.op2;
+                GenTree* op1 = intrin.op1;
+                GenTree* op2 = intrin.op2;
                 if (op2->OperIsHWIntrinsic())
                 {
                     uint32_t maskSize = genTypeSize(node->GetSimdBaseType());

@@ -402,7 +402,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         else if (intrin.numOperands >= 2 && intrin.op2->IsEmbMaskOp())
         {
             // Handle case where op2 is operation that needs embedded mask
-            GenTree* op2 = intrin.op2;
+            GenTree*          op2 = intrin.op2;
             const HWIntrinsic intrinOp2(op2->AsHWIntrinsic());
             instruction       insOp2 = HWIntrinsicInfo::lookupIns(intrinOp2.id, intrinOp2.baseType);
 
@@ -410,54 +410,54 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             assert(op2->isContained());
             assert(op2->OperIsHWIntrinsic());
 
-            //if (isRMW)
+            // if (isRMW)
             //{
-                // op1Reg contains a mask, op2Reg contains the RMW register.
+            //  op1Reg contains a mask, op2Reg contains the RMW register.
 
-                if (targetReg != op1Reg)
-                {
+            if (targetReg != op1Reg)
+            {
+                assert(targetReg != op3Reg);
+                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
+            }
+
+            switch (intrin.numOperands)
+            {
+                case 2:
+                    GetEmitter()->emitIns_R_R(insOp2, emitSize, targetReg, op1Reg, opt);
+                    break;
+
+                case 3:
                     assert(targetReg != op3Reg);
-                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
-                }
+                    GetEmitter()->emitIns_R_R_R(insOp2, emitSize, targetReg, op1Reg, op3Reg, opt);
+                    break;
 
-                switch (intrin.numOperands)
-                {
-                    case 2:
-                        GetEmitter()->emitIns_R_R(insOp2, emitSize, targetReg, op1Reg, opt);
-                        break;
-
-                    case 3:
-                        assert(targetReg != op3Reg);
-                        GetEmitter()->emitIns_R_R_R(insOp2, emitSize, targetReg, op1Reg, op3Reg, opt);
-                        break;
-
-                    default:
-                        unreached();
-                }
+                default:
+                    unreached();
+            }
             //}
-            //else
+            // else
             //{
-                //// op1Reg contains the RMW register.
-                //if (targetReg != op1Reg)
-                //{
-                //    assert(targetReg != op2Reg);
-                //    assert(targetReg != op3Reg);
-                //    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
-                //}
+            //// op1Reg contains the RMW register.
+            // if (targetReg != op1Reg)
+            //{
+            //     assert(targetReg != op2Reg);
+            //     assert(targetReg != op3Reg);
+            //     GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
+            // }
 
-                //switch (intrin.numOperands)
-                //{
-                //    case 2:
-                //        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
-                //        break;
+            // switch (intrin.numOperands)
+            //{
+            //     case 2:
+            //         GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+            //         break;
 
-                //    case 3:
-                //        GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
-                //        break;
+            //    case 3:
+            //        GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
+            //        break;
 
-                //    default:
-                //        unreached();
-                //}
+            //    default:
+            //        unreached();
+            //}
             //}
         }
         else

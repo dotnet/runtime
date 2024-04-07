@@ -2223,8 +2223,7 @@ GenTree* Compiler::gtNewSimdConvertVectorToMaskNode(var_types   type,
 
     // ConvertVectorToMask uses cmpne which requires an embedded mask.
     GenTree* trueMask = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-    return gtNewSimdHWIntrinsicNode(TYP_MASK, trueMask, node, NI_Sve_ConvertVectorToMask, simdBaseJitType,
-                                    simdSize);
+    return gtNewSimdHWIntrinsicNode(TYP_MASK, trueMask, node, NI_Sve_ConvertVectorToMask, simdBaseJitType, simdSize);
 }
 
 //------------------------------------------------------------------------
