@@ -19,7 +19,6 @@ namespace FPBehaviorApp
         CONVERT_SENTINEL,
         CONVERT_SATURATING,
         CONVERT_NATIVECOMPILERBEHAVIOR,
-        CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32,
     }
 
     public enum ConversionType
@@ -91,7 +90,6 @@ namespace FPBehaviorApp
                     return (Double.IsNaN(x) || (x<int.MinValue) || (x > int.MaxValue)) ? int.MinValue: (int) x;
 
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
-                case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
                     return Double.IsNaN(x) ? 0 : (x< int.MinValue) ? int.MinValue : (x > int.MaxValue) ? int.MaxValue : (int) x;
             }
             return 0;
@@ -114,7 +112,6 @@ namespace FPBehaviorApp
                     return (Double.IsNaN(x) || (x < 0) || (x > uint.MaxValue)) ? uint.MaxValue : (uint)x;
 
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
-                case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
                     return (Double.IsNaN(x) || (x < 0)) ? 0 : (x > uint.MaxValue) ? uint.MaxValue : (uint)x;
             }
 
@@ -137,29 +134,11 @@ namespace FPBehaviorApp
                 case FPtoIntegerConversionType.CONVERT_SENTINEL:
                     return (Double.IsNaN(x) || (x < long.MinValue) || (x >= llong_max_plus_1)) ? long.MinValue : (long)x;
 
-                case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
-                    if (x > 0)
-                    {
-                        return (long)CppNativeArm32ConvertDoubleToUInt64(x);
-                    }
-                    else
-                    {
-                        return -(long)CppNativeArm32ConvertDoubleToUInt64(-x);
-                    }
-
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
                     return Double.IsNaN(x) ? 0 : (x < long.MinValue) ? long.MinValue : (x >= llong_max_plus_1) ? long.MaxValue : (long)x;
             }
 
             return 0;
-
-            static ulong CppNativeArm32ConvertDoubleToUInt64(double y)
-            {
-                const double uintmax_plus_1 = -2.0 * (double)int.MinValue;
-                uint hi32Bits = ConvertDoubleToUInt32(y / uintmax_plus_1, FPtoIntegerConversionType.CONVERT_SATURATING);
-                uint lo32Bits = ConvertDoubleToUInt32(y - (((double)hi32Bits) * uintmax_plus_1), FPtoIntegerConversionType.CONVERT_SATURATING);
-                return (((ulong)hi32Bits) << (int)32) + lo32Bits;
-            }
         }
 
         public static ulong ConvertDoubleToUInt64(double x, FPtoIntegerConversionType t)
@@ -183,18 +162,6 @@ namespace FPBehaviorApp
 
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
                     return (Double.IsNaN(x) || (x < 0)) ? 0 : (x >= ullong_max_plus_1) ? ulong.MaxValue : (ulong)x;
-
-                case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
-                    {
-                        if (x < two63)
-                        {
-                            return (ulong)ConvertDoubleToInt64(x, FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32);
-                        }
-                        else
-                        {
-                            return (ulong)ConvertDoubleToInt64(x - two63, FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32) + (0x8000000000000000);
-                        }
-                    }
             }
 
             return 0;
@@ -261,7 +228,6 @@ namespace FPBehaviorApp
 
             if (!tValue.HasValue)
             {
-                TestBitValue(value, dblVal, FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32);
                 TestBitValue(value, dblVal, FPtoIntegerConversionType.CONVERT_BACKWARD_COMPATIBLE);
                 TestBitValue(value, dblVal, FPtoIntegerConversionType.CONVERT_SATURATING);
                 TestBitValue(value, dblVal, FPtoIntegerConversionType.CONVERT_SENTINEL);
@@ -355,18 +321,8 @@ namespace FPBehaviorApp
         [Fact]
         public static int TestEntryPoint()
         {
-            switch (RuntimeInformation.ProcessArchitecture)
-            {
-                case Architecture.Arm:
-                    Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32;
-                    break;
+            Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_SATURATING;
 
-                case Architecture.X86:
-                case Architecture.X64:
-                case Architecture.Arm64:
-                    Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_SATURATING;
-                    break;
-            }
             Console.WriteLine($"Expected managed float behavior is {Program.ManagedConversionRule} Execute with parameter to adjust");
             Console.WriteLine("Specific test cases");
 
