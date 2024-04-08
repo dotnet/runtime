@@ -69,7 +69,7 @@
 
     <Target Name="InstallRuntimeComponentToFinalDestination"
             AfterTargets="CopyNativeBinary"
-            DependsOnTargets="CopyNativeBinary;StripLibraryLikeCoreCLRBuild" Condition="'$(IsRuntimeComponent)' == 'true'">
+            DependsOnTargets="CopyNativeBinary;_CopyAotSymbols;StripLibraryLikeCoreCLRBuild" Condition="'$(IsRuntimeComponent)' == 'true'">
         <Error Text="Set at least one @InstallRuntimeComponentDestination item" Condition="@(InstallRuntimeComponentDestination->Count()) == 0" />
 
         <PropertyGroup>
@@ -88,7 +88,7 @@
 
         <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
             <CopyFinalFiles Include="$(PublishDir)$(TargetName)$(NativeBinaryExt)" />
-            <CopyFinalFilesPDB Include="$(PublishDir)$(TargetName).pdb" />
+            <CopyFinalFilesPDB Include="$(PublishDir)$(TargetName).pdb" Condition="Exists('$(PublishDir)$(TargetName).pdb')" />
         </ItemGroup>
 
         <Message Importance="Normal" Text="Installing @(CopyFinalFiles) into %(_NormalizedInstallRuntimeComponentDest.Identity)"/>
