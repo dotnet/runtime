@@ -3989,7 +3989,7 @@ int LinearScan::BuildSimple(GenTree* tree)
 //
 int LinearScan::BuildReturn(GenTree* tree)
 {
-    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op1 = tree->AsOp()->GetReturnValue();
 
 #if !defined(TARGET_64BIT)
     if (tree->TypeGet() == TYP_LONG)
