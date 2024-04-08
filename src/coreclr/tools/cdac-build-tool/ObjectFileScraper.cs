@@ -4,6 +4,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -13,8 +14,8 @@ namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
 public class ObjectFileScraper
 {
-    public readonly ReadOnlyMemory<byte> MagicLE = new byte[8]{0x44, 0x41, 0x43, 0x42, 0x4C, 0x4F, 0x42, 0x00}; // "DACBLOB\0"
-    public readonly ReadOnlyMemory<byte> MagicBE = new byte[8]{0x00, 0x42, 0x4F, 0x4C, 0x42, 0x43, 0x41, 0x44};
+    public static readonly ReadOnlyMemory<byte> MagicLE = new byte[8] { 0x44, 0x41, 0x43, 0x42, 0x4C, 0x4F, 0x42, 0x00 }; // "DACBLOB\0"
+    public static readonly ReadOnlyMemory<byte> MagicBE = new byte[8] { 0x00, 0x42, 0x4F, 0x4C, 0x42, 0x43, 0x41, 0x44 };
 
     private readonly DataDescriptorModel.Builder _builder;
 
@@ -27,70 +28,122 @@ public class ObjectFileScraper
 
     public async Task<bool> ScrapeInput(string inputPath, CancellationToken token)
     {
-        using var file = File.Open(inputPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        var r = await FindMagic(file, token);
-
-        if (!r.Found) {
+        var bytes = await File.ReadAllBytesAsync(inputPath, token);
+        if (!ScraperState.FindMagic(bytes, out var state))
+        {
             return false;
         }
         if (Verbose) {
-            Console.WriteLine ($"{inputPath}: magic at {r.Position}");
+            Console.WriteLine($"{inputPath}: magic at {state.MagicStart}");
         }
-        file.Seek(r.Position + (long)MagicLE.Length, SeekOrigin.Begin); // skip magic
-        var headerStart = file.Position;
-        var header = ReadHeader(file, r.LittleEndian);
+        var header = ReadHeader(state);
         if (Verbose) {
             DumpHeaderDirectory(header);
         }
-        var content = ReadContent(file, headerStart, header, r.LittleEndian);
+        var content = ReadContent(state, header);
         content.AddToModel(_builder);
         return true;
     }
 
-    struct MagicResult {
-        public bool Found {get; init;}
-        public long Position {get; init;}
-        public bool LittleEndian {get; init;}
-    }
-
-    private async Task<MagicResult> FindMagic(Stream stream, CancellationToken token)
+    class ScraperState
     {
-        var buf = new byte[4096];
-        long pos = stream.Position;
-        while (true) {
-            token.ThrowIfCancellationRequested();
-            int bytesRead = await stream.ReadAsync(buf, 0, buf.Length, token);
-            if (bytesRead == 0)
-                return new (){Found = false, Position = 0, LittleEndian = true};
-            // FIXME: what if magic spans a buffer boundary
-            if (FindMagic(buf, out int offset, out bool isLittleEndian)) {
-                pos += (long)offset;
-                return new (){Found = true, Position = pos, LittleEndian = isLittleEndian};
+        public ReadOnlyMemory<byte> Data { get; }
+        public bool LittleEndian { get; }
+        private long _position;
+
+        public long MagicStart => HeaderStart - MagicLE.Length;
+        public long HeaderStart { get; }
+
+        private ScraperState(ReadOnlyMemory<byte> data, bool isLittleEndian, long headerStart)
+        {
+            Data = data;
+            LittleEndian = isLittleEndian;
+            HeaderStart = headerStart;
+            _position = headerStart;
+        }
+
+        public static bool FindMagic(ReadOnlyMemory<byte> bytes, [NotNullWhen(true)] out ScraperState? scraperState)
+        {
+            if (FindMagic(bytes.Span, out int offset, out bool isLittleEndian))
+            {
+                scraperState = new ScraperState(bytes, isLittleEndian, offset + MagicLE.Length);
+                return true;
             }
-            pos += bytesRead;
+            scraperState = null;
+            return false;
+        }
+
+        private static bool FindMagic(ReadOnlySpan<byte> buffer, out int offset, out bool isLittleEndian)
+        {
+            int start = buffer.IndexOf(MagicLE.Span);
+            if (start != -1)
+            {
+                offset = start;
+                isLittleEndian = true;
+                return true;
+            }
+            start = buffer.IndexOf(MagicBE.Span);
+            if (start != -1)
+            {
+                offset = start;
+                isLittleEndian = false;
+                return true;
+            }
+            offset = 0;
+            isLittleEndian = false;
+            return false;
+        }
+
+        public ulong GetUInt64(long offset) => LittleEndian ? BinaryPrimitives.ReadUInt64LittleEndian(Data.Span.Slice((int)offset)) : BinaryPrimitives.ReadUInt64BigEndian(Data.Span.Slice((int)offset));
+        public uint GetUInt32(long offset) => LittleEndian ? BinaryPrimitives.ReadUInt32LittleEndian(Data.Span.Slice((int)offset)) : BinaryPrimitives.ReadUInt32BigEndian(Data.Span.Slice((int)offset));
+        public ushort GetUInt16(long offset) => LittleEndian ? BinaryPrimitives.ReadUInt16LittleEndian(Data.Span.Slice((int)offset)) : BinaryPrimitives.ReadUInt16BigEndian(Data.Span.Slice((int)offset));
+        public byte GetByte(long offset) => Data.Span[(int)offset];
+
+
+        public void GetBytes(long offset, Span<byte> buffer) => Data.Span.Slice((int)offset, buffer.Length).CopyTo(buffer);
+
+        public void ResetPosition(long position)
+        {
+            _position = position;
+        }
+
+        public ulong ReadUInt64()
+        {
+            var value = GetUInt64(_position);
+            _position += sizeof(ulong);
+            return value;
+        }
+        public uint ReadUInt32()
+        {
+            var value = GetUInt32(_position);
+            _position += sizeof(uint);
+            return value;
+        }
+        public ushort ReadUInt16()
+        {
+            var value = GetUInt16(_position);
+            _position += sizeof(ushort);
+            return value;
+        }
+
+        public byte ReadByte()
+        {
+            var value = GetByte(_position);
+            _position += sizeof(byte);
+            return value;
+        }
+        public void ReadBytes(Span<byte> buffer)
+        {
+            GetBytes(_position, buffer);
+            _position += buffer.Length;
+        }
+
+        public void Skip(int count)
+        {
+            _position += count;
         }
     }
 
-    private bool FindMagic(ReadOnlySpan<byte> buffer, out int offset, out bool isLittleEndian)
-    {
-        int start = buffer.IndexOf(MagicLE.Span);
-        if (start != -1)
-        {
-            offset = start;
-            isLittleEndian = true;
-            return true;
-        }
-        start = buffer.IndexOf(MagicBE.Span);
-        if (start != -1)
-        {
-            offset = start;
-            isLittleEndian = false;
-            return true;
-        }
-        offset = 0;
-        isLittleEndian = false;
-        return false;
-    }
 
     struct HeaderDirectory
     {
@@ -136,30 +189,30 @@ public class ObjectFileScraper
     private ulong Swap(bool isLittleEndian, ulong value) => (isLittleEndian == BitConverter.IsLittleEndian) ? value : BinaryPrimitives.ReverseEndianness(value);
 
 
-    private HeaderDirectory ReadHeader(Stream stream, bool isLE)
+    private HeaderDirectory ReadHeader(ScraperState state)
     {
-        using var reader = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true);
-        var baselineStart = Swap(isLE, reader.ReadUInt32());
-        var typesStart = Swap(isLE, reader.ReadUInt32());
+        state.ResetPosition(state.HeaderStart);
+        var baselineStart = state.ReadUInt32();
+        var typesStart = state.ReadUInt32();
 
-        var fieldPoolStart = Swap(isLE, reader.ReadUInt32());
-        var globalLiteralValuesStart = Swap(isLE, reader.ReadUInt32());
+        var fieldPoolStart = state.ReadUInt32();
+        var globalLiteralValuesStart = state.ReadUInt32();
 
-        var globalPointersStart = Swap(isLE, reader.ReadUInt32());
-        var namesStart = Swap(isLE, reader.ReadUInt32());
+        var globalPointersStart = state.ReadUInt32();
+        var namesStart = state.ReadUInt32();
 
-        var typeCount = Swap(isLE, reader.ReadUInt32());
-        var fieldPoolCount = Swap(isLE, reader.ReadUInt32());
+        var typeCount = state.ReadUInt32();
+        var fieldPoolCount = state.ReadUInt32();
 
-        var globalLiteralValuesCount = Swap(isLE, reader.ReadUInt32());
-        var globalPointerValuesCount = Swap(isLE, reader.ReadUInt32());
+        var globalLiteralValuesCount = state.ReadUInt32();
+        var globalPointerValuesCount = state.ReadUInt32();
 
-        var namesPoolCount = Swap(isLE, reader.ReadUInt32());
+        var namesPoolCount = state.ReadUInt32();
 
-        var typeSpecSize = reader.ReadByte();
-        var fieldSpecSize = reader.ReadByte();
-        var globalLiteralSpecSize = reader.ReadByte();
-        var globalPointerSpecSize = reader.ReadByte();
+        var typeSpecSize = state.ReadByte();
+        var fieldSpecSize = state.ReadByte();
+        var globalLiteralSpecSize = state.ReadByte();
+        var globalPointerSpecSize = state.ReadByte();
 
         return new HeaderDirectory {
             BaselineStart = baselineStart,
@@ -297,21 +350,20 @@ public class ObjectFileScraper
         }
     }
 
-    private Content ReadContent(Stream stream, long startPos, HeaderDirectory header, bool isLE)
+    private Content ReadContent(ScraperState state, HeaderDirectory header)
     {
-        using var reader = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true);
-        reader.BaseStream.Seek(startPos + header.BaselineStart, SeekOrigin.Begin);
-        var baselineNameIdx = Swap(isLE, reader.ReadUInt32());
+        state.ResetPosition(state.HeaderStart + header.BaselineStart);
+        var baselineNameIdx = state.ReadUInt32();
         Console.WriteLine($"baseline Name Idx = {baselineNameIdx}");
 
-        TypeSpec[] typeSpecs = ReadTypeSpecs(reader, startPos, header, isLE);
-        FieldSpec[] fieldSpecs = ReadFieldSpecs(reader, startPos, header, isLE);
-        GlobalLiteralSpec[] globalLiteralSpecs = ReadGlobalLiteralSpecs(reader, startPos, header, isLE);
-        GlobalPointerSpec[] globalPointerSpecs = ReadGlobalPointerSpecs(reader, startPos, header, isLE);
-        byte[] namesPool = ReadNamesPool(reader, startPos, header);
+        TypeSpec[] typeSpecs = ReadTypeSpecs(state, header);
+        FieldSpec[] fieldSpecs = ReadFieldSpecs(state, header);
+        GlobalLiteralSpec[] globalLiteralSpecs = ReadGlobalLiteralSpecs(state, header);
+        GlobalPointerSpec[] globalPointerSpecs = ReadGlobalPointerSpecs(state, header);
+        byte[] namesPool = ReadNamesPool(state, header);
 
         byte[] endMagic = new byte[4];
-        reader.Read(endMagic.AsSpan());
+        state.ReadBytes(endMagic.AsSpan());
         if (!CheckEndMagic(endMagic))
         {
             throw new InvalidOperationException($"expected endMagic, got 0x{endMagic[0]:x} 0x{endMagic[1]:x} 0x{endMagic[2]:x} 0x{endMagic[3]:x}");
@@ -328,102 +380,99 @@ public class ObjectFileScraper
         };
     }
 
-    private TypeSpec[] ReadTypeSpecs(BinaryReader reader, long startPos, HeaderDirectory header, bool isLE)
+    private TypeSpec[] ReadTypeSpecs(ScraperState state, HeaderDirectory header)
     {
         TypeSpec[] typeSpecs = new TypeSpec[header.TypeCount];
 
-        reader.BaseStream.Seek(startPos + (long)header.TypesStart, SeekOrigin.Begin);
+        state.ResetPosition(state.HeaderStart + (long)header.TypesStart);
         for (int i = 0; i < header.TypeCount; i++)
         {
             int bytesRead = 0;
-            typeSpecs[i].NameIdx = Swap(isLE, reader.ReadUInt32());
+            typeSpecs[i].NameIdx = state.ReadUInt32();
             bytesRead += 4;
-            typeSpecs[i].FieldsIdx = Swap(isLE, reader.ReadUInt32());
+            typeSpecs[i].FieldsIdx = state.ReadUInt32();
             bytesRead += 4;
-            typeSpecs[i].Size = Swap(isLE, reader.ReadUInt16());
+            typeSpecs[i].Size = state.ReadUInt16();
             bytesRead += 2;
             Console.WriteLine($"TypeSpec[{i}]: NameIdx = {typeSpecs[i].NameIdx}, FieldsIdx = {typeSpecs[i].FieldsIdx}, Size = {typeSpecs[i].Size}");
             // skip padding
             if (bytesRead < header.TypeSpecSize)
             {
-                reader.BaseStream.Seek(header.TypeSpecSize - bytesRead, SeekOrigin.Current);
+                state.Skip(header.TypeSpecSize - bytesRead);
             }
         }
         return typeSpecs;
     }
 
-    private FieldSpec[] ReadFieldSpecs(BinaryReader reader, long startPos, HeaderDirectory header, bool isLE)
+    private FieldSpec[] ReadFieldSpecs(ScraperState state, HeaderDirectory header)
     {
-        reader.BaseStream.Seek(startPos + (long)header.FieldPoolStart, SeekOrigin.Begin);
+        state.ResetPosition(state.HeaderStart + (long)header.FieldPoolStart);
         FieldSpec[] fieldSpecs = new FieldSpec[header.FieldPoolCount];
         for (int i = 0; i < header.FieldPoolCount; i++)
         {
             int bytesRead = 0;
-            fieldSpecs[i].NameIdx = Swap(isLE, reader.ReadUInt32());
+            fieldSpecs[i].NameIdx = state.ReadUInt32();
             bytesRead += 4;
-            fieldSpecs[i].TypeNameIdx = Swap(isLE, reader.ReadUInt32());
+            fieldSpecs[i].TypeNameIdx = state.ReadUInt32();
             bytesRead += 4;
-            fieldSpecs[i].FieldOffset = Swap(isLE, reader.ReadUInt16());
+            fieldSpecs[i].FieldOffset = state.ReadUInt16();
             bytesRead += 2;
             // skip padding
             if (bytesRead < header.FieldSpecSize)
             {
-                reader.BaseStream.Seek(header.FieldSpecSize - bytesRead, SeekOrigin.Current);
+                state.Skip(header.FieldSpecSize - bytesRead);
             }
         }
         return fieldSpecs;
     }
 
-    private GlobalLiteralSpec[] ReadGlobalLiteralSpecs(BinaryReader reader, long startPos, HeaderDirectory header, bool isLE)
+    private GlobalLiteralSpec[] ReadGlobalLiteralSpecs(ScraperState state, HeaderDirectory header)
     {
         GlobalLiteralSpec[] globalSpecs = new GlobalLiteralSpec[header.GlobalLiteralValuesCount];
-        reader.BaseStream.Seek(startPos + (long)header.GlobalLiteralValuesStart, SeekOrigin.Begin);
+        state.ResetPosition(state.HeaderStart + (long)header.GlobalLiteralValuesStart);
         for (int i = 0; i < header.GlobalLiteralValuesCount; i++)
         {
             int bytesRead = 0;
-            globalSpecs[i].NameIdx = Swap(isLE, reader.ReadUInt32());
+            globalSpecs[i].NameIdx = state.ReadUInt32();
             bytesRead += 4;
-            globalSpecs[i].TypeNameIdx = Swap(isLE, reader.ReadUInt32());
+            globalSpecs[i].TypeNameIdx = state.ReadUInt32();
             bytesRead += 4;
-            globalSpecs[i].Value = Swap(isLE, reader.ReadUInt64());
+            globalSpecs[i].Value = state.ReadUInt64();
             bytesRead += 8;
             // skip padding
             if (bytesRead < header.GlobalLiteralSpecSize)
             {
-                reader.BaseStream.Seek(header.GlobalLiteralSpecSize - bytesRead, SeekOrigin.Current);
+                state.Skip(header.GlobalLiteralSpecSize - bytesRead);
             }
         }
         return globalSpecs;
     }
 
-    private GlobalPointerSpec[] ReadGlobalPointerSpecs(BinaryReader reader, long startPos, HeaderDirectory header, bool isLE)
+    private GlobalPointerSpec[] ReadGlobalPointerSpecs(ScraperState state, HeaderDirectory header)
     {
         GlobalPointerSpec[] globalSpecs = new GlobalPointerSpec[header.GlobalPointerValuesCount];
-        reader.BaseStream.Seek(startPos + (long)header.GlobalPointersStart, SeekOrigin.Begin);
+        state.ResetPosition(state.HeaderStart + (long)header.GlobalPointersStart);
         for (int i = 0; i < header.GlobalPointerValuesCount; i++)
         {
             int bytesRead = 0;
-            globalSpecs[i].NameIdx = Swap(isLE, reader.ReadUInt32());
+            globalSpecs[i].NameIdx = state.ReadUInt32();
             bytesRead += 4;
-            globalSpecs[i].AuxDataIdx = Swap(isLE, reader.ReadUInt32());
+            globalSpecs[i].AuxDataIdx = state.ReadUInt32();
             bytesRead += 4;
             // skip padding
             if (bytesRead < header.GlobalPointerSpecSize)
             {
-                reader.BaseStream.Seek(header.GlobalPointerSpecSize - bytesRead, SeekOrigin.Current);
+                state.Skip(header.GlobalPointerSpecSize - bytesRead);
             }
         }
         return globalSpecs;
     }
 
-    private byte[] ReadNamesPool(BinaryReader reader, long startPos, HeaderDirectory header)
+    private byte[] ReadNamesPool(ScraperState state, HeaderDirectory header)
     {
         byte[] namesPool = new byte[header.NamesPoolCount];
-        reader.BaseStream.Seek(startPos + (long)header.NamesStart, SeekOrigin.Begin);
-        int namesPoolCountRead = reader.Read(namesPool.AsSpan());
-        if (namesPoolCountRead != header.NamesPoolCount) {
-            throw new InvalidOperationException ($"expected to read {header.NamesPoolCount} bytes of strings");
-        }
+        state.ResetPosition(state.HeaderStart + (long)header.NamesStart);
+        state.ReadBytes(namesPool.AsSpan());
         return namesPool;
     }
 
