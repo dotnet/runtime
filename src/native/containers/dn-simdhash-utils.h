@@ -60,6 +60,8 @@ MurmurHash3_32_ptr (const void *ptr, uint32_t seed)
 	// mono_aligned_addr_hash shifts all incoming pointers by 3 bits to account
 	//  for a presumed 8-byte alignment of addresses (the dlmalloc default).
 	const uint32_t alignment_shift = 3;
+	// Compute this outside of the if to suppress msvc build warning
+	const uint8_t is_64_bit = sizeof(void*) == sizeof(uint32_t);
 	union {
 		uint32_t u32;
 		uint64_t u64;
@@ -68,7 +70,7 @@ MurmurHash3_32_ptr (const void *ptr, uint32_t seed)
 	u.ptr = ptr;
 
 	// Apply murmurhash3's finalization bit mixer to a pointer to compute a 32-bit hash.
-	if (sizeof (void*) == 8) {
+	if (is_64_bit) {
 		// The high bits of a 64-bit pointer are usually low entropy, as are the
 		//  2-3 lowest bits. We want to capture most of the entropy and mix it into
 		//  a 32-bit hash to reduce the odds of hash collisions for arbitrary 64-bit
