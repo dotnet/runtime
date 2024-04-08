@@ -104,6 +104,12 @@ namespace System.CodeDom.Tests
                 LastCalledMethod = nameof(Write);
             }
 
+            public override void Write(string format, params ReadOnlySpan<object?> arg)
+            {
+                base.Write(format, arg);
+                LastCalledMethod = nameof(Write);
+            }
+
             public override void Write(string value)
             {
                 base.Write(value);
@@ -207,6 +213,12 @@ namespace System.CodeDom.Tests
             }
 
             public override void WriteLine(string format, params object[] arg)
+            {
+                base.WriteLine(format, arg);
+                LastCalledMethod = nameof(WriteLine);
+            }
+
+            public override void WriteLine(string format, params ReadOnlySpan<object?> arg)
             {
                 base.WriteLine(format, arg);
                 LastCalledMethod = nameof(WriteLine);
