@@ -49,13 +49,11 @@ namespace System.Net.Quic.Tests
 
             if (enabledBySwitch)
             {
-                Assert.True(File.Exists(tempFile));
-                var text = File.ReadAllText(tempFile);
-                Assert.True(text.Length > 0);
+                Assert.True(File.ReadAllText(tempFile).Length > 0);
             }
             else
             {
-                Assert.True(!File.Exists(tempFile) || File.ReadAllText(tempFile).Length == 0);
+                Assert.True(File.ReadAllText(tempFile).Length == 0);
             }
         }
     }

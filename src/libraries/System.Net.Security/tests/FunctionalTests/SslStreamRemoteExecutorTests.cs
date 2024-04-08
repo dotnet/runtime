@@ -66,12 +66,11 @@ namespace System.Net.Security.Tests
 
             if (enabledBySwitch)
             {
-                Assert.True(File.Exists(tempFile));
                 Assert.True(File.ReadAllText(tempFile).Length > 0);
             }
             else
             {
-                Assert.True(!File.Exists(tempFile) || File.ReadAllText(tempFile).Length == 0);
+                Assert.True(File.ReadAllText(tempFile).Length == 0);
             }
         }
     }
