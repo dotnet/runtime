@@ -7,15 +7,16 @@
     <Nullable>enable</Nullable>
     <!-- declare types in namespaces; ConfigureAwait; Prefer 'static readonly' fields; trim warnings -->
     <NoWarn>CA1050;CA2007;CA1861;IL2104</NoWarn>
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
   <!-- versions are pinned but when run from WBT level, it's taking in-tree runtime -->
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0-preview.1.24081.5" />
+    <ProjectReference Include="..\Library\Json.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(SkipLazyLoadingTest)' != 'true'">
-    <ProjectReference Include="..\Library\Json.csproj" />
     <BlazorWebAssemblyLazyLoad Include="Json$(WasmAssemblyExtension)" />
   </ItemGroup>
 </Project>

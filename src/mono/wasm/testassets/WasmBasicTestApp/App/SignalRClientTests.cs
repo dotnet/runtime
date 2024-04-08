@@ -41,16 +41,8 @@ public partial class SignalRClientTests
                 TestOutput.WriteLine("SignalR connection is not established.");
                 return;
             }
-            try
-            {
-                await _hubConnection.SendAsync("SendMessage", "message", 1); // ToDo: change later to Environment.CurrentManagedThreadId
-                TestOutput.WriteLine($"SignalRPassMessages was sent by CurrentManagedThreadId={Environment.CurrentManagedThreadId}, message={message}");
-            }
-            catch (Exception ex)
-            {
-                // throws System.InvalidOperationException: JsonSerializerIsReflectionDisabled
-                TestOutput.WriteLine($"Exception in SignalRPassMessages: {ex}");
-            }
+            await _hubConnection.SendAsync("SendMessage", message, Environment.CurrentManagedThreadId);
+            TestOutput.WriteLine($"SignalRPassMessages was sent by CurrentManagedThreadId={Environment.CurrentManagedThreadId}, message={message}");
         });
 
     [JSExport]

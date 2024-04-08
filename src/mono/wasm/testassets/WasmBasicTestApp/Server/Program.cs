@@ -13,9 +13,7 @@ using Server;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// System.InvalidOperationException: JsonSerializerIsReflectionDisabled on message passing
-builder.Services.AddSignalR()
-
+builder.Services.AddSignalR();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
