@@ -58,10 +58,8 @@ static inline uint32_t
 MurmurHash3_32_ptr (const void *ptr, uint32_t seed)
 {
 	// mono_aligned_addr_hash shifts all incoming pointers by 3 bits to account
-	//  for a presumed 8-byte alignment of addresses (the dmalloc default). However,
-	// I'm not doing this right now because I'm not sure it is necessary w/the
-	//  finalization mixer in place - if anything, it can discard data.
-	const uint32_t alignment_shift = 0;
+	//  for a presumed 8-byte alignment of addresses (the dlmalloc default).
+	const uint32_t alignment_shift = 3;
 	union {
 		uint32_t u32;
 		uint64_t u64;
@@ -69,12 +67,18 @@ MurmurHash3_32_ptr (const void *ptr, uint32_t seed)
 	} u;
 	u.ptr = ptr;
 
-	// Apply murmurhash3's 32 or 64 bit finalization bit mixer to the pointer,
-	//  then return the result truncated to 32 bits.
+	// Apply murmurhash3's finalization bit mixer to a pointer to compute a 32-bit hash.
 	if (sizeof (void*) == 8) {
-		return (uint32_t)(murmur3_fmix64(u.u64 >> alignment_shift) & 0xFFFFFFFFu);
+		// The high bits of a 64-bit pointer are usually low entropy, as are the
+		//  2-3 lowest bits. We want to capture most of the entropy and mix it into
+		//  a 32-bit hash to reduce the odds of hash collisions for arbitrary 64-bit
+		//  pointers. From my testing, this is a good way to do it.
+		return murmur3_fmix32((uint32_t)((u.u64 >> alignment_shift) & 0xFFFFFFFFu));
+		// return (uint32_t)(murmur3_fmix64(u.u64 >> alignment_shift) & 0xFFFFFFFFu);
 	} else {
-		return murmur3_fmix32(u.u32 >> alignment_shift);
+		// No need for an alignment shift here, we're mixing the bits and then
+		//  simdhash uses 7 of the top bits and a handful of the low bits.
+		return murmur3_fmix32(u.u32);
 	}
 }
 
