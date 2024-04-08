@@ -188,8 +188,6 @@ target_sources(coreclr_static PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
 target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} clrjit_static cee_wks_mergeable ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
-# using $<TARGET_OBJECTS:> because the exported symbols from cdac_contract_descriptor are otherwise
-# unreferenced which means the linker doesn't include them
 target_link_libraries(coreclr PRIVATE cdac_contract_descriptor)
 target_link_libraries(coreclr_static PRIVATE cdac_contract_descriptor)
 
@@ -224,5 +222,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
-install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)# Enable profile guided optimization
+install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
+
+# Enable profile guided optimization
 add_pgo(coreclr)

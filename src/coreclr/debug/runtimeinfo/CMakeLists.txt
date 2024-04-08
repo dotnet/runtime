@@ -38,7 +38,6 @@ endif()
 # publish runtimeinfo lib
 install_clr(TARGETS runtimeinfo DESTINATIONS lib COMPONENT runtime)
 
-
 add_library(cdac_data_descriptor OBJECT data-descriptor.cpp)
 # don't build the data descriptor before the VM (and any of its dependencies' generated headers)
 add_dependencies(cdac_data_descriptor cee_wks_core)
@@ -52,15 +51,7 @@ target_include_directories(cdac_data_descriptor BEFORE PRIVATE ${VM_DIR})
 target_include_directories(cdac_data_descriptor BEFORE PRIVATE ${VM_DIR}/${ARCH_SOURCES_DIR})
 target_include_directories(cdac_data_descriptor PRIVATE ${CLR_DIR}/interop/inc)
 
-
-
 set(GENERATED_CDAC_DESCRIPTOR_DIR "${CMAKE_CURRENT_BINARY_DIR}/cdac")
-if(CLR_CMAKE_HOST_WIN32)
-    set(DOTNET_CMD "${CLR_REPO_ROOT_DIR}/dotnet.cmd")
-else()
-    set(DOTNET_CMD "${CLR_REPO_ROOT_DIR}/dotnet.sh")
-endif()
-
 set(CONTRACT_DESCRIPTOR_OUTPUT "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c")
 set(CDAC_BUILD_TOOL_CSPROJ "${CLR_DIR}/tools/cdac-build-tool/cdac-build-tool.csproj")
 
@@ -76,6 +67,9 @@ add_custom_command(
     USES_TERMINAL
 )
 
+# n.b. important that cdac_contract_descriptor is an object library;
+# if it was static, linking it into the final dll would not export
+# DotNetRuntimeContractDescriptor since it is not referenced anywhere.
 add_library_clr(cdac_contract_descriptor OBJECT
     "${CONTRACT_DESCRIPTOR_OUTPUT}"
     contract-aux-data.cpp
