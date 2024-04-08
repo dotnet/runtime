@@ -485,6 +485,10 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
+#if FEATURE_WASM_MANAGED_THREADS
+            Thread.AssureBlockingPossible();
+#endif
+
             if (!IsSet)
             {
                 if (millisecondsTimeout == 0)

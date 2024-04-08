@@ -87,6 +87,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.ComponentModel.EnumConverter.#ctor(System.Type)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net8.0/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>P:System.ComponentModel.DesignerAttribute.DesignerBaseTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/netstandard.dll</Left>
     <Right>net9.0/netstandard.dll</Right>
@@ -106,6 +112,12 @@
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>P:System.ComponentModel.EditorAttribute.EditorTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net8.0/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.ComponentModel.EnumConverter.EnumType:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/netstandard.dll</Left>
     <Right>net9.0/netstandard.dll</Right>
   </Suppression>
@@ -303,6 +315,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.ComponentModel.EnumConverter.#ctor(System.Type)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net8.0/System.ComponentModel.TypeConverter.dll</Left>
+    <Right>net9.0/System.ComponentModel.TypeConverter.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>P:System.ComponentModel.DesignerAttribute.DesignerBaseTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/System.ComponentModel.TypeConverter.dll</Left>
     <Right>net9.0/System.ComponentModel.TypeConverter.dll</Right>
@@ -322,6 +340,12 @@
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>P:System.ComponentModel.EditorAttribute.EditorTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net8.0/System.ComponentModel.TypeConverter.dll</Left>
+    <Right>net9.0/System.ComponentModel.TypeConverter.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.ComponentModel.EnumConverter.EnumType:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/System.ComponentModel.TypeConverter.dll</Left>
     <Right>net9.0/System.ComponentModel.TypeConverter.dll</Right>
   </Suppression>
@@ -411,6 +435,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.ComponentModel.EnumConverter.#ctor(System.Type)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net8.0/System.dll</Left>
+    <Right>net9.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>P:System.ComponentModel.DesignerAttribute.DesignerBaseTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/System.dll</Left>
     <Right>net9.0/System.dll</Right>
@@ -430,6 +460,12 @@
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>P:System.ComponentModel.EditorAttribute.EditorTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net8.0/System.dll</Left>
+    <Right>net9.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.ComponentModel.EnumConverter.EnumType:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/System.dll</Left>
     <Right>net9.0/System.dll</Right>
   </Suppression>

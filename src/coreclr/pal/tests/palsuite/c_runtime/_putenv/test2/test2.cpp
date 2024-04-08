@@ -35,7 +35,7 @@ PALTEST(c_runtime__putenv_test2_paltest_putenv_test2, "c_runtime/_putenv/test2/p
              "_putenv(%s)\n", _putenvString0);
     }
 
-    variableValue = getenv(variable);
+    variableValue = PAL_getenv(variable);
     
     if (variableValue == NULL)
     { 
@@ -60,7 +60,7 @@ PALTEST(c_runtime__putenv_test2_paltest_putenv_test2, "c_runtime/_putenv/test2/p
                      "_putenv(%s)\n", _putenvString1);
             }
 
-            variableValue = getenv(variable);
+            variableValue = PAL_getenv(variable);
 
             if (variableValue != NULL)
             { 
