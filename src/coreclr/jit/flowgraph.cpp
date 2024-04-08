@@ -592,7 +592,7 @@ PhaseStatus Compiler::fgImport()
 
         // Reset this as it is a one-shot thing.
         //
-        fgPgoDeferredInconsistency = false;
+        INDEBUG(fgPgoDeferredInconsistency = false);
     }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
