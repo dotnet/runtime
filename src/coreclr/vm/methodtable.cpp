@@ -2074,6 +2074,11 @@ namespace
         }
 
         DWORD numIntroducedFields = pMT->GetNumIntroducedInstanceFields();
+        if (numIntroducedFields != 1)
+        {
+            return false;
+        }
+
         FieldDesc *pFieldStart = pMT->GetApproxFieldDescListRaw();
         CorElementType firstFieldElementType = pFieldStart->GetFieldType();
 
@@ -2084,8 +2089,7 @@ namespace
         // instead of adding additional padding at the end of a one-field structure.
         // We do this check here to save looking up the FixedBufferAttribute when loading the field
         // from metadata.
-        return numIntroducedFields == 1
-                        && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
+        return (CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
                             || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
                         && (pFieldStart->GetOffset() == 0)
                         && pMT->HasLayout()
