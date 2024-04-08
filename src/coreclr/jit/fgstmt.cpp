@@ -197,7 +197,7 @@ void Compiler::fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt)
         }
         else if (block->KindIs(BBJ_RETURN))
         {
-            assert((lastStmt->GetRootNode()->OperIs(GT_RETURN, GT_JMP)) ||
+            assert((lastStmt->GetRootNode()->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET, GT_JMP)) ||
                    // BBJ_RETURN blocks in functions returning void do not get a GT_RETURN node if they
                    // have a .tail prefix (even if canTailCall returns false for these calls)
                    // code:Compiler::impImportBlockCode (search for the RET: label)

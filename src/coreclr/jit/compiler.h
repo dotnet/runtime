@@ -11465,7 +11465,6 @@ public:
             case GT_FIELD_ADDR:
             case GT_RETURN:
             case GT_RETFILT:
-            case GT_SWIFT_ERROR_RET:
             case GT_RUNTIMELOOKUP:
             case GT_ARR_ADDR:
             case GT_KEEPALIVE:

@@ -6719,7 +6719,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_BSWAP16:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
-        case GT_SWIFT_ERROR_RET:
             if (operand == this->AsUnOp()->gtOp1)
             {
                 *pUse = &this->AsUnOp()->gtOp1;
@@ -7371,7 +7370,6 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_MEMORYBARRIER:
         case GT_CATCH_ARG:
         case GT_SWIFT_ERROR:
-        case GT_SWIFT_ERROR_RET:
             return true;
         default:
             return false;
@@ -9633,6 +9631,10 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             }
             break;
 
+            case GT_SWIFT_ERROR_RET:
+                copy = new (this, oper) GenTreeOp(oper, tree->TypeGet(), tree->gtGetOp1(), tree->gtGetOp2());
+                break;
+
             default:
                 assert(!GenTree::IsExOp(tree->OperKind()) && tree->OperIsSimple());
                 // We're in the SimpleOp case, so it's always unary or binary.
@@ -10291,7 +10293,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
         case GT_RETURNTRAP:
-        case GT_SWIFT_ERROR_RET:
             m_edge = &m_node->AsUnOp()->gtOp1;
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::Terminate;

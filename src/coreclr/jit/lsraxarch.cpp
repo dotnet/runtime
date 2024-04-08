@@ -733,6 +733,7 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 #ifdef TARGET_X86
         case GT_LONG:
 #endif
+        case GT_SWIFT_ERROR_RET:
             return false;
 
         case GT_ADD:

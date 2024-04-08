@@ -2990,14 +2990,14 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
 // Note: treeNode's and op1's registers are already consumed.
 //
 // Arguments:
-//    treeNode - The GT_RETURN or GT_RETFILT tree node with non-struct and non-void type
+//    treeNode - The GT_RETURN/GT_RETFILT/GT_SWIFT_ERROR_RET tree node with non-struct and non-void type
 //
 // Return Value:
 //    None
 //
 void CodeGen::genSimpleReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    assert(treeNode->OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
     GenTree*  op1        = treeNode->gtGetOp1();
     var_types targetType = treeNode->TypeGet();
 

@@ -1404,7 +1404,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
 //
 void CodeGen::genFloatReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    assert(treeNode->OperIs(GT_RETURN, GT_RETFILT));
     assert(varTypeIsFloating(treeNode));
 
     GenTree* op1 = treeNode->gtGetOp1();

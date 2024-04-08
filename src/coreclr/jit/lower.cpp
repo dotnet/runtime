@@ -525,7 +525,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_SWIFT_ERROR_RET:
-            return LowerSwiftErrorRet(node);
+            std::swap(node->AsOp()->gtOp1, node->AsOp()->gtOp2);
+            LowerRet(node->AsUnOp());
+            std::swap(node->AsOp()->gtOp1, node->AsOp()->gtOp2);
+            break;
 
         case GT_RETURNTRAP:
             ContainCheckReturnTrap(node->AsOp());
@@ -4547,7 +4550,7 @@ void Lowering::LowerJmpMethod(GenTree* jmp)
 // Lower GT_RETURN node to insert PInvoke method epilog if required.
 void Lowering::LowerRet(GenTreeUnOp* ret)
 {
-    assert(ret->OperGet() == GT_RETURN);
+    assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
 
     JITDUMP("lowering GT_RETURN\n");
     DISPNODE(ret);
@@ -4896,7 +4899,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         return;
     }
 
-    assert(ret->OperIs(GT_RETURN));
+    assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
     assert(varTypeIsStruct(ret));
 
     GenTree*  retVal           = ret->gtGetOp1();
@@ -4988,7 +4991,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 {
     assert(!comp->compMethodReturnsMultiRegRetType());
-    assert(ret->OperIs(GT_RETURN));
+    assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
     GenTreeLclVarCommon* lclVar = ret->gtGetOp1()->AsLclVar();
     assert(lclVar->OperIs(GT_LCL_VAR));
     unsigned   lclNum = lclVar->GetLclNum();
@@ -8172,7 +8175,7 @@ void Lowering::ContainCheckLclHeap(GenTreeOp* node)
 //
 void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 {
-    assert(ret->OperIs(GT_RETURN));
+    assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
 
 #if !defined(TARGET_64BIT)
     if (ret->TypeGet() == TYP_LONG)

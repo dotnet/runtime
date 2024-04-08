@@ -10890,8 +10890,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         assert(info.compCallConv == CorInfoCallConvExtension::Swift);
         assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
         GenTree* const swiftErrorNode = gtNewLclFldNode(lvaSwiftErrorLocal, TYP_I_IMPL, 0);
-        GenTree* const swiftErrorRet  = gtNewOperNode(GT_SWIFT_ERROR_RET, op1->TypeGet(), swiftErrorNode);
-        impAppendTree(swiftErrorRet, CHECK_SPILL_NONE, impCurStmtDI);
+        op1                           = new (this, GT_SWIFT_ERROR_RET)
+            GenTreeOp(GT_SWIFT_ERROR_RET, op1->TypeGet(), swiftErrorNode, op1->gtGetOp1());
     }
 #endif // SWIFT_SUPPORT
 

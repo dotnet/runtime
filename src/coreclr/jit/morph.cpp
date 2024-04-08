@@ -14069,7 +14069,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
     Statement* lastStmt = block->lastStmt();
     GenTree*   ret      = (lastStmt != nullptr) ? lastStmt->GetRootNode() : nullptr;
 
-    if ((ret != nullptr) && (ret->OperGet() == GT_RETURN) && ((ret->gtFlags & GTF_RET_MERGED) != 0))
+    if ((ret != nullptr) && ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET) && ((ret->gtFlags & GTF_RET_MERGED) != 0))
     {
         // This return was generated during epilog merging, so leave it alone
     }
@@ -14092,7 +14092,8 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
 
         if (genReturnLocal != BAD_VAR_NUM)
         {
-            // replace the GT_RETURN node to be a STORE_LCL_VAR that stores the return value into genReturnLocal.
+            // replace the GT_RETURN/GT_SWIFT_ERROR_RET node to be a STORE_LCL_VAR that stores the return value into
+            // genReturnLocal.
 
             // Method must be returning a value other than TYP_VOID.
             noway_assert(compMethodHasRetVal());
@@ -14104,13 +14105,22 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
 
             // GT_RETURN must have non-null operand as the method is returning the value assigned to
             // genReturnLocal
-            noway_assert(ret->OperGet() == GT_RETURN);
-            noway_assert(ret->gtGetOp1() != nullptr);
+            GenTree* retVal;
+            if (ret->OperIs(GT_SWIFT_ERROR_RET))
+            {
+                retVal = ret->gtGetOp2();
+            }
+            else
+            {
+                noway_assert(ret->OperIs(GT_RETURN));
+                retVal = ret->gtGetOp1();
+            }
+
+            noway_assert(retVal != nullptr);
 
             Statement*       pAfterStatement = lastStmt;
             const DebugInfo& di              = lastStmt->GetDebugInfo();
-            GenTree*         tree =
-                gtNewTempStore(genReturnLocal, ret->gtGetOp1(), CHECK_SPILL_NONE, &pAfterStatement, di, block);
+            GenTree* tree = gtNewTempStore(genReturnLocal, retVal, CHECK_SPILL_NONE, &pAfterStatement, di, block);
             if (tree->OperIsCopyBlkOp())
             {
                 tree = fgMorphCopyBlock(tree);
@@ -14133,16 +14143,17 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
                 lastStmt = newStmt;
             }
         }
-        else if (ret != nullptr && ret->OperGet() == GT_RETURN)
+        else if ((ret != nullptr) && ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
         {
             // This block ends with a GT_RETURN
             noway_assert(lastStmt != nullptr);
             noway_assert(lastStmt->GetNextStmt() == nullptr);
 
-            // Must be a void GT_RETURN with null operand; delete it as this block branches to oneReturn
-            // block
+            // Must be a void GT_RETURN/GT_SWIFT_ERROR_RET with null operand; delete it as this block branches to
+            // oneReturn block
+            GenTree* const retVal = ret->OperIs(GT_RETURN) ? ret->gtGetOp1() : ret->gtGetOp2();
             noway_assert(ret->TypeGet() == TYP_VOID);
-            noway_assert(ret->gtGetOp1() == nullptr);
+            noway_assert(retVal == nullptr);
 
             if (opts.compDbgCode && lastStmt->GetDebugInfo().IsValid())
             {

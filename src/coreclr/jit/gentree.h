@@ -1739,6 +1739,9 @@ public:
 #endif // defined(TARGET_ARM64)
 
                 return true;
+
+            case GT_SWIFT_ERROR_RET:
+                return (gtType == TYP_VOID);
             default:
                 return false;
         }

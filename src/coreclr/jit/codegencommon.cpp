@@ -7759,14 +7759,14 @@ void CodeGen::genLongReturn(GenTree* treeNode)
 //            In case of LONG return on 32-bit, delegates to the genLongReturn method.
 //
 // Arguments:
-//    treeNode - The GT_RETURN or GT_RETFILT tree node.
+//    treeNode - The GT_RETURN/GT_RETFILT/GT_SWIFT_ERROR_RET tree node.
 //
 // Return Value:
 //    None
 //
 void CodeGen::genReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperIs(GT_RETURN, GT_RETFILT));
+    assert(treeNode->OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
 
     GenTree*  op1        = treeNode->gtGetOp1();
     var_types targetType = treeNode->TypeGet();
@@ -7870,7 +7870,7 @@ void CodeGen::genReturn(GenTree* treeNode)
     //
     // There should be a single GT_RETURN while generating profiler ELT callbacks.
     //
-    if (treeNode->OperIs(GT_RETURN) && compiler->compIsProfilerHookNeeded())
+    if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET) && compiler->compIsProfilerHookNeeded())
     {
         // !! NOTE !!
         // Since we are invalidating the assumption that we would slip into the epilog
@@ -7939,7 +7939,8 @@ void CodeGen::genReturn(GenTree* treeNode)
 
 #ifdef SWIFT_SUPPORT
 //------------------------------------------------------------------------
-// genSwiftErrorReturn: Generates code for loading the SwiftError pseudolocal value into the error register.
+// genSwiftErrorReturn: Generates code for returning the normal return value,
+//                      and loading the SwiftError pseudolocal value in the error register.
 //
 // Arguments:
 //    treeNode - The GT_SWIFT_ERROR_RET tree node.
@@ -7950,9 +7951,11 @@ void CodeGen::genReturn(GenTree* treeNode)
 void CodeGen::genSwiftErrorReturn(GenTree* treeNode)
 {
     assert(treeNode->OperIs(GT_SWIFT_ERROR_RET));
-    GenTree*        swiftErrorNode = treeNode->gtGetOp1();
-    const regNumber srcReg         = genConsumeReg(swiftErrorNode);
-    inst_Mov(swiftErrorNode->TypeGet(), REG_SWIFT_ERROR, srcReg, true, EA_PTRSIZE);
+    std::swap(treeNode->AsOp()->gtOp1, treeNode->AsOp()->gtOp2);
+    GenTree*        swiftErrorNode = treeNode->gtGetOp2();
+    const regNumber errorSrcReg    = genConsumeReg(swiftErrorNode);
+    genReturn(treeNode);
+    inst_Mov(swiftErrorNode->TypeGet(), REG_SWIFT_ERROR, errorSrcReg, true, EA_PTRSIZE);
 }
 #endif // SWIFT_SUPPORT
 
@@ -7963,15 +7966,15 @@ void CodeGen::genSwiftErrorReturn(GenTree* treeNode)
 //    treeNode - The tree node to evaluate whether is a struct return.
 //
 // Return Value:
-//    Returns true if the 'treeNode" is a GT_RETURN node of type struct.
+//    Returns true if the 'treeNode" is a GT_RETURN/GT_SWIFT_ERROR_RET node of type struct.
 //    Otherwise returns false.
 //
 bool CodeGen::isStructReturn(GenTree* treeNode)
 {
-    // This method could be called for 'treeNode' of GT_RET_FILT or GT_RETURN.
+    // This method could be called for 'treeNode' of GT_RET_FILT/GT_RETURN/GT_SWIFT_ERROR_RET.
     // For the GT_RET_FILT, the return is always a bool or a void, for the end of a finally block.
-    noway_assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
-    if (treeNode->OperGet() != GT_RETURN)
+    noway_assert(treeNode->OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
+    if (!treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
     {
         return false;
     }
@@ -7998,7 +8001,7 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
 //
 void CodeGen::genStructReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_RETURN);
+    assert(treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
 
     genConsumeRegs(treeNode->gtGetOp1());
 
