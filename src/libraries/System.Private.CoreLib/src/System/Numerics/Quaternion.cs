@@ -159,7 +159,6 @@ namespace System.Numerics
             {
                 var left = value1.AsVector128();
                 var right = value2.AsVector128();
-                
                 var result = right * left.GetElementUnsafe(3);
                 result += (Vector128.Shuffle(right, Vector128.Create(3, 2, 1, 0)) * left.GetElementUnsafe(0)) * Vector128.Create(+1.0f, -1.0f, +1.0f, -1.0f);
                 result += (Vector128.Shuffle(right, Vector128.Create(2, 3, 0, 1)) * left.GetElementUnsafe(1)) * Vector128.Create(+1.0f, +1.0f, -1.0f, -1.0f);
