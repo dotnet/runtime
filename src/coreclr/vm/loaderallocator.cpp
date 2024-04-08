@@ -34,7 +34,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pDynamicHelpersHeap = NULL;
 #endif
     m_pFuncPtrStubs = NULL;
-    m_hLoaderAllocatorObjectHandle = NULL;
+    m_hLoaderAllocatorObjectHandle = (OBJECTHANDLE)NULL;
     m_pStringLiteralMap = NULL;
 
     m_cReferences = (UINT32)-1;
@@ -759,7 +759,7 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
         gc.loaderAllocator = (LOADERALLOCATORREF)ObjectFromHandle(m_hLoaderAllocatorObjectHandle);
         if (gc.loaderAllocator == NULL)
         {   // The managed LoaderAllocator is already collected, we cannot allocate any exposed managed objects for it
-            retVal = NULL;
+            retVal = (LOADERHANDLE)NULL;
         }
         else
         {

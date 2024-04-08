@@ -5610,7 +5610,7 @@ PCODE NDirect::GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, 
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pStub = NULL;
+    PCODE pStub = (PCODE)NULL;
 
     CONSISTENCY_CHECK(*ppStubMD == NULL);
 
@@ -5620,7 +5620,7 @@ PCODE NDirect::GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, 
     *ppStubMD = NDirect::GetILStubMethodDesc(pNMD, &sigInfo, dwStubFlags);
 
     if (SF_IsForNumParamBytes(dwStubFlags))
-        return NULL;
+        return (PCODE)NULL;
 
     if (*ppStubMD)
     {
@@ -5667,7 +5667,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
 
     PCODE pCode = pStubMD->GetNativeCode();
 
-    if (pCode == NULL)
+    if (pCode == (PCODE)NULL)
     {
         ///////////////////////////////
         //
@@ -5720,7 +5720,7 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
     }
     CONTRACT_END;
 
-    PCODE                   pStub = NULL;
+    PCODE                   pStub = (PCODE)NULL;
     MethodDesc*             pStubMD = NULL;
 
     if (pMD->IsNDirect())
@@ -6022,7 +6022,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     }
     CONTRACT_END;
 
-    PCODE pTempILStub = NULL;
+    PCODE pTempILStub = (PCODE)NULL;
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     // this function is called by CLR to native assembly stubs which are called by
@@ -6125,7 +6125,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
 
     InterlockedCompareExchangeT<PCODE>(&pVASigCookie->pNDirectILStub,
                                                     pTempILStub,
-                                                    NULL);
+                                                    (PCODE)NULL);
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;

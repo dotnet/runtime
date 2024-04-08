@@ -381,7 +381,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
         do
         {
             StressLogChunk * inProcChunkPtr = new StressLogChunk;
-            hr = memCallBack->ReadVirtual (outProcChunkPtr, inProcChunkPtr, sizeof (*inProcChunkPtr), NULL);
+            hr = memCallBack->ReadVirtual (outProcChunkPtr, inProcChunkPtr, sizeof (*inProcChunkPtr), 0);
             if (hr != S_OK || !inProcChunkPtr->IsValid ())
             {
                 if (hr != S_OK)

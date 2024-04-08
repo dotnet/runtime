@@ -39,7 +39,7 @@ struct METHODTOKEN
 
     BOOL IsNull() const
     {
-        return m_pCodeHeader == NULL;
+        return m_pCodeHeader == 0;
     }
 };
 

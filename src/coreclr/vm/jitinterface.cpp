@@ -823,7 +823,7 @@ CHECK CheckContext(CORINFO_MODULE_HANDLE scopeHnd, CORINFO_CONTEXT_HANDLE contex
     if (context != METHOD_BEING_COMPILED_CONTEXT())
     {
         CHECK_MSG(scopeHnd != NULL, "Illegal null scope");
-        CHECK_MSG(((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK) != NULL, "Illegal null context");
+        CHECK_MSG(((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK) != 0, "Illegal null context");
         if (((size_t)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
         {
             TypeHandle handle((CORINFO_CLASS_HANDLE)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK));
@@ -869,9 +869,9 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     _ASSERTE(CheckContext(pResolvedToken->tokenScope, pResolvedToken->tokenContext));
 
     pResolvedToken->pTypeSpec = NULL;
-    pResolvedToken->cbTypeSpec = NULL;
+    pResolvedToken->cbTypeSpec = 0;
     pResolvedToken->pMethodSpec = NULL;
-    pResolvedToken->cbMethodSpec = NULL;
+    pResolvedToken->cbMethodSpec = 0;
 
     TypeHandle th;
     MethodDesc * pMD = NULL;
@@ -12388,7 +12388,7 @@ void CEEJitInfo::setEHinfo (
 
     if (m_pMethodBeingCompiled->IsDynamicMethod() &&
         ((pEHClause->Flags & COR_ILEXCEPTION_CLAUSE_FILTER) == 0) &&
-        (clause->ClassToken != NULL))
+        (clause->ClassToken != mdTokenNil))
     {
         ResolvedToken resolved{};
         m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver()->ResolveToken(clause->ClassToken, &resolved);
@@ -12878,7 +12878,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     NativeCodeVersion nativeCodeVersion = config->GetCodeVersion();
     MethodDesc* ftn = nativeCodeVersion.GetMethodDesc();
 
-    PCODE ret = NULL;
+    PCODE ret = (PCODE)NULL;
     NormalizedTimer timer;
     int64_t c100nsTicksInJit = 0;
 
@@ -14511,7 +14511,7 @@ EECodeInfo::EECodeInfo()
 {
     WRAPPER_NO_CONTRACT;
 
-    m_codeAddress = NULL;
+    m_codeAddress = (PCODE)NULL;
 
     m_pJM = NULL;
     m_pMD = NULL;

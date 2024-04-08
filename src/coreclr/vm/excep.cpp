@@ -5787,7 +5787,7 @@ LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress)
 
     // Reverse COM interop IL stubs map all exceptions to HRESULTs and must not propagate Thread.Abort
     // to their unmanaged callers.
-    if (uTryCatchResumeAddress != NULL)
+    if (uTryCatchResumeAddress != (UINT_PTR)NULL)
     {
         MethodDesc * pMDResumeMethod = ExecutionManager::GetCodeMethodDesc((PCODE)uTryCatchResumeAddress);
         if (pMDResumeMethod->IsILStub())

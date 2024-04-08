@@ -899,7 +899,7 @@ void DumpMscorlib(void* GUICookie)
             // Retrieve the type def properties as well, so that we can check a few more things about
             // the System.Object type
             //
-            if (SUCCEEDED(g_pPubImport->GetTypeDefProps(tkObjectTypeDef, NULL, NULL, 0, &dwClassAttrs, &tkExtends)))
+            if (SUCCEEDED(g_pPubImport->GetTypeDefProps(tkObjectTypeDef, NULL, 0, NULL, &dwClassAttrs, &tkExtends)))
             {
                 bool bExtends = g_pPubImport->IsValidToken(tkExtends);
                 bool isClass = ((dwClassAttrs & tdClassSemanticsMask) == tdClass);
@@ -3538,7 +3538,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
         pComSig = NULL;
     }
 
-    if (cComSig == NULL)
+    if (cComSig == 0)
     {
         sprintf_s(szString, SZSTRING_SIZE, "%sERROR: method '%s' has no signature", g_szAsmCodeIndent, pszMemberName);
         printError(GUICookie, ERRORMSG(szString));
@@ -4010,7 +4010,7 @@ BOOL DumpField(mdToken FuncToken, const char *pszClassName,void *GUICookie, BOOL
     {
         pComSig = NULL;
     }
-    if (cComSig == NULL)
+    if (cComSig == 0)
     {
         char sz[2048];
         sprintf_s(sz,2048,"%sERROR: field '%s' has no signature",g_szAsmCodeIndent,pszMemberName);

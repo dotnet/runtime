@@ -52,11 +52,11 @@ void ThreadLocalBlock::FreeTLM(SIZE_T i, BOOL isThreadShuttingdown)
                         ThreadLocalModule::CollectibleDynamicEntry *entry = (ThreadLocalModule::CollectibleDynamicEntry*)pThreadLocalModule->m_pDynamicClassTable[k].m_pDynamicEntry;
                         PTR_LoaderAllocator pLoaderAllocator = entry->m_pLoaderAllocator;
 
-                        if (entry->m_hGCStatics != NULL)
+                        if (entry->m_hGCStatics != 0)
                         {
                             pLoaderAllocator->FreeHandle(entry->m_hGCStatics);
                         }
-                        if (entry->m_hNonGCStatics != NULL)
+                        if (entry->m_hNonGCStatics != 0)
                         {
                             pLoaderAllocator->FreeHandle(entry->m_hNonGCStatics);
                         }

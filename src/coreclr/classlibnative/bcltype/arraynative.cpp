@@ -32,7 +32,7 @@ extern "C" PCODE QCALLTYPE Array_GetElementConstructorEntrypoint(QCall::TypeHand
 {
     QCALL_CONTRACT;
 
-    PCODE ctorEntrypoint = NULL;
+    PCODE ctorEntrypoint = (PCODE)0;
 
     BEGIN_QCALL;
 

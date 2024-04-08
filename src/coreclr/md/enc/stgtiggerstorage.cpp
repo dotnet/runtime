@@ -725,7 +725,7 @@ TiggerStorage::FindStream(
         PSTORAGESTREAM p = m_pStreamList;
 
         SIZE_T pStartMD = (SIZE_T)(m_pStgIO->m_pData);
-        SIZE_T pEndMD = NULL;
+        SIZE_T pEndMD = 0;
 
         if (!ClrSafeInt<SIZE_T>::addition(pStartMD, m_pStgIO->m_cbData, pEndMD))
         {

@@ -53,7 +53,7 @@ inline BOOL IsHandleNullUnchecked(OBJECTHANDLE handle)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (handle == NULL || (*(_UNCHECKED_OBJECTREF *)handle) == NULL);
+    return (handle == (OBJECTHANDLE)NULL || (*(_UNCHECKED_OBJECTREF *)handle) == NULL);
 }
 
 inline BOOL ObjectHandleIsNull(OBJECTHANDLE handle)
@@ -331,8 +331,8 @@ inline void DestroyTypedHandle(OBJECTHANDLE handle)
 
 #ifndef FEATURE_NATIVEAOT
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyHandle>                   OHWrapper;
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyPinningHandle, NULL>      PinningHandleHolder;
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyAsyncPinningHandle, NULL> AsyncPinningHandleHolder;
+typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyPinningHandle, 0>      PinningHandleHolder;
+typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyAsyncPinningHandle, 0> AsyncPinningHandleHolder;
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyRefcountedHandle>         RefCountedOHWrapper;
 
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyLongWeakHandle>            LongWeakHandleHolder;

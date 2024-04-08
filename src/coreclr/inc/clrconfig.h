@@ -147,6 +147,6 @@ inline CLRConfig::LookupOptions operator&(CLRConfig::LookupOptions lhs, CLRConfi
     return static_cast<CLRConfig::LookupOptions>(static_cast<DWORD>(lhs) & static_cast<DWORD>(rhs));
 }
 
-typedef Wrapper<LPWSTR, DoNothing, CLRConfig::FreeConfigString, NULL> CLRConfigStringHolder;
+typedef Wrapper<LPWSTR, DoNothing, CLRConfig::FreeConfigString, 0> CLRConfigStringHolder;
 
 #endif //__CLRConfig_h__

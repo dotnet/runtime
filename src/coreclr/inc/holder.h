@@ -817,9 +817,9 @@ class Wrapper : public BaseWrapper<TYPE, FunctionBase<TYPE, ACQUIREF, RELEASEF>,
 #endif
 
 template <typename _TYPE, void (*_RELEASEF)(_TYPE*)>
-class SpecializedWrapper : public Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, NULL>
+class SpecializedWrapper : public Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, 0>
 {
-    using BaseT = Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, NULL>;
+    using BaseT = Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, 0>;
 public:
     FORCEINLINE SpecializedWrapper() : BaseT(NULL, FALSE)
     {
@@ -1146,7 +1146,7 @@ typedef Wrapper<void *, DoNothing, VoidUnmapViewOfFile> MapViewHolder;
 // A holder for HMODULE.
 FORCEINLINE void HolderFreeLibrary(HMODULE h) { FreeLibrary(h); }
 
-typedef Wrapper<HMODULE, DoNothing<HMODULE>, HolderFreeLibrary, NULL> HModuleHolder;
+typedef Wrapper<HMODULE, DoNothing<HMODULE>, HolderFreeLibrary, 0> HModuleHolder;
 
 template <typename T> FORCEINLINE
 void DoLocalFree(T* pMem)

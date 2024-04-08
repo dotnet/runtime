@@ -1240,7 +1240,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
         pIL->cbSize = header.GetCodeSize();
 
         // Now we get the signature token
-        if (header.LocalVarSigTok != NULL)
+        if (header.LocalVarSigTok != mdTokenNil)
         {
             mdSig = header.GetLocalVarSigTok();
         }
@@ -1314,14 +1314,14 @@ void DacDbiInterfaceImpl::GetMethodRegionInfo(MethodDesc *             pMethodDe
     }
     CONTRACTL_END;
 
-    IJitManager::MethodRegionInfo methodRegionInfo = {NULL, 0, NULL, 0};
+    IJitManager::MethodRegionInfo methodRegionInfo = {(TADDR)NULL, 0, (TADDR)NULL, 0};
     PCODE functionAddress = pMethodDesc->GetNativeCode();
 
     // get the start address of the hot region and initialize the jit manager
     pCodeInfo->m_rgCodeRegions[kHot].pAddress = CORDB_ADDRESS(PCODEToPINSTR(functionAddress));
 
     // if the start address is NULL, the code isn't available yet, so just return
-    if (functionAddress != NULL)
+    if (functionAddress != (PCODE)NULL)
     {
         EECodeInfo codeInfo(functionAddress);
         _ASSERTE(codeInfo.IsValid());
@@ -1372,7 +1372,7 @@ void DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainAssembly         vmDomai
     if(pMethodDesc != NULL)
     {
         GetMethodRegionInfo(pMethodDesc, pCodeInfo);
-        if (pCodeInfo->m_rgCodeRegions[kHot].pAddress != NULL)
+        if (pCodeInfo->m_rgCodeRegions[kHot].pAddress != (CORDB_ADDRESS)NULL)
         {
             pCodeInfo->isInstantiatedGeneric = pMethodDesc->HasClassOrMethodInstantiation();
             LookupEnCVersions(pModule,
@@ -1397,14 +1397,14 @@ void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMe
 
     _ASSERTE(pCodeInfo != NULL);
 
-    if (hotCodeStartAddr == NULL)
+    if (hotCodeStartAddr == (CORDB_ADDRESS)NULL)
     {
         // if the start address is NULL, the code isn't available yet, so just return
         _ASSERTE(!pCodeInfo->IsValid());
         return;
     }
 
-    IJitManager::MethodRegionInfo methodRegionInfo = {NULL, 0, NULL, 0};
+    IJitManager::MethodRegionInfo methodRegionInfo = {(TADDR)NULL, 0, (TADDR)NULL, 0};
     TADDR codeAddr = CORDB_ADDRESS_TO_TADDR(hotCodeStartAddr);
 
 #ifdef TARGET_ARM
@@ -1655,7 +1655,7 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
 
                     if (pCurrentFieldData->OkToGetOrSetStaticAddress())
                     {
-                        pCurrentFieldData->SetStaticAddress(NULL);
+                        pCurrentFieldData->SetStaticAddress((TADDR)NULL);
                     }
                 }
                 else
@@ -3192,7 +3192,7 @@ CORDB_ADDRESS DacDbiInterfaceImpl::GetThreadStaticAddress(VMPTR_FieldDesc vmFiel
 
     Thread * pRuntimeThread = vmRuntimeThread.GetDacPtr();
     PTR_FieldDesc pFieldDesc = vmField.GetDacPtr();
-    TADDR fieldAddress = NULL;
+    TADDR fieldAddress = (TADDR)NULL;
 
     _ASSERTE(pRuntimeThread != NULL);
 
@@ -3441,7 +3441,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, Delega
 
     PTR_Object pInvocationList = OBJECTREFToObject(pDelObj->GetInvocationList());
 
-    if (invocationCount == NULL)
+    if (invocationCount == 0)
     {
         if (pInvocationList == NULL)
         {
@@ -3449,7 +3449,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, Delega
             // Special case: This might fail in a VSD delegate (instance open virtual)...
             // TODO: There is the special signatures cases missing.
             TADDR targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
-            if (targetMethodPtr == NULL)
+            if (targetMethodPtr == (TADDR)NULL)
             {
                 // Static extension methods, other closed static delegates, and instance delegates fall into this category.
                 *delegateType = kClosedDelegate;
@@ -3501,7 +3501,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateFunctionData(
 
     HRESULT hr = S_OK;
     PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
-    TADDR targetMethodPtr = NULL;
+    TADDR targetMethodPtr = (TADDR)NULL;
     VMPTR_MethodDesc pMD;
 
     switch (delegateType)
@@ -3552,7 +3552,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateTargetObject(
         }
 
         default:
-            ppTargetObj->SetDacTargetPtr(NULL);
+            ppTargetObj->SetDacTargetPtr((TADDR)NULL);
             break;
     }
 
@@ -4388,7 +4388,7 @@ void DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModule, ModuleInfo * pDat
 
     // Get PE BaseAddress and Size
     // For dynamic modules, these are 0. Else,
-    pData->pPEBaseAddress = NULL;
+    pData->pPEBaseAddress = (CORDB_ADDRESS)NULL;
     pData->nPESize = 0;
 
     if (!fIsDynamic)
@@ -4765,7 +4765,7 @@ BOOL DacDbiInterfaceImpl::HasUnhandledException(VMPTR_Thread vmThread)
     // most managed exceptions are just a throwable bound to a
     // native exception. In that case this handle will be non-null
     OBJECTHANDLE ohException = pThread->GetThrowableAsHandle();
-    if (ohException != NULL)
+    if (ohException != (OBJECTHANDLE)NULL)
     {
         // during the UEF we set the unhandled bit, if it is set the exception
         // was unhandled
@@ -4854,7 +4854,7 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetCurrentException(VMPTR_Thread vmThrea
     // OBJECTHANDLEs are really just TADDRs.
     OBJECTHANDLE ohException = pThread->GetThrowableAsHandle();        // ohException can be NULL
 
-    if (ohException == NULL)
+    if (ohException == (OBJECTHANDLE)NULL)
     {
         if (pThread->IsLastThrownObjectUnhandled())
         {
@@ -4872,7 +4872,7 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetObjectForCCW(CORDB_ADDRESS ccwPtr)
 {
     DD_ENTER_MAY_THROW;
 
-    OBJECTHANDLE ohCCW = NULL;
+    OBJECTHANDLE ohCCW = (OBJECTHANDLE)NULL;
 
 #ifdef FEATURE_COMWRAPPERS
     if (DACTryGetComWrappersHandleFromCCW(ccwPtr, &ohCCW) != S_OK)
@@ -4963,13 +4963,13 @@ CLR_DEBUGGING_PROCESS_FLAGS DacDbiInterfaceImpl::GetAttachStateFlags()
 //     Non-null Target Address of hijack function.
 TADDR DacDbiInterfaceImpl::GetHijackAddress()
 {
-    TADDR addr = NULL;
+    TADDR addr = (TADDR)NULL;
     if (g_pDebugger != NULL)
     {
         // Get the start address of the redirect function for unhandled exceptions.
         addr = dac_cast<TADDR>(g_pDebugger->m_rgHijackFunction[Debugger::kUnhandledException].StartAddress());
     }
-    if (addr == NULL)
+    if (addr == (TADDR)NULL)
     {
         ThrowHR(CORDBG_E_NOTREADY);
     }
@@ -5209,8 +5209,8 @@ void DacDbiInterfaceImpl::Hijack(
     // space used by the OS exception dispatcher.  We are using the latter approach here.
     //
 
-    CORDB_ADDRESS espOSContext = NULL;
-    CORDB_ADDRESS espOSRecord  = NULL;
+    CORDB_ADDRESS espOSContext = (CORDB_ADDRESS)NULL;
+    CORDB_ADDRESS espOSRecord  = (CORDB_ADDRESS)NULL;
     if (pThread != NULL && pThread->IsExceptionInProgress())
     {
         espOSContext = (CORDB_ADDRESS)PTR_TO_TADDR(pThread->GetExceptionState()->GetContextRecord());
@@ -5360,10 +5360,10 @@ TargetBuffer DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS   VASigCookieAddr,
     DD_ENTER_MAY_THROW;
 
     _ASSERTE(pArgBase != NULL);
-    *pArgBase = NULL;
+    *pArgBase = (CORDB_ADDRESS)NULL;
 
     // First, read the VASigCookie pointer.
-    TADDR taVASigCookie = NULL;
+    TADDR taVASigCookie = (TADDR)NULL;
     SafeReadStructOrThrow(VASigCookieAddr, &taVASigCookie);
 
     // Now create a DAC copy of VASigCookie.
@@ -5665,7 +5665,7 @@ CORDB_ADDRESS DacDbiInterfaceImpl::GetDebuggerControlBlockAddress()
     return CORDB_ADDRESS(dac_cast<TADDR>(g_pDebugger->m_pRCThread->GetDCB()));
     }
 
-    return NULL;
+    return (CORDB_ADDRESS)NULL;
 }
 
 // DacDbi API: Get the context for a particular thread of the target process
@@ -6541,7 +6541,7 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
             if (ctx == NULL)
                 continue;
 
-            if ((CORDB_ADDRESS)ctx->alloc_ptr != NULL)
+            if ((CORDB_ADDRESS)ctx->alloc_ptr != (CORDB_ADDRESS)NULL)
             {
                 mAllocInfo[j].Ptr = (CORDB_ADDRESS)ctx->alloc_ptr;
                 mAllocInfo[j].Limit = (CORDB_ADDRESS)ctx->alloc_limit;
@@ -6856,7 +6856,7 @@ HRESULT DacDbiInterfaceImpl::WalkHeap(HeapWalkHandle handle,
         {
             objects[i].address = addr;
             objects[i].type.token1 = mt;
-            objects[i].type.token2 = NULL;
+            objects[i].type.token2 = 0;
             objects[i].size = size;
             i++;
         }

@@ -519,7 +519,7 @@ struct ProcessModIter
         {
             m_nextDomain = false;
 
-            if (AppDomain::GetCurrentDomain() == nullptr)
+            if (AppDomain::GetCurrentDomain() == (PTR_AppDomain)nullptr)
             {
                 return NULL;
             }

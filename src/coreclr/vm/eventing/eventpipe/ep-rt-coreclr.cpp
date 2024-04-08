@@ -49,14 +49,14 @@ stack_walk_callback (
 
 	// Get the IP.
 	UINT_PTR control_pc = (UINT_PTR)frame->GetRegisterSet ()->ControlPC;
-	if (control_pc == NULL) {
+	if (control_pc == 0) {
 		if (ep_stack_contents_get_length (stack_contents) == 0) {
 			// This happens for pinvoke stubs on the top of the stack.
 			return SWA_CONTINUE;
 		}
 	}
 
-	EP_ASSERT (control_pc != NULL);
+	EP_ASSERT (control_pc != 0);
 
 	// Add the IP to the captured stack.
 	ep_stack_contents_append (stack_contents, control_pc, frame->GetFunction ());

@@ -760,7 +760,7 @@ void FrameInfo::InitFromStubHelper(
     this->internal    = false;
     this->managed     = true;
     this->relOffset   = 0;
-    this->ambientSP   = NULL;
+    this->ambientSP   = (TADDR)NULL;
 
 
     // Method associated w/a stub will never have a JitManager.
@@ -1019,7 +1019,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
             // If we have a valid reg-display (non-null IP) then update it.
             // We may have an invalid reg-display if we have an exit frame on an inactive thread.
             REGDISPLAY * pNewRD = pCF->GetRegisterSet();
-            if (GetControlPC(pNewRD) != NULL)
+            if (GetControlPC(pNewRD) != (PCODE)NULL)
             {
                 LOG((LF_CORDB, LL_EVERYTHING, "DWSP. updating RD while tracking UM chain\n"));
                 CopyREGDISPLAY(d->GetUMChainStartRD(), pNewRD);
@@ -1538,7 +1538,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 #endif // FEATURE_EH_FUNCLETS
 
     d->info.frame = frame;
-    d->info.ambientSP = NULL;
+    d->info.ambientSP = (TADDR)NULL;
 
     // Record the appdomain that the thread was in when it
     // was running code for this frame.

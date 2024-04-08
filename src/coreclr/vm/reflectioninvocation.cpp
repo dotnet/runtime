@@ -1095,7 +1095,7 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
     Assembly *pAssem = pField->GetModule()->GetAssembly();
 
     BYTE           *pDst = NULL;
-    ARG_SLOT        value = NULL;
+    ARG_SLOT        value = 0;
     CorElementType  fieldElType;
 
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
@@ -1835,9 +1835,9 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     if (pMT->IsNullable())
     {
         // CreateInstance returns null given Nullable<T>
-        *ppfnAllocator = NULL;
+        *ppfnAllocator = (PCODE)NULL;
         *pvAllocatorFirstArg = NULL;
-        *ppfnCtor = NULL;
+        *ppfnCtor = (PCODE)NULL;
         *pfCtorIsPublic = TRUE; // no ctor call needed => assume 'public' equivalent
     }
     else
@@ -1855,14 +1855,14 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
             _ASSERTE(pMD != NULL);
 
             PCODE pCode = pMD->GetMultiCallableAddrOfCode();
-            _ASSERTE(pCode != NULL);
+            _ASSERTE(pCode != (PCODE)NULL);
 
             *ppfnCtor = pCode;
             *pfCtorIsPublic = pMD->IsPublic();
         }
         else if (pMT->IsValueType())
         {
-            *ppfnCtor = NULL; // no ctor call needed; we're creating a boxed default(T)
+            *ppfnCtor = (PCODE)NULL; // no ctor call needed; we're creating a boxed default(T)
             *pfCtorIsPublic = TRUE; // no ctor call needed => assume 'public' equivalent
         }
         else

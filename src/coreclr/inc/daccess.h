@@ -865,6 +865,10 @@ public:
     {
         m_addr = addr;
     }
+    __TPtrBase(std::nullptr_t)
+    {
+        m_addr = 0;
+    }
 
     bool operator!() const
     {
@@ -883,6 +887,14 @@ public:
     bool operator!=(TADDR addr) const
     {
         return m_addr != addr;
+    }
+    bool operator==(std::nullptr_t) const
+    {
+        return m_addr == 0;
+    }
+    bool operator!=(std::nullptr_t) const
+    {
+        return m_addr != 0;
     }
     bool operator<(TADDR addr) const
     {
@@ -931,6 +943,7 @@ protected:
     // All protected - this type should not be used directly - use one of the derived types instead.
     __DPtrBase< type, DPtrType >(void) : __TPtrBase() {}
     __DPtrBase< type, DPtrType >(TADDR addr) : __TPtrBase(addr) {}
+    __DPtrBase< type, DPtrType >(std::nullptr_t) : __TPtrBase(nullptr) {}
 
     explicit __DPtrBase< type, DPtrType >(__TPtrBase addr)
     {
@@ -952,6 +965,11 @@ public:
         m_addr = addr;
         return DPtrType(m_addr);
     }
+    DPtrType& operator=(std::nullptr_t)
+    {
+        m_addr = 0;
+        return DPtrType(m_addr);
+    }
 
     type& operator*(void) const
     {
@@ -966,6 +984,10 @@ public:
     {
         return m_addr == addr;
     }
+    bool operator==(std::nullptr_t) const
+    {
+        return m_addr == 0;
+    }
     bool operator!=(const DPtrType& ptr) const
     {
         return !operator==(ptr);
@@ -973,6 +995,10 @@ public:
     bool operator!=(TADDR addr) const
     {
         return m_addr != addr;
+    }
+    bool operator!=(std::nullptr_t) const
+    {
+        return m_addr != 0;
     }
     bool operator<(const DPtrType& ptr) const
     {
@@ -1182,6 +1208,7 @@ public:
     // constructors - all chain to __DPtrBase constructors
     __DPtr< type >(void) : __DPtrBase<type,__DPtr<type> >() {}
     __DPtr< type >(TADDR addr) : __DPtrBase<type,__DPtr<type> >(addr) {}
+    __DPtr< type >(std::nullptr_t) : __DPtrBase<type,__DPtr<type> >(nullptr) {}
 
     // construct const from non-const
     typedef typename std::remove_const<type>::type mutable_type;
@@ -1220,6 +1247,7 @@ public:
     // constructors - all chain to __DPtrBase constructors
     __ArrayDPtr< type >(void) : __DPtrBase<type,__ArrayDPtr<type> >() {}
     __ArrayDPtr< type >(TADDR addr) : __DPtrBase<type,__ArrayDPtr<type> >(addr) {}
+    __ArrayDPtr< type >(std::nullptr_t) : __DPtrBase<type,__ArrayDPtr<type> >(nullptr) {}
 
     // construct const from non-const
     typedef typename std::remove_const<type>::type mutable_type;
@@ -1247,6 +1275,7 @@ public:
 
     __SPtr< type >(void) : __TPtrBase() {}
     __SPtr< type >(TADDR addr) : __TPtrBase(addr) {}
+    __SPtr< type >(std::nullptr_t) : __TPtrBase(nullptr) {}
     explicit __SPtr< type >(__TPtrBase addr)
     {
         m_addr = addr.GetAddr();
@@ -1264,6 +1293,11 @@ public:
     __SPtr< type >& operator=(TADDR addr)
     {
         m_addr = addr;
+        return *this;
+    }
+    __SPtr< type >& operator=(std::nullptr_t)
+    {
+        m_addr = 0;
         return *this;
     }
 
@@ -1339,6 +1373,7 @@ public:
 
     __VPtr< type >(void) : __TPtrBase() {}
     __VPtr< type >(TADDR addr) : __TPtrBase(addr) {}
+    __VPtr< type >(std::nullptr_t) : __TPtrBase(nullptr) {}
     explicit __VPtr< type >(__TPtrBase addr)
     {
         m_addr = addr.GetAddr();
@@ -1356,6 +1391,11 @@ public:
     __VPtr< type >& operator=(TADDR addr)
     {
         m_addr = addr;
+        return *this;
+    }
+    __VPtr< type >& operator=(std::nullptr_t)
+    {
+        m_addr = 0;
         return *this;
     }
 
@@ -1376,6 +1416,10 @@ public:
     {
         return m_addr == addr;
     }
+    bool operator==(std::nullptr_t) const
+    {
+        return m_addr == 0;
+    }
     bool operator!=(const __VPtr< type >& ptr) const
     {
         return !operator==(ptr);
@@ -1383,6 +1427,10 @@ public:
     bool operator!=(TADDR addr) const
     {
         return m_addr != addr;
+    }
+    bool operator!=(std::nullptr_t) const
+    {
+        return m_addr != 0;
     }
 
     bool IsValid(void) const
@@ -1736,6 +1784,7 @@ class __VoidPtr : public __TPtrBase
 public:
     __VoidPtr(void) : __TPtrBase() {}
     __VoidPtr(TADDR addr) : __TPtrBase(addr) {}
+    __VoidPtr(std::nullptr_t) : __TPtrBase(nullptr) {}
 
     // Note, unlike __DPtr, this ctor form is not explicit.  We allow implicit
     // conversions from any pointer type (just like for void*).
@@ -1771,6 +1820,11 @@ public:
         m_addr = addr;
         return *this;
     }
+    __VoidPtr& operator=(std::nullptr_t)
+    {
+        m_addr = 0;
+        return *this;
+    }
 
     // note, no marshalling operators (type* conversion, operator ->, operator*)
     // A void* can't be marshalled because we don't know how much to copy
@@ -1785,6 +1839,10 @@ public:
     {
         return m_addr == addr;
     }
+    bool operator==(std::nullptr_t) const
+    {
+        return m_addr == 0;
+    }
     bool operator!=(const __TPtrBase& ptr) const
     {
         return !operator==(ptr);
@@ -1792,6 +1850,10 @@ public:
     bool operator!=(TADDR addr) const
     {
         return m_addr != addr;
+    }
+    bool operator!=(std::nullptr_t) const
+    {
+        return m_addr != 0;
     }
     bool operator<(const __TPtrBase& ptr) const
     {

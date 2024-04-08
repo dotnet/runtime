@@ -127,7 +127,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                     {
                         // Call GetMethodDesc_NoRestore instead of GetMethodDesc to avoid restoring methods.
                         MethodDesc *hotDesc = (MethodDesc *)mi.GetMethodDesc_NoRestore();
-                        if (hotDesc != nullptr && hotDesc->GetNativeCode() != NULL)
+                        if (hotDesc != nullptr && hotDesc->GetNativeCode() != (PCODE)NULL)
                         {
                             PerfMap::LogPreCompiledMethod(hotDesc, hotDesc->GetNativeCode());
                         }

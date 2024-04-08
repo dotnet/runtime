@@ -902,7 +902,7 @@ PCODE MethodDesc::GetNativeCode()
     }
 
     if (!HasStableEntryPoint() || HasPrecode())
-        return NULL;
+        return (PCODE)NULL;
 
     return GetStableEntryPoint();
 }
@@ -913,7 +913,7 @@ PCODE MethodDesc::GetNativeCodeAnyVersion()
     SUPPORTS_DAC;
 
     PCODE pDefaultCode = GetNativeCode();
-    if (pDefaultCode != NULL)
+    if (pDefaultCode != (PCODE)NULL)
     {
         return pDefaultCode;
     }
@@ -929,13 +929,13 @@ PCODE MethodDesc::GetNativeCodeAnyVersion()
             for (NativeCodeVersionIterator curNative = nativeCollection.Begin(), endNative = nativeCollection.End(); curNative != endNative; curNative++)
             {
                 PCODE native = curNative->GetNativeCode();
-                if(native != NULL)
+                if(native != (PCODE)NULL)
                 {
                     return native;
                 }
             }
         }
-        return NULL;
+        return (PCODE)NULL;
     }
 }
 
@@ -1049,7 +1049,7 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
     // Always pickup overrides like reflection emit, EnC, etc.
     TADDR pIL = pModule->GetDynamicIL(GetMemberDef());
 
-    if (pIL == NULL)
+    if (pIL == (TADDR)NULL)
     {
         pIL = pModule->GetIL(GetRVA());
     }
@@ -1069,7 +1069,7 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
 #endif
 
 #ifdef DACCESS_COMPILE
-    return (pIL != NULL) ? DacGetIlMethod(pIL) : NULL;
+    return (pIL != (TADDR)NULL) ? DacGetIlMethod(pIL) : NULL;
 #else // !DACCESS_COMPILE
     return PTR_COR_ILMETHOD(pIL);
 #endif // !DACCESS_COMPILE
@@ -1915,7 +1915,7 @@ PCODE MethodDesc::GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags /*
 
     PCODE ret = TryGetMultiCallableAddrOfCode(accessFlags);
 
-    if (ret == NULL)
+    if (ret == (PCODE)NULL)
     {
         GCX_COOP();
 
@@ -2023,7 +2023,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     if (IsVersionableWithVtableSlotBackpatch())
     {
         // Caller has to call via slot or allocate funcptr stub
-        return NULL;
+        return (PCODE)NULL;
     }
 
     // Force the creation of the precode if we would eventually got one anyway
@@ -2210,7 +2210,7 @@ void MethodDesc::Reset()
 
     if (HasNativeCodeSlot())
     {
-        *GetAddrOfNativeCodeSlot() = NULL;
+        *GetAddrOfNativeCodeSlot() = (PCODE)NULL;
     }
     _ASSERTE(!HasNativeCode());
 }
@@ -3253,7 +3253,7 @@ void MethodDesc::ResetCodeEntryPointForEnC()
         PCODE pCode = *ppCode;
         LOG((LF_CORDB, LL_INFO1000000, "MD::RCEPFENC: %p -> %p\n",
             ppCode, pCode));
-        *ppCode = NULL;
+        *ppCode = (PCODE)NULL;
     }
 }
 

@@ -464,7 +464,7 @@ public:
     virtual TADDR GetReturnAddressPtr()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return NULL;
+        return 0;
     }
 
     // ASAN doesn't like us messing with the return address.
@@ -472,7 +472,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         TADDR ptr = GetReturnAddressPtr();
-        return (ptr != NULL) ? *PTR_PCODE(ptr) : NULL;
+        return (ptr != 0) ? *PTR_PCODE(ptr) : 0;
     }
 
 #ifndef DACCESS_COMPILE
@@ -604,13 +604,13 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         if (ip)
-            *ip = NULL;
+            *ip = 0;
 
         if (returnIP)
-            *returnIP = NULL;
+            *returnIP = 0;
 
         if (returnSP)
-            *returnSP = NULL;
+            *returnSP = 0;
     }
 
     // Return where the frame will execute next - the result is filled
@@ -1258,7 +1258,7 @@ public:
             return unwoundState.GetRetAddr();
 #else  // !DACCESS_COMPILE
             _ASSERTE(!"HMF's should always be initialized in the non-DAC world.");
-            return NULL;
+            return 0;
 
 #endif // !DACCESS_COMPILE
         }
@@ -2730,13 +2730,13 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         if (ip)
-            *ip = NULL;
+            *ip = 0;
 
         if (returnIP)
-            *returnIP = NULL;
+            *returnIP = 0;
 
         if (returnSP)
-            *returnSP = NULL;
+            *returnSP = 0;
     }
 
     // Keep as last entry in class
@@ -2838,7 +2838,7 @@ public:
             return PTR_HOST_MEMBER_TADDR(InlinedCallFrame, this,
                                             m_pCallerReturnAddress);
         else
-            return NULL;
+            return 0;
     }
 
     virtual BOOL NeedsUpdateRegDisplay()
@@ -2943,13 +2943,13 @@ public:
         return pFrame &&
             pFrame != FRAME_TOP &&
             InlinedCallFrame::GetMethodFrameVPtr() == pFrame->GetVTablePtr() &&
-            dac_cast<TADDR>(dac_cast<PTR_InlinedCallFrame>(pFrame)->m_pCallerReturnAddress) != NULL;
+            dac_cast<TADDR>(dac_cast<PTR_InlinedCallFrame>(pFrame)->m_pCallerReturnAddress) != 0;
     }
 
     // Marks the frame as inactive.
     void Reset()
     {
-        m_pCallerReturnAddress = NULL;
+        m_pCallerReturnAddress = 0;
     }
 
     int GetFrameType()

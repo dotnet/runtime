@@ -384,13 +384,13 @@ SIZE_T DereferenceByRefVar(SIZE_T addr)
 {
     STATIC_CONTRACT_WRAPPER;
 
-    SIZE_T result = NULL;
+    SIZE_T result = 0;
 
 #if defined(DACCESS_COMPILE)
     HRESULT hr = DacReadAll(addr, &result, sizeof(result), false);
     if (FAILED(hr))
     {
-        result = NULL;
+        result = 0;
     }
 
 #else  // !DACCESS_COMPILE
@@ -1070,7 +1070,7 @@ BOOL JITNotifications::SetAllNotifications(TADDR clrModule,USHORT NType,BOOL *ch
     {
         JITNotification *pCurrent = m_jitTable + i;
         if (!pCurrent->IsFree() &&
-            ((clrModule == NULL) || (pCurrent->clrModule == clrModule))&&
+            ((clrModule == (TADDR)NULL) || (pCurrent->clrModule == clrModule))&&
             pCurrent->state != NType)
         {
             pCurrent->state = NType;
@@ -1102,7 +1102,7 @@ BOOL JITNotifications::SetNotification(TADDR clrModule, mdToken token, USHORT NT
         return FALSE;
     }
 
-    if (clrModule == NULL)
+    if (clrModule == (TADDR)NULL)
     {
         return FALSE;
     }
@@ -1255,7 +1255,7 @@ BOOL UpdateOutOfProcTable(__GlobalPtr<NotificationClass*, DPTR(NotificationClass
         return FALSE;
     }
 
-    if (dac_cast<TADDR>(pHostTable) == NULL)
+    if (dac_cast<TADDR>(pHostTable) == (TADDR)NULL)
     {
         // The table has not been initialized in the target.  Allocate space for it and update the pointer
         // in the target so that we'll use this allocated memory from now on.  Note that we never free this
@@ -1492,14 +1492,14 @@ void DACNotifyExceptionHelper(TADDR *args, UINT argCount)
 
         DACRaiseException(args, argCount);
 
-        g_clrNotificationArguments[0] = NULL;
+        g_clrNotificationArguments[0] = 0;
     }
 }
 
 void InitializeClrNotifications()
 {
     g_clrNotificationCrst.Init(CrstClrNotification, CRST_UNSAFE_ANYMODE);
-    g_clrNotificationArguments[0] = NULL;
+    g_clrNotificationArguments[0] = 0;
 }
 
 // <TODO> FIX IN BETA 2

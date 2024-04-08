@@ -76,9 +76,9 @@ void RangeList::InitBlock(RangeListBlock *b)
     Range *r = b->ranges;
     Range *rEnd = r + RANGE_COUNT;
     while (r < rEnd)
-        r++->id = NULL;
+        r++->id = (TADDR)NULL;
 
-    b->next = NULL;
+    b->next = nullptr;
 }
 
 BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
@@ -92,7 +92,7 @@ BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
     }
     CONTRACTL_END
 
-    _ASSERTE(id != NULL);
+    _ASSERTE(id != (TADDR)NULL);
 
     RangeListBlock *b = m_firstEmptyBlock;
     Range *r = b->ranges + m_firstEmptyRange;
@@ -102,7 +102,7 @@ BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
     {
         while (r < rEnd)
         {
-            if (r->id == NULL)
+            if (r->id == (TADDR)NULL)
             {
                 r->start = (TADDR)start;
                 r->end = (TADDR)end;
@@ -123,7 +123,7 @@ BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
         // new one.
         //
 
-        if (b->next == NULL)
+        if (b->next == nullptr)
         {
             RangeListBlock *newBlock = new (nothrow) RangeListBlock;
 
@@ -136,7 +136,7 @@ BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
 
             InitBlock(newBlock);
 
-            newBlock->next = NULL;
+            newBlock->next = nullptr;
             b->next = newBlock;
         }
 
@@ -177,7 +177,7 @@ void RangeList::RemoveRangesWorker(void *id, const BYTE* start, const BYTE* end)
 
         while (r < rEnd)
         {
-            if (r->id != NULL)
+            if (r->id != (TADDR)NULL)
             {
                 if (start != NULL)
                 {
@@ -188,12 +188,12 @@ void RangeList::RemoveRangesWorker(void *id, const BYTE* start, const BYTE* end)
                         CONSISTENCY_CHECK_MSGF(r->end >= (TADDR)start &&
                                                r->end <= (TADDR)end,
                                                ("r: %p start: %p end: %p", r, start, end));
-                        r->id = NULL;
+                        r->id = (TADDR)NULL;
                     }
                 }
                 else if (r->id == (TADDR)id)
                 {
-                    r->id = NULL;
+                    r->id = (TADDR)NULL;
                 }
             }
 
@@ -204,7 +204,7 @@ void RangeList::RemoveRangesWorker(void *id, const BYTE* start, const BYTE* end)
         // If there are no more blocks, we're done.
         //
 
-        if (b->next == NULL)
+        if (b->next == nullptr)
         {
             m_firstEmptyRange = 0;
             m_firstEmptyBlock = &m_starterBlock;
@@ -249,7 +249,7 @@ BOOL RangeList::IsInRangeWorker(TADDR address, TADDR *pID /* = NULL */)
     {
         while (r < rEnd)
         {
-            if (r->id != NULL &&
+            if (r->id != (TADDR)NULL &&
                 address >= r->start
                 && address < r->end)
             {
@@ -266,7 +266,7 @@ BOOL RangeList::IsInRangeWorker(TADDR address, TADDR *pID /* = NULL */)
         // If there are no more blocks, we're done.
         //
 
-        if (b->next == NULL)
+        if (b->next == nullptr)
             return FALSE;
 
         //
@@ -326,7 +326,7 @@ RangeList::RangeListBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     for (i=0; i<RANGE_COUNT; i++)
     {
         range = &(this->ranges[i]);
-        if (range->id == NULL || range->start == NULL || range->end == NULL ||
+        if (range->id == (TADDR)NULL || range->start == (TADDR)NULL || range->end == (TADDR)NULL ||
             // just looking at the lower 4bytes is good enough on WIN64
             range->start == BADFOOD || range->end == BADFOOD)
         {

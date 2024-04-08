@@ -337,7 +337,7 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
         // Take a lock here since we don't want to allocate redundant objects which won't be collected
         CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
 
-        if (VolatileLoad(pDest) == NULL)
+        if (VolatileLoad(pDest) == 0)
         {
             FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
             Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, g_pRuntimeTypeClass->GetBaseSize());
@@ -363,7 +363,7 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
 
         // Let all threads fight over who wins using InterlockedCompareExchange.
         // Only the winner can set m_ExposedClassObject from NULL.
-        if (InterlockedCompareExchangeT(pDest, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
+        if (InterlockedCompareExchangeT(pDest, exposedClassObjectHandle, (RUNTIMETYPEHANDLE)0))
         {
             // GC will collect unused instance
             allocator->FreeHandle(exposedClassObjectHandle);

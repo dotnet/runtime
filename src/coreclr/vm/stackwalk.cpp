@@ -175,7 +175,7 @@ TADDR CrawlFrame::GetAmbientSPFromCrawlFrame()
 #elif defined(TARGET_ARM)
     return GetRegisterSet()->pCurrentContext->Sp;
 #else
-    return NULL;
+    return 0;
 #endif
 }
 
@@ -692,11 +692,11 @@ PCODE Thread::VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, KNONVOLATILE_CO
 #endif
         if (NULL == pFunctionEntry)
         {
-            return NULL;
+            return (PCODE)NULL;
         }
     }
 
-    RtlVirtualUnwind(NULL,
+    RtlVirtualUnwind(0,
                      uImageBase,
                      uControlPc,
                      pFunctionEntry,
@@ -1158,9 +1158,8 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 
 #endif // FEATURE_HIJACK
 
-    // FRAME_TOP and NULL must be distinct values. This assert
-    // will fire if someone changes this.
-    static_assert_no_msg(FRAME_TOP_VALUE != NULL);
+    // FRAME_TOP must not be 0/NULL.
+    static_assert_no_msg(FRAME_TOP_VALUE != 0);
 
     m_frameState = SFITER_UNINITIALIZED;
 
@@ -1454,7 +1453,7 @@ void StackFrameIterator::ResetCrawlFrame()
     m_crawl.isProfilerDoStackSnapshot = !!(this->m_flags & PROFILER_DO_STACK_SNAPSHOT);
     m_crawl.isNoFrameTransition = false;
 
-    m_crawl.taNoFrameTransitionMarker = NULL;
+    m_crawl.taNoFrameTransitionMarker = (TADDR)NULL;
 
 #if defined(FEATURE_EH_FUNCLETS)
     m_crawl.isFilterFunclet       = false;

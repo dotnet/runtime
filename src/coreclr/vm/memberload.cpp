@@ -153,7 +153,7 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
     BOOL fIsMethod;
     TADDR pDatum = pModule->LookupMemberRef(MemberRef, &fIsMethod);
 
-    if (pDatum != NULL)
+    if (pDatum != (TADDR)NULL)
     {
         if (!fIsMethod)
         {
@@ -190,7 +190,7 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
     if (TypeFromToken(parent) == mdtMethodDef)
     {
         // Return now if actualTypeRequired was set and the desc was cached
-        if (pDatum != NULL)
+        if (pDatum != (TADDR)NULL)
         {
             *ppTH = dac_cast<PTR_MethodDesc>(pDatum)->GetMethodTable();
             return;
@@ -329,7 +329,7 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
     }
 
     // Return now if actualTypeRequired was set and the desc was cached
-    if (pDatum != NULL)
+    if (pDatum != (TADDR)NULL)
     {
         *ppTH = typeHnd;
         return;

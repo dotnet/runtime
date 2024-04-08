@@ -4324,7 +4324,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
     GcEvtArgs pubGcEvtArgs = {};
     ULONG32 notifyType = 0;
     DWORD catcherNativeOffset = 0;
-    TADDR nativeCodeLocation = NULL;
+    TADDR nativeCodeLocation = (TADDR)NULL;
 
     DAC_ENTER();
 
@@ -4706,7 +4706,7 @@ ClrDataAccess::SetAllCodeNotifications(
                 BOOL changedTable;
                 TADDR modulePtr = mod ?
                     PTR_HOST_TO_TADDR(((ClrDataModule*)mod)->GetModule()) :
-                    NULL;
+                    (TADDR)NULL;
 
                 if (jn.SetAllNotifications(modulePtr, (USHORT)flags, &changedTable))
                 {
@@ -4822,7 +4822,7 @@ ClrDataAccess::GetCodeNotifications(
             }
             else
             {
-                TADDR modulePtr = NULL;
+                TADDR modulePtr = (TADDR)NULL;
                 if (singleMod)
                 {
                     modulePtr = PTR_HOST_TO_TADDR(((ClrDataModule*)singleMod)->
@@ -4908,7 +4908,7 @@ ClrDataAccess::SetCodeNotifications(
                     goto Exit;
                 }
 
-                TADDR modulePtr = NULL;
+                TADDR modulePtr = (TADDR)NULL;
                 if (singleMod)
                 {
                     modulePtr =
@@ -5952,10 +5952,10 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     COUNT_T countNativeVarInfo;
     NewHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
     TADDR nativeCodeStartAddr;
-    if (address != NULL)
+    if (address != (TADDR)NULL)
     {
         NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
-        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == (PCODE)NULL)
         {
             return E_INVALIDARG;
         }
@@ -6010,10 +6010,10 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
     // Use the DebugInfoStore to get IL->Native maps.
     // It doesn't matter whether we're jitted, ngenned etc.
     TADDR nativeCodeStartAddr;
-    if (address != NULL)
+    if (address != (TADDR)NULL)
     {
         NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
-        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == (PCODE)NULL)
         {
             return E_INVALIDARG;
         }
@@ -6947,7 +6947,7 @@ ClrDataAccess::GetDacGlobalValues()
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
-    if (m_dacGlobals.ThreadStore__s_pThreadStore == NULL)
+    if (m_dacGlobals.ThreadStore__s_pThreadStore == (TADDR)NULL)
     {
         return CORDBG_E_UNSUPPORTED;
     }

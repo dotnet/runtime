@@ -5042,7 +5042,7 @@ HCIMPLEND
 static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOffset)
 {
     STANDARD_VM_CONTRACT;
-    PCODE osrVariant = NULL;
+    PCODE osrVariant = (PCODE)NULL;
 
     // Fetch the patchpoint info for the current method
     EEJitManager* jitMgr = ExecutionManager::GetEEJitManager();
@@ -5054,7 +5054,7 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOf
     {
         // Unexpected, but not fatal
         STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "JitPatchpointWorker: failed to restore patchpoint info for Method=0x%pM\n", pMD);
-        return NULL;
+        return (PCODE)NULL;
     }
 
     // Set up a new native code version for the OSR variant of this method.
@@ -5069,7 +5069,7 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOf
         {
             // Unexpected, but not fatal
             STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "JitPatchpointWorker: failed to add native code version for Method=0x%pM\n", pMD);
-            return NULL;
+            return (PCODE)NULL;
         }
     }
 
@@ -5087,7 +5087,7 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOf
 // Helper method wrapper to set up a frame so we can invoke methods that might GC
 HCIMPL3(PCODE, JIT_Patchpoint_Framed, MethodDesc* pMD, EECodeInfo& codeInfo, int ilOffset)
 {
-    PCODE result = NULL;
+    PCODE result = (PCODE)NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
@@ -5129,7 +5129,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     LoaderAllocator* allocator = pMD->GetLoaderAllocator();
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
     PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
-    PCODE osrMethodCode = NULL;
+    PCODE osrMethodCode = (PCODE)NULL;
     bool isNewMethod = false;
 
     // In the current prototype, counter is shared by all patchpoints
@@ -5164,7 +5164,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     // See if we have an OSR method for this patchpoint.
     osrMethodCode = ppInfo->m_osrMethodCode;
 
-    if (osrMethodCode == NULL)
+    if (osrMethodCode == (PCODE)NULL)
     {
         // No OSR method yet, let's see if we should create one.
         //
@@ -5266,7 +5266,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         osrMethodCode = HCCALL3(JIT_Patchpoint_Framed, pMD, codeInfo, ilOffset);
 
         // If that failed, mark the patchpoint as invalid.
-        if (osrMethodCode == NULL)
+        if (osrMethodCode == (PCODE)NULL)
         {
             // Unexpected, but not fatal
             STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_Patchpoint: patchpoint (0x%p) OSR method creation failed,"
@@ -5454,7 +5454,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     {
         GCX_PREEMP();
 
-        while (ppInfo->m_osrMethodCode == NULL)
+        while (ppInfo->m_osrMethodCode == (PCODE)NULL)
         {
             // Invalid patchpoints are fatal, for partial compilation patchpoints
             //
@@ -5500,7 +5500,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
             // If that failed, mark the patchpoint as invalid.
             // This is fatal, for partial compilation patchpoints
             //
-            if (newMethodCode == NULL)
+            if (newMethodCode == (PCODE)NULL)
             {
                 STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_PartialCompilationPatchpoint: patchpoint (0x%p) OSR method creation failed,"
                     " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
@@ -5809,7 +5809,7 @@ HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32
     //
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     DELEGATEREF del = (DELEGATEREF)objRef;
-    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
+    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == (PCODE)NULL))
     {
         MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
         if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
@@ -5856,7 +5856,7 @@ HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64
     //
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     DELEGATEREF del = (DELEGATEREF)objRef;
-    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
+    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == (PCODE)NULL))
     {
         MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
         if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())

@@ -341,7 +341,7 @@ static ClassID NonGenericTypeHandleToClassID(TypeHandle th)
 
     if ((!th.IsNull()) && (th.HasInstantiation()))
 {
-        return NULL;
+        return 0;
 }
 
     return TypeHandleToClassID(th);
@@ -1067,7 +1067,7 @@ ClassID SafeGetClassIDFromObject(Object * pObj)
     TypeHandle th = pObj->GetGCSafeTypeHandleIfPossible();
     if(th == NULL)
     {
-        return NULL;
+        return 0;
     }
 
     return TypeHandleToClassID(th);
@@ -1635,7 +1635,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectSize(ObjectID objectId, ULONG *pcSize)
          "**PROF: GetObjectSize 0x%p.\n",
          objectId));
 
-    if (objectId == NULL)
+    if (objectId == 0)
     {
         return E_INVALIDARG;
     }
@@ -1699,7 +1699,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectSize2(ObjectID objectId, SIZE_T *pcSize)
          "**PROF: GetObjectSize2 0x%p.\n",
          objectId));
 
-    if (objectId == NULL)
+    if (objectId == 0)
     {
         return E_INVALIDARG;
     }
@@ -1763,7 +1763,7 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
 
     HRESULT hr;
 
-    if (classId == NULL)
+    if (classId == 0)
     {
         return E_INVALIDARG;
     }
@@ -1801,7 +1801,7 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
     {
         if (pBaseClassId != NULL)
         {
-            *pBaseClassId = NULL;
+            *pBaseClassId = 0;
         }
 
         // This is not an array, S_FALSE indicates so.
@@ -2130,7 +2130,7 @@ HRESULT ProfToEEInterfaceImpl::GetTokenAndMetaDataFromFunction(
          "**PROF: GetTokenAndMetaDataFromFunction 0x%p.\n",
          functionId));
 
-    if (functionId == NULL)
+    if (functionId == 0)
     {
         return E_INVALIDARG;
     }
@@ -2259,7 +2259,7 @@ HRESULT GetCodeInfoFromCodeStart(
 
     HRESULT hr;
 
-    if (start == NULL)
+    if (start == (PCODE)NULL)
     {
         return CORPROF_E_FUNCTION_NOT_COMPILED;
     }
@@ -2310,7 +2310,7 @@ HRESULT GetCodeInfoFromCodeStart(
                 codeInfos[0].size = methodRegionInfo.coldSize;
             }
 
-            if (NULL != methodRegionInfo.coldStartAddress)
+            if ((PCODE)NULL != methodRegionInfo.coldStartAddress)
             {
                 if (cCodeInfos > 1)
                 {
@@ -2333,7 +2333,7 @@ HRESULT GetCodeInfoFromCodeStart(
 
     if (NULL != pcCodeInfos)
     {
-        *pcCodeInfos = (NULL != methodRegionInfo.coldStartAddress) ? 2 : 1;
+        *pcCodeInfos = ((PCODE)NULL != methodRegionInfo.coldStartAddress) ? 2 : 1;
     }
 
 
@@ -2534,7 +2534,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
         hr = ValidateParametersForGetCodeInfo(pMethodDesc, cCodeInfos, codeInfos);
         if (SUCCEEDED(hr))
         {
-            PCODE pCodeStart = NULL;
+            PCODE pCodeStart = (PCODE)NULL;
             CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
             {
                 CodeVersionManager::LockHolder codeVersioningLockHolder;
@@ -2755,7 +2755,7 @@ HRESULT ProfToEEInterfaceImpl::GetArrayObjectInfo(ObjectID objectId,
          "**PROF: GetArrayObjectInfo 0x%p.\n",
          objectId));
 
-    if (objectId == NULL)
+    if (objectId == 0)
     {
         return E_INVALIDARG;
     }
@@ -2886,7 +2886,7 @@ HRESULT ProfToEEInterfaceImpl::GetBoxClassLayout(ClassID classId,
         return E_INVALIDARG;
     }
 
-    if (classId == NULL)
+    if (classId == 0)
     {
         return E_INVALIDARG;
     }
@@ -2949,7 +2949,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadAppDomain(ThreadID threadId,
 
     Thread *pThread;
 
-    if (threadId == NULL)
+    if (threadId == 0)
     {
         pThread = GetThreadNULLOk();
     }
@@ -3021,7 +3021,7 @@ HRESULT ProfToEEInterfaceImpl::GetRVAStaticAddress(ClassID classId,
     //
     // Check for NULL parameters
     //
-    if ((classId == NULL) || (ppAddress == NULL))
+    if ((classId == 0) || (ppAddress == NULL))
     {
         return E_INVALIDARG;
     }
@@ -3139,7 +3139,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
     //
     // Check for NULL parameters
     //
-    if ((classId == NULL) || (appDomainId == NULL) || (ppAddress == NULL))
+    if ((classId == 0) || (appDomainId == 0) || (ppAddress == NULL))
     {
         return E_INVALIDARG;
     }
@@ -3285,7 +3285,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress(ClassID classId,
     //
     // Verify the value of threadId, which must be the current thread ID or NULL, which means using curernt thread ID.
     //
-    if ((threadId != NULL) && (threadId != ((ThreadID)GetThreadNULLOk())))
+    if ((threadId != 0) && (threadId != ((ThreadID)GetThreadNULLOk())))
     {
         return E_INVALIDARG;
     }
@@ -3296,7 +3296,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress(ClassID classId,
     //
     // Check for NULL parameters
     //
-    if ((classId == NULL) || (ppAddress == NULL) || !IsManagedThread(threadId) || (appDomainId == NULL))
+    if ((classId == 0) || (ppAddress == NULL) || !IsManagedThread(threadId) || (appDomainId == 0))
     {
         return E_INVALIDARG;
     }
@@ -3360,7 +3360,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
          threadId));
 
 
-    if (threadId == NULL)
+    if (threadId == 0)
     {
         if (GetThreadNULLOk() == NULL)
         {
@@ -3373,7 +3373,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
     //
     // Check for NULL parameters
     //
-    if ((classId == NULL) || (ppAddress == NULL) || !IsManagedThread(threadId) || (appDomainId == NULL))
+    if ((classId == 0) || (ppAddress == NULL) || !IsManagedThread(threadId) || (appDomainId == 0))
     {
         return E_INVALIDARG;
     }
@@ -3539,7 +3539,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainsContainingModule(ModuleID moduleId,
     //
     // Check for NULL parameters
     //
-    if ((moduleId == NULL) || ((appDomainIds == NULL) && (cAppDomainIds != 0)) || (pcAppDomainIds == NULL))
+    if ((moduleId == 0) || ((appDomainIds == NULL) && (cAppDomainIds != 0)) || (pcAppDomainIds == NULL))
     {
         return E_INVALIDARG;
     }
@@ -3614,7 +3614,7 @@ HRESULT ProfToEEInterfaceImpl::GetStaticFieldInfo(ClassID classId,
     //
     // Check for NULL parameters
     //
-    if ((classId == NULL) || (pFieldInfo == NULL))
+    if ((classId == 0) || (pFieldInfo == NULL))
     {
         return E_INVALIDARG;
     }
@@ -3717,7 +3717,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo2(ClassID classId,
     //
     // Verify parameters.
     //
-    if (classId == NULL)
+    if (classId == 0)
     {
         return E_INVALIDARG;
     }
@@ -3736,7 +3736,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo2(ClassID classId,
     {
         if (pParentClassId != NULL)
         {
-            *pParentClassId = NULL;
+            *pParentClassId = 0;
         }
 
         if (pModuleId != NULL)
@@ -3779,7 +3779,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo2(ClassID classId,
         }
         else
         {
-            *pParentClassId = NULL;
+            *pParentClassId = 0;
         }
     }
 
@@ -3996,7 +3996,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
         "**PROF: GetModuleInfo2 0x%p.\n",
         moduleId));
 
-    if (moduleId == NULL)
+    if (moduleId == 0)
     {
         return E_INVALIDARG;
     }
@@ -4149,7 +4149,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
         moduleId,
         dwOpenFlags));
 
-    if (moduleId == NULL)
+    if (moduleId == 0)
     {
         return E_INVALIDARG;
     }
@@ -4236,7 +4236,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
     ULONG       RVA;                    // Return RVA of the method body.
     DWORD       dwImplFlags;            // Flags for the item.
 
-    if ((moduleId == NULL) ||
+    if ((moduleId == 0) ||
         (methodId == mdMethodDefNil) ||
         (methodId == 0) ||
         (TypeFromToken(methodId) != mdtMethodDef))
@@ -4359,7 +4359,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBodyAllocator(ModuleID         modul
         "**PROF: GetILFunctionBodyAllocator 0x%p.\n",
         moduleId));
 
-    if ((moduleId == NULL) || (ppMalloc == NULL))
+    if ((moduleId == 0) || (ppMalloc == NULL))
     {
         return E_INVALIDARG;
     }
@@ -4414,7 +4414,7 @@ HRESULT ProfToEEInterfaceImpl::SetILFunctionBody(ModuleID    moduleId,
          moduleId,
          methodId));
 
-    if ((moduleId == NULL) ||
+    if ((moduleId == 0) ||
         (methodId == mdMethodDefNil) ||
         (TypeFromToken(methodId) != mdtMethodDef) ||
         (pbNewILMethodHeader == NULL))
@@ -4489,7 +4489,7 @@ HRESULT ProfToEEInterfaceImpl::SetILInstrumentedCodeMap(FunctionID functionId,
          functionId,
          fStartJit));
 
-    if (functionId == NULL)
+    if (functionId == 0)
     {
         return E_INVALIDARG;
     }
@@ -4698,19 +4698,19 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo(ClassID classId,
         "**PROF: GetClassIDInfo 0x%p.\n",
         classId));
 
-    if (classId == NULL)
+    if (classId == 0)
     {
         return E_INVALIDARG;
     }
 
     if (pModuleId != NULL)
     {
-        *pModuleId = NULL;
+        *pModuleId = 0;
     }
 
     if (pTypeDefToken != NULL)
     {
-        *pTypeDefToken = NULL;
+        *pTypeDefToken = 0;
     }
 
     // Handle globals which don't have the instances.
@@ -4726,7 +4726,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo(ClassID classId,
             *pTypeDefToken = mdTokenNil;
     }
     }
-    else if (classId == NULL)
+    else if (classId == 0)
     {
         return E_INVALIDARG;
     }
@@ -4786,7 +4786,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo(FunctionID functionId,
         "**PROF: GetFunctionInfo 0x%p.\n",
         functionId));
 
-    if (functionId == NULL)
+    if (functionId == 0)
     {
         return E_INVALIDARG;
     }
@@ -4892,7 +4892,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
         "**PROF: GetILToNativeMapping2 0x%p 0x%p.\n",
         functionId, reJitId));
 
-    if (functionId == NULL)
+    if (functionId == 0)
     {
         return E_INVALIDARG;
     }
@@ -4923,7 +4923,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
         }
         else
         {
-            PCODE pCodeStart = NULL;
+            PCODE pCodeStart = (PCODE)NULL;
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
             ILCodeVersion ilCodeVersion = NULL;
             {
@@ -4981,7 +4981,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassFromObject(ObjectID objectId,
          "**PROF: GetClassFromObject 0x%p.\n",
          objectId));
 
-    if (objectId == NULL)
+    if (objectId == 0)
     {
         return E_INVALIDARG;
     }
@@ -5037,7 +5037,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassFromToken(ModuleID    moduleId,
          moduleId,
          typeDef));
 
-    if ((moduleId == NULL) || (typeDef == mdTypeDefNil) || (typeDef == NULL))
+    if ((moduleId == 0) || (typeDef == mdTypeDefNil) || (typeDef == mdTokenNil))
     {
         return E_INVALIDARG;
     }
@@ -5087,7 +5087,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassFromToken(ModuleID    moduleId,
     //
     ClassID classId = NonGenericTypeHandleToClassID(th);
 
-    if (classId == NULL)
+    if (classId == 0)
     {
         return CORPROF_E_TYPE_IS_PARAMETERIZED;
     }
@@ -5270,7 +5270,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromToken(ModuleID moduleId,
          moduleId,
          typeDef));
 
-    if ((moduleId == NULL) || (typeDef == mdTokenNil))
+    if ((moduleId == 0) || (typeDef == mdTokenNil))
     {
         return E_INVALIDARG;
     }
@@ -5473,7 +5473,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
          "**PROF: GetAppDomainInfo 0x%p.\n",
          appDomainId));
 
-    if (appDomainId == NULL)
+    if (appDomainId == 0)
     {
         return E_INVALIDARG;
     }
@@ -5584,7 +5584,7 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
          "**PROF: GetAssemblyInfo 0x%p.\n",
          assemblyId));
 
-    if (assemblyId == NULL)
+    if (assemblyId == 0)
     {
         return E_INVALIDARG;
     }
@@ -5981,7 +5981,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
     //
     COR_PRF_FRAME_INFO_INTERNAL *pFrameInfo = (COR_PRF_FRAME_INFO_INTERNAL *)frameInfo;
 
-    if ((funcId == NULL) ||
+    if ((funcId == 0) ||
         ((pFrameInfo != NULL) && (pFrameInfo->funcID != funcId)))
     {
         return E_INVALIDARG;
@@ -6005,7 +6005,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
     TypeHandle specificClass;
     MethodDesc* pActualMethod;
 
-    ClassID classId = NULL;
+    ClassID classId = 0;
 
     if (pMethDesc->IsSharedByGenericInstantiations())
     {
@@ -6056,7 +6056,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
             //
             // We could not get any class information.
             //
-            classId = NULL;
+            classId = 0;
         }
     }
     else
@@ -6191,7 +6191,7 @@ HRESULT ProfToEEInterfaceImpl::IsFunctionDynamic(FunctionID functionId, BOOL *is
     // Verify parameters.
     //
 
-    if (functionId == NULL)
+    if (functionId == 0)
     {
         return E_INVALIDARG;
     }
@@ -6346,7 +6346,7 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
     // Verify parameters.
     //
 
-    if (functionId == NULL)
+    if (functionId == 0)
     {
         return E_INVALIDARG;
     }
@@ -6453,7 +6453,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
     }
     CONTRACTL_END;
 
-    if (functionID == NULL)
+    if (functionID == 0)
     {
         return E_INVALIDARG;
     }
@@ -6491,7 +6491,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
             {
                 PCODE codeStart = (*iter).GetNativeCode();
 
-                if (codeStart != NULL)
+                if (codeStart != (PCODE)NULL)
                 {
                     addresses.Append(codeStart);
                     ++trueLen;
@@ -6564,7 +6564,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping3(UINT_PTR pNativeCodeStartAd
         "**PROF: GetILToNativeMapping3 0x%p.\n",
         pNativeCodeStartAddress));
 
-    if (pNativeCodeStartAddress == NULL)
+    if (pNativeCodeStartAddress == (PCODE)NULL)
     {
         return E_INVALIDARG;
     }
@@ -7409,7 +7409,7 @@ HRESULT ProfToEEInterfaceImpl::CreateHandle(
         LL_INFO1000,
         "**PROF: CreateHandle.\n"));
 
-    if (object == NULL)
+    if (object == 0)
     {
         return E_INVALIDARG;
     }
@@ -7833,7 +7833,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassLayout(ClassID classID,
     //
     // Verify parameters
     //
-    if ((pcFieldOffset == NULL) || (classID == NULL))
+    if ((pcFieldOffset == NULL) || (classID == 0))
     {
          return E_INVALIDARG;
     }
@@ -8030,7 +8030,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     }
     else
     {
-        frameInfo.funcID = NULL;
+        frameInfo.funcID = 0;
         frameInfo.extraArg = NULL;
     }
 
@@ -8542,7 +8542,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
         return CORPROF_E_INCONSISTENT_WITH_FLAGS;
     }
 
-    if (thread == NULL)
+    if (thread == 0)
     {
         pThreadToSnapshot = pCurrentThread;
     }
@@ -9732,7 +9732,7 @@ HRESULT ProfilingGetFunctionEnter3Info(FunctionID functionId,                   
     }
     CONTRACTL_END;
 
-    if ((functionId == NULL) || (eltInfo == NULL))
+    if ((functionId == 0) || (eltInfo == 0))
     {
         return E_INVALIDARG;
     }
@@ -9931,7 +9931,7 @@ HRESULT ProfilingGetFunctionLeave3Info(FunctionID functionId,                   
     }
     CONTRACTL_END;
 
-    if ((pFrameInfo == NULL) || (eltInfo == NULL))
+    if ((pFrameInfo == NULL) || (eltInfo == 0))
     {
         return E_INVALIDARG;
     }
@@ -10093,7 +10093,7 @@ HRESULT ProfilingGetFunctionTailcall3Info(FunctionID functionId,                
     }
     CONTRACTL_END;
 
-    if ((functionId == NULL) || (eltInfo == NULL) || (pFrameInfo == NULL))
+    if ((functionId == 0) || (eltInfo == 0) || (pFrameInfo == NULL))
     {
         return E_INVALIDARG;
     }
@@ -10540,7 +10540,7 @@ HRESULT ProfToEEInterfaceImpl::ApplyMetaData(
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers, (LF_CORPROF, LL_INFO1000, "**PROF: ApplyMetaData.\n"));
 
-    if (moduleId == NULL)
+    if (moduleId == 0)
     {
         return E_INVALIDARG;
     }
@@ -10734,7 +10734,7 @@ HCIMPL_PROLOG(ProfileEnter)
             g_profControlBlock.mainProfilerInfo.pProfInterface->GetEnter2Hook()(
                 functionId,
                 clientData,
-                NULL,
+                0,
                 NULL);
             goto LExit;
         }
@@ -10744,7 +10744,7 @@ HCIMPL_PROLOG(ProfileEnter)
         //
         ProfileSetFunctionIDInPlatformSpecificHandle(platformSpecificHandle, functionId);
 
-        COR_PRF_FRAME_INFO frameInfo = NULL;
+        COR_PRF_FRAME_INFO frameInfo = 0;
         COR_PRF_FUNCTION_ARGUMENT_INFO * pArgumentInfo = NULL;
         ULONG ulArgInfoSize = 0;
 
@@ -10908,7 +10908,7 @@ HCIMPL_PROLOG(ProfileLeave)
             g_profControlBlock.mainProfilerInfo.pProfInterface->GetLeave2Hook()(
                 functionId,
                 clientData,
-                NULL,
+                0,
                 NULL);
             goto LExit;
         }
@@ -10916,7 +10916,7 @@ HCIMPL_PROLOG(ProfileLeave)
         //
         // Whidbey Slow-Path ELT
         //
-        COR_PRF_FRAME_INFO frameInfo = NULL;
+        COR_PRF_FRAME_INFO frameInfo = 0;
         COR_PRF_FUNCTION_ARGUMENT_RANGE argumentRange;
 
         HRESULT hr = ProfilingGetFunctionLeave3Info(functionId, (COR_PRF_ELT_INFO)&eltInfo, &frameInfo, &argumentRange);
@@ -11040,14 +11040,14 @@ HCIMPL2(EXTERN_C void, ProfileTailcall, UINT_PTR clientData, void * platformSpec
             g_profControlBlock.mainProfilerInfo.pProfInterface->GetTailcall2Hook()(
                 functionId,
                 clientData,
-                NULL);
+                0);
             goto LExit;
         }
 
         //
         // Whidbey Slow-Path ELT
         //
-        COR_PRF_FRAME_INFO frameInfo = NULL;
+        COR_PRF_FRAME_INFO frameInfo = 0;
 
         HRESULT hr = ProfilingGetFunctionTailcall3Info(functionId, (COR_PRF_ELT_INFO)&eltInfo, &frameInfo);
         _ASSERTE(hr == S_OK);

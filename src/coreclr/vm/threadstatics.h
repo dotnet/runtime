@@ -96,8 +96,8 @@ struct ThreadLocalModule
             LIMITED_METHOD_CONTRACT;
         }
 
-        LOADERHANDLE        m_hGCStatics = NULL;
-        LOADERHANDLE        m_hNonGCStatics = NULL;
+        LOADERHANDLE        m_hGCStatics = (LOADERHANDLE)0;
+        LOADERHANDLE        m_hNonGCStatics = (LOADERHANDLE)0;
         PTR_LoaderAllocator m_pLoaderAllocator = NULL;
     };
     typedef DPTR(CollectibleDynamicEntry) PTR_CollectibleDynamicEntry;

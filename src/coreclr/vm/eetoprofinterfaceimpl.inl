@@ -222,7 +222,7 @@ inline UINT_PTR EEToProfInterfaceImpl::LookupClientIDFromCache(FunctionID functi
     }
     else
     {
-        return NULL;
+        return 0;
     }
 }
 

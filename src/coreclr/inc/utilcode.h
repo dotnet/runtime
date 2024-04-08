@@ -1742,7 +1742,7 @@ public:
         HASHFIND    *psSrch)            // Search object.
     {
         WRAPPER_NO_CONTRACT;
-        if (m_piBuckets == 0)
+        if (m_piBuckets == nullptr)
             return (0);
         psSrch->iBucket = 1;
         psSrch->iNext = m_piBuckets[0];

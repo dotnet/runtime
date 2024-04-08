@@ -3995,7 +3995,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
     }
 
     int     doff = Compiler::eeGetJitDataOffs(fldHnd);
-    ssize_t addr = NULL;
+    ssize_t addr = 0;
 
     if (doff >= 0)
     {
