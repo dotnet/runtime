@@ -53,6 +53,7 @@ private:
     static constexpr weight_t ilNextLikelihood      = 0.52;
     static constexpr weight_t loopBackLikelihood    = 0.9;
     static constexpr weight_t loopExitLikelihood    = 0.9;
+    static constexpr weight_t throwLikelihood       = 0;
     static constexpr unsigned maxRepairRetries      = 4;
     static constexpr unsigned maxSolverIterations   = 50;
     static constexpr weight_t maxCount              = 1e12;

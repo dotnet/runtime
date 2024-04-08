@@ -85,7 +85,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
 
     // If the initial pass results were approximate, iterate until we get
     // something that is self-consistent (or, accept the fact that
-    // that the results can never be self-consistent -- infinite loops, eg).
+    // the results can never be self-consistent -- infinite loops, eg).
     //
     // Each iteration will blend in increasing amounts of synthetic profile,
     // and also modulate the synthetic probabilities towards 50/50. The net result
@@ -93,7 +93,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     // iteration counts. This blending helps facilitate convergence, which is also
     // impacted by extremely high loop iteration counts.
     //
-    // Put another way, we take an intially approximate profile as a sign that the
+    // Put another way, we take an initially approximate profile as a sign that the
     // profile data itself may be a bit suspect, and so we adjust based on a "prior"
     // belief that the profile should be somewhat flatter.
     //
@@ -109,7 +109,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         m_overflow                  = false;
         m_cappedCyclicProbabilities = 0;
 
-        // Regularize the edgelikelihoods...
+        // Regularize the edge likelihoods...
         //
         BlendLikelihoods();
         ComputeCyclicProbabilities();
@@ -158,7 +158,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     // convergence) but not actually converge because of
     // nonsensical flow.
     //
-    // This generally only happens under pure synthesis, becase
+    // This generally only happens under pure synthesis, because
     // methods with invalid IL won't have real PGO data.
     //
     // Assume all is well.
@@ -277,8 +277,6 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 
     if (isTrueThrow != isFalseThrow)
     {
-        const weight_t throwLikelihood = 0;
-
         if (isTrueThrow)
         {
             trueEdge->setLikelihood(throwLikelihood);
@@ -1069,7 +1067,7 @@ void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
         {
             for (EHblkDsc* const HBtab : EHClauses(m_comp))
             {
-                // Only set weights on the filter/hander entries
+                // Only set weights on the filter/handler entries
                 // if the associated try is reachable.
                 //
                 BasicBlock* const tryBlock = HBtab->ebdTryBeg;
@@ -1214,7 +1212,7 @@ void ProfileSynthesis::GaussSeidelSolver()
     // to converge. We don't have time for that, so we will give up
     // fairly quickly.
     //
-    // This can be mitgated somewhat by using blend mode for repairs, as that tends
+    // This can be mitigated somewhat by using blend mode for repairs, as that tends
     // to shift likelihoods off of the extremes (say 0.999) can lead to high
     // iteration counts.
     //
@@ -1339,7 +1337,7 @@ void ProfileSynthesis::GaussSeidelSolver()
 
                         if (predBlock == block)
                         {
-                            // We might see a degenerate self BBJ_COND. Hoepfully not.
+                            // We might see a degenerate self BBJ_COND. Hopefully not.
                             //
                             assert(selfEdge == nullptr);
                             selfEdge = edge;
