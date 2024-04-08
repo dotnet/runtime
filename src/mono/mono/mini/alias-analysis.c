@@ -54,7 +54,7 @@ lower_load (MonoCompile *cfg, MonoInst *load, MonoInst *ldaddr)
 
 	if (replaced_op != load->opcode) {
 		if (cfg->verbose_level > 2) {
-			printf ("Incompatible load type: expected " M_PRI_INST " but got %s\n",
+			printf ("Incompatible load type: expected " M_PRI_INST " but got " M_PRI_INST "\n",
 				mono_inst_name (replaced_op),
 				mono_inst_name (load->opcode));
 		}
@@ -86,11 +86,9 @@ lower_store (MonoCompile *cfg, MonoInst *store, MonoInst *ldaddr)
 
 	if (replaced_op != store->opcode) {
 		if (cfg->verbose_level > 2) {
-			#ifndef DISABLE_LOGGING
-			printf ("Incompatible store_reg type: expected %s but got %s\n",
+			printf ("Incompatible store_reg type: expected " M_PRI_INST " but got " M_PRI_INST "\n",
 				mono_inst_name (replaced_op),
 				mono_inst_name (store->opcode));
-			#endif
 		}
 		return FALSE;
 	} else {

@@ -7773,12 +7773,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_warning ("unknown opcode " M_PRI_INST " in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
 		}
-		
-		#ifndef DISABLE_LOGGING
+
 		g_assertf ((code - cfg->native_code - offset) <= max_len,
 			   "wrong maximal instruction length of instruction " M_PRI_INST " (expected %d, got %d)",
 			   mono_inst_name (ins->opcode), max_len, (int)(code - cfg->native_code - offset));
-		#endif
 	}
 
 	set_code_cursor (cfg, code);

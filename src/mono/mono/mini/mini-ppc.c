@@ -2420,7 +2420,7 @@ map_to_reg_reg_op (int op)
 		return OP_STOREI8_MEMBASE_REG;
 	}
 	if (mono_op_imm_to_op (op) == -1)
-		g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (op));
+		g_error ("mono_op_imm_to_op failed for " M_PRI_INST "\n", mono_inst_name (op));
 	return mono_op_imm_to_op (op);
 }
 
