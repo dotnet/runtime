@@ -60,7 +60,7 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 	fi
 else
 	if [[ -z "$JS_ENGINE_ARGS" ]]; then
-		JS_ENGINE_ARGS="--browser-arg=--js-flags=--stack-trace-limit=1000 --browser-arg=--enable-logging --browser-arg=--v=1 --browser-arg=--log-level=INFO --browser-arg=--log-file=$XHARNESS_OUT/chrome.log"
+		JS_ENGINE_ARGS="--browser-arg=--js-flags=--stack-trace-limit=1000 --browser-arg=--enable-logging --browser-arg=--v=2 --browser-arg=--log-level=INFO --browser-arg=--log-file=$XHARNESS_OUT/chrome.log"
 		export CHROME_LOG_FILE="$XHARNESS_OUT/chrome.log"
 	fi
 fi
