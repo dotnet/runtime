@@ -344,20 +344,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Save(NativeWriter writer)
         {
-            Debug.Assert(Value == null ||
-                Value.HandleType == HandleType.ConstantByteValue ||
-                Value.HandleType == HandleType.ConstantSByteValue ||
-                Value.HandleType == HandleType.ConstantInt16Value ||
-                Value.HandleType == HandleType.ConstantUInt16Value ||
-                Value.HandleType == HandleType.ConstantInt32Value ||
-                Value.HandleType == HandleType.ConstantUInt32Value ||
-                Value.HandleType == HandleType.ConstantInt64Value ||
-                Value.HandleType == HandleType.ConstantUInt64Value);
             writer.Write(Value);
-            Debug.Assert(Type == null ||
-                Type.HandleType == HandleType.TypeDefinition ||
-                Type.HandleType == HandleType.TypeReference ||
-                Type.HandleType == HandleType.TypeSpecification);
             writer.Write(Type);
         } // Save
 
@@ -2207,6 +2194,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 handle.HandleType == HandleType.TypeSpecification ||
                 handle.HandleType == HandleType.ConstantBooleanArray ||
                 handle.HandleType == HandleType.ConstantBooleanValue ||
+                handle.HandleType == HandleType.ConstantBoxedEnumValue ||
                 handle.HandleType == HandleType.ConstantByteArray ||
                 handle.HandleType == HandleType.ConstantByteValue ||
                 handle.HandleType == HandleType.ConstantCharArray ||
@@ -2419,6 +2407,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 DefaultValue.HandleType == HandleType.TypeSpecification ||
                 DefaultValue.HandleType == HandleType.ConstantBooleanArray ||
                 DefaultValue.HandleType == HandleType.ConstantBooleanValue ||
+                DefaultValue.HandleType == HandleType.ConstantBoxedEnumValue ||
                 DefaultValue.HandleType == HandleType.ConstantByteArray ||
                 DefaultValue.HandleType == HandleType.ConstantByteValue ||
                 DefaultValue.HandleType == HandleType.ConstantCharArray ||
@@ -3334,6 +3323,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 Value.HandleType == HandleType.TypeSpecification ||
                 Value.HandleType == HandleType.ConstantBooleanArray ||
                 Value.HandleType == HandleType.ConstantBooleanValue ||
+                Value.HandleType == HandleType.ConstantBoxedEnumValue ||
                 Value.HandleType == HandleType.ConstantByteArray ||
                 Value.HandleType == HandleType.ConstantByteValue ||
                 Value.HandleType == HandleType.ConstantCharArray ||
@@ -3599,6 +3589,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 DefaultValue.HandleType == HandleType.TypeSpecification ||
                 DefaultValue.HandleType == HandleType.ConstantBooleanArray ||
                 DefaultValue.HandleType == HandleType.ConstantBooleanValue ||
+                DefaultValue.HandleType == HandleType.ConstantBoxedEnumValue ||
                 DefaultValue.HandleType == HandleType.ConstantByteArray ||
                 DefaultValue.HandleType == HandleType.ConstantByteValue ||
                 DefaultValue.HandleType == HandleType.ConstantCharArray ||
@@ -3794,6 +3785,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 DefaultValue.HandleType == HandleType.TypeSpecification ||
                 DefaultValue.HandleType == HandleType.ConstantBooleanArray ||
                 DefaultValue.HandleType == HandleType.ConstantBooleanValue ||
+                DefaultValue.HandleType == HandleType.ConstantBoxedEnumValue ||
                 DefaultValue.HandleType == HandleType.ConstantByteArray ||
                 DefaultValue.HandleType == HandleType.ConstantByteValue ||
                 DefaultValue.HandleType == HandleType.ConstantCharArray ||
