@@ -9,8 +9,8 @@ export {
     mono_wasm_pthread_ptr, update_thread_info, isMonoThreadMessage, monoThreadInfo,
 } from "./shared";
 export {
-    mono_wasm_dump_threads, cancelThreads, is_thread_available,
-    populateEmscriptenPool, mono_wasm_init_threads, init_finalizer_thread,
+    mono_wasm_dump_threads, cancelThreads,
+    populateEmscriptenPool, mono_wasm_init_threads,
     waitForThread, replaceEmscriptenPThreadUI
 } from "./ui-thread";
 export {
