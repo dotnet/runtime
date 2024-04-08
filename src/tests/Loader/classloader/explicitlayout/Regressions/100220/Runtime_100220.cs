@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -10,21 +11,22 @@ public static class Runtime_100220
 {
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/100220", TestRuntimes.Mono)]
+    // Also, Mono needs RuntimeHelpers.GetRawObjectDataSize or equivalent to get an object size
     public static int TestEntryPoint()
     {
         if (IntPtr.Size == 8)
         {
             // Classes
-            Assert.Equal(32, GetManagedSize(() => new MyClassAuto()));
-            Assert.Equal(32, GetManagedSize(() => new MyClass1000Exp()));
-            Assert.Equal(32, GetManagedSize(() => new MyClass1000Seq()));
-            Assert.Equal(32, GetManagedSize(() => new MyClass1000NoGcExp()));
-            Assert.Equal(1016, GetManagedSize(() => new MyClass1000NoGcSeq()));
-            Assert.Equal(40, GetManagedSize(() => new BaseClassSeq()));
-            Assert.Equal(56, GetManagedSize(() => new SubclassSeq()));
-            Assert.Equal(64, GetManagedSize(() => new SubclassSubclassSeq()));
-            Assert.Equal(48, GetManagedSize(() => new SubclassWithGcSeq()));
-            Assert.Equal(32, GetManagedSize(() => new SubclassOfBaseWithGcSeq()));
+            Assert.Equal(16, ObjectSize<MyClassAuto>());
+            Assert.Equal(16, ObjectSize<MyClass1000Exp>());
+            Assert.Equal(16, ObjectSize<MyClass1000Seq>());
+            Assert.Equal(16, ObjectSize<MyClass1000NoGcExp>());
+            Assert.Equal(1000, ObjectSize<MyClass1000NoGcSeq>());
+            Assert.Equal(24, ObjectSize<BaseClassSeq>());
+            Assert.Equal(40, ObjectSize<SubclassSeq>());
+            Assert.Equal(48, ObjectSize<SubclassSubclassSeq>());
+            Assert.Equal(32, ObjectSize<SubclassWithGcSeq>());
+            Assert.Equal(16, ObjectSize<SubclassOfBaseWithGcSeq>());
 
             // Structs
             Assert.Equal(16, Unsafe.SizeOf<MyStructAuto>());
@@ -36,16 +38,16 @@ public static class Runtime_100220
         else
         {
             // Classes
-            Assert.Equal(16, GetManagedSize(() => new MyClassAuto()));
-            Assert.Equal(20, GetManagedSize(() => new MyClass1000Exp()));
-            Assert.Equal(16, GetManagedSize(() => new MyClass1000Seq()));
-            Assert.Equal(20, GetManagedSize(() => new MyClass1000NoGcExp()));
-            Assert.Equal(1008, GetManagedSize(() => new MyClass1000NoGcSeq()));
-            Assert.Equal(28, GetManagedSize(() => new BaseClassSeq()));
-            Assert.Equal(44, GetManagedSize(() => new SubclassSeq()));
-            Assert.Equal(52, GetManagedSize(() => new SubclassSubclassSeq()));
-            Assert.Equal(36, GetManagedSize(() => new SubclassWithGcSeq()));
-            Assert.Equal(16, GetManagedSize(() => new SubclassOfBaseWithGcSeq()));
+            Assert.Equal(8, ObjectSize<MyClassAuto>());
+            Assert.Equal(12, ObjectSize<MyClass1000Exp>());
+            Assert.Equal(8, ObjectSize<MyClass1000Seq>());
+            Assert.Equal(12, ObjectSize<MyClass1000NoGcExp>());
+            Assert.Equal(1000, ObjectSize<MyClass1000NoGcSeq>());
+            Assert.Equal(20, ObjectSize<BaseClassSeq>());
+            Assert.Equal(36, ObjectSize<SubclassSeq>());
+            Assert.Equal(44, ObjectSize<SubclassSubclassSeq>());
+            Assert.Equal(28, ObjectSize<SubclassWithGcSeq>());
+            Assert.Equal(8, ObjectSize<SubclassOfBaseWithGcSeq>());
 
             // Structs
             Assert.Equal(8, Unsafe.SizeOf<MyStructAuto>());
@@ -103,12 +105,11 @@ public static class Runtime_100220
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-    private static int GetManagedSize(Func<object> allocator)
+    private static int ObjectSize<T>() where T : new()
     {
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        allocator();
-        long after = GC.GetAllocatedBytesForCurrentThread();
-        return checked((int)(after - before));
+        return (int)(nuint)typeof(RuntimeHelpers)
+            .GetMethod("GetRawObjectDataSize", BindingFlags.Static | BindingFlags.NonPublic)
+            .Invoke(null, [new T()]);
     }
 
     private class MyClassAuto
