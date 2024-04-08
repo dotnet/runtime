@@ -27,7 +27,9 @@ namespace System.Net.Quic.Tests
         {
             if (PlatformDetection.IsDebugLibrary(typeof(QuicConnection).Assembly) && !enabledBySwitch)
             {
-                throw new SkipTestException("AppCtxSwitch is not necessary for SSLKEYLOGFILE in Debug.");
+                // AppCtxSwitch is not checked for SSLKEYLOGFILE in Debug builds, the same code path
+                // will be tested by the enabledBySwitch = true case. Skip it here.
+                return;
             }
 
             var psi = new ProcessStartInfo();
