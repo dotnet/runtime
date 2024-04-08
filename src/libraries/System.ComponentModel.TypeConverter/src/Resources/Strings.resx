@@ -178,6 +178,9 @@
   <data name="PropertyTabAttributeParamsBothNull" xml:space="preserve">
     <value>An array of tab type names or tab types must be specified</value>
   </data>
+  <data name="ComObjectDescriptorsNotSupported" xml:space="preserve">
+    <value>COM object type descriptor functionality has been disabled in the app configuration and is not supported.</value>
+  </data>
   <data name="CultureInfoConverterDefaultCultureString" xml:space="preserve">
     <value>(Default)</value>
   </data>

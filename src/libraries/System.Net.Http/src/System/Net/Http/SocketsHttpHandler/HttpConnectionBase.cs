@@ -211,5 +211,41 @@ namespace System.Net.Http
         }
 
         public abstract void Dispose();
+
+        /// <summary>
+        /// Called by <see cref="HttpConnectionPool.CleanCacheAndDisposeIfUnused"/> while holding the lock.
+        /// </summary>
+        public bool IsUsable(long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)
+        {
+            // Validate that the connection hasn't been idle in the pool for longer than is allowed.
+            if (pooledConnectionIdleTimeout != Timeout.InfiniteTimeSpan)
+            {
+                long idleTicks = GetIdleTicks(nowTicks);
+                if (idleTicks > pooledConnectionIdleTimeout.TotalMilliseconds)
+                {
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Scavenging connection. Idle {TimeSpan.FromMilliseconds(idleTicks)} > {pooledConnectionIdleTimeout}.");
+                    return false;
+                }
+            }
+
+            // Validate that the connection lifetime has not been exceeded.
+            if (pooledConnectionLifetime != Timeout.InfiniteTimeSpan)
+            {
+                long lifetimeTicks = GetLifetimeTicks(nowTicks);
+                if (lifetimeTicks > pooledConnectionLifetime.TotalMilliseconds)
+                {
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Scavenging connection. Lifetime {TimeSpan.FromMilliseconds(lifetimeTicks)} > {pooledConnectionLifetime}.");
+                    return false;
+                }
+            }
+
+            if (!CheckUsabilityOnScavenge())
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace($"Scavenging connection. Keep-Alive timeout exceeded, unexpected data or EOF received.");
+                return false;
+            }
+
+            return true;
+        }
     }
 }

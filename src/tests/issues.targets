@@ -244,9 +244,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_590771/DevDiv_590771/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
-            <Issue>https://github.com/dotnet/runtime/issues/67870</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Exceptions/UnwindFpBleedTest/UnwindFpBleedTest/*">
           <Issue>Windows's unwinder in ARM64v8 queue doesn't contain FP unwind fix</Issue>
         </ExcludeList>
@@ -421,9 +418,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
             <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
-            <Issue>https://github.com/dotnet/runtime/issues/57856</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/multiple/multiple/*">
             <Issue>https://github.com/dotnet/runtime/issues/57875</Issue>
@@ -710,6 +704,9 @@
             <Issue>Test expects being run with corerun</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/RuntimeConfiguration/TestConfigTester/*">
+            <Issue>Test expects being run with corerun</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandledTester/*">
             <Issue>Test expects being run with corerun</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/debugging/debuginfo/tester/*">
