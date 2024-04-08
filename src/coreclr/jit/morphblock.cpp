@@ -63,7 +63,7 @@ protected:
 };
 
 //------------------------------------------------------------------------
-// MorphInitBlock: Morph a block initialization assignment tree.
+// MorphInitBlock: Morph a block initialization store tree.
 //
 // Arguments:
 //    comp - a compiler instance;
@@ -318,13 +318,13 @@ void MorphInitBlockHelper::MorphStructCases()
 
 //------------------------------------------------------------------------
 // InitFieldByField: Attempts to promote a local block init tree to a tree
-// of promoted field initialization assignments.
+// of promoted field initialization stores.
 //
 // If successful, will set "m_transformationDecision" to "FieldByField" and
 // "m_result" to the final tree.
 //
 // Notes:
-//    This transforms a single block initialization assignment like:
+//    This transforms a single block initialization store like:
 //
 //    *  STORE_BLK struct<12> (init)
 //    +--*  LCL_ADDR  byref V02 loc0
@@ -481,7 +481,7 @@ void MorphInitBlockHelper::TryPrimitiveInit()
 
 //------------------------------------------------------------------------
 // EliminateCommas: Prepare for block morphing by removing commas from the
-// source operand of the assignment.
+// source operand of the store.
 //
 // Parameters:
 //   commaPool - [out] Pool of GT_COMMA nodes linked by their gtNext nodes that
@@ -620,7 +620,7 @@ private:
 };
 
 //------------------------------------------------------------------------
-// MorphCopyBlock: Morph a block copy assignment tree.
+// MorphCopyBlock: Morph a block copy tree.
 //
 // Arguments:
 //    comp - a compiler instance;
@@ -676,7 +676,7 @@ void MorphCopyBlockHelper::PrepareSrc()
 }
 
 // TrySpecialCases: check special cases that require special transformations.
-//    The current special cases include assignments with calls in RHS.
+//    The current special cases include stores with calls as values.
 //
 void MorphCopyBlockHelper::TrySpecialCases()
 {
@@ -707,7 +707,7 @@ void MorphCopyBlockHelper::TrySpecialCases()
 //
 void MorphCopyBlockHelper::MorphStructCases()
 {
-    JITDUMP("block assignment to morph:\n");
+    JITDUMP("block store to morph:\n");
     DISPTREE(m_store);
 
     if (m_dstVarDsc != nullptr)
@@ -775,7 +775,7 @@ void MorphCopyBlockHelper::MorphStructCases()
         requiresCopyBlock = true;
     }
 
-    // Can we use field by field assignment for the dest?
+    // Can we use field by field copy for the dest?
     if (m_dstDoFldStore && m_dstVarDsc->lvAnySignificantPadding)
     {
         JITDUMP(" dest has significant padding");
@@ -783,7 +783,7 @@ void MorphCopyBlockHelper::MorphStructCases()
         requiresCopyBlock = true;
     }
 
-    // Can we use field by field assignment for the src?
+    // Can we use field by field copy for the src?
     if (m_srcDoFldStore && m_srcVarDsc->lvAnySignificantPadding)
     {
         JITDUMP(" src has significant padding");
@@ -805,8 +805,8 @@ void MorphCopyBlockHelper::MorphStructCases()
     }
 #endif // TARGET_ARM
 
-    // Don't use field by field assignment if the src is a call, lowering will handle
-    // it without spilling the call result into memory to access the individual fields.
+    // Don't use field by field store if the src is a call, lowering will handle it
+    // without spilling the call result into memory to access the individual fields.
     // For HWI/SIMD/CNS_VEC, we don't expect promoted destinations - we purposefully
     // mark SIMDs used in such copies as "used in a SIMD intrinsic", to prevent their
     // promotion.
@@ -944,12 +944,12 @@ void MorphCopyBlockHelper::MorphStructCases()
     // If we require a copy block the set both of the field assign bools to false
     if (requiresCopyBlock)
     {
-        // If a copy block is required then we won't do field by field assignments
+        // If a copy block is required then we won't do field by field stores
         m_dstDoFldStore = false;
         m_srcDoFldStore = false;
     }
 
-    JITDUMP(requiresCopyBlock ? " this requires a CopyBlock.\n" : " using field by field assignments.\n");
+    JITDUMP(requiresCopyBlock ? " this requires a CopyBlock.\n" : " using field by field stores.\n");
 
     if (requiresCopyBlock)
     {
@@ -996,7 +996,7 @@ void MorphCopyBlockHelper::MorphStructCases()
 }
 
 //------------------------------------------------------------------------
-// TryPrimitiveCopy: Attempt to replace a block assignment with a scalar assignment.
+// TryPrimitiveCopy: Attempt to replace a block store with a scalar store.
 //
 // If successful, will set "m_transformationDecision" to "OneStoreBlock".
 //
@@ -1074,7 +1074,7 @@ void MorphCopyBlockHelper::TryPrimitiveCopy()
 }
 
 //------------------------------------------------------------------------
-// CopyFieldByField: transform the copy block to a field by field assignment.
+// CopyFieldByField: transform the copy block to a field by field store.
 //
 // Notes:
 //    We do it for promoted lclVars which fields can be enregistered.
@@ -1108,7 +1108,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
     if (m_dstDoFldStore && m_srcDoFldStore)
     {
-        // To do fieldwise assignments for both sides.
+        // To do fieldwise stores for both sides.
         // The structs do not have to be the same exact types but have to have same field types
         // at the same offsets.
         assert(m_dstLclNum != BAD_VAR_NUM && m_srcLclNum != BAD_VAR_NUM);
@@ -1468,9 +1468,9 @@ bool MorphCopyBlockHelper::CanReuseAddressForDecomposedStore(GenTree* addrNode)
 //
 // Return Value:
 //    We can return the original block copy unmodified (least desirable, but always correct)
-//    We can return a single assignment, when TryPrimitiveCopy transforms it (most desirable).
+//    We can return a single store, when TryPrimitiveCopy transforms it (most desirable).
 //    If we have performed struct promotion of the Source() or the Dest() then we will try to
-//    perform a field by field assignment for each of the promoted struct fields.
+//    perform a field by field store for each of the promoted struct fields.
 //
 // Assumptions:
 //    The child nodes for tree have already been Morphed.
@@ -1478,10 +1478,10 @@ bool MorphCopyBlockHelper::CanReuseAddressForDecomposedStore(GenTree* addrNode)
 // Notes:
 //    If we leave it as a block copy we will call lvaSetVarDoNotEnregister() on Source() or Dest()
 //    if they cannot be enregistered.
-//    When performing a field by field assignment we can have one of Source() or Dest treated as a blob of bytes
+//    When performing a field by field store we can have one of Source() or Dest treated as a blob of bytes
 //    and in such cases we will call lvaSetVarDoNotEnregister() on the one treated as a blob of bytes.
 //    If the Source() or Dest() is a struct that has a "CustomLayout" and "ContainsHoles" then we
-//    can not use a field by field assignment and must leave the original block copy unmodified.
+//    can not use a field by field store and must leave the original block copy unmodified.
 //
 GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 {
@@ -1489,14 +1489,14 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// fgMorphInitBlock: Morph a block initialization assignment tree.
+// fgMorphInitBlock: Morph a block initialization store tree.
 //
 // Arguments:
 //    tree - A store tree that performs block initialization.
 //
 // Return Value:
 //    If the destination is a promoted struct local variable then we will try to
-//    perform a field by field assignment for each of the promoted struct fields.
+//    perform a field by field store for each of the promoted struct fields.
 //    This is not always possible (e.g. if the struct is address exposed).
 //
 //    Otherwise the original store tree is returned unmodified, note that the
