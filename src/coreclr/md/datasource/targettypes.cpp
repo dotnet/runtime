@@ -378,7 +378,7 @@ m_rENCRecs(0)
 {
     memset(&m_pLookUpHashes, 0, TBL_COUNT*sizeof(CORDB_ADDRESS));
     memset(&m_pVS, 0, TBL_COUNT*sizeof(CORDB_ADDRESS));
-    memset(&m_bSortable, 0, TBL_COUNT*sizeof(BOOL));
+    memset(&m_bSortable, 0, TBL_COUNT*sizeof(BYTE));
 }
 
 HRESULT Target_CMiniMdRW::ReadFrom(DataTargetReader & reader)
