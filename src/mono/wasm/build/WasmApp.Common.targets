@@ -515,6 +515,7 @@
       <_WasmBuildNativeRequired Condition="@(_ChangedBoolPropertiesThatTriggerRelinking->Count()) > 0">true</_WasmBuildNativeRequired>
     </PropertyGroup>
 
+    <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_WasmBuildNativeRequired)' == 'true'"
            Text="WasmBuildNative is required because %(_ChangedBoolPropertiesThatTriggerRelinking.Identity)=$(%(_ChangedBoolPropertiesThatTriggerRelinking.Identity)), but WasmBuildNative is already set to 'false'." />
 
     <PropertyGroup>
