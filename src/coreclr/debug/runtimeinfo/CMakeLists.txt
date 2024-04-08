@@ -40,6 +40,8 @@ install_clr(TARGETS runtimeinfo DESTINATIONS lib COMPONENT runtime)
 
 
 add_library(cdac_data_descriptor OBJECT data-descriptor.cpp)
+# don't build the data descriptor before the VM (and any of its dependencies' generated headers)
+add_dependencies(cdac_data_descriptor cee_wks_core)
 if(CLR_CMAKE_TARGET_WIN32)
   # turn off whole program optimization:
   # 1. it creates object files that cdac-build-tool can't read
