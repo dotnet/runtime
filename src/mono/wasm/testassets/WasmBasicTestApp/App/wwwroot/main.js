@@ -25,7 +25,7 @@ switch (testCase) {
     case "AppSettingsTest":
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
         break;
-    case "ModuleConfigTests":
+    case "DownloadResourceProgressTest":
         if (params.get("failAssemblyDownload") === "true") {
             let assemblyCounter = 0;
             let failAtAssemblyNumbers = [
@@ -63,14 +63,18 @@ switch (testCase) {
                 if (loaded === total && loaded !== 0) {
                     testOutput("DownloadResourceProgress: Finished");
                 }
-            },
-            out: () => {
+            }
+        });
+        break;
+    case "OutErrOverrideWorks":
+        dotnet.withModuleConfig({
+            out: (message) => {
                 console.log("Emscripten out override works!");
-                console.log(console)
+                console.log(message)
             },
-            err: () => {
-                console.log("Emscripten err override works!");
-                console.error(console)
+            err: (message) => {
+                console.error("Emscripten err override works!");
+                console.error(message)
             },
         });
         break;
@@ -102,8 +106,11 @@ try {
             exports.AppSettingsTest.Run();
             exit(0);
             break;
-        case "ModuleConfigTests":
+        case "DownloadResourceProgressTest":
             exit(0);
+            break;
+        case "OutErrOverrideWorks":
+            dotnet.run();
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
