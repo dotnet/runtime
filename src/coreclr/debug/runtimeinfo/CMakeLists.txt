@@ -66,10 +66,12 @@ set(CDAC_BUILD_TOOL_CSPROJ "${CLR_DIR}/tools/cdac-build-tool/cdac-build-tool.csp
 
 set(CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.txt")
 
+# generate the contract descriptor by running cdac-build-tool
+# n.b. this just uses `dotnet` from the PATH.  InitializeDotNetCli adds the apropropriate directory
 add_custom_command(
     OUTPUT "${CONTRACT_DESCRIPTOR_OUTPUT}"
     VERBATIM
-    COMMAND "${DOTNET_CMD}" run --project "${CDAC_BUILD_TOOL_CSPROJ}" -c "$<CONFIG>" -- compose -v -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -c "${CONTRACT_FILE}" $<TARGET_OBJECTS:cdac_data_descriptor>
+    COMMAND dotnet run --project "${CDAC_BUILD_TOOL_CSPROJ}" -c "$<CONFIG>" -- compose -v -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -c "${CONTRACT_FILE}" $<TARGET_OBJECTS:cdac_data_descriptor>
     DEPENDS cdac_data_descriptor cee_wks_core $<TARGET_OBJECTS:cdac_data_descriptor> "${CONTRACT_FILE}"
     USES_TERMINAL
 )

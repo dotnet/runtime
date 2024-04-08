@@ -190,8 +190,8 @@ target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 # using $<TARGET_OBJECTS:> because the exported symbols from cdac_contract_descriptor are otherwise
 # unreferenced which means the linker doesn't include them
-target_link_libraries(coreclr PRIVATE $<TARGET_OBJECTS:cdac_contract_descriptor>)
-target_link_libraries(coreclr_static PRIVATE $<TARGET_OBJECTS:cdac_contract_descriptor>)
+target_link_libraries(coreclr PRIVATE cdac_contract_descriptor)
+target_link_libraries(coreclr_static PRIVATE cdac_contract_descriptor)
 
 if(CLR_CMAKE_TARGET_WIN32)
     set(CLRDEBUGINFO_RESOURCE_PATH ${CMAKE_CURRENT_BINARY_DIR}/clr_debug_resource.bin)
