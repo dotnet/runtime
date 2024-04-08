@@ -144,11 +144,11 @@ Some tests need to be run in their own process as they interact with global proc
 
 Sometimes you may want to run a test with the least amount of code before actually executing the test. In addition to the merged test runner, we have another runner mode known as the "Standalone" runner. This runner is used by default in tests that require process isolation. This runner consists of a simple `try-catch` around executing each test sequentially, with no test results file or runtime test filtering.
 
-To filter tests on a merged test runner built as standalone, you can set the `TestFilter` property when using `./dotnet.sh build -c <Configuration> src/tests/path/to/test.csproj` like so: `./dotnet.sh build -c Checked src/tests/path/to/test.csproj -p:TestFilter=SubstringOfFullyQualifiedTestName`. This mechanism supports the same filtering as the runtime test filtering. Using this mechanism will allow you to skip individual test cases at build time instead of at runtime.
+To filter tests on a merged test runner built as standalone, you can set the `TestFilter` property, like so: `./dotnet.sh build -c Checked src/tests/path/to/test.csproj -p:TestFilter=SubstringOfFullyQualifiedTestName`. This mechanism supports the same filtering as the runtime test filtering. Using this mechanism will allow you to skip individual test cases at build time instead of at runtime.
 
 #### Building all tests with the Standalone Runner
 
-If you wish to use the Standalone runner described in the [previous section](#the-standalone-test-runner-and-build-time-test-filtering), you can set the `BuildAllTestsAsStandalone` environment variable to `true` when invoking the `./src/tests/build.sh` or `./src/tests/build.cmd` scripts. This will build all tests that are not directly in a merged test runner's project as separate executable tests and build only the tests that are compiled into the runner directly. If a runner has no tests that are built directly into the runner, then it will be excluded.
+If you wish to use the Standalone runner described in the [previous section](#the-standalone-test-runner-and-build-time-test-filtering), you can set the `BuildAllTestsAsStandalone` environment variable to `true` when invoking the `./src/tests/build.sh` or `./src/tests/build.cmd` scripts (for example, `export BuildAllTestsAsStandalone=true` or `set BuildAllTestsAsStandalone=true`). This will build all tests that are not directly in a merged test runner's project as separate executable tests and build only the tests that are compiled into the runner directly. If a runner has no tests that are built directly into the runner, then it will be excluded.
 
 ### Building C++/CLI Native Test Components Against the Live Ref Assemblies
 
