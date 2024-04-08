@@ -15,7 +15,7 @@ struct TypeSpec
 {
     uint32_t Name;
     uint32_t Fields;
-    uint16_t Size;
+    uint16_t Size; // note: C++ fragile no designated initializers - Size must come after Name and Fields
 };
 
 struct FieldSpec
@@ -363,37 +363,39 @@ struct MagicAndBlob {
 
 DLLEXPORT size_t FooFaFa = 0x12345678;
 
+// C-style designated initializers are a C++20 feature.  Have to use plain old aggregate initialization instead.
+
 DLLEXPORT
 struct MagicAndBlob BlobDataDescriptor = {
-    .magic = 0x00424F4C42434144ull,// "DACBLOB",
-    .Blob = {
-        .Directory = {
-            .BaselineStart = offsetof(struct BinaryBlobDataDescriptor, BaselineName),
-            .TypesStart = offsetof(struct BinaryBlobDataDescriptor, Types),
-            .FieldPoolStart = offsetof(struct BinaryBlobDataDescriptor, FieldPool),
-            .GlobalLiteralValuesStart = offsetof(struct BinaryBlobDataDescriptor, GlobalLiteralValues),
-            .GlobalPointersStart = offsetof(struct BinaryBlobDataDescriptor, GlobalPointerValues),
-            .NamesStart = offsetof(struct BinaryBlobDataDescriptor, NamesPool),
-            .TypeCount = CDacBlobTypesCount,
-            .FieldPoolCount = CDacBlobFieldPoolCount,
-            .GlobalLiteralValuesCount = CDacBlobGlobalLiteralsCount,
-            .GlobalPointerValuesCount = CDacBlobGlobalPointersCount,
-            .NamesPoolCount = sizeof(struct CDacStringPoolSizes),
-            .TypeSpecSize = sizeof(struct TypeSpec),
-            .FieldSpecSize = sizeof(struct FieldSpec),
-            .GlobalLiteralSpecSize = sizeof(struct GlobalLiteralSpec),
-            .GlobalPointerSpecSize = sizeof(struct GlobalPointerSpec),
+    /*.magic = */ 0x00424F4C42434144ull,// "DACBLOB",
+    /*.Blob =*/ {
+        /*.Directory =*/ {
+            /*.BaselineStart = */ offsetof(struct BinaryBlobDataDescriptor, BaselineName),
+            /* .TypesStart = */ offsetof(struct BinaryBlobDataDescriptor, Types),
+            /* .FieldPoolStart = */ offsetof(struct BinaryBlobDataDescriptor, FieldPool),
+            /* .GlobalLiteralValuesStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalLiteralValues),
+            /* .GlobalPointersStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalPointerValues),
+            /* .NamesStart = */ offsetof(struct BinaryBlobDataDescriptor, NamesPool),
+            /* .TypeCount = */ CDacBlobTypesCount,
+            /* .FieldPoolCount = */ CDacBlobFieldPoolCount,
+            /* .GlobalLiteralValuesCount = */ CDacBlobGlobalLiteralsCount,
+            /* .GlobalPointerValuesCount = */ CDacBlobGlobalPointersCount,
+            /* .NamesPoolCount = */ sizeof(struct CDacStringPoolSizes),
+            /* .TypeSpecSize = */ sizeof(struct TypeSpec),
+            /* .FieldSpecSize = */ sizeof(struct FieldSpec),
+            /* .GlobalLiteralSpecSize = */ sizeof(struct GlobalLiteralSpec),
+            /* .GlobalPointerSpecSize = */ sizeof(struct GlobalPointerSpec),
         },
-        .BaselineName = offsetof(struct CDacStringPoolSizes, cdac_string_pool_baseline_),
+        /* .BaselineName = */ offsetof(struct CDacStringPoolSizes, cdac_string_pool_baseline_),
 
-        .Types = {
+        /* .Types = */ {
 #define CDAC_BASELINE(name)
 #define CDAC_TYPES_BEGIN()
 #define CDAC_TYPE_BEGIN(name) { \
-    .Name = GET_TYPE_NAME(name), \
-    .Fields = GET_TYPE_FIELDS(name),
-#define CDAC_TYPE_INDETERMINATE(name) .Size = 0,
-#define CDAC_TYPE_SIZE(size) .Size = size,
+    /* .Name = */ GET_TYPE_NAME(name), \
+    /* .Fields = */ GET_TYPE_FIELDS(name),
+#define CDAC_TYPE_INDETERMINATE(name) /*.Size = */ 0,
+#define CDAC_TYPE_SIZE(size) /* .Size = */ size,
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset)
 #define CDAC_TYPE_END(name) },
 #define CDAC_TYPES_END()
@@ -417,16 +419,16 @@ struct MagicAndBlob BlobDataDescriptor = {
 #undef CDAC_GLOBALS_END
         },
 
-        .FieldPool = {
+        /* .FieldPool = */ {
 #define CDAC_BASELINE(name) {0,},
 #define CDAC_TYPES_BEGIN()
 #define CDAC_TYPE_BEGIN(name)
 #define CDAC_TYPE_INDETERMINATE(name)
 #define CDAC_TYPE_SIZE(size)
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) { \
-    .Name = GET_FIELD_NAME(tyname,membername), \
-    .TypeName = GET_FIELDTYPE_NAME(tyname,membername), \
-    .FieldOffset = offset, \
+    /* .Name = */ GET_FIELD_NAME(tyname,membername), \
+    /* .TypeName = */ GET_FIELDTYPE_NAME(tyname,membername), \
+    /* .FieldOffset = */ offset, \
 },
 #define CDAC_TYPE_END(name) { 0, },
 #define CDAC_TYPES_END()
@@ -450,7 +452,7 @@ struct MagicAndBlob BlobDataDescriptor = {
 #undef CDAC_GLOBALS_END
         },
 
-        .GlobalLiteralValues = {
+        /* .GlobalLiteralValues = */ {
 #define CDAC_BASELINE(name)
 #define CDAC_TYPES_BEGIN()
 #define CDAC_TYPE_BEGIN(name)
@@ -461,7 +463,7 @@ struct MagicAndBlob BlobDataDescriptor = {
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
 #define CDAC_GLOBAL_POINTER(name,value)
-#define CDAC_GLOBAL(name,tyname,value) { .Name = GET_GLOBAL_NAME(name), .TypeName = GET_GLOBALTYPE_NAME(name), .Value = value },
+#define CDAC_GLOBAL(name,tyname,value) { /*.Name = */ GET_GLOBAL_NAME(name), /* .TypeName = */ GET_GLOBALTYPE_NAME(name), /* .Value = */ value },
 #define CDAC_GLOBALS_END()
 #include "data-descriptor.h"
 #undef CDAC_BASELINE
@@ -479,7 +481,7 @@ struct MagicAndBlob BlobDataDescriptor = {
 #undef CDAC_GLOBALS_END
         },
 
-        .GlobalPointerValues = {
+        /* .GlobalPointerValues = */ {
 #define CDAC_BASELINE(name)
 #define CDAC_TYPES_BEGIN()
 #define CDAC_TYPE_BEGIN(name)
@@ -489,7 +491,7 @@ struct MagicAndBlob BlobDataDescriptor = {
 #define CDAC_TYPE_END(name)
 #define CDAC_TYPES_END()
 #define CDAC_GLOBALS_BEGIN()
-#define CDAC_GLOBAL_POINTER(name,value) { .Name = GET_GLOBAL_NAME(name), .AuxIndex = GET_GLOBAL_POINTER_INDEX(name) },
+#define CDAC_GLOBAL_POINTER(name,value) { /* .Name = */ GET_GLOBAL_NAME(name), /* .AuxIndex = */ GET_GLOBAL_POINTER_INDEX(name) },
 #define CDAC_GLOBAL(name,tyname,value)
 #define CDAC_GLOBALS_END()
 #include "data-descriptor.h"
@@ -508,7 +510,7 @@ struct MagicAndBlob BlobDataDescriptor = {
 #undef CDAC_GLOBALS_END
         },
 
-        .NamesPool = ("\0" // starts with a nul
+        /* .NamesPool = */ ("\0" // starts with a nul
 #define CDAC_BASELINE(name) name "\0"
 #define CDAC_TYPES_BEGIN()
 #define CDAC_TYPE_BEGIN(name) #name "\0"
@@ -537,7 +539,7 @@ struct MagicAndBlob BlobDataDescriptor = {
 #undef CDAC_GLOBALS_END
                   ),
 
-        .EndMagic = { 0x01, 0x02, 0x03, 0x04 },
+        /* .EndMagic = */ { 0x01, 0x02, 0x03, 0x04 },
     }
 };
 
