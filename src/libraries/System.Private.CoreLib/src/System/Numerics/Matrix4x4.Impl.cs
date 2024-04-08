@@ -166,20 +166,10 @@ namespace System.Numerics
             public static Impl operator *(in Impl left, in Impl right)
             {
                 Impl result;
-                result.X = Transform(left.X, in right);
-                result.Y = Transform(left.Y, in right);
-                result.Z = Transform(left.Z, in right);
-                result.W = Transform(left.W, in right);
-                return result;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static Vector4 Transform(Vector4 vector, in Impl matrix)
-            {
-                var result = matrix.X * vector.X;
-                result += matrix.Y * vector.Y;
-                result += matrix.Z * vector.Z;
-                result += matrix.W * vector.W;
+                result.X = Vector4.Transform(left.X, in right);
+                result.Y = Vector4.Transform(left.Y, in right);
+                result.Z = Vector4.Transform(left.Z, in right);
+                result.W = Vector4.Transform(left.W, in right);
                 return result;
             }
 
