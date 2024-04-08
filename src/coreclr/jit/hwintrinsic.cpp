@@ -1606,6 +1606,17 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 
 #if defined(TARGET_ARM64)
+    if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrinsic))
+    {
+        assert(numArgs > 0);
+        GenTree* op1 = retNode->AsHWIntrinsic()->Op(1);
+        if (!varTypeIsMask(op1))
+        {
+            // Op1 input is a vector. HWInstrinsic requires a mask.
+            retNode->AsHWIntrinsic()->Op(1) = gtNewSimdConvertVectorToMaskNode(retType, op1, simdBaseJitType, simdSize);
+        }
+    }
+
     if (retType != nodeRetType)
     {
         // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
