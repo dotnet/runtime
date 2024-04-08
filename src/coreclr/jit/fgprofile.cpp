@@ -5299,6 +5299,15 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         return true;
     }
 
+    if (fgPgoDeferredInconsistency)
+    {
+        // We have a deferred consistency check failure. Just return w/o checking further
+        // We will assert later once we see the method has valid IL.
+        //
+        JITDUMP("[deferred prior check failed -- skipping this check]\n");
+        return false;
+    }
+
     JITDUMP("Checking Profile Weights (flags:0x%x)\n", checks);
     unsigned problemBlocks    = 0;
     unsigned unprofiledBlocks = 0;

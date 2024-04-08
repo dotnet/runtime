@@ -6308,7 +6308,7 @@ public:
     bool                                   fgPgoConsistent;
 
 #ifdef DEBUG
-    bool                                   fgPgoConsistentCheck;
+    bool                                   fgPgoDeferredInconsistency;
 #endif
 
 

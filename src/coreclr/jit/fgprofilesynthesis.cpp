@@ -152,20 +152,32 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     }
 
 #ifdef DEBUG
-    if (JitConfig.JitCheckSynthesizedCounts() > 0)
+    // We want to assert that the profile is consistent.
+    // However, we need to defer asserting since invalid IL can
+    // match the one-pass convergence criteria (where we assume
+    // convergence) but not actually converge because of
+    // nonsensical flow.
+    //
+    // This generally only happens under pure synthesis, becase
+    // methods with invalid IL won't have real PGO data.
+    //
+    // Assume all is well.
+    //
+    m_comp->fgPgoDeferredInconsistency = false;
+
+    if (m_comp->fgPgoConsistent)
     {
-        // Verify consistency, provided we didn't see any improper headers
-        // or cap any Cp values.
+        const bool isConsistent =
+            m_comp->fgDebugCheckProfileWeights(ProfileChecks::CHECK_LIKELY | ProfileChecks::CHECK_ALL_BLOCKS);
+
+        // We thought profile data was consistent, but it wasn't.
+        // Leave a note so we can bypass the post-phase check, and
+        // instead assert at the end of fgImport, if we make it that far.
         //
-        // Unfortunately invalid IL may also cause inconsistencies,
-        // so if we are running before the importer, we can't reliably
-        // assert. So we check now, but defer asserting until the end of fgImport.
-        //
-        if (m_comp->fgPgoConsistent)
+        if (!isConsistent)
         {
-            // verify likely weights, assert on failure, check all blocks
-            m_comp->fgPgoConsistentCheck =
-                m_comp->fgDebugCheckProfileWeights(ProfileChecks::CHECK_LIKELY | ProfileChecks::CHECK_ALL_BLOCKS);
+            m_comp->fgPgoDeferredInconsistency = true;
+            JITDUMP("Will defer asserting until after importation\n");
         }
     }
 #endif
