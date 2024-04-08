@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Do not produce a public package. This ships as part of the runtime -->
+    <IsShippingPackage>false</IsShippingPackage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InstallRuntimeComponentDestination Include="." />
+    <!-- TODO: [cdac] Output to sharedFramework and add PlatformManifestFileEntry for Microsoft.NETCore.App once ready to include in shipping package -->
+    <!-- <InstallRuntimeComponentDestination Include="sharedFramework" Condition="'$(RuntimeFlavor)' == 'coreclr'"/> -->
+  </ItemGroup>
+
+</Project>
