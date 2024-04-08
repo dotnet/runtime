@@ -7955,6 +7955,8 @@ void CodeGen::genReturn(GenTree* treeNode)
 void CodeGen::genSwiftErrorReturn(GenTree* treeNode)
 {
     assert(treeNode->OperIs(GT_SWIFT_ERROR_RET));
+    // The first operand is the error value, but genReturn expects it to be the normal return value,
+    // so swap them.
     std::swap(treeNode->AsOp()->gtOp1, treeNode->AsOp()->gtOp2);
     GenTree*        swiftErrorNode = treeNode->gtGetOp2();
     const regNumber errorSrcReg    = genConsumeReg(swiftErrorNode);
@@ -7970,7 +7972,7 @@ void CodeGen::genSwiftErrorReturn(GenTree* treeNode)
 //    treeNode - The tree node to evaluate whether is a struct return.
 //
 // Return Value:
-//    Returns true if the 'treeNode" is a GT_RETURN/GT_SWIFT_ERROR_RET node of type struct.
+//    Returns true if the 'treeNode' is a GT_RETURN/GT_SWIFT_ERROR_RET node of type struct.
 //    Otherwise returns false.
 //
 bool CodeGen::isStructReturn(GenTree* treeNode)

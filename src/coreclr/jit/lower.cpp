@@ -525,6 +525,8 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_SWIFT_ERROR_RET:
+            // The first operand is the error value, but LowerRet expects it to be the normal return value,
+            // so swap them.
             std::swap(node->AsOp()->gtOp1, node->AsOp()->gtOp2);
             LowerRet(node->AsUnOp());
             std::swap(node->AsOp()->gtOp1, node->AsOp()->gtOp2);
