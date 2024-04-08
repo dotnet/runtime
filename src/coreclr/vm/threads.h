@@ -4082,7 +4082,7 @@ private:
 };
 
 template<>
-struct ::cdac_offsets<Thread>
+struct cdac_offsets<Thread>
 {
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t Link = offsetof(Thread, m_Link);
