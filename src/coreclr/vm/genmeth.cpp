@@ -565,7 +565,7 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
 {
     CONTRACT(InstantiatedMethodDesc *)
     {
-        THROWS;
+        NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
         PRECONDITION(CheckPointer(pExactOrRepMT));

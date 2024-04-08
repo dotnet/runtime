@@ -294,8 +294,8 @@ void CrawlFrame::InitializeExactGenericInstantiations()
 {
     CONTRACTL {
         SUPPORTS_DAC;
-        DISABLED(NOTHROW);
-        DISABLED(GC_NOTRIGGER);
+        NOTHROW;
+        GC_NOTRIGGER;
     } CONTRACTL_END;
 
     // Turn into cooperative GC mode
@@ -315,7 +315,12 @@ void CrawlFrame::InitializeExactGenericInstantiations()
 #ifndef DACCESS_COMPILE
                 if (pConstructedFunc->IsSharedByGenericInstantiations())
                 {
-                    pConstructedFunc = InstantiatedMethodDesc::FindOrCreateExactClassMethod(th.GetMethodTable(), pConstructedFunc);
+                    InstantiatedMethodDesc *pInstMD = InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(th.GetMethodTable(), pConstructedFunc->GetMemberDef(), Instantiation(), false);
+
+                    if (pInstMD != NULL)
+                    {
+                        pConstructedFunc = pInstMD;
+                    }
                 }
 #endif // !DACCESS_COMPILE
                 pFunc = pConstructedFunc;

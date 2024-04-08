@@ -1504,13 +1504,10 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     CONTRACTL
     {
         MODE_ANY;
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    
-    // Turn into cooperative GC mode
-    GCX_COOP();
 
     pcfThisFrame->pRD = pRD;
 
