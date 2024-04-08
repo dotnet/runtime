@@ -4023,6 +4023,12 @@ public:
         return lvaGetDesc(lclVar->GetLclNum());
     }
 
+    const ABIPassingInformation& lvaGetParameterABIInfo(unsigned lclNum)
+    {
+        assert(lclNum < info.compArgsCount);
+        return lvaParameterPassingInfo[lclNum];
+    }
+
     unsigned lvaTrackedIndexToLclNum(unsigned trackedIndex)
     {
         assert(trackedIndex < lvaTrackedCount);
@@ -4091,18 +4097,7 @@ public:
     bool lvaIsOriginalThisReadOnly();           // return true if there is no place in the code
                                                 // that writes to arg0
 
-#ifdef TARGET_X86
-    bool lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum)
-    {
-        if (!info.compIsVarArgs)
-        {
-            return false;
-        }
-
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        return varDsc->lvIsParam && !varDsc->lvIsRegArg && (lclNum != lvaVarargsHandleArg);
-    }
-#endif // TARGET_X86
+    bool lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum);
 
     bool lvaIsImplicitByRefLocal(unsigned lclNum) const;
     bool lvaIsLocalImplicitlyAccessedByRef(unsigned lclNum) const;
@@ -8021,32 +8016,6 @@ protected:
 private:
     Lowering*            m_pLowering;   // Lowering; needed to Lower IR that's added or modified after Lowering.
     LinearScanInterface* m_pLinearScan; // Linear Scan allocator
-
-    /* raIsVarargsStackArg is called by raMaskStkVars and by
-       lvaComputeRefCounts.  It identifies the special case
-       where a varargs function has a parameter passed on the
-       stack, other than the special varargs handle.  Such parameters
-       require special treatment, because they cannot be tracked
-       by the GC (their offsets in the stack are not known
-       at compile time).
-    */
-
-    bool raIsVarargsStackArg(unsigned lclNum)
-    {
-#ifdef TARGET_X86
-
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
-
-        assert(varDsc->lvIsParam);
-
-        return (info.compIsVarArgs && !varDsc->lvIsRegArg && (lclNum != lvaVarargsHandleArg));
-
-#else // TARGET_X86
-
-        return false;
-
-#endif // TARGET_X86
-    }
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
