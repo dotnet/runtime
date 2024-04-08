@@ -2,7 +2,7 @@
 
 ### Summary
 
-This is an internal implemetnation detail allowing tooling to read target architecture structure sizes and offsets without understaing target architecture object formats.
+This is an internal implemetnation detail allowing tooling to read target architecture structure sizes and offsets without understanding target architecture object formats.
 
 ### Design requirements
 
