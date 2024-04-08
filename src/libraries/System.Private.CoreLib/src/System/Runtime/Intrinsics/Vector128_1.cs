@@ -694,12 +694,12 @@ namespace System.Runtime.Intrinsics
 
         static bool ISimdVector<Vector128<T>, T>.AnyWhereAllBitsSet(Vector128<T> vector)
         {
-            return (Vector128.EqualsAny(vector, Vector128<T>.AllBitsSet));
+            return Vector128.EqualsAny(vector, Vector128<T>.AllBitsSet);
         }
 
         static bool ISimdVector<Vector128<T>, T>.Any(Vector128<T> vector, T value)
         {
-            return (Vector128.EqualsAny(vector, Vector128.Create((T)value)));
+            return Vector128.EqualsAny(vector, Vector128.Create((T)value));
         }
 
         static int ISimdVector<Vector128<T>, T>.IndexOfLastMatch(Vector128<T> vector)

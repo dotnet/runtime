@@ -759,12 +759,12 @@ namespace System.Runtime.Intrinsics
 
         static bool ISimdVector<Vector64<T>, T>.AnyWhereAllBitsSet(Vector64<T> vector)
         {
-            return (Vector64.EqualsAny(vector, Vector64<T>.AllBitsSet));
+            return Vector64.EqualsAny(vector, Vector64<T>.AllBitsSet);
         }
 
         static bool ISimdVector<Vector64<T>, T>.Any(Vector64<T> vector, T value)
         {
-            return (Vector64.EqualsAny(vector, Vector64.Create((T)value)));
+            return Vector64.EqualsAny(vector, Vector64.Create((T)value));
         }
 
         static int ISimdVector<Vector64<T>, T>.IndexOfLastMatch(Vector64<T> vector)
