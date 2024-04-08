@@ -521,15 +521,8 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_RETURN:
-            LowerRet(node->AsUnOp());
-            break;
-
         case GT_SWIFT_ERROR_RET:
-            // The first operand is the error value, but LowerRet expects it to be the normal return value,
-            // so swap them.
-            std::swap(node->AsOp()->gtOp1, node->AsOp()->gtOp2);
             LowerRet(node->AsUnOp());
-            std::swap(node->AsOp()->gtOp1, node->AsOp()->gtOp2);
             break;
 
         case GT_RETURNTRAP:
@@ -4558,13 +4551,13 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     DISPNODE(ret);
     JITDUMP("============\n");
 
-    GenTree* retVal = ret->gtGetOp1();
+    GenTree* retVal = ret->AsOp()->GetReturnValue();
     // There are two kinds of retyping:
     // - A simple bitcast can be inserted when:
     //   - We're returning a floating type as an integral type or vice-versa, or
     // - If we're returning a struct as a primitive type, we change the type of
     // 'retval' in 'LowerRetStructLclVar()'
-    bool needBitcast        = (ret->TypeGet() != TYP_VOID) && !varTypeUsesSameRegType(ret, ret->gtGetOp1());
+    bool needBitcast        = (ret->TypeGet() != TYP_VOID) && !varTypeUsesSameRegType(ret, retVal);
     bool doPrimitiveBitcast = false;
     if (needBitcast)
     {

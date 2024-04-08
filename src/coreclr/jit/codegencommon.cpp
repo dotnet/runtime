@@ -7767,7 +7767,7 @@ void CodeGen::genReturn(GenTree* treeNode)
 {
     assert(treeNode->OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
 
-    GenTree*  op1        = treeNode->gtGetOp1();
+    GenTree*  op1        = treeNode->AsOp()->GetReturnValue();
     var_types targetType = treeNode->TypeGet();
 
     // A void GT_RETFILT is the end of a finally. For non-void filter returns we need to load the result in the return
@@ -7955,10 +7955,7 @@ void CodeGen::genReturn(GenTree* treeNode)
 void CodeGen::genSwiftErrorReturn(GenTree* treeNode)
 {
     assert(treeNode->OperIs(GT_SWIFT_ERROR_RET));
-    // The first operand is the error value, but genReturn expects it to be the normal return value,
-    // so swap them.
-    std::swap(treeNode->AsOp()->gtOp1, treeNode->AsOp()->gtOp2);
-    GenTree*        swiftErrorNode = treeNode->gtGetOp2();
+    GenTree*        swiftErrorNode = treeNode->gtGetOp1();
     const regNumber errorSrcReg    = genConsumeReg(swiftErrorNode);
     genReturn(treeNode);
     inst_Mov(swiftErrorNode->TypeGet(), REG_SWIFT_ERROR, errorSrcReg, true, EA_PTRSIZE);

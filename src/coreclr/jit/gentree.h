@@ -3040,6 +3040,19 @@ struct GenTreeOp : public GenTreeUnOp
     // then sets the flag GTF_DIV_BY_CNS_OPT and GTF_DONT_CSE on the constant
     void CheckDivideByConstOptimized(Compiler* comp);
 
+    GenTree* GetReturnValue() const
+    {
+        assert(OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
+#ifdef SWIFT_SUPPORT
+        if (OperIs(GT_SWIFT_ERROR_RET))
+        {
+            return gtOp2;
+        }
+#endif // SWIFT_SUPPORT
+
+        return gtOp1;
+    }
+
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
     bool IsValidLongMul();
 #endif
