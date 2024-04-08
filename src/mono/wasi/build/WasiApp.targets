@@ -261,7 +261,7 @@
   </Target>
 
   <Target Name="_WasiWriteRspForLinking"
-          DependsOnTargets="_WasmSelectRuntimeComponentsForLinking;_WasiGetWasiOutputFileName"
+          DependsOnTargets="_WasmSelectRuntimeComponentsForLinking;_WasiGetWasiOutputFileName;_MonoSelectRuntimeComponents"
           BeforeTargets="_WasmWriteRspForLinking"
           Returns="@(_WasmLinkStepArgs)">
 
@@ -296,26 +296,8 @@
       <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true'">libmono-wasm-nosimd.a</_WasmSIMDLibToExclude>
     </PropertyGroup>
 
-    <!-- Mono component selection -->
-    <PropertyGroup>
-      <_WasiDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' != '0'">true</_WasiDebuggerSupport>
-      <_WasiDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' == '0'">false</_WasiDebuggerSupport>
-      <_WasiDebuggerSupport Condition="'$(_WasiDebuggerSupport)' == '' and '$(WasmBuildingForNestedPublish)' == 'true'">false</_WasiDebuggerSupport>
-      <_WasiDebuggerSupport Condition="'$(_WasiDebuggerSupport)' == ''">true</_WasiDebuggerSupport>
-    </PropertyGroup>
-    <Message Importance="High" Text="_WasiDebuggerSupport = $(_WasiDebuggerSupport)" />
     <ItemGroup>
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" /> <!-- Requires threads -->
-      <_MonoRuntimeComponentDontLink Include="libmono-component-marshal-ilgen-static.a" />
       <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
-    </ItemGroup>
-    <ItemGroup Condition="'$(_WasiDebuggerSupport)' == 'false'">
-      <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-static.a" />
-      <_MonoRuntimeComponentDontLink Include="libmono-component-hot_reload-static.a" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(_WasiDebuggerSupport)' == 'true'">
-      <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-stub-static.a" />
-      <_MonoRuntimeComponentDontLink Include="libmono-component-hot_reload-stub-static.a" />
     </ItemGroup>
 
     <ItemGroup>
