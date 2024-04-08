@@ -2839,7 +2839,7 @@ public:
     }
 
     // -----------------------------------------------------------------------------
-    // GetOrAdd: Find the node representing a register.
+    // Get: Find the node representing a register.
     //
     // Parameters:
     //   reg - Register
@@ -2917,13 +2917,13 @@ public:
     }
 
     // -----------------------------------------------------------------------------
-    // FindNodeToHandle: Find the next register node to handle incoming moves to.
+    // FindNodeToProcess: Find the next register node to process incoming moves to.
     //
     // Returns:
-    //   A register node to handle, based on heuristics that try to reduce the
+    //   A register node to process, based on heuristics that try to reduce the
     //   amount of shuffling that needs to happen.
     //
-    RegNode* FindNodeToHandle()
+    RegNode* FindNodeToProcess()
     {
         RegNode* lastNode = nullptr;
 
@@ -3223,7 +3223,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     regMaskTP busyRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
     while (true)
     {
-        RegNode* node = graph.FindNodeToHandle();
+        RegNode* node = graph.FindNodeToProcess();
         if (node == nullptr)
         {
             break;
