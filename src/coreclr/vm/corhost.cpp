@@ -259,7 +259,8 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
                                       LPCWSTR pwzAssemblyPath,
                                       int argc,
                                       LPCWSTR* argv,
-                                      DWORD *pReturnValue)
+                                      DWORD *pReturnValue,
+                                      bool preLoadLibs)
 {
     CONTRACTL
     {
@@ -337,7 +338,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
         if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions))
         {
             EX_TRY
-                DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */);
+                DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */, preLoadLibs);
                 if (pReturnValue)
                 {
                     *pReturnValue = retval;
@@ -346,7 +347,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
         }
         else
         {
-            DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */);
+            DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */, preLoadLibs);
             if (pReturnValue)
             {
                 *pReturnValue = retval;

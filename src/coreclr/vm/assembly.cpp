@@ -1381,7 +1381,7 @@ void RunManagedStartup()
     managedStartup.Call(args);
 }
 
-INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads)
+INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads, bool preLoadLibs)
 {
     CONTRACTL
     {
@@ -1444,9 +1444,11 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
             // Main thread wasn't started by the runtime.
             Thread::InitializationForManagedThreadInNative(pThread);
 
-            RunManagedStartup();
+             if (preLoadLibs)
+                RunManagedStartup();
 
-            hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
+            if (!preLoadLibs)
+                hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
 
             Thread::CleanUpForManagedThreadInNative(pThread);
         }

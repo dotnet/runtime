@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- always set SelfContained when running to use Mono on desktop -->
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <UsingTask TaskName="MonoAOTCompiler"
+             AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+
+  <Target Name="AOTCompileApp" Condition="'$(RunAOTCompilation)' == 'true'" AfterTargets="CopyFilesToPublishDirectory">
+    <PropertyGroup>
+      <_AotOutputType>Library</_AotOutputType>
+      <_AotLibraryFormat>Dylib</_AotLibraryFormat>
+      <UseAotDataFile>false</UseAotDataFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <AotInputAssemblies Include="$(PublishDir)\*.dll" />
+    </ItemGroup>
+
+    <MonoAOTCompiler
+      CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
+      OutputType="$(_AotOutputType)"
+      LibraryFormat="$(_AotLibraryFormat)"
+      Assemblies="@(AotInputAssemblies)"
+      OutputDir="$(PublishDir)"
+      CollectTrimmingEligibleMethods="$(StripILCode)"
+      TrimmingEligibleMethodsOutputDirectory="$(TrimmingEligibleMethodsOutputDirectory)"
+      IntermediateOutputPath="$(IntermediateOutputPath)"
+      UseAotDataFile="$(UseAotDataFile)"
+      MibcProfilePath="$(MibcProfilePath)"
+      UseLLVM="$(MonoEnableLLVM)"
+      LLVMPath="$(MonoAotCrossDir)">
+      <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
+    </MonoAOTCompiler>
+  </Target>
+
+  <UsingTask TaskName="ILStrip"
+             AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+
+  <Target Name="StripILCode" Condition="'$(StripILCode)' == 'true'" AfterTargets="AOTCompileApp">
+    <PropertyGroup>
+      <TrimIndividualMethods>true</TrimIndividualMethods>
+    </PropertyGroup>
+
+    <ILStrip
+      TrimIndividualMethods="$(TrimIndividualMethods)"
+      Assemblies="@(BundleAssemblies)">
+      <Output TaskParameter="TrimmedAssemblies" ItemName="TrimmedAssemblies" />
+    </ILStrip>
+
+    <Copy
+        SourceFiles="@(TrimmedAssemblies->Metadata('TrimmedAssemblyFileName'))"
+        DestinationFiles="@(TrimmedAssemblies)"
+        OverwriteReadOnlyFiles="true"
+    />
+    <Delete Files="@(TrimmedAssemblies->Metadata('TrimmedAssemblyFileName'))" />
+  </Target>
+</Project>

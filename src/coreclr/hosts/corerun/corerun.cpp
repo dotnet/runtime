@@ -432,7 +432,20 @@ static int run(const configuration& config)
             config.entry_assembly_argc,
             argv_utf8.get(),
             entry_assembly_utf8.c_str(),
-            (uint32_t*)&exit_code);
+            (uint32_t*)&exit_code,
+            true);
+
+        string_t new_entry_assembly = "/home/yangfan/work/dotnet_1/runtime/artifacts/bin/HelloWorld_2/x64/Debug/linux-x64/publish/HelloWorld_2.dll";
+        pal::string_utf8_t new_entry_assembly_utf8 = pal::convert_to_utf8(new_entry_assembly.c_str());
+        result = coreclr_execute_func(
+            CurrentClrInstance,
+            CurrentAppDomainId,
+            config.entry_assembly_argc,
+            argv_utf8.get(),
+            new_entry_assembly_utf8.c_str(),
+            (uint32_t*)&exit_code,
+            false);
+        
         if (FAILED(result))
         {
             pal::fprintf(stderr, W("BEGIN: coreclr_execute_assembly failed - Error: 0x%08x\n"), result);

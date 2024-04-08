@@ -251,7 +251,7 @@ public:
 
     //****************************************************************************************
     //
-    INT32 ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads);
+    INT32 ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads, bool preLoadLibs);
 
     //****************************************************************************************
 
