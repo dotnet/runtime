@@ -118,7 +118,7 @@ namespace System.Numerics
         /// <remarks>The <see cref="op_Division" /> method defines the division operation for <see cref="Quaternion" /> objects.</remarks>
         public static Quaternion operator /(Quaternion value1, Quaternion value2)
         {
-            return Concatenate(Inverse(value2), value1);
+            return value1 * Inverse(value2);
         }
 
         /// <summary>Returns a value that indicates whether two quaternions are equal.</summary>
@@ -159,24 +159,11 @@ namespace System.Numerics
             {
                 var left = value1.AsVector128();
                 var right = value2.AsVector128();
-
-                var l0012 = Vector128.Shuffle(left, Vector128.Create(0, 0, 1, 2));
-                var l1120 = Vector128.Shuffle(left, Vector128.Create(1, 1, 2, 0));
-                var r0333 = Vector128.Shuffle(right, Vector128.Create(0, 3, 3, 3));
-                var r1201 = Vector128.Shuffle(right, Vector128.Create(1, 2, 0, 1));
-
-                var t0 = l0012 * r0333 + l1120 * r1201;
-                var mask = Vector128.Create(0x80000000, 0, 0, 0);
-                var t0m = Vector128.Xor(t0, mask.AsSingle());
-
-                var l2201 = Vector128.Shuffle(left, Vector128.Create(2, 2, 0, 1));
-                var l3333 = Vector128.Shuffle(left, Vector128.Create(3, 3, 3, 3));
-                var r2120 = Vector128.Shuffle(right, Vector128.Create(2, 1, 2, 0));
-                var r3012 = Vector128.Shuffle(right, Vector128.Create(3, 0, 1, 2));
-
-                var t1 = l3333 * r3012 - l2201 * r2120 + t0m;
-                var result = Vector128.Shuffle(t1, Vector128.Create(1, 2, 3, 0));
-
+                
+                var result = right * left.GetElementUnsafe(3);
+                result += (Vector128.Shuffle(right, Vector128.Create(3, 2, 1, 0)) * left.GetElementUnsafe(0)) * Vector128.Create(+1.0f, -1.0f, +1.0f, -1.0f);
+                result += (Vector128.Shuffle(right, Vector128.Create(2, 3, 0, 1)) * left.GetElementUnsafe(1)) * Vector128.Create(+1.0f, +1.0f, -1.0f, -1.0f);
+                result += (Vector128.Shuffle(right, Vector128.Create(1, 0, 3, 2)) * left.GetElementUnsafe(2)) * Vector128.Create(-1.0f, +1.0f, +1.0f, -1.0f);
                 return Unsafe.BitCast<Vector128<float>, Quaternion>(result);
             }
             else
@@ -269,62 +256,7 @@ namespace System.Numerics
         /// <param name="value1">The first quaternion rotation in the series.</param>
         /// <param name="value2">The second quaternion rotation in the series.</param>
         /// <returns>A new quaternion representing the concatenation of the <paramref name="value1" /> rotation followed by the <paramref name="value2" /> rotation.</returns>
-        public static Quaternion Concatenate(Quaternion value1, Quaternion value2)
-        {
-            if (Vector128.IsHardwareAccelerated)
-            {
-                var left = Unsafe.BitCast<Quaternion, Vector128<float>>(value1);
-                var right = Unsafe.BitCast<Quaternion, Vector128<float>>(value2);
-
-                var c = Cross(right, left);
-                var dot = Vector3.Dot(right.AsVector3(), left.AsVector3());
-
-                var t0 = right * Vector128.Shuffle(left, Vector128.Create(3, 3, 3, 3));
-                var t1 = left * Vector128.Shuffle(right, Vector128.Create(3, 3, 3, 3)) + c;
-                var t2 = t0 + t1;
-                var ans = Unsafe.BitCast<Vector128<float>, Quaternion>(t2);
-                ans.W = t0.GetElement(3) - dot;
-                return ans;
-
-                static Vector128<float> Cross(Vector128<float> l, Vector128<float> r)
-                {
-                    return (Vector128.Shuffle(l, Vector128.Create(1, 2, 0, 3)) *
-                            Vector128.Shuffle(r, Vector128.Create(2, 0, 1, 3))) -
-                           (Vector128.Shuffle(l, Vector128.Create(2, 0, 1, 3)) *
-                            Vector128.Shuffle(r, Vector128.Create(1, 2, 0, 3)));
-                }
-            }
-            else
-            {
-                Quaternion ans;
-
-                // Concatenate rotation is actually q2 * q1 instead of q1 * q2.
-                // So that's why value2 goes q1 and value1 goes q2.
-                float q1x = value2.X;
-                float q1y = value2.Y;
-                float q1z = value2.Z;
-                float q1w = value2.W;
-
-                float q2x = value1.X;
-                float q2y = value1.Y;
-                float q2z = value1.Z;
-                float q2w = value1.W;
-
-                // cross(av, bv)
-                float cx = q1y * q2z - q1z * q2y;
-                float cy = q1z * q2x - q1x * q2z;
-                float cz = q1x * q2y - q1y * q2x;
-
-                float dot = q1x * q2x + q1y * q2y + q1z * q2z;
-
-                ans.X = q1x * q2w + q2x * q1w + cx;
-                ans.Y = q1y * q2w + q2y * q1w + cy;
-                ans.Z = q1z * q2w + q2z * q1w + cz;
-                ans.W = q1w * q2w - dot;
-
-                return ans;
-            }
-        }
+        public static Quaternion Concatenate(Quaternion value1, Quaternion value2) => value2 * value1;
 
         /// <summary>Returns the conjugate of a specified quaternion.</summary>
         /// <param name="value">The quaternion.</param>
