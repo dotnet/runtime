@@ -32,6 +32,8 @@ extern void FinalizeWeakReference(Object* obj);
 extern GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
 extern bool g_gcHeapHardLimitInfoSpecified;
 
+extern thread_local int doubleReportTrackingIndex;
+
 #include <generatedumpflags.h>
 #include "gcrefmap.h"
 
@@ -201,6 +203,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 #if defined(FEATURE_EH_FUNCLETS)
         flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
 #endif // defined(FEATURE_EH_FUNCLETS)
+        doubleReportTrackingIndex = 0;
         pThread->StackWalkFrames( GcStackCrawlCallBack, &gcctx, flagsStackWalk);
     }
 

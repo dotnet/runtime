@@ -137,6 +137,11 @@ inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
     return true;
 }
 
+thread_local void **doubleReportTracking = NULL;
+thread_local int doubleReportTrackingSize = 0;
+thread_local int doubleReportTrackingIndex = 0;
+static const int DoubleReportTrackingInitialSize = 256;
+
 /*
  * GcEnumObject()
  *
@@ -148,6 +153,22 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
 {
     Object ** ppObj = (Object **)pObj;
     GCCONTEXT   * pCtx  = (GCCONTEXT *) pData;
+
+    if (g_pConfig->GetEnableGCHoleMonitoring() && ((flags & GC_CALL_PINNED) == 0) && pCtx->sc->promotion)
+    {
+        if (doubleReportTrackingIndex == doubleReportTrackingSize)
+        {
+            doubleReportTrackingSize = (doubleReportTrackingSize == 0) ? DoubleReportTrackingInitialSize : doubleReportTrackingSize * 2;
+            doubleReportTracking = (void**)realloc(doubleReportTracking, doubleReportTrackingSize * sizeof(void*));
+        }
+        for (int i = 0; i < doubleReportTrackingIndex; i++)
+        {
+            // Double reporting of the same slot detected
+            _ASSERTE_ALL_BUILDS(doubleReportTracking[i] != pObj);
+        }
+
+        doubleReportTracking[doubleReportTrackingIndex++] = pObj;
+    }
 
     // Since we may be asynchronously walking another thread's stack,
     // check (frequently) for stack-buffer-overrun corruptions after
