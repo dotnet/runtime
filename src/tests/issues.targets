@@ -2582,7 +2582,37 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport/**" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' and '$(TargetArchitecture)' == 'x64'">
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minifullaot' and '$(TargetArchitecture)' == 'arm64'">
+        <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/nullabletypes/boxunboxenum_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/volatile/1/cpblk_volatile/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_85874/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/HwiOp/HwiSideEffects/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Base/add_ovf/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/CodeGenBringUpTests/ArrayExc_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/Instantiation/Classes/baseclass01/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/AddingSequence_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ForwardSub/andnotcontained/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/Benchstones/BenchI/8Queens/8Queens/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/Casting/castclasspointer/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Instantiation/Positive/AbstractBase01/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/GitHub_93770/GitHub_93770/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/address_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/fp/exgen/1000w1d_cs_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/fp/exgen/1000w1d_cs_do/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/address_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/fp/exgen/1000w1d_cs_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/fp/exgen/1000w1d_cs_ro/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Stress/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.2-M02/b00719/b00719/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_100466/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/V1.2-M02/b102518/b102518/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/Dev11/dev11_10427/conv_ovf_i4/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b28598/b28598/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/rngchk/ArrayWith2Loops_o/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/valuetypes/nullable/castclass/castclass/castclass032**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/ddb/127931/127931/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadstatic/threadstatic08/**" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minijit' and '$(TargetArchitecture)' == 'arm64'">
